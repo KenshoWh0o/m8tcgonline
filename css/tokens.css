@@ -1,30 +1,33 @@
 /* Jetons de design : couleurs, typos, rythme. Modifier ici pour changer la charte. */
 /* ============ Jetons ============ */
+/* Les trois couleurs de marque sont relevées directement sur le logo : orchidée de l'ellipse,
+   magenta du relief, rose pâle du lettrage. Tout le reste en découle. */
 :root{
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 
-  /* Fonds : presque noir et neutre, les cartes doivent être les seules taches de couleur */
-  --bg:#0d0d10;
-  --bg-2:#121216;
-  --surface:#17171c;
-  --surface-2:#1d1d23;
-  --line:#26262e;
-  --line-2:#34343e;
+  /* Fonds : noir teinté prune, pour s'accorder au rose sans virer au gris froid */
+  --bg:#0c0910;
+  --bg-2:#120e18;
+  --surface:#181320;
+  --surface-2:#211a2c;
+  --line:#2e2539;
+  --line-2:#3f3450;
 
   /* Texte */
-  --text:#eeeef2;
-  --subtle:#b4b5be;
-  --muted:#85868f;
+  --text:#f4eef7;
+  --subtle:#bdb2c6;
+  --muted:#8b8096;
 
   /* Marque */
-  --brand:#ec8fff;        /* orchidée du logo */
-  --brand-deep:#b44cd6;
-  --brand-ink:#190a1c;
-  --accent:#8936ff;       /* violette : couleur d'action */
-  --accent-2:#a95cf2;
-  --accent-glow:rgba(137,54,255,.45);
+  --brand:#df6de8;        /* orchidée du logo */
+  --brand-light:#ffd7f0;  /* rose pâle du lettrage */
+  --brand-deep:#a63fb0;
+  --brand-ink:#1a0a1e;
+  --accent:#8936ff;       /* violet : couleur d'action */
+  --accent-soft:#a95cf2;
+  --accent-deep:#57189e;  /* rebord des boutons pressables */
 
   /* Raretés */
   --r-r:#39b8ff;
@@ -33,13 +36,13 @@
 
   --display:'Archivo','Arial Black',system-ui,sans-serif;
   --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --radius:14px;
-  --radius-sm:10px;
+  --radius:16px;
+  --radius-sm:12px;
 }
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
 body{position:relative;height:100%;margin:0;display:flex;flex-direction:column;color:var(--text);font-family:var(--body);font-size:15px;
   -webkit-tap-highlight-color:transparent;background:var(--bg);isolation:isolate}
 button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:4px}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:6px}
 img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}

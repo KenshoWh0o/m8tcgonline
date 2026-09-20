@@ -124,10 +124,9 @@ setInterval(() => {
     if (tab === 'boosters' && !rv) render();
     return;
   }
-  const lab = $('#tmlabel');
-  if (!lab) return;
-  lab.textContent = timerLabel();
-  $('#tmclock').textContent = timerClock();
+  const cl = $('#tmclock');
+  if (!cl) return;
+  cl.textContent = timerClock();
   $('#tmbar').style.width = tickPct() + '%';
 }, 1000);
 

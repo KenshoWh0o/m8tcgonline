@@ -41,16 +41,11 @@ function openBooster(opts) {
 
   rv = { cards: drawn, news, idx: 0, god, test: !!opts.test, opts, revealed: false };
 
+  /* Le paquet plonge vers la caméra, puis le théâtre enchaîne sur la déchirure. */
   const pk = $('#pack');
   if (pk && !RM()) {
     pk.classList.add('tear');
-    if (god) pk.classList.add('god');
-    const r = pk.getBoundingClientRect();
-    const cols = god ? REVEAL.L.colors : ['#ffffff', '#ec8fff', '#8936ff', '#39b8ff'];
-    setTimeout(() => tab === 'boosters' && FX.burst(r.left + r.width / 2, r.top + r.height * .3,
-      { n: god ? 120 : 60, colors: cols, speed: god ? 11 : 7, up: 3, shape: 'star' }), 240);
-    setTimeout(() => pk.classList.add('spill'), 420);
-    setTimeout(startTheater, 1050);
+    setTimeout(startTheater, 300);
   } else {
     startTheater();
   }
@@ -59,7 +54,50 @@ function openBooster(opts) {
 function startTheater() {
   opening = false;
   showStack();
-  if (rv.god) godIntro();
+}
+
+/* Ouverture du paquet. La pile et le paquet sont dans le même écran depuis le début :
+   le paquet se déchire par le haut, puis les cartes en sortent d'un seul mouvement
+   jusqu'à venir se présenter face au joueur. Aucun remplacement de DOM, donc aucune coupure. */
+function packOpen(done) {
+  const st = $('#opening');
+  const pack = $('#packrip');
+  if (!st || !pack) {
+    done();
+    return;
+  }
+
+  const god = rv.god;
+  const cur = rv;
+  const cols = god ? REVEAL.L.colors : ['#ffffff', '#ffd7f0', '#df6de8', '#a95cf2'];
+  const at = (ms, fn) => setTimeout(() => {
+    if (rv === cur && document.body.contains(st)) fn();
+  }, ms);
+  const blast = (y, n, speed, size) => {
+    const r = pack.getBoundingClientRect();
+    FX.burst(r.left + r.width / 2, r.top + r.height * y, { n, colors: cols, speed, up: 3, shape: 'star', size, g: .05, life: 48 });
+  };
+
+  st.classList.add('rip-shake');
+  at(360, () => {
+    st.classList.add('rip-cut');
+    blast(.09, god ? 80 : 40, god ? 10 : 7, 3.2);
+  });
+  at(640, () => st.classList.add('rip-open'));
+
+  /* Retirer « packed » relâche la transition de la pile : elle sort du paquet et vient de face. */
+  at(920, () => {
+    st.classList.remove('packed');
+    st.classList.add('rip-pull');
+    blast(.16, god ? 140 : 56, god ? 12 : 8, 4);
+    if (god) FX.sparkle({ n: 110, colors: cols, size: 4 });
+  });
+
+  at(2050, () => {
+    pack.remove();
+    st.classList.remove('rip-shake', 'rip-cut', 'rip-open', 'rip-pull');
+    done();
+  });
 }
 
 function theater(html) {
@@ -150,16 +188,31 @@ function showStack() {
   const n = rv.cards.length;
   const last = n - 1;
   const fin = rk(rv.cards[last]) >= 3;
-  theater(`<div class="th-stage ${rv.god ? 'god' : ''}" id="opening">
+  const anim = !RM();
+
+  /* La carte à surprise ne porte pas encore sa rareté : sa couleur ne doit rien révéler
+     avant la révélation. doReveal() ajoute la classe au dernier moment. */
+  theater(`<div class="th-stage${rv.god ? ' god' : ''}${anim ? ' packed' : ''}" id="opening">
     <div class="th-top"><span class="th-count" id="opcount">1 / ${n}</span>${rv.test ? '<span class="th-test">Test</span>' : ''}<button class="th-skip" data-t="skip">Tout voir</button></div>
-    <div class="stackwrap"><div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
-      <div class="stack3d intro" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
+    <div class="stackwrap">${rv.god ? '<div class="godaura" aria-hidden="true"></div>' : ''}<div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
+      <div class="stack3d" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
         const f = i === last && fin;
-        return `<div class="scard${f ? ' veiled final r' + c.rar : ''}" data-i="${i}" style="--z:${i}">${f ? `<div class="lifter"><div class="spinner">${renderCard(c)}<div class="spinback r${c.rar}"><img src="${ART.back}" alt=""></div></div></div>` : renderCard(c)}<div class="sheen"></div></div>`;
-      }).join('')}</div></div></div>
+        return `<div class="scard${f ? ' veiled final' : ''}" data-i="${i}" style="--z:${i}">${f ? `<div class="lifter"><div class="spinner">${renderCard(c)}<div class="spinback"><img src="${ART.back}" alt=""></div></div></div>` : renderCard(c)}<div class="sheen"></div></div>`;
+      }).join('')}</div></div>
+      ${anim ? `<div class="packrip" id="packrip" aria-hidden="true">
+        <img class="rp-body" src="${packArt}" alt="">
+        <div class="rp-top"><img src="${packArt}" alt=""></div>
+        <i class="rp-line"></i>
+      </div>` : ''}</div>
     <div class="op-rar" id="oprar"></div>
-    <p class="op-hint" id="ophint">Glisse lentement pour voir la pile en 3D, d'un coup sec pour passer</p></div>`);
-  bindStack();
+    <p class="op-hint" id="ophint"></p></div>`);
+
+  const start = () => {
+    bindStack();
+    if (rv.god) godIntro();
+  };
+  if (anim) packOpen(start);
+  else start();
 }
 
 function isFinalHit() {
@@ -217,7 +270,8 @@ function doReveal(done) {
 
   stage.style.setProperty('--rc', cfg.rc);
   stage.classList.add('charging', 'charge-' + c.rar);
-  top.classList.add('charging');
+  /* La rareté n'est posée sur la carte qu'ici : avant, sa couleur vendrait la mèche. */
+  top.classList.add('charging', 'r' + c.rar);
 
   setTimeout(() => {
     if (!document.body.contains(top)) {
@@ -273,6 +327,7 @@ function doReveal(done) {
 function bindStack() {
   const st = $('#stack');
   const s3 = $('#s3d');
+  const stage = $('#opening');
   if (!st) return;
 
   const T = { rx: 0, ry: 0, mrx: 0, mry: 0, manual: false, grx: 0, gry: 0, alive: true, b0: null };
@@ -399,13 +454,11 @@ function bindStack() {
     T.rx += (trx - T.rx) * .14;
     T.ry += (tr_y - T.ry) * .14;
     st.style.transform = `rotateX(${T.rx.toFixed(2)}deg) rotateY(${T.ry.toFixed(2)}deg)`;
+    /* L'inclinaison fait briller la tranche de la carte à surprise : le spoil devient volontaire. */
+    if (stage) stage.style.setProperty('--tilt', Math.min(1, Math.abs(T.ry) / 30).toFixed(3));
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
-
-  setTimeout(() => {
-    if (s3) s3.classList.remove('intro');
-  }, RM() ? 0 : 900);
 }
 
 function showRecap() {

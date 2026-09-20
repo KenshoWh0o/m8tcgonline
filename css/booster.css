@@ -1,60 +1,92 @@
-/* Écran du booster : bandeau d'extension, paquet 3D, réserve, ouverture. */
+/* Écran du booster : bandeau d'extension, paquet 3D, réserve, et la déchirure d'ouverture. */
 /* ============ Écran booster ============ */
 .packzone{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100%;width:100%;gap:4px}
 
-.setbar{position:relative;text-align:center;width:100%}
-.setlogo{display:block;width:min(240px,56vw);margin:0 auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.7))}
+.setbar{position:relative;text-align:center;width:100%;max-width:520px}
+.setlogo{display:block;width:min(250px,58vw);margin:0 auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.7))}
 .setmeta{margin:8px 0 0;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.02em}
-.edition{position:absolute;right:2%;top:4%;width:clamp(38px,11vw,50px);height:auto;rotate:8deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+.edition{position:absolute;right:2%;top:2%;width:clamp(38px,11vw,52px);height:auto;rotate:8deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
 
 .packstage{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  perspective:1200px;padding:6px 0 0}
-.packglow{position:absolute;top:44%;left:50%;width:min(540px,116vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,rgba(236,143,255,.2),rgba(137,54,255,.09) 42%,transparent 68%)}
+  perspective:1300px;padding:8px 0 0}
+.packglow{position:absolute;top:44%;left:50%;width:min(620px,124vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(223,109,232,.22),rgba(137,54,255,.08) 40%,transparent 68%)}
 /* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
 .pack3d{position:relative;transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
 @keyframes packbob{50%{translate:0 -10px}}
-.pack{position:relative;display:block;height:clamp(168px,calc(100dvh - 470px),330px);width:auto;max-width:62vw;aspect-ratio:368/553;
+.pack{position:relative;display:block;width:min(66vw,calc((100dvh - 420px) * .665),340px);height:auto;aspect-ratio:368/553;
   touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform-style:preserve-3d;
-  filter:drop-shadow(0 26px 36px rgba(0,0,0,.7));transition:filter .25s}
+  filter:drop-shadow(0 28px 40px rgba(0,0,0,.72));transition:filter .25s}
 .pack:active{cursor:grabbing}
 .pack-art{display:block;width:100%;height:100%;object-fit:contain}
 .pack-foil{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.5;
   background:linear-gradient(112deg,transparent 33%,rgba(255,255,255,.55) 48%,transparent 63%);background-size:280% 100%;
   background-position:var(--fx,50%) 0}
 /* Paquet ouvrable : un halo respire derrière lui, le geste est évident sans ligne d'explication. */
-.pack.ready::after{content:'';position:absolute;inset:-7% -9%;border-radius:20px;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(236,143,255,.3),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
+.pack.ready::after{content:'';position:absolute;inset:-8% -10%;border-radius:22px;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(223,109,232,.34),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
 @keyframes packpulse{50%{opacity:.3}}
-.pack.ready:hover{filter:drop-shadow(0 26px 36px rgba(0,0,0,.7)) drop-shadow(0 0 24px rgba(236,143,255,.5))}
-.packshadow{width:min(180px,42vw);height:18px;margin-top:12px;border-radius:50%;flex:0 0 auto;
-  background:radial-gradient(closest-side,rgba(0,0,0,.75),transparent)}
+.pack.ready:hover{filter:drop-shadow(0 28px 40px rgba(0,0,0,.72)) drop-shadow(0 0 26px rgba(223,109,232,.55))}
+.packshadow{width:min(190px,44vw);height:18px;margin-top:14px;border-radius:50%;flex:0 0 auto;
+  background:radial-gradient(closest-side,rgba(0,0,0,.78),transparent)}
 
 /* ============ Réserve ============ */
-.packfoot{flex:0 0 auto;width:100%;max-width:380px;padding-top:12px}
-.meter{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
-.meter.dry{opacity:.72}
-.meter-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.pips{display:inline-flex;gap:5px}
-.pip{width:9px;height:13px;border-radius:2px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
-.pip.on{background:linear-gradient(160deg,var(--brand),var(--accent));box-shadow:0 0 9px rgba(137,54,255,.55)}
-.meter-count{font-family:var(--display);font-weight:900;font-style:italic;font-size:18px;line-height:1}
-.meter-count small{font-size:11px;font-style:normal;font-weight:700;color:var(--muted)}
-.meter-bar{height:4px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:11px 0 9px}
-.meter-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--brand));transition:width .9s linear}
-.meter-foot{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11px;font-weight:700;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--muted)}
-.meter-foot b{font-family:var(--display);font-style:italic;font-size:21px;line-height:1;letter-spacing:0;color:var(--text);
-  font-variant-numeric:tabular-nums}
-.packbtn{padding:15px 20px;font-size:15.5px}
+.packfoot{flex:0 0 auto;width:100%;max-width:390px;padding-top:14px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.packrail{display:flex;gap:10px;justify-content:center;width:100%}
+.rchip{position:relative;flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;overflow:hidden;
+  background:linear-gradient(180deg,var(--surface-2),var(--surface));border-radius:999px;padding:9px 16px;
+  box-shadow:0 3px 0 #0c0810,inset 0 0 0 1px var(--line)}
+.rchip .ic{width:19px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 6px rgba(137,54,255,.45))}
+.rchip svg{width:17px;height:17px;flex:0 0 auto;color:var(--muted)}
+.rchip b{font-family:var(--display);font-weight:900;font-style:italic;font-size:17px;line-height:1;font-variant-numeric:tabular-nums}
+.rchip small{font-size:11px;font-weight:700;color:var(--muted);margin-left:-4px}
+.rchip.time b{color:var(--subtle)}
+.rchip.time.full b{color:var(--brand)}
+/* Jauge de recharge : un liseré qui se remplit sous la pastille. */
+.rfill{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--brand));transition:width .9s linear}
+.rchip.time.full .rfill{background:var(--brand)}
+.packbtn{max-width:340px}
 
-/* ============ Ouverture ============ */
-.pack.tear{animation:packshake .4s linear}
-@keyframes packshake{20%{translate:-4px 1px}40%{translate:4px -1px}60%{translate:-3px 1px}80%{translate:3px 0}}
+/* ============ Départ de l'ouverture ============ */
+/* Le paquet plonge vers la caméra, le théâtre prend le relais avec la déchirure. */
+.pack.tear{animation:packdive .34s cubic-bezier(.5,0,.9,.4) forwards}
+@keyframes packdive{to{scale:1.35;opacity:0;filter:brightness(1.6) blur(3px)}}
 .pack.tear::after{animation:none;opacity:0}
-.pack.spill{animation:packblast .62s cubic-bezier(.45,0,.8,.35) forwards}
-@keyframes packblast{40%{scale:1.05;translate:0 -8px}to{scale:1.55;translate:0 -46px;opacity:0;filter:brightness(2.2) blur(5px)}}
-.pack.spill::before{content:'';position:absolute;left:-32%;right:-32%;top:-16%;height:56%;pointer-events:none;z-index:5;
-  background:radial-gradient(closest-side,#fff,rgba(236,143,255,.65),transparent);animation:packflash .6s forwards}
-.pack.god.spill::before{background:radial-gradient(closest-side,#fff,rgba(255,199,59,.9),rgba(255,120,0,.35),transparent)}
-@keyframes packflash{from{opacity:0;scale:.5 .4}45%{opacity:1}to{opacity:0;scale:1.8 2.4}}
+
+/* ============ Déchirure (le paquet vit dans la même scène que la pile) ============ */
+/* Posé par-dessus la pile : tant qu'il est là, les cartes sont « dedans ». */
+.packrip{position:absolute;left:50%;top:50%;z-index:5;width:113%;aspect-ratio:368/553;translate:-50% -50%;
+  transform-style:preserve-3d;pointer-events:none;filter:drop-shadow(0 26px 38px rgba(0,0,0,.75))}
+.rp-body{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+/* Bord déchiré : la même ligne en dents de scie sur les deux moitiés du paquet. */
+.rip-open .rp-body{clip-path:polygon(0.0% 9.6%, 2.9% 11.9%, 5.9% 9.6%, 8.8% 11.9%, 11.8% 9.6%, 14.7% 11.9%, 17.6% 9.6%, 20.6% 11.9%, 23.5% 9.6%, 26.5% 11.9%, 29.4% 9.6%, 32.4% 11.9%, 35.3% 9.6%, 38.2% 11.9%, 41.2% 9.6%, 44.1% 11.9%, 47.1% 9.6%, 50.0% 11.9%, 52.9% 9.6%, 55.9% 11.9%, 58.8% 9.6%, 61.8% 11.9%, 64.7% 9.6%, 67.6% 11.9%, 70.6% 9.6%, 73.5% 11.9%, 76.5% 9.6%, 79.4% 11.9%, 82.4% 9.6%, 85.3% 11.9%, 88.2% 9.6%, 91.2% 11.9%, 94.1% 9.6%, 97.1% 11.9%, 100.0% 9.6%, 100% 100%, 0% 100%)}
+.rp-top{position:absolute;inset:0;clip-path:polygon(0% 0%, 100% 0%, 100.0% 9.6%, 97.1% 11.9%, 94.1% 9.6%, 91.2% 11.9%, 88.2% 9.6%, 85.3% 11.9%, 82.4% 9.6%, 79.4% 11.9%, 76.5% 9.6%, 73.5% 11.9%, 70.6% 9.6%, 67.6% 11.9%, 64.7% 9.6%, 61.8% 11.9%, 58.8% 9.6%, 55.9% 11.9%, 52.9% 9.6%, 50.0% 11.9%, 47.1% 9.6%, 44.1% 11.9%, 41.2% 9.6%, 38.2% 11.9%, 35.3% 9.6%, 32.4% 11.9%, 29.4% 9.6%, 26.5% 11.9%, 23.5% 9.6%, 20.6% 11.9%, 17.6% 9.6%, 14.7% 11.9%, 11.8% 9.6%, 8.8% 11.9%, 5.9% 9.6%, 2.9% 11.9%, 0.0% 9.6%);transform-origin:50% 11%;transform-style:preserve-3d}
+.rp-top img{display:block;width:100%;height:100%;object-fit:contain}
+/* La bande s'assombrit en basculant vers l'arrière : c'est ce qui donne le volume. */
+.rp-top::after{content:'';position:absolute;inset:0;opacity:0;background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,0) 72%)}
+.rip-open .rp-top{animation:riptop 1.05s cubic-bezier(.24,.72,.3,1) forwards}
+.rip-open .rp-top::after{animation:ripshade 1.05s ease-out forwards}
+@keyframes riptop{
+  20%{transform:translateY(-3%) rotateX(58deg)}
+  58%{transform:translate(9%,-42%) rotateX(112deg) rotateZ(9deg);opacity:1}
+  100%{transform:translate(28%,-126%) rotateX(168deg) rotateZ(25deg);opacity:0}}
+@keyframes ripshade{35%{opacity:.95}100%{opacity:1}}
+
+.rp-line{position:absolute;left:3%;right:3%;top:10.5%;height:3px;border-radius:3px;background:#fff;transform-origin:left center;scale:0 1;
+  box-shadow:0 0 12px #fff,0 0 26px var(--accent)}
+.rip-cut .rp-line{animation:ripcut .32s ease-out forwards}
+.god .rp-line{box-shadow:0 0 12px #fff,0 0 30px var(--r-l)}
+@keyframes ripcut{0%{scale:0 1;opacity:1}70%{scale:1 1;opacity:1}100%{scale:1 1;opacity:0}}
+
+.rip-shake .packrip{animation:ripshake .38s ease-in-out}
+@keyframes ripshake{
+  15%{transform:rotateZ(-1.6deg) rotateY(-6deg)}
+  40%{transform:rotateZ(1.6deg) rotateY(6deg)}
+  65%{transform:rotateZ(-1.1deg) rotateY(-3deg)}
+  85%{transform:rotateZ(.7deg) rotateY(2deg)}}
+
+/* On tire les cartes vers soi : le paquet vide bascule et descend hors champ. */
+.rip-pull .packrip{animation:packaway 1.05s cubic-bezier(.32,.76,.36,1) forwards}
+@keyframes packaway{
+  28%{transform:translateY(9%) rotateX(9deg) rotateZ(-2deg)}
+  100%{transform:translateY(128%) rotateX(32deg) rotateZ(-9deg);opacity:0}}

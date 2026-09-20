@@ -20,22 +20,12 @@ function header() {
   $('#tk').textContent = save.unlimited ? '∞' : String(save.tickets);
 }
 
-/* Logo : le premier mot porte le lettrage, le reste va sur le bandeau. */
 function brand() {
-  const w = GAME_NAME.trim().split(/\s+/);
-  const main = w.shift() || GAME_NAME;
-  const sub = w.join(' ');
-  $('#brand').innerHTML = `<span class="bm-main" data-txt="${h(main)}">${h(main)}</span>${sub ? `<span class="bm-sub"><span>${h(sub)}</span></span>` : ''}`;
+  $('#brand').innerHTML = `<img src="${ART.logo}" alt="${h(GAME_NAME)}">`;
   document.title = GAME_NAME;
 }
 
 /* ---------- Compte à rebours ---------- */
-function timerLabel() {
-  if (save.unlimited) return 'Mode illimité';
-  if (save.tickets >= TICKET_CAP) return 'Réserve pleine';
-  return 'Prochain booster';
-}
-
 function timerClock() {
   if (save.unlimited) return '∞';
   if (save.tickets >= TICKET_CAP) return 'Max';
@@ -108,8 +98,7 @@ function vBoosters() {
     return `<div class="empty"><h1>Aucune carte</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
   }
   const can = save.unlimited || save.tickets > 0;
-  const pips = Array.from({ length: TICKET_CAP },
-    (_, i) => `<span class="pip${save.unlimited || i < save.tickets ? ' on' : ''}"></span>`).join('');
+  const full = save.unlimited || save.tickets >= TICKET_CAP;
 
   return `<section class="packzone">
   <header class="setbar">
@@ -130,15 +119,13 @@ function vBoosters() {
   </div>
 
   <footer class="packfoot">
-    <div class="meter${can ? '' : ' dry'}">
-      <div class="meter-head">
-        <span class="pips" aria-hidden="true">${pips}</span>
-        <span class="meter-count">${save.unlimited ? '∞' : `${save.tickets}<small>/${TICKET_CAP}</small>`}</span>
-      </div>
-      <div class="meter-bar"><i id="tmbar" style="width:${tickPct()}%"></i></div>
-      <div class="meter-foot"><span id="tmlabel">${timerLabel()}</span><b id="tmclock">${timerClock()}</b></div>
+    <div class="packrail">
+      <span class="rchip"><img class="ic" src="${ART.seal}" alt="">
+        <b>${save.unlimited ? '∞' : save.tickets}</b>${save.unlimited ? '' : `<small>/${TICKET_CAP}</small>`}</span>
+      ${save.unlimited ? '' : `<span class="rchip time${full ? ' full' : ''}">${ICON.glass}<b id="tmclock">${timerClock()}</b>
+        <i class="rfill" id="tmbar" style="width:${tickPct()}%"></i></span>`}
     </div>
-    <button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${can ? 'Ouvrir un booster' : 'Réserve vide'}</button>
+    <button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>
   </footer>
 </section>`;
 }

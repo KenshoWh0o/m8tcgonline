@@ -3,7 +3,7 @@
   padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px)}
 #viewer[hidden]{display:none}
 .vw-bg{position:absolute;inset:0;animation:fadein .25s both;
-  background:radial-gradient(circle at 50% 38%,rgba(137,54,255,.28),transparent 62%),linear-gradient(180deg,#121216,#070709)}
+  background:radial-gradient(circle at 50% 38%,rgba(223,109,232,.26),transparent 62%),linear-gradient(180deg,#120e18,#07050a)}
 .vw-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.05) .7px,transparent .8px) 0 0/22px 22px}
 @keyframes fadein{from{opacity:0}}
 .vw-close{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.14);
@@ -20,7 +20,7 @@
 .vw-glare{position:absolute;inset:0;border-radius:5.5%/3.94%;pointer-events:none;
   background:radial-gradient(circle at var(--gx,50%) var(--gy,35%),rgba(255,255,255,.55),transparent 42%);mix-blend-mode:overlay}
 .vw-holo{position:absolute;inset:0;border-radius:5.5%/3.94%;pointer-events:none;opacity:0;mix-blend-mode:color-dodge;
-  background:linear-gradient(115deg,transparent 15%,rgba(236,143,255,.5) 30%,rgba(57,184,255,.5) 45%,rgba(255,199,59,.5) 60%,rgba(137,54,255,.45) 75%,transparent 90%);
+  background:linear-gradient(115deg,transparent 15%,rgba(137,54,255,.5) 30%,rgba(57,184,255,.5) 45%,rgba(255,199,59,.5) 60%,rgba(223,109,232,.45) 75%,transparent 90%);
   background-size:320% 320%;background-position:var(--hx,50%) 50%}
 .vw-card.rR .vw-holo{opacity:.25}.vw-card.rE .vw-holo{opacity:.45}.vw-card.rL .vw-holo{opacity:.62}
 .vw-shadow{position:relative;width:210px;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.7),transparent);margin-top:18px}

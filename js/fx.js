@@ -111,7 +111,7 @@ const FX = (() => {
     },
     confetti(o = {}) {
       const n = o.n || 120;
-      const cs = o.colors || ['#ff2e88', '#fff'];
+      const cs = o.colors || ['#a95cf2', '#fff'];
       const a = [];
       for (let i = 0; i < n; i++) {
         a.push({

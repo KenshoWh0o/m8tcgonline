@@ -9,5 +9,5 @@
 .labbtn.tR{border-left:3px solid var(--r-r)}
 .labbtn.tE{border-left:3px solid var(--r-e)}
 .labbtn.tL{border-left:3px solid var(--r-l)}
-.labbtn.tG{grid-column:1/-1;border-left:3px solid var(--accent)}
+.labbtn.tG{grid-column:1/-1;border-left:3px solid var(--r-l)}
 .labbtn:disabled{opacity:.3;cursor:not-allowed}

@@ -67,6 +67,7 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Changer le nombre de cartes par booster | `js/config.js` (`PACK_SIZE`) + `makeBooster()` dans `js/booster.js` |
 | Changer les taux de drop ou du godpack | `js/booster.js` (`RATES`, `GOD`) |
 | Régler la durée ou les particules d'une révélation | `js/config.js` (`REVEAL`) |
+| Modifier l'animation de déchirure du paquet | `showRip()` dans `js/opening.js` + bloc `Déchirure` de `css/booster.css` |
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
 | Changer le nombre de boosters gratuits ou le délai | `js/config.js` (`TICKET_CAP`, `INTERVAL`) |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
@@ -83,7 +84,19 @@ Huit cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
 | 7 | Essence |
 | 8 | Le hit : rare, épique ou légendaire (`RATES.HIT` ≈ 79 / 17 / 4 %) |
 
-Environ un booster sur 2 000 (`GOD`) est un **godpack** : 4 rares, 3 épiques et une légendaire en dernier. Il n'a pas d'écran à lui — l'ouverture part sur une charge dorée, un éclair et le lettrage *GODPACK* au-dessus de la pile, puis les cartes se révèlent normalement.
+Environ un booster sur 2 000 (`GOD`) est un **godpack** : 4 rares, 3 épiques et une légendaire en dernier. Il n'a pas d'écran à lui — la déchirure vire à l'or, puis une charge, un éclair et le lettrage *GODPACK* claquent au-dessus de la pile avant que les cartes se révèlent normalement.
+
+### L'ouverture
+
+Tout se joue dans **un seul écran, sans jamais remplacer le DOM** : c'est ce qui évite les coupures. `showStack()` (`js/opening.js`) monte la pile complète *et* le paquet par-dessus, puis `packOpen()` déroule la séquence :
+
+1. Le paquet de l'écran Boosters grossit et se fond — on plonge dedans (`.pack.tear`).
+2. Le paquet tremble en 3D, un trait lumineux coupe le haut, la bande se détache en dents de scie et bascule vers l'arrière en s'assombrissant (`riptop`, perspective posée par `.stackwrap`).
+3. La classe `packed` est retirée : la pile, jusque-là tassée *dans* le paquet (`translateY(17%) scale(.82) rotateX(-16deg)`), revient à sa position de repos en une seule transition. Les huit cartes sortent alignées et se présentent de face pendant que le paquet vide bascule et descend hors champ.
+
+Les délais sont dans `packOpen()`, le reste dans le bloc `Déchirure` de `css/booster.css`.
+
+**Pas de spoiler.** La dernière carte ne reçoit sa classe de rareté que dans `doReveal()` : avant, aucune lueur colorée ne trahit ce qu'il y a dessous. À la place, `bindStack()` écrit `--tilt` sur la scène selon l'inclinaison, et la tranche de la carte s'allume en blanc quand on fait tourner la pile — le spoil devient un geste volontaire.
 
 > `PACK_SIZE` sert à l'affichage ; c'est `makeBooster()` qui décide vraiment du contenu. Pense à changer les deux si tu touches au nombre de cartes. Les visuels de paquet fournis portent la mention imprimée « Booster de 10 cartes » : elle vient des images d'origine, pas du jeu.
 
@@ -126,11 +139,14 @@ Les visuels de la marque vivent dans `assets/` et sont déclarés dans `js/confi
 - `card-back.webp` — le dos affiché quand la dernière carte se retourne.
 - `extension-logo.svg` — le logo de l'extension, en haut de l'écran Boosters et sur le récap.
 - `1st-edition.svg`, `pack-star.svg`, `star-pink.svg` — pastille de première édition, icône du compteur de boosters, étincelle posée sur le logo et dans les emplacements vides de la collection.
-- `logo.webp` et `logo-bw.svg` — le lettrage Gentle Mates d'origine. Le jeu ne les affiche pas (le logo de l'en-tête est dessiné en CSS dans `base.css`, classes `.bm-main` et `.bm-sub`), ils sont gardés comme référence si tu retouches la charte.
+- `logo-m8.webp` — le logo du jeu, affiché en en-tête (`ART.logo`). Il est détouré sur fond transparent depuis le fichier d'origine.
+- `logo.webp` et `logo-bw.svg` — le lettrage Gentle Mates d'origine, gardé comme référence si tu retouches la charte.
 
-L'interface est en thème sombre uniquement, calée sur la charte Gentle Mates : fond presque noir et neutre, une seule couleur d'action (le violet `#8936ff`, dégradé vers `#a95cf2` sur les boutons), l'orchidée `#ec8fff` du logo pour les accents et les pastilles *NEW*.
+**La palette sort du logo.** L'orchidée `#df6de8` de l'ellipse sert de couleur de marque (onglet actif, étoile, halos) et le rose pâle `#ffd7f0` du lettrage de couleur claire. La couleur d'action est le violet `#8936ff` (dégradé vers `#a95cf2`, rebord `#57189e`) : boutons, puces sélectionnées, pastilles *NEW*, jauges. Les fonds sont un noir teinté prune plutôt qu'un gris froid. Les raretés gardent leurs couleurs propres (bleu, violet, or).
 
-Le logo du jeu est dessiné en CSS dans `base.css` : deux calques superposés (`.bm-main::before` pose le contour épais, `.bm-main::after` le remplissage dégradé) surmontés d'un bandeau incliné `.bm-sub`. Le découpage vient de `GAME_NAME` : le premier mot fait le lettrage, le reste va sur le bandeau.
+L'étoile du logo (`assets/star-pink.svg`, reprise en ligne dans `ICON.star`) sert d'icône à l'onglet Boosters et au bouton d'ouverture : c'est la seule icône pleine, les deux autres onglets restent au trait.
+
+Les boutons, les puces et les pastilles ont un rebord plein dessous qui s'enfonce au clic (`.btn`, `.chips button`, `.rchip` dans `base.css` et `booster.css`) : c'est ce qui donne le ressenti « jeu de cartes mobile ».
 
 ## Dépendances externes
 

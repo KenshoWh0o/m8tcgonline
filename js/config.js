@@ -20,10 +20,19 @@ const PACK_ARTS = [
 
 /* Le sceau assets/pack-star.svg sert d'icône au compteur de boosters, directement dans index.html. */
 const ART = {
+  logo: 'assets/logo-m8.webp',         /* logo du jeu, en en-tête */
   back: 'assets/card-back.webp',       /* dos de carte */
   set: 'assets/extension-logo.svg',    /* logo de l'extension */
   edition: 'assets/1st-edition.svg',   /* pastille 1re édition */
+  seal: 'assets/pack-star.svg',        /* sceau, icône de la réserve */
   star: 'assets/star-pink.svg'         /* étincelle des emplacements vides */
+};
+
+/* Petites icônes en ligne : elles héritent de la couleur du texte qui les entoure.
+   L'étoile est celle du logo : elle sert de marque à l'onglet Boosters et au bouton d'ouverture. */
+const ICON = {
+  star: '<svg class="ico-star" viewBox="0 0 20 14" aria-hidden="true"><path d="M8.13814 0L8.07808 0.158491L6.03604 5.54717L0.21021 6.63019L0 6.68302L0.21021 6.73585L4.8949 8.10943L1.95195 13.7623L1.83183 14L2.04204 13.8151L7.92793 8.98113L12.6426 10.3547H12.7628L12.7027 10.2755L10.9009 6.97358L19.6096 1.90189L20 1.66415L19.5496 1.79623L9.75976 4.80755L8.1982 0.158491L8.13814 0Z" fill="currentColor"/></svg>',
+  glass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10M7 21h10M8 3v4.4a4 4 0 0 0 1.6 3.2L12 12l-2.4 1.4A4 4 0 0 0 8 16.6V21M16 3v4.4a4 4 0 0 1-1.6 3.2L12 12l2.4 1.4a4 4 0 0 1 1.6 3.2V21"/></svg>'
 };
 
 /* ---------- Référentiels ---------- */
