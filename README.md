@@ -31,25 +31,21 @@ premier-lobby/
 │   ├── booster.css     Écran du paquet
 │   ├── opening.css     Ouverture plein écran, révélations, récap
 │   ├── viewer.css      Visionneuse 3D
-│   ├── lab.css         Onglet Labo
-│   └── combat.css      Combat (désactivé)
+│   └── lab.css         Onglet Labo
 ├── js/
 │   ├── config.js       Couleurs, raretés, réglages des révélations
 │   ├── utils.js        Outils partagés
 │   ├── storage.js      État global + sauvegarde
-│   ├── effects.js      Lecture des textes d'effet
 │   ├── render-card.js  Affichage d'une carte
 │   ├── ui.js           Fenêtre modale
 │   ├── fx.js           Particules
 │   ├── booster.js      Tickets, taux de tirage, écran du paquet
 │   ├── opening.js      Pile 3D, révélation, godpack, récap
 │   ├── collection.js   Onglet Collection
-│   ├── deck.js         Deck (pour le combat)
 │   ├── import.js       Import zip/json, édition, design du booster
 │   ├── viewer.js       Visionneuse 3D
 │   ├── lab.js          Onglet Labo
-│   ├── app.js          Navigation, clics, démarrage (chargé en dernier)
-│   └── combat/         Moteur et interface du combat (désactivés)
+│   └── app.js          Navigation, clics, démarrage (chargé en dernier)
 └── vendor/
     └── jszip.min.js    Lecture des fichiers zip (licence MIT, voir JSZIP-LICENSE.md)
 ```
@@ -86,12 +82,6 @@ Place un fichier `.json` dans le zip, à côté des images. Chaque entrée est r
 - **Raretés :** ES, C, PC, R, E, L
 - **Couleurs :** Rose, Orange, Jade, Violette, Jaune, Mauve, Verte, Bleue, Azur, Neutre
 - **Images :** avif, png, jpg, webp
-
-## Réactiver le combat
-
-1. Dans `index.html`, décommente `css/combat.css` et les deux scripts `js/combat/…`.
-2. Ajoute dans `<nav>` les boutons `data-tab="deck"` et `data-tab="combat"`.
-3. Dans `css/base.css`, passe `nav{grid-template-columns:repeat(4,1fr)}` à `repeat(6,1fr)`.
 
 ## Dépendances externes
 
