@@ -74,6 +74,7 @@ function closeTheater() {
   document.body.classList.remove('intheater');
   FX.clear();
   rv = null;
+  rollPack();
   render();
 }
 
@@ -91,7 +92,7 @@ function showStack() {
     <div class="stackwrap"><div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
       <div class="stack3d intro" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
         const f = i === last && fin;
-        return `<div class="scard${f ? ' veiled final r' + c.rar : ''}" data-i="${i}" style="--z:${i}">${f ? `<div class="lifter"><div class="spinner">${renderCard(c)}<div class="spinback r${c.rar}"></div></div></div>` : renderCard(c)}<div class="sheen"></div></div>`;
+        return `<div class="scard${f ? ' veiled final r' + c.rar : ''}" data-i="${i}" style="--z:${i}">${f ? `<div class="lifter"><div class="spinner">${renderCard(c)}<div class="spinback r${c.rar}"><img src="${ART.back}" alt=""></div></div></div>` : renderCard(c)}<div class="sheen"></div></div>`;
       }).join('')}</div></div></div>
     <div class="op-rar" id="oprar"></div>
     <p class="op-hint" id="ophint">Glisse lentement pour voir la pile en 3D, d'un coup sec pour passer</p></div>`);
@@ -355,7 +356,7 @@ function showRecap() {
   const R = RAR[best.rar] || RAR.C;
 
   theater(`<div class="recap ${rv.god ? 'god' : ''}">
-    <div class="rc-head"><span class="rc-kicker">${rv.test ? 'Ouverture de test' : 'Booster ouvert'}</span><h2>${h(SET_NAME)}</h2></div>
+    <div class="rc-head"><span class="rc-kicker">${rv.test ? 'Ouverture de test' : 'Booster ouvert'}</span><img class="rc-setlogo" src="${ART.set}" alt="${h(SET_NAME)}"></div>
     <div class="rc-hero r${best.rar}"><div class="rc-halo"></div><button class="rc-best" data-t="show" data-id="${best.id}">${renderCard(best)}</button>
       <div class="rc-bestlabel"><span class="rc-tag r${best.rar}">${R.nom}</span>${rv.news[bi] ? '<em>NEW</em>' : ''}</div></div>
     <div class="rc-stats">

@@ -50,7 +50,15 @@ const colOf = c => COLORS[c.col] || COLORS.neutre;
 const tcol = c => colOf(c).c;
 const rk = c => (RAR[c.rar] || RAR.C).rank;
 
-const dot = k => `<i class="dot" style="background:${(COLORS[k] || COLORS.neutre).c}"></i>`;
+/* Symbole d'une essence : le logo officiel quand il existe, sinon une pastille de couleur. */
+const essIcon = (k, cls) => {
+  const col = COLORS[k] || COLORS.neutre;
+  return col.ic
+    ? `<img class="ess ${cls || ''}" src="${col.ic}" alt="${col.nom}">`
+    : `<i class="ess dot ${cls || ''}" style="background:${col.c}"></i>`;
+};
+
+const dot = k => essIcon(k);
 const costDots = cost => Object.entries(cost).map(([k, n]) => dot(k).repeat(n)).join('');
 const costText = cost => Object.entries(cost).map(([k, n]) => `${n} ${(COLORS[k] || COLORS.neutre).nom}`).join(', ');
 

@@ -1,6 +1,6 @@
-# Premier Lobby
+# Mate TCG Online
 
-Jeu de collection de cartes façon TCG Pocket, qui tourne entièrement dans le navigateur. Les 122 cartes de l'extension *Gentle Mates* sont livrées avec le jeu : on ouvre des boosters et on remplit sa collection.
+Jeu de collection de cartes façon TCG Pocket, qui tourne entièrement dans le navigateur. Les 122 cartes de l'extension *Tout commence ici* sont livrées avec le jeu : on ouvre des boosters et on remplit sa collection.
 
 Il n'y a ni serveur ni base de données. Les cartes font partie du code ; seule la progression (boosters et collection) est enregistrée dans le navigateur de l'appareil (IndexedDB).
 
@@ -22,19 +22,22 @@ Autre option, si Node.js est installé : `npx serve .` dans le dossier, puis ouv
 ## Organisation
 
 ```
-premier-lobby/
+mate-tcg-online/
 ├── index.html          Structure de la page + chargement des fichiers
 ├── cards/              Les images des cartes (une par carte, .avif)
+├── assets/             Habillage : logos, visuels de booster, dos de carte, essences
+│   ├── boosters/       Les quatre visuels de paquet
+│   └── essences/       Les neuf symboles d'essence
 ├── css/
-│   ├── tokens.css      Couleurs, typos, mode sombre (la charte)
+│   ├── tokens.css      Couleurs, typos, rythme (la charte)
 │   ├── base.css        Fond, en-tête, navigation, boutons, fenêtres
-│   ├── cards.css       Cartes, grilles, collection
-│   ├── booster.css     Écran du paquet
+│   ├── cards.css       Cartes, symboles d'essence, grille de collection
+│   ├── booster.css     Écran du paquet et animation d'ouverture
 │   ├── opening.css     Ouverture plein écran, révélations, récap
 │   ├── viewer.css      Visionneuse 3D
 │   └── lab.css         Onglet Labo
 ├── js/
-│   ├── config.js       Nom du jeu, couleurs, raretés, réglages des révélations
+│   ├── config.js       Nom du jeu, habillage, couleurs, raretés, révélations
 │   ├── utils.js        Outils partagés
 │   ├── cards-data.js   La liste des cartes de l'extension
 │   ├── cards.js        Transforme cette liste en cartes du jeu
@@ -42,7 +45,7 @@ premier-lobby/
 │   ├── render-card.js  Affichage d'une carte
 │   ├── ui.js           Fenêtre modale
 │   ├── fx.js           Particules
-│   ├── booster.js      Tickets, taux de tirage, écran du paquet
+│   ├── booster.js      Tickets, taux de tirage, écran du paquet en 3D
 │   ├── opening.js      Pile 3D, révélation, godpack, récap
 │   ├── collection.js   Onglet Collection
 │   ├── viewer.js       Visionneuse 3D
@@ -58,8 +61,9 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 |---|---|
 | Ajouter, retirer ou corriger une carte | `js/cards-data.js` (+ l'image dans `cards/`) |
 | Changer le nom du jeu ou de l'extension | `js/config.js` (`GAME_NAME`, `SET_NAME`) |
-| Mettre une image sur le booster | `js/config.js` (`PACK_ART`) |
-| Changer les couleurs ou les typos | `css/tokens.css` |
+| Changer les visuels de booster | `js/config.js` (`PACK_ARTS`) + les images dans `assets/boosters/` |
+| Changer le dos de carte, le logo d'extension, la pastille | `js/config.js` (`ART`) |
+| Changer les couleurs, les typos, les arrondis | `css/tokens.css` |
 | Changer les taux de drop ou du godpack | `js/booster.js` (`RATES`, `GOD`) |
 | Régler la durée ou les particules d'une révélation | `js/config.js` (`REVEAL`) |
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
@@ -95,6 +99,19 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 - **Facultatif :** `sous_type`, `mot_cle`, `ambiance`, `resilience`, et `booster: false` pour qu'une carte ne sorte jamais dans un paquet.
 
 > Le numéro sert d'identifiant : changer le `num` d'une carte déjà collectionnée la fait repartir à zéro dans la collection. Les champs `ambiance` et `resilience` sont conservés avec la carte mais ne sont pas affichés : ils font déjà partie de l'image.
+
+## Habillage
+
+Les visuels de la marque vivent dans `assets/` et sont déclarés dans `js/config.js` :
+
+- `boosters/booster-01…04.webp` — les quatre paquets. Un est tiré au sort à chaque ouverture, **sans aucun effet sur le contenu**.
+- `essences/<couleur>.svg` — les neuf symboles d'essence, utilisés dans les filtres de collection et la fiche d'une carte. Leurs couleurs officielles sont reprises dans `COLORS` (`js/config.js`), avec un bleu légèrement éclairci pour rester lisible sur fond sombre.
+- `card-back.webp` — le dos affiché quand la dernière carte se retourne.
+- `extension-logo.svg` — le logo de l'extension, en haut de l'écran Boosters et sur le récap.
+- `1st-edition.svg`, `pack-star.svg`, `star-pink.svg` — pastille de première édition, icône du compteur de boosters, étincelle des emplacements vides.
+- `logo.webp` et `logo-bw.svg` — le lettrage Gentle Mates d'origine. Le jeu ne les affiche pas (le logo de l'en-tête est dessiné en CSS dans `base.css`, classes `.bm-main` et `.bm-sub`), ils sont gardés comme référence si tu retouches la charte.
+
+L'interface est en thème sombre uniquement, calée sur la charte Gentle Mates : fond presque noir et neutre, une seule couleur d'action (le rose `#ee0073`), l'orchidée du logo pour les accents.
 
 ## Dépendances externes
 

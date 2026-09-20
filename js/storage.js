@@ -45,10 +45,12 @@ async function kvSet(k, v) {
 /* ---------- État global ---------- */
 let save = null;
 let cards = [];
+let packArt = PACK_ARTS[0];
 let byId = {};
 let tab = 'boosters';
 let rv = null;
 let colFilter = 'all';
+let essFilter = 'all';
 let opening = false;
 
 const persist = () => kvSet('save2', save);
@@ -65,6 +67,11 @@ function rebuild() {
 
 function poolFor() {
   return cards.filter(c => c.inBoost !== false || c.cat === 'essence');
+}
+
+/* Tire le visuel du prochain paquet : purement cosmétique, le contenu ne change pas. */
+function rollPack() {
+  packArt = rnd(PACK_ARTS);
 }
 
 /* ---------- Ménage ---------- */

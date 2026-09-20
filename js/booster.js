@@ -20,11 +20,12 @@ function header() {
   $('#tk').textContent = save.unlimited ? '∞' : String(save.tickets);
 }
 
-/* Titre de la page et en-tête : le dernier mot du nom du jeu porte le bandeau coloré. Une seule fois au démarrage. */
+/* Titre de la page et logo : le dernier mot du nom passe en ligne basse, comme « TRADING CARD GAME » sous le logo M8. */
 function brand() {
   const w = GAME_NAME.trim().split(/\s+/);
   const last = w.length > 1 ? w.pop() : '';
-  $('#brand').innerHTML = `<span>${h(w.join(' '))}</span>${last ? `<span class="tape">${h(last)}</span>` : ''}`;
+  const main = w.join(' ');
+  $('#brand').innerHTML = `<span class="bm-main" data-txt="${h(main)}">${h(main)}</span>${last ? `<span class="bm-sub">${h(last)}</span>` : ''}`;
   document.title = GAME_NAME;
 }
 
@@ -78,66 +79,87 @@ function makeBooster(pool, god) {
 }
 
 /* ---------- Écran booster ---------- */
-function packCover() {
-  const p = poolFor().filter(c => c.img && c.cat !== 'essence').sort((a, b) => rk(b) - rk(a));
-  return p.length ? p[hash('cover' + p.length) % Math.min(3, p.length)] : null;
-}
-
 function vBoosters() {
   if (!cards.length) {
-    return `<div class="empty"><div class="empty-pack"></div><h1>Aucune carte</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
+    return `<div class="empty"><h1>Aucune carte</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
   }
   const can = save.unlimited || save.tickets > 0;
-  const cv = packCover();
-  return `<div class="packzone">
-  <div class="rays" aria-hidden="true"></div>
-  <div class="packfloat"><div class="pack${PACK_ART ? ' custom' : ''}" id="pack" role="button" tabindex="0" aria-label="Glisse le long du haut du booster pour l'ouvrir">
-    ${PACK_ART ? `<img class="pack-art" src="${PACK_ART}" alt="">` : `<div class="pack-body"><div class="pack-band"></div><div class="pack-dots"></div></div>
-    ${cv ? `<div class="pack-cover"><img src="${cv.img}" alt=""></div>` : ''}`}
-    <div class="pack-foil"></div>
-    <div class="crimp"><div class="tearline" id="tearline"></div>${can ? '<div class="finger" aria-hidden="true"></div>' : ''}</div>
-    ${PACK_ART ? '' : `<div class="pack-name"><small>${h(GAME_NAME)}</small><b>${h(SET_NAME)}</b><span class="pack-count">10 cartes</span></div>`}
-  </div></div>
-  <div class="pedestal" aria-hidden="true"></div>
-  <p class="packhint">${can ? "Glisse le long du haut pour l'ouvrir" : 'Plus de booster disponible'}</p>
-  ${can ? '<button class="linkbtn" data-act="open">Ouvrir sans glisser</button>' : ''}
-  <p class="muted small" id="timer">${timerText()}</p></div>
-  <details class="rates"><summary>Contenu d'un booster</summary><p>10 cartes : 8 communes ou peu communes, 1 Essence, puis une rare garantie qui peut être remplacée par une épique (environ 1 sur 6) ou une légendaire (environ 1 sur 24). Chaque booster est tiré indépendamment. Très rarement, un godpack ne contient que des rares, des épiques et une légendaire.</p></details>`;
+
+  return `<section class="packzone">
+  <header class="setbar">
+    <img class="setlogo" src="${ART.set}" alt="${h(SET_NAME)}">
+    <img class="edition" src="${ART.edition}" alt="Première édition">
+    <p class="setmeta">${cards.length} cartes · 10 par booster</p>
+  </header>
+
+  <div class="packstage">
+    <div class="packglow" aria-hidden="true"></div>
+    <div class="pack3d" id="pack3d">
+      <div class="pack" id="pack" role="button" tabindex="0" aria-label="Ouvrir le booster">
+        <img class="pack-art" src="${packArt}" alt="">
+        <div class="pack-foil" aria-hidden="true"></div>
+        <div class="pack-crimp" aria-hidden="true"><i class="tearline" id="tearline"></i></div>
+        ${can ? '<div class="finger" aria-hidden="true"></div>' : ''}
+      </div>
+    </div>
+    <div class="packshadow" aria-hidden="true"></div>
+  </div>
+
+  <footer class="packfoot">
+    <button class="btn" data-act="open" ${can ? '' : 'disabled'}>${can ? 'Ouvrir le booster' : 'Plus de booster'}</button>
+    <p class="packhint">${can ? 'ou glisse le long du haut du paquet' : 'Reviens quand la réserve est remontée'}</p>
+    <p class="muted small" id="timer">${timerText()}</p>
+  </footer>
+</section>`;
 }
 
+/* Le paquet suit le doigt en 3D, comme la pile de l'ouverture ; glisser le long du haut le déchire. */
 function bindPack() {
   const pk = $('#pack');
-  if (!pk) return;
-  let x0 = null;
-  let w = 1;
+  const box = $('#pack3d');
+  if (!pk || !box) return;
+
+  const T = { rx: 0, ry: 0, mrx: 0, mry: 0, manual: false, alive: true };
+  const alive = () => T.alive && document.body.contains(pk);
+
+  let pid = null, x0 = 0, y0 = 0, tearing = false, w = 1;
 
   pk.addEventListener('pointerdown', e => {
+    if (pid != null) return;
+    pid = e.pointerId;
     const r = pk.getBoundingClientRect();
-    if (e.clientY - r.top > r.height * .3) return;
     x0 = e.clientX;
+    y0 = e.clientY;
     w = r.width;
+    tearing = e.clientY - r.top < r.height * .28;
     pk.setPointerCapture(e.pointerId);
   });
 
   pk.addEventListener('pointermove', e => {
-    if (x0 == null) return;
-    const p = Math.max(0, Math.min(1, (e.clientX - x0) / (w * .7)));
-    $('#tearline').style.width = (p * 100) + '%';
-    if (p >= 1) {
-      x0 = null;
-      openBooster();
-      if (!opening && !rv) {
-        const t = $('#tearline');
-        if (t) t.style.width = '0';
+    if (e.pointerId !== pid) return;
+    const dx = e.clientX - x0;
+    const dy = e.clientY - y0;
+    if (tearing) {
+      const p = Math.max(0, Math.min(1, dx / (w * .7)));
+      $('#tearline').style.width = (p * 100) + '%';
+      if (p >= 1) {
+        pid = null;
+        tearing = false;
+        openBooster();
       }
+      return;
     }
+    T.manual = true;
+    T.mry = Math.max(-26, Math.min(26, dx * .3));
+    T.mrx = Math.max(-22, Math.min(22, -dy * .3));
   });
 
   const end = () => {
-    if (x0 == null) return;
-    x0 = null;
-    const t = $('#tearline');
-    if (t) t.style.width = '0';
+    pid = null;
+    T.manual = false;
+    tearing = false;
+    const l = $('#tearline');
+    if (l) l.style.width = '0';
   };
   pk.addEventListener('pointerup', end);
   pk.addEventListener('pointercancel', end);
@@ -148,6 +170,18 @@ function bindPack() {
       openBooster();
     }
   });
+
+  const frame = now => {
+    if (!alive()) return;
+    const trx = T.manual ? T.mrx : (RM() ? 0 : Math.sin(now / 2400) * 3.5);
+    const tryy = T.manual ? T.mry : (RM() ? 0 : Math.sin(now / 1900) * 6);
+    T.rx += (trx - T.rx) * .12;
+    T.ry += (tryy - T.ry) * .12;
+    box.style.transform = `rotateX(${T.rx.toFixed(2)}deg) rotateY(${T.ry.toFixed(2)}deg)`;
+    pk.style.setProperty('--fx', (50 + T.ry * 1.8).toFixed(1) + '%');
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
 }
 
 function bindTilt(root) {

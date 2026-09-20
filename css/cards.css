@@ -1,6 +1,6 @@
 /* Cartes, grilles et collection. */
 /* ============ Cartes ============ */
-.cwrap{container-type:inline-size;width:100%;border-radius:5.5%/3.94%;box-shadow:0 4px 14px rgba(40,10,40,.28)}
+.cwrap{container-type:inline-size;width:100%;border-radius:5.5%/3.94%;box-shadow:0 6px 16px rgba(0,0,0,.45)}
 .card{position:relative;width:100%;aspect-ratio:63/88;font-size:6.2cqi;border-radius:5.5cqi;background:#fbfbff;color:#151a4a;
   border:3.2cqi solid var(--tc);padding:3.5cqi;display:flex;flex-direction:column;gap:1.8cqi;overflow:hidden;clip-path:inset(0 round 5.5cqi)}
 .c-top{display:flex;justify-content:space-between;align-items:baseline;gap:.3em;font-family:var(--display);font-weight:800}
@@ -15,24 +15,43 @@
 .c-fx{font-size:.6em;line-height:1.3;color:#474c78}
 .c-kw{font-size:.58em;line-height:1.3;background:#eef0fb;border-left:.35em solid var(--tc);padding:.25em .4em;border-radius:.3em;color:#303565}
 .c-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font-size:.52em;color:#5b6095;gap:.4em}
-.c-rar{font-size:1.4em;color:var(--tc);font-weight:800}
-.card.img-card{padding:0;border-width:0;background:#222}
+.card.img-card{padding:0;border-width:0;background:#15151a}
 .card.img-card img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit}
-.card.img-card .c-badge{position:absolute;right:3cqi;bottom:3cqi;background:rgba(0,0,0,.6);color:#fff;border-radius:99px;padding:.15em .6em;font-size:.6em;font-weight:700}
 .card.r-L::after,.card.r-E::after{content:'';position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(115deg,transparent 22%,rgba(255,255,255,.4) 36%,rgba(255,130,220,.22) 44%,rgba(120,220,255,.22) 52%,transparent 66%);
+  background:linear-gradient(115deg,transparent 22%,rgba(255,255,255,.34) 36%,rgba(236,143,255,.2) 44%,rgba(57,184,255,.2) 52%,transparent 66%);
   background-size:260% 100%;background-position:40% 0}
 .stack .card.r-L::after,.stack .card.r-E::after,.rc-best .card.r-L::after,.rc-best .card.r-E::after{animation:holo 3.4s linear infinite}
 @keyframes holo{from{background-position:130% 0}to{background-position:-130% 0}}
-.card.ghost-card{border:0;background:var(--surface2);box-shadow:inset 0 0 0 2px var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--display);font-weight:900;font-style:italic;font-size:12cqi}
-.dot{display:inline-block;width:.85em;height:.85em;border-radius:50%;border:1px solid rgba(0,0,0,.25);margin-right:1px;vertical-align:-.1em}
-.count{position:absolute;top:-6px;right:-6px;background:var(--ink);color:#fff;font-size:11px;font-weight:900;padding:2px 8px;z-index:2;clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%)}
-.new{position:absolute;top:-8px;left:50%;transform:translateX(-50%) skewX(-10deg);background:var(--pink);color:#fff;font-size:10px;font-weight:900;padding:2px 8px;z-index:2;letter-spacing:.04em;font-family:var(--display)}
-.num{display:block;text-align:center;font-size:11px;font-weight:800;color:var(--muted);margin-top:5px;font-family:var(--display);font-style:italic}
-.rC,.rPC,.rES{color:var(--muted)}.rR{color:#2f8fff}.rE{color:#b440f0}.rL{color:#e0a100}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 10px;padding-top:4px}
-.gcell{position:relative;background:none;border:0;padding:0;text-align:left}
-.colhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.prog{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:22px;font-family:var(--display);font-style:italic}
-.prog .bar{width:96px;height:9px;background:var(--surface2);overflow:hidden;transform:skewX(-20deg)}
-.prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--violet))}
+.card.ghost-card{position:relative;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);display:flex;align-items:center;
+  justify-content:center;color:var(--line-2);font-family:var(--display);font-weight:900;font-style:italic;font-size:11cqi}
+.card.ghost-card img{position:absolute;width:34%;opacity:.12}
+.card.ghost-card span{position:relative}
+
+/* Symboles d'essence */
+.ess{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;object-fit:contain}
+.ess.dot{border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.ess.big{width:1.6em;height:1.6em}
+
+/* ============ Collection ============ */
+.colhead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.prog{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--subtle)}
+.prog .bar{width:120px;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.prog .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--brand))}
+.prog b{color:var(--text)}
+.essrow{display:flex;gap:6px;overflow-x:auto;padding:0 0 14px;scrollbar-width:none}
+.essrow::-webkit-scrollbar{display:none}
+.essrow button{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--subtle);
+  padding:6px 12px 6px 9px;border-radius:999px;font-size:12px;font-weight:700;transition:background .14s,border-color .14s,color .14s}
+.essrow button:hover{background:var(--surface-2);color:var(--text)}
+.essrow button.on{border-color:var(--ec,var(--brand));color:var(--text);background:color-mix(in srgb,var(--ec,var(--brand)) 16%,var(--surface))}
+.essrow .ess{width:17px;height:17px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(94px,27vw,138px),1fr));gap:18px 10px;padding-top:2px}
+.gcell{position:relative;background:none;border:0;padding:0;text-align:left;transition:transform .16s}
+button.gcell:hover{transform:translateY(-3px)}
+.count{position:absolute;top:-6px;right:-5px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);font-size:10.5px;
+  font-weight:800;padding:2px 7px;border-radius:999px;z-index:2}
+.new{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9.5px;font-weight:800;
+  padding:2px 8px;border-radius:999px;z-index:2;letter-spacing:.06em}
+.num{display:block;text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:6px;letter-spacing:.04em}
+.rC,.rPC,.rES{color:var(--muted)}.rR{color:var(--r-r)}.rE{color:var(--r-e)}.rL{color:var(--r-l)}

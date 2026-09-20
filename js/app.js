@@ -28,7 +28,7 @@ $('#nav').addEventListener('click', e => {
 
 /* ---------- Actions ---------- */
 $('#main').addEventListener('click', e => {
-  const el = e.target.closest('[data-act],[data-show],[data-filter]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess]');
   if (!el) return;
   const d = el.dataset;
 
@@ -39,6 +39,11 @@ $('#main').addEventListener('click', e => {
   }
   if (d.filter) {
     colFilter = d.filter;
+    render();
+    return;
+  }
+  if (d.ess) {
+    essFilter = d.ess;
     render();
     return;
   }
@@ -123,6 +128,7 @@ setInterval(() => {
   cards = buildCards();
   rebuild();
   brand();
+  rollPack();
 
   save = (await kvGet('save2')) || defaultSave();
   if (!save.col) save.col = {};

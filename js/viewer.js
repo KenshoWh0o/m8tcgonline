@@ -16,7 +16,7 @@ function openViewer(c) {
   v.innerHTML = `<div class="vw-bg" data-v="close"></div><button class="vw-close" data-v="close" aria-label="Fermer">✕</button>
   <div class="vw-stage"><div class="vw-card r${c.rar}" id="vwc">${renderCard(c)}<div class="vw-holo"></div><div class="vw-glare"></div></div></div>
   <div class="vw-shadow" id="vwsh"></div>
-  <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span><span class="vw-num">#${String(c.num || 0).padStart(3, '0')}</span>${n ? `<span class="vw-own">×${n}</span>` : ''}</div></div>
+  <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span><span class="vw-col">${essIcon(c.col)}${colOf(c).nom}</span><span class="vw-num">#${String(c.num || 0).padStart(3, '0')}</span>${n ? `<span class="vw-own">×${n}</span>` : ''}</div></div>
   <p class="vw-hint">Fais glisser la carte pour la faire pivoter</p>`;
   v.hidden = false;
 

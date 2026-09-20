@@ -1,26 +1,34 @@
 /* Visionneuse 3D. */
-#viewer{position:fixed;inset:0;z-index:55;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px)}
+#viewer{position:fixed;inset:0;z-index:55;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;
+  padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px)}
 #viewer[hidden]{display:none}
-.vw-bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,#3d1f7a,#1b0a1e 62%,#0d050f);animation:fadein .25s both}
-.vw-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(rgba(255,46,136,.2) 1px,transparent 1.6px) 0 0/16px 16px}
+.vw-bg{position:absolute;inset:0;animation:fadein .25s both;
+  background:radial-gradient(circle at 50% 38%,rgba(137,54,255,.28),transparent 62%),linear-gradient(180deg,#121216,#070709)}
+.vw-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.05) .7px,transparent .8px) 0 0/22px 22px}
 @keyframes fadein{from{opacity:0}}
-.vw-close{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;width:46px;height:40px;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:18px;font-weight:900;z-index:2;clip-path:polygon(7px 0,100% 0,calc(100% - 7px) 100%,0 100%)}
+.vw-close{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;z-index:2}
+.vw-close:hover{background:rgba(255,255,255,.16)}
 .vw-stage{position:relative;perspective:1100px;animation:vwin .65s cubic-bezier(.2,1.3,.4,1) both}
 @keyframes vwin{from{transform:translateY(60px) scale(.55) rotate(-8deg);opacity:0}}
-.vw-card{position:relative;width:min(300px,72vw,52vh);transform-style:preserve-3d;will-change:transform;touch-action:none;cursor:grab;border-radius:5.5%}
+.vw-card{position:relative;width:min(320px,74vw,52vh);transform-style:preserve-3d;will-change:transform;touch-action:none;cursor:grab;border-radius:5.5%}
 .vw-card:active{cursor:grabbing}
-.vw-card .cwrap{box-shadow:none;filter:drop-shadow(0 26px 30px rgba(0,0,0,.55))}
-.vw-card.rR .cwrap{filter:drop-shadow(0 0 8px rgba(95,208,255,.7)) drop-shadow(0 0 22px rgba(95,208,255,.7)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
-.vw-card.rE .cwrap{filter:drop-shadow(0 0 9px rgba(176,77,255,.75)) drop-shadow(0 0 24px rgba(176,77,255,.75)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
-.vw-card.rL .cwrap{filter:drop-shadow(0 0 10px rgba(255,197,61,.85)) drop-shadow(0 0 28px rgba(255,197,61,.85)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
-.vw-glare{position:absolute;inset:0;border-radius:5.5%/3.94%;pointer-events:none;background:radial-gradient(circle at var(--gx,50%) var(--gy,35%),rgba(255,255,255,.6),transparent 42%);mix-blend-mode:overlay}
+.vw-card .cwrap{box-shadow:none;filter:drop-shadow(0 26px 30px rgba(0,0,0,.6))}
+.vw-card.rR .cwrap{filter:drop-shadow(0 0 8px rgba(57,184,255,.7)) drop-shadow(0 0 22px rgba(57,184,255,.7)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.vw-card.rE .cwrap{filter:drop-shadow(0 0 9px rgba(160,92,255,.75)) drop-shadow(0 0 24px rgba(160,92,255,.75)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.vw-card.rL .cwrap{filter:drop-shadow(0 0 10px rgba(255,199,59,.85)) drop-shadow(0 0 28px rgba(255,199,59,.85)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.vw-glare{position:absolute;inset:0;border-radius:5.5%/3.94%;pointer-events:none;
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,35%),rgba(255,255,255,.55),transparent 42%);mix-blend-mode:overlay}
 .vw-holo{position:absolute;inset:0;border-radius:5.5%/3.94%;pointer-events:none;opacity:0;mix-blend-mode:color-dodge;
-  background:linear-gradient(115deg,transparent 15%,rgba(255,110,220,.55) 30%,rgba(110,220,255,.55) 45%,rgba(255,230,120,.55) 60%,rgba(170,120,255,.5) 75%,transparent 90%);background-size:320% 320%;background-position:var(--hx,50%) 50%}
-.vw-card.rR .vw-holo{opacity:.25}.vw-card.rE .vw-holo{opacity:.45}.vw-card.rL .vw-holo{opacity:.65}
-.vw-shadow{position:relative;width:210px;height:22px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);margin-top:16px}
-.vw-info{position:relative;text-align:center;margin-top:8px;animation:fadeup .5s .15s both}
-.vw-name{font-family:var(--display);font-stretch:118%;font-weight:900;font-style:italic;font-size:24px;line-height:1.1}
-.vw-meta{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px}
-.vw-num{font-family:var(--display);font-weight:800;font-style:italic;color:rgba(255,255,255,.7)}
-.vw-own{font-family:var(--display);font-weight:900;background:rgba(255,255,255,.14);padding:3px 10px;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
-.vw-hint{position:relative;color:rgba(255,255,255,.5);font-size:12px;font-weight:700;margin-top:12px}
+  background:linear-gradient(115deg,transparent 15%,rgba(236,143,255,.5) 30%,rgba(57,184,255,.5) 45%,rgba(255,199,59,.5) 60%,rgba(137,54,255,.45) 75%,transparent 90%);
+  background-size:320% 320%;background-position:var(--hx,50%) 50%}
+.vw-card.rR .vw-holo{opacity:.25}.vw-card.rE .vw-holo{opacity:.45}.vw-card.rL .vw-holo{opacity:.62}
+.vw-shadow{position:relative;width:210px;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.7),transparent);margin-top:18px}
+.vw-info{position:relative;text-align:center;margin-top:10px;animation:fadeup .5s .15s both}
+.vw-name{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:23px;line-height:1.1}
+.vw-meta{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px;flex-wrap:wrap}
+.vw-col{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.75);
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:4px 12px 4px 8px}
+.vw-num{font-weight:700;font-size:12.5px;color:rgba(255,255,255,.55);letter-spacing:.04em}
+.vw-own{font-weight:800;font-size:12.5px;background:rgba(255,255,255,.1);border-radius:999px;padding:4px 11px}
+.vw-hint{position:relative;color:rgba(255,255,255,.4);font-size:12px;font-weight:600;margin-top:14px}
