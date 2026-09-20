@@ -12,11 +12,11 @@ const COL_FILTERS = [
 ];
 
 function vCollection() {
-  if (!custom.length) {
-    return `<div class="empty"><h1>Collection vide</h1><p class="muted">Importe tes cartes, puis ouvre des boosters pour les collectionner.</p><button class="btn" data-go="import">Importer mes cartes</button></div>`;
+  if (!cards.length) {
+    return `<div class="empty"><h1>Collection vide</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
   }
 
-  const all = custom.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
+  const all = cards.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
   const list = colFilter === 'all' ? all : all.filter(c => c.cat === colFilter);
   const owned = all.filter(c => save.col[c.id] > 0).length;
   const pct = Math.round(owned / all.length * 100);

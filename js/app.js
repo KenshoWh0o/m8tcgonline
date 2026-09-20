@@ -7,21 +7,14 @@ function render() {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
 
   const m = $('#main');
-  m.innerHTML = tab === 'boosters' ? vBoosters()
-    : tab === 'collection' ? vCollection()
+  m.innerHTML = tab === 'collection' ? vCollection()
     : tab === 'test' ? vTest()
-    : vImport();
+    : vBoosters();
 
   if (tab === 'boosters') bindPack();
 
   const u = $('#unl');
   if (u) u.onchange = () => { save.unlimited = u.checked; persist(); header(); };
-
-  const sn = $('#setname');
-  if (sn) sn.onchange = () => { save.setName = sn.value.trim(); persist(); };
-
-  const gn = $('#gamename');
-  if (gn) gn.onchange = () => { save.gameName = gn.value.trim(); persist(); header(); };
 }
 
 /* ---------- Navigation ---------- */
@@ -35,7 +28,7 @@ $('#nav').addEventListener('click', e => {
 
 /* ---------- Actions ---------- */
 $('#main').addEventListener('click', e => {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-edit],[data-go]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter]');
   if (!el) return;
   const d = el.dataset;
 
@@ -49,28 +42,9 @@ $('#main').addEventListener('click', e => {
     render();
     return;
   }
-  if (d.go) {
-    rv = null;
-    tab = d.go;
-    render();
-    return;
-  }
-  if (d.edit) {
-    editSheet(d.edit);
-    return;
-  }
-
   switch (d.act) {
     case 'open':
       openBooster();
-      break;
-    case 'packimg':
-      $('#fpack').click();
-      break;
-    case 'packdel':
-      packImg = null;
-      kvSet('packimg', null);
-      render();
       break;
     case 't-open':
       openBooster({ test: true });
@@ -88,14 +62,14 @@ $('#main').addEventListener('click', e => {
       openBooster({ test: true, god: true });
       break;
     case 't-all':
-      custom.forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
+      cards.forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
       persist();
       toast('Toutes les cartes sont débloquées.');
       break;
     case 't-clear':
       openSheet({
         title: 'Vider ta collection ?',
-        body: '<p class="muted">Tes cartes importées restent, mais tu ne possèdes plus aucun exemplaire.</p>',
+        body: '<p class="muted">Les cartes du jeu restent, mais tu ne possèdes plus aucun exemplaire.</p>',
         actions: [
           { label: 'Vider', primary: true, fn: () => { save.col = {}; persist(); closeSheet(); render(); toast('Collection vidée.'); } },
           { label: 'Annuler', fn: closeSheet }
@@ -121,43 +95,10 @@ $('#main').addEventListener('click', e => {
       rv.idx = rv.cards.length;
       render();
       break;
-    case 'zip':
-      $('#fzip').click();
-      break;
-    case 'imgs':
-      $('#fimg').click();
-      break;
-    case 'giveall':
-      custom.forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
-      persist();
-      toast('Ajoutées à ta collection.');
-      render();
-      break;
-    case 'delall':
-      openSheet({
-        title: 'Supprimer toutes tes cartes ?',
-        body: '<p class="muted">Les images importées seront effacées de cet appareil.</p>',
-        actions: [
-          {
-            label: 'Supprimer', primary: true, fn: async () => {
-              custom.forEach(c => { delete save.col[c.id]; kvSet('img:' + c.id, null); });
-              imgSaved = new Set();
-              custom = [];
-              await persistCustom();
-              persist();
-              rebuild();
-              closeSheet();
-              render();
-            }
-          },
-          { label: 'Annuler', fn: closeSheet }
-        ]
-      });
-      break;
     case 'reset':
       openSheet({
         title: 'Tout réinitialiser ?',
-        body: '<p class="muted">Ta collection et tes boosters reviennent au départ. Tes cartes importées sont conservées.</p>',
+        body: '<p class="muted">Ta collection et tes boosters reviennent au départ.</p>',
         actions: [
           { label: 'Réinitialiser', primary: true, fn: () => { save = defaultSave(); rv = null; persist(); closeSheet(); render(); } },
           { label: 'Annuler', fn: closeSheet }
@@ -179,16 +120,19 @@ setInterval(() => {
 
 /* ---------- Démarrage ---------- */
 (async () => {
-  save = await kvGet('save2');
-  await loadCustom();
-  packImg = (await kvGet('packimg')) || null;
+  cards = buildCards();
   rebuild();
+  brand();
 
-  if (!save) {
-    save = defaultSave();
-    persist();
-  }
+  save = (await kvGet('save2')) || defaultSave();
+  if (!save.col) save.col = {};
+  /* Une carte retirée de js/cards-data.js disparaît aussi de la collection. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
+  if (!save.purged) {
+    save.purged = true;
+    purgeLegacy();
+  }
+  persist();
 
   regen();
   render();

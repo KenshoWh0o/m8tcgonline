@@ -1,5 +1,16 @@
-/* Configuration : couleurs, catégories, raretés, réglages des révélations. Aucune logique ici. */
+/* Configuration : identité du jeu, couleurs, catégories, raretés, réglages des révélations. Aucune logique ici. */
 "use strict";
+
+/* ---------- Identité du jeu ---------- */
+/* Le dernier mot du nom du jeu est mis en avant dans l'en-tête. */
+const GAME_NAME = 'Premier Lobby';
+const SET_NAME = 'Gentle Mates';
+
+/* Dossier des images, ajouté devant le champ "fichier" de chaque carte de js/cards-data.js. */
+const CARD_DIR = 'cards/';
+
+/* Visuel du booster : chemin d'une image verticale 2:3, ou '' pour le paquet dessiné par le jeu. */
+const PACK_ART = '';
 
 /* ---------- Référentiels ---------- */
 const COLORS = {

@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Images de cartes : binaire, pas de conversion de fin de ligne
+*.avif binary

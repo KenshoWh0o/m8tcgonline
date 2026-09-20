@@ -3,11 +3,11 @@
 
 /* ---------- Labo ---------- */
 function vTest() {
-  if (!custom.length) {
-    return `<div class="empty"><h1>Labo</h1><p class="muted">Importe d'abord tes cartes pour tester les ouvertures.</p><button class="btn" data-go="import">Importer mes cartes</button></div>`;
+  if (!cards.length) {
+    return `<div class="empty"><h1>Labo</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
   }
 
-  const has = r => custom.some(c => c.rar === r && c.cat !== 'essence');
+  const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
 
   return `<h1>Labo</h1><p class="muted">Les ouvertures de test ne consomment pas de booster et n'ajoutent rien à ta collection.</p>
   <section class="panel"><h2>Ouvertures</h2><div class="labgrid">
@@ -21,5 +21,9 @@ function vTest() {
     <div class="row"><button class="btn ghost" data-act="t-all">Tout débloquer</button><button class="btn ghost" data-act="t-clear">Vider</button></div>
     <div class="row" style="margin-top:8px"><button class="btn ghost" data-act="t-10">+10 boosters</button></div>
     <label class="toggle" style="margin-top:10px"><span>Boosters illimités</span><input type="checkbox" id="unl" ${save.unlimited ? 'checked' : ''}></label>
+  </section>
+  <section class="panel"><h2>Progression</h2>
+    <p class="muted small">Remet les boosters et la collection au départ. Les cartes du jeu ne bougent pas.</p>
+    <div class="row"><button class="btn ghost" data-act="reset">Réinitialiser ma progression</button></div>
   </section>`;
 }

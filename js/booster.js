@@ -18,10 +18,14 @@ function regen() {
 
 function header() {
   $('#tk').textContent = save.unlimited ? '∞' : String(save.tickets);
-  const w = gameName().trim().split(/\s+/);
+}
+
+/* Titre de la page et en-tête : le dernier mot du nom du jeu porte le bandeau coloré. Une seule fois au démarrage. */
+function brand() {
+  const w = GAME_NAME.trim().split(/\s+/);
   const last = w.length > 1 ? w.pop() : '';
   $('#brand').innerHTML = `<span>${h(w.join(' '))}</span>${last ? `<span class="tape">${h(last)}</span>` : ''}`;
-  document.title = gameName();
+  document.title = GAME_NAME;
 }
 
 function timerText() {
@@ -32,9 +36,6 @@ function timerText() {
   const s = Math.max(0, Math.floor(left / 1000) % 60);
   return `Prochain booster gratuit dans ${m}:${String(s).padStart(2, '0')}.`;
 }
-
-const setName = () => (save && save.setName) || 'Mes cartes';
-const gameName = () => (save && save.gameName) || 'Premier Lobby';
 
 /* ---------- Tirage ---------- */
 const RATES = { CPC: { C: 75, PC: 25 }, HIT: { R: 79.2, E: 16.63, L: 4.17 } };
@@ -83,19 +84,19 @@ function packCover() {
 }
 
 function vBoosters() {
-  if (!custom.length) {
-    return `<div class="empty"><div class="empty-pack"></div><h1>Aucune carte pour l'instant</h1><p class="muted">Importe ton zip de cartes pour remplir les boosters.</p><button class="btn" data-go="import">Importer mes cartes</button></div>`;
+  if (!cards.length) {
+    return `<div class="empty"><div class="empty-pack"></div><h1>Aucune carte</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
   }
   const can = save.unlimited || save.tickets > 0;
   const cv = packCover();
   return `<div class="packzone">
   <div class="rays" aria-hidden="true"></div>
-  <div class="packfloat"><div class="pack${packImg ? ' custom' : ''}" id="pack" role="button" tabindex="0" aria-label="Glisse le long du haut du booster pour l'ouvrir">
-    ${packImg ? `<img class="pack-art" src="${packImg}" alt="">` : `<div class="pack-body"><div class="pack-band"></div><div class="pack-dots"></div></div>
+  <div class="packfloat"><div class="pack${PACK_ART ? ' custom' : ''}" id="pack" role="button" tabindex="0" aria-label="Glisse le long du haut du booster pour l'ouvrir">
+    ${PACK_ART ? `<img class="pack-art" src="${PACK_ART}" alt="">` : `<div class="pack-body"><div class="pack-band"></div><div class="pack-dots"></div></div>
     ${cv ? `<div class="pack-cover"><img src="${cv.img}" alt=""></div>` : ''}`}
     <div class="pack-foil"></div>
     <div class="crimp"><div class="tearline" id="tearline"></div>${can ? '<div class="finger" aria-hidden="true"></div>' : ''}</div>
-    ${packImg ? '' : `<div class="pack-name"><small>${h(gameName())}</small><b>${h(setName())}</b><span class="pack-count">10 cartes</span></div>`}
+    ${PACK_ART ? '' : `<div class="pack-name"><small>${h(GAME_NAME)}</small><b>${h(SET_NAME)}</b><span class="pack-count">10 cartes</span></div>`}
   </div></div>
   <div class="pedestal" aria-hidden="true"></div>
   <p class="packhint">${can ? "Glisse le long du haut pour l'ouvrir" : 'Plus de booster disponible'}</p>

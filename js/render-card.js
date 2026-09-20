@@ -69,7 +69,6 @@ function artSVG(card) {
   return g + '</svg>';
 }
 
-const artOf = c => c.img ? `<img src="${c.img}" alt="">` : artSVG(c);
 const catLine = c => `${CATS[c.cat]}${c.sous ? ' ' + h(c.sous) : ''} ${colOf(c).nom}`;
 
 /* ---------- Rendu complet d'une carte ---------- */
@@ -78,7 +77,7 @@ function renderCard(c) {
   const R = RAR[c.rar] || RAR.C;
 
   if (c.img) {
-    return `<div class="cwrap"><div class="card img-card r-${c.rar}" style="--tc:${tc}"><img src="${c.img}" alt="${h(c.nom)}"></div></div>`;
+    return `<div class="cwrap"><div class="card img-card r-${c.rar}" style="--tc:${tc}"><img src="${c.img}" alt="${h(c.nom)}" loading="lazy" decoding="async"></div></div>`;
   }
 
   let body = '';
@@ -90,9 +89,4 @@ function renderCard(c) {
   }
 
   return `<div class="cwrap"><div class="card r-${c.rar}" style="--tc:${tc}"><div class="c-top"><span class="c-name">${h(c.nom)}</span>${c.cat === 'joueur' ? `<span class="c-hp">DEF <b>${c.def}</b></span>` : ''}</div><div class="c-art">${artSVG(c)}</div><div class="c-type">${catLine(c)}</div>${body}<div class="c-foot"><span>${R.nom}</span></div></div></div>`;
-}
-
-/* ---------- Vignette en liste (onglet import, choix de deck…) ---------- */
-function thumbRow(c, right) {
-  return `<div class="li" style="--tc:${tcol(c)}"><div class="th">${artOf(c)}</div><div class="tx"><b>${h(c.nom)}</b><small>${CATS[c.cat]} ${colOf(c).nom}${c.cat === 'joueur' ? ', ' + c.def + ' DEF' : ''}</small></div>${right}</div>`;
 }

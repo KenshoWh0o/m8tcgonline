@@ -42,5 +42,3 @@
 
 .pack-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pack.custom .crimp{background:rgba(255,255,255,.14)}
-.packprev{width:120px;margin:4px 0 12px;box-shadow:0 10px 24px rgba(0,0,0,.25)}
-.packprev img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}

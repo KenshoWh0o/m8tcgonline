@@ -8,7 +8,7 @@ function openBooster(opts) {
 
   const pool = poolFor();
   if (!pool.some(c => c.cat !== 'essence')) {
-    toast("Ce booster est vide : importe d'abord tes cartes.");
+    toast('Ce booster est vide : aucune carte à tirer.');
     return;
   }
   if (!opts.test && !save.unlimited && save.tickets < 1) {
@@ -23,20 +23,23 @@ function openBooster(opts) {
   }
 
   const god = opts.god != null ? opts.god : Math.random() < GOD;
-  const cards = makeBooster(pool, god);
+  const drawn = makeBooster(pool, god);
   if (opts.force && !god) {
     const c = pickFrom(pool, opts.force);
-    if (c) cards[cards.length - 1] = c;
+    if (c) drawn[drawn.length - 1] = c;
   }
 
-  const news = cards.map(c => !(save.col[c.id] > 0));
+  /* Les images arrivent du dossier cards/ : on lance leur chargement avant l'animation d'ouverture. */
+  drawn.forEach(c => { if (c.img) new Image().src = c.img; });
+
+  const news = drawn.map(c => !(save.col[c.id] > 0));
   if (!opts.test) {
-    cards.forEach(c => save.col[c.id] = (save.col[c.id] || 0) + 1);
+    drawn.forEach(c => save.col[c.id] = (save.col[c.id] || 0) + 1);
     persist();
   }
   header();
 
-  rv = { cards, news, idx: 0, god, test: !!opts.test, opts, revealed: false };
+  rv = { cards: drawn, news, idx: 0, god, test: !!opts.test, opts, revealed: false };
 
   const pk = $('#pack');
   if (pk && !RM()) {
@@ -342,17 +345,17 @@ function bindStack() {
 }
 
 function showRecap() {
-  const cards = rv.cards;
-  const best = cards.reduce((m, c) => rk(c) > rk(m) ? c : m, cards[0]);
-  const bi = cards.indexOf(best);
+  const drawn = rv.cards;
+  const best = drawn.reduce((m, c) => rk(c) > rk(m) ? c : m, drawn[0]);
+  const bi = drawn.indexOf(best);
   const nNew = rv.news.filter(Boolean).length;
-  const hits = cards.filter(c => rk(c) >= 3).length;
-  const all = custom.filter(c => c.cat !== 'essence');
+  const hits = drawn.filter(c => rk(c) >= 3).length;
+  const all = cards.filter(c => c.cat !== 'essence');
   const owned = all.filter(c => save.col[c.id] > 0).length;
   const R = RAR[best.rar] || RAR.C;
 
   theater(`<div class="recap ${rv.god ? 'god' : ''}">
-    <div class="rc-head"><span class="rc-kicker">${rv.test ? 'Ouverture de test' : 'Booster ouvert'}</span><h2>${h(setName())}</h2></div>
+    <div class="rc-head"><span class="rc-kicker">${rv.test ? 'Ouverture de test' : 'Booster ouvert'}</span><h2>${h(SET_NAME)}</h2></div>
     <div class="rc-hero r${best.rar}"><div class="rc-halo"></div><button class="rc-best" data-t="show" data-id="${best.id}">${renderCard(best)}</button>
       <div class="rc-bestlabel"><span class="rc-tag r${best.rar}">${R.nom}</span>${rv.news[bi] ? '<em>NEW</em>' : ''}</div></div>
     <div class="rc-stats">
@@ -360,7 +363,7 @@ function showRecap() {
       <div><b>${hits}</b><span>rare${hits > 1 ? 's' : ''} ou mieux</span></div>
       <div><b>${owned}<small>/${all.length}</small></b><span>collection</span></div>
     </div>
-    <div class="rc-grid">${cards.map((c, i) => `<button class="rc-cell" data-t="show" data-id="${c.id}" style="--d:${200 + i * 70}ms">${rv.news[i] ? '<span class="new">NEW</span>' : ''}${renderCard(c)}</button>`).join('')}</div>
+    <div class="rc-grid">${drawn.map((c, i) => `<button class="rc-cell" data-t="show" data-id="${c.id}" style="--d:${200 + i * 70}ms">${rv.news[i] ? '<span class="new">NEW</span>' : ''}${renderCard(c)}</button>`).join('')}</div>
     <div class="rc-actions"><button class="btn" data-t="again">${rv.test ? 'Relancer ce test' : 'Ouvrir un autre booster'}</button><button class="btn ghost dark" data-t="done">Terminer</button></div>
   </div>`);
 

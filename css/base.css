@@ -21,7 +21,7 @@
 main{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 14px 24px}
 
 /* ============ Navigation ============ */
-nav{display:grid;grid-template-columns:repeat(4,1fr);background:var(--ink);padding:6px 4px 8px;position:relative}
+nav{display:grid;grid-template-columns:repeat(3,1fr);background:var(--ink);padding:6px 4px 8px;position:relative}
 nav::before{content:'';position:absolute;left:0;right:0;top:-10px;height:10px;background:var(--ink);clip-path:polygon(0 100%,100% 0,100% 100%)}
 nav button{position:relative;background:none;border:0;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:800;color:#b79ab4}
 nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -56,25 +56,11 @@ p{line-height:1.45;margin:6px 0}
 .empty .btn{max-width:280px;margin-top:14px}
 .empty-pack{width:120px;height:180px;margin:0 auto 18px;border:3px dashed var(--line);transform:rotate(-6deg)}
 
-/* ============ Listes, formulaires ============ */
-.list{display:flex;flex-direction:column;gap:6px}
-.li{display:flex;align-items:center;gap:10px;background:var(--surface);padding:6px 10px 6px 8px;border-left:5px solid var(--tc);clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)}
-.li .th{width:40px;flex:0 0 40px;border-radius:4px;overflow:hidden;aspect-ratio:63/88}
-.li .th svg,.li .th img{display:block;width:100%;height:100%;object-fit:cover}
-.li .tx{flex:1;min-width:0}
-.li .tx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
-.li .tx small{color:var(--muted);font-size:12px}
-.mini{border:0;background:var(--surface2);min-width:38px;height:34px;font-weight:900;font-size:17px;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
-.mini:disabled{opacity:.3}.mini.txt{font-size:13px;padding:0 14px}
+/* ============ Blocs dépliants, réglages ============ */
 details{background:var(--surface);padding:12px 14px;margin:10px 0;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%)}
 summary{font-weight:900;cursor:pointer}
-pre{background:var(--surface2);padding:10px;overflow-x:auto;font-size:12px}
-label.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:800;margin-bottom:10px}
-label.fld input,label.fld select{font:inherit;padding:10px;border:0;box-shadow:inset 0 0 0 2px var(--line);background:var(--surface);color:var(--text)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);padding:12px 14px;margin-bottom:8px;font-weight:700}
 .toggle input{width:22px;height:22px;accent-color:var(--pink)}
-.progress{font-size:13px;color:var(--muted);margin:8px 0}
 
 /* ============ Feuille, toast ============ */
 .sheet-wrap{position:fixed;inset:0;background:rgba(20,6,16,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50}
