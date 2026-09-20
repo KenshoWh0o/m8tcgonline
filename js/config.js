@@ -77,6 +77,10 @@ const TICKET_CAP = 5;
 /* Nombre de cartes par booster. La composition slot par slot est dans makeBooster() (js/booster.js). */
 const PACK_SIZE = 8;
 
+/* Emplacements Secrets tenus en réserve dans la collection : numérotés à la suite des cartes
+   existantes, mais hors du total puisqu'ils ne sont pas encore sortis. 0 pour les masquer. */
+const SECRETS = 5;
+
 /* Mise en scène de la dernière carte selon la rareté (durée de charge en ms, particules, couleurs) */
 const REVEAL = {
   R: { charge: 450, colors: ['#39b8ff', '#ffffff', '#b8ecff'], n: 50, speed: 9, label: 'Rare', rc: '#39b8ff' },

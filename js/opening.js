@@ -69,7 +69,7 @@ function packOpen(done) {
 
   const god = rv.god;
   const cur = rv;
-  const cols = god ? REVEAL.L.colors : ['#ffffff', '#ffd7f0', '#df6de8', '#a95cf2'];
+  const cols = god ? ['#fff6d0', '#ffc73b', '#ffffff', '#ffe08a'] : ['#ffffff', '#ffd7f0', '#a95cf2', '#8936ff'];
   const at = (ms, fn) => setTimeout(() => {
     if (rv === cur && document.body.contains(st)) fn();
   }, ms);
@@ -78,24 +78,35 @@ function packOpen(done) {
     FX.burst(r.left + r.width / 2, r.top + r.height * y, { n, colors: cols, speed, up: 3, shape: 'star', size, g: .05, life: 48 });
   };
 
-  st.classList.add('rip-shake');
-  at(360, () => {
+  /* Godpack : rien ne le dit encore. La lumière monte lentement dans le paquet, la couture s'allume,
+     et tout se déverse au moment de la déchirure. Aucun texte, aucun écran, aucune coupure. */
+  const wake = god ? 860 : 0;
+  st.classList.add(god ? 'rip-wake' : 'rip-shake');
+
+  at(wake + 360, () => {
     st.classList.add('rip-cut');
-    blast(.09, god ? 80 : 40, god ? 10 : 7, 3.2);
+    blast(.09, god ? 120 : 40, god ? 11 : 7, god ? 4 : 3.2);
   });
-  at(640, () => st.classList.add('rip-open'));
+
+  at(wake + 640, () => {
+    st.classList.add('rip-open');
+    if (god) st.classList.add('lit');
+  });
 
   /* Retirer « packed » relâche la transition de la pile : elle sort du paquet et vient de face. */
-  at(920, () => {
+  at(wake + 920, () => {
     st.classList.remove('packed');
     st.classList.add('rip-pull');
-    blast(.16, god ? 140 : 56, god ? 12 : 8, 4);
-    if (god) FX.sparkle({ n: 110, colors: cols, size: 4 });
+    blast(.16, god ? 190 : 56, god ? 13 : 8, god ? 4.6 : 4);
+    if (god) FX.sparkle({ n: 150, colors: cols, size: 4.4 });
   });
 
-  at(2050, () => {
+  /* Une seconde nappe d'étincelles pour que la pluie dorée ne s'arrête jamais net. */
+  if (god) at(wake + 1500, () => FX.sparkle({ n: 110, colors: cols, size: 3.6 }));
+
+  at(wake + 2050, () => {
     pack.remove();
-    st.classList.remove('rip-shake', 'rip-cut', 'rip-open', 'rip-pull');
+    st.classList.remove('rip-wake', 'rip-shake', 'rip-cut', 'rip-open', 'rip-pull');
     done();
   });
 }
@@ -119,71 +130,6 @@ function closeTheater() {
   render();
 }
 
-/* Godpack : pas d'écran à recliquer, la pile s'ouvre sur une salve dorée reprenant la mise en scène des hits. */
-function godIntro() {
-  const stage = $('#opening');
-  const el = $('#oprar');
-  const hint = $('#ophint');
-  if (!stage || !el) return;
-
-  const cfg = REVEAL.L;
-  const cur = rv;
-  rv.lock = true;
-  el.className = 'op-rar';
-  el.innerHTML = '';
-  if (hint) hint.textContent = '';
-
-  stage.style.setProperty('--rc', cfg.rc);
-  stage.classList.add('charging', 'charge-L');
-  if (!RM()) FX.sparkle({ n: 120, colors: cfg.colors, size: 4 });
-
-  /* Décharge : éclair, onde de choc, secousse de la pile et lettrage qui claque. */
-  setTimeout(() => {
-    if (rv !== cur || !document.body.contains(stage)) return;
-    stage.classList.remove('charging', 'charge-L');
-    stage.classList.add('flash-L');
-
-    const sh = $('#shock');
-    if (sh) {
-      sh.className = 'shock';
-      void sh.offsetWidth;
-      sh.className = 'shock go rL';
-      setTimeout(() => {
-        const s2 = $('#shock');
-        if (!s2) return;
-        s2.className = 'shock';
-        void s2.offsetWidth;
-        s2.className = 'shock go rL';
-      }, 220);
-    }
-
-    const s3 = $('#s3d');
-    if (s3) {
-      s3.classList.remove('punch');
-      void s3.offsetWidth;
-      s3.classList.add('punch');
-    }
-
-    el.className = 'op-rar big rL godslam';
-    el.innerHTML = '<span class="slam">GODPACK</span>';
-
-    if (!RM()) {
-      const r = stage.getBoundingClientRect();
-      FX.burst(r.left + r.width / 2, r.top + r.height * .42,
-        { n: 190, colors: cfg.colors, speed: 15, shape: 'star', g: .05, size: 4.5, life: 55 });
-      setTimeout(() => FX.sparkle({ n: 150, colors: cfg.colors, size: 4 }), 200);
-    }
-  }, RM() ? 0 : 900);
-
-  /* Retour à la main du joueur. */
-  setTimeout(() => {
-    if (rv !== cur || !document.body.contains(stage)) return;
-    stage.classList.remove('flash-L');
-    rv.lock = false;
-    announce();
-  }, RM() ? 10 : 2500);
-}
-
 function showStack() {
   const n = rv.cards.length;
   const last = n - 1;
@@ -194,7 +140,7 @@ function showStack() {
      avant la révélation. doReveal() ajoute la classe au dernier moment. */
   theater(`<div class="th-stage${rv.god ? ' god' : ''}${anim ? ' packed' : ''}" id="opening">
     <div class="th-top"><span class="th-count" id="opcount">1 / ${n}</span>${rv.test ? '<span class="th-test">Test</span>' : ''}<button class="th-skip" data-t="skip">Tout voir</button></div>
-    <div class="stackwrap">${rv.god ? '<div class="godaura" aria-hidden="true"></div>' : ''}<div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
+    <div class="stackwrap">${rv.god ? '<div class="godaura" aria-hidden="true"></div><div class="godwash" aria-hidden="true"></div>' : ''}<div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
       <div class="stack3d" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
         const f = i === last && fin;
         return `<div class="scard${f ? ' veiled final' : ''}" data-i="${i}" style="--z:${i}">${f ? `<div class="lifter"><div class="spinner">${renderCard(c)}<div class="spinback"><img src="${ART.back}" alt=""></div></div></div>` : renderCard(c)}<div class="sheen"></div></div>`;
@@ -202,14 +148,13 @@ function showStack() {
       ${anim ? `<div class="packrip" id="packrip" aria-hidden="true">
         <img class="rp-body" src="${packArt}" alt="">
         <div class="rp-top"><img src="${packArt}" alt=""></div>
-        <i class="rp-line"></i>
+        <i class="rp-line"></i>${rv.god ? '<i class="rp-leak"></i><i class="rp-beam"></i>' : ''}
       </div>` : ''}</div>
     <div class="op-rar" id="oprar"></div>
     <p class="op-hint" id="ophint"></p></div>`);
 
   const start = () => {
     bindStack();
-    if (rv.god) godIntro();
   };
   if (anim) packOpen(start);
   else start();
@@ -248,13 +193,7 @@ function announce() {
   el.innerHTML = `${rk(c) >= 3 ? R.nom : ''}${nw ? ' <em>NEW</em>' : ''}`;
   $('#ophint').textContent = rv.idx === rv.cards.length - 1 ? 'Glisse pour voir ton récap' : 'Glisse d\'un coup sec ou touche pour passer';
 
-  if (rk(c) >= 3) {
-    top.classList.add('hitcard', 'h' + c.rar);
-    if (rv.god && !RM()) {
-      const r = top.getBoundingClientRect();
-      FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 30, colors: REVEAL[c.rar].colors, speed: 6, shape: 'star' });
-    }
-  }
+  if (rk(c) >= 3 && !rv.god) top.classList.add('hitcard', 'h' + c.rar);
 }
 
 function doReveal(done) {

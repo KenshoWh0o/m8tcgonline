@@ -26,6 +26,11 @@ function vCollection() {
   const cats = COL_FILTERS.filter(([k]) => k === 'all' || all.some(c => c.cat === k));
   const essences = Object.keys(COLORS).filter(k => all.some(c => c.col === k));
 
+  /* Les Secrets prennent la suite de la numérotation sans entrer dans le total.
+     On ne les montre que sans filtre : ils n'ont encore ni catégorie ni essence. */
+  const noFilter = colFilter === 'all' && essFilter === 'all';
+  const secretFrom = all.reduce((m, c) => Math.max(m, c.num || 0), 0) + 1;
+
   return `<div class="colhead">
     <h1>Collection</h1>
     <div class="prog"><div class="bar"><i style="width:${pct}%"></i></div><span><b>${owned}</b> / ${all.length}</span></div>
@@ -41,5 +46,14 @@ function vCollection() {
     return n
       ? `<button class="gcell" data-show="${c.id}"><span class="count">×${n}</span>${renderCard(c)}<span class="num">${no}</span></button>`
       : `<div class="gcell"><div class="cwrap"><div class="card ghost-card"><img src="${ART.star}" alt=""><span>${no}</span></div></div><span class="num">&nbsp;</span></div>`;
-  }).join('')}</div>` : '<p class="empty">Aucune carte avec ces filtres.</p>'}`;
+  }).join('')}${noFilter ? secretCells(secretFrom) : ''}</div>` : '<p class="empty">Aucune carte avec ces filtres.</p>'}`;
+}
+
+/* Les Secrets prolongent la grille sans en changer le total : des emplacements vides
+   comme les autres, seul le reflet les distingue. */
+function secretCells(from) {
+  return Array.from({ length: SECRETS }, (_, i) => {
+    const no = '#' + String(from + i).padStart(3, '0');
+    return `<div class="gcell"><div class="cwrap"><div class="card ghost-card secret-card"><img src="${ART.star}" alt=""><span>${no}</span></div></div><span class="num">&nbsp;</span></div>`;
+  }).join('');
 }

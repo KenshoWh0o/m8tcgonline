@@ -2,12 +2,11 @@
 /* ============ Théâtre (ouverture plein écran) ============ */
 #theater{position:fixed;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;color:#fff;
   padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
-  background:radial-gradient(90% 52% at 50% 30%,rgba(223,109,232,.2) 0%,transparent 68%),linear-gradient(180deg,#120e18,#07050a)}
+  background:radial-gradient(90% 52% at 50% 30%,rgba(137,54,255,.22) 0%,transparent 68%),linear-gradient(180deg,#120e18,#07050a)}
 #theater[hidden]{display:none}
 #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
 .th-stage{position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:66px 16px 34px;overflow:hidden}
-.th-stage.god{background:radial-gradient(circle at 50% 40%,rgba(255,199,59,.22),transparent 60%)}
 .th-top{position:absolute;top:14px;left:50%;translate:-50% 0;z-index:3;width:min(100% - 32px,540px);display:flex;
   justify-content:space-between;align-items:center;gap:8px}
 .th-count{font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.06em;background:rgba(255,255,255,.08);
@@ -71,15 +70,25 @@
 @keyframes slam{0%{transform:scale(3.2) rotate(-6deg);opacity:0}60%{opacity:1}}
 .op-hint{position:relative;z-index:2;color:rgba(255,255,255,.55);font-size:12.5px;font-weight:600;margin-top:2px;min-height:1.2em}
 
-/* Godpack : rayons lents derrière la pile et lettrage qui claque, sans écran intermédiaire. */
-.op-rar.godslam{font-size:clamp(36px,12vw,62px);font-stretch:125%;letter-spacing:-.01em;justify-content:center;
-  filter:drop-shadow(0 0 22px rgba(255,199,59,.6))}
-.th-stage.god .stack3d{filter:drop-shadow(0 0 28px rgba(255,199,59,.5))}
-.godaura{position:absolute;left:50%;top:50%;width:190%;aspect-ratio:1;translate:-50% -50%;pointer-events:none;opacity:.2;z-index:0;
-  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.6) 0 6deg,transparent 6deg 15deg);
-  -webkit-mask:radial-gradient(circle,#000 10%,transparent 62%);mask:radial-gradient(circle,#000 10%,transparent 62%);
-  animation:spinaura 26s linear infinite}
+/* ============ Godpack ============ */
+/* Rien ne le trahit tant que le paquet est fermé : c'est la lumière qui en sort qui l'annonce.
+   Pas de mot, pas d'écran, pas de surbrillance carte par carte — juste la scène qui s'embrase. */
+.th-stage.god.lit{background:radial-gradient(circle at 50% 42%,rgba(255,199,59,.2),transparent 62%)}
+.th-stage.god .stack3d{transition:transform 1.15s cubic-bezier(.2,.86,.26,1),filter 1.3s ease-out}
+.th-stage.god.lit .stack3d{filter:drop-shadow(0 0 32px rgba(255,199,59,.55))}
+/* Rayons lents, qui n'apparaissent qu'une fois le paquet ouvert. */
+.godaura{position:absolute;left:50%;top:50%;width:200%;aspect-ratio:1;translate:-50% -50%;pointer-events:none;opacity:0;z-index:0;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.55) 0 5deg,transparent 5deg 14deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:spinaura 30s linear infinite;transition:opacity 1.5s ease-out}
+.lit .godaura{opacity:.22}
 @keyframes spinaura{to{rotate:360deg}}
+/* Nappe de lumière : elle jaillit de la fente, puis se pose autour de la pile et y reste. */
+.godwash{position:absolute;left:50%;top:32%;width:0;aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;opacity:0;z-index:1;
+  background:radial-gradient(circle,rgba(255,244,205,.95),rgba(255,199,59,.45) 30%,rgba(255,130,0,.12) 56%,transparent 72%);
+  transition:width 1.6s cubic-bezier(.16,.85,.3,1),top 1.6s ease-out,opacity 1.4s ease-out}
+.rip-open .godwash{width:300%;opacity:.9}
+.rip-pull .godwash{width:235%;top:48%;opacity:.5}
 
 /* Récap */
 .recap{position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;padding:18px 16px 28px}
@@ -115,14 +124,17 @@
 @keyframes deal{from{transform:translateY(160px) rotate(-18deg) scale(.5);opacity:0}}
 .rc-actions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px;margin-top:26px}
 
-/* dernière carte : dos réel, bords brillants, rotation propre */
+/* dernière carte : dos réel, rotation propre */
 .scard.final{--fc:rgba(255,255,255,.8)}
 .scard.final.rR{--fc:rgba(57,184,255,.95)}.scard.final.rE{--fc:rgba(170,100,255,.95)}.scard.final.rL{--fc:rgba(255,199,59,1)}
 .lifter,.spinner{position:relative;transform-style:preserve-3d}
 .spinner>.cwrap{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+/* Le dos doit se lire comme une carte retournée, pas comme une plaque claire : pas de halo
+   rectangulaire autour, un rendu assombri et un liseré intérieur pour le relief. */
 .spinback{position:absolute;inset:0;border-radius:5.5%/3.94%;overflow:hidden;transform:rotateY(180deg);
-  backface-visibility:hidden;-webkit-backface-visibility:hidden;filter:drop-shadow(0 0 16px var(--fc))}
-.spinback img{display:block;width:100%;height:100%;object-fit:cover}
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.1),inset 0 0 46px rgba(0,0,0,.55)}
+.spinback img{display:block;width:100%;height:100%;object-fit:cover;filter:brightness(.66) contrast(1.06) saturate(.9)}
 .scard.spinE .spinner{animation:spinE .75s cubic-bezier(.15,.85,.3,1)}
 .scard.spinE .lifter{animation:liftE .75s ease-out}
 @keyframes spinE{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}

@@ -3,7 +3,7 @@
   padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px)}
 #viewer[hidden]{display:none}
 .vw-bg{position:absolute;inset:0;animation:fadein .25s both;
-  background:radial-gradient(circle at 50% 38%,rgba(223,109,232,.26),transparent 62%),linear-gradient(180deg,#120e18,#07050a)}
+  background:radial-gradient(circle at 50% 38%,rgba(137,54,255,.28),transparent 62%),linear-gradient(180deg,#120e18,#07050a)}
 .vw-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.05) .7px,transparent .8px) 0 0/22px 22px}
 @keyframes fadein{from{opacity:0}}
 .vw-close{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.14);

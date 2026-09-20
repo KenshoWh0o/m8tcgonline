@@ -84,7 +84,7 @@ Huit cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
 | 7 | Essence |
 | 8 | Le hit : rare, épique ou légendaire (`RATES.HIT` ≈ 79 / 17 / 4 %) |
 
-Environ un booster sur 2 000 (`GOD`) est un **godpack** : 4 rares, 3 épiques et une légendaire en dernier. Il n'a pas d'écran à lui — la déchirure vire à l'or, puis une charge, un éclair et le lettrage *GODPACK* claquent au-dessus de la pile avant que les cartes se révèlent normalement.
+Environ un booster sur 2 000 (`GOD`) est un **godpack** : 4 rares, 3 épiques et une légendaire en dernier. Rien ne l'annonce, ni écran, ni mot : voir plus bas.
 
 ### L'ouverture
 
@@ -97,6 +97,16 @@ Tout se joue dans **un seul écran, sans jamais remplacer le DOM** : c'est ce qu
 Les délais sont dans `packOpen()`, le reste dans le bloc `Déchirure` de `css/booster.css`.
 
 **Pas de spoiler.** La dernière carte ne reçoit sa classe de rareté que dans `doReveal()` : avant, aucune lueur colorée ne trahit ce qu'il y a dessous. À la place, `bindStack()` écrit `--tilt` sur la scène selon l'inclinaison, et la tranche de la carte s'allume en blanc quand on fait tourner la pile — le spoil devient un geste volontaire.
+
+### Le godpack
+
+Il n'a ni écran, ni lettrage, ni surbrillance carte par carte : **c'est la lumière qui le raconte**, dans la même séquence que n'importe quelle ouverture.
+
+1. Le paquet reste normal, mais `packOpen()` lui accorde 860 ms de plus (`rip-wake`) : l'image s'assombrit (`goddim`), la couture du haut s'allume de plus en plus (`leakwake`) et le tremblement monte (`godtremble`). On sent qu'il y a quelque chose dedans, sans savoir quoi.
+2. À la déchirure, la couture explose (`leakflash`) et un faisceau s'échappe par la fente (`.rp-beam`) : un trapèze découpé en `clip-path`, flouté et masqué en radial, qui s'évase vers le haut — un cône de lumière, pas un bloc. La classe `lit` arrive en même temps : la nappe dorée (`.godwash`) inonde la scène, les rayons lents (`.godaura`) apparaissent, la pile prend son halo.
+3. Les cartes sortent dans cette lumière et la pluie d'étincelles se relance à mi-parcours pour qu'elle ne s'arrête jamais net.
+
+Dans un godpack, `announce()` **n'ajoute pas** la surbrillance de rareté carte par carte : toutes les cartes sont des hits, les éclairs bleus et violets ne feraient que brouiller l'or. Seule la légendaire finale garde sa révélation complète.
 
 > `PACK_SIZE` sert à l'affichage ; c'est `makeBooster()` qui décide vraiment du contenu. Pense à changer les deux si tu touches au nombre de cartes. Les visuels de paquet fournis portent la mention imprimée « Booster de 10 cartes » : elle vient des images d'origine, pas du jeu.
 
@@ -128,6 +138,10 @@ Les délais sont dans `packOpen()`, le reste dans le bloc `Déchirure` de `css/b
 - **Couleurs :** Rose, Orange, Jade, Violette, Jaune, Mauve, Verte, Bleue, Azur, Neutre
 - **Facultatif :** `sous_type`, `mot_cle`, `ambiance`, `resilience`, et `booster: false` pour qu'une carte ne sorte jamais dans un paquet.
 
+### Les Secrets
+
+`SECRETS` (`js/config.js`) prolonge la grille de collection avec des emplacements numérotés à la suite des cartes existantes (#123 à #127 aujourd'hui) mais **hors du total** : la barre de progression reste sur 122. Ils s'ajoutent dans la même grille, juste après la dernière carte (`secretCells()`), et disparaissent dès qu'un filtre est actif puisqu'ils n'ont encore ni catégorie ni essence. Mets `SECRETS = 0` pour les masquer ; ajoute les vraies cartes dans `js/cards-data.js` quand elles sortent, et baisse `SECRETS` d'autant.
+
 > Le numéro sert d'identifiant : changer le `num` d'une carte déjà collectionnée la fait repartir à zéro dans la collection. Les champs `ambiance` et `resilience` sont conservés avec la carte mais ne sont pas affichés : ils font déjà partie de l'image.
 
 ## Habillage
@@ -142,7 +156,7 @@ Les visuels de la marque vivent dans `assets/` et sont déclarés dans `js/confi
 - `logo-m8.webp` — le logo du jeu, affiché en en-tête (`ART.logo`). Il est détouré sur fond transparent depuis le fichier d'origine.
 - `logo.webp` et `logo-bw.svg` — le lettrage Gentle Mates d'origine, gardé comme référence si tu retouches la charte.
 
-**La palette sort du logo.** L'orchidée `#df6de8` de l'ellipse sert de couleur de marque (onglet actif, étoile, halos) et le rose pâle `#ffd7f0` du lettrage de couleur claire. La couleur d'action est le violet `#8936ff` (dégradé vers `#a95cf2`, rebord `#57189e`) : boutons, puces sélectionnées, pastilles *NEW*, jauges. Les fonds sont un noir teinté prune plutôt qu'un gris froid. Les raretés gardent leurs couleurs propres (bleu, violet, or).
+**Une seule couleur d'interface : le violet.** Boutons, onglet actif, puces sélectionnées, pastilles *NEW*, jauges de recharge et de collection, halos de fond — tout est en `--accent` `#8936ff` / `--accent-soft` `#a95cf2`, avec le rebord `#57189e` sous les éléments pressables. L'orchidée `#df6de8` et le rose pâle `#ffd7f0` du logo ne servent plus qu'au logo lui-même. Les fonds sont un noir teinté prune. Les raretés gardent leurs couleurs propres (bleu, violet, or).
 
 L'étoile du logo (`assets/star-pink.svg`, reprise en ligne dans `ICON.star`) sert d'icône à l'onglet Boosters et au bouton d'ouverture : c'est la seule icône pleine, les deux autres onglets restent au trait.
 

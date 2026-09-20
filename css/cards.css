@@ -36,7 +36,7 @@
 .colhead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
 .prog{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--subtle)}
 .prog .bar{width:120px;height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden}
-.prog .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--brand));
+.prog .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-soft));
   box-shadow:0 0 10px rgba(137,54,255,.5)}
 .prog b{color:var(--text)}
 .essrow{display:flex;gap:6px;overflow-x:auto;padding:0 0 14px;scrollbar-width:none}
@@ -44,7 +44,7 @@
 .essrow button{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--subtle);
   padding:6px 12px 6px 9px;border-radius:999px;font-size:12px;font-weight:700;transition:background .14s,border-color .14s,color .14s}
 .essrow button:hover{background:var(--surface-2);color:var(--text)}
-.essrow button.on{border-color:var(--ec,var(--brand));color:var(--text);background:color-mix(in srgb,var(--ec,var(--brand)) 16%,var(--surface))}
+.essrow button.on{border-color:var(--ec,var(--accent-soft));color:var(--text);background:color-mix(in srgb,var(--ec,var(--accent-soft)) 18%,var(--surface))}
 .essrow .ess{width:17px;height:17px}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(94px,27vw,138px),1fr));gap:18px 10px;padding-top:2px}
@@ -55,4 +55,12 @@ button.gcell:hover{transform:translateY(-3px)}
 .new{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9.5px;font-weight:900;
   padding:3px 9px;border-radius:999px;z-index:2;letter-spacing:.08em;box-shadow:0 0 14px rgba(137,54,255,.55)}
 .num{display:block;text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:6px;letter-spacing:.04em}
+
+/* ============ Secrets (à venir) ============ */
+/* Même emplacement vide que les autres : on n'ajoute que le reflet qui balaie la carte. */
+.card.ghost-card.secret-card{overflow:hidden;background:linear-gradient(165deg,#251a33,#130e1c 58%,#1d1429);
+  box-shadow:inset 0 0 0 1px var(--line-2)}
+.card.ghost-card.secret-card::before{content:'';position:absolute;inset:0;opacity:.55;
+  background:linear-gradient(115deg,transparent 26%,rgba(169,92,242,.4) 44%,rgba(223,109,232,.3) 55%,transparent 72%);
+  background-size:260% 100%;animation:holo 5.5s linear infinite}
 .rC,.rPC,.rES{color:var(--muted)}.rR{color:var(--r-r)}.rE{color:var(--r-e)}.rL{color:var(--r-l)}

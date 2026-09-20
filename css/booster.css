@@ -10,7 +10,7 @@
 .packstage{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   perspective:1300px;padding:8px 0 0}
 .packglow{position:absolute;top:44%;left:50%;width:min(620px,124vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,rgba(223,109,232,.22),rgba(137,54,255,.08) 40%,transparent 68%)}
+  background:radial-gradient(circle,rgba(137,54,255,.24),rgba(169,92,242,.1) 40%,transparent 68%)}
 /* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
 .pack3d{position:relative;transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
 @keyframes packbob{50%{translate:0 -10px}}
@@ -24,9 +24,9 @@
   background-position:var(--fx,50%) 0}
 /* Paquet ouvrable : un halo respire derrière lui, le geste est évident sans ligne d'explication. */
 .pack.ready::after{content:'';position:absolute;inset:-8% -10%;border-radius:22px;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(223,109,232,.34),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
+  background:radial-gradient(closest-side,rgba(137,54,255,.36),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
 @keyframes packpulse{50%{opacity:.3}}
-.pack.ready:hover{filter:drop-shadow(0 28px 40px rgba(0,0,0,.72)) drop-shadow(0 0 26px rgba(223,109,232,.55))}
+.pack.ready:hover{filter:drop-shadow(0 28px 40px rgba(0,0,0,.72)) drop-shadow(0 0 26px rgba(169,92,242,.6))}
 .packshadow{width:min(190px,44vw);height:18px;margin-top:14px;border-radius:50%;flex:0 0 auto;
   background:radial-gradient(closest-side,rgba(0,0,0,.78),transparent)}
 
@@ -41,10 +41,10 @@
 .rchip b{font-family:var(--display);font-weight:900;font-style:italic;font-size:17px;line-height:1;font-variant-numeric:tabular-nums}
 .rchip small{font-size:11px;font-weight:700;color:var(--muted);margin-left:-4px}
 .rchip.time b{color:var(--subtle)}
-.rchip.time.full b{color:var(--brand)}
+.rchip.time.full b{color:var(--accent-soft)}
 /* Jauge de recharge : un liseré qui se remplit sous la pastille. */
-.rfill{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--brand));transition:width .9s linear}
-.rchip.time.full .rfill{background:var(--brand)}
+.rfill{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-soft));transition:width .9s linear}
+.rchip.time.full .rfill{background:var(--accent-soft)}
 .packbtn{max-width:340px}
 
 /* ============ Départ de l'ouverture ============ */
@@ -84,6 +84,44 @@
   40%{transform:rotateZ(1.6deg) rotateY(6deg)}
   65%{transform:rotateZ(-1.1deg) rotateY(-3deg)}
   85%{transform:rotateZ(.7deg) rotateY(2deg)}}
+
+/* ---- Godpack : la lumière monte dans le paquet avant même la déchirure ---- */
+/* La couture s'allume peu à peu et le paquet tremble de plus en plus : on sent que ça va lâcher. */
+.god .rp-leak{position:absolute;left:6%;right:6%;top:10.4%;height:4px;border-radius:99px;opacity:0;
+  background:linear-gradient(90deg,transparent,#fff 26%,#fff 74%,transparent);
+  box-shadow:0 0 10px #fff,0 0 30px #ffe08a,0 0 80px rgba(255,199,59,.95),0 0 150px rgba(255,150,0,.55)}
+/* Le paquet s'assombrit pendant que la couture s'allume : la seule lumière vient de l'intérieur. */
+.rip-wake .rp-body,.rip-wake .rp-top img{animation:goddim 1.5s ease-in forwards}
+@keyframes goddim{to{filter:brightness(.52) saturate(.65)}}
+.rip-cut .rp-body,.rip-cut .rp-top img{animation:godlight .6s ease-out forwards}
+@keyframes godlight{0%{filter:brightness(.52) saturate(.65)}45%{filter:brightness(1.7) saturate(1.1)}100%{filter:none}}
+.rip-wake .rp-leak{animation:leakwake 1.5s cubic-bezier(.4,0,.55,1) forwards}
+@keyframes leakwake{0%{opacity:0;scale:.15 1}55%{opacity:.7;scale:.82 1}100%{opacity:1;scale:1 1.7}}
+.rip-cut .rp-leak{animation:leakflash .55s ease-out forwards}
+@keyframes leakflash{0%{opacity:1;scale:1 1.7}40%{opacity:1;scale:1 5}100%{opacity:0;scale:1 9}}
+.rip-wake .packrip{animation:godtremble 1.5s cubic-bezier(.4,0,.6,1)}
+@keyframes godtremble{
+  0%{transform:none}
+  30%{transform:rotateZ(-.4deg) rotateY(-2deg)}
+  50%{transform:rotateZ(.7deg) rotateY(3deg)}
+  68%{transform:rotateZ(-1deg) rotateY(-4deg)}
+  82%{transform:rotateZ(1.4deg) rotateY(5deg)}
+  92%{transform:rotateZ(-1.9deg) rotateY(-6deg)}
+  100%{transform:rotateZ(1.2deg) rotateY(4deg)}}
+/* Faisceau qui s'échappe de la fente : un cône flou qui s'évase vers le haut et se dissout.
+   La découpe en trapèze + le flou + le masque radial lui donnent du volume ; sans ça c'est un bloc blanc. */
+.god .rp-beam{position:absolute;left:50%;bottom:89.4%;width:200%;height:155%;translate:-50% 0;transform-origin:50% 100%;
+  opacity:0;pointer-events:none;filter:blur(20px);
+  clip-path:polygon(47.5% 100%,52.5% 100%,90% 0,10% 0);
+  background:linear-gradient(180deg,rgba(255,206,96,0),rgba(255,224,150,.5) 50%,rgba(255,246,214,.98));
+  -webkit-mask:radial-gradient(78% 100% at 50% 100%,#000 3%,rgba(0,0,0,.5) 44%,transparent 90%);
+  mask:radial-gradient(78% 100% at 50% 100%,#000 3%,rgba(0,0,0,.5) 44%,transparent 90%)}
+.rip-open .rp-beam{animation:beamup 1.9s cubic-bezier(.14,.78,.3,1) forwards}
+@keyframes beamup{
+  0%{opacity:0;transform:scale(.3,.06)}
+  14%{opacity:1;transform:scale(1,1)}
+  46%{opacity:.8;transform:scale(1.06,1.08)}
+  100%{opacity:0;transform:scale(1.4,1.28)}}
 
 /* On tire les cartes vers soi : le paquet vide bascule et descend hors champ. */
 .rip-pull .packrip{animation:packaway 1.05s cubic-bezier(.32,.76,.36,1) forwards}
