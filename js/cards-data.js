@@ -514,7 +514,7 @@ const CARD_DATA = [
     ambiance: "Papa, tonton Itachi a dit des gros mots"
   },
   {
-    fichier: "060_E_Joueur_Mauve_Gotaga-Pose.avif", num: 60, nom: "Gotaga Posé",
+    fichier: "060_E_Joueur_Mauve_Gotaga-Pose.avif", num: 60, nom: "Gotaga Pose",
     categorie: "Joueur", couleur: "Mauve", rarete: "E", def: 150,
     attaques: [
       { nom: "Aspiration d'âme", cout: { mauve: 3, neutre: 1 }, degats: 150, effet: "+100 si l'adversaire a récuperé un PV ce tour.", plus: true }
