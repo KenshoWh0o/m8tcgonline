@@ -1,0 +1,35 @@
+/* Jetons de design : couleurs, typos, mode sombre. Modifier ici pour changer la charte. */
+/* ============ Jetons ============ */
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --ink:#1b0a1e;            /* prune profond : barres, texte */
+  --ink2:#2d1233;
+  --pink:#ff2e88;           /* rose signature */
+  --pink-deep:#c9125f;
+  --violet:#6a3cff;         /* violet électrique */
+  --lilac:#cdbdff;
+  --sky:#5fd0ff;            /* bleu froid des rares */
+  --gold:#ffc53d;           /* or des légendaires */
+  --paper:#f8f0f7;          /* fond clair rosé */
+  --surface:#ffffff;
+  --surface2:#f3e5f0;
+  --text:#1b0a1e;
+  --muted:#7d6a7b;
+  --line:#ead3e3;
+  --good:#1faa6a;
+  --display:'Archivo','Arial Black',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --cut:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--paper:#120814;--surface:#1f1022;--surface2:#2c1731;--text:#f8edf5;--muted:#b49cb0;--line:#3b2140}
+}
+:root[data-theme="dark"]{--paper:#120814;--surface:#1f1022;--surface2:#2c1731;--text:#f8edf5;--muted:#b49cb0;--line:#3b2140}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--ink)}
+body{position:relative;height:100%;margin:0;display:flex;flex-direction:column;color:var(--text);font-family:var(--body);font-size:15px;-webkit-tap-highlight-color:transparent;background:var(--paper);isolation:isolate}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}

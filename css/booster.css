@@ -1,0 +1,46 @@
+/* Écran du booster (paquet, déchirure) et design importé. */
+/* ============ Écran booster ============ */
+.packzone{position:relative;display:flex;flex-direction:column;align-items:center;padding-top:14px}
+.rays{position:absolute;top:-40px;left:50%;width:560px;height:560px;transform:translateX(-50%);pointer-events:none;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,rgba(255,46,136,.16) 0 7deg,transparent 7deg 16deg,rgba(106,60,255,.1) 16deg 21deg,transparent 21deg 30deg);
+  -webkit-mask:radial-gradient(circle,#000 18%,transparent 60%);mask:radial-gradient(circle,#000 18%,transparent 60%)}
+.packfloat{position:relative;animation:float 3.6s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-9px) rotate(.6deg)}}
+.pack{position:relative;width:220px;height:340px;border-radius:10px;overflow:hidden;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;
+  box-shadow:0 26px 50px rgba(120,10,70,.45),inset 0 0 0 2px rgba(255,255,255,.28)}
+.pack-body{position:absolute;inset:0;background:linear-gradient(170deg,#ff2e88 0%,#d11772 30%,#5a1ca8 70%,#1b0a1e 100%)}
+.pack-band{position:absolute;left:-20%;right:-20%;top:58%;height:58px;background:var(--ink);transform:rotate(-14deg);box-shadow:0 -6px 0 var(--sky),0 6px 0 var(--gold)}
+.pack-dots{position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.35) 1px,transparent 1.6px) 0 0/9px 9px;-webkit-mask:linear-gradient(180deg,#000,transparent 45%);mask:linear-gradient(180deg,#000,transparent 45%)}
+.pack-foil{position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.38) 45%,transparent 60%);background-size:250% 100%;animation:holo 4.2s linear infinite;z-index:3;pointer-events:none;mix-blend-mode:screen}
+.pack-cover{position:absolute;left:50%;top:50px;width:104px;transform:translateX(-50%) rotate(-5deg);border-radius:7px;overflow:hidden;box-shadow:0 12px 26px rgba(0,0,0,.5);border:3px solid #fff;z-index:2}
+.pack-cover img{display:block;width:100%}
+.crimp{position:absolute;left:0;right:0;top:0;height:42px;background:rgba(27,10,30,.35);z-index:4;
+  -webkit-mask:linear-gradient(#000,#000) top/100% 36px no-repeat,conic-gradient(from -45deg at bottom,#000 90deg,transparent 0) bottom/12px 6px repeat-x;
+  mask:linear-gradient(#000,#000) top/100% 36px no-repeat,conic-gradient(from -45deg at bottom,#000 90deg,transparent 0) bottom/12px 6px repeat-x}
+.crimp::after{content:'';position:absolute;left:0;right:0;top:34px;border-top:2px dashed rgba(255,255,255,.55)}
+.tearline{position:absolute;left:0;top:33px;height:4px;width:0;background:#fff;box-shadow:0 0 14px #fff,0 0 4px var(--pink);z-index:2}
+.pack-name{position:absolute;left:0;right:0;top:204px;text-align:center;z-index:4;padding:0 10px}
+.pack-name small{display:block;font-size:10px;font-weight:800;opacity:.8;letter-spacing:.04em;margin-bottom:3px}
+.pack-name b{display:block;font-family:var(--display);font-stretch:125%;font-weight:900;font-style:italic;font-size:25px;line-height:.95;letter-spacing:-.02em;text-shadow:0 3px 0 rgba(0,0,0,.35)}
+.pack-count{display:inline-block;margin-top:34px;background:#fff;color:var(--ink);font-family:var(--display);font-weight:900;font-size:11px;padding:3px 10px;transform:skewX(-12deg)}
+.finger{position:absolute;top:26px;left:10px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px rgba(255,255,255,.3),0 0 18px #fff;animation:swipe 2.3s ease-in-out infinite;pointer-events:none;z-index:3}
+@keyframes swipe{0%{transform:translateX(0);opacity:0}15%{opacity:1}70%{transform:translateX(170px);opacity:1}100%{transform:translateX(180px);opacity:0}}
+.pack.tear .finger{display:none}
+.pack.tear .crimp{animation:tear .5s cubic-bezier(.3,.6,.4,1) forwards}
+@keyframes tear{30%{transform:translate(10px,-6px) rotate(3deg)}to{transform:translate(200px,-120px) rotate(28deg);opacity:0}}
+.pack.tear{animation:rumble .35s .1s linear}
+@keyframes rumble{20%{transform:translate(-3px,1px) rotate(-1deg)}40%{transform:translate(3px,-1px) rotate(1deg)}60%{transform:translate(-2px,1px)}80%{transform:translate(2px,0)}}
+.pack.spill{animation:drop .6s cubic-bezier(.5,0,.9,.5) forwards}
+.pack.spill::after{content:'';position:absolute;left:-20%;right:-20%;top:-40px;height:120px;background:radial-gradient(closest-side,#fff,rgba(255,46,136,.6),transparent);z-index:5;animation:glowup .6s forwards}
+@keyframes drop{to{transform:translateY(90px) scale(.9);opacity:0}}
+@keyframes glowup{from{opacity:0}40%{opacity:1}to{opacity:.8;transform:scaleY(2)}}
+.pedestal{position:relative;width:200px;height:26px;margin-top:6px;background:var(--ink);clip-path:polygon(12% 0,88% 0,100% 100%,0 100%)}
+.pedestal::before{content:'';position:absolute;left:12%;right:12%;top:0;height:3px;background:var(--pink)}
+.packhint{font-family:var(--display);font-stretch:110%;font-weight:900;font-style:italic;font-size:16px;margin:18px 0 0;text-align:center}
+#timer{text-align:center;max-width:300px}
+.rates{margin-top:18px}
+
+.pack-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pack.custom .crimp{background:rgba(255,255,255,.14)}
+.packprev{width:120px;margin:4px 0 12px;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.packprev img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}
