@@ -27,7 +27,7 @@ mate-tcg-online/
 ├── cards/              Les images des cartes (une par carte, .avif)
 ├── assets/             Habillage : logos, visuels de booster, dos de carte, essences
 │   ├── boosters/       Les quatre visuels de paquet
-│   └── essences/       Les neuf symboles d'essence
+│   └── essences/       Les dix symboles d'essence
 ├── css/
 │   ├── tokens.css      Couleurs, typos, rythme (la charte)
 │   ├── base.css        Fond, en-tête, navigation, boutons, fenêtres
@@ -45,7 +45,7 @@ mate-tcg-online/
 │   ├── render-card.js  Affichage d'une carte
 │   ├── ui.js           Fenêtre modale
 │   ├── fx.js           Particules
-│   ├── booster.js      Tickets, taux de tirage, écran du paquet en 3D
+│   ├── booster.js      Réserve, composition d'un booster, écran du paquet en 3D
 │   ├── opening.js      Pile 3D, révélation, godpack, récap
 │   ├── collection.js   Onglet Collection
 │   ├── viewer.js       Visionneuse 3D
@@ -64,11 +64,28 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Changer les visuels de booster | `js/config.js` (`PACK_ARTS`) + les images dans `assets/boosters/` |
 | Changer le dos de carte, le logo d'extension, la pastille | `js/config.js` (`ART`) |
 | Changer les couleurs, les typos, les arrondis | `css/tokens.css` |
+| Changer le nombre de cartes par booster | `js/config.js` (`PACK_SIZE`) + `makeBooster()` dans `js/booster.js` |
 | Changer les taux de drop ou du godpack | `js/booster.js` (`RATES`, `GOD`) |
 | Régler la durée ou les particules d'une révélation | `js/config.js` (`REVEAL`) |
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
 | Changer le nombre de boosters gratuits ou le délai | `js/config.js` (`TICKET_CAP`, `INTERVAL`) |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
+
+## Composition d'un booster
+
+Huit cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
+
+| Carte | Contenu |
+|---|---|
+| 1 à 3 | Commune |
+| 4 | Commune ou peu commune (`RATES.SLOT4`, 50/50) |
+| 5 et 6 | Peu commune |
+| 7 | Essence |
+| 8 | Le hit : rare, épique ou légendaire (`RATES.HIT` ≈ 79 / 17 / 4 %) |
+
+Environ un booster sur 2 000 (`GOD`) est un **godpack** : 4 rares, 3 épiques et une légendaire en dernier. Il n'a pas d'écran à lui — l'ouverture part sur une charge dorée, un éclair et le lettrage *GODPACK* au-dessus de la pile, puis les cartes se révèlent normalement.
+
+> `PACK_SIZE` sert à l'affichage ; c'est `makeBooster()` qui décide vraiment du contenu. Pense à changer les deux si tu touches au nombre de cartes. Les visuels de paquet fournis portent la mention imprimée « Booster de 10 cartes » : elle vient des images d'origine, pas du jeu.
 
 ## Ajouter une carte
 
@@ -105,13 +122,15 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 Les visuels de la marque vivent dans `assets/` et sont déclarés dans `js/config.js` :
 
 - `boosters/booster-01…04.webp` — les quatre paquets. Un est tiré au sort à chaque ouverture, **sans aucun effet sur le contenu**.
-- `essences/<couleur>.svg` — les neuf symboles d'essence, utilisés dans les filtres de collection et la fiche d'une carte. Leurs couleurs officielles sont reprises dans `COLORS` (`js/config.js`), avec un bleu légèrement éclairci pour rester lisible sur fond sombre.
+- `essences/<couleur>.svg` et `essences/neutre.png` — les dix symboles d'essence, utilisés dans les filtres de collection et la fiche d'une carte. Leurs couleurs officielles sont reprises dans `COLORS` (`js/config.js`), avec un bleu légèrement éclairci pour rester lisible sur fond sombre.
 - `card-back.webp` — le dos affiché quand la dernière carte se retourne.
 - `extension-logo.svg` — le logo de l'extension, en haut de l'écran Boosters et sur le récap.
-- `1st-edition.svg`, `pack-star.svg`, `star-pink.svg` — pastille de première édition, icône du compteur de boosters, étincelle des emplacements vides.
+- `1st-edition.svg`, `pack-star.svg`, `star-pink.svg` — pastille de première édition, icône du compteur de boosters, étincelle posée sur le logo et dans les emplacements vides de la collection.
 - `logo.webp` et `logo-bw.svg` — le lettrage Gentle Mates d'origine. Le jeu ne les affiche pas (le logo de l'en-tête est dessiné en CSS dans `base.css`, classes `.bm-main` et `.bm-sub`), ils sont gardés comme référence si tu retouches la charte.
 
-L'interface est en thème sombre uniquement, calée sur la charte Gentle Mates : fond presque noir et neutre, une seule couleur d'action (le rose `#ee0073`), l'orchidée du logo pour les accents.
+L'interface est en thème sombre uniquement, calée sur la charte Gentle Mates : fond presque noir et neutre, une seule couleur d'action (le violet `#8936ff`, dégradé vers `#a95cf2` sur les boutons), l'orchidée `#ec8fff` du logo pour les accents et les pastilles *NEW*.
+
+Le logo du jeu est dessiné en CSS dans `base.css` : deux calques superposés (`.bm-main::before` pose le contour épais, `.bm-main::after` le remplissage dégradé) surmontés d'un bandeau incliné `.bm-sub`. Le découpage vient de `GAME_NAME` : le premier mot fait le lettrage, le reste va sur le bandeau.
 
 ## Dépendances externes
 

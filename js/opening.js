@@ -44,8 +44,11 @@ function openBooster(opts) {
   const pk = $('#pack');
   if (pk && !RM()) {
     pk.classList.add('tear');
+    if (god) pk.classList.add('god');
     const r = pk.getBoundingClientRect();
-    setTimeout(() => tab === 'boosters' && FX.burst(r.left + r.width / 2, r.top + 26, { n: 60, colors: ['#ffffff', '#ff2e88', '#ffc53d', '#62d0ff'], speed: 7, up: 3, shape: 'star' }), 240);
+    const cols = god ? REVEAL.L.colors : ['#ffffff', '#ec8fff', '#8936ff', '#39b8ff'];
+    setTimeout(() => tab === 'boosters' && FX.burst(r.left + r.width / 2, r.top + r.height * .3,
+      { n: god ? 120 : 60, colors: cols, speed: god ? 11 : 7, up: 3, shape: 'star' }), 240);
     setTimeout(() => pk.classList.add('spill'), 420);
     setTimeout(startTheater, 1050);
   } else {
@@ -55,8 +58,8 @@ function openBooster(opts) {
 
 function startTheater() {
   opening = false;
-  if (rv.god) showGod();
-  else showStack();
+  showStack();
+  if (rv.god) godIntro();
 }
 
 function theater(html) {
@@ -78,9 +81,69 @@ function closeTheater() {
   render();
 }
 
-function showGod() {
-  theater(`<div class="godscreen" data-t="god"><div class="godrays"></div><div class="godtxt">GODPACK</div><p>Tout le booster est rare ou mieux.</p><span class="godtap">Touche pour ouvrir</span></div>`);
-  setTimeout(() => FX.sparkle({ n: 140, colors: ['#ffc53d', '#fff3b0', '#ff2e88', '#ffffff'] }), 300);
+/* Godpack : pas d'écran à recliquer, la pile s'ouvre sur une salve dorée reprenant la mise en scène des hits. */
+function godIntro() {
+  const stage = $('#opening');
+  const el = $('#oprar');
+  const hint = $('#ophint');
+  if (!stage || !el) return;
+
+  const cfg = REVEAL.L;
+  const cur = rv;
+  rv.lock = true;
+  el.className = 'op-rar';
+  el.innerHTML = '';
+  if (hint) hint.textContent = '';
+
+  stage.style.setProperty('--rc', cfg.rc);
+  stage.classList.add('charging', 'charge-L');
+  if (!RM()) FX.sparkle({ n: 120, colors: cfg.colors, size: 4 });
+
+  /* Décharge : éclair, onde de choc, secousse de la pile et lettrage qui claque. */
+  setTimeout(() => {
+    if (rv !== cur || !document.body.contains(stage)) return;
+    stage.classList.remove('charging', 'charge-L');
+    stage.classList.add('flash-L');
+
+    const sh = $('#shock');
+    if (sh) {
+      sh.className = 'shock';
+      void sh.offsetWidth;
+      sh.className = 'shock go rL';
+      setTimeout(() => {
+        const s2 = $('#shock');
+        if (!s2) return;
+        s2.className = 'shock';
+        void s2.offsetWidth;
+        s2.className = 'shock go rL';
+      }, 220);
+    }
+
+    const s3 = $('#s3d');
+    if (s3) {
+      s3.classList.remove('punch');
+      void s3.offsetWidth;
+      s3.classList.add('punch');
+    }
+
+    el.className = 'op-rar big rL godslam';
+    el.innerHTML = '<span class="slam">GODPACK</span>';
+
+    if (!RM()) {
+      const r = stage.getBoundingClientRect();
+      FX.burst(r.left + r.width / 2, r.top + r.height * .42,
+        { n: 190, colors: cfg.colors, speed: 15, shape: 'star', g: .05, size: 4.5, life: 55 });
+      setTimeout(() => FX.sparkle({ n: 150, colors: cfg.colors, size: 4 }), 200);
+    }
+  }, RM() ? 0 : 900);
+
+  /* Retour à la main du joueur. */
+  setTimeout(() => {
+    if (rv !== cur || !document.body.contains(stage)) return;
+    stage.classList.remove('flash-L');
+    rv.lock = false;
+    announce();
+  }, RM() ? 10 : 2500);
 }
 
 function showStack() {
@@ -375,9 +438,6 @@ $('#theater').addEventListener('click', e => {
   const t = e.target.closest('[data-t]');
   if (!t) return;
   switch (t.dataset.t) {
-    case 'god':
-      showStack();
-      break;
     case 'skip':
       if (!rv) return;
       rv.lock = false;

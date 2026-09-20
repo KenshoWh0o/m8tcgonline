@@ -113,14 +113,22 @@ $('#main').addEventListener('click', e => {
   }
 });
 
-/* ---------- Boucle des tickets ---------- */
+/* ---------- Boucle de la réserve ---------- */
 setInterval(() => {
   if (!save) return;
   const before = save.tickets;
   regen();
-  if (save.tickets !== before) header();
-  const t = $('#timer');
-  if (t) t.textContent = timerText();
+  if (save.tickets !== before) {
+    header();
+    /* Le compteur de l'écran booster montre la réserve : il faut le redessiner. */
+    if (tab === 'boosters' && !rv) render();
+    return;
+  }
+  const lab = $('#tmlabel');
+  if (!lab) return;
+  lab.textContent = timerLabel();
+  $('#tmclock').textContent = timerClock();
+  $('#tmbar').style.width = tickPct() + '%';
 }, 1000);
 
 /* ---------- Démarrage ---------- */

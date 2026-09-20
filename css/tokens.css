@@ -22,8 +22,9 @@
   --brand:#ec8fff;        /* orchidée du logo */
   --brand-deep:#b44cd6;
   --brand-ink:#190a1c;
-  --accent:#ee0073;       /* rose vif M8 */
-  --accent-2:#8936ff;
+  --accent:#8936ff;       /* violette : couleur d'action */
+  --accent-2:#a95cf2;
+  --accent-glow:rgba(137,54,255,.45);
 
   /* Raretés */
   --r-r:#39b8ff;

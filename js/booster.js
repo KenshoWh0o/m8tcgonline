@@ -1,7 +1,7 @@
-/* Boosters : tickets, taux de tirage, écran du paquet et geste de déchirure. */
+/* Boosters : réserve de tickets, composition d'un paquet, écran du paquet en 3D. */
 "use strict";
 
-/* ---------- Tickets ---------- */
+/* ---------- Réserve ---------- */
 function regen() {
   if (save.tickets >= TICKET_CAP) {
     save.lastTick = Date.now();
@@ -20,26 +20,40 @@ function header() {
   $('#tk').textContent = save.unlimited ? '∞' : String(save.tickets);
 }
 
-/* Titre de la page et logo : le dernier mot du nom passe en ligne basse, comme « TRADING CARD GAME » sous le logo M8. */
+/* Logo : le premier mot porte le lettrage, le reste va sur le bandeau. */
 function brand() {
   const w = GAME_NAME.trim().split(/\s+/);
-  const last = w.length > 1 ? w.pop() : '';
-  const main = w.join(' ');
-  $('#brand').innerHTML = `<span class="bm-main" data-txt="${h(main)}">${h(main)}</span>${last ? `<span class="bm-sub">${h(last)}</span>` : ''}`;
+  const main = w.shift() || GAME_NAME;
+  const sub = w.join(' ');
+  $('#brand').innerHTML = `<span class="bm-main" data-txt="${h(main)}">${h(main)}</span>${sub ? `<span class="bm-sub"><span>${h(sub)}</span></span>` : ''}`;
   document.title = GAME_NAME;
 }
 
-function timerText() {
-  if (save.unlimited) return 'Boosters illimités activés.';
-  if (save.tickets >= TICKET_CAP) return `Réserve pleine (${TICKET_CAP} boosters).`;
-  const left = INTERVAL - (Date.now() - save.lastTick);
-  const m = Math.max(0, Math.floor(left / 60000));
-  const s = Math.max(0, Math.floor(left / 1000) % 60);
-  return `Prochain booster gratuit dans ${m}:${String(s).padStart(2, '0')}.`;
+/* ---------- Compte à rebours ---------- */
+function timerLabel() {
+  if (save.unlimited) return 'Mode illimité';
+  if (save.tickets >= TICKET_CAP) return 'Réserve pleine';
+  return 'Prochain booster';
+}
+
+function timerClock() {
+  if (save.unlimited) return '∞';
+  if (save.tickets >= TICKET_CAP) return 'Max';
+  const left = Math.max(0, INTERVAL - (Date.now() - save.lastTick));
+  const m = Math.floor(left / 60000);
+  const s = Math.floor(left / 1000) % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/* Part du délai déjà écoulée, pour la jauge de recharge. */
+function tickPct() {
+  if (save.unlimited || save.tickets >= TICKET_CAP) return 100;
+  return Math.min(100, Math.max(0, (Date.now() - save.lastTick) / INTERVAL * 100));
 }
 
 /* ---------- Tirage ---------- */
-const RATES = { CPC: { C: 75, PC: 25 }, HIT: { R: 79.2, E: 16.63, L: 4.17 } };
+/* SLOT4 : la quatrième carte hésite entre commune et peu commune. HIT : la dernière carte. */
+const RATES = { SLOT4: { C: 50, PC: 50 }, HIT: { R: 79.2, E: 16.63, L: 4.17 } };
 const GOD = 1 / 2000;
 
 function pickFrom(pool, r) {
@@ -64,17 +78,27 @@ function weighted(w) {
   return Object.keys(w)[0];
 }
 
+/* Huit cartes : 3 communes, une commune ou peu commune, 2 peu communes, 1 essence, puis le hit.
+   Godpack : 4 rares, 3 épiques et la légendaire en dernier. */
 function makeBooster(pool, god) {
   const out = [];
+
   if (god) {
-    for (let i = 0; i < 9; i++) out.push(pickFrom(pool, weighted({ R: 55, E: 45 })));
+    for (let i = 0; i < 4; i++) out.push(pickFrom(pool, 'R'));
+    for (let i = 0; i < 3; i++) out.push(pickFrom(pool, 'E'));
     out.push(pickFrom(pool, 'L'));
     return out.filter(Boolean);
   }
-  for (let i = 0; i < 8; i++) out.push(pickFrom(pool, weighted(RATES.CPC)));
+
+  for (let i = 0; i < 3; i++) out.push(pickFrom(pool, 'C'));
+  out.push(pickFrom(pool, weighted(RATES.SLOT4)));
+  out.push(pickFrom(pool, 'PC'));
+  out.push(pickFrom(pool, 'PC'));
+
   const ess = pool.filter(c => c.cat === 'essence');
   out.push(ess.length ? rnd(ess) : pickFrom(pool, 'C'));
   out.push(pickFrom(pool, weighted(RATES.HIT)));
+
   return out.filter(Boolean);
 }
 
@@ -84,54 +108,59 @@ function vBoosters() {
     return `<div class="empty"><h1>Aucune carte</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
   }
   const can = save.unlimited || save.tickets > 0;
+  const pips = Array.from({ length: TICKET_CAP },
+    (_, i) => `<span class="pip${save.unlimited || i < save.tickets ? ' on' : ''}"></span>`).join('');
 
   return `<section class="packzone">
   <header class="setbar">
     <img class="setlogo" src="${ART.set}" alt="${h(SET_NAME)}">
     <img class="edition" src="${ART.edition}" alt="Première édition">
-    <p class="setmeta">${cards.length} cartes · 10 par booster</p>
+    <p class="setmeta">${cards.length} cartes · ${PACK_SIZE} par booster</p>
   </header>
 
   <div class="packstage">
     <div class="packglow" aria-hidden="true"></div>
     <div class="pack3d" id="pack3d">
-      <div class="pack" id="pack" role="button" tabindex="0" aria-label="Ouvrir le booster">
+      <div class="pack${can ? ' ready' : ''}" id="pack" role="button" tabindex="0" aria-label="Ouvrir un booster">
         <img class="pack-art" src="${packArt}" alt="">
         <div class="pack-foil" aria-hidden="true"></div>
-        <div class="pack-crimp" aria-hidden="true"><i class="tearline" id="tearline"></i></div>
-        ${can ? '<div class="finger" aria-hidden="true"></div>' : ''}
       </div>
     </div>
     <div class="packshadow" aria-hidden="true"></div>
   </div>
 
   <footer class="packfoot">
-    <button class="btn" data-act="open" ${can ? '' : 'disabled'}>${can ? 'Ouvrir le booster' : 'Plus de booster'}</button>
-    <p class="packhint">${can ? 'ou glisse le long du haut du paquet' : 'Reviens quand la réserve est remontée'}</p>
-    <p class="muted small" id="timer">${timerText()}</p>
+    <div class="meter${can ? '' : ' dry'}">
+      <div class="meter-head">
+        <span class="pips" aria-hidden="true">${pips}</span>
+        <span class="meter-count">${save.unlimited ? '∞' : `${save.tickets}<small>/${TICKET_CAP}</small>`}</span>
+      </div>
+      <div class="meter-bar"><i id="tmbar" style="width:${tickPct()}%"></i></div>
+      <div class="meter-foot"><span id="tmlabel">${timerLabel()}</span><b id="tmclock">${timerClock()}</b></div>
+    </div>
+    <button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${can ? 'Ouvrir un booster' : 'Réserve vide'}</button>
   </footer>
 </section>`;
 }
 
-/* Le paquet suit le doigt en 3D, comme la pile de l'ouverture ; glisser le long du haut le déchire. */
+/* Le paquet suit le doigt en 3D ; une simple pression l'ouvre. */
 function bindPack() {
   const pk = $('#pack');
   const box = $('#pack3d');
   if (!pk || !box) return;
 
-  const T = { rx: 0, ry: 0, mrx: 0, mry: 0, manual: false, alive: true };
-  const alive = () => T.alive && document.body.contains(pk);
+  const T = { rx: 0, ry: 0, mrx: 0, mry: 0, manual: false };
+  const alive = () => document.body.contains(pk);
 
-  let pid = null, x0 = 0, y0 = 0, tearing = false, w = 1;
+  let pid = null, x0 = 0, y0 = 0, t0 = 0, moved = 0;
 
   pk.addEventListener('pointerdown', e => {
     if (pid != null) return;
     pid = e.pointerId;
-    const r = pk.getBoundingClientRect();
     x0 = e.clientX;
     y0 = e.clientY;
-    w = r.width;
-    tearing = e.clientY - r.top < r.height * .28;
+    t0 = performance.now();
+    moved = 0;
     pk.setPointerCapture(e.pointerId);
   });
 
@@ -139,30 +168,21 @@ function bindPack() {
     if (e.pointerId !== pid) return;
     const dx = e.clientX - x0;
     const dy = e.clientY - y0;
-    if (tearing) {
-      const p = Math.max(0, Math.min(1, dx / (w * .7)));
-      $('#tearline').style.width = (p * 100) + '%';
-      if (p >= 1) {
-        pid = null;
-        tearing = false;
-        openBooster();
-      }
-      return;
-    }
+    moved = Math.max(moved, Math.hypot(dx, dy));
     T.manual = true;
-    T.mry = Math.max(-26, Math.min(26, dx * .3));
-    T.mrx = Math.max(-22, Math.min(22, -dy * .3));
+    T.mry = Math.max(-28, Math.min(28, dx * .3));
+    T.mrx = Math.max(-24, Math.min(24, -dy * .3));
   });
 
-  const end = () => {
+  /* Pression franche et sans glissement : on ouvre. Sinon, on a juste fait tourner le paquet. */
+  const up = e => {
+    if (e.pointerId !== pid) return;
     pid = null;
     T.manual = false;
-    tearing = false;
-    const l = $('#tearline');
-    if (l) l.style.width = '0';
+    if (moved < 9 && performance.now() - t0 < 600) openBooster();
   };
-  pk.addEventListener('pointerup', end);
-  pk.addEventListener('pointercancel', end);
+  pk.addEventListener('pointerup', up);
+  pk.addEventListener('pointercancel', () => { pid = null; T.manual = false; });
 
   pk.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {

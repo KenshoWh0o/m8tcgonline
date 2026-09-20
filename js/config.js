@@ -38,7 +38,7 @@ const COLORS = {
   verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg' },
   bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg' },
   azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg' },
-  neutre: { nom: 'Neutre', c: '#9ba0b0', ic: null }
+  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png' }
 };
 
 const CATS = {
@@ -64,6 +64,9 @@ const DEFD = { ES: 0, C: 60, PC: 80, R: 100, E: 120, L: 150 };
 /* ---------- Réglages des boosters ---------- */
 const INTERVAL = 30 * 60 * 1000;
 const TICKET_CAP = 5;
+
+/* Nombre de cartes par booster. La composition slot par slot est dans makeBooster() (js/booster.js). */
+const PACK_SIZE = 8;
 
 /* Mise en scène de la dernière carte selon la rareté (durée de charge en ms, particules, couleurs) */
 const REVEAL = {

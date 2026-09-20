@@ -43,7 +43,6 @@
 .th-stage.charge-E.charging .charge-ring{animation-duration:.5s;opacity:.52}
 .th-stage.charge-L.charging .charge-ring{animation-duration:.35s;opacity:.68;width:620px;height:620px;margin:-310px 0 0 -310px}
 @keyframes pulse{50%{transform:scale(1.12)}}
-@keyframes spinr{to{transform:rotate(360deg)}}
 .th-stage.charge-L.charging{background:radial-gradient(circle at 50% 45%,rgba(255,199,59,.3),transparent 60%)}
 /* Voile plein écran des éclairs de révélation ; les classes flash-* l'allument. */
 .th-stage::after{content:'';position:fixed;inset:0;pointer-events:none;opacity:0;z-index:40}
@@ -55,8 +54,8 @@
   display:flex;align-items:center;gap:9px}
 .op-rar.rC,.op-rar.rPC,.op-rar.rES{color:rgba(255,255,255,.6)}
 .op-rar.rR{color:var(--r-r)}.op-rar.rE{color:#c79bff}.op-rar.rL{color:var(--r-l)}
-.op-rar em{font-style:normal;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.06em;background:var(--accent);color:#fff;
-  padding:3px 9px;border-radius:999px}
+.op-rar em{font-style:normal;font-family:var(--body);font-size:10.5px;font-weight:900;letter-spacing:.06em;background:var(--brand);
+  color:#1b0a1f;padding:3px 9px;border-radius:999px;box-shadow:0 0 12px rgba(236,143,255,.45)}
 .op-rar .qmark{color:rgba(255,255,255,.75)}
 .op-rar.big{font-size:38px;font-stretch:125%}
 .op-rar.big.rL .slam{background:linear-gradient(180deg,#fff6d0,#ffc73b 55%,#e08a00);-webkit-background-clip:text;background-clip:text;
@@ -65,15 +64,9 @@
 @keyframes slam{0%{transform:scale(3.2) rotate(-6deg);opacity:0}60%{opacity:1}}
 .op-hint{position:relative;z-index:2;color:rgba(255,255,255,.55);font-size:12.5px;font-weight:600;margin-top:2px;min-height:1.2em}
 
-/* Godpack */
-.godscreen{position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-  cursor:pointer;overflow:hidden;background:radial-gradient(circle,#fff3c4 0%,#ffc73b 30%,#ee0073 72%,#12060f 100%);color:#1a1205}
-.godrays{position:absolute;inset:-60%;background:repeating-conic-gradient(rgba(255,255,255,.4) 0 9deg,transparent 9deg 18deg);animation:spinr 14s linear infinite}
-.godtxt{position:relative;font-family:var(--display);font-stretch:125%;font-weight:900;font-style:italic;font-size:54px;color:#fff;
-  text-shadow:0 5px 0 #a30a50,0 10px 30px rgba(0,0,0,.35);animation:slam .8s cubic-bezier(.2,1.6,.4,1) both}
-.godscreen p{position:relative;font-weight:800;font-size:15px;margin-top:10px}
-.godtap{position:relative;margin-top:26px;font-weight:800;font-size:13px;background:#12060f;color:#fff;padding:9px 20px;border-radius:999px;
-  animation:breathe 1.4s ease-in-out infinite}
+/* Godpack : le lettrage claque au-dessus de la pile, sans écran intermédiaire. */
+.op-rar.godslam{font-size:clamp(34px,11vw,56px);font-stretch:125%;letter-spacing:-.01em;justify-content:center}
+.th-stage.god .stack3d{filter:drop-shadow(0 0 26px rgba(255,199,59,.45))}
 
 /* Récap */
 .recap{position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;padding:18px 16px 28px}
@@ -94,7 +87,8 @@
 .rc-bestlabel{position:relative;display:flex;gap:8px;align-items:center;margin-top:14px}
 .rc-tag{font-family:var(--display);font-weight:900;font-style:italic;font-size:13px;background:#fff;color:#12111a;padding:5px 13px;border-radius:999px}
 .rc-tag.rR{background:var(--r-r)}.rc-tag.rE{background:#b67dff}.rc-tag.rL{background:var(--r-l)}
-.rc-bestlabel em{font-style:normal;font-weight:800;font-size:10.5px;letter-spacing:.06em;background:var(--accent);padding:4px 10px;border-radius:999px}
+.rc-bestlabel em{font-style:normal;font-weight:900;font-size:10.5px;letter-spacing:.06em;background:var(--brand);color:#1b0a1f;
+  padding:4px 10px;border-radius:999px}
 .rc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:420px;margin:18px 0 20px}
 .rc-stats div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);padding:11px 6px;
   text-align:center;animation:fadeup .5s both}
@@ -103,7 +97,7 @@
 .rc-stats b small{font-size:13px;opacity:.55}
 .rc-stats span{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.6)}
 @keyframes fadeup{from{transform:translateY(12px);opacity:0}}
-.rc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px 8px;width:100%;max-width:480px}
+.rc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;width:100%;max-width:440px}
 .rc-cell{position:relative;background:none;border:0;padding:0;color:#fff;animation:deal .5s var(--d) cubic-bezier(.2,1.3,.4,1) both}
 @keyframes deal{from{transform:translateY(160px) rotate(-18deg) scale(.5);opacity:0}}
 .rc-actions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px;margin-top:26px}

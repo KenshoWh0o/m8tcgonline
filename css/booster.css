@@ -1,50 +1,60 @@
-/* Écran du booster : bandeau d'extension, paquet 3D, ouverture. */
+/* Écran du booster : bandeau d'extension, paquet 3D, réserve, ouverture. */
 /* ============ Écran booster ============ */
 .packzone{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100%;width:100%;gap:4px}
 
 .setbar{position:relative;text-align:center;width:100%}
 .setlogo{display:block;width:min(240px,56vw);margin:0 auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.7))}
 .setmeta{margin:8px 0 0;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.02em}
-.edition{position:absolute;right:2%;top:4%;width:clamp(38px,11vw,50px);height:auto;rotate:8deg;
-  filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+.edition{position:absolute;right:2%;top:4%;width:clamp(38px,11vw,50px);height:auto;rotate:8deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
 
-.packstage{position:relative;flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+.packstage{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   perspective:1200px;padding:6px 0 0}
 .packglow{position:absolute;top:44%;left:50%;width:min(540px,116vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle,rgba(236,143,255,.2),rgba(137,54,255,.09) 42%,transparent 68%)}
 /* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
 .pack3d{position:relative;transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
 @keyframes packbob{50%{translate:0 -10px}}
-.pack{position:relative;display:block;height:clamp(168px,calc(100dvh - 450px),340px);width:auto;max-width:62vw;aspect-ratio:368/553;touch-action:none;user-select:none;-webkit-user-select:none;
-  cursor:grab;transform-style:preserve-3d;filter:drop-shadow(0 26px 36px rgba(0,0,0,.7))}
+.pack{position:relative;display:block;height:clamp(168px,calc(100dvh - 470px),330px);width:auto;max-width:62vw;aspect-ratio:368/553;
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform-style:preserve-3d;
+  filter:drop-shadow(0 26px 36px rgba(0,0,0,.7));transition:filter .25s}
 .pack:active{cursor:grabbing}
 .pack-art{display:block;width:100%;height:100%;object-fit:contain}
 .pack-foil{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.5;
   background:linear-gradient(112deg,transparent 33%,rgba(255,255,255,.55) 48%,transparent 63%);background-size:280% 100%;
   background-position:var(--fx,50%) 0}
-.pack-crimp{position:absolute;left:5%;right:5%;top:4.5%;height:7%;pointer-events:none}
-.tearline{position:absolute;left:0;top:50%;height:3px;width:0;border-radius:2px;background:#fff;box-shadow:0 0 10px #fff,0 0 22px var(--accent)}
-/* Filet lumineux qui balaie la bande à déchirer : montre le geste sans surcharger le paquet. */
-.finger{position:absolute;left:5%;right:5%;top:4.5%;height:7%;pointer-events:none;opacity:0;
-  background:linear-gradient(90deg,transparent 0 4%,rgba(255,255,255,.9) 9%,transparent 15% 100%);background-size:320% 100%;
-  filter:drop-shadow(0 0 7px rgba(255,255,255,.9));animation:swipe 2.8s ease-in-out infinite}
-@keyframes swipe{0%{background-position:0 0;opacity:0}14%{opacity:1}74%{background-position:100% 0;opacity:1}100%{background-position:108% 0;opacity:0}}
+/* Paquet ouvrable : un halo respire derrière lui, le geste est évident sans ligne d'explication. */
+.pack.ready::after{content:'';position:absolute;inset:-7% -9%;border-radius:20px;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(236,143,255,.3),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
+@keyframes packpulse{50%{opacity:.3}}
+.pack.ready:hover{filter:drop-shadow(0 26px 36px rgba(0,0,0,.7)) drop-shadow(0 0 24px rgba(236,143,255,.5))}
 .packshadow{width:min(180px,42vw);height:18px;margin-top:12px;border-radius:50%;flex:0 0 auto;
   background:radial-gradient(closest-side,rgba(0,0,0,.75),transparent)}
 
-.packfoot{flex:0 0 auto;width:100%;max-width:360px;text-align:center;padding-top:12px}
-.packhint{font-size:12.5px;font-weight:600;color:var(--muted);margin:9px 0 0}
-#timer{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+/* ============ Réserve ============ */
+.packfoot{flex:0 0 auto;width:100%;max-width:380px;padding-top:12px}
+.meter{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.meter.dry{opacity:.72}
+.meter-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pips{display:inline-flex;gap:5px}
+.pip{width:9px;height:13px;border-radius:2px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.pip.on{background:linear-gradient(160deg,var(--brand),var(--accent));box-shadow:0 0 9px rgba(137,54,255,.55)}
+.meter-count{font-family:var(--display);font-weight:900;font-style:italic;font-size:18px;line-height:1}
+.meter-count small{font-size:11px;font-style:normal;font-weight:700;color:var(--muted)}
+.meter-bar{height:4px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:11px 0 9px}
+.meter-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--brand));transition:width .9s linear}
+.meter-foot{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted)}
+.meter-foot b{font-family:var(--display);font-style:italic;font-size:21px;line-height:1;letter-spacing:0;color:var(--text);
+  font-variant-numeric:tabular-nums}
+.packbtn{padding:15px 20px;font-size:15.5px}
 
 /* ============ Ouverture ============ */
-.pack.tear .finger{display:none}
 .pack.tear{animation:packshake .4s linear}
 @keyframes packshake{20%{translate:-4px 1px}40%{translate:4px -1px}60%{translate:-3px 1px}80%{translate:3px 0}}
-.pack.tear .pack-crimp::after{content:'';position:absolute;left:-4%;right:-4%;top:40%;height:4px;border-radius:3px;background:#fff;
-  box-shadow:0 0 16px #fff,0 0 34px var(--accent);animation:ripline .45s ease-out both}
-@keyframes ripline{from{scale:0 1}to{scale:1 1;opacity:.2}}
+.pack.tear::after{animation:none;opacity:0}
 .pack.spill{animation:packblast .62s cubic-bezier(.45,0,.8,.35) forwards}
 @keyframes packblast{40%{scale:1.05;translate:0 -8px}to{scale:1.55;translate:0 -46px;opacity:0;filter:brightness(2.2) blur(5px)}}
-.pack.spill::after{content:'';position:absolute;left:-30%;right:-30%;top:-14%;height:52%;pointer-events:none;z-index:5;
+.pack.spill::before{content:'';position:absolute;left:-32%;right:-32%;top:-16%;height:56%;pointer-events:none;z-index:5;
   background:radial-gradient(closest-side,#fff,rgba(236,143,255,.65),transparent);animation:packflash .6s forwards}
+.pack.god.spill::before{background:radial-gradient(closest-side,#fff,rgba(255,199,59,.9),rgba(255,120,0,.35),transparent)}
 @keyframes packflash{from{opacity:0;scale:.5 .4}45%{opacity:1}to{opacity:0;scale:1.8 2.4}}
