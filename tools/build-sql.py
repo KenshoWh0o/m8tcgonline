@@ -16,6 +16,7 @@ MORCEAUX = [
     ('03_rpc.sql',    'Les actions du jeu : ouvrir, echanger, encaisser, acheter'),
     ('04_seed.sql',   'Les quetes et le catalogue de la boutique'),
     ('06_social.sql', 'Les amis et les fiches de joueur'),
+    ('07_vitrine.sql', 'La vitrine : quatre cartes mises en avant sur le profil'),
 ]
 
 entete = """-- =====================================================================

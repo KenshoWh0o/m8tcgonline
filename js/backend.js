@@ -84,6 +84,7 @@ Backend.loadLocal = async function () {
   save.shards = save.shards || 0;
   save.inv = save.inv || {};
   save.quetes = [];
+  save.vitrine = save.vitrine || [];
   save.pseudo = save.pseudo || 'Invité';
   save.avatar = save.avatar || 'star';
   save.frame = save.frame || 'default';
@@ -116,7 +117,8 @@ Backend.apply = function (etat) {
     tradeFreeAt: srvTime(p.trade_free_at),
     packsOpened: p.packs_opened,
     tradesDone: p.trades_done,
-    streak: p.streak
+    streak: p.streak,
+    vitrine: p.vitrine || []
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -198,6 +200,8 @@ Backend.setProfile = async function (champs) {
     p_frame: champs.p_frame ?? null
   }));
 };
+
+Backend.setVitrine = async cartes => Backend.apply(await Backend.rpc('set_vitrine', { p_cards: cartes }));
 
 Backend.claimQuest = async id => Backend.apply(await Backend.rpc('claim_quest', { p_quest: id }));
 Backend.buy = async id => Backend.apply(await Backend.rpc('shop_buy', { p_item: id }));

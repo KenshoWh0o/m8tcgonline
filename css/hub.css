@@ -3,6 +3,10 @@
    ordinateur est tout en bas du fichier. */
 
 /* ============ Titres de page ============ */
+/* Les h2 sont en petites capitales espacées ; un sous-titre glissé dedans doit
+   redevenir une phrase, sinon il crie. */
+h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
+
 .pagehead{margin:2px 0 14px}
 .pagehead h1{margin:0 0 2px}
 .pagehead p{margin:0;max-width:52ch}
@@ -177,8 +181,30 @@
 .avapick.on{background:rgba(137,54,255,.2);box-shadow:inset 0 0 0 1px var(--accent-soft)}
 .avapick.on>span{color:var(--text)}
 
+/* ============ Vitrine ============ */
+/* Quatre emplacements côte à côte, cerclés de la couleur du cadre choisi :
+   c'est ce que les cadres de la boutique encadrent vraiment. */
+.vitpanel h2{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.vitrine{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 10px}
+.vit{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.vit.vide{justify-content:center;aspect-ratio:5/7;border:0;border-radius:10px;background:var(--bg-2);
+  box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);gap:2px}
+.vit.vide.muette{opacity:.4}
+.vitplus{font-size:22px;font-weight:300;line-height:1;color:var(--accent-soft)}
+.vit.vide.muette .vitplus{color:var(--muted)}
+.vitcarte{display:block;width:100%;background:none;border:0;padding:0;border-radius:9px;
+  box-shadow:0 0 0 2px var(--f1,#3f3450),0 4px 14px rgba(0,0,0,.45)}
+.vitrine.prisme .vitcarte{animation:prisme 4s linear infinite}
+.vitnom{font-size:10px;font-weight:700;line-height:1.2;text-align:center;color:var(--subtle);
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.vitx{position:absolute;top:-5px;right:-5px;width:22px;height:22px;border:0;border-radius:50%;
+  background:var(--surface-2);color:var(--muted);font-size:11px;line-height:1;
+  box-shadow:0 0 0 1px var(--line-2),0 2px 6px rgba(0,0,0,.5)}
+.vitx:hover{color:var(--text);background:var(--line-2)}
+.sheet .vitrine{margin-bottom:16px}
+
 /* ============ Profil ============ */
-.idcard{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(137,54,255,.16),var(--surface) 62%);
+.idcard{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;background:linear-gradient(135deg,rgba(137,54,255,.16),var(--surface) 62%);
   border:1px solid var(--line);border-radius:var(--radius);padding:16px 15px;margin-bottom:10px}
 .idnom{flex:1;min-width:0}
 .idnom b{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;font-size:21px;

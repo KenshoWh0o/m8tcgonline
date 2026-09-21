@@ -413,7 +413,9 @@ function showRecap() {
   const bi = drawn.indexOf(best);
   const nNew = rv.news.filter(Boolean).length;
   const hits = drawn.filter(c => rk(c) >= 3).length;
-  const all = cards.filter(c => c.cat !== 'essence');
+  /* Toutes les cartes, Essences comprises : c'est le même total que l'onglet
+     Collection, sinon les deux écrans s'obstinent à ne pas dire la même chose. */
+  const all = cards;
   const owned = all.filter(c => save.col[c.id] > 0).length;
   const R = RAR[best.rar] || RAR.C;
 

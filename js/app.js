@@ -212,7 +212,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-tab],[data-auth],[data-tr],[data-soc],[data-quete],[data-achat],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-tab],[data-auth],[data-tr],[data-soc],[data-quete],[data-achat],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-vit-on],[data-vit-off]');
   if (!el) return;
   const d = el.dataset;
 
@@ -230,6 +230,8 @@ async function clicPage(e) {
   if (d.amiNon) return agir(() => Backend.amiRepondre(d.amiNon, false).catch(
     () => Backend.amiRetirer(d.amiNon)), 'C\'est fait.');
   if (d.troc) return versEchange(d.troc);
+  if (d.vitOn) { closeSheet(); return vitrineAjouter(d.vitOn); }
+  if (d.vitOff) return vitrineRetirer(d.vitOff);
 
   /* Quêtes, boutique, échanges */
   if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.');
@@ -260,6 +262,7 @@ async function clicPage(e) {
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
     case 'pf-carte': return ouvrirChoixAvatar();
+    case 'vit-add': return ouvrirChoixVitrine();
     case 'soc-add': return socAjouter();
     case 'tr-find': return trChercher();
     case 'tr-send': return trEnvoyer();
