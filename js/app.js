@@ -114,7 +114,8 @@ function vTiroir() {
         : Backend.dispo
           ? `<p class="muted small">Un compte garde ta collection et ouvre les échanges,
                les quêtes et la boutique.</p>
-             <button class="btn" data-act="connexion">Créer un compte</button>`
+             <button class="btn" data-act="connexion">${CONNEXION.email
+               ? 'Créer un compte' : 'Se connecter avec Discord'}</button>`
           : `<p class="muted small">Le serveur n'est pas encore branché sur ce site :
                ta progression reste dans ce navigateur.</p>`}
       <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${APP_VERSION}</p>

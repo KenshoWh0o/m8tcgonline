@@ -133,34 +133,58 @@ Les deux étoiles à la fin veulent dire « et tout ce qui suit ».
 
 ---
 
-## Étape 5 — Vérifier l'e-mail de confirmation
+## Étape 5 — La connexion Discord
 
-1. Supabase › **Authentication** › **Sign In / Providers** › **Email**.
-2. Vérifie que **Confirm email** est **activé**. C'est ce qui oblige à cliquer le lien
-   reçu avant de pouvoir jouer — sans ça, n'importe quelle adresse inventée passerait.
+**C'est la seule méthode de connexion ouverte par défaut** (réglage `CONNEXION` en haut de
+`js/config.js`). Pas de courriel à envoyer, donc aucun joueur bloqué faute d'avoir reçu son
+lien — et le pseudo comme l'avatar arrivent tout faits.
 
-### Créer ton compte, maintenant
+1. Supabase › **Authentication › Sign In / Providers › Discord** : active-le.
+   Il affiche alors une **Callback URL** — copie-la.
+2. Va sur **[discord.com/developers/applications](https://discord.com/developers/applications)**,
+   **New Application**, nomme-la `Mate TCG Online`, accepte, **Create**.
+3. Menu de gauche › **OAuth2** :
+   - **Redirects** › **Add Redirect** › colle la Callback URL › **Save Changes**
+   - copie le **Client ID**
+   - **Reset Secret** › **Yes, do it!** › copie le **Client Secret**
+4. Retour dans Supabase : colle le Client ID et le Client Secret, puis **Save**.
 
-1. Retourne sur `http://localhost:8765`.
-2. **Créer un compte avec une adresse** : un pseudo, ton adresse, un mot de passe.
-3. Va dans ta boîte mail, clique le lien. **Regarde dans les indésirables** si tu ne vois
-   rien.
-4. Reviens sur le jeu et connecte-toi. Tu dois voir ton pseudo dans le menu du compte.
+Onglet **General Information** de l'application Discord : mets-y l'icône
+`assets/icon-512.png` et le nom du jeu. C'est ce que les gens verront sur l'écran
+d'autorisation.
 
-> 🔴 **À faire avant d'ouvrir le jeu à d'autres personnes.** L'expéditeur fourni par
-> Supabase est bridé à **quelques courriels par heure**. Ça suffit pour te tester tout
-> seul, pas pour dix joueurs. Le jour où tu partages le lien, va dans
+---
+
+## Étape 5 bis — L'inscription par adresse *(facultative)*
+
+Le jeu ne la propose pas. Pour la rouvrir, passe `email` à `true` dans `CONNEXION`
+(`js/config.js`) — l'écran de connexion s'adapte tout seul.
+
+Si tu le fais, lis ce qui suit.
+
+1. Supabase › **Authentication › Sign In / Providers › Email**.
+2. Vérifie que **Confirm email** est **activé** : c'est ce qui oblige à cliquer le lien
+   reçu avant de pouvoir jouer. Sans ça, n'importe quelle adresse inventée passerait.
+
+> 🔴 **Le point qui lâche en premier.** L'expéditeur fourni par Supabase est bridé à
+> **quelques courriels par heure**. Ça suffit pour se tester seul, pas pour dix joueurs qui
+> s'inscrivent le même soir. Avant de partager le lien, va dans
 > **Authentication › Emails › SMTP Settings** et branche ton propre expéditeur
-> ([Resend](https://resend.com) ou [Brevo](https://www.brevo.com), gratuits tous les
-> deux). Sans ça, des gens ne recevront jamais leur lien et croiront que le site est
-> cassé.
+> ([Resend](https://resend.com) ou [Brevo](https://www.brevo.com), gratuits tous les deux).
+> Sans ça, des gens ne recevront jamais leur lien et croiront que le site est cassé.
+>
+> **C'est précisément ce problème que la connexion Discord seule fait disparaître.**
 >
 > Tant que tu y es, **Authentication › Emails** te laisse traduire les messages en
 > français et y mettre ton logo.
 
 ---
 
-## Étape 6 — Te donner les droits d'administrateur
+## Étape 6 — Créer ton compte et te donner les droits d'administrateur
+
+Ouvre le jeu, clique **Continuer avec Discord**, autorise. Ton profil est créé.
+
+Puis :
 
 L'onglet **Labo** n'existe que pour les administrateurs. Maintenant que ton compte
 existe, donne-toi les droits.
@@ -183,24 +207,21 @@ Pour donner l'accès à quelqu'un d'autre, remplace l'adresse et relance.
 
 ---
 
-## Étape 7 — La connexion Discord *(facultatif)*
+## Étape 7 — Changer de méthode de connexion plus tard
 
-Le jeu marche sans. Si tu veux le bouton « Continuer avec Discord » :
+Tout tient dans une ligne, en haut de `js/config.js` :
 
-1. Va sur **[discord.com/developers/applications](https://discord.com/developers/applications)**,
-   clique **New Application**, nomme-la `Mate TCG Online`, accepte, **Create**.
-2. Dans Supabase, ouvre **Authentication › Sign In / Providers › Discord** et active-le.
-   Supabase affiche alors une **Callback URL** : copie-la.
-3. Retourne sur Discord, onglet **OAuth2** :
-   - Section **Redirects** : **Add Redirect**, colle la Callback URL, puis **Save Changes**.
-   - Copie le **Client ID**.
-   - Clique **Reset Secret** puis **Yes, do it**, et copie le **Client Secret**.
-4. Retourne dans Supabase, colle le Client ID et le Client Secret, puis **Save**.
-5. Recharge le jeu et essaie le bouton Discord.
+```js
+const CONNEXION = { discord: true, email: false };
+```
 
-Pendant que tu y es, onglet **General Information** de l'application Discord : mets-y
-l'icône `assets/icon-512.png` et le nom du jeu. C'est ce que les gens verront sur l'écran
-d'autorisation.
+Passe `email` à `true` pour rouvrir l'inscription par adresse (et lis l'étape 5 bis), ou
+`discord` à `false` pour la fermer. L'écran de connexion se redessine tout seul, il n'y a
+rien d'autre à toucher.
+
+> Ce réglage n'est qu'un affichage : c'est Supabase qui décide vraiment, via les
+> fournisseurs activés dans **Authentication › Sign In / Providers**. Les deux doivent
+> être d'accord.
 
 ---
 

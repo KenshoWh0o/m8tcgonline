@@ -71,6 +71,7 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+<script src="js/config.js"></script>
 <script src="js/supabase-config.js"></script>
 <script>
 "use strict";
@@ -145,10 +146,16 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
   }
 
   /* ---- 3. Inscription et confirmation par e-mail ---- */
+  const emailOuvert = !!(typeof CONNEXION !== 'undefined' && CONNEXION.email);
   if (reglages.disable_signup) {
     poser({ etat: 'ko', titre: 'Les inscriptions sont fermées',
       detail: 'Personne ne peut créer de compte.',
       faire: 'Supabase › <b>Authentication › Sign In / Providers</b> : active <b>Allow new users to sign up</b>.' });
+  } else if (!emailOuvert) {
+    poser({ etat: 'ok', titre: 'Connexion par Discord uniquement',
+      detail: `Le jeu n'affiche pas l'inscription par adresse (réglage <code>CONNEXION</code>
+        dans <code>js/config.js</code>). Aucun courriel n'est envoyé, donc aucun joueur ne
+        peut rester bloqué faute d'avoir reçu son lien.` });
   } else if (reglages.mailer_autoconfirm) {
     poser({ etat: 'warn', titre: "L'adresse e-mail n'est pas vérifiée",
       detail: "Les comptes sont activés sans que personne ait à cliquer sur un lien : n'importe quelle adresse, même inventée, passe.",

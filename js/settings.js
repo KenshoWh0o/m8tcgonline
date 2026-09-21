@@ -47,7 +47,8 @@ function vReglages() {
              et disparaît si tu effaces tes données. Les échanges, quêtes et la boutique
              demandent un compte.</p>
            <div class="row" style="margin-top:12px">
-             <button class="btn" data-act="connexion">Créer un compte ou se connecter</button>
+             <button class="btn" data-act="connexion">${CONNEXION.email
+               ? 'Créer un compte ou se connecter' : 'Se connecter avec Discord'}</button>
            </div>`
         : `<p class="muted small">Le serveur n'est pas encore branché sur ce site.
              La progression reste dans ce navigateur.</p>`}

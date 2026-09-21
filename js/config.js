@@ -90,6 +90,16 @@ const REVEAL = {
   L: { charge: 1150, colors: ['#ffc73b', '#fff3b0', '#ec8fff', '#ffffff'], n: 160, speed: 14, label: 'Légendaire', rc: '#ffc73b' }
 };
 
+/* ---------- Comment on se connecte ---------- */
+/* Discord seul, par défaut : le public du jeu y est déjà, l'inscription tient en
+   un clic, le pseudo et l'avatar arrivent tout faits, et il n'y a aucun courriel
+   à envoyer — donc aucun joueur bloqué faute d'avoir reçu son lien.
+   Repasser `email` à true rouvre l'inscription par adresse : l'écran de connexion
+   s'adapte tout seul, il n'y a rien d'autre à toucher.
+   Le serveur reste maître : ce réglage n'est qu'un affichage, ce sont les
+   fournisseurs activés dans Supabase qui décident vraiment. */
+const CONNEXION = { discord: true, email: false };
+
 /* ---------- Identité en ligne ---------- */
 /* Laisser vide tant que l'adresse finale n'est pas décidée : les balises de partage
    se replient alors sur l'adresse courante. Sinon, mettre l'adresse complète, sans / final. */

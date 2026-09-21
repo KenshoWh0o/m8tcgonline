@@ -5,7 +5,9 @@ Jeu de collection de cartes façon TCG Pocket. Les 122 cartes de l'extension *To
 Le site est fait de fichiers statiques — aucune étape de compilation, aucun paquet à installer. Il fonctionne dans **deux régimes** :
 
 - **Hors ligne.** Rien à configurer : la progression est enregistrée dans le navigateur de l'appareil (IndexedDB). Les onglets qui ont besoin des autres joueurs invitent à créer un compte.
-- **En ligne.** Un projet [Supabase](https://supabase.com) gratuit apporte les comptes (e-mail avec confirmation, ou Discord), la collection sauvegardée sur le compte, un cooldown que la montre du téléphone ne peut pas tromper, les échanges, les quêtes et la boutique. Marche à suivre : **[SETUP.md](SETUP.md)**.
+- **En ligne.** Un projet [Supabase](https://supabase.com) gratuit apporte les comptes, la collection sauvegardée sur le compte, un cooldown que la montre du téléphone ne peut pas tromper, les échanges, les quêtes et la boutique. Marche à suivre : **[SETUP.md](SETUP.md)**.
+
+La connexion se fait **par Discord**, en un clic : le public du jeu y est déjà, le pseudo et l'avatar arrivent tout faits, et surtout aucun courriel n'est envoyé — donc aucun joueur bloqué faute d'avoir reçu son lien. L'inscription par adresse existe dans le code et se rouvre en passant `email` à `true` dans `CONNEXION` (`js/config.js`).
 
 Le jeu bascule tout seul : tant que `js/supabase-config.js` est vide, il tourne hors ligne.
 
@@ -113,6 +115,7 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Changer le nombre de boosters gratuits ou le délai | **en ligne :** `cfg()` dans `supabase/01_schema.sql` · **hors ligne :** `TICKET_CAP`, `INTERVAL` dans `js/config.js` |
 | Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
+| Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
 | Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
 | Changer la musique d'ambiance | `ACCORDS` et `SFX.musiqueOn()` dans `js/sfx.js` |

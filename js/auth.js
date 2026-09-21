@@ -5,6 +5,8 @@
 
 /* 'accueil' | 'inscription' | 'connexion' | 'oubli' | 'confirme' */
 let authVue = 'accueil';
+/* Les écrans liés à l'adresse e-mail n'existent que si cette voie est ouverte. */
+const VUES_EMAIL = ['inscription', 'connexion', 'oubli', 'confirme'];
 let authMail = '';
 let authErr = '';
 
@@ -19,6 +21,8 @@ const porteVisible = () => Backend.dispo && Backend.mode !== 'cloud' && !veutHor
 const DISCORD_ICO = '<svg viewBox="0 0 24 18" aria-hidden="true" fill="currentColor"><path d="M20.3 1.6A19.8 19.8 0 0 0 15.4.1a14 14 0 0 0-.6 1.3 18.3 18.3 0 0 0-5.5 0A13.6 13.6 0 0 0 8.6.1 19.7 19.7 0 0 0 3.7 1.6C.6 6.2-.3 10.7.2 15.1a19.9 19.9 0 0 0 6 3 14.7 14.7 0 0 0 1.3-2.1 13 13 0 0 1-2-1c.2-.1.3-.2.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4a13 13 0 0 1-2 1 14.5 14.5 0 0 0 1.3 2.1 19.8 19.8 0 0 0 6-3c.6-5.1-.9-9.6-3.6-13.5ZM8.0 12.4c-1.2 0-2.2-1.1-2.2-2.4S6.8 7.6 8 7.6s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>';
 
 function vAuth() {
+  if (!CONNEXION.email && VUES_EMAIL.includes(authVue)) authVue = 'accueil';
+
   const champ = (id, type, label, val, extra) =>
     `<label class="field"><span>${label}</span>
       <input id="${id}" type="${type}" value="${h(val || '')}" ${extra || ''}></label>`;
@@ -75,10 +79,19 @@ function vAuth() {
         et te donne accès aux échanges entre joueurs.</p>
       ${err}
       <div class="authacts">
-        <button class="btn discord" data-auth="discord">${DISCORD_ICO} Continuer avec Discord</button>
-        <button class="btn ghost" data-auth="vers-inscription">Créer un compte avec une adresse</button>
-        <button class="linkbtn" data-auth="vers-connexion">J'ai déjà un compte</button>
+        ${CONNEXION.discord
+          ? `<button class="btn discord" data-auth="discord">${DISCORD_ICO} Continuer avec Discord</button>`
+          : ''}
+        ${CONNEXION.email
+          ? `<button class="btn ${CONNEXION.discord ? 'ghost' : ''}" data-auth="vers-inscription">Créer un compte avec une adresse</button>
+             <button class="linkbtn" data-auth="vers-connexion">J'ai déjà un compte</button>`
+          : ''}
       </div>
+      ${CONNEXION.discord && !CONNEXION.email
+        ? `<p class="muted small">Un seul clic : ni adresse à taper, ni mot de passe à
+             retenir, ni courriel à attendre. Ton pseudo et ton avatar Discord te suivent,
+             et tu pourras les changer ensuite.</p>`
+        : ''}
       <div class="authsep"><span>ou</span></div>
       <button class="linkbtn" data-auth="hors-ligne">Jouer sans compte sur cet appareil</button>
       <p class="muted small">Sans compte, la progression reste dans ce navigateur
@@ -94,9 +107,16 @@ function vAuth() {
 /* ---------- Actions ---------- */
 const valeur = id => { const e = $('#' + id); return e ? e.value.trim() : ''; };
 
+const ACTIONS_EMAIL = ['vers-inscription', 'vers-connexion', 'vers-oubli',
+                       'inscrire', 'entrer', 'oublier', 'renvoyer'];
+
 async function authFaire(quoi) {
   authErr = '';
   const aller = v => { authVue = v; render(); };
+
+  /* Garde-fou : un vieux lien ou un clic tardif ne doit pas ouvrir une voie fermée. */
+  if (!CONNEXION.email && ACTIONS_EMAIL.includes(quoi)) return aller('accueil');
+  if (!CONNEXION.discord && quoi === 'discord') return aller('accueil');
 
   if (quoi === 'vers-inscription') return aller('inscription');
   if (quoi === 'vers-connexion') return aller('connexion');
