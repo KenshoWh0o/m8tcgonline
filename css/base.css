@@ -20,7 +20,10 @@
 .pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px rgba(137,54,255,.5))}
 
 main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:14px 16px 26px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
-main>*{max-width:1180px;margin-inline:auto}
+/* Sur `#main` et non sur `main` : une classe comme `.pagehead` pose un
+   `margin` raccourci, qui l'emporterait sur un sélecteur d'éléments seuls et
+   décollerait l'en-tête de page du reste de la colonne. */
+#main>*{max-width:1180px;margin-inline:auto}
 
 /* ============ Navigation ============ */
 /* Tout est accroché à #nav, et non à l'élément <nav> : le panneau du tiroir en
@@ -108,6 +111,34 @@ summary{font-weight:700;cursor:pointer}
   border:1px solid var(--line-2);color:var(--text);padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;z-index:80;opacity:0;
   pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 #toast.on{opacity:1}
+
+/* ============ Notification de quête ============ */
+/* Elle passe en haut, à l'opposé du toast : les deux peuvent tomber en même
+   temps — on encaisse une récompense pendant qu'une autre quête se termine —
+   et elles ne doivent pas se marcher dessus. Rien à fermer, rien à lire
+   absolument : la pastille de l'onglet Quêtes garde la trace. */
+#qnotif{position:fixed;top:calc(env(safe-area-inset-top,0px) + 66px);left:50%;transform:translateX(-50%);
+  z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;
+  width:max-content;max-width:min(360px,calc(100vw - 32px));pointer-events:none}
+.qn{display:flex;align-items:center;gap:11px;width:100%;
+  background:linear-gradient(180deg,rgba(38,30,50,.97),rgba(24,19,32,.97));
+  border:1px solid var(--line-2);border-radius:var(--radius);padding:10px 13px;
+  box-shadow:0 10px 26px rgba(0,0,0,.5),inset 0 0 0 1px rgba(85,230,166,.22);
+  cursor:pointer;pointer-events:auto;animation:qn-in .3s cubic-bezier(.2,1.1,.4,1)}
+.qn.out{animation:qn-out .3s ease-in forwards}
+.qnico{display:grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+  background:rgba(85,230,166,.16);color:#55e6a6}
+.qnico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qntxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.qntxt b{font-size:13.5px;font-weight:800;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qntxt small{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7fdcb4}
+.qngain{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;
+  font-family:var(--display);font-weight:900;font-size:14px;color:var(--brand-light)}
+.qngain .shard{width:15px;height:15px}
+@keyframes qn-in{from{opacity:0;transform:translateY(-14px) scale(.96)}}
+@keyframes qn-out{to{opacity:0;transform:translateY(-10px) scale(.97)}}
+/* Pendant une ouverture de booster, l'écran appartient aux cartes. */
+body.intheater #qnotif{visibility:hidden}
 
 /* Réduction des animations si demandé par le système */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

@@ -96,6 +96,7 @@ function vAuth() {
   return `<div class="authwrap"><div class="authcard">
     <img class="authlogo" src="${ART.logo}" alt="${h(GAME_NAME)}">
     ${corps}
+    <p class="mentions">${MENTIONS}</p>
   </div></div>`;
 }
 

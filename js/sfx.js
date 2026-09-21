@@ -1,14 +1,17 @@
 /* Sons du jeu, fabriqués à la volée par le navigateur (Web Audio).
    Aucun fichier à charger : rien à télécharger, rien à héberger, et le son
-   part à l'instant où on touche l'écran. Tout passe par deux robinets de
-   volume, un pour les bruitages et un pour l'ambiance, réglables dans Réglages. */
+   part à l'instant où on touche l'écran. Tout passe par un robinet de volume
+   unique, réglable dans Réglages.
+
+   Il n'y a que des bruitages : chacun répond à un geste. Une musique de fond,
+   elle, joue sans qu'on l'ait demandée — on l'a retirée. */
 "use strict";
 
 const SFX = {
   ctx: null,
-  bus: null, busSfx: null, busMus: null,
+  bus: null, busSfx: null,
   pret: false,
-  reglages: { sfx: true, mus: false, volSfx: 0.7, volMus: 0.35 }
+  reglages: { sfx: true, volSfx: 0.7 }
 };
 
 const SFX_CLE = 'mtcg.audio';
@@ -42,11 +45,8 @@ SFX.init = function () {
   comp.connect(SFX.bus);
 
   SFX.busSfx = SFX.ctx.createGain();
-  SFX.busMus = SFX.ctx.createGain();
   SFX.busSfx.gain.value = SFX.reglages.sfx ? SFX.reglages.volSfx : 0;
-  SFX.busMus.gain.value = 0;
   SFX.busSfx.connect(comp);
-  SFX.busMus.connect(comp);
 
   SFX.pret = true;
   return SFX.ctx;
@@ -62,7 +62,6 @@ SFX.appliquer = function () {
   if (!SFX.pret) return;
   const t = SFX.ctx.currentTime;
   SFX.busSfx.gain.setTargetAtTime(SFX.reglages.sfx ? SFX.reglages.volSfx : 0, t, .05);
-  SFX.busMus.gain.setTargetAtTime(SFX.reglages.mus ? SFX.reglages.volMus : 0, t, .4);
   SFX.sauver();
 };
 
@@ -205,84 +204,12 @@ SFX.jouer = function (nom, arg) {
   try { r(arg); } catch (e) { /* un son raté n'interrompt pas la partie */ }
 };
 
-/* ------------------------------------------------------------- l'ambiance --- */
-/* Un tapis lent : quatre accords qui tournent, un souffle très doux par-dessus.
-   Volontairement discret, pensé pour être laissé en fond sans lasser. */
-const ACCORDS = [
-  [146.83, 220.00, 293.66, 369.99],  /* Ré mineur */
-  [174.61, 261.63, 349.23, 440.00],  /* Fa majeur */
-  [130.81, 196.00, 261.63, 329.63],  /* Do majeur */
-  [110.00, 164.81, 220.00, 277.18]   /* La mineur */
-];
-
-let musique = null;
-
-SFX.musiqueOn = function () {
-  const c = SFX.reveiller();
-  if (!c || musique) return;
-
-  const sortie = SFX.busMus;
-  const voix = ACCORDS[0].map(() => {
-    const o = SFX.ctx.createOscillator(); o.type = 'triangle';
-    const d = SFX.ctx.createOscillator(); d.type = 'sine';
-    const g = SFX.ctx.createGain(); g.gain.value = 0;
-    const f = SFX.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; f.Q.value = .4;
-    o.connect(f); d.connect(f); f.connect(g); g.connect(sortie);
-    o.start(); d.start();
-    return { o, d, g };
-  });
-
-  /* Un souffle d'air très filtré : la respiration du morceau. */
-  const air = SFX.ctx.createBufferSource();
-  air.buffer = bruit(); air.loop = true;
-  const airF = SFX.ctx.createBiquadFilter(); airF.type = 'bandpass';
-  airF.frequency.value = 500; airF.Q.value = .5;
-  const airG = SFX.ctx.createGain(); airG.gain.value = .016;
-  air.connect(airF); airF.connect(airG); airG.connect(sortie);
-  air.start();
-
-  let i = 0;
-  const changer = () => {
-    const t = SFX.ctx.currentTime;
-    const acc = ACCORDS[i % ACCORDS.length];
-    voix.forEach((v, k) => {
-      v.o.frequency.setTargetAtTime(acc[k], t, 1.6);
-      v.d.frequency.setTargetAtTime(acc[k] * 2.003, t, 1.6);
-      v.g.gain.setTargetAtTime(.055 / (1 + k * .3), t, 2.2);
-    });
-    airF.frequency.setTargetAtTime(380 + (i % 3) * 190, t, 3);
-    i++;
-  };
-  changer();
-  musique = { voix, air, airG, minuteur: setInterval(changer, 9000) };
-};
-
-SFX.musiqueOff = function () {
-  if (!musique) return;
-  const t = SFX.ctx.currentTime;
-  clearInterval(musique.minuteur);
-  musique.voix.forEach(v => v.g.gain.setTargetAtTime(0, t, .6));
-  musique.airG.gain.setTargetAtTime(0, t, .6);
-  const m = musique;
-  setTimeout(() => {
-    m.voix.forEach(v => { try { v.o.stop(); v.d.stop(); } catch (e) { /* déjà arrêté */ } });
-    try { m.air.stop(); } catch (e) { /* déjà arrêté */ }
-  }, 2500);
-  musique = null;
-};
-
-SFX.majMusique = function () {
-  if (SFX.reglages.mus) SFX.musiqueOn(); else SFX.musiqueOff();
-  SFX.appliquer();
-};
-
-/* Premier geste : on débloque le son, et l'ambiance démarre si elle était active. */
+/* Premier geste : on débloque le son. Les navigateurs n'en veulent pas avant. */
 ['pointerdown', 'keydown'].forEach(evt =>
   addEventListener(evt, function amorce() {
     removeEventListener(evt, amorce);
     SFX.reveiller();
     SFX.appliquer();
-    if (SFX.reglages.mus) SFX.musiqueOn();
   }, { once: true, passive: true }));
 
 /* Un clic sur un bouton sonne, sans avoir à le brancher partout. */
@@ -292,7 +219,7 @@ addEventListener('pointerdown', e => {
   SFX.jouer(b.dataset.snd || (b.closest('#nav, .tiroir-liste') ? 'onglet' : 'tap'));
 }, { passive: true, capture: true });
 
-/* L'ambiance se met en veille quand on quitte l'onglet du navigateur. */
+/* Le son se coupe quand on quitte l'onglet du navigateur. */
 addEventListener('visibilitychange', () => {
   if (!SFX.pret) return;
   SFX.bus.gain.setTargetAtTime(document.hidden ? 0 : 1, SFX.ctx.currentTime, .2);

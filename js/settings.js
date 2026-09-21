@@ -19,9 +19,6 @@ function vReglages() {
     <label class="toggle"><span>Bruitages<small class="muted">Cartes, paquets, boutons</small></span>
       <input type="checkbox" id="set-sfx" ${r.sfx ? 'checked' : ''}></label>
     ${curseur('set-volsfx', 'Volume des bruitages', r.volSfx, r.sfx)}
-    <label class="toggle"><span>Musique d'ambiance<small class="muted">Un fond sobre, en boucle</small></span>
-      <input type="checkbox" id="set-mus" ${r.mus ? 'checked' : ''}></label>
-    ${curseur('set-volmus', 'Volume de la musique', r.volMus, r.mus)}
   </section>
 
   <section class="panel">
@@ -78,6 +75,7 @@ function vReglages() {
     <p class="muted small">${h(GAME_NAME)} · extension « ${h(SET_NAME)} » · ${cards.length} cartes.
       Jeu de collection sans argent réel : les ${MONNAIE.nom} se gagnent en jouant.</p>
     <p class="muted small">Version ${APP_VERSION}${Backend.mode === 'cloud' ? ' · compte en ligne' : ' · hors ligne'}</p>
+    <p class="mentions">${MENTIONS}</p>
   </section>`;
 }
 
@@ -100,15 +98,9 @@ function bindReglages() {
   b('set-sfx', e => e.onchange = () => {
     SFX.reglages.sfx = e.checked; SFX.appliquer(); SFX.jouer('tap'); render();
   });
-  b('set-mus', e => e.onchange = () => {
-    SFX.reglages.mus = e.checked; SFX.majMusique(); render();
-  });
   b('set-volsfx', e => {
     e.oninput = () => { SFX.reglages.volSfx = e.value / 100; SFX.appliquer(); e.nextElementSibling.value = e.value; };
     e.onchange = () => SFX.jouer('carte');
-  });
-  b('set-volmus', e => {
-    e.oninput = () => { SFX.reglages.volMus = e.value / 100; SFX.appliquer(); e.nextElementSibling.value = e.value; };
   });
   b('set-rm', e => e.onchange = () => { poserRM(e.checked); render(); });
 

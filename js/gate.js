@@ -59,9 +59,9 @@ function vPorte() {
     </div>
 
     <span class="locktag">Bientôt disponible</span>
-    <h1 class="locktitle">Ça arrive</h1>
+    <h1 class="locktitle">Coming soon</h1>
     <p class="muted lockdit">L'extension <b>${h(SET_NAME)}</b> et ses ${cards.length} cartes
-      ouvrent bientôt. Boosters, collection, échanges entre joueurs.</p>
+      arrivent bientôt. Boosters, collections, échanges,…</p>
 
     <div id="lockcompte">${vCompteARebours()}</div>
 
@@ -74,6 +74,8 @@ function vPorte() {
         <button class="btn tiny" data-act="porte-ok">Entrer</button>
       </div>
     </details>
+
+    <p class="mentions">${MENTIONS}</p>
   </div></div>`;
 }
 

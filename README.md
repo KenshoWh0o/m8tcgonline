@@ -121,11 +121,11 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
 | Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
+| Modifier la mention légale | `MENTIONS` dans `js/config.js` (elle s'affiche aux trois endroits d'un coup) |
 | Changer le code d'accès | `python3 tools/code-porte.py "NouveauCode"` |
 | Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
 | Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
-| Changer la musique d'ambiance | `ACCORDS` et `SFX.musiqueOn()` dans `js/sfx.js` |
 | Regénérer l'image de partage et les icônes | `python3 tools/gen-icons.py` |
 | Donner les droits d'administrateur | `supabase/05_admin.sql` |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
@@ -246,7 +246,9 @@ Pour déplacer un onglet, il suffit de changer son drapeau : `bas: true` le met 
 
 **Mobile d'abord.** La barre du bas tient cinq onglets au pouce ; à partir de 900 px de large elle devient un rail vertical à droite, et les feuilles modales se centrent au lieu de monter du bas. Toute l'adaptation ordinateur tient dans un seul bloc `@media` en bas de `css/hub.css`.
 
-Sur ordinateur, la page est une **grille** (en-tête sur toute la largeur, puis contenu et rail), et non un flex qui passe à la ligne : avec `flex-wrap`, le navigateur répartit la hauteur restante entre les lignes, et l'en-tête s'allongeait dès qu'une page avait peu de contenu.
+Sur ordinateur, la page est une **grille** (en-tête sur toute la largeur, puis contenu et rail), et non un flex qui passe à la ligne : avec `flex-wrap`, le navigateur répartit la hauteur restante entre les lignes, et l'en-tête s'allongeait dès qu'une page avait peu de contenu. Le contenu se **centre** dans la colonne qui lui reste : collé contre le rail, il donnait l'impression d'une page décalée d'un côté.
+
+> Ces règles de largeur portent sur `#main > *`, et non sur `main > *`. Une classe comme `.pagehead` pose un `margin` raccourci, qui l'emporte sur un sélecteur d'éléments seuls — le titre d'une page se recollait alors à gauche pendant que les panneaux restaient centrés.
 
 > Les règles de la barre du bas sont accrochées à `#nav`, jamais à l'élément `<nav>` : le panneau du tiroir en est un aussi, et héritait sinon de sa mise en colonne.
 
@@ -274,13 +276,15 @@ La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est 
 
 Objectifs, récompenses, articles et prix sont tous dans `supabase/04_seed.sql`. On équilibre là, on rejoue le fichier, c'est pris en compte : ni déploiement, ni mise à jour du site.
 
+Une quête qui se termine se signale **deux fois**, et jamais en travers du chemin : une carte passe en haut de l'écran pendant quatre secondes (`notifQuete()`, `js/quests.js`), puis la pastille de l'onglet Quêtes prend le relais et reste tant qu'il y a une récompense à encaisser. C'est `Backend.apply()` qui les repère, en comparant l'état reçu du serveur au précédent : le navigateur ne décide de rien, il ne fait qu'annoncer ce qui vient de basculer.
+
 ## Les sons
 
 Aucun fichier audio dans le dépôt : tout est **fabriqué à la volée** par le navigateur (`js/sfx.js`, Web Audio). Rien à télécharger, rien à héberger, aucune question de droits, et le son part à l'instant où on touche l'écran.
 
 Chaque son est une recette courte dans `RECETTES` : quelques souffles de bruit filtré pour tout ce qui frotte, glisse ou se déchire, quelques notes pour les clics et les carillons. La déchirure du paquet, le passage d'une carte, la montée avant une révélation et les trois paliers de carillon (rare, épique, légendaire) sont branchés dans `js/opening.js`.
 
-La **musique d'ambiance** est un tapis de quatre accords qui tournent lentement, avec un souffle très filtré par-dessus. Volontairement discrète, et **coupée par défaut** : elle s'active dans les Réglages, avec son propre volume.
+Il n'y a **que des bruitages** : chacun répond à un geste. Une musique de fond, elle, joue sans qu'on l'ait demandée — le jeu n'en a pas.
 
 Les navigateurs interdisent le son tant que la personne n'a rien touché : tout se débloque au premier geste, quel qu'il soit. Un clic sur n'importe quel bouton sonne sans avoir à le brancher, grâce à un écouteur unique posé sur la page.
 

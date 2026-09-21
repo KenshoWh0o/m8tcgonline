@@ -14,6 +14,58 @@ function questesPretes() {
   return (save.quetes || []).filter(q => !q.claimed && q.progress >= q.goal).length;
 }
 
+/* ---------- Notification d'accomplissement ---------- */
+/* Une quête finie se signale deux fois : une carte qui passe et s'en va, et la
+   pastille de l'onglet, elle, qui reste. La carte dit « c'est arrivé », la
+   pastille dit « il reste à encaisser » — l'une n'a pas à faire le travail de
+   l'autre, donc elle ne s'attarde pas et ne demande rien.
+
+   Le serveur seul décide de l'avancement : on ne fait que comparer deux états
+   successifs (voir Backend.apply) et annoncer ce qui vient de basculer. */
+
+const QNOTIF_DUREE = 4000;
+
+/* Les identifiants des quêtes déjà terminées dans un état donné. */
+const questesFinies = liste =>
+  new Set((liste || []).filter(q => q.progress >= q.goal).map(q => q.id));
+
+/* Compare l'ancien état au nouveau et annonce ce qui vient de se terminer.
+   `avant` à null — première ouverture de session — n'annonce rien : sinon on
+   accueillerait le joueur avec la pile de tout ce qu'il a déjà fait. */
+function signalerQuetes(avant, apres) {
+  if (!avant) return;
+  const dejaFait = questesFinies(avant);
+  (apres || []).forEach(q => {
+    if (q.progress >= q.goal && !dejaFait.has(q.id)) notifQuete(q);
+  });
+}
+
+function notifQuete(q) {
+  const pile = $('#qnotif');
+  if (!pile) return;
+
+  const el = document.createElement('div');
+  el.className = 'qn';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `<span class="qnico">${NAVICO.quest}</span>
+    <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
+    <span class="qngain">${shardIco}${fmtN(q.reward)}</span>`;
+  /* Deux quêtes peuvent tomber ensemble : un seul son pour la volée, sinon le
+     même bruitage se superpose à lui-même. */
+  if (!pile.children.length) SFX.jouer('gagne');
+  pile.appendChild(el);
+
+  /* On retire la carte du flux dès le départ de l'animation : les suivantes
+     remontent pendant qu'elle s'efface, au lieu d'attendre qu'elle ait disparu. */
+  const partir = () => {
+    if (!el.isConnected) return;
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 320);
+  };
+  setTimeout(partir, QNOTIF_DUREE);
+  el.onclick = () => { partir(); aller('quetes'); };
+}
+
 function vQuetes() {
   if (Backend.mode !== 'cloud') return horsLigne('Quêtes');
 

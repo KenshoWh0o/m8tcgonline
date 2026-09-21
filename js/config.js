@@ -6,6 +6,12 @@
 const GAME_NAME = 'Mate TCG Online';
 const SET_NAME = 'Tout commence ici';
 
+/* Mention légale, affichée à l'identique sur l'écran d'attente et dans Réglages.
+   Un seul endroit pour la modifier : elle doit dire la même chose aux deux. */
+const MENTIONS = 'Projet non affilié à Gentle Mates. Toutes les images présentes '
+  + 'sur le site sont utilisées à titre informatif. Les marques et logos affichés '
+  + 'demeurent la propriété de leurs détenteurs respectifs.';
+
 /* Dossier des images, ajouté devant le champ "fichier" de chaque carte de js/cards-data.js. */
 const CARD_DIR = 'cards/';
 

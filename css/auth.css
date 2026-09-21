@@ -93,3 +93,12 @@ body.inlock main { padding:0 }
 .lockcode[open] summary{color:var(--subtle);margin-bottom:6px}
 .lockcode .findrow{margin-top:4px}
 .lockcode .autherr{margin:0 0 10px}
+
+/* ============ Mention légale ============ */
+/* Elle doit être lisible sans jamais tirer l'œil : elle figure sur l'écran
+   d'attente, sur la porte de connexion et dans « À propos ». Un seul style
+   pour les trois, défini ici avec les deux écrans pleine page qui l'affichent. */
+.mentions{max-width:46ch;margin:26px auto 0;color:var(--muted);font-size:11px;
+  line-height:1.5;text-align:center;text-wrap:pretty}
+.panel .mentions{margin:14px 0 0;text-align:left;max-width:none;
+  padding-top:12px;border-top:1px solid var(--line)}
