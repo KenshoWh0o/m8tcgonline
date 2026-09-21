@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vérification — Mate TCG Online</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c0910">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<style>
+/* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
+body{display:block;height:auto;min-height:100%}
+.wrap{max-width:720px;margin:0 auto;padding:26px 18px 60px}
+.vtitre{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:27px;
+  letter-spacing:-.025em;margin:0 0 4px}
+.vsous{color:var(--muted);margin:0 0 22px;line-height:1.5}
+.bilan{display:flex;align-items:center;gap:14px;border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;
+  background:var(--surface);border:1px solid var(--line)}
+.bilan.ok{border-color:rgba(85,230,166,.45);background:linear-gradient(180deg,rgba(85,230,166,.1),var(--surface))}
+.bilan.ko{border-color:rgba(238,0,115,.4);background:linear-gradient(180deg,rgba(238,0,115,.09),var(--surface))}
+.bilan b{font-family:var(--display);font-stretch:106%;font-weight:900;font-size:17px;display:block;margin-bottom:2px}
+.bilan p{margin:0;color:var(--muted);font-size:13.5px}
+.gros{font-size:30px;line-height:1}
+
+.etape{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:9px}
+.etape.att{opacity:.55}
+.etitre{display:flex;align-items:flex-start;gap:11px}
+.puce{flex:0 0 auto;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  font-size:13px;font-weight:900;background:var(--surface-2);color:var(--muted)}
+.ok .puce{background:rgba(85,230,166,.18);color:#55e6a6}
+.ko .puce{background:rgba(238,0,115,.18);color:#ff82b8}
+.warn .puce{background:rgba(255,199,59,.18);color:var(--r-l)}
+.etitre b{font-size:15px;font-weight:800;flex:1}
+.detail{margin:8px 0 0 35px;color:var(--muted);font-size:13.5px;line-height:1.5}
+.detail b{color:var(--text)}
+.quoifaire{margin:10px 0 0 35px;padding:10px 13px;background:var(--bg-2);border-radius:var(--radius-sm);
+  border-left:3px solid var(--accent);font-size:13.5px;line-height:1.5}
+.quoifaire b{color:var(--text)}
+code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;
+  word-break:break-all}
+.quoifaire code{background:rgba(0,0,0,.35)}
+.liens{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.liens a{flex:1;min-width:180px;text-align:center;text-decoration:none;display:block;
+  border-radius:999px;padding:14px 20px;font-family:var(--display);font-weight:900;font-size:14px;
+  letter-spacing:.05em;text-transform:uppercase;color:#fff;
+  background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+  box-shadow:0 4px 0 var(--accent-deep)}
+.liens a.ghost{background:linear-gradient(180deg,var(--surface-2),var(--surface));color:var(--text);
+  box-shadow:0 4px 0 #100c15,inset 0 0 0 1px var(--line-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="vtitre">Vérification de l'installation</h1>
+  <p class="vsous">Cette page contrôle que le serveur est bien branché, et dit en clair ce
+    qu'il reste à faire. Elle ne modifie rien. Tu peux y revenir à tout moment.</p>
+
+  <div class="bilan" id="bilan"><span class="gros">⏳</span>
+    <div><b>Vérification en cours…</b><p>Quelques secondes.</p></div></div>
+
+  <div id="etapes"></div>
+
+  <div class="liens">
+    <a href="./">Ouvrir le jeu</a>
+    <a class="ghost" href="#" onclick="location.reload();return false">Revérifier</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+<script src="js/supabase-config.js"></script>
+<script>
+"use strict";
+
+/* Chaque contrôle rend { etat, titre, detail, faire }.
+   etat : 'ok' | 'ko' | 'warn' | 'att'  —  faire : ce qu'il reste à faire, ou rien. */
+const E = s => String(s == null ? '' : s)
+  .replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+const PUCE = { ok: '✓', ko: '✕', warn: '!', att: '…' };
+const resultats = [];
+
+function poser(r) {
+  resultats.push(r);
+  document.getElementById('etapes').insertAdjacentHTML('beforeend',
+    `<div class="etape ${r.etat}">
+      <div class="etitre"><span class="puce">${PUCE[r.etat]}</span><b>${E(r.titre)}</b></div>
+      ${r.detail ? `<div class="detail">${r.detail}</div>` : ''}
+      ${r.faire ? `<div class="quoifaire">${r.faire}</div>` : ''}
+    </div>`);
+}
+
+const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="color:var(--accent-soft)">${t}</a>`;
+
+(async function verifier() {
+  const cle = typeof SUPABASE_ANON_KEY === 'string' ? SUPABASE_ANON_KEY : '';
+  const url = typeof SUPABASE_URL === 'string' ? SUPABASE_URL.replace(/\/+$/, '') : '';
+
+  /* ---- 1. Les deux clés ---- */
+  if (!url || !cle) {
+    poser({ etat: 'ko', titre: 'Les deux clés ne sont pas encore renseignées',
+      detail: 'Le jeu fonctionne, mais en mode hors ligne : la progression reste dans ce navigateur, sans compte ni échanges.',
+      faire: `Ouvre <code>js/supabase-config.js</code> et colle-y le <b>Project URL</b> et la clé
+        <b>anon public</b>, que Supabase affiche dans <b>Settings › API</b>.
+        Étapes 1 à 3 de <code>SETUP.md</code>.` });
+    return conclure();
+  }
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url)) {
+    poser({ etat: 'warn', titre: "L'adresse du projet a une forme inhabituelle",
+      detail: `Lue : <code>${E(url)}</code>. Attendu : <code>https://xxxxxxxx.supabase.co</code>, sans barre oblique finale.`,
+      faire: 'Recopie exactement le <b>Project URL</b> de <b>Settings › API</b>.' });
+  } else {
+    poser({ etat: 'ok', titre: 'Les deux clés sont en place',
+      detail: `Projet <code>${E(url)}</code>.` });
+  }
+  if (cle.startsWith('eyJ') && cle.includes('service_role')) {
+    poser({ etat: 'ko', titre: 'Mauvaise clé : c’est la clé service_role',
+      detail: 'Cette clé contourne toutes les sécurités, et ce fichier est visible par tout le monde.',
+      faire: 'Remplace-la tout de suite par la clé <b>anon public</b>, puis dans Supabase, <b>Settings › API › Reset</b> la clé service_role.' });
+  }
+
+  /* ---- 2. Le projet répond ---- */
+  let reglages = null;
+  try {
+    const r = await fetch(url + '/auth/v1/settings', { headers: { apikey: cle } });
+    if (!r.ok) throw new Error('réponse ' + r.status);
+    reglages = await r.json();
+    poser({ etat: 'ok', titre: 'Le projet Supabase répond' });
+  } catch (e) {
+    poser({ etat: 'ko', titre: 'Le projet Supabase ne répond pas',
+      detail: `Erreur : <code>${E(e.message)}</code>.`,
+      faire: `Trois causes possibles : l'adresse ou la clé sont fausses ; le projet est
+        <b>en pause</b> (les projets gratuits s'endorment après une semaine sans activité —
+        réveille-le depuis ${lien('https://supabase.com/dashboard', 'ton tableau de bord')}) ;
+        ou tu n'as pas de réseau.` });
+    return conclure();
+  }
+
+  /* ---- 3. Inscription et confirmation par e-mail ---- */
+  if (reglages.disable_signup) {
+    poser({ etat: 'ko', titre: 'Les inscriptions sont fermées',
+      detail: 'Personne ne peut créer de compte.',
+      faire: 'Supabase › <b>Authentication › Sign In / Providers</b> : active <b>Allow new users to sign up</b>.' });
+  } else if (reglages.mailer_autoconfirm) {
+    poser({ etat: 'warn', titre: "L'adresse e-mail n'est pas vérifiée",
+      detail: "Les comptes sont activés sans que personne ait à cliquer sur un lien : n'importe quelle adresse, même inventée, passe.",
+      faire: 'Supabase › <b>Authentication › Sign In / Providers › Email</b> : active <b>Confirm email</b>.' });
+  } else {
+    poser({ etat: 'ok', titre: 'Inscription par e-mail avec vérification',
+      detail: 'Un lien de confirmation est envoyé, et le compte ne sert qu’une fois cliqué.',
+      faire: `<b>À faire avant d'ouvrir le jeu aux autres :</b> l'expéditeur fourni par Supabase
+        est bridé à quelques courriels par heure. Branche le tien dans
+        <b>Authentication › Emails › SMTP Settings</b> (${lien('https://resend.com', 'Resend')} ou
+        ${lien('https://www.brevo.com', 'Brevo')}, gratuits), sinon des joueurs ne recevront
+        jamais leur lien.` });
+  }
+
+  /* ---- 4. Discord ---- */
+  const ext = reglages.external || {};
+  poser(ext.discord
+    ? { etat: 'ok', titre: 'La connexion Discord est activée' }
+    : { etat: 'warn', titre: "La connexion Discord n'est pas activée",
+        detail: 'Ce n’est pas bloquant : la création de compte par e-mail suffit pour jouer.',
+        faire: 'Étape 6 de <code>SETUP.md</code> — création de l’application Discord, puis <b>Authentication › Providers › Discord</b> dans Supabase.' });
+
+  /* ---- 5. Les tables ---- */
+  const sb = window.supabase.createClient(url, cle);
+  const compter = async t => {
+    const { count, error } = await sb.from(t).select('*', { count: 'exact', head: true });
+    if (error) throw error;
+    return count;
+  };
+
+  let basePrete = false;
+  try {
+    const [nc, nq, ns] = await Promise.all([compter('cards'), compter('quests'), compter('shop_items')]);
+    basePrete = nc > 0;
+    poser(nc > 0
+      ? { etat: 'ok', titre: 'La base est installée',
+          detail: `<b>${nc}</b> cartes, <b>${nq}</b> quêtes, <b>${ns}</b> articles en boutique.` }
+      : { etat: 'ko', titre: 'Les tables existent, mais le catalogue est vide',
+          detail: 'Sans cartes, le serveur ne peut tirer aucun booster.',
+          faire: 'Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.' });
+  } catch (e) {
+    poser({ etat: 'ko', titre: "La base n'est pas installée",
+      detail: `Erreur : <code>${E(e.message || e.code)}</code>.`,
+      faire: `Ouvre Supabase › <b>SQL Editor › New query</b>, colle tout le contenu de
+        <code>supabase/TOUT.sql</code>, puis clique <b>Run</b>. Étape 2 de <code>SETUP.md</code>.` });
+  }
+
+  /* ---- 6. Les fonctions du jeu ---- */
+  /* Sans session, me() doit répondre « non connecte » : c'est la preuve qu'elle existe. */
+  let session = null;
+  try {
+    const { data } = await sb.auth.getSession();
+    session = data ? data.session : null;
+  } catch (e) { /* pas de session */ }
+
+  try {
+    const { error } = await sb.rpc('me');
+    if (error && error.code === 'PGRST202') throw new Error('absente');
+    poser({ etat: 'ok', titre: 'Les actions du jeu sont installées',
+      detail: 'Ouverture de booster, échanges, quêtes et boutique répondent.' });
+  } catch (e) {
+    poser({ etat: 'ko', titre: 'Les actions du jeu ne sont pas installées',
+      detail: 'La partie <code>03_rpc.sql</code> manque, ou le SQL s’est arrêté en cours de route.',
+      faire: `Rejoue <code>supabase/TOUT.sql</code> en entier et regarde si le <b>SQL Editor</b>
+        affiche une erreur en rouge — auquel cas, copie-la, elle dit exactement ce qui coince.` });
+  }
+
+  /* ---- 7. L'adresse de retour ---- */
+  const ici = location.origin + location.pathname.replace(/verif\.html$/, '');
+  poser({ etat: 'warn', titre: 'Les adresses de retour sont à vérifier à la main',
+    detail: `Cette page est servie depuis <code>${E(ici)}</code>. Sans cette adresse dans la
+      liste, le lien reçu par courriel et le retour de Discord tombent dans le vide.`,
+    faire: `Supabase › <b>Authentication › URL Configuration</b> : mets cette adresse en
+      <b>Site URL</b>, et ajoute <code>${E(ici)}**</code> dans <b>Redirect URLs</b>.
+      Ajoute aussi <code>http://localhost:8765/**</code> pour développer en local.` });
+
+  /* ---- 8. Ton compte ---- */
+  if (!session) {
+    poser({ etat: 'att', titre: 'Tu n’es pas connecté sur cette page',
+      detail: 'Normal si tu n’as pas encore créé ton compte.',
+      faire: 'Ouvre le jeu, crée ton compte, confirme ton adresse par courriel, puis reviens ici.' });
+  } else {
+    try {
+      const { data } = await sb.from('profiles').select('pseudo,is_admin').eq('id', session.user.id).single();
+      poser(data && data.is_admin
+        ? { etat: 'ok', titre: `Connecté en administrateur : ${data.pseudo}`,
+            detail: 'L’onglet Labo t’est accessible dans le jeu.' }
+        : { etat: 'warn', titre: `Connecté : ${data ? data.pseudo : session.user.email}`,
+            detail: 'Ce compte n’a pas les droits d’administrateur.',
+            faire: `Pour te les donner : ouvre <code>supabase/05_admin.sql</code>, remplace
+              l’adresse par <code>${E(session.user.email || '')}</code>, et exécute-le dans le
+              <b>SQL Editor</b>. Étape 7 de <code>SETUP.md</code>.` });
+    } catch (e) {
+      poser({ etat: 'warn', titre: 'Connecté, mais le profil est introuvable',
+        detail: 'Le compte existe côté authentification, mais pas côté jeu.',
+        faire: 'Rejoue <code>supabase/TOUT.sql</code> : le déclencheur qui crée les profils en fait partie. Puis crée un nouveau compte.' });
+    }
+  }
+
+  conclure();
+})().catch(e => {
+  poser({ etat: 'ko', titre: 'La vérification elle-même a échoué',
+    detail: `<code>${E(e && e.message)}</code>`,
+    faire: 'Recharge la page. Si ça recommence, copie ce message : il dit ce qui bloque.' });
+  conclure();
+});
+
+function conclure() {
+  const ko = resultats.filter(r => r.etat === 'ko').length;
+  const reste = resultats.filter(r => r.faire).length;
+  const b = document.getElementById('bilan');
+
+  if (ko) {
+    b.className = 'bilan ko';
+    b.innerHTML = `<span class="gros">✕</span><div><b>${ko} point${ko > 1 ? 's' : ''} bloquant${ko > 1 ? 's' : ''}</b>
+      <p>Le jeu tourne, mais en hors ligne. Chaque point ci-dessous dit quoi faire.</p></div>`;
+  } else if (reste) {
+    b.className = 'bilan ok';
+    b.innerHTML = `<span class="gros">✓</span><div><b>Le serveur est branché</b>
+      <p>${reste} point${reste > 1 ? 's' : ''} à regarder plus bas, mais rien qui empêche de jouer.</p></div>`;
+  } else {
+    b.className = 'bilan ok';
+    b.innerHTML = `<span class="gros">✓</span><div><b>Tout est en place</b>
+      <p>Rien à signaler. Bon jeu.</p></div>`;
+  }
+}
+</script>
+</body>
+</html>

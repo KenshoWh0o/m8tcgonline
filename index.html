@@ -4,6 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mate TCG Online</title>
+<meta name="description" content="Ouvre des boosters, complète les 122 cartes de l'extension « Tout commence ici » et échange avec les autres joueurs. Jeu de collection Gentle Mates, gratuit et sans argent réel.">
+<meta name="theme-color" content="#0c0910">
+<meta name="color-scheme" content="dark">
+
+<!-- Identité du site : icône du navigateur, image de partage -->
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="canonical" href="./">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mate TCG Online">
+<meta property="og:title" content="Mate TCG Online">
+<meta property="og:description" content="Ouvre des boosters, complète ta collection et échange avec les autres joueurs.">
+<meta property="og:image" content="assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Le logo Mate TCG Online sur un fond violet étoilé">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mate TCG Online">
+<meta name="twitter:description" content="Ouvre des boosters, complète ta collection et échange avec les autres joueurs.">
+<meta name="twitter:image" content="assets/og-image.png">
+
+<!-- Ajouté à l'écran d'accueil d'un iPhone, le jeu s'ouvre en plein écran -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mate TCG">
+<meta name="mobile-web-app-capable" content="yes">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -16,35 +48,64 @@
 <link rel="stylesheet" href="css/opening.css">
 <link rel="stylesheet" href="css/viewer.css">
 <link rel="stylesheet" href="css/lab.css">
+<link rel="stylesheet" href="css/auth.css">
+<link rel="stylesheet" href="css/hub.css">
 </head>
 <body>
 <div class="bgdeco" aria-hidden="true"></div>
-<header class="top"><div id="brand"></div><div class="pill"><img class="pk" src="assets/pack-star.svg" alt=""><span id="tk">…</span></div></header>
+
+<header class="top">
+  <div id="brand"></div>
+  <div class="hdr">
+    <span class="pill" role="button" tabindex="0" aria-label="Tes boosters">
+      <img class="pk" src="assets/pack-star.svg" alt=""><span id="tk">…</span></span>
+    <span class="pill ec" id="ec" role="button" tabindex="0" aria-label="Tes Éclats">
+      <svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 9.5 12 22 4 9.5Z" fill="currentColor" opacity=".9"/><path d="M12 2 4 9.5h16Z" fill="#fff" opacity=".35"/></svg><b>0</b></span>
+    <button id="btn-install" class="hdrbtn" aria-label="Installer le jeu" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17"/></svg></button>
+    <button id="moi" class="hdrbtn ava-btn" aria-label="Menu du compte" aria-haspopup="menu"></button>
+  </div>
+</header>
+
 <main id="main"></main>
-<nav id="nav">
-  <button data-tab="boosters"><svg class="ico-star" viewBox="0 0 20 14" aria-hidden="true"><path d="M8.13814 0L8.07808 0.158491L6.03604 5.54717L0.21021 6.63019L0 6.68302L0.21021 6.73585L4.8949 8.10943L1.95195 13.7623L1.83183 14L2.04204 13.8151L7.92793 8.98113L12.6426 10.3547H12.7628L12.7027 10.2755L10.9009 6.97358L19.6096 1.90189L20 1.66415L19.5496 1.79623L9.75976 4.80755L8.1982 0.158491L8.13814 0Z" fill="currentColor"/></svg> Boosters</button>
-  <button data-tab="collection"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="9" rx="1.5"/><rect x="14" y="4" width="7" height="9" rx="1.5"/><path d="M3 17h18M3 20.5h12"/></svg>Collection</button>
-  <button data-tab="test"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7 15h10"/></svg>Labo</button>
-</nav>
+
+<nav id="nav" aria-label="Navigation principale"></nav>
+
+<aside id="tiroir" hidden></aside>
 <div id="theater" hidden></div>
 <div id="viewer" hidden></div>
 <canvas id="fx" aria-hidden="true"></canvas>
 <div id="sheet" class="sheet-wrap" hidden></div>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Le client du compte en ligne. Absent (hors réseau, ou bloqué), le jeu bascule
+     tout seul en mode hors ligne : voir Backend.init() dans js/backend.js. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
 
 <!-- Code du jeu : l'ordre compte, app.js en dernier -->
 <script src="js/config.js"></script>
+<script src="js/supabase-config.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/sfx.js"></script>
 <script src="js/cards-data.js"></script>
 <script src="js/cards.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/render-card.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/booster.js"></script>
 <script src="js/opening.js"></script>
 <script src="js/collection.js"></script>
 <script src="js/viewer.js"></script>
+<script src="js/trade.js"></script>
+<script src="js/quests.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/pwa.js"></script>
 <script src="js/lab.js"></script>
 <script src="js/app.js"></script>
 </body>

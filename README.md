@@ -1,8 +1,15 @@
 # Mate TCG Online
 
-Jeu de collection de cartes façon TCG Pocket, qui tourne entièrement dans le navigateur. Les 122 cartes de l'extension *Tout commence ici* sont livrées avec le jeu : on ouvre des boosters et on remplit sa collection.
+Jeu de collection de cartes façon TCG Pocket. Les 122 cartes de l'extension *Tout commence ici* sont livrées avec le jeu : on ouvre des boosters, on remplit sa collection, et on échange avec les autres joueurs.
 
-Il n'y a ni serveur ni base de données. Les cartes font partie du code ; seule la progression (boosters et collection) est enregistrée dans le navigateur de l'appareil (IndexedDB).
+Le site est fait de fichiers statiques — aucune étape de compilation, aucun paquet à installer. Il fonctionne dans **deux régimes** :
+
+- **Hors ligne.** Rien à configurer : la progression est enregistrée dans le navigateur de l'appareil (IndexedDB). Les onglets qui ont besoin des autres joueurs invitent à créer un compte.
+- **En ligne.** Un projet [Supabase](https://supabase.com) gratuit apporte les comptes (e-mail avec confirmation, ou Discord), la collection sauvegardée sur le compte, un cooldown que la montre du téléphone ne peut pas tromper, les échanges, les quêtes et la boutique. Marche à suivre : **[SETUP.md](SETUP.md)**.
+
+Le jeu bascule tout seul : tant que `js/supabase-config.js` est vide, il tourne hors ligne.
+
+> **Rien ne se paie avec de l'argent réel.** La monnaie du jeu, les *Éclats*, se gagne uniquement en accomplissant des quêtes.
 
 ## Lancer le projet
 
@@ -16,18 +23,39 @@ Autre option, si Node.js est installé : `npx serve .` dans le dossier, puis ouv
 
 ## Mettre en ligne
 
-- **Netlify Drop** (app.netlify.com/drop) : fais glisser le dossier entier, tu obtiens une adresse.
 - **GitHub Pages** : pousse le dossier dans un dépôt GitHub, puis *Settings › Pages › Deploy from branch*.
+- **Netlify Drop** (app.netlify.com/drop) : fais glisser le dossier entier, tu obtiens une adresse.
+
+Le service worker et l'installation sur l'écran d'accueil exigent **HTTPS** (ou `localhost`). Un fichier ouvert par double-clic marche, mais sans mode hors ligne ni installation.
+
+Pour brancher les comptes en ligne : **[SETUP.md](SETUP.md)**, écrit pas à pas. Et à tout moment, la page **`verif.html`** du site contrôle l'installation et dit en clair ce qui manque.
 
 ## Organisation
 
 ```
 mate-tcg-online/
 ├── index.html          Structure de la page + chargement des fichiers
+├── verif.html          Page de diagnostic : ce qui est branché, ce qui manque
+├── manifest.webmanifest  Identité de l'application installée (nom, icônes, couleurs)
+├── sw.js               Service worker : le jeu s'ouvre hors réseau
+├── SETUP.md            Mettre le jeu en ligne, pas à pas
 ├── cards/              Les images des cartes (une par carte, .avif)
 ├── assets/             Habillage : logos, visuels de booster, dos de carte, essences
 │   ├── boosters/       Les quatre visuels de paquet
-│   └── essences/       Les dix symboles d'essence
+│   ├── essences/       Les dix symboles d'essence
+│   ├── icon-*.png      Icônes de l'application installée (générées)
+│   └── og-image.png    Image affichée quand le lien du site est partagé (générée)
+├── tools/              Petits scripts de maintenance (Python, sans dépendance)
+│   ├── build-sql.py    Assemble supabase/TOUT.sql
+│   └── gen-icons.py    Régénère icônes, favicons et image de partage
+├── supabase/           Tout le code serveur : tables, sécurité, actions du jeu
+│   ├── TOUT.sql        Les quatre fichiers ci-dessous, en un seul (assemblé)
+│   ├── 01_schema.sql   Tables, règles d'accès, recharge des boosters
+│   ├── 02_cards.sql    Catalogue des cartes (généré depuis js/cards-data.js)
+│   ├── 03_rpc.sql      Ouvrir un booster, échanger, encaisser une quête, acheter
+│   ├── 04_seed.sql     Quêtes et boutique — c'est ici qu'on équilibre
+│   ├── 05_admin.sql    Se donner les droits d'administrateur
+│   └── gen-cards-sql.py  Régénère 02_cards.sql
 ├── css/
 │   ├── tokens.css      Couleurs, typos, rythme (la charte)
 │   ├── base.css        Fond, en-tête, navigation, boutons, fenêtres
@@ -35,21 +63,34 @@ mate-tcg-online/
 │   ├── booster.css     Écran du paquet et animation d'ouverture
 │   ├── opening.css     Ouverture plein écran, révélations, récap
 │   ├── viewer.css      Visionneuse 3D
-│   └── lab.css         Onglet Labo
+│   ├── lab.css         Onglet Labo
+│   ├── auth.css        Écran de connexion
+│   └── hub.css         Onglets v2 + adaptation ordinateur
 ├── js/
-│   ├── config.js       Nom du jeu, habillage, couleurs, raretés, révélations
+│   ├── config.js       Nom du jeu, habillage, couleurs, raretés, onglets, révélations
+│   ├── supabase-config.js  Les deux clés du compte en ligne (vides = hors ligne)
 │   ├── utils.js        Outils partagés
+│   ├── sfx.js          Les sons, fabriqués à la volée (Web Audio)
 │   ├── cards-data.js   La liste des cartes de l'extension
 │   ├── cards.js        Transforme cette liste en cartes du jeu
-│   ├── storage.js      État global + sauvegarde de la progression
+│   ├── storage.js      État global + sauvegarde locale
 │   ├── render-card.js  Affichage d'une carte
-│   ├── ui.js           Fenêtre modale
+│   ├── ui.js           Fenêtre modale, avatars, petits blocs répétés
+│   ├── backend.js      Un seul jeu d'appels, deux implantations (local / en ligne)
+│   ├── auth.js         Écran de connexion et création de compte
 │   ├── fx.js           Particules
 │   ├── booster.js      Réserve, composition d'un booster, écran du paquet en 3D
 │   ├── opening.js      Pile 3D, révélation, godpack, récap
 │   ├── collection.js   Onglet Collection
 │   ├── viewer.js       Visionneuse 3D
-│   ├── lab.js          Onglet Labo
+│   ├── trade.js        Onglet Échanges
+│   ├── quests.js       Onglet Quêtes
+│   ├── shop.js         Onglet Boutique
+│   ├── battle.js       Onglet Combats (à venir)
+│   ├── profile.js      Onglet Profil
+│   ├── settings.js     Onglet Réglages
+│   ├── pwa.js          Ajout à l'écran d'accueil, service worker
+│   ├── lab.js          Onglet Labo (administrateurs)
 │   └── app.js          Navigation, clics, démarrage (chargé en dernier)
 ```
 
@@ -65,11 +106,18 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Changer le dos de carte, le logo d'extension, la pastille | `js/config.js` (`ART`) |
 | Changer les couleurs, les typos, les arrondis | `css/tokens.css` |
 | Changer le nombre de cartes par booster | `js/config.js` (`PACK_SIZE`) + `makeBooster()` dans `js/booster.js` |
-| Changer les taux de drop ou du godpack | `js/booster.js` (`RATES`, `GOD`) |
+| Changer les taux de drop ou du godpack | **en ligne :** `open_pack()` dans `supabase/03_rpc.sql` · **hors ligne :** `RATES`, `GOD` dans `js/booster.js` |
 | Régler la durée ou les particules d'une révélation | `js/config.js` (`REVEAL`) |
 | Modifier l'animation de déchirure du paquet | `showRip()` dans `js/opening.js` + bloc `Déchirure` de `css/booster.css` |
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
-| Changer le nombre de boosters gratuits ou le délai | `js/config.js` (`TICKET_CAP`, `INTERVAL`) |
+| Changer le nombre de boosters gratuits ou le délai | **en ligne :** `cfg()` dans `supabase/01_schema.sql` · **hors ligne :** `TICKET_CAP`, `INTERVAL` dans `js/config.js` |
+| Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
+| Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
+| Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
+| Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
+| Changer la musique d'ambiance | `ACCORDS` et `SFX.musiqueOn()` dans `js/sfx.js` |
+| Regénérer l'image de partage et les icônes | `python3 tools/gen-icons.py` |
+| Donner les droits d'administrateur | `supabase/05_admin.sql` |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
 
 ## Composition d'un booster
@@ -162,8 +210,91 @@ L'étoile du logo (`assets/star-pink.svg`, reprise en ligne dans `ICON.star`) se
 
 Les boutons, les puces et les pastilles ont un rebord plein dessous qui s'enfonce au clic (`.btn`, `.chips button`, `.rchip` dans `base.css` et `booster.css`) : c'est ce qui donne le ressenti « jeu de cartes mobile ».
 
+## Les onglets
+
+Ils sont décrits dans `TABS` (`js/config.js`), sur deux niveaux : ce qu'on joue, et ce qui concerne le compte.
+
+| Onglet | Où | Compte requis |
+|---|---|---|
+| Boosters | barre du bas / rail | non |
+| Collection | barre du bas / rail | non |
+| Combats | barre du bas / rail | non |
+| Échanges | barre du bas / rail | oui |
+| Quêtes | barre du bas / rail | oui |
+| Mon profil | tiroir (mobile) · rail (ordinateur) | oui |
+| Boutique | tiroir (mobile) · rail (ordinateur) | oui |
+| Réglages | tiroir (mobile) · rail (ordinateur) | non |
+| Labo | tiroir · rail | **administrateurs seulement** |
+
+Pour déplacer un onglet, il suffit de changer son drapeau : `bas: true` le met dans la barre du bas, `tiroir: true` le range dans le menu du compte.
+
+**La barre du bas ne contient que le jeu.** Cinq places, pas une de plus — les cinq endroits où l'on revient tout le temps. Une pastille y signale ce qui attend : récompenses à encaisser sur Quêtes, demandes reçues sur Échanges.
+
+**Le compte vit dans un tiroir.** Sur mobile, appuyer sur son avatar déplie un panneau depuis le bord droit — celui d'où vient le doigt : pseudo, ressources, profil, boutique, réglages, déconnexion. Un point sur l'avatar prévient quand quelque chose y attend.
+
+**Sur ordinateur, il n'y a pas de tiroir** : le rail a la place d'afficher les deux groupes, séparés par un filet, et l'avatar mène directement au profil. Inutile de cacher derrière un menu ce qui tient à l'écran.
+
+**Mobile d'abord.** La barre du bas tient cinq onglets au pouce ; à partir de 900 px de large elle devient un rail vertical à droite, et les feuilles modales se centrent au lieu de monter du bas. Toute l'adaptation ordinateur tient dans un seul bloc `@media` en bas de `css/hub.css`.
+
+Sur ordinateur, la page est une **grille** (en-tête sur toute la largeur, puis contenu et rail), et non un flex qui passe à la ligne : avec `flex-wrap`, le navigateur répartit la hauteur restante entre les lignes, et l'en-tête s'allongeait dès qu'une page avait peu de contenu.
+
+> Les règles de la barre du bas sont accrochées à `#nav`, jamais à l'élément `<nav>` : le panneau du tiroir en est un aussi, et héritait sinon de sa mise en colonne.
+
+**L'en-tête montre toujours les deux compteurs et l'avatar**, même hors ligne. Ce sont les seules portes vers la boutique et vers le menu du compte : les cacher revenait à cacher qu'ils existent.
+
+## Échanges
+
+Une carte contre une carte, **de rareté identique**, et jamais en simultané : quelqu'un propose, l'autre répond quand il veut, et l'échange ne se fait que si les deux ont validé.
+
+Le coût est payé par celui qui lance la demande : **une demande gratuite toutes les 6 heures**, ou un **jeton d'échange** acheté en boutique pour ne pas attendre. Le délai et le jeton sont vérifiés par le serveur, pas par la page.
+
+Au moment où la demande est acceptée, le serveur revérifie **tout** : que les deux joueurs possèdent encore leur carte, que les raretés correspondent toujours, et il échange les deux cartes dans une seule transaction. Personne ne peut donner deux fois la même carte en lançant deux demandes.
+
+## Quêtes et boutique
+
+Les quêtes paient en **Éclats**, la seule monnaie du jeu. La boutique les dépense : des boosters, des jetons d'échange, des cadres d'avatar. Aucun achat avec de l'argent réel, nulle part.
+
+La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est le serveur qui l'incrémente au moment où l'événement arrive vraiment, dans `open_pack()` et `trade_respond()`. C'est pour ça que toutes les quêtes portent sur des choses qu'il peut constater lui-même — boosters ouverts, cartes inédites, raretés sorties, échanges conclus, jours de connexion, pourcentage de collection.
+
+Objectifs, récompenses, articles et prix sont tous dans `supabase/04_seed.sql`. On équilibre là, on rejoue le fichier, c'est pris en compte : ni déploiement, ni mise à jour du site.
+
+## Les sons
+
+Aucun fichier audio dans le dépôt : tout est **fabriqué à la volée** par le navigateur (`js/sfx.js`, Web Audio). Rien à télécharger, rien à héberger, aucune question de droits, et le son part à l'instant où on touche l'écran.
+
+Chaque son est une recette courte dans `RECETTES` : quelques souffles de bruit filtré pour tout ce qui frotte, glisse ou se déchire, quelques notes pour les clics et les carillons. La déchirure du paquet, le passage d'une carte, la montée avant une révélation et les trois paliers de carillon (rare, épique, légendaire) sont branchés dans `js/opening.js`.
+
+La **musique d'ambiance** est un tapis de quatre accords qui tournent lentement, avec un souffle très filtré par-dessus. Volontairement discrète, et **coupée par défaut** : elle s'active dans les Réglages, avec son propre volume.
+
+Les navigateurs interdisent le son tant que la personne n'a rien touché : tout se débloque au premier geste, quel qu'il soit. Un clic sur n'importe quel bouton sonne sans avoir à le brancher, grâce à un écouteur unique posé sur la page.
+
+## Installation sur l'écran d'accueil
+
+`manifest.webmanifest` et `sw.js` font du site une application installable : ouverte en plein écran, sans barre d'adresse, avec son icône — et consultable sans réseau.
+
+Sur Android, le navigateur propose lui-même l'installation : `js/pwa.js` récupère sa demande et la déclenche au bon moment. **Sur iPhone, rien de tel n'existe** — il faut passer par le bouton *Partager* de Safari — alors le jeu dessine la marche à suivre en trois étapes illustrées, avec une flèche qui pointe vers le bas de l'écran.
+
+La bulle ne s'affiche **jamais au premier écran** : elle attend que deux boosters aient été ouverts, et ne revient pas avant deux semaines si on a dit non. Le bouton dans les Réglages permet de la rappeler à tout moment.
+
+Le service worker sert le code par le réseau d'abord (les corrections arrivent sans attendre) et les images par le cache (elles ne changent jamais sans changer de nom). Quand une nouvelle version est en ligne, il prévient au lieu de recharger sous les doigts.
+
+## Identité visuelle
+
+`python3 tools/gen-icons.py` régénère les icônes de l'application, les favicons et l'image de partage à partir de `assets/logo-m8.webp` et des couleurs de `css/tokens.css`. Le script n'a besoin d'aucune bibliothèque : il écrit les PNG à la main et rasterise l'étoile du logo lui-même.
+
+`assets/favicon.svg` est écrit à la main et reste net à toutes les tailles ; les PNG sont là pour les navigateurs qui n'acceptent pas le SVG, et pour l'icône d'iPhone qui l'exige.
+
+Les balises de partage (Open Graph et Twitter Card) sont en haut de `index.html`. Elles pointent en relatif, ce qui marche partout ; si tu prends un vrai domaine, renseigne `SITE_URL` dans `js/config.js` — il sert aussi d'adresse de retour après un courriel de confirmation ou un détour par Discord.
+
+## Administrateurs
+
+L'onglet **Labo** n'est plus accessible à tout le monde. Il n'apparaît que pour les profils marqués `is_admin` en base, et ce drapeau ne peut être posé que depuis le tableau de bord Supabase (`supabase/05_admin.sql`) : aucune fonction du jeu ne l'expose, et le navigateur n'a pas le droit d'écrire dans la table des profils.
+
+Cacher un bouton ne protège rien — ce qui protège, c'est que le serveur refuse les actions. Les boutons du Labo qui touchent à la collection ne modifient que l'affichage local : en ligne, la vérité reste celle du serveur, et la page la récupère telle quelle au rafraîchissement suivant.
+
 ## Dépendances externes
 
-- Polices Google Fonts (Archivo, Figtree), chargées en ligne. Sans connexion, le navigateur utilise des polices de secours.
+- **Polices Google Fonts** (Archivo, Figtree), chargées en ligne. Sans connexion, le navigateur utilise des polices de secours.
+- **supabase-js**, chargé depuis un CDN, uniquement pour le compte en ligne. S'il est absent (hors réseau, bloqueur), le jeu bascule tout seul en mode hors ligne.
 
-Aucune autre bibliothèque : tout le reste est dans le dépôt.
+Aucune autre bibliothèque, aucune étape de compilation : tout le reste est dans le dépôt.

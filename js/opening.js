@@ -2,53 +2,53 @@
 "use strict";
 
 /* ---------- Ouverture ---------- */
-function openBooster(opts) {
+async function openBooster(opts) {
   opts = opts || {};
   if (opening) return;
+  opening = true;
 
-  const pool = poolFor();
-  if (!pool.some(c => c.cat !== 'essence')) {
+  /* La collection telle qu'elle est juste avant le tirage : c'est elle qui dit
+     quelles cartes sont inédites, y compris quand c'est le serveur qui l'a déjà
+     mise à jour de son côté. */
+  const avant = Object.assign({}, save.col);
+
+  /* Le paquet plonge vers la caméra pendant que le serveur tire : l'attente est
+     couverte par l'animation, et l'écran ne reste jamais figé. */
+  const pk = $('#pack');
+  if (pk && !RM()) pk.classList.add('tear');
+  SFX.jouer('craque');
+
+  let tirage;
+  try {
+    tirage = await Backend.openPack(opts);
+  } catch (e) {
+    opening = false;
+    if (pk) pk.classList.remove('tear');
+    toast(e.message || 'Impossible d\'ouvrir ce booster.');
+    SFX.jouer('erreur');
+    render();
+    return;
+  }
+
+  const drawn = tirage.cards;
+  if (!drawn.length) {
+    opening = false;
+    if (pk) pk.classList.remove('tear');
     toast('Ce booster est vide : aucune carte à tirer.');
     return;
   }
-  if (!opts.test && !save.unlimited && save.tickets < 1) {
-    toast('Plus de booster pour le moment.');
-    return;
-  }
 
-  opening = true;
-  if (!opts.test && !save.unlimited) {
-    if (save.tickets >= TICKET_CAP) save.lastTick = Date.now();
-    save.tickets--;
-  }
-
-  const god = opts.god != null ? opts.god : Math.random() < GOD;
-  const drawn = makeBooster(pool, god);
-  if (opts.force && !god) {
-    const c = pickFrom(pool, opts.force);
-    if (c) drawn[drawn.length - 1] = c;
-  }
-
-  /* Les images arrivent du dossier cards/ : on lance leur chargement avant l'animation d'ouverture. */
+  /* Les images arrivent du dossier cards/ : on lance leur chargement avant l'animation. */
   drawn.forEach(c => { if (c.img) new Image().src = c.img; });
 
-  const news = drawn.map(c => !(save.col[c.id] > 0));
-  if (!opts.test) {
-    drawn.forEach(c => save.col[c.id] = (save.col[c.id] || 0) + 1);
-    persist();
-  }
+  const news = drawn.map(c => !(avant[c.id] > 0));
   header();
+  if (!opts.test) noterPaquetOuvert();
 
-  rv = { cards: drawn, news, idx: 0, god, test: !!opts.test, opts, revealed: false };
+  rv = { cards: drawn, news, idx: 0, god: tirage.god, test: !!opts.test, opts, revealed: false };
 
-  /* Le paquet plonge vers la caméra, puis le théâtre enchaîne sur la déchirure. */
-  const pk = $('#pack');
-  if (pk && !RM()) {
-    pk.classList.add('tear');
-    setTimeout(startTheater, 300);
-  } else {
-    startTheater();
-  }
+  if (pk && !RM()) setTimeout(startTheater, 120);
+  else startTheater();
 }
 
 function startTheater() {
@@ -83,8 +83,11 @@ function packOpen(done) {
   const wake = god ? 860 : 0;
   st.classList.add(god ? 'rip-wake' : 'rip-shake');
 
+  if (god) at(0, () => SFX.jouer('monte', 900));
+
   at(wake + 360, () => {
     st.classList.add('rip-cut');
+    SFX.jouer('dechire');
     blast(.09, god ? 120 : 40, god ? 11 : 7, god ? 4 : 3.2);
   });
 
@@ -97,6 +100,7 @@ function packOpen(done) {
   at(wake + 920, () => {
     st.classList.remove('packed');
     st.classList.add('rip-pull');
+    SFX.jouer('woosh');
     blast(.16, god ? 190 : 56, god ? 13 : 8, god ? 4.6 : 4);
     if (god) FX.sparkle({ n: 150, colors: cols, size: 4.4 });
   });
@@ -209,6 +213,7 @@ function doReveal(done) {
 
   stage.style.setProperty('--rc', cfg.rc);
   stage.classList.add('charging', 'charge-' + c.rar);
+  SFX.jouer('monte', cfg.charge);
   /* La rareté n'est posée sur la carte qu'ici : avant, sa couleur vendrait la mèche. */
   top.classList.add('charging', 'r' + c.rar);
 
@@ -220,6 +225,7 @@ function doReveal(done) {
     stage.classList.remove('charging');
     top.classList.remove('veiled', 'charging');
     top.classList.add('unveil', 'hitcard', 'h' + c.rar);
+    SFX.jouer(c.rar === 'L' ? 'legend' : c.rar === 'E' ? 'epique' : 'rare');
     if (c.rar === 'E' || c.rar === 'L') top.classList.add('spin' + c.rar);
     rv.revealed = true;
 
@@ -280,6 +286,7 @@ function bindStack() {
     const el = top();
     if (!el || busy || !rv || rv.lock) return;
     busy = true;
+    SFX.jouer('carte');
     el.style.transition = RM() ? 'none' : 'transform .32s cubic-bezier(.4,0,.8,.4),opacity .32s';
     el.style.transform = `translateZ(0) translate(${dir * 150}%,-14%) rotate(${dir * 26}deg)`;
     el.style.opacity = '0';
@@ -423,6 +430,7 @@ function showRecap() {
     <div class="rc-actions"><button class="btn" data-t="again">${rv.test ? 'Relancer ce test' : 'Ouvrir un autre booster'}</button><button class="btn ghost dark" data-t="done">Terminer</button></div>
   </div>`);
 
+  SFX.jouer('gagne');
   if (best.rar === 'L' && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: REVEAL.L.colors }), 500);
 }
 
@@ -444,10 +452,6 @@ $('#theater').addEventListener('click', e => {
     }
     case 'again': {
       const o = rv.opts;
-      if (!o.test && !save.unlimited && save.tickets < 1) {
-        toast('Plus de booster pour le moment.');
-        return;
-      }
       FX.clear();
       openBooster(o);
       break;

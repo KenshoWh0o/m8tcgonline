@@ -71,8 +71,10 @@ const DEFV = { ES: 0, C: 90, PC: 110, R: 120, E: 130, L: 150 };
 const DEFD = { ES: 0, C: 60, PC: 80, R: 100, E: 120, L: 150 };
 
 /* ---------- Réglages des boosters ---------- */
-const INTERVAL = 30 * 60 * 1000;
-const TICKET_CAP = 5;
+/* Valeurs de repli, utilisées hors ligne. Connecté, le serveur impose les siennes
+   (fonction cfg() dans supabase/01_schema.sql) : la montre du téléphone n'y peut rien. */
+let INTERVAL = 30 * 60 * 1000;
+let TICKET_CAP = 5;
 
 /* Nombre de cartes par booster. La composition slot par slot est dans makeBooster() (js/booster.js). */
 const PACK_SIZE = 8;
@@ -87,3 +89,71 @@ const REVEAL = {
   E: { charge: 800, colors: ['#8936ff', '#ec8fff', '#ffffff', '#d9b8ff'], n: 100, speed: 11, label: 'Épique', rc: '#8936ff' },
   L: { charge: 1150, colors: ['#ffc73b', '#fff3b0', '#ec8fff', '#ffffff'], n: 160, speed: 14, label: 'Légendaire', rc: '#ffc73b' }
 };
+
+/* ---------- Identité en ligne ---------- */
+/* Laisser vide tant que l'adresse finale n'est pas décidée : les balises de partage
+   se replient alors sur l'adresse courante. Sinon, mettre l'adresse complète, sans / final. */
+const SITE_URL = '';
+
+/* ---------- Économie ---------- */
+const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
+
+/* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
+const FRAMES = {
+  default: { nom: 'Aucun', c1: '#3f3450', c2: '#2e2539' },
+  f_azur:  { nom: 'Azur',  c1: '#39b8ff', c2: '#2f7fc9' },
+  f_rose:  { nom: 'Rose',  c1: '#ee0073', c2: '#ffd7f0' },
+  f_or:    { nom: 'Or',    c1: '#ffc73b', c2: '#fff3b0' },
+  f_prisme:{ nom: 'Prisme', prisme: true, c1: '#ee0073', c2: '#39b8ff' }
+};
+
+/* Avatars disponibles sans posséder de carte. Au-delà, on choisit une carte de sa collection. */
+const AVATARS = {
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg' },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp' },
+  logo: { nom: 'Logo', art: 'assets/logo-bw.svg' }
+};
+
+/* ---------- Échanges ---------- */
+/* Une demande gratuite passé le délai, sinon un jeton acheté en boutique.
+   Le serveur applique la même règle : ces valeurs ne servent qu'à l'affichage. */
+const TRADE_COOLDOWN_H = 6;
+
+/* ---------- Onglets ---------- */
+/* `bas` : la barre du bas sur mobile, le rail sur ordinateur. Cinq places, pas une
+   de plus : ce sont les cinq endroits où l'on revient tout le temps.
+   `tiroir` : le menu qui se déplie sous l'avatar — le compte et ses réglages,
+   pas le jeu. `admin` : réservé aux profils administrateurs. */
+const TABS = [
+  { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
+  { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
+  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword' },
+  { id: 'echanges',   nom: 'Échanges',   bas: true, ico: 'swap',  online: true },
+  { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest', online: true },
+
+  { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user', online: true,
+    desc: 'Pseudo, avatar, cadre et statistiques' },
+  { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,
+    desc: 'Dépenser tes Éclats' },
+  { id: 'reglages', nom: 'Réglages',   tiroir: true, ico: 'gear',
+    desc: 'Son, animations, compte, installation' },
+  { id: 'labo',     nom: 'Labo',       tiroir: true, ico: 'flask', admin: true,
+    desc: 'Ouvertures de test — administrateurs' }
+];
+
+/* Icônes de navigation : tracées au trait, sauf l'étoile du logo qui est pleine. */
+const NAVICO = {
+  star:  ICON.star,
+  cards: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="9" rx="1.5"/><rect x="14" y="4" width="7" height="9" rx="1.5"/><path d="M3 17h18M3 20.5h12"/></svg>',
+  swap:  '<svg viewBox="0 0 24 24"><path d="M4 8h13l-3.2-3.2M20 16H7l3.2 3.2"/></svg>',
+  shop:  '<svg viewBox="0 0 24 24"><path d="M4 8h16l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H6.7a1.5 1.5 0 0 1-1.5-1.3Z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>',
+  more:  '<svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.5" cy="12" r="1.4"/></svg>',
+  quest: '<svg viewBox="0 0 24 24"><path d="M9 11.5 11 13.5l4.5-4.5"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',
+  sword: '<svg viewBox="0 0 24 24"><path d="M14.5 3H21v6.5L10.2 20.3a2 2 0 0 1-2.8 0l-3.7-3.7a2 2 0 0 1 0-2.8Z"/><path d="m14 10-4 4"/></svg>',
+  user:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>',
+  gear:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3 16.6 7.4M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>',
+  flask: '<svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7 15h10"/></svg>',
+  coin:  '<svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.5 6 .9-4.3 4.3 1 6.1L12 17l-5.3 2.8 1-6.1L3.4 9.4l6-.9Z"/></svg>'
+};
+
+const tabDef = id => TABS.find(t => t.id === id) || TABS[0];

@@ -16,10 +16,6 @@ function regen() {
   }
 }
 
-function header() {
-  $('#tk').textContent = save.unlimited ? '∞' : String(save.tickets);
-}
-
 function brand() {
   $('#brand').innerHTML = `<img src="${ART.logo}" alt="${h(GAME_NAME)}">`;
   document.title = GAME_NAME;
@@ -101,6 +97,7 @@ function vBoosters() {
   const full = save.unlimited || save.tickets >= TICKET_CAP;
 
   return `<section class="packzone">
+  ${bandeauQuetes()}
   <header class="setbar">
     <img class="setlogo" src="${ART.set}" alt="${h(SET_NAME)}">
     <img class="edition" src="${ART.edition}" alt="Première édition">
@@ -128,6 +125,25 @@ function vBoosters() {
     <button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>
   </footer>
 </section>`;
+}
+
+/* Un rappel discret des quêtes finies, au-dessus du paquet : c'est là qu'on
+   passe le plus clair de son temps, autant y montrer ce qui attend d'être encaissé. */
+function bandeauQuetes() {
+  if (Backend.mode !== 'cloud') return '';
+  const n = questesPretes();
+  const reste = (save.quetes || []).filter(q => q.scope === 'daily' && !q.claimed).length;
+  if (n) {
+    return `<button class="qstrip ready" data-tab="quetes">
+      <span class="qstripico">${NAVICO.quest}</span>
+      <b>${n} récompense${n > 1 ? 's' : ''} à récupérer</b>
+      <span class="qstripgo">Voir</span></button>`;
+  }
+  if (!reste) return '';
+  return `<button class="qstrip" data-tab="quetes">
+    <span class="qstripico">${NAVICO.quest}</span>
+    <b>${reste} quête${reste > 1 ? 's' : ''} du jour</b>
+    <span class="qstripgo">Voir</span></button>`;
 }
 
 /* Le paquet suit le doigt en 3D ; une simple pression l'ouvre. */

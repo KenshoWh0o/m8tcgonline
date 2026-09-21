@@ -56,7 +56,13 @@ let opening = false;
 const persist = () => kvSet('save2', save);
 
 function defaultSave() {
-  return { tickets: TICKET_CAP, lastTick: Date.now(), unlimited: false, col: {} };
+  return {
+    tickets: TICKET_CAP, lastTick: Date.now(), unlimited: false, col: {},
+    /* Champs v2 : hors ligne ils restent inertes, mais l'interface les lit partout. */
+    shards: 0, inv: {}, quetes: [],
+    pseudo: 'Invité', avatar: 'star', frame: 'default', isAdmin: false,
+    tradeFreeAt: 0, packsOpened: 0, tradesDone: 0, streak: 0
+  };
 }
 
 /* Index des cartes par identifiant, pour les retrouver depuis la sauvegarde. */

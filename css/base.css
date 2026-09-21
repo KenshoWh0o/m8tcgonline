@@ -6,12 +6,15 @@
 .bgdeco::after{content:'';position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.05) .7px,transparent .8px) 0 0/24px 24px;
   -webkit-mask:linear-gradient(180deg,#000,transparent 55%);mask:linear-gradient(180deg,#000,transparent 55%)}
 
+/* `display` posé sur une classe l'emporterait sur la règle du navigateur : on tranche. */
+[hidden]{display:none!important}
+
 /* ============ Tête ============ */
 .top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 16px 10px;
   background:linear-gradient(180deg,rgba(12,9,16,.97),rgba(12,9,16,.74));border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
 #brand{display:flex;align-items:center;user-select:none}
 #brand img{display:block;height:clamp(34px,10vw,46px);width:auto;filter:drop-shadow(0 0 18px rgba(169,92,242,.4))}
-.pill{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;
+.pill{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;
   padding:6px 15px 6px 11px;font-family:var(--display);font-weight:900;font-size:14px}
 .pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px rgba(137,54,255,.5))}
 
@@ -19,21 +22,23 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 16px 26px;scrollbar-w
 main>*{max-width:1180px;margin-inline:auto}
 
 /* ============ Navigation ============ */
-nav{position:relative;z-index:3;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+/* Tout est accroché à #nav, et non à l'élément <nav> : le panneau du tiroir en
+   est un aussi, et héritait sinon de la mise en colonne de la barre du bas. */
+#nav{position:relative;z-index:3;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
   padding:7px 10px calc(7px + env(safe-area-inset-bottom,0px));background:rgba(12,9,16,.95);border-top:1px solid var(--line);backdrop-filter:blur(10px)}
-nav button{position:relative;background:none;border:0;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:4px;
-  font-size:10.5px;font-weight:800;letter-spacing:.03em;color:var(--muted);border-radius:var(--radius-sm);
+#nav button{position:relative;background:none;border:0;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-size:10px;font-weight:800;letter-spacing:.01em;color:var(--muted);border-radius:var(--radius-sm);white-space:nowrap;
   transition:color .16s,background .16s}
-nav button:hover{color:var(--subtle);background:rgba(255,255,255,.03)}
-nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#nav button:hover{color:var(--subtle);background:rgba(255,255,255,.03)}
+#nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 /* L'étoile du logo est pleine : elle sert de marque, pas d'icône au trait. */
-nav svg.ico-star,.btn svg.ico-star{width:24px;height:17px;stroke:none;fill:currentColor}
-nav button.on svg.ico-star{fill:var(--accent-soft);filter:drop-shadow(0 0 9px rgba(137,54,255,.8))}
-nav button.on{color:var(--text);background:linear-gradient(180deg,rgba(137,54,255,.22),rgba(137,54,255,.06))}
-nav button.on svg{stroke:var(--accent-soft)}
-nav button.on::after{content:'';position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--accent-soft);
+#nav svg.ico-star,.btn svg.ico-star{width:24px;height:17px;stroke:none;fill:currentColor}
+#nav button.on svg.ico-star{fill:var(--accent-soft);filter:drop-shadow(0 0 9px rgba(137,54,255,.8))}
+#nav button.on{color:var(--text);background:linear-gradient(180deg,rgba(137,54,255,.22),rgba(137,54,255,.06))}
+#nav button.on svg{stroke:var(--accent-soft)}
+#nav button.on::after{content:'';position:absolute;top:0;left:26%;right:26%;height:3px;border-radius:0 0 3px 3px;background:var(--accent-soft);
   box-shadow:0 0 12px var(--accent)}
-body.intheater nav,body.intheater .top,body.intheater main,body.intheater .bgdeco{visibility:hidden}
+body.intheater #nav,body.intheater .top,body.intheater main,body.intheater .bgdeco{visibility:hidden}
 
 /* ============ Typo ============ */
 h1{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:25px;margin:6px 0 4px;letter-spacing:-.025em;line-height:1.05}

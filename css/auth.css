@@ -1,0 +1,36 @@
+/* Porte d'entrée : création de compte, connexion, mot de passe oublié.
+   Elle prend tout l'écran — ni en-tête, ni barre du bas — pour qu'il n'y ait
+   qu'une chose à faire à la fois. */
+
+body.inauth .top,
+body.inauth #nav { display:none }
+body.inauth main { padding:0 }
+
+.authwrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:26px 18px calc(30px + env(safe-area-inset-bottom,0px))}
+.authcard{width:100%;max-width:400px;text-align:center}
+.authlogo{height:clamp(52px,17vw,74px);width:auto;margin-bottom:22px;filter:drop-shadow(0 0 26px rgba(169,92,242,.45))}
+.authtitle{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:26px;
+  letter-spacing:-.025em;line-height:1.08;margin:0 0 8px}
+.authcard>p{margin:0 auto 18px;max-width:34ch}
+
+.field{display:block;text-align:left;margin:0 0 12px}
+.field>span{display:block;font-size:12.5px;font-weight:800;color:var(--subtle);margin:0 0 6px;letter-spacing:.02em}
+.field input,.findrow input,.compose input,.panel input[type=text]{
+  width:100%;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius-sm);
+  color:var(--text);font:inherit;font-size:16px;padding:13px 14px;transition:border-color .15s,box-shadow .15s}
+.field input:focus,.findrow input:focus,.compose input:focus,.panel input[type=text]:focus{
+  outline:0;border-color:var(--accent-soft);box-shadow:0 0 0 3px rgba(137,54,255,.22)}
+.field input::placeholder,.findrow input::placeholder,.compose input::placeholder{color:var(--muted)}
+
+.authacts{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.autherr{background:rgba(238,0,115,.12);border:1px solid rgba(238,0,115,.4);color:#ffc2dd;
+  border-radius:var(--radius-sm);padding:10px 13px;font-size:13.5px;font-weight:600;text-align:left;margin:0 0 14px}
+
+/* Le bouton Discord garde la couleur de la marque : on la reconnaît d'un coup d'œil. */
+.btn.discord{background:linear-gradient(180deg,#6c7ef4,#5865f2);box-shadow:0 5px 0 #3c45ad,0 12px 22px rgba(88,101,242,.3),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn.discord:active:not(:disabled){box-shadow:0 0 0 #3c45ad,0 4px 10px rgba(88,101,242,.24),inset 0 1px 0 rgba(255,255,255,.3)}
+.btn.discord svg{width:22px;height:17px}
+
+.authsep{position:relative;margin:20px 0 14px;color:var(--muted);font-size:12px;font-weight:700}
+.authsep::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--line)}
+.authsep span{position:relative;background:var(--bg);padding:0 12px}
