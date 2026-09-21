@@ -50,6 +50,7 @@ mate-tcg-online/
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
 │   ├── code-porte.py   Calcule l'empreinte d'un code d'accès
+│   ├── version.py      Pose le numéro de version et marque les fichiers
 │   └── gen-icons.py    Régénère icônes, favicons et image de partage
 ├── supabase/           Tout le code serveur : tables, sécurité, actions du jeu
 │   ├── TOUT.sql        Les quatre fichiers ci-dessous, en un seul (assemblé)
@@ -333,6 +334,26 @@ rebours s'affiche alors tout seul. Laissé à `null`, on annonce seulement « bi
 L'onglet **Labo** n'est plus accessible à tout le monde. Il n'apparaît que pour les profils marqués `is_admin` en base, et ce drapeau ne peut être posé que depuis le tableau de bord Supabase (`supabase/05_admin.sql`) : aucune fonction du jeu ne l'expose, et le navigateur n'a pas le droit d'écrire dans la table des profils.
 
 Cacher un bouton ne protège rien — ce qui protège, c'est que le serveur refuse les actions. Les boutons du Labo qui touchent à la collection ne modifient que l'affichage local : en ligne, la vérité reste celle du serveur, et la page la récupère telle quelle au rafraîchissement suivant.
+
+## Mettre à jour le site
+
+GitHub Pages sert les fichiers avec un cache de dix minutes. Sans précaution, une
+correction poussée peut mettre ce temps-là à apparaître — voire ne jamais apparaître sur
+un navigateur qui garde l'ancienne copie. C'est la raison d'être de `tools/version.py` :
+
+```bash
+python3 tools/version.py 2.3.2
+git add -A && git commit -m "…" && git push
+```
+
+Le script écrit le numéro dans `js/pwa.js` et `sw.js`, et accroche `?v=2.3.2` à chaque
+css et js de `index.html` et `verif.html`. Chaque version devient ainsi une adresse
+différente : le navigateur ne peut plus servir l'ancienne par erreur. Le service worker
+met en réserve les mêmes adresses marquées, et propose la mise à jour au lieu de
+recharger sous les doigts.
+
+**À lancer avant chaque mise en ligne qui touche au code.** Les images et les cartes ne
+sont pas marquées : elles ne changent jamais sans changer de nom.
 
 ## Dépendances externes
 

@@ -397,11 +397,14 @@ addEventListener('visibilitychange', () => {
   rollPack();
   poserRM(reglageRM());
 
-  /* Porte fermée : on s'arrête là. Pas de service worker, pas d'appel au
-     serveur — un visiteur qui n'a pas le code ne déclenche rien du tout. */
+  /* Le service worker se branche toujours : c'est lui qui apporte les mises à
+     jour. Le laisser de côté pendant que la porte est fermée gèlerait le site
+     sur la version qu'un visiteur a déjà en cache. */
+  brancherSW();
+
+  /* Porte fermée : on s'arrête là, sans contacter le serveur du jeu. */
   if (!porteOuverte()) return render();
 
-  brancherSW();
   await Backend.init();
 
   if (Backend.mode === 'cloud') {

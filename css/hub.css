@@ -394,13 +394,14 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   #nav{grid-area:nav}
   main{grid-area:main}
 
-  /* Porte d'entrée : ni en-tête ni rail, donc une seule zone — sinon la colonne
-     du rail reste réservée et l'écran de connexion se retrouve décentré. */
-  body.inauth{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
+  /* Écrans pleine page — attente et connexion : ni en-tête ni rail, donc une
+     seule zone. Sans ça, la colonne du rail reste réservée et le contenu se
+     retrouve décentré. */
+  body.inauth,body.inlock{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
     grid-template-areas:"main"}
-  /* Les pages du jeu sont calées à gauche sous le rail ; la porte d'entrée,
-     elle, n'a rien autour et doit rester au milieu de l'écran. */
-  body.inauth main>*{max-width:none;margin-inline:auto}
+  /* Les pages du jeu sont calées à gauche sous le rail ; ces deux écrans-là
+     n'ont rien autour et doivent rester au milieu. */
+  body.inauth main>*,body.inlock main>*{max-width:none;margin-inline:auto}
   #brand img{height:44px}
 
   /* Le rail passe à droite : sous la main qui tient la souris, et à l'opposé

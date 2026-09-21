@@ -7,7 +7,7 @@
    Rien de ce qui touche au compte n'est mis en cache. */
 "use strict";
 
-const VERSION = 'mtcg-v2.3.0';
+const VERSION = 'mtcg-v2.3.1';
 const COQUILLE = VERSION + '-coquille';
 const MEDIAS = VERSION + '-medias';
 
@@ -26,11 +26,17 @@ const ESSENTIEL = [
   'assets/icon-192.png', 'assets/apple-touch-icon.png', 'assets/favicon.svg'
 ];
 
+/* La page demande ses css et ses js avec ?v=<version> (voir tools/version.py) :
+   on met en réserve exactement les mêmes adresses, sinon le cache ne servirait
+   jamais à rien — une adresse différente est une ressource différente. */
+const MARQUE = VERSION.replace('mtcg-v', '');
+const marquer = u => /\.(css|js)$/.test(u) ? u + '?v=' + MARQUE : u;
+
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
     const c = await caches.open(COQUILLE);
     /* Un fichier manquant ne doit pas faire échouer toute l'installation. */
-    await Promise.all(ESSENTIEL.map(u => c.add(u).catch(() => {})));
+    await Promise.all(ESSENTIEL.map(u => c.add(marquer(u)).catch(() => {})));
   })());
 });
 
