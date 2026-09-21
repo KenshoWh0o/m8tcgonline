@@ -147,21 +147,35 @@
 .ofico svg.ico-star{width:24px;height:17px;stroke:none;fill:currentColor}
 
 /* ============ Avatars et cadres ============ */
+/* Deux cadrages : les photos et les cartes remplissent le cercle, les symboles
+   restent entiers au centre sur un fond de leur couleur. */
 .ava{position:relative;display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:50%;
-  background:var(--surface-2);box-shadow:0 0 0 2px var(--f1,#3f3450)}
-.ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:center 28%}
-.ava.carte img{object-position:center 22%}
+  overflow:hidden;background:var(--surface-2);box-shadow:0 0 0 2px var(--f1,#3f3450)}
+.ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:center}
+.ava.carte img{object-position:center 24%}
+/* Un voile sombre par-dessus la couleur : les symboles d'essence sont peints de
+   leur propre couleur et disparaîtraient sur un fond identique. Le voile garde
+   la teinte tout en rendant le symbole lisible. */
+.ava.ico{background:linear-gradient(rgba(10,7,14,.62),rgba(10,7,14,.62)),var(--ab,var(--surface-2))}
+.ava.ico img{width:58%;height:58%;object-fit:contain;
+  filter:drop-shadow(0 0 5px rgba(0,0,0,.6)) drop-shadow(0 1px 1px rgba(0,0,0,.5))}
 .ava.sm{width:34px;height:34px}
-.ava.md{width:54px;height:54px}
+.ava.md{width:56px;height:56px}
 .ava.lg{width:48px;height:48px}
 .ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,#3f3450),0 0 24px rgba(137,54,255,.25)}
 .ava.prisme{animation:prisme 4s linear infinite}
 @keyframes prisme{0%{box-shadow:0 0 0 3px #ee0073}25%{box-shadow:0 0 0 3px #ffc73b}50%{box-shadow:0 0 0 3px #55e6a6}75%{box-shadow:0 0 0 3px #39b8ff}100%{box-shadow:0 0 0 3px #ee0073}}
-.avaplus{font-size:24px;font-weight:300;color:var(--muted);line-height:1}
+.avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
 
-.avagrid{display:flex;flex-wrap:wrap;gap:10px;padding:4px 0 2px}
-.avapick{background:none;border:0;padding:4px;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.avapick.on{background:rgba(137,54,255,.18);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+/* Une grille régulière : les avatars s'alignent quel que soit leur nombre. */
+.avagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;padding:4px 0 2px}
+.avapick{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
+  padding:8px 4px;border-radius:14px;transition:background .14s}
+.avapick:hover{background:rgba(255,255,255,.04)}
+.avapick>span{font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.2;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
+.avapick.on{background:rgba(137,54,255,.2);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.avapick.on>span{color:var(--text)}
 
 /* ============ Profil ============ */
 .idcard{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(137,54,255,.16),var(--surface) 62%);
@@ -194,6 +208,57 @@
   color:var(--text);min-width:2.4em;text-align:right}
 .slider input[type=range]{grid-row:2;grid-column:1/-1;width:100%;accent-color:var(--accent);height:22px;margin:0}
 .about code{background:var(--bg-2);border-radius:5px;padding:1px 5px;font-size:12px}
+
+/* ============ Social ============ */
+/* Un second niveau de puces, plus discret que le premier : on est déjà dans
+   une section, ce n'est plus un changement d'onglet. */
+.souschips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.souschips::-webkit-scrollbar{display:none}
+.souschips button{flex:0 0 auto;border:0;background:var(--bg-2);color:var(--muted);padding:7px 14px;
+  font-size:12px;font-weight:800;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);
+  display:inline-flex;align-items:center;gap:6px;transition:color .14s,background .14s}
+.souschips button:hover{color:var(--subtle)}
+.souschips button.on{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.rappelrar{margin:0 0 12px}
+
+.amiligne{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:9px 11px;margin-bottom:8px}
+.amiid{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;
+  padding:0;text-align:left}
+.aminom{min-width:0}
+.aminom b{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:800}
+.aminom .qtag{font-size:9.5px;padding:1px 5px;border-radius:4px;background:rgba(85,230,166,.16)}
+.aminom small{display:block;line-height:1.3}
+.amiacts{display:flex;gap:6px;flex:0 0 auto}
+.amiacts .btn.tiny{padding:8px 13px;font-size:11.5px}
+
+/* Fiche d'un joueur, dans la feuille modale */
+.fiche{display:flex;align-items:center;gap:14px;margin:4px 0 14px}
+.fichemeta{flex:1;min-width:0}
+.fichemeta p{margin:4px 0 0}
+.sheet .stats{grid-template-columns:repeat(2,1fr);margin-bottom:16px}
+
+/* ============ Recharge d'échange ============ */
+.cooldown{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:11px 12px;margin:0 0 12px}
+.cooldown.pret{border-color:rgba(85,230,166,.4)}
+.cdico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border-radius:10px;
+  background:rgba(137,54,255,.18);color:var(--accent-soft)}
+.cooldown.pret .cdico{background:rgba(85,230,166,.16);color:#55e6a6}
+.cdico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cdtxt{flex:1;min-width:0}
+.cdtxt b{display:block;font-size:13.5px;font-weight:800}
+.cdtxt small{display:block;font-size:12px}
+.cdbar{display:block;height:4px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin-top:6px;
+  box-shadow:inset 0 0 0 1px var(--line)}
+.cdbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+  transition:width 1s linear}
+.cdjetons{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;border:0;background:var(--surface-2);
+  border-radius:999px;padding:7px 12px;color:var(--subtle);box-shadow:inset 0 0 0 1px var(--line)}
+.cdjetons b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
+.cdjetons svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.cdjetons.vide{opacity:.6}
+.cdjetons.vide b{color:var(--muted)}
 
 /* ============ Échanges ============ */
 .trade{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 13px 14px;margin-bottom:10px}
@@ -307,6 +372,9 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
      du rail reste réservée et l'écran de connexion se retrouve décentré. */
   body.inauth{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
     grid-template-areas:"main"}
+  /* Les pages du jeu sont calées à gauche sous le rail ; la porte d'entrée,
+     elle, n'a rien autour et doit rester au milieu de l'écran. */
+  body.inauth main>*{max-width:none;margin-inline:auto}
   #brand img{height:44px}
 
   /* Le rail passe à droite : sous la main qui tient la souris, et à l'opposé

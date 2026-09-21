@@ -117,11 +117,15 @@ const FRAMES = {
   f_prisme:{ nom: 'Prisme', prisme: true, c1: '#ee0073', c2: '#39b8ff' }
 };
 
-/* Avatars disponibles sans posséder de carte. Au-delà, on choisit une carte de sa collection. */
+/* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
+   compte, qui reste à jour toute seule), « ess:<couleur> » (un des dix symboles
+   d'essence) ou « card:<id> » (une carte possédée, vérifiée par le serveur). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg' },
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg', ico: true, bg: '#8936ff' },
   back: { nom: 'Dos de carte', art: 'assets/card-back.webp' },
-  logo: { nom: 'Logo', art: 'assets/logo-bw.svg' }
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg', ico: true, bg: '#8936ff' },
+  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg', ico: true, bg: '#ee0073' }
 };
 
 /* ---------- Échanges ---------- */
@@ -138,7 +142,7 @@ const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
   { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword' },
-  { id: 'echanges',   nom: 'Échanges',   bas: true, ico: 'swap',  online: true },
+  { id: 'social',     nom: 'Social',     bas: true, ico: 'amis',  online: true },
   { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest', online: true },
 
   { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user', online: true,
@@ -156,6 +160,7 @@ const NAVICO = {
   star:  ICON.star,
   cards: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="9" rx="1.5"/><rect x="14" y="4" width="7" height="9" rx="1.5"/><path d="M3 17h18M3 20.5h12"/></svg>',
   swap:  '<svg viewBox="0 0 24 24"><path d="M4 8h13l-3.2-3.2M20 16H7l3.2 3.2"/></svg>',
+  amis:  '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.6 20a6.4 6.4 0 0 1 12.8 0"/><path d="M16.5 5.4a3.4 3.4 0 0 1 0 6.6M17.6 14.4A6.4 6.4 0 0 1 21.4 20"/></svg>',
   shop:  '<svg viewBox="0 0 24 24"><path d="M4 8h16l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H6.7a1.5 1.5 0 0 1-1.5-1.3Z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>',
   more:  '<svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.5" cy="12" r="1.4"/></svg>',
   quest: '<svg viewBox="0 0 24 24"><path d="M9 11.5 11 13.5l4.5-4.5"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',

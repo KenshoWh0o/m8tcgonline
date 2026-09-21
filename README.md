@@ -56,6 +56,7 @@ mate-tcg-online/
 │   ├── 02_cards.sql    Catalogue des cartes (généré depuis js/cards-data.js)
 │   ├── 03_rpc.sql      Ouvrir un booster, échanger, encaisser une quête, acheter
 │   ├── 04_seed.sql     Quêtes et boutique — c'est ici qu'on équilibre
+│   ├── 06_social.sql   Amis et fiches de joueur
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   └── gen-cards-sql.py  Régénère 02_cards.sql
 ├── css/
@@ -85,7 +86,8 @@ mate-tcg-online/
 │   ├── opening.js      Pile 3D, révélation, godpack, récap
 │   ├── collection.js   Onglet Collection
 │   ├── viewer.js       Visionneuse 3D
-│   ├── trade.js        Onglet Échanges
+│   ├── trade.js        Échanges (section de Social)
+│   ├── social.js       Onglet Social : amis, fiches de joueur
 │   ├── quests.js       Onglet Quêtes
 │   ├── shop.js         Onglet Boutique
 │   ├── battle.js       Onglet Combats (à venir)
@@ -222,7 +224,7 @@ Ils sont décrits dans `TABS` (`js/config.js`), sur deux niveaux : ce qu'on joue
 | Boosters | barre du bas / rail | non |
 | Collection | barre du bas / rail | non |
 | Combats | barre du bas / rail | non |
-| Échanges | barre du bas / rail | oui |
+| Social | barre du bas / rail | oui |
 | Quêtes | barre du bas / rail | oui |
 | Mon profil | tiroir (mobile) · rail (ordinateur) | oui |
 | Boutique | tiroir (mobile) · rail (ordinateur) | oui |
@@ -231,7 +233,7 @@ Ils sont décrits dans `TABS` (`js/config.js`), sur deux niveaux : ce qu'on joue
 
 Pour déplacer un onglet, il suffit de changer son drapeau : `bas: true` le met dans la barre du bas, `tiroir: true` le range dans le menu du compte.
 
-**La barre du bas ne contient que le jeu.** Cinq places, pas une de plus — les cinq endroits où l'on revient tout le temps. Une pastille y signale ce qui attend : récompenses à encaisser sur Quêtes, demandes reçues sur Échanges.
+**La barre du bas ne contient que le jeu.** Cinq places, pas une de plus — les cinq endroits où l'on revient tout le temps. Une pastille y signale ce qui attend : récompenses à encaisser sur Quêtes, demandes d'ami et d'échange sur Social.
 
 **Le compte vit dans un tiroir.** Sur mobile, appuyer sur son avatar déplie un panneau depuis le bord droit — celui d'où vient le doigt : pseudo, ressources, profil, boutique, réglages, déconnexion. Un point sur l'avatar prévient quand quelque chose y attend.
 
@@ -245,11 +247,17 @@ Sur ordinateur, la page est une **grille** (en-tête sur toute la largeur, puis 
 
 **L'en-tête montre toujours les deux compteurs et l'avatar**, même hors ligne. Ce sont les seules portes vers la boutique et vers le menu du compte : les cacher revenait à cacher qu'ils existent.
 
-## Échanges
+## Social
 
-Une carte contre une carte, **de rareté identique**, et jamais en simultané : quelqu'un propose, l'autre répond quand il veut, et l'échange ne se fait que si les deux ont validé.
+Les échanges vivent dans l'onglet **Social**, pas à côté : on n'échange pas avec un inconnu. On cherche quelqu'un par son pseudo, on l'ajoute, on regarde ce qu'il possède, puis on propose.
 
-Le coût est payé par celui qui lance la demande : **une demande gratuite toutes les 6 heures**, ou un **jeton d'échange** acheté en boutique pour ne pas attendre. Le délai et le jeton sont vérifiés par le serveur, pas par la page.
+**Les amis.** Une demande part vers un pseudo, l'autre accepte ou refuse. La table `friendships` range chaque paire dans un ordre stable (`a < b`), ce qui rend impossible deux amitiés croisées entre les mêmes personnes — et une demande envoyée à quelqu'un qui t'avait déjà demandé vaut acceptation.
+
+**La fiche d'un joueur** montre ses compteurs à tout le monde, mais sa collection **seulement entre amis**. On y voit ses doublons : les cartes qu'il a en plusieurs exemplaires, donc celles qu'il peut céder sans se démunir. C'est ce qui permet de viser un échange qui a une chance d'aboutir.
+
+**Les échanges.** Une carte contre une carte, **de rareté identique**, et jamais en simultané : quelqu'un propose, l'autre répond quand il veut, et l'échange ne se fait que si les deux ont validé.
+
+Le coût est payé par celui qui lance la demande : **une demande gratuite toutes les 6 heures**, ou un **jeton d'échange** acheté en boutique pour ne pas attendre. Une barre de recharge le montre en haut de la section. Le délai et le jeton sont vérifiés par le serveur, pas par la page.
 
 Au moment où la demande est acceptée, le serveur revérifie **tout** : que les deux joueurs possèdent encore leur carte, que les raretés correspondent toujours, et il échange les deux cartes dans une seule transaction. Personne ne peut donner deux fois la même carte en lançant deux demandes.
 

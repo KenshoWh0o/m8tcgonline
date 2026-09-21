@@ -12,16 +12,14 @@ const RAR_ORDRE = ['C', 'PC', 'R', 'E', 'L'];
 const tradeGratuit = () => !save.tradeFreeAt || save.tradeFreeAt <= Date.now();
 const tradeJetons = () => (save.inv || {}).trade_token || 0;
 
-/* ---------- La page ---------- */
+/* ---------- La section Échanges, dans l'onglet Social ---------- */
 function vEchanges() {
-  if (Backend.mode !== 'cloud') return horsLigne('Échanges');
-
   const list = Backend.trades || [];
   const recues = list.filter(t => t.sens === 'recue' && t.status === 'pending');
   const envoyees = list.filter(t => t.sens === 'envoyee' && t.status === 'pending');
   const passees = list.filter(t => t.status !== 'pending');
 
-  const onglets = [
+  const sous = [
     ['recues', 'Reçues', recues.length],
     ['envoyees', 'Envoyées', envoyees.length],
     ['nouvelle', 'Proposer', 0]
@@ -32,7 +30,7 @@ function vEchanges() {
   else if (trVue === 'envoyees') {
     corps = envoyees.length
       ? envoyees.map(ligneTrade).join('')
-      : vide('Aucune demande en cours', 'Propose un échange, puis attends la réponse.');
+      : vide('Aucune demande en cours', 'Propose un échange à un ami, puis attends sa réponse.');
   } else {
     corps = recues.length
       ? recues.map(ligneTrade).join('')
@@ -44,26 +42,36 @@ function vEchanges() {
        ${passees.slice(0, 8).map(ligneTrade).join('')}</section>`
     : '';
 
-  return `<div class="pagehead">
-      <h1>Échanges</h1>
-      <p class="muted">Carte contre carte, à rareté égale. Les deux joueurs doivent valider.</p>
-    </div>
-    ${bandeauCout()}
-    <div class="chips">${onglets.map(([k, l, n]) =>
+  return `${bandeauCout()}
+    <div class="souschips">${sous.map(([k, l, n]) =>
       `<button data-tr="${k}" class="${trVue === k ? 'on' : ''}">${l}${n ? ` <i class="pastille">${n}</i>` : ''}</button>`).join('')}</div>
+    <p class="muted small rappelrar">Carte contre carte, à rareté égale. Les deux joueurs doivent valider.</p>
     ${corps}${histo}`;
 }
 
-/* Rappelle ce que coûte la prochaine demande : un délai, ou un jeton. */
+/* Une ligne de recharge, lisible d'un coup d'œil : prête, ou le temps restant,
+   avec les jetons qui permettent de passer devant. */
 function bandeauCout() {
-  if (tradeGratuit()) {
-    return `<div class="notice ok">Ta demande gratuite est disponible.
-      Ensuite, une toutes les ${TRADE_COOLDOWN_H} h — ou un jeton pour ne pas attendre.</div>`;
-  }
   const j = tradeJetons();
-  return `<div class="notice">Prochaine demande gratuite dans <b>${dans(save.tradeFreeAt - Date.now())}</b>.
-    ${j ? `Tu as <b>${j}</b> jeton${j > 1 ? 's' : ''} pour passer devant.`
-        : 'Un jeton d\'échange s\'achète en boutique.'}</div>`;
+  const jetons = j
+    ? `<span class="cdjetons">${NAVICO.swap}<b>${j}</b></span>`
+    : `<button class="cdjetons vide" data-tab="boutique" title="Acheter un jeton">${NAVICO.swap}<b>0</b></button>`;
+
+  if (tradeGratuit()) {
+    return `<div class="cooldown pret">
+      <span class="cdico">${NAVICO.quest}</span>
+      <span class="cdtxt"><b>Demande disponible</b>
+        <small class="muted">Une toutes les ${TRADE_COOLDOWN_H} h</small></span>
+      ${jetons}</div>`;
+  }
+
+  const reste = save.tradeFreeAt - Date.now();
+  const pct = Math.max(0, Math.min(100, 100 - reste / (TRADE_COOLDOWN_H * 3600e3) * 100));
+  return `<div class="cooldown">
+    <span class="cdico">${ICON.glass}</span>
+    <span class="cdtxt"><b>Prochaine demande dans ${dans(reste)}</b>
+      <i class="cdbar"><i style="width:${pct.toFixed(1)}%"></i></i></span>
+    ${jetons}</div>`;
 }
 
 /* ---------- Une demande ---------- */

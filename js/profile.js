@@ -46,13 +46,21 @@ function vProfil() {
   <section class="panel">
     <h2>Avatar</h2>
     <div class="avagrid">
+      ${Backend.photoDiscord
+        ? `<button class="avapick${save.avatar === 'discord' ? ' on' : ''}" data-ava="discord">
+            ${avatarHTML('discord', save.frame, 'md')}<span>Discord</span></button>`
+        : ''}
+      <button class="avapick${String(save.avatar).startsWith('card:') ? ' on' : ''}" data-act="pf-carte">
+        ${String(save.avatar).startsWith('card:')
+          ? avatarHTML(save.avatar, save.frame, 'md')
+          : '<span class="ava md ico"><span class="avaplus">+</span></span>'}
+        <span>Une carte</span></button>
       ${Object.entries(AVATARS).map(([k, a]) =>
-        `<button class="avapick${save.avatar === k ? ' on' : ''}" data-ava="${k}" title="${h(a.nom)}">
-          ${avatarHTML(k, save.frame, 'md')}</button>`).join('')}
-      <button class="avapick carte" data-act="pf-carte">
-        <span class="ava md"><span class="avaplus">+</span></span>
-        <span class="muted small">Une carte</span>
-      </button>
+        `<button class="avapick${save.avatar === k ? ' on' : ''}" data-ava="${k}">
+          ${avatarHTML(k, save.frame, 'md')}<span>${h(a.nom)}</span></button>`).join('')}
+      ${Object.keys(COLORS).map(k =>
+        `<button class="avapick${save.avatar === 'ess:' + k ? ' on' : ''}" data-ava="ess:${k}">
+          ${avatarHTML('ess:' + k, save.frame, 'md')}<span>${h(COLORS[k].nom)}</span></button>`).join('')}
     </div>
   </section>
 
@@ -68,11 +76,13 @@ function vProfil() {
 
 /* Choisir une carte possédée comme avatar. */
 function ouvrirChoixAvatar() {
-  const liste = cards.filter(c => (save.col[c.id] || 0) > 0 && c.img);
+  const liste = cards
+    .filter(c => (save.col[c.id] || 0) > 0 && c.img)
+    .sort((a, b) => rk(b) - rk(a) || a.num - b.num);
   openSheet({
-    title: 'Ton avatar',
+    title: 'Une carte en avatar',
     body: liste.length
-      ? `<p class="muted small">Parmi les cartes que tu possèdes.</p>
+      ? `<p class="muted small">Parmi les ${liste.length} cartes que tu possèdes.</p>
          <div class="pickgrid">${liste.map(c =>
            `<button class="pick" data-avacard="${c.id}" data-snd="carte">${renderCard(c)}
              <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`

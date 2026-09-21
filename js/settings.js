@@ -118,6 +118,10 @@ function bindReglages() {
     e.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); trChercher(); } };
   });
   b('tr-note', e => e.oninput = () => { trBrouillon.note = e.value; });
+  b('soc-pseudo', e => {
+    e.oninput = () => { socRecherche = e.value; };
+    e.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); socAjouter(); } };
+  });
 
   const u = $('#unl');
   if (u) u.onchange = () => { save.unlimited = u.checked; persist(); header(); };

@@ -14,7 +14,11 @@ const Backend = {
   /* Écart entre l'horloge du téléphone et celle du serveur, en millisecondes. */
   skew: 0,
   trades: [],
+  amis: [],
   shop: [],
+  /* La photo du compte Discord, relue à chaque session : l'avatar « discord »
+     suit donc les changements faits sur Discord, sans rien stocker chez nous. */
+  photoDiscord: null,
   ready: false
 };
 
@@ -41,6 +45,7 @@ Backend.init = async function () {
 
   const { data } = await Backend.sb.auth.getSession();
   Backend.session = data ? data.session : null;
+  Backend.lirePhotoDiscord();
 
   Backend.sb.auth.onAuthStateChange((evt, sess) => {
     const avant = !!Backend.session;
@@ -67,6 +72,12 @@ Backend.init = async function () {
 };
 
 /* ============================================================ Mode hors ligne */
+Backend.lirePhotoDiscord = function () {
+  const m = Backend.session && Backend.session.user && Backend.session.user.user_metadata;
+  const url = m && (m.avatar_url || m.picture);
+  Backend.photoDiscord = typeof url === 'string' && url.startsWith('http') ? url : null;
+};
+
 Backend.loadLocal = async function () {
   save = (await kvGet('save2')) || defaultSave();
   if (!save.col) save.col = {};
@@ -207,6 +218,18 @@ Backend.loadTrades = async function () {
 };
 
 Backend.findPlayer = pseudo => Backend.rpc('find_player', { p_pseudo: pseudo });
+
+/* ---- Amis ---- */
+Backend.loadAmis = async function () {
+  if (Backend.mode !== 'cloud') return [];
+  Backend.amis = await Backend.rpc('friend_list') || [];
+  return Backend.amis;
+};
+
+Backend.amiDemander = async p => { Backend.amis = await Backend.rpc('friend_request', { p_pseudo: p }) || []; };
+Backend.amiRepondre = async (p, ok) => { Backend.amis = await Backend.rpc('friend_respond', { p_pseudo: p, p_accept: !!ok }) || []; };
+Backend.amiRetirer = async p => { Backend.amis = await Backend.rpc('friend_remove', { p_pseudo: p }) || []; };
+Backend.ficheJoueur = p => Backend.rpc('player_profile', { p_pseudo: p });
 
 Backend.tradeCreate = async function (pseudo, offer, want, note) {
   Backend.apply(await Backend.rpc('trade_create',

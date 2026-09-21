@@ -34,23 +34,46 @@ function showCard(c) {
 }
 
 /* ---------- Avatars ---------- */
-/* Un avatar est soit une carte possédée (`card:c042`), soit un des visuels
-   livrés avec le jeu, soit l'image renvoyée par Discord (une adresse http). */
-function avatarSrc(a) {
+/* Cinq formes possibles :
+     'discord'        la photo du compte Discord, toujours à jour
+     'card:c042'      une carte possédée
+     'ess:rose'       un des dix symboles d'essence
+     'star', 'back'…  un visuel livré avec le jeu
+     'https://…'      une adresse déposée à l'inscription (ancien format)
+   Chacune renvoie une image et la façon de la cadrer : les photos et les cartes
+   remplissent le cercle, les symboles restent entiers au centre. */
+function avatarInfo(a) {
   a = a || 'star';
+
+  if (a === 'discord') {
+    return Backend.photoDiscord
+      ? { src: Backend.photoDiscord, plein: true }
+      : { src: AVATARS.star.art, ico: true, bg: AVATARS.star.bg };
+  }
   if (a.startsWith('card:')) {
     const c = byId[a.slice(5)];
-    return c && c.img ? c.img : ART.star;
+    return c && c.img ? { src: c.img, carte: true } : { src: ART.star, ico: true, bg: '#8936ff' };
   }
-  if (a.startsWith('http')) return a;
-  return (AVATARS[a] || AVATARS.star).art;
+  if (a.startsWith('ess:')) {
+    const k = a.slice(4);
+    const col = COLORS[k] || COLORS.neutre;
+    return { src: col.ic, ico: true, bg: col.c };
+  }
+
+  if (a.startsWith('http')) return { src: a, plein: true };
+
+  const v = AVATARS[a] || AVATARS.star;
+  return { src: v.art, ico: !!v.ico, bg: v.bg, plein: !v.ico };
 }
+
+const avatarSrc = a => avatarInfo(a).src;
 
 function avatarHTML(a, frame, cls) {
   const f = FRAMES[frame] || FRAMES.default;
-  const carte = String(a || '').startsWith('card:');
-  return `<span class="ava ${cls || ''}${f.prisme ? ' prisme' : ''}${carte ? ' carte' : ''}"
-    style="--f1:${f.c1};--f2:${f.c2}"><img src="${avatarSrc(a)}" alt=""></span>`;
+  const v = avatarInfo(a);
+  const mode = v.ico ? ' ico' : v.carte ? ' carte' : '';
+  return `<span class="ava ${cls || ''}${f.prisme ? ' prisme' : ''}${mode}"
+    style="--f1:${f.c1};--f2:${f.c2}${v.bg ? ';--ab:' + v.bg : ''}"><img src="${v.src}" alt=""></span>`;
 }
 
 /* ---------- Petits blocs répétés ---------- */

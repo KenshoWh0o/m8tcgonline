@@ -56,9 +56,7 @@ function navHTML() {
 function pastilleOnglet(id) {
   if (Backend.mode !== 'cloud') return 0;
   if (id === 'quetes') return questesPretes();
-  if (id === 'echanges') {
-    return (Backend.trades || []).filter(t => t.sens === 'recue' && t.status === 'pending').length;
-  }
+  if (id === 'social') return socNotifs();
   return 0;
 }
 
@@ -153,7 +151,7 @@ addEventListener('resize', () => { if (surOrdi()) fermerTiroir(); });
 const VUES = {
   boosters: () => vBoosters(),
   collection: () => vCollection(),
-  echanges: () => vEchanges(),
+  social: () => vSocial(),
   boutique: () => vBoutique(),
   quetes: () => vQuetes(),
   combats: () => vCombats(),
@@ -197,7 +195,9 @@ function aller(id) {
   render();
   /* Les pages qui vivent sur le serveur se rafraîchissent en arrivant. */
   if (Backend.mode === 'cloud') {
-    if (tab === 'echanges') Backend.loadTrades().then(render).catch(() => {});
+    if (tab === 'social') {
+      Promise.all([Backend.loadTrades(), Backend.loadAmis()]).then(render).catch(() => {});
+    }
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
   }
 }
@@ -212,7 +212,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-tab],[data-auth],[data-tr],[data-quete],[data-achat],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-tab],[data-auth],[data-tr],[data-soc],[data-quete],[data-achat],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc]');
   if (!el) return;
   const d = el.dataset;
 
@@ -222,6 +222,14 @@ async function clicPage(e) {
   if (d.filter) { colFilter = d.filter; return render(); }
   if (d.ess) { essFilter = d.ess; return render(); }
   if (d.tr) { trVue = d.tr; return render(); }
+  if (d.soc) { socVue = d.soc; return render(); }
+
+  /* Amis */
+  if (d.fiche) return ouvrirFiche(d.fiche);
+  if (d.amiOk) return agir(() => Backend.amiRepondre(d.amiOk, true), 'Vous êtes amis.');
+  if (d.amiNon) return agir(() => Backend.amiRepondre(d.amiNon, false).catch(
+    () => Backend.amiRetirer(d.amiNon)), 'C\'est fait.');
+  if (d.troc) return versEchange(d.troc);
 
   /* Quêtes, boutique, échanges */
   if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.');
@@ -252,6 +260,7 @@ async function clicPage(e) {
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
     case 'pf-carte': return ouvrirChoixAvatar();
+    case 'soc-add': return socAjouter();
     case 'tr-find': return trChercher();
     case 'tr-send': return trEnvoyer();
 
@@ -382,7 +391,8 @@ addEventListener('visibilitychange', () => {
     try {
       await Backend.checkin();
       Backend.loadShop().catch(() => {});
-      Backend.loadTrades().then(() => { if (tab === 'echanges') render(); }).catch(() => {});
+      Promise.all([Backend.loadTrades(), Backend.loadAmis()])
+        .then(() => { if (tab === 'social') render(); }).catch(() => {});
     } catch (e) {
       toast(e.message || 'Le serveur a répondu de travers.');
     }
