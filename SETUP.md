@@ -342,6 +342,16 @@ Editor**, et c'est pris en compte immédiatement, sans toucher au site.
 
 Modifie le fichier, colle-le dans le SQL Editor, **Run**. C'est tout.
 
+> **`TOUT.sql` se rejoue autant de fois qu'on veut.** Chaque ligne est mise à
+> jour si elle existe déjà, et le ménage du catalogue épargne les cartes Promo —
+> elles sont créées par un autre fichier, et deux d'entre elles sont vendues en
+> boutique. Sans ce garde-fou, la deuxième exécution s'arrêtait sur
+> `violates foreign key constraint "shop_items_carte_id_fkey"`.
+>
+> Si une exécution échoue quand même, relance-la après correction : l'éditeur SQL
+> de Supabase joue le script d'un bloc, donc un échec annule tout ce qui
+> précède. Puis ouvre `verif.html` pour contrôler l'état réel de la base.
+
 > Le raisonnement derrière les valeurs actuelles — combien de boosters pour
 > compléter la collection, combien d'Éclats par jour, pourquoi une carte Promo
 > coûte 10 000 — est écrit en tête de `supabase/04_seed.sql`. Lis-le avant de

@@ -4,6 +4,11 @@
 --  A rejouer dans Supabase apres chaque ajout ou retrait de carte.
 -- =====================================================================
 
+-- La colonne qui distingue les Promos du reste. Elle est aussi creee par
+-- 01_schema.sql ; on la redemande ici pour que ce fichier reste jouable seul,
+-- ce qui est son usage courant : on le rejoue a chaque ajout de carte.
+alter table public.cards add column if not exists promo boolean not null default false;
+
 insert into public.cards (id, num, nom, cat, col, rar, in_booster) values
   ('c001', 1, 'Essence Rose', 'essence', 'rose', 'ES', true),
   ('c002', 2, 'Essence Orange', 'essence', 'orange', 'ES', true),
@@ -131,5 +136,63 @@ on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat,
   col = excluded.col, rar = excluded.rar, in_booster = excluded.in_booster;
 
+-- ---------------------------------------------------------------- menage
 -- Une carte retiree de js/cards-data.js disparait aussi du tirage serveur.
-delete from public.cards where id not in ('c001', 'c002', 'c003', 'c004', 'c005', 'c006', 'c007', 'c008', 'c009', 'c010', 'c011', 'c012', 'c013', 'c014', 'c015', 'c016', 'c017', 'c018', 'c019', 'c020', 'c021', 'c022', 'c023', 'c024', 'c025', 'c026', 'c027', 'c028', 'c029', 'c030', 'c031', 'c032', 'c033', 'c034', 'c035', 'c036', 'c037', 'c038', 'c039', 'c040', 'c041', 'c042', 'c043', 'c044', 'c045', 'c046', 'c047', 'c048', 'c049', 'c050', 'c051', 'c052', 'c053', 'c054', 'c055', 'c056', 'c057', 'c058', 'c059', 'c060', 'c061', 'c062', 'c063', 'c064', 'c065', 'c066', 'c067', 'c068', 'c069', 'c070', 'c071', 'c072', 'c073', 'c074', 'c075', 'c076', 'c077', 'c078', 'c079', 'c080', 'c081', 'c082', 'c083', 'c084', 'c085', 'c086', 'c087', 'c088', 'c089', 'c090', 'c091', 'c092', 'c093', 'c094', 'c095', 'c096', 'c097', 'c098', 'c099', 'c100', 'c101', 'c102', 'c103', 'c104', 'c105', 'c106', 'c107', 'c108', 'c109', 'c110', 'c111', 'c112', 'c113', 'c114', 'c115', 'c116', 'c117', 'c118', 'c119', 'c120', 'c121', 'c122');
+--
+-- Ce bloc est plus long qu'un simple `delete` pour deux raisons, apprises
+-- chacune a ses depens :
+--
+-- 1. `and not promo`. Ce fichier ne connait que l'extension. Les cartes Promo
+--    sont creees plus loin, par 03b_promos.sql, et n'apparaissent donc jamais
+--    dans la liste ci-dessus. Sans ce garde-fou, rejouer l'installation les
+--    effacait — et la boutique, qui en vend deux, refusait l'operation :
+--        violates foreign key constraint "shop_items_carte_id_fkey"
+--    La premiere execution passait (les Promos n'existaient pas encore), la
+--    seconde echouait. C'est le genre de piege qui ne se voit qu'au deuxieme
+--    passage.
+--
+-- 2. Les echanges en attente. `trades` pointe vers `cards` sans cascade : une
+--    carte retiree alors qu'un echange la propose bloquerait toute
+--    l'installation sur un message illisible. On annule donc ces demandes
+--    d'abord — elles ne peuvent de toute facon plus etre honorees — et on le
+--    dit dans les logs.
+--
+-- Ce qui reste volontairement bloquant : une carte encore vendue en boutique.
+-- La, c'est une erreur de configuration, et l'effacer en silence ferait bien
+-- plus de degats que de s'arreter.
+do $$
+declare
+  a_retirer text[];
+  vendues   text[];
+  n_ech     int;
+begin
+  select array_agg(id) into a_retirer
+    from public.cards
+   where not promo and id <> all (array['c001', 'c002', 'c003', 'c004', 'c005', 'c006', 'c007', 'c008', 'c009', 'c010', 'c011', 'c012', 'c013', 'c014', 'c015', 'c016', 'c017', 'c018', 'c019', 'c020', 'c021', 'c022', 'c023', 'c024', 'c025', 'c026', 'c027', 'c028', 'c029', 'c030', 'c031', 'c032', 'c033', 'c034', 'c035', 'c036', 'c037', 'c038', 'c039', 'c040', 'c041', 'c042', 'c043', 'c044', 'c045', 'c046', 'c047', 'c048', 'c049', 'c050', 'c051', 'c052', 'c053', 'c054', 'c055', 'c056', 'c057', 'c058', 'c059', 'c060', 'c061', 'c062', 'c063', 'c064', 'c065', 'c066', 'c067', 'c068', 'c069', 'c070', 'c071', 'c072', 'c073', 'c074', 'c075', 'c076', 'c077', 'c078', 'c079', 'c080', 'c081', 'c082', 'c083', 'c084', 'c085', 'c086', 'c087', 'c088', 'c089', 'c090', 'c091', 'c092', 'c093', 'c094', 'c095', 'c096', 'c097', 'c098', 'c099', 'c100', 'c101', 'c102', 'c103', 'c104', 'c105', 'c106', 'c107', 'c108', 'c109', 'c110', 'c111', 'c112', 'c113', 'c114', 'c115', 'c116', 'c117', 'c118', 'c119', 'c120', 'c121', 'c122']);
+
+  if a_retirer is null then
+    raise notice 'Catalogue a jour : aucune carte a retirer.';
+    return;
+  end if;
+
+  select array_agg(carte_id) into vendues
+    from public.shop_items where carte_id = any (a_retirer);
+  if vendues is not null then
+    raise exception
+      'Menage impossible : la boutique vend encore %. Retire l''article '
+      'correspondant de 04_seed.sql, ou remets la carte dans js/cards-data.js.',
+      vendues;
+  end if;
+
+  update public.trades set status = 'cancelled', resolved_at = now()
+   where status = 'pending'
+     and (offer_card = any (a_retirer) or want_card = any (a_retirer));
+  get diagnostics n_ech = row_count;
+  if n_ech > 0 then
+    raise notice '% demande(s) d''echange annulee(s) : la carte proposee n''existe plus.', n_ech;
+  end if;
+
+  delete from public.trades where offer_card = any (a_retirer) or want_card = any (a_retirer);
+  delete from public.cards  where id = any (a_retirer);
+  raise notice '% carte(s) retiree(s) du catalogue serveur.', array_length(a_retirer, 1);
+end $$;

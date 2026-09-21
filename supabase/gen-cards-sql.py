@@ -59,17 +59,81 @@ out = ["""-- ===================================================================
 --  A rejouer dans Supabase apres chaque ajout ou retrait de carte.
 -- =====================================================================
 
+-- La colonne qui distingue les Promos du reste. Elle est aussi creee par
+-- 01_schema.sql ; on la redemande ici pour que ce fichier reste jouable seul,
+-- ce qui est son usage courant : on le rejoue a chaque ajout de carte.
+alter table public.cards add column if not exists promo boolean not null default false;
+
 insert into public.cards (id, num, nom, cat, col, rar, in_booster) values"""]
 out.append(',\n'.join(
     "  (%s, %d, %s, %s, %s, %s, %s)" % (q(c), n, q(nm), q(ct), q(cl), q(rr), ib)
     for (c, n, nm, ct, cl, rr, ib) in rows))
+liste = ', '.join(q(r[0]) for r in rows)
 out.append("""on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat,
   col = excluded.col, rar = excluded.rar, in_booster = excluded.in_booster;
 
+-- ---------------------------------------------------------------- menage
 -- Une carte retiree de js/cards-data.js disparait aussi du tirage serveur.
-delete from public.cards where id not in (%s);
-""" % ', '.join(q(r[0]) for r in rows))
+--
+-- Ce bloc est plus long qu'un simple `delete` pour deux raisons, apprises
+-- chacune a ses depens :
+--
+-- 1. `and not promo`. Ce fichier ne connait que l'extension. Les cartes Promo
+--    sont creees plus loin, par 03b_promos.sql, et n'apparaissent donc jamais
+--    dans la liste ci-dessus. Sans ce garde-fou, rejouer l'installation les
+--    effacait — et la boutique, qui en vend deux, refusait l'operation :
+--        violates foreign key constraint "shop_items_carte_id_fkey"
+--    La premiere execution passait (les Promos n'existaient pas encore), la
+--    seconde echouait. C'est le genre de piege qui ne se voit qu'au deuxieme
+--    passage.
+--
+-- 2. Les echanges en attente. `trades` pointe vers `cards` sans cascade : une
+--    carte retiree alors qu'un echange la propose bloquerait toute
+--    l'installation sur un message illisible. On annule donc ces demandes
+--    d'abord — elles ne peuvent de toute facon plus etre honorees — et on le
+--    dit dans les logs.
+--
+-- Ce qui reste volontairement bloquant : une carte encore vendue en boutique.
+-- La, c'est une erreur de configuration, et l'effacer en silence ferait bien
+-- plus de degats que de s'arreter.
+do $$
+declare
+  a_retirer text[];
+  vendues   text[];
+  n_ech     int;
+begin
+  select array_agg(id) into a_retirer
+    from public.cards
+   where not promo and id <> all (array[__IDS__]);
+
+  if a_retirer is null then
+    raise notice 'Catalogue a jour : aucune carte a retirer.';
+    return;
+  end if;
+
+  select array_agg(carte_id) into vendues
+    from public.shop_items where carte_id = any (a_retirer);
+  if vendues is not null then
+    raise exception
+      'Menage impossible : la boutique vend encore %. Retire l''article '
+      'correspondant de 04_seed.sql, ou remets la carte dans js/cards-data.js.',
+      vendues;
+  end if;
+
+  update public.trades set status = 'cancelled', resolved_at = now()
+   where status = 'pending'
+     and (offer_card = any (a_retirer) or want_card = any (a_retirer));
+  get diagnostics n_ech = row_count;
+  if n_ech > 0 then
+    raise notice '% demande(s) d''echange annulee(s) : la carte proposee n''existe plus.', n_ech;
+  end if;
+
+  delete from public.trades where offer_card = any (a_retirer) or want_card = any (a_retirer);
+  delete from public.cards  where id = any (a_retirer);
+  raise notice '% carte(s) retiree(s) du catalogue serveur.', array_length(a_retirer, 1);
+end $$;
+""".replace('__IDS__', liste))
 
 open(os.path.join(ROOT, 'supabase', '02_cards.sql'), 'w', encoding='utf-8').write('\n'.join(out))
 
