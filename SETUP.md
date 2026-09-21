@@ -334,12 +334,22 @@ Editor**, et c'est pris en compte immédiatement, sans toucher au site.
 
 | Quoi | Où |
 |---|---|
-| Rythme de recharge, plafond de la réserve, délai entre deux échanges, chance de godpack | fonction `cfg()` dans `supabase/01_schema.sql` |
+| Rythme de recharge, plafond de la réserve, délai entre deux échanges, chance de godpack, palier des Promos | fonction `cfg()` dans `supabase/01_schema.sql` |
 | Composition d'un booster et taux de la dernière carte | fonction `open_pack()` dans `supabase/03_rpc.sql` |
 | Quêtes : objectifs et récompenses | `supabase/04_seed.sql` |
 | Boutique : articles et prix | `supabase/04_seed.sql` |
+| Cartes Promo : catalogue et paliers d'obtention | `supabase/03b_promos.sql` |
 
 Modifie le fichier, colle-le dans le SQL Editor, **Run**. C'est tout.
+
+> Le raisonnement derrière les valeurs actuelles — combien de boosters pour
+> compléter la collection, combien d'Éclats par jour, pourquoi une carte Promo
+> coûte 10 000 — est écrit en tête de `supabase/04_seed.sql`. Lis-le avant de
+> changer un chiffre : ils se tiennent les uns les autres.
+
+> **Deux endroits pour les taux de tirage.** `open_pack()` fait le vrai tirage ;
+> `RATES` dans `js/booster.js` ne sert qu'aux ouvertures de test du Labo. Si tu
+> changes l'un, change l'autre, sinon le Labo montre autre chose que le jeu.
 
 ### Quand tu ajoutes ou retires une carte
 

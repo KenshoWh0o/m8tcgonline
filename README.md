@@ -280,15 +280,82 @@ Le coût est payé par celui qui lance la demande : **une demande gratuite toute
 
 Au moment où la demande est acceptée, le serveur revérifie **tout** : que les deux joueurs possèdent encore leur carte, que les raretés correspondent toujours, et il échange les deux cartes dans une seule transaction. Personne ne peut donner deux fois la même carte en lançant deux demandes.
 
+## L'équilibrage
+
+Tout le jeu tient sur une seule tension : **le temps contre la collection.** Les 122 cartes ne s'achètent pas, elles se trouvent ; les Éclats ne font qu'accélérer un peu. Les chiffres ci-dessous viennent d'une simulation, pas d'une intuition.
+
+### La collection
+
+Six boosters gratuits par jour (un toutes les 4 h, réserve de 5). En médiane :
+
+| Étape | Boosters | Environ |
+|---|---|---|
+| 25 % | 4 | le premier jour |
+| 50 % | 10 | deux jours |
+| 75 % | 26 | une semaine |
+| **90 %** | 85 | deux semaines — donne la Promo **P06** |
+| **100 %** | 655 | ~110 jours — donne la Promo **P05** |
+
+La courbe est volontairement brutale à la fin : le goulot, ce sont les **dix légendaires à 4 %** chacune. Tout le reste se complète en un mois ; c'est la dernière poignée de cartes qui fait la valeur du Master Set.
+
+### Les Éclats
+
+Un joueur régulier gagne environ **300 Éclats par jour** (quotidiennes + hebdomadaires, sans compter les échanges qui demandent un partenaire).
+
+| Article | Prix | À 300/jour |
+|---|---|---|
+| Un booster | 350 | un peu plus d'une journée |
+| Dix boosters | 3 000 | dix jours |
+| Jeton d'échange | 250 | moins d'une journée |
+| Un cadre | 1 200 à 6 000 | de quatre à vingt jours |
+| **Une carte Promo** | 10 000 | **un mois d'épargne** |
+
+Tout dépenser en boosters n'accélère la collection que d'environ **17 %** — 94 jours au lieu de 110. C'est le réglage qu'on cherchait : les Éclats aident, ils ne remplacent pas le temps. Et à 10 000, une carte Promo coûte assez cher pour que « j'ouvre, ou j'économise » soit une vraie décision plutôt qu'un réflexe.
+
+Le détail du calcul est en tête de `supabase/04_seed.sql`, à côté des valeurs elles-mêmes.
+
 ## Quêtes et boutique
 
-Les quêtes paient en **Éclats**, la seule monnaie du jeu. La boutique les dépense : des boosters, des jetons d'échange, des cadres d'avatar. Aucun achat avec de l'argent réel, nulle part.
+Les quêtes paient en **Éclats**, la seule monnaie du jeu. La boutique les dépense. Aucun achat avec de l'argent réel, nulle part.
 
 La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est le serveur qui l'incrémente au moment où l'événement arrive vraiment, dans `open_pack()` et `trade_respond()`. C'est pour ça que toutes les quêtes portent sur des choses qu'il peut constater lui-même — boosters ouverts, cartes inédites, raretés sorties, échanges conclus, jours de connexion, pourcentage de collection.
 
 Objectifs, récompenses, articles et prix sont tous dans `supabase/04_seed.sql`. On équilibre là, on rejoue le fichier, c'est pris en compte : ni déploiement, ni mise à jour du site.
 
-Une quête qui se termine se signale **deux fois**, et jamais en travers du chemin : une carte passe en haut de l'écran pendant quatre secondes (`notifQuete()`, `js/quests.js`), puis la pastille de l'onglet Quêtes prend le relais et reste tant qu'il y a une récompense à encaisser. C'est `Backend.apply()` qui les repère, en comparant l'état reçu du serveur au précédent : le navigateur ne décide de rien, il ne fait qu'annoncer ce qui vient de basculer.
+**Trois périodes, trois sous-onglets.** Quotidiennes, Hebdomadaires, Saisonnières. Les seize quêtes d'un seul tenant faisaient une page qu'on ne lisait plus : on n'a qu'une question à la fois, « qu'est-ce que je peux finir aujourd'hui ? ». Chaque période affiche le temps qui lui reste — « remise à zéro dans 3 h 20 » plutôt que « remis à zéro chaque nuit », qui ne dit pas quand. Le calcul est calé sur l'heure de Paris via `Intl`, exactement comme `period_key()` côté serveur : les deux frontières doivent tomber ensemble.
+
+Une quête qui se termine se signale **deux fois**, et jamais en travers du chemin : une carte passe en haut de l'écran pendant quatre secondes (`notifQuete()`, `js/quests.js`), puis la pastille de l'onglet prend le relais et reste tant qu'il y a une récompense à encaisser. C'est `Backend.apply()` qui les repère, en comparant l'état reçu du serveur au précédent.
+
+**La boutique a deux rayons** — Cartes et Cosmétiques — et un étal plutôt qu'une liste : on voit l'objet avant son libellé. Un achat demande **toujours deux gestes**, ouvrir la fiche puis confirmer, avec le solde restant affiché avant de payer. Un article à 10 000 Éclats ne doit jamais partir sur un doigt posé de travers.
+
+## Les cartes Promo
+
+Quatre cartes hors extension. Elles ne sortent d'aucun booster, ne comptent pas dans les 122, et ne s'échangent pas — le serveur refuse les trois.
+
+| Carte | Comment l'obtenir |
+|---|---|
+| **P01** Major de Paris | Boutique, 10 000 Éclats |
+| **P02** Major de Paris *(illustration alternative)* | Boutique, 10 000 Éclats |
+| **P06** Le Marionnettiste | 90 % de la collection |
+| **P05** Tout Commence Ici | Master Set complet (les 122 cartes) |
+
+Elles vivent dans `promos`, jamais dans `cards` : c'est ce qui garantit que « 122 » reste 122 partout, et que le pourcentage de collection ne bouge pas quand on en ajoute une. Côté serveur, la colonne `cards.promo` les exclut du tirage (`pick_card`) et du calcul d'avancement (`sync_collection_quests`).
+
+Les deux cartes de palier sont accordées par `check_promos()` (`supabase/03b_promos.sql`), appelée depuis `me()` et `open_pack()`. L'insertion est idempotente : une carte déjà possédée n'est pas redonnée, sinon le compteur d'exemplaires grimperait tout seul à chaque rafraîchissement.
+
+> **Pourquoi 90 % et non 50 %.** La moitié de l'extension se fait en une dizaine de paquets, c'est-à-dire le deuxième jour. Une récompense décrochée le deuxième jour n'en est pas une. À 90 % il faut une quinzaine de jours de jeu régulier, et ça laisse les 100 % comme dernier sommet.
+
+**L'obtention a sa propre scène** (`js/promos.js`, `css/promo.css`) : la carte arrive de loin, dos tourné, se retourne, et le nom tombe. Rien à toucher avant la fin — le bouton ne devient cliquable qu'une fois la carte révélée, sinon un doigt posé au hasard fermait la scène avant le retournement. La détection suit le même principe que les quêtes : on compare deux états successifs envoyés par le serveur, et une file d'attente enchaîne les cartes si plusieurs tombent ensemble.
+
+## Thème clair et sombre
+
+Deux palettes, une seule liste de noms, dans `css/tokens.css`. Le sombre est la référence — c'est là que les cartes brillent — et le clair reprend chaque jeton un par un. **Aucune couleur n'est écrite en dur ailleurs :** une feuille qui poserait un `#181320` serait juste dans un thème et fausse dans l'autre.
+
+Le réglage vit sur `<html>` : `data-theme="dark"` ou `"light"`. En « automatique », l'attribut est **retiré** — c'est la requête média qui décide, et elle suit le système en direct sans qu'on ait à l'écouter. Le choix est rangé dans le navigateur, pas sur le compte : il décrit cet écran-ci, et on peut vouloir le clair sur le téléphone et le sombre sur l'ordinateur.
+
+Trois surfaces ne suivent pas le thème : le **théâtre d'ouverture**, la **visionneuse** et la **scène des Promos**. Ce sont des salles obscures — une carte se regarde sur du noir. Elles redéclarent donc la palette sombre pour tout ce qu'elles contiennent (bas de `css/tokens.css`) : sans ça, une couleur de rareté calculée pour du papier blanc — l'or à `#a06b00` — se retrouverait posée sur du noir, où elle disparaît.
+
+Les visuels de marque sont l'autre exception. Le logo du jeu, celui de l'extension et la pastille « 1re édition » sont des images pensées pour du noir : du blanc, de l'argenté, des halos. En thème clair, elles reçoivent une **plaque sombre taillée à leur forme** plutôt qu'un filtre — c'est ce que fait n'importe quelle charte quand un logo n'existe qu'en version claire.
 
 ## Les sons
 
@@ -297,6 +364,16 @@ Aucun fichier audio dans le dépôt : tout est **fabriqué à la volée** par le
 Chaque son est une recette courte dans `RECETTES` : quelques souffles de bruit filtré pour tout ce qui frotte, glisse ou se déchire, quelques notes pour les clics et les carillons. La déchirure du paquet, le passage d'une carte, la montée avant une révélation et les trois paliers de carillon (rare, épique, légendaire) sont branchés dans `js/opening.js`.
 
 Il n'y a **que des bruitages** : chacun répond à un geste. Une musique de fond, elle, joue sans qu'on l'ait demandée — le jeu n'en a pas.
+
+### Le son sur mobile
+
+Un navigateur de téléphone ne laisse pas une page faire du bruit quand elle veut, et trois règles s'ajoutent les unes aux autres. Chacune coupait le son ici :
+
+1. **Rien avant un geste.** L'`AudioContext` naît suspendu et ne se réveille que dans un gestionnaire déclenché par la personne. On le réveille au tout premier contact, quel qu'il soit.
+2. **`resume()` prend son temps.** Il rend une promesse : juste après l'appel, l'état est encore `suspended`. L'ancien code vérifiait l'état tout de suite et renonçait — le premier son de chaque session était systématiquement perdu. Les sons demandés pendant ce réveil sont désormais **mis de côté** et joués dès que le contexte tourne.
+3. **Le système reprend la main.** Quitter l'onglet, verrouiller l'écran, recevoir un appel : le contexte est suspendu et n'est pas rendu. Sans reprise explicite, tout restait muet au retour, définitivement. On redemande le réveil sur `visibilitychange`, sur `pageshow`, et à chaque geste.
+
+Ce qu'on ne peut pas corriger : sur iPhone, l'interrupteur « silencieux » de la tranche coupe le son des pages web. Aucune ligne de JavaScript ne passe outre — les Réglages le disent au joueur plutôt que de le laisser chercher, et un bouton **Tester le son** répond honnêtement (`SFX.audible()`).
 
 Les navigateurs interdisent le son tant que la personne n'a rien touché : tout se débloque au premier geste, quel qu'il soit. Un clic sur n'importe quel bouton sonne sans avoir à le brancher, grâce à un écouteur unique posé sur la page.
 
@@ -350,6 +427,16 @@ rebours s'affiche alors tout seul. Laissé à `null`, on annonce seulement « bi
 L'onglet **Labo** n'est plus accessible à tout le monde. Il n'apparaît que pour les profils marqués `is_admin` en base, et ce drapeau ne peut être posé que depuis le tableau de bord Supabase (`supabase/05_admin.sql`) : aucune fonction du jeu ne l'expose, et le navigateur n'a pas le droit d'écrire dans la table des profils.
 
 Cacher un bouton ne protège rien — ce qui protège, c'est que le serveur refuse les actions. Les boutons du Labo qui touchent à la collection ne modifient que l'affichage local : en ligne, la vérité reste celle du serveur, et la page la récupère telle quelle au rafraîchissement suivant.
+
+Le Labo sert à **voir ce qu'on ne peut pas provoquer** :
+
+- les cinq ouvertures de test (normale, rare, épique, légendaire, godpack) ;
+- **l'animation d'obtention de chaque carte Promo**, une par une ou toutes à la suite — c'est exactement ce que verra un joueur, seule l'écriture dans la collection est sautée ;
+- les notifications qui passent en haut de l'écran ;
+- la collection remplie à 90 %, pour regarder la grille et la jauge dans un état intermédiaire ;
+- un tableau des valeurs d'équilibrage en cours, telles que le serveur les impose.
+
+Pour obtenir une Promo **pour de vrai** sur son compte — et vérifier la détection, la boutique et les paliers de bout en bout — les requêtes sont commentées en bas de `supabase/03b_promos.sql`.
 
 ## Mettre à jour le site
 
