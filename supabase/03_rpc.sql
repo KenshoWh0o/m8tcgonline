@@ -411,7 +411,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', t.id, 'sens', case when t.from_user = p then 'envoyee' else 'recue' end,
-      'pseudo', o.pseudo, 'avatar', o.avatar,
+      'pseudo', o.pseudo, 'avatar', o.avatar, 'photo', photo_discord(o.id),
       'offer', t.offer_card, 'want', t.want_card, 'note', t.note,
       'status', t.status, 'created_at', t.created_at,
       'possible', exists (select 1 from collection c
@@ -433,7 +433,8 @@ begin
   if auth.uid() is null then raise exception 'non connecte'; end if;
   select * into r from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then return 'null'::jsonb; end if;
-  return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar, 'frame', r.frame);
+  return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
+    'frame', r.frame, 'photo', photo_discord(r.id));
 end $$;
 
 -- =====================================================================

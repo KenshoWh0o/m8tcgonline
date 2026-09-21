@@ -32,7 +32,7 @@ function header() {
      il n'y a pas de tiroir, donc pas de chevron (voir css/hub.css). */
   const av = $('#moi');
   if (av) {
-    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm')
+    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm', maPhoto())
       + '<i class="moicaret" aria-hidden="true">' + NAVICO.caret + '</i>';
     av.classList.toggle('alerte', pastilleTiroir() > 0);
     av.setAttribute('aria-label', surOrdi() ? 'Mon profil' : 'Menu du compte');
@@ -91,7 +91,7 @@ function vTiroir() {
   return `<div class="tiroir-bg" data-tiroir="fermer"></div>
   <nav class="tiroir-panneau" aria-label="Menu du compte">
     <header class="tiroir-id">
-      ${avatarHTML(save.avatar, save.frame, 'xl')}
+      ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
       <div><b>${h(save.pseudo)}</b><p class="muted small">${h(sousTitre)}</p></div>
       <button class="tiroir-x" data-tiroir="fermer" aria-label="Fermer">✕</button>
     </header>

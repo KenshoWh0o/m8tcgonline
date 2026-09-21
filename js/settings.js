@@ -135,7 +135,7 @@ function vReglages() {
   <section class="panel">
     <h2>Compte</h2>
     ${enLigne
-      ? `<div class="found">${avatarHTML(save.avatar, save.frame, 'sm')}<b>${h(save.pseudo)}</b>
+      ? `<div class="found">${avatarHTML(save.avatar, save.frame, 'sm', maPhoto())}<b>${h(save.pseudo)}</b>
            <span class="qtag ok">En ligne</span></div>
          <p class="muted small">Ta progression est enregistrée sur le serveur :
            tu la retrouves sur n'importe quel appareil.</p>

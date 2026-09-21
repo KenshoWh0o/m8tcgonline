@@ -103,6 +103,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
         'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+        'photo', photo_discord(o.id),
         'is_admin', o.is_admin, 'streak', o.streak,
         'lien', case when f.accepte then 'ami'
                      when f.demandeur = moi then 'envoyee' else 'recue' end,
@@ -139,6 +140,7 @@ begin
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+    'photo', photo_discord(o.id),
     'is_admin', o.is_admin, 'streak', o.streak,
     'packs_opened', o.packs_opened, 'trades_done', o.trades_done,
     'membre_depuis', o.created_at,

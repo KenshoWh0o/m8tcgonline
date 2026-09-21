@@ -216,7 +216,7 @@ function vRecompense(q) {
   const f = q.item ? FRAMES[q.item] : null;
   if (f) {
     return `<span class="qreward objet" title="Cadre ${h(f.nom)}">
-      <span class="qrcadre">${avatarHTML(save.avatar, q.item, 'sm')}</span>
+      <span class="qrcadre">${avatarHTML(save.avatar, q.item, 'sm', maPhoto())}</span>
       <small>Cadre</small></span>`;
   }
   return `<span class="qreward">${shardIco}${fmtN(q.reward)}</span>`;

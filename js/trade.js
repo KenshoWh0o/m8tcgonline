@@ -90,7 +90,7 @@ function ligneTrade(t) {
 
   return `<article class="trade${attente ? '' : ' passe'}">
     <header class="trhead">
-      ${avatarHTML(t.avatar, 'default', 'sm')}
+      ${avatarHTML(t.avatar, 'default', 'sm', t.photo)}
       <div><b>${h(t.pseudo)}</b>
         <p class="muted small">${recue ? 'te propose un échange' : 'a reçu ta demande'}
           · ${dateCourte(t.created_at)}</p></div>
@@ -155,7 +155,7 @@ function vNouvelleDemande() {
       <button class="btn tiny ghost" data-act="tr-find">Chercher</button>
     </div>
     ${trCible
-      ? `<div class="found">${avatarHTML(trCible.avatar, trCible.frame, 'sm')}
+      ? `<div class="found">${avatarHTML(trCible.avatar, trCible.frame, 'sm', trCible.photo)}
            <b>${h(trCible.pseudo)}</b><span class="qtag ok">Trouvé</span></div>`
       : '<p class="muted small">Le pseudo s\'écrit exactement comme dans le profil, majuscules mises à part.</p>'}
 

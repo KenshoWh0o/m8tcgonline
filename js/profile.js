@@ -16,7 +16,7 @@ function vProfil() {
   return `<div class="pagehead"><div><h1>Profil</h1></div></div>
 
   <section class="idcard">
-    ${avatarHTML(save.avatar, save.frame, 'xl')}
+    ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
     <div class="idnom">
       <b>${h(save.pseudo)}</b>
       ${save.isAdmin ? '<span class="qtag ok">Admin</span>' : ''}
@@ -55,16 +55,16 @@ function vProfil() {
     <div class="avagrid">
       ${Backend.photoDiscord
         ? `<button class="avapick${save.avatar === 'discord' ? ' on' : ''}" data-ava="discord">
-            ${avatarHTML('discord', save.frame, 'md')}<span>Discord</span></button>`
+            ${avatarHTML('discord', save.frame, 'md', maPhoto())}<span>Discord</span></button>`
         : ''}
       <button class="avapick${String(save.avatar).startsWith('card:') ? ' on' : ''}" data-act="pf-carte">
         ${String(save.avatar).startsWith('card:')
-          ? avatarHTML(save.avatar, save.frame, 'md')
+          ? avatarHTML(save.avatar, save.frame, 'md', maPhoto())
           : '<span class="ava md ico"><span class="avaplus">+</span></span>'}
         <span>Une carte</span></button>
       ${Object.entries(AVATARS).map(([k, a]) =>
         `<button class="avapick${save.avatar === k ? ' on' : ''}" data-ava="${k}">
-          ${avatarHTML(k, save.frame, 'md')}<span>${h(a.nom)}</span></button>`).join('')}
+          ${avatarHTML(k, save.frame, 'md', maPhoto())}<span>${h(a.nom)}</span></button>`).join('')}
       ${Object.keys(COLORS).map(k =>
         `<button class="avapick${save.avatar === 'ess:' + k ? ' on' : ''}" data-ava="ess:${k}">
           ${avatarHTML('ess:' + k, save.frame, 'md')}<span>${h(COLORS[k].nom)}</span></button>`).join('')}
@@ -76,7 +76,7 @@ function vProfil() {
     ${cadres.length > 1 ? '' : '<p class="muted small">Les autres cadres s\'achètent en boutique.</p>'}
     <div class="avagrid">
       ${cadres.map(k => `<button class="avapick${save.frame === k ? ' on' : ''}" data-frame="${k}"
-        title="${h(FRAMES[k].nom)}">${avatarHTML(save.avatar, k, 'md')}</button>`).join('')}
+        title="${h(FRAMES[k].nom)}">${avatarHTML(save.avatar, k, 'md', maPhoto())}</button>`).join('')}
     </div>
   </section>`;
 }

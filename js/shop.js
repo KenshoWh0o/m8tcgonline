@@ -34,7 +34,7 @@ const carteDe = it => byId[it.carte_id] || byId[it.montant_id] || null;
 function vArticleArt(it) {
   const c = carteDe(it);
   if (c) return renderCard(c);
-  if (FRAMES[it.id]) return avatarHTML(save.avatar, it.id, 'lg');
+  if (FRAMES[it.id]) return avatarHTML(save.avatar, it.id, 'lg', maPhoto());
   if (it.effet === 'trade_token') return `<img class="ofjeton" src="${ART.jeton}" alt="">`;
   if (it.effet === 'tickets' || it.effet === 'refill') return `<img src="${PACK_ARTS[0]}" alt="">`;
   return ICON.star;
@@ -186,7 +186,7 @@ function vAchatScene(it) {
   }
 
   if (FRAMES[it.id]) {
-    return `<div class="a3d cadre"><div class="a3d-cadre">${avatarHTML(save.avatar, it.id, 'xl')}</div></div>`;
+    return `<div class="a3d cadre"><div class="a3d-cadre">${avatarHTML(save.avatar, it.id, 'xl', maPhoto())}</div></div>`;
   }
 
   if (it.effet === 'trade_token') {

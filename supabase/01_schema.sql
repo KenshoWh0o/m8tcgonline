@@ -259,6 +259,40 @@ end $$;
 --  Quetes : la progression n'est jamais envoyee par le client, elle est
 --  incrementee ici, au moment ou l'evenement se produit vraiment.
 -- =====================================================================
+-- =====================================================================
+--  La photo Discord d'un joueur
+--
+--  Quand quelqu'un choisit « Discord » comme avatar, on ne copie pas sa photo
+--  chez nous : on enregistre le mot « discord », et le navigateur va chercher
+--  l'adresse dans la session ouverte. C'est ce qui fait qu'une photo changee
+--  sur Discord se met a jour toute seule.
+--
+--  Mais un navigateur n'a qu'une session : la sienne. En affichant la liste
+--  d'amis, il resolvait donc « discord » avec la photo de CELUI QUI REGARDE —
+--  et tout le monde portait le visage du spectateur.
+--
+--  Cette fonction va chercher la vraie adresse, cote serveur, pour le joueur
+--  qu'on affiche. Elle ne rend que ca : pas l'adresse e-mail, pas les jetons,
+--  rien d'autre de auth.users. Et elle n'est appelee que depuis les fonctions
+--  qui renvoient deja le pseudo et l'avatar de ce joueur — on n'expose donc
+--  rien de plus que ce que le jeu montrait deja.
+-- =====================================================================
+create or replace function public.photo_discord(p uuid) returns text
+language sql security definer stable set search_path = public as $$
+  select coalesce(
+    nullif(u.raw_user_meta_data->>'avatar_url', ''),
+    nullif(u.raw_user_meta_data->>'picture', ''))
+  from auth.users u
+  where u.id = p
+    and coalesce(u.raw_user_meta_data->>'avatar_url',
+                 u.raw_user_meta_data->>'picture') like 'http%';
+$$;
+
+-- Rouage interne : appele par friend_list, player_profile, trade_list et
+-- find_player, jamais par le navigateur. Le laisser ouvert permettrait de
+-- parcourir les photos par identifiant.
+revoke all on function public.photo_discord from anon, authenticated;
+
 create or replace function public.period_key(sc text) returns text
 language sql stable as $$
   select case sc

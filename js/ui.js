@@ -34,6 +34,11 @@ function showCard(c) {
 }
 
 /* ---------- Avatars ---------- */
+/* Ma photo Discord à moi, lue dans ma session. À ne passer qu'en dessinant mon
+   propre avatar : pour tous les autres, c'est le serveur qui fournit l'adresse
+   (voir photo_discord() dans supabase/01_schema.sql). */
+const maPhoto = () => Backend.photoDiscord;
+
 /* Cinq formes possibles :
      'discord'        la photo du compte Discord, toujours à jour
      'card:c042'      une carte possédée
@@ -42,12 +47,18 @@ function showCard(c) {
      'https://…'      une adresse déposée à l'inscription (ancien format)
    Chacune renvoie une image et la façon de la cadrer : les photos et les cartes
    remplissent le cercle, les symboles restent entiers au centre. */
-function avatarInfo(a) {
+function avatarInfo(a, photo) {
   a = a || 'star';
 
+  /* `photo` est l'adresse de la photo Discord DU JOUEUR AFFICHE. Elle est
+     obligatoire, et il n'y a volontairement aucun repli sur la session en
+     cours : c'est ce repli qui causait le bug où chacun voyait ses amis avec
+     sa propre photo. Sans adresse, on retombe sur l'étoile — un avatar
+     générique se remarque et se corrige, le visage de quelqu'un d'autre passe
+     inaperçu et induit en erreur. */
   if (a === 'discord') {
-    return Backend.photoDiscord
-      ? { src: Backend.photoDiscord, plein: true }
+    return photo
+      ? { src: photo, plein: true }
       : { src: AVATARS.star.art, ico: true, bg: AVATARS.star.bg };
   }
   /* `pos` : où viser en recadrant. L'illustration d'une carte occupe le haut ;
@@ -69,7 +80,7 @@ function avatarInfo(a) {
     plein: !v.ico && !v.objet };
 }
 
-const avatarSrc = a => avatarInfo(a).src;
+const avatarSrc = (a, photo) => avatarInfo(a, photo).src;
 
 /* Trois cadrages, et un seul choix à faire : de quelle forme est l'image ?
      `plein`  une photo, déjà carrée : elle remplit le cercle.
@@ -77,10 +88,15 @@ const avatarSrc = a => avatarInfo(a).src;
      `objet`  une carte, un dos, un booster — un rectangle haut. Il remplit le
               cercle par recadrage, jamais par étirement : `--apos` dit où
               viser, parce que l'endroit intéressant n'est pas au milieu.
-   Le cadre animé (Prisme, Sceau) est posé en classe, ses couleurs en variables. */
-function avatarHTML(a, frame, cls) {
+   Le cadre animé (Prisme, Sceau) est posé en classe, ses couleurs en variables.
+
+   `photo` : l'adresse de la photo Discord du joueur qu'on dessine. Pour soi,
+   c'est `maPhoto()` ; pour quelqu'un d'autre, c'est le champ `photo` renvoyé
+   par le serveur. Ne rien passer dessine l'étoile — jamais le visage d'un
+   autre. */
+function avatarHTML(a, frame, cls, photo) {
   const f = FRAMES[frame] || FRAMES.default;
-  const v = avatarInfo(a);
+  const v = avatarInfo(a, photo);
   const mode = v.ico ? ' ico' : v.objet ? ' objet' : '';
   const anim = f.prisme ? ' prisme' : f.sceau ? ' sceau' : '';
   const vars = [`--f1:${f.c1}`, `--f2:${f.c2}`];

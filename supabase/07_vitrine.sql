@@ -97,6 +97,7 @@ begin
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+    'photo', photo_discord(o.id),
     'is_admin', o.is_admin, 'streak', o.streak,
     'packs_opened', o.packs_opened, 'trades_done', o.trades_done,
     'membre_depuis', o.created_at,

@@ -269,6 +269,28 @@ Sur ordinateur, la page est une **grille** (en-tête sur toute la largeur, puis 
 
 **L'en-tête montre toujours les deux compteurs et l'avatar**, même hors ligne. Ce sont les seules portes vers la boutique et vers le menu du compte : les cacher revenait à cacher qu'ils existent.
 
+## Les avatars des autres joueurs
+
+Choisir « Discord » comme avatar n'enregistre pas la photo chez nous : on stocke le
+mot `discord`, et l'adresse réelle se lit dans la session ouverte. C'est ce qui fait
+qu'une photo changée sur Discord se met à jour toute seule, sans rien à resynchroniser.
+
+**Mais un navigateur n'a qu'une session : la sienne.** En dessinant la liste d'amis, il
+résolvait donc `discord` avec la photo de *celui qui regarde* — et tous les joueurs
+ayant choisi cet avatar portaient le visage du spectateur.
+
+La photo est désormais une donnée comme une autre : le serveur la joint au profil qu'il
+renvoie (`photo_discord()` dans `supabase/01_schema.sql`, appelée par `friend_list`,
+`player_profile`, `trade_list` et `find_player`). Elle ne rend que l'adresse de l'image,
+rien d'autre de `auth.users`, et seulement pour des joueurs dont le jeu montrait déjà le
+pseudo et l'avatar.
+
+Côté navigateur, `avatarHTML(avatar, cadre, taille, photo)` prend la photo en quatrième
+argument. **Il n'y a aucun repli sur la session en cours** : sans adresse, on dessine
+l'étoile. C'est délibéré — un avatar générique se remarque et se corrige, le visage de
+quelqu'un d'autre passe inaperçu et trompe. `maPhoto()` marque explicitement les endroits
+où l'on se dessine soi-même.
+
 ## Social
 
 Les échanges vivent dans l'onglet **Social**, pas à côté : on n'échange pas avec un inconnu. On cherche quelqu'un par son pseudo, on l'ajoute, on regarde ce qu'il possède, puis on propose.
