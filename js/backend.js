@@ -99,10 +99,12 @@ Backend.loadLocal = async function () {
 Backend.apply = function (etat) {
   const p = etat.profil;
 
-  /* L'avancement des quêtes n'arrive que par là. On garde l'état précédent le
-     temps de repérer celles qui viennent de se terminer : c'est le seul moment
-     où on peut le savoir, puisque `save` est remplacé juste en dessous. */
+  /* L'avancement des quêtes et l'arrivée d'une carte Promo n'arrivent que par
+     là. On garde l'état précédent le temps de repérer ce qui vient de changer :
+     c'est le seul moment où on peut le savoir, puisque `save` est remplacé
+     juste en dessous. */
   const quetesAvant = save && Array.isArray(save.quetes) ? save.quetes : null;
+  const colAvant = save && save.col ? save.col : null;
   Backend.skew = Date.now() - Date.parse(p.serveur);
   TICKET_CAP = p.ticket_cap;
   INTERVAL = p.ticket_minutes * 60 * 1000;
@@ -129,6 +131,7 @@ Backend.apply = function (etat) {
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
 
   signalerQuetes(quetesAvant, save.quetes);
+  signalerPromos(colAvant, save.col);
 };
 
 /* Appelle une fonction du serveur et remonte un message lisible en cas de refus. */

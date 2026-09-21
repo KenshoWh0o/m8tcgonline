@@ -7,7 +7,7 @@ function vCombats() {
     .filter(c => c.cat === 'joueur' && (c.rar === 'L' || c.rar === 'E'))
     .slice(0, 3);
 
-  return `<div class="pagehead"><h1>Combats</h1></div>
+  return `<div class="pagehead"><div><h1>Combats</h1></div></div>
     <section class="soon">
       <div class="soonart" aria-hidden="true">
         ${vedettes.map((c, i) => `<div class="soondeck d${i}">${renderCard(c)}</div>`).join('')}

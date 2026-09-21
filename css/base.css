@@ -1,10 +1,17 @@
-/* Structure générale : fond, en-tête, navigation, typo, boutons, fenêtres, notifications. */
+/* Structure générale : fond, en-tête, navigation, typo, boutons, fenêtres, notifications.
+   Aucune couleur écrite en dur : tout vient des jetons de css/tokens.css, sinon
+   le thème clair s'effondre. */
+
 /* ============ Fond ============ */
+/* Une nappe de couleur en haut et une trame de points qui s'efface : la page a
+   une profondeur sans qu'on ait à poser une image. */
 .bgdeco{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.bgdeco::before{content:'';position:absolute;left:50%;top:-22%;width:min(980px,150vw);aspect-ratio:1;transform:translateX(-50%);
-  background:radial-gradient(circle,rgba(137,54,255,.15),rgba(137,54,255,.06) 38%,transparent 66%)}
-.bgdeco::after{content:'';position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.05) .7px,transparent .8px) 0 0/24px 24px;
-  -webkit-mask:linear-gradient(180deg,#000,transparent 55%);mask:linear-gradient(180deg,#000,transparent 55%)}
+.bgdeco::before{content:'';position:absolute;left:50%;top:-24%;width:min(1020px,152vw);aspect-ratio:1;
+  transform:translateX(-50%);
+  background:radial-gradient(circle,var(--accent-glow),transparent 62%);opacity:.34}
+.bgdeco::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(currentColor .7px,transparent .8px) 0 0/26px 26px;color:var(--line-2);opacity:.5;
+  -webkit-mask:linear-gradient(180deg,#000,transparent 58%);mask:linear-gradient(180deg,#000,transparent 58%)}
 
 /* `display` posé sur une classe l'emporterait sur la règle du navigateur : on tranche. */
 [hidden]{display:none!important}
@@ -12,128 +19,197 @@
 /* ============ Tête ============ */
 .top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:calc(9px + env(safe-area-inset-top,0px)) 16px 10px;
-  background:linear-gradient(180deg,rgba(12,9,16,.97),rgba(12,9,16,.74));border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+  background:linear-gradient(180deg,var(--veil-2),var(--veil));
+  border-bottom:1px solid var(--line);backdrop-filter:blur(14px) saturate(1.3)}
 #brand{display:flex;align-items:center;user-select:none;cursor:pointer}
-#brand img{display:block;height:clamp(34px,10vw,46px);width:auto;filter:drop-shadow(0 0 18px rgba(169,92,242,.4))}
-.pill{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;
-  padding:6px 15px 6px 11px;font-family:var(--display);font-weight:900;font-size:14px}
-.pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px rgba(137,54,255,.5))}
+#brand img{display:block;height:clamp(34px,10vw,46px);width:auto;
+  filter:drop-shadow(0 0 18px var(--accent-glow))}
 
-main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:14px 16px 26px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
-/* Sur `#main` et non sur `main` : une classe comme `.pagehead` pose un
-   `margin` raccourci, qui l'emporterait sur un sélecteur d'éléments seuls et
-   décollerait l'en-tête de page du reste de la colonne. */
+main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:16px 16px 28px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+/* Sur `#main` et non sur `main` : une classe comme `.pagehead` pose un `margin`
+   raccourci, qui l'emporterait sur un sélecteur d'éléments seuls et décollerait
+   l'en-tête de page du reste de la colonne. */
 #main>*{max-width:1180px;margin-inline:auto}
 
 /* ============ Navigation ============ */
 /* Tout est accroché à #nav, et non à l'élément <nav> : le panneau du tiroir en
    est un aussi, et héritait sinon de la mise en colonne de la barre du bas. */
 #nav{position:relative;z-index:3;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
-  padding:7px 10px calc(7px + env(safe-area-inset-bottom,0px));
-  /* Un fond plus clair que la page : la réserve du bas se lit alors comme le bas
-     de la barre, et non comme un trou. */
-  background:linear-gradient(180deg,rgba(28,22,38,.97),rgba(20,15,27,.99));
-  border-top:1px solid var(--line-2);backdrop-filter:blur(14px)}
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,var(--veil-2),var(--bg-2));
+  border-top:1px solid var(--line-2);backdrop-filter:blur(16px) saturate(1.3)}
 
 /* Filet de sécurité : si le navigateur rend quand même la page plus courte que
    l'écran, cette bande peint le bas aux couleurs de la barre. */
 body::after{content:'';position:fixed;left:0;right:0;bottom:0;z-index:2;pointer-events:none;
-  height:env(safe-area-inset-bottom,0px);background:rgba(20,15,27,.99)}
-#nav button{position:relative;background:none;border:0;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:4px;
-  font-size:10px;font-weight:800;letter-spacing:.01em;color:var(--muted);border-radius:var(--radius-sm);white-space:nowrap;
-  transition:color .16s,background .16s}
-#nav button:hover{color:var(--subtle);background:rgba(255,255,255,.03)}
-#nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  height:env(safe-area-inset-bottom,0px);background:var(--bg-2)}
+
+#nav button{position:relative;background:none;border:0;padding:7px 0 6px;display:flex;flex-direction:column;
+  align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.01em;color:var(--muted);
+  border-radius:var(--radius-sm);white-space:nowrap;transition:color .16s,background .16s}
+#nav button:hover{color:var(--subtle);background:var(--hover)}
+#nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
 /* L'étoile du logo est pleine : elle sert de marque, pas d'icône au trait. */
 #nav svg.ico-star,.btn svg.ico-star{width:24px;height:17px;stroke:none;fill:currentColor}
-#nav button.on svg.ico-star{fill:var(--accent-soft);filter:drop-shadow(0 0 9px rgba(137,54,255,.8))}
-#nav button.on{color:var(--text);background:linear-gradient(180deg,rgba(137,54,255,.22),rgba(137,54,255,.06))}
+
+/* L'onglet en cours : la pastille se dessine derrière l'icône seule, pas
+   derrière toute la colonne. Un bloc de couleur haut de 46 px écrasait la barre ;
+   une pastille de la taille du doigt la laisse respirer. */
+#nav button .navbg{position:absolute;top:3px;left:50%;width:52px;height:30px;translate:-50% 0;
+  border-radius:999px;opacity:0;scale:.7;pointer-events:none;
+  background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));
+  box-shadow:inset 0 0 0 1px var(--accent-wash-2);
+  transition:opacity .2s,scale .24s cubic-bezier(.2,1.3,.4,1)}
+#nav button.on .navbg{opacity:1;scale:1}
+#nav button.on{color:var(--text)}
 #nav button.on svg{stroke:var(--accent-soft)}
-#nav button.on::after{content:'';position:absolute;top:0;left:26%;right:26%;height:3px;border-radius:0 0 3px 3px;background:var(--accent-soft);
-  box-shadow:0 0 12px var(--accent)}
+#nav button.on svg.ico-star{fill:var(--accent-soft);filter:drop-shadow(0 0 9px var(--accent-glow))}
+/* Le contenu passe au-dessus de la pastille de sélection. La pastille de
+   compte, elle, garde son positionnement absolu : la remettre dans le flux la
+   renvoyait sous le libellé, à cheval sur le bord de l'écran. */
+#nav button>svg,#nav button>span{position:relative;z-index:1}
+#nav button>.pastille{z-index:2}
+
 body.intheater #nav,body.intheater .top,body.intheater main,body.intheater .bgdeco{visibility:hidden}
 
 /* ============ Typo ============ */
-h1{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:25px;margin:6px 0 4px;letter-spacing:-.025em;line-height:1.05}
-h2{font-family:var(--display);font-stretch:106%;font-weight:800;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
+/* Les titres de page sont en Archivo étiré et penché : c'est la typo du logo.
+   Une graisse de labeur en petites capitales grises, c'était le réglage par
+   défaut d'un éditeur de texte, pas une identité. */
+h1{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:27px;
+  margin:6px 0 4px;letter-spacing:-.03em;line-height:1.04}
+
+/* Les titres de section : même famille, même pente, taille de texte courant.
+   Le petit trait qui les précède tient lieu de puce — il aligne l'œil sans
+   ajouter un mot. */
+h2{position:relative;font-family:var(--display);font-stretch:108%;font-weight:800;font-style:italic;
+  font-size:16.5px;letter-spacing:-.015em;text-transform:none;color:var(--text);
+  margin:var(--gap-5) 0 var(--gap-2);padding-left:13px;line-height:1.2}
+h2::before{content:'';position:absolute;left:0;top:.18em;bottom:.18em;width:3px;border-radius:3px;
+  background:linear-gradient(180deg,var(--accent-soft),var(--accent));opacity:.9}
+/* Un sous-titre glissé dans un h2 redevient une phrase. */
+h2 .small,h2 .muted{font-family:var(--body);font-style:normal;font-weight:600;letter-spacing:0}
+
+h3{font-family:var(--display);font-stretch:106%;font-weight:800;font-style:italic;font-size:15px;
+  margin:0 0 6px;letter-spacing:-.01em}
 p{line-height:1.5;margin:6px 0}
-.muted{color:var(--muted)}.small{font-size:13px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+b,strong{font-weight:800}
+a{color:var(--accent-soft)}
 
 /* ============ Boutons pressables ============ */
-/* Un rebord plein sous le bouton : il s'enfonce au clic, comme dans les jeux de cartes mobiles. */
-.btn{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:0;border-radius:999px;
-  padding:15px 24px;font-family:var(--display);font-weight:900;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:#fff;
+/* Un rebord plein sous le bouton : il s'enfonce au clic, comme dans les jeux de
+   cartes mobiles. C'est la signature tactile du site — tout ce qui s'appuie
+   descend de la même hauteur. */
+.btn{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  border:0;border-radius:999px;padding:15px 24px;font-family:var(--display);font-weight:900;
+  font-size:15px;letter-spacing:.055em;text-transform:uppercase;color:var(--on-accent);
   background:linear-gradient(180deg,var(--accent-soft),var(--accent));
-  box-shadow:0 5px 0 var(--accent-deep),0 12px 22px rgba(137,54,255,.26),inset 0 1px 0 rgba(255,255,255,.4);
+  box-shadow:0 5px 0 var(--accent-deep),var(--sh-3),inset 0 1px 0 var(--gloss);
   transition:transform .09s ease-out,box-shadow .09s ease-out,filter .15s}
 .btn:hover:not(:disabled){filter:brightness(1.07)}
-.btn:active:not(:disabled){transform:translateY(5px);box-shadow:0 0 0 var(--accent-deep),0 4px 10px rgba(137,54,255,.2),inset 0 1px 0 rgba(255,255,255,.3)}
+.btn:active:not(:disabled){transform:translateY(5px);
+  box-shadow:0 0 0 var(--accent-deep),var(--sh-1),inset 0 1px 0 var(--gloss-soft)}
 .btn.ghost{background:linear-gradient(180deg,var(--surface-2),var(--surface));color:var(--text);
-  box-shadow:0 4px 0 #100c15,0 8px 16px rgba(0,0,0,.4),inset 0 0 0 1px var(--line-2)}
-.btn.ghost:active:not(:disabled){transform:translateY(4px);box-shadow:0 0 0 #100c15,0 3px 8px rgba(0,0,0,.35),inset 0 0 0 1px var(--line-2)}
-.btn.ghost.dark{background:rgba(255,255,255,.1);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.16)}
-.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:0 4px 0 rgba(0,0,0,.4)}
+  box-shadow:0 4px 0 var(--sh-press),var(--sh-2),inset 0 0 0 1px var(--line-2)}
+.btn.ghost:active:not(:disabled){transform:translateY(4px);
+  box-shadow:0 0 0 var(--sh-press),var(--sh-1),inset 0 0 0 1px var(--line-2)}
+/* Sur un fond déjà sombre — théâtre, bandeau de carte — le fantôme s'éclaircit. */
+.btn.ghost.dark{background:rgba(255,255,255,.12);color:#fff;
+  box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.18)}
+.btn.ghost.dark:active:not(:disabled){box-shadow:0 0 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.18)}
+.btn.danger{background:linear-gradient(180deg,var(--danger),#c1005c);
+  box-shadow:0 5px 0 #7d003b,var(--sh-3),inset 0 1px 0 var(--gloss)}
+.btn.danger:active:not(:disabled){box-shadow:0 0 0 #7d003b,var(--sh-1)}
+.btn:disabled{opacity:.38;cursor:not-allowed;box-shadow:0 4px 0 var(--sh-press);filter:grayscale(.3)}
 .btn svg{width:19px;height:19px;flex:0 0 auto}
+
+/* Petit bouton plein, pour les actions posées dans une ligne. */
+.btn.tiny{width:auto;flex:0 0 auto;padding:9px 16px;font-size:12.5px;border-radius:999px;gap:5px;
+  letter-spacing:.04em;box-shadow:0 4px 0 var(--accent-deep),inset 0 1px 0 var(--gloss)}
+.btn.tiny:active:not(:disabled){transform:translateY(4px);box-shadow:0 0 0 var(--accent-deep)}
+.btn.tiny.ghost{box-shadow:0 3px 0 var(--sh-press),inset 0 0 0 1px var(--line-2)}
+.btn.tiny.ghost:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--sh-press),inset 0 0 0 1px var(--line-2)}
+
 .linkbtn{background:none;border:0;color:var(--muted);font-weight:700;font-size:13px;padding:6px}
 .linkbtn:hover{color:var(--text)}
-.row{display:flex;gap:10px;align-items:center}.row>.btn{flex:1}
+.row{display:flex;gap:10px;align-items:center}
+.row>.btn{flex:1}
 
-/* ============ Puces, panneaux ============ */
+/* ============ Puces de filtre ============ */
 .chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chips button{flex:0 0 auto;border:0;background:linear-gradient(180deg,var(--surface-2),var(--surface));color:var(--subtle);
-  padding:8px 16px;font-size:12.5px;font-weight:800;border-radius:999px;box-shadow:0 3px 0 #100c15,inset 0 0 0 1px var(--line);
+.chips button{flex:0 0 auto;border:0;background:linear-gradient(180deg,var(--surface-2),var(--surface));
+  color:var(--subtle);padding:8px 16px;font-size:12.5px;font-weight:800;border-radius:999px;
+  box-shadow:0 3px 0 var(--sh-press),inset 0 0 0 1px var(--line);
   transition:color .14s,transform .09s,box-shadow .09s}
 .chips button:hover{color:var(--text)}
-.chips button:active{transform:translateY(3px);box-shadow:0 0 0 #100c15,inset 0 0 0 1px var(--line)}
-.chips button.on{background:linear-gradient(180deg,var(--accent-soft),var(--accent));color:#fff;box-shadow:0 3px 0 var(--accent-deep),inset 0 1px 0 rgba(255,255,255,.3)}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:2px 16px 18px;margin-bottom:12px}
-.panel h2{margin-top:16px}
-.empty{text-align:center;padding:60px 10px;color:var(--muted)}
+.chips button:active{transform:translateY(3px);box-shadow:0 0 0 var(--sh-press),inset 0 0 0 1px var(--line)}
+.chips button.on{background:linear-gradient(180deg,var(--accent-soft),var(--accent));color:var(--on-accent);
+  box-shadow:0 3px 0 var(--accent-deep),inset 0 1px 0 var(--gloss-soft)}
 
-/* ============ Blocs dépliants, réglages ============ */
-details{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin:10px 0}
+/* ============ Panneaux ============ */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:2px 16px 18px;margin-bottom:12px;box-shadow:var(--sh-1)}
+.panel h2{margin-top:18px}
+.panel>h2:first-child{margin-top:16px}
+.empty{text-align:center;padding:56px 10px;color:var(--muted)}
+
+/* ============ Blocs dépliants ============ */
+details{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 16px;margin:10px 0}
 summary{font-weight:700;cursor:pointer}
-.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2);border-radius:var(--radius-sm);
-  padding:12px 14px;margin-bottom:8px;font-weight:600}
-.toggle input{width:20px;height:20px;accent-color:var(--accent)}
 
-/* ============ Feuille, toast ============ */
-.sheet-wrap{position:fixed;inset:0;background:rgba(6,4,8,.74);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+/* ============ Feuille modale ============ */
+.sheet-wrap{position:fixed;inset:0;background:var(--scrim);backdrop-filter:blur(7px);
+  display:flex;align-items:flex-end;justify-content:center;z-index:50;animation:fadein .2s}
 .sheet-wrap[hidden]{display:none}
-.sheet{position:relative;background:var(--surface);border:1px solid var(--line);border-bottom:0;width:100%;max-width:520px;
-  padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:90%;overflow-y:auto;border-radius:var(--radius) var(--radius) 0 0;
-  animation:up .26s cubic-bezier(.2,1.1,.4,1)}
+@keyframes fadein{from{opacity:0}}
+.sheet{position:relative;background:var(--surface);border:1px solid var(--line);border-bottom:0;
+  width:100%;max-width:520px;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));
+  max-height:90%;overflow-y:auto;border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow:var(--sh-4);animation:up .3s cubic-bezier(.2,1.1,.4,1)}
 @keyframes up{from{transform:translateY(60px);opacity:.3}}
-.sheet h3{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;margin:2px 0 10px;font-size:20px}
+/* La poignée : elle dit que le panneau vient du bas et qu'il y repartira. */
+.sheet::before{content:'';position:absolute;top:8px;left:50%;width:38px;height:4px;translate:-50% 0;
+  border-radius:99px;background:var(--line-2)}
+.sheet h3{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
+  margin:4px 0 10px;font-size:21px;letter-spacing:-.02em}
 .sheet .acts{display:flex;flex-direction:column;gap:10px;margin-top:18px}
-#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);transform:translateX(-50%);background:var(--surface-2);
-  border:1px solid var(--line-2);color:var(--text);padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;z-index:80;opacity:0;
-  pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
-#toast.on{opacity:1}
 
-/* ============ Notification de quête ============ */
-/* Elle passe en haut, à l'opposé du toast : les deux peuvent tomber en même
-   temps — on encaisse une récompense pendant qu'une autre quête se termine —
-   et elles ne doivent pas se marcher dessus. Rien à fermer, rien à lire
-   absolument : la pastille de l'onglet Quêtes garde la trace. */
+/* ============ Notification passagère ============ */
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);
+  transform:translateX(-50%) translateY(8px);background:var(--surface-2);border:1px solid var(--line-2);
+  color:var(--text);padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;z-index:80;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90%;text-align:center;
+  box-shadow:var(--sh-3)}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ============ Notification de quête et de promo ============ */
+/* Elles passent en haut, à l'opposé du toast : les deux peuvent tomber en même
+   temps — on encaisse une récompense pendant qu'une autre quête se termine — et
+   elles ne doivent pas se marcher dessus. Rien à fermer, rien à lire
+   absolument : la pastille de l'onglet garde la trace. */
 #qnotif{position:fixed;top:calc(env(safe-area-inset-top,0px) + 66px);left:50%;transform:translateX(-50%);
   z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;
-  width:max-content;max-width:min(360px,calc(100vw - 32px));pointer-events:none}
-.qn{display:flex;align-items:center;gap:11px;width:100%;
-  background:linear-gradient(180deg,rgba(38,30,50,.97),rgba(24,19,32,.97));
-  border:1px solid var(--line-2);border-radius:var(--radius);padding:10px 13px;
-  box-shadow:0 10px 26px rgba(0,0,0,.5),inset 0 0 0 1px rgba(85,230,166,.22);
-  cursor:pointer;pointer-events:auto;animation:qn-in .3s cubic-bezier(.2,1.1,.4,1)}
+  width:max-content;max-width:min(380px,calc(100vw - 32px));pointer-events:none}
+.qn{display:flex;align-items:center;gap:11px;width:100%;background:var(--surface-2);
+  border:1px solid var(--ok-line);border-radius:var(--radius);padding:10px 13px;
+  box-shadow:var(--sh-3);cursor:pointer;pointer-events:auto;
+  animation:qn-in .34s cubic-bezier(.2,1.2,.4,1)}
 .qn.out{animation:qn-out .3s ease-in forwards}
 .qnico{display:grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border-radius:50%;
-  background:rgba(85,230,166,.16);color:#55e6a6}
-.qnico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  background:var(--ok-wash);color:var(--ok)}
+.qnico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
 .qntxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .qntxt b{font-size:13.5px;font-weight:800;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qntxt small{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7fdcb4}
-.qngain{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;
-  font-family:var(--display);font-weight:900;font-size:14px;color:var(--brand-light)}
+.qntxt small{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ok)}
+.qngain{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-family:var(--display);
+  font-weight:900;font-size:14px;color:var(--brand-light)}
 .qngain .shard{width:15px;height:15px}
 @keyframes qn-in{from{opacity:0;transform:translateY(-14px) scale(.96)}}
 @keyframes qn-out{to{opacity:0;transform:translateY(-10px) scale(.97)}}
@@ -142,3 +218,38 @@ body.intheater #qnotif{visibility:hidden}
 
 /* Réduction des animations si demandé par le système */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ============ Les visuels de marque en thème clair ============ */
+/* Le logo du jeu, celui de l'extension et la pastille « 1re édition » sont des
+   images pensées pour du noir : du blanc, de l'argenté, des halos. Posées sur
+   un fond clair, elles s'effacent — et on ne peut pas les redessiner pour
+   autant, ce sont les visuels officiels.
+
+   On leur rend donc leur fond : une plaque sombre, taillée à leur forme. Ce
+   n'est pas un rattrapage, c'est ce que fait n'importe quelle charte quand un
+   logo n'existe qu'en version claire. */
+#brand{position:relative;border-radius:999px;padding:0 2px}
+#brand::before{content:'';position:absolute;inset:-5px -12px;border-radius:999px;opacity:0;
+  background:linear-gradient(135deg,#1c1129,#0d0814);transition:opacity .2s}
+#brand img{position:relative}
+
+.setbar .setlogo{position:relative}
+
+/* La plaque s'arrête au logo : la ligne « 122 cartes » est du texte courant,
+   elle reste dans les couleurs du thème et se lit en noir sur clair. */
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]) #brand::before{opacity:1}
+  :root:not([data-theme="dark"]) .setlogo{padding:14px 20px;box-sizing:content-box;
+    border-radius:var(--radius-lg);background:linear-gradient(160deg,#1c1129,#0d0814);
+    box-shadow:var(--sh-2)}
+  /* L'ombre portée du paquet, calculée pour du noir, faisait une flaque sur
+     du clair. */
+  :root:not([data-theme="dark"]) .packshadow{opacity:.35}
+  :root:not([data-theme="dark"]) .pack{filter:drop-shadow(0 20px 30px rgba(48,30,66,.4))}
+}
+:root[data-theme="light"] #brand::before{opacity:1}
+:root[data-theme="light"] .setlogo{padding:14px 20px;box-sizing:content-box;
+  border-radius:var(--radius-lg);background:linear-gradient(160deg,#1c1129,#0d0814);
+  box-shadow:var(--sh-2)}
+:root[data-theme="light"] .packshadow{opacity:.35}
+:root[data-theme="light"] .pack{filter:drop-shadow(0 20px 30px rgba(48,30,66,.4))}

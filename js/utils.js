@@ -50,6 +50,15 @@ const colOf = c => COLORS[c.col] || COLORS.neutre;
 const tcol = c => colOf(c).c;
 const rk = c => (RAR[c.rar] || RAR.C).rank;
 
+/* L'extension et les Promos, dans une seule liste. À n'utiliser que là où les
+   deux ont leur place — un choix d'avatar, une vitrine. Partout où l'on compte
+   la collection, c'est `cards` seul : les Promos sont hors extension, et le
+   total de 122 ne doit jamais bouger. */
+const toutesCartes = () => cards.concat(promos);
+
+/* Les plus rares d'abord, puis par numéro. */
+const parRarete = (a, b) => rk(b) - rk(a) || (a.num || 0) - (b.num || 0);
+
 /* Symbole d'une essence : le logo officiel quand il existe, sinon une pastille de couleur. */
 const essIcon = (k, cls) => {
   const col = COLORS[k] || COLORS.neutre;

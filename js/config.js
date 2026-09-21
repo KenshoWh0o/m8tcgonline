@@ -64,14 +64,22 @@ const CATS = {
   essence: 'Essence'
 };
 
+/* `PR` n'est pas une rareté de plus dans l'échelle : c'est une case à part.
+   Les Promos ne sortent d'aucun booster, ne comptent pas dans l'extension et
+   ne s'échangent pas — le serveur refuse les deux. Le rang 6 sert seulement à
+   les ranger en dernier quand on trie une liste mélangée. */
 const RAR = {
   ES: { nom: 'Essence', sym: '○', rank: 0 },
   C: { nom: 'Commune', sym: '◆', rank: 1 },
   PC: { nom: 'Peu commune', sym: '◆◆', rank: 2 },
   R: { nom: 'Rare', sym: '◆◆◆', rank: 3 },
   E: { nom: 'Épique', sym: '★', rank: 4 },
-  L: { nom: 'Légendaire', sym: '★★', rank: 5 }
+  L: { nom: 'Légendaire', sym: '★★', rank: 5 },
+  PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true }
 };
+
+/* Les raretés proposées comme filtre dans la Collection, dans l'ordre de l'échelle. */
+const RAR_FILTRES = ['ES', 'C', 'PC', 'R', 'E', 'L'];
 
 const DEFV = { ES: 0, C: 90, PC: 110, R: 120, E: 130, L: 150 };
 const DEFD = { ES: 0, C: 60, PC: 80, R: 100, E: 120, L: 150 };
@@ -79,11 +87,11 @@ const DEFD = { ES: 0, C: 60, PC: 80, R: 100, E: 120, L: 150 };
 /* ---------- Réglages des boosters ---------- */
 /* Valeurs de repli, utilisées hors ligne. Connecté, le serveur impose les siennes
    (fonction cfg() dans supabase/01_schema.sql) : la montre du téléphone n'y peut rien. */
-let INTERVAL = 30 * 60 * 1000;
+let INTERVAL = 4 * 60 * 60 * 1000;
 let TICKET_CAP = 5;
 
 /* Nombre de cartes par booster. La composition slot par slot est dans makeBooster() (js/booster.js). */
-const PACK_SIZE = 8;
+const PACK_SIZE = 10;
 
 /* Emplacements Secrets tenus en réserve dans la collection : numérotés à la suite des cartes
    existantes, mais hors du total puisqu'ils ne sont pas encore sortis. 0 pour les masquer. */
@@ -127,10 +135,13 @@ const FRAMES = {
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
    compte, qui reste à jour toute seule), « ess:<couleur> » (un des dix symboles
    d'essence) ou « card:<id> » (une carte possédée, vérifiée par le serveur). */
+/* `objet` : une image plus haute que large — une carte, un dos, un paquet.
+   Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
+   avatarHTML dans js/ui.js). */
 const AVATARS = {
   star: { nom: 'Étoile', art: 'assets/pack-star.svg', ico: true, bg: '#8936ff' },
-  back: { nom: 'Dos de carte', art: 'assets/card-back.webp' },
-  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp' },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp', objet: true },
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp', objet: true },
   set:  { nom: 'Extension', art: 'assets/extension-logo.svg', ico: true, bg: '#8936ff' },
   ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg', ico: true, bg: '#ee0073' }
 };
@@ -138,7 +149,7 @@ const AVATARS = {
 /* ---------- Échanges ---------- */
 /* Une demande gratuite passé le délai, sinon un jeton acheté en boutique.
    Le serveur applique la même règle : ces valeurs ne servent qu'à l'affichage. */
-const TRADE_COOLDOWN_H = 6;
+const TRADE_COOLDOWN_H = 10;
 
 /* ---------- Onglets ---------- */
 /* `bas` : la barre du bas sur mobile, le rail sur ordinateur. Cinq places, pas une
@@ -165,17 +176,51 @@ const TABS = [
 /* Icônes de navigation : tracées au trait, sauf l'étoile du logo qui est pleine. */
 const NAVICO = {
   star:  ICON.star,
-  cards: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="9" rx="1.5"/><rect x="14" y="4" width="7" height="9" rx="1.5"/><path d="M3 17h18M3 20.5h12"/></svg>',
+  /* Collection : un classeur à cartes — la reliure à gauche, les pochettes à droite.
+     Deux rectangles et une barre ne disaient rien ; un classeur, tout le monde
+     l'a déjà eu entre les mains. */
+  cards: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7.5 3v18"/><rect x="11" y="7" width="3.6" height="4.4" rx=".8"/><rect x="16.4" y="7" width="3.6" height="4.4" rx=".8"/><rect x="11" y="13.6" width="3.6" height="4.4" rx=".8"/><rect x="16.4" y="13.6" width="3.6" height="4.4" rx=".8"/></svg>',
   swap:  '<svg viewBox="0 0 24 24"><path d="M4 8h13l-3.2-3.2M20 16H7l3.2 3.2"/></svg>',
   amis:  '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.6 20a6.4 6.4 0 0 1 12.8 0"/><path d="M16.5 5.4a3.4 3.4 0 0 1 0 6.6M17.6 14.4A6.4 6.4 0 0 1 21.4 20"/></svg>',
   shop:  '<svg viewBox="0 0 24 24"><path d="M4 8h16l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H6.7a1.5 1.5 0 0 1-1.5-1.3Z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>',
   more:  '<svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.5" cy="12" r="1.4"/></svg>',
   quest: '<svg viewBox="0 0 24 24"><path d="M9 11.5 11 13.5l4.5-4.5"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',
-  sword: '<svg viewBox="0 0 24 24"><path d="M14.5 3H21v6.5L10.2 20.3a2 2 0 0 1-2.8 0l-3.7-3.7a2 2 0 0 1 0-2.8Z"/><path d="m14 10-4 4"/></svg>',
+  /* Combats : deux épées croisées. L'ancienne icône était une forme sans nom —
+     personne ne devinait qu'on se battait derrière. */
+  sword: '<svg viewBox="0 0 24 24"><path d="M14.8 3H21v6.2L12.6 17.6"/><path d="M9.2 3H3v6.2l8.4 8.4"/><path d="m4.6 19.4 2.8-2.8M6 21l3.4-3.4"/><path d="m19.4 19.4-2.8-2.8M18 21l-3.4-3.4"/></svg>',
   user:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>',
-  gear:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3 16.6 7.4M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>',
+  /* Réglages : un vrai rouage, à dents. Le cercle entouré de huit rayons se
+     lisait comme un soleil — on cherchait la météo, pas les paramètres. */
+  gear:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><path d="M19.6 14.4a1.6 1.6 0 0 0 .32 1.76l.06.06a1.9 1.9 0 1 1-2.7 2.7l-.05-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.46v.17a1.9 1.9 0 1 1-3.8 0v-.09a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.76.32l-.06.06a1.9 1.9 0 1 1-2.7-2.7l.06-.06a1.6 1.6 0 0 0 .32-1.76 1.6 1.6 0 0 0-1.46-.97h-.17a1.9 1.9 0 0 1 0-3.8h.09a1.6 1.6 0 0 0 1.46-1.05 1.6 1.6 0 0 0-.32-1.76l-.06-.06a1.9 1.9 0 1 1 2.7-2.7l.06.06a1.6 1.6 0 0 0 1.76.32h.08a1.6 1.6 0 0 0 .97-1.46v-.17a1.9 1.9 0 1 1 3.8 0v.09a1.6 1.6 0 0 0 .97 1.46 1.6 1.6 0 0 0 1.77-.32l.05-.06a1.9 1.9 0 1 1 2.7 2.7l-.06.06a1.6 1.6 0 0 0-.32 1.76v.08a1.6 1.6 0 0 0 1.46.97h.17a1.9 1.9 0 0 1 0 3.8h-.09a1.6 1.6 0 0 0-1.46.97Z"/></svg>',
   flask: '<svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7 15h10"/></svg>',
-  coin:  '<svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.5 6 .9-4.3 4.3 1 6.1L12 17l-5.3 2.8 1-6.1L3.4 9.4l6-.9Z"/></svg>'
+  coin:  '<svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.5 6 .9-4.3 4.3 1 6.1L12 17l-5.3 2.8 1-6.1L3.4 9.4l6-.9Z"/></svg>',
+
+  /* Le menu du compte, sur mobile : trois lignes, le signe universel du panneau
+     qui se déplie. Posé sur l'avatar, il dit que l'avatar est un bouton. */
+  menu:  '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></svg>',
+  promo: '<svg viewBox="0 0 24 24"><path d="M12 2.6 14.1 9h6.7l-5.4 3.9 2 6.4-5.4-4-5.4 4 2-6.4L3.2 9h6.7Z"/></svg>',
+  sun:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4 17 7M7 17l-1.6 1.6M18.6 18.6 17 17M7 7 5.4 5.4"/></svg>',
+  moon:  '<svg viewBox="0 0 24 24"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/></svg>',
+  auto:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></svg>',
+  lock:  '<svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+  caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
+  filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>'
+};
+
+/* ---------- Cartes Promo ---------- */
+/* Le palier de collection qui accorde la promo « palier ». 90 % et non 50 % :
+   la moitié de l'extension se passe en une dizaine de paquets — une récompense
+   décrochée le deuxième jour n'en est pas une. À 90 % il faut une bonne
+   quinzaine de jours, et ça laisse les 100 % comme dernier sommet. */
+const PROMO_PALIER = 90;
+
+/* Ce qu'on lit sous une promo qu'on n'a pas encore. */
+const PROMO_COMMENT = {
+  boutique: 'En boutique',
+  palier: PROMO_PALIER + ' % de la collection',
+  master: 'Master Set complet'
 };
 
 const tabDef = id => TABS.find(t => t.id === id) || TABS[0];

@@ -4,7 +4,32 @@
    unique, réglable dans Réglages.
 
    Il n'y a que des bruitages : chacun répond à un geste. Une musique de fond,
-   elle, joue sans qu'on l'ait demandée — on l'a retirée. */
+   elle, joue sans qu'on l'ait demandée — on l'a retirée.
+
+   ------------------------------------------------------------------------
+   Le son sur mobile, et pourquoi ce fichier fait plus que jouer des notes.
+
+   Un navigateur de téléphone ne laisse pas une page faire du bruit quand elle
+   veut. Trois règles s'y ajoutent, et chacune coupait le son ici :
+
+   1. Rien avant un geste. L'AudioContext naît « suspended » et ne se réveille
+      que dans un gestionnaire d'événement déclenché par la personne. On le
+      réveille donc au tout premier contact, quel qu'il soit.
+
+   2. `resume()` prend son temps. Il rend une promesse : juste après l'appel,
+      l'état est encore « suspended ». Le code d'avant vérifiait l'état tout de
+      suite et renonçait — le premier son d'une session était systématiquement
+      perdu. Les sons demandés pendant ce réveil sont désormais mis de côté et
+      joués dès que le contexte tourne.
+
+   3. Le système reprend la main. Quitter l'onglet, verrouiller l'écran,
+      recevoir un appel : le système suspend le contexte et ne le rend pas. Sans
+      reprise explicite, tout restait muet au retour, définitivement. On
+      redemande donc le réveil au retour sur l'onglet et à chaque geste.
+
+   Ce qu'on ne peut pas corriger : sur iPhone, l'interrupteur « silencieux » de
+   la tranche coupe le son des pages web. Aucune ligne de JavaScript ne passe
+   outre — les Réglages le disent au joueur plutôt que de le laisser chercher. */
 "use strict";
 
 const SFX = {
@@ -19,7 +44,10 @@ const SFX_CLE = 'mtcg.audio';
 (function chargerReglages() {
   try {
     const v = JSON.parse(localStorage.getItem(SFX_CLE) || 'null');
-    if (v && typeof v === 'object') Object.assign(SFX.reglages, v);
+    if (v && typeof v === 'object') {
+      if (typeof v.sfx === 'boolean') SFX.reglages.sfx = v.sfx;
+      if (typeof v.volSfx === 'number') SFX.reglages.volSfx = Math.max(0, Math.min(1, v.volSfx));
+    }
   } catch (e) { /* premier lancement */ }
 })();
 
@@ -27,14 +55,20 @@ SFX.sauver = function () {
   try { localStorage.setItem(SFX_CLE, JSON.stringify(SFX.reglages)); } catch (e) { /* mode privé */ }
 };
 
-/* Les navigateurs refusent le son tant que la personne n'a rien touché :
-   on prépare tout au premier geste, quel qu'il soit. */
 SFX.init = function () {
   if (SFX.pret) return SFX.ctx;
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
 
-  SFX.ctx = new AC();
+  try {
+    /* `latencyHint:'interactive'` demande la plus petite latence possible : un
+       bruitage de bouton qui arrive 200 ms trop tard ne se rattache plus au
+       geste, et on l'entend comme un défaut. */
+    SFX.ctx = new AC({ latencyHint: 'interactive' });
+  } catch (e) {
+    return null;
+  }
+
   SFX.bus = SFX.ctx.createGain();
   SFX.bus.gain.value = 1;
   SFX.bus.connect(SFX.ctx.destination);
@@ -52,10 +86,41 @@ SFX.init = function () {
   return SFX.ctx;
 };
 
+/* ---------- Réveil ---------- */
+/* Les sons demandés pendant que le contexte se réveille attendent ici. On n'en
+   garde que quelques-uns : si le réveil traîne, rejouer dix bruitages d'un coup
+   ferait un paquet de bruit sans rapport avec ce que la personne vient de
+   faire. */
+const enAttente = [];
+const ATTENTE_MAX = 4;
+let reveilEnCours = false;
+
 SFX.reveiller = function () {
   const c = SFX.init();
-  if (c && c.state === 'suspended') c.resume();
+  if (!c) return null;
+  if (c.state === 'running' || reveilEnCours) return c;
+
+  reveilEnCours = true;
+  /* Selon les navigateurs, `resume()` rend une promesse ou rien du tout. */
+  let p;
+  try { p = c.resume(); } catch (e) { p = null; }
+  Promise.resolve(p)
+    .then(viderAttente)
+    .catch(() => { /* refusé : il faudra un vrai geste */ })
+    .then(() => { reveilEnCours = false; });
   return c;
+};
+
+function viderAttente() {
+  if (!SFX.ctx || SFX.ctx.state !== 'running') return;
+  enAttente.splice(0, enAttente.length).forEach(([nom, arg]) => lancer(nom, arg));
+}
+
+/* Le son sort-il vraiment ? Sert au bouton « Tester le son » des Réglages :
+   c'est la seule réponse honnête à « je n'entends rien ». */
+SFX.audible = function () {
+  return !!(SFX.pret && SFX.ctx && SFX.ctx.state === 'running'
+    && SFX.reglages.sfx && SFX.reglages.volSfx > 0);
 };
 
 SFX.appliquer = function () {
@@ -195,32 +260,51 @@ function carillon(freqs, duree, gain, delai) {
   });
 }
 
-SFX.jouer = function (nom, arg) {
-  if (!SFX.reglages.sfx) return;
+function lancer(nom, arg) {
   const r = RECETTES[nom];
   if (!r) return;
-  const c = SFX.reveiller();
-  if (!c || c.state !== 'running') return;
   try { r(arg); } catch (e) { /* un son raté n'interrompt pas la partie */ }
+}
+
+SFX.jouer = function (nom, arg) {
+  if (!SFX.reglages.sfx || !RECETTES[nom]) return;
+
+  const c = SFX.reveiller();
+  if (!c) return;
+
+  /* Le contexte tourne : on joue tout de suite. Sinon on met de côté — le
+     réveil est en cours et videra la file. Renoncer ici, c'était perdre le
+     premier son de chaque session et tous ceux d'après un retour d'arrière-plan. */
+  if (c.state === 'running') return lancer(nom, arg);
+  if (enAttente.length < ATTENTE_MAX) enAttente.push([nom, arg]);
 };
 
-/* Premier geste : on débloque le son. Les navigateurs n'en veulent pas avant. */
-['pointerdown', 'keydown'].forEach(evt =>
-  addEventListener(evt, function amorce() {
-    removeEventListener(evt, amorce);
-    SFX.reveiller();
-    SFX.appliquer();
-  }, { once: true, passive: true }));
+/* Chaque geste est une occasion de réveiller le son : c'est le seul moment où
+   les navigateurs de téléphone l'autorisent. L'appel ne coûte rien quand le
+   contexte tourne déjà — il ressort à la première ligne. */
+['pointerdown', 'touchstart', 'keydown'].forEach(evt =>
+  addEventListener(evt, () => SFX.reveiller(), { passive: true, capture: true }));
 
 /* Un clic sur un bouton sonne, sans avoir à le brancher partout. */
 addEventListener('pointerdown', e => {
   const b = e.target.closest('button, .gcell[data-show], [role="button"]');
-  if (!b || b.disabled) return;
-  SFX.jouer(b.dataset.snd || (b.closest('#nav, .tiroir-liste') ? 'onglet' : 'tap'));
+  if (!b || b.disabled || b.dataset.snd === 'non') return;
+  SFX.jouer(b.dataset.snd || (b.closest('#nav, .tiroir-liste, .segbar') ? 'onglet' : 'tap'));
 }, { passive: true, capture: true });
 
-/* Le son se coupe quand on quitte l'onglet du navigateur. */
+/* Quitter l'onglet coupe le son ; y revenir le rend. Le système a pu suspendre
+   le contexte pendant l'absence : on le redemande, sans quoi tout reste muet
+   jusqu'au rechargement de la page. */
 addEventListener('visibilitychange', () => {
   if (!SFX.pret) return;
-  SFX.bus.gain.setTargetAtTime(document.hidden ? 0 : 1, SFX.ctx.currentTime, .2);
+  if (document.hidden) {
+    SFX.bus.gain.setTargetAtTime(0, SFX.ctx.currentTime, .2);
+    return;
+  }
+  SFX.reveiller();
+  SFX.bus.gain.setTargetAtTime(1, SFX.ctx.currentTime, .2);
 });
+
+/* Certains navigateurs mobiles signalent la reprise par `pageshow` et non par
+   `visibilitychange` — notamment au retour depuis le cache de navigation. */
+addEventListener('pageshow', () => { if (SFX.pret) SFX.reveiller(); });

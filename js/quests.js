@@ -1,17 +1,90 @@
 /* Onglet Quêtes. Toute la progression est comptée par le serveur au moment où
    l'événement arrive vraiment (supabase/03_rpc.sql) : rien n'est déclaré par
-   le navigateur, donc rien n'est gonflable depuis la console. */
+   le navigateur, donc rien n'est gonflable depuis la console.
+
+   Trois périodes, trois sous-onglets. Tout afficher d'un coup faisait une page
+   de seize cartes qu'on ne lisait plus : on n'a qu'une question à la fois —
+   « qu'est-ce que je peux finir aujourd'hui ? ». */
 "use strict";
 
+/* L'ordre compte : c'est celui des sous-onglets, et le premier est celui qu'on
+   ouvre par défaut. `titre` sert au sous-onglet, `plein` au bandeau de période. */
 const SCOPES = [
-  ['daily', 'Aujourd\'hui', 'Remis à zéro chaque nuit, heure de Paris.'],
-  ['weekly', 'Cette semaine', 'Remis à zéro le lundi.'],
-  ['milestone', 'Paliers', 'Une seule fois, pour toujours.']
+  { id: 'daily',     titre: 'Quotidiennes',  plein: 'Quêtes du jour',      remise: 'jour' },
+  { id: 'weekly',    titre: 'Hebdomadaires', plein: 'Quêtes de la semaine', remise: 'semaine' },
+  { id: 'milestone', titre: 'Saisonnières',  plein: 'Quêtes de saison',     remise: null }
 ];
+
+/* Le sous-onglet ouvert. Il survit aux rendus, pas aux rechargements. */
+let qVue = 'daily';
+
+/* Une icône par famille d'objectif : on reconnaît la quête avant de la lire. */
+const QICO = {
+  checkin: 'clock', packs: 'star', new_cards: 'cards',
+  rarity_R: 'quest', rarity_E: 'quest', rarity_L: 'coin',
+  trades: 'swap', collection_pct: 'cards'
+};
+
+/* ---------- Comptages ---------- */
+const questesDe = scope => (save.quetes || []).filter(q => q.scope === scope);
+const questePrete = q => !q.claimed && q.progress >= q.goal;
 
 /* Nombre de récompenses à encaisser : sert la pastille de la barre du bas. */
 function questesPretes() {
-  return (save.quetes || []).filter(q => !q.claimed && q.progress >= q.goal).length;
+  return (save.quetes || []).filter(questePrete).length;
+}
+
+const questesPretesDe = scope => questesDe(scope).filter(questePrete).length;
+
+/* ---------- Remise à zéro ---------- */
+/* Les périodes sont calées sur l'heure de Paris côté serveur (period_key dans
+   supabase/01_schema.sql) : on calcule ici la même frontière, sinon le compte à
+   rebours du joueur et la remise à zéro réelle ne tomberaient pas ensemble.
+
+   `Intl` donne l'heure de Paris quelle que soit celle du téléphone, et gère
+   l'heure d'été sans table de dates à tenir à jour. */
+const PARIS = { timeZone: 'Europe/Paris', hour12: false,
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit' };
+
+function heureParis(d) {
+  const p = {};
+  new Intl.DateTimeFormat('fr-FR', PARIS).formatToParts(d)
+    .forEach(x => { if (x.type !== 'literal') p[x.type] = +x.value; });
+  /* `24` pour minuit selon les navigateurs : on ramène à 0. */
+  if (p.hour === 24) p.hour = 0;
+  return p;
+}
+
+/* Millisecondes avant la prochaine remise à zéro de la période. */
+function resteAvantRemise(scope) {
+  if (scope === 'milestone') return null;
+  const maintenant = Date.now() + Backend.skew;
+  const p = heureParis(new Date(maintenant));
+  const ecoule = (p.hour * 3600 + p.minute * 60 + p.second) * 1000;
+
+  if (scope === 'daily') return 86400000 - ecoule;
+
+  /* La semaine ISO commence le lundi : `getUTCDay()` sur une date construite à
+     partir des composantes parisiennes donne le bon jour, sans fuseau qui s'en
+     mêle. */
+  const jour = (new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay() + 6) % 7;
+  return (7 - jour) * 86400000 - ecoule;
+}
+
+/* « 4 h 20 », « 38 min », « 2 j 6 h » — le format se resserre quand l'échéance
+   approche : à trois jours, les minutes n'intéressent personne. */
+function dureeCourte(ms) {
+  if (ms == null) return '';
+  if (ms <= 0) return 'maintenant';
+  const s = Math.floor(ms / 1000);
+  const j = Math.floor(s / 86400);
+  const hh = Math.floor(s / 3600) % 24;
+  const mm = Math.floor(s / 60) % 60;
+  if (j) return `${j} j ${hh} h`;
+  if (hh) return `${hh} h ${String(mm).padStart(2, '0')}`;
+  if (mm) return `${mm} min`;
+  return `${s} s`;
 }
 
 /* ---------- Notification d'accomplissement ---------- */
@@ -25,12 +98,10 @@ function questesPretes() {
 
 const QNOTIF_DUREE = 4000;
 
-/* Les identifiants des quêtes déjà terminées dans un état donné. */
 const questesFinies = liste =>
   new Set((liste || []).filter(q => q.progress >= q.goal).map(q => q.id));
 
-/* Compare l'ancien état au nouveau et annonce ce qui vient de se terminer.
-   `avant` à null — première ouverture de session — n'annonce rien : sinon on
+/* `avant` à null — première ouverture de session — n'annonce rien : sinon on
    accueillerait le joueur avec la pile de tout ce qu'il a déjà fait. */
 function signalerQuetes(avant, apres) {
   if (!avant) return;
@@ -47,67 +118,118 @@ function notifQuete(q) {
   const el = document.createElement('div');
   el.className = 'qn';
   el.setAttribute('role', 'status');
-  el.innerHTML = `<span class="qnico">${NAVICO.quest}</span>
+  el.innerHTML = `<span class="qnico">${NAVICO.check}</span>
     <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
     <span class="qngain">${shardIco}${fmtN(q.reward)}</span>`;
+
   /* Deux quêtes peuvent tomber ensemble : un seul son pour la volée, sinon le
      même bruitage se superpose à lui-même. */
   if (!pile.children.length) SFX.jouer('gagne');
   pile.appendChild(el);
 
   /* On retire la carte du flux dès le départ de l'animation : les suivantes
-     remontent pendant qu'elle s'efface, au lieu d'attendre qu'elle ait disparu. */
+     remontent pendant qu'elle s'efface, au lieu d'attendre sa disparition. */
   const partir = () => {
     if (!el.isConnected) return;
     el.classList.add('out');
     setTimeout(() => el.remove(), 320);
   };
   setTimeout(partir, QNOTIF_DUREE);
-  el.onclick = () => { partir(); aller('quetes'); };
+  el.onclick = () => { partir(); qVue = q.scope; aller('quetes'); };
 }
 
+/* ---------- L'écran ---------- */
 function vQuetes() {
   if (Backend.mode !== 'cloud') return horsLigne('Quêtes');
 
   const qs = save.quetes || [];
-  const pretes = questesPretes();
+  if (!qs.length) {
+    return `<div class="pagehead"><div><h1>Quêtes</h1></div></div>
+      ${vide('Rien à faire', 'Aucune quête n\'est configurée sur le serveur.')}`;
+  }
 
-  const carte = q => {
-    const fini = q.progress >= q.goal;
-    const pct = Math.min(100, Math.round(q.progress / q.goal * 100));
-    const suffixe = q.metric === 'collection_pct' ? ' %' : '';
-    return `<article class="quest${q.claimed ? ' done' : fini ? ' ready' : ''}">
+  /* Un sous-onglet vide n'existe pas : on bascule sur le premier qui a du
+     contenu plutôt que d'afficher une page blanche. */
+  const dispo = SCOPES.filter(s => questesDe(s.id).length);
+  if (!dispo.some(s => s.id === qVue)) qVue = dispo.length ? dispo[0].id : 'daily';
+
+  const onglets = dispo.map(s => {
+    const n = questesPretesDe(s.id);
+    return `<button data-qv="${s.id}" class="${qVue === s.id ? 'on' : ''}">
+      ${h(s.titre)}${n ? `<i class="pastille">${n}</i>` : ''}</button>`;
+  }).join('');
+
+  return `<div class="pagehead">
+      <div>
+        <h1>Quêtes</h1>
+        <p>Elles paient en ${MONNAIE.nom}, la monnaie de la boutique.</p>
+      </div>
+      <span class="wallet pageact">${shardIco}<b>${fmtN(save.shards)}</b></span>
+    </div>
+    <div class="segbar">${onglets}</div>
+    ${vQuetesSection(qVue)}`;
+}
+
+function vQuetesSection(scope) {
+  const def = SCOPES.find(s => s.id === scope) || SCOPES[0];
+  const liste = questesDe(scope);
+  const restantes = liste.filter(q => !q.claimed).length;
+  const reste = resteAvantRemise(scope);
+
+  const bandeau = `<div class="qperiode">
+    <span class="qpico">${NAVICO[reste == null ? 'promo' : 'clock']}</span>
+    <span class="qptxt">
+      <b>${h(def.plein)}</b>
+      <small>${reste == null
+        ? 'Une seule fois, pour toujours.'
+        : `Remise à zéro dans <b class="tnum" id="qremise">${dureeCourte(reste)}</b>`}</small>
+    </span>
+    <span class="qpreste"><b class="tnum">${restantes}</b><small>${restantes > 1 ? 'restantes' : 'restante'}</small></span>
+  </div>`;
+
+  const fini = !restantes
+    ? `<div class="qallgood">${NAVICO.check}
+        <span>${reste == null
+          ? 'Toutes les quêtes de saison sont derrière toi.'
+          : 'Tout est fait. Reviens ' + (scope === 'daily' ? 'demain' : 'la semaine prochaine') + '.'}</span>
+      </div>`
+    : '';
+
+  return bandeau + fini + liste.map(vQuete).join('');
+}
+
+function vQuete(q) {
+  const fini = q.progress >= q.goal;
+  const pct = Math.min(100, Math.round(q.progress / q.goal * 100));
+  const unite = q.metric === 'collection_pct' ? ' %' : '';
+
+  return `<article class="quest${q.claimed ? ' done' : fini ? ' ready' : ''}">
+    <span class="qico">${NAVICO[fini && !q.claimed ? 'check' : QICO[q.metric] || 'quest']}</span>
+    <div class="qcorps">
       <div class="qhead">
-        <div><b>${h(q.titre)}</b><p class="muted small">${h(q.detail)}</p></div>
+        <div><b>${h(q.titre)}</b><p>${h(q.detail)}</p></div>
         <span class="qreward">${shardIco}${fmtN(q.reward)}</span>
       </div>
       <div class="qbar"><i style="width:${pct}%"></i></div>
       <div class="qfoot">
-        <span class="muted small">${q.progress}${suffixe} / ${q.goal}${suffixe}</span>
+        <span class="qcompte"><b>${fmtN(q.progress)}${unite}</b> / ${fmtN(q.goal)}${unite}</span>
         ${q.claimed
           ? '<span class="qtag">Récupérée</span>'
           : fini
             ? `<button class="btn tiny" data-quete="${h(q.id)}" data-snd="piece">Récupérer</button>`
-            : '<span class="qtag muted">En cours</span>'}
+            : '<span class="qtag">En cours</span>'}
       </div>
-    </article>`;
-  };
-
-  const sections = SCOPES.map(([k, titre, sous]) => {
-    const l = qs.filter(q => q.scope === k);
-    if (!l.length) return '';
-    const reste = l.filter(q => !q.claimed).length;
-    return `<section class="qsec">
-      <div class="qsechead"><h2>${titre}</h2><span class="muted small">${sous}</span></div>
-      ${reste ? '' : '<p class="muted small qallgood">Tout est fait. Reviens plus tard.</p>'}
-      ${l.map(carte).join('')}
-    </section>`;
-  }).join('');
-
-  return `<div class="pagehead">
-      <h1>Quêtes</h1>
-      <p class="muted">Elles paient en ${MONNAIE.nom}, la monnaie de la boutique.</p>
     </div>
-    ${pretes ? `<div class="notice ok">${pretes} récompense${pretes > 1 ? 's' : ''} à récupérer.</div>` : ''}
-    ${sections || vide('Rien à faire', 'Aucune quête n\'est configurée sur le serveur.')}`;
+  </article>`;
+}
+
+/* Le compte à rebours bat sans redessiner la page : un seul nœud change. */
+function majRemiseQuetes() {
+  const el = $('#qremise');
+  if (!el) return;
+  const reste = resteAvantRemise(qVue);
+  if (reste == null) return;
+  /* Passé zéro, c'est le serveur qui a la vérité : on va la chercher. */
+  if (reste <= 0) return Backend.pull().then(render).catch(() => {});
+  el.textContent = dureeCourte(reste);
 }

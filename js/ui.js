@@ -52,7 +52,7 @@ function avatarInfo(a) {
   }
   if (a.startsWith('card:')) {
     const c = byId[a.slice(5)];
-    return c && c.img ? { src: c.img, carte: true } : { src: ART.star, ico: true, bg: '#8936ff' };
+    return c && c.img ? { src: c.img, objet: true } : { src: ART.star, ico: true, bg: '#8936ff' };
   }
   if (a.startsWith('ess:')) {
     const k = a.slice(4);
@@ -63,17 +63,27 @@ function avatarInfo(a) {
   if (a.startsWith('http')) return { src: a, plein: true };
 
   const v = AVATARS[a] || AVATARS.star;
-  return { src: v.art, ico: !!v.ico, bg: v.bg, plein: !v.ico };
+  return { src: v.art, ico: !!v.ico, objet: !!v.objet, bg: v.bg, plein: !v.ico && !v.objet };
 }
 
 const avatarSrc = a => avatarInfo(a).src;
 
+/* Trois cadrages, et un seul choix à faire : de quelle forme est l'image ?
+     `plein`  une photo, déjà carrée : elle remplit le cercle.
+     `ico`    un symbole : il reste entier, au centre, sur un fond de sa couleur.
+     `objet`  une carte, un dos, un booster — un rectangle haut. Le forcer dans
+              un rond l'écrasait : on le pose entier, et c'est sa propre image
+              floutée qui remplit le tour.
+   Le fond flouté passe par `--abi`, lu par `.ava.objet::before` (css/hub.css). */
 function avatarHTML(a, frame, cls) {
   const f = FRAMES[frame] || FRAMES.default;
   const v = avatarInfo(a);
-  const mode = v.ico ? ' ico' : v.carte ? ' carte' : '';
+  const mode = v.ico ? ' ico' : v.objet ? ' objet' : '';
+  const vars = [`--f1:${f.c1}`, `--f2:${f.c2}`];
+  if (v.bg) vars.push('--ab:' + v.bg);
+  if (v.objet) vars.push(`--abi:url("${encodeURI(v.src)}")`);
   return `<span class="ava ${cls || ''}${f.prisme ? ' prisme' : ''}${mode}"
-    style="--f1:${f.c1};--f2:${f.c2}${v.bg ? ';--ab:' + v.bg : ''}"><img src="${v.src}" alt=""></span>`;
+    style="${vars.join(';')}"><img src="${v.src}" alt=""></span>`;
 }
 
 /* ---------- Petits blocs répétés ---------- */
@@ -110,16 +120,21 @@ function occupe(v) {
   document.body.classList.toggle('busy', occupeN > 0);
 }
 
-/* Enveloppe une action serveur : curseur d'attente, erreur affichée, rendu final. */
+/* Enveloppe une action serveur : curseur d'attente, erreur affichée, rendu final.
+   Renvoie `true` si le serveur a dit oui — les appelants qui enchaînent quelque
+   chose derrière (une confirmation, une animation) ont besoin de le savoir,
+   sinon ils fêtent un achat que le serveur a refusé. */
 async function agir(fn, msg) {
   occupe(true);
   try {
     await fn();
     if (msg) { toast(msg); SFX.jouer('gagne'); }
     render();
+    return true;
   } catch (e) {
     toast(e.message || 'Quelque chose a raté.');
     SFX.jouer('erreur');
+    return false;
   } finally {
     occupe(false);
   }

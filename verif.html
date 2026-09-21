@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#0c0910">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=2.4.0">
-<link rel="stylesheet" href="css/base.css?v=2.4.0">
+<link rel="stylesheet" href="css/tokens.css?v=2.5.1">
+<link rel="stylesheet" href="css/base.css?v=2.5.1">
 <style>
 /* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
 body{display:block;height:auto;min-height:100%}
@@ -71,8 +71,8 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="js/config.js?v=2.4.0"></script>
-<script src="js/supabase-config.js?v=2.4.0"></script>
+<script src="js/config.js?v=2.5.1"></script>
+<script src="js/supabase-config.js?v=2.5.1"></script>
 <script>
 "use strict";
 
@@ -186,13 +186,28 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     return count;
   };
 
+  /* Les Promos sont dans la même table que le reste, mais hors extension :
+     les compter avec les autres ferait dire « 126 cartes » là où le jeu en
+     annonce 122 partout ailleurs. */
+  const compterPromos = async () => {
+    const { count, error } = await sb.from('cards')
+      .select('*', { count: 'exact', head: true }).eq('promo', true);
+    if (error) return null;
+    return count;
+  };
+
   let basePrete = false;
   try {
-    const [nc, nq, ns] = await Promise.all([compter('cards'), compter('quests'), compter('shop_items')]);
+    const [nc, nq, ns, np] = await Promise.all([
+      compter('cards'), compter('quests'), compter('shop_items'), compterPromos()]);
     basePrete = nc > 0;
+    const extension = np == null ? nc : nc - np;
     poser(nc > 0
       ? { etat: 'ok', titre: 'La base est installée',
-          detail: `<b>${nc}</b> cartes, <b>${nq}</b> quêtes, <b>${ns}</b> articles en boutique.` }
+          detail: `<b>${extension}</b> cartes d'extension${np ? ` et <b>${np}</b> promos` : ''},
+            <b>${nq}</b> quêtes, <b>${ns}</b> articles en boutique.`
+            + (np == null ? `<br><b>La colonne des promos manque</b> : rejoue
+                 <code>supabase/TOUT.sql</code>, il ajoute les cartes Promo.` : '') }
       : { etat: 'ko', titre: 'Les tables existent, mais le catalogue est vide',
           detail: 'Sans cartes, le serveur ne peut tirer aucun booster.',
           faire: 'Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.' });

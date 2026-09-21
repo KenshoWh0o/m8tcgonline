@@ -116,7 +116,7 @@ begin
 
   foreach essai in array ord loop
     select id into out_id from cards
-      where in_booster and rar = essai and cat <> 'essence'
+      where in_booster and not promo and rar = essai and cat <> 'essence'
       order by random() limit 1;
     if out_id is not null then return out_id; end if;
   end loop;
@@ -139,22 +139,29 @@ begin
 
   god := random() < 1.0 / cfg('god_odds');
 
+  -- Dix cartes : 4 communes, 3 peu communes, 1 essence, 1 rare garantie, puis
+  -- le hit (rare 70 %, epique 26 %, legendaire 4 %). La rare garantie assure
+  -- qu'aucun paquet ne soit vide de sens : il y a toujours au moins deux cartes
+  -- de rang R ou mieux.
+  -- Ces taux doivent rester identiques a RATES dans js/booster.js, qui sert
+  -- aux ouvertures de test du Labo.
   if god then
-    for i in 1..4 loop ids := ids || pick_card('R'); end loop;
-    for i in 1..3 loop ids := ids || pick_card('E'); end loop;
+    for i in 1..5 loop ids := ids || pick_card('R'); end loop;
+    for i in 1..4 loop ids := ids || pick_card('E'); end loop;
     ids := ids || pick_card('L');
   else
-    for i in 1..3 loop ids := ids || pick_card('C'); end loop;
-    ids := ids || pick_card(case when random() < 0.5 then 'C' else 'PC' end);
-    ids := ids || pick_card('PC');
-    ids := ids || pick_card('PC');
+    for i in 1..4 loop ids := ids || pick_card('C'); end loop;
+    for i in 1..3 loop ids := ids || pick_card('PC'); end loop;
 
-    select id into cid from cards where in_booster and cat = 'essence' order by random() limit 1;
+    select id into cid from cards
+      where in_booster and not promo and cat = 'essence' order by random() limit 1;
     ids := ids || coalesce(cid, pick_card('C'));
 
+    ids := ids || pick_card('R');
+
     x := random() * 100.0;
-    ids := ids || pick_card(case when x < 79.2 then 'R'
-                                 when x < 95.83 then 'E'
+    ids := ids || pick_card(case when x < 70.0 then 'R'
+                                 when x < 96.0 then 'E'
                                  else 'L' end);
   end if;
 
@@ -186,6 +193,7 @@ begin
   perform bump_quests(p, 'rarity_L', (select count(*)::int from cards
                                       where id = any(ids) and rar = 'L'));
   perform sync_collection_quests(p);
+  perform check_promos(p);
 
   return jsonb_build_object('cards', to_jsonb(ids), 'god', god, 'etat', me());
 end $$;
@@ -243,6 +251,14 @@ begin
   elsif it.effet = 'trade_token' then
     insert into inventory (user_id, item_id, qty) values (p, 'trade_token', it.montant)
       on conflict (user_id, item_id) do update set qty = inventory.qty + excluded.qty;
+  elsif it.effet = 'carte' then
+    -- Une carte achetee entre dans la collection comme n'importe quelle autre.
+    -- Elle est marquee `unique_buy` en boutique : on ne l'achete qu'une fois.
+    if it.carte_id is null then raise exception 'Article mal configure.'; end if;
+    insert into collection (user_id, card_id, qty) values (p, it.carte_id, 1)
+      on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+    insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
+      on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
   else -- cosmetique
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
       on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
@@ -273,6 +289,7 @@ begin
   if ro is null or rw is null then raise exception 'Carte inconnue.'; end if;
   if ro <> rw then raise exception 'Les deux cartes doivent etre de la meme rarete.'; end if;
   if ro = 'ES' then raise exception 'Les Essences ne s''echangent pas.'; end if;
+  if ro = 'PR' then raise exception 'Les cartes Promo ne s''echangent pas.'; end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
     raise exception 'Tu ne possedes pas la carte que tu proposes.';

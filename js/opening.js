@@ -47,6 +47,14 @@ async function openBooster(opts) {
 
   rv = { cards: drawn, news, idx: 0, god: tirage.god, test: !!opts.test, opts, revealed: false };
 
+  /* « Aller droit au récap » : on saute le défilé, pas le tirage. La
+     collection a déjà été mise à jour par le serveur. */
+  if (JEU.recapDirect && !opts.test) {
+    rv.idx = rv.cards.length;
+    opening = false;
+    return showRecap();
+  }
+
   if (pk && !RM()) setTimeout(startTheater, 120);
   else startTheater();
 }
@@ -226,6 +234,9 @@ function doReveal(done) {
     top.classList.remove('veiled', 'charging');
     top.classList.add('unveil', 'hitcard', 'h' + c.rar);
     SFX.jouer(c.rar === 'L' ? 'legend' : c.rar === 'E' ? 'epique' : 'rare');
+    /* La vibration double le son : sur un téléphone en silencieux, c'est tout ce
+       qui reste pour dire qu'il vient de se passer quelque chose. */
+    vibrer(c.rar === 'L' ? [30, 50, 30, 50, 60] : c.rar === 'E' ? [25, 45, 40] : 30);
     if (c.rar === 'E' || c.rar === 'L') top.classList.add('spin' + c.rar);
     rv.revealed = true;
 
@@ -306,7 +317,9 @@ function bindStack() {
   };
 
   const reqGyro = () => {
-    if (T.gyro) return;
+    /* Réglable : l'inclinaison au gyroscope plaît, mais elle demande une
+       autorisation sur iPhone et gêne ceux qui jouent couchés. */
+    if (T.gyro || !JEU.gyro) return;
     T.gyro = true;
     const on = e => {
       if (!alive()) {
@@ -429,11 +442,35 @@ function showRecap() {
       <div><b>${owned}<small>/${all.length}</small></b><span>collection</span></div>
     </div>
     <div class="rc-grid">${drawn.map((c, i) => `<button class="rc-cell" data-t="show" data-id="${c.id}" style="--d:${200 + i * 70}ms">${rv.news[i] ? '<span class="new">NEW</span>' : ''}${renderCard(c)}</button>`).join('')}</div>
-    <div class="rc-actions"><button class="btn" data-t="again">${rv.test ? 'Relancer ce test' : 'Ouvrir un autre booster'}</button><button class="btn ghost dark" data-t="done">Terminer</button></div>
+    <div class="rc-actions">${vRecapActions()}</div>
   </div>`);
 
   SFX.jouer('gagne');
   if (best.rar === 'L' && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: REVEAL.L.colors }), 500);
+}
+
+/* Les deux boutons du récap. « Ouvrir un autre booster » ne disait pas s'il en
+   restait un : on appuyait, et le jeu répondait « réserve vide ». Le compte est
+   désormais sur le bouton, et quand il n'y en a plus le bouton le dit et cède
+   la place principale à « Terminer ». */
+function vRecapActions() {
+  if (rv.test) {
+    return '<button class="btn" data-t="again">Relancer ce test</button>'
+      + '<button class="btn ghost dark" data-t="done">Terminer</button>';
+  }
+
+  const reste = save.unlimited ? Infinity : save.tickets;
+  if (!reste) {
+    return `<button class="btn" data-t="done">Terminer</button>
+      <p class="rc-vide">${NAVICO.clock} Réserve vide · prochain booster dans
+        <b class="tnum">${h(timerClock())}</b></p>`;
+  }
+
+  const compte = save.unlimited
+    ? '<span class="rc-reste">∞</span>'
+    : `<span class="rc-reste">${reste}</span>`;
+  return `<button class="btn" data-t="again">${ICON.star}Ouvrir un autre${compte}</button>
+    <button class="btn ghost dark" data-t="done">Terminer</button>`;
 }
 
 $('#theater').addEventListener('click', e => {
@@ -460,6 +497,11 @@ $('#theater').addEventListener('click', e => {
     }
     case 'done':
       closeTheater();
+      break;
+    /* La scène d'obtention d'une Promo vit dans le même théâtre, mais elle a
+       sa propre sortie : voir fermerPromo() dans js/promos.js. */
+    case 'promo-ok':
+      fermerPromo();
       break;
   }
 });

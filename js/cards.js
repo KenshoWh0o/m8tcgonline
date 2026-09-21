@@ -91,6 +91,43 @@ function makeCard(meta, idx) {
   return c;
 }
 
+/* ---------- Les cartes Promo ---------- */
+/* Elles passent par le même moule que les autres — mêmes champs, même rendu —
+   mais gardent leur identifiant à elles (`p01` et non `c001`) et une rareté à
+   part. C'est ce qui les tient hors de l'extension partout : elles ne sont pas
+   dans `cards`, donc pas dans le total, pas dans le pourcentage, et pas dans
+   le tirage d'un booster. */
+function makePromo(meta) {
+  const num = +String(meta.code || '').replace(/\D/g, '') || 0;
+  const c = makeCard({
+    nom: meta.nom,
+    categorie: meta.categorie,
+    sous_type: meta.sous_type,
+    couleur: meta.couleur,
+    rarete: 'PR',
+    def: meta.def,
+    attaques: meta.attaques,
+    mot_cle: meta.mot_cle,
+    effets: meta.effets,
+    fichier: meta.fichier,
+    booster: false,
+    num
+  }, num - 1);
+
+  c.id = 'p' + String(num).padStart(2, '0');
+  c.code = meta.code;
+  c.promo = true;
+  c.obtention = meta.obtention || 'boutique';
+  c.illustrateur = meta.illustrateur || '';
+  c.variante = meta.variante || '';
+  return c;
+}
+
+function buildPromos() {
+  if (typeof PROMO_DATA === 'undefined') return [];
+  return PROMO_DATA.map(makePromo).sort((a, b) => a.num - b.num);
+}
+
 /* ---------- La liste complète ---------- */
 function buildCards() {
   const list = CARD_DATA.map(makeCard).sort((a, b) => a.num - b.num);

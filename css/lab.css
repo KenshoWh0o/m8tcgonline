@@ -11,3 +11,14 @@
 .labbtn.tL{border-left:3px solid var(--r-l)}
 .labbtn.tG{grid-column:1/-1;border-left:3px solid var(--r-l)}
 .labbtn:disabled{opacity:.3;cursor:not-allowed}
+.labbtn.tPR{border-left:3px solid var(--r-pr)}
+
+/* Les valeurs d'équilibrage en cours, telles que le serveur les impose. Elles
+   ne se modifient pas d'ici : c'est un tableau de bord, pas un panneau de
+   commande — d'où la mise en page en fiche, sans rien de cliquable. */
+.labfacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.labfait{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  background:var(--bg-2);border-radius:var(--radius-sm);padding:10px 13px;
+  box-shadow:inset 0 0 0 1px var(--line)}
+.labfait span{font-size:12px;font-weight:600;color:var(--muted)}
+.labfait b{font-family:var(--display);font-weight:900;font-size:15px;white-space:nowrap}

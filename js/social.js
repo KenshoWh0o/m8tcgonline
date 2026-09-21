@@ -22,11 +22,13 @@ function vSocial() {
   ];
 
   return `<div class="pagehead">
-      <h1>Social</h1>
-      <p class="muted">Ajoute des joueurs, regarde leur collection, et échangez vos cartes.</p>
+      <div>
+        <h1>Social</h1>
+        <p>Ajoute des joueurs, regarde leur collection, et échangez vos cartes.</p>
+      </div>
     </div>
-    <div class="chips">${onglets.map(([k, l, n]) =>
-      `<button data-soc="${k}" class="${socVue === k ? 'on' : ''}">${l}${n ? ` <i class="pastille">${n}</i>` : ''}</button>`).join('')}</div>
+    <div class="segbar">${onglets.map(([k, l, n]) =>
+      `<button data-soc="${k}" class="${socVue === k ? 'on' : ''}">${l}${n ? `<i class="pastille">${n}</i>` : ''}</button>`).join('')}</div>
     ${socVue === 'echanges' ? vEchanges() : vAmis()}`;
 }
 
@@ -120,7 +122,7 @@ async function ouvrirFiche(pseudo) {
         <p class="muted small">Membre depuis ${dateCourte(f.membre_depuis).split(' à ')[0]}</p>
       </div>
     </div>
-    ${(f.vitrine || []).length ? vVitrine(f.vitrine, f.frame, false) : ''}
+    ${(f.vitrine || []).length ? vVitrine(f.vitrine, false) : ''}
     <div class="stats">
       <div class="stat"><b>${f.possede} / ${f.total}</b><span>collection (${pct} %)</span></div>
       <div class="stat"><b>${fmtN(f.packs_opened)}</b><span>boosters ouverts</span></div>

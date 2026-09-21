@@ -37,8 +37,13 @@ create table if not exists public.cards (
   cat        text not null,
   col        text not null,
   rar        text not null,
-  in_booster boolean not null default true
+  in_booster boolean not null default true,
+  -- Une carte Promo est dans le catalogue pour pouvoir entrer dans une
+  -- collection, mais elle n'appartient pas a l'extension : ni dans un booster,
+  -- ni dans le pourcentage de completion, ni dans un echange.
+  promo      boolean not null default false
 );
+alter table public.cards add column if not exists promo boolean not null default false;
 create index if not exists cards_rar_idx on public.cards (rar) where in_booster;
 
 -- ------------------------------------------------------------ collection
@@ -74,16 +79,25 @@ create table if not exists public.quest_progress (
 -- ------------------------------------------------------------- boutique
 create table if not exists public.shop_items (
   id       text primary key,
-  categ    text not null check (categ in ('boosters','echange','cosmetique')),
+  categ    text not null check (categ in ('boosters','echange','cosmetique','promo')),
   titre    text not null,
   detail   text not null default '',
   prix     integer not null check (prix >= 0),
-  effet    text not null,                -- tickets | trade_token | avatar_frame | refill
+  effet    text not null,                -- tickets | trade_token | cosmetique | refill | carte
   montant  integer not null default 1,
+  -- Pour effet = 'carte' : l'identifiant de la carte accordee (ex. 'p01').
+  carte_id text references public.cards,
   unique_buy boolean not null default false,
   ordre    integer not null default 0,
   actif    boolean not null default true
 );
+
+alter table public.shop_items add column if not exists carte_id text references public.cards;
+do $$ begin
+  alter table public.shop_items drop constraint if exists shop_items_categ_check;
+  alter table public.shop_items add constraint shop_items_categ_check
+    check (categ in ('boosters','echange','cosmetique','promo'));
+end $$;
 
 create table if not exists public.inventory (
   user_id uuid not null references public.profiles on delete cascade,
@@ -119,11 +133,15 @@ create or replace function public.cfg(k text) returns integer
 language sql immutable as $$
   select case k
     when 'ticket_cap'        then 5          -- boosters en reserve au maximum
-    when 'ticket_minutes'    then 30         -- un booster toutes les 30 min
-    when 'pack_size'         then 8
+    when 'ticket_minutes'    then 240        -- un booster toutes les 4 h, soit 6 par jour
+    when 'pack_size'         then 10
     when 'god_odds'          then 2000       -- 1 chance sur 2000
-    when 'trade_cooldown_h'  then 6          -- un echange gratuit toutes les 6 h
+    when 'trade_cooldown_h'  then 10         -- un echange gratuit toutes les 10 h
     when 'shards_per_dup'    then 0
+    -- Le palier de collection qui accorde la carte Promo « palier ».
+    -- 90 et non 50 : la moitie de l'extension se fait en une dizaine de
+    -- paquets, une recompense decrochee le deuxieme jour n'en est pas une.
+    when 'promo_palier_pct'  then 90
   end;
 $$;
 
@@ -265,10 +283,14 @@ create or replace function public.sync_collection_quests(p uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare pct int;
 begin
+  -- `where not k.promo` : les cartes Promo sont hors extension. Les compter
+  -- ferait bouger le total de 122, et le palier des 100 % deviendrait
+  -- inatteignable tant qu'on n'a pas achete les promos de la boutique.
   select case when count(*) = 0 then 0
          else floor(count(*) filter (where c.qty > 0) * 100.0 / count(*)) end
     into pct
-    from cards k left join collection c on c.card_id = k.id and c.user_id = p;
+    from cards k left join collection c on c.card_id = k.id and c.user_id = p
+   where not k.promo;
 
   insert into quest_progress (user_id, quest_id, period_key, progress)
   select p, q.id, 'all', pct from quests q where q.metric = 'collection_pct'

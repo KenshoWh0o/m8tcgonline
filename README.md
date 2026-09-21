@@ -57,8 +57,10 @@ mate-tcg-online/
 │   ├── 01_schema.sql   Tables, règles d'accès, recharge des boosters
 │   ├── 02_cards.sql    Catalogue des cartes (généré depuis js/cards-data.js)
 │   ├── 03_rpc.sql      Ouvrir un booster, échanger, encaisser une quête, acheter
+│   ├── 03b_promos.sql  Les cartes Promo et leurs paliers de collection
 │   ├── 04_seed.sql     Quêtes et boutique — c'est ici qu'on équilibre
 │   ├── 06_social.sql   Amis et fiches de joueur
+│   ├── 07_vitrine.sql  La vitrine du profil
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   └── gen-cards-sql.py  Régénère 02_cards.sql
 ├── css/
@@ -70,6 +72,7 @@ mate-tcg-online/
 │   ├── viewer.css      Visionneuse 3D
 │   ├── lab.css         Onglet Labo
 │   ├── auth.css        Écran de connexion
+│   ├── promo.css       Scène d'obtention d'une carte Promo
 │   └── hub.css         Onglets v2 + adaptation ordinateur
 ├── js/
 │   ├── config.js       Nom du jeu, habillage, couleurs, raretés, onglets, révélations
@@ -77,7 +80,8 @@ mate-tcg-online/
 │   ├── utils.js        Outils partagés
 │   ├── sfx.js          Les sons, fabriqués à la volée (Web Audio)
 │   ├── cards-data.js   La liste des cartes de l'extension
-│   ├── cards.js        Transforme cette liste en cartes du jeu
+│   ├── promos-data.js  Les cartes Promo, hors extension
+│   ├── cards.js        Transforme ces listes en cartes du jeu
 │   ├── storage.js      État global + sauvegarde locale
 │   ├── render-card.js  Affichage d'une carte
 │   ├── ui.js           Fenêtre modale, avatars, petits blocs répétés
@@ -92,6 +96,7 @@ mate-tcg-online/
 │   ├── trade.js        Échanges (section de Social)
 │   ├── social.js       Onglet Social : amis, fiches de joueur
 │   ├── quests.js       Onglet Quêtes
+│   ├── promos.js       Détection et mise en scène des cartes Promo
 │   ├── shop.js         Onglet Boutique
 │   ├── battle.js       Onglet Combats (à venir)
 │   ├── profile.js      Onglet Profil
@@ -114,6 +119,9 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Changer les couleurs, les typos, les arrondis | `css/tokens.css` |
 | Changer le nombre de cartes par booster | `js/config.js` (`PACK_SIZE`) + `makeBooster()` dans `js/booster.js` |
 | Changer les taux de drop ou du godpack | **en ligne :** `open_pack()` dans `supabase/03_rpc.sql` · **hors ligne :** `RATES`, `GOD` dans `js/booster.js` |
+| Ajouter ou modifier une carte Promo | `js/promos-data.js` (+ l'image dans `cards/promos/`) **et** `supabase/03b_promos.sql` |
+| Changer le palier qui donne une Promo | `PROMO_PALIER` dans `js/config.js` **et** `cfg('promo_palier_pct')` dans `supabase/01_schema.sql` |
+| Changer le thème par défaut | `poserTheme()` dans `js/settings.js` ; les deux palettes sont dans `css/tokens.css` |
 | Régler la durée ou les particules d'une révélation | `js/config.js` (`REVEAL`) |
 | Modifier l'animation de déchirure du paquet | `showRip()` dans `js/opening.js` + bloc `Déchirure` de `css/booster.css` |
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
@@ -136,13 +144,17 @@ Huit cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
 
 | Carte | Contenu |
 |---|---|
-| 1 à 3 | Commune |
-| 4 | Commune ou peu commune (`RATES.SLOT4`, 50/50) |
-| 5 et 6 | Peu commune |
-| 7 | Essence |
-| 8 | Le hit : rare, épique ou légendaire (`RATES.HIT` ≈ 79 / 17 / 4 %) |
+| 1 à 4 | Commune |
+| 5 à 7 | Peu commune |
+| 8 | Essence |
+| 9 | **Rare garantie** |
+| 10 | Le hit : rare, épique ou légendaire (`RATES.HIT` = 70 / 26 / 4 %) |
 
-Environ un booster sur 2 000 (`GOD`) est un **godpack** : 4 rares, 3 épiques et une légendaire en dernier. Rien ne l'annonce, ni écran, ni mot : voir plus bas.
+La rare garantie en neuvième position est le pivot de l'équilibrage : elle assure qu'**aucun paquet ne soit vide de sens**. Il y a toujours au moins deux cartes de rang R ou mieux, donc toujours quelque chose qui fait avancer la collection quelque part.
+
+Environ un booster sur 2 000 (`GOD`) est un **godpack** : 5 rares, 4 épiques et une légendaire en dernier. Rien ne l'annonce, ni écran, ni mot : voir plus bas.
+
+> Ces taux existent à deux endroits : `open_pack()` dans `supabase/03_rpc.sql` (le vrai tirage) et `RATES` dans `js/booster.js` (les ouvertures de test du Labo). Les garder identiques, sinon le Labo ment sur ce qu'il montre.
 
 ### L'ouverture
 
@@ -150,7 +162,7 @@ Tout se joue dans **un seul écran, sans jamais remplacer le DOM** : c'est ce qu
 
 1. Le paquet de l'écran Boosters grossit et se fond — on plonge dedans (`.pack.tear`).
 2. Le paquet tremble en 3D, un trait lumineux coupe le haut, la bande se détache en dents de scie et bascule vers l'arrière en s'assombrissant (`riptop`, perspective posée par `.stackwrap`).
-3. La classe `packed` est retirée : la pile, jusque-là tassée *dans* le paquet (`translateY(17%) scale(.82) rotateX(-16deg)`), revient à sa position de repos en une seule transition. Les huit cartes sortent alignées et se présentent de face pendant que le paquet vide bascule et descend hors champ.
+3. La classe `packed` est retirée : la pile, jusque-là tassée *dans* le paquet (`translateY(17%) scale(.82) rotateX(-16deg)`), revient à sa position de repos en une seule transition. Les dix cartes sortent alignées et se présentent de face pendant que le paquet vide bascule et descend hors champ.
 
 Les délais sont dans `packOpen()`, le reste dans le bloc `Déchirure` de `css/booster.css`.
 

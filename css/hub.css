@@ -1,24 +1,32 @@
-/* Les onglets ajoutés en v2 : page « Plus », quêtes, boutique, échanges,
-   combats, profil, réglages. Pensé pour le pouce d'abord ; l'adaptation
-   ordinateur est tout en bas du fichier. */
+/* Les onglets ajoutés en v2 : tiroir, quêtes, boutique, échanges, combats,
+   profil, réglages. Pensé pour le pouce d'abord ; l'adaptation ordinateur est
+   tout en bas du fichier.
+
+   Aucune couleur en dur : tout passe par les jetons de css/tokens.css. */
 
 /* ============ Titres de page ============ */
-/* Les h2 sont en petites capitales espacées ; un sous-titre glissé dedans doit
-   redevenir une phrase, sinon il crie. */
-h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
+/* L'en-tête d'un onglet : le titre, une ligne d'explication, et si besoin une
+   action posée à droite. Il tient lieu de première phrase — inutile d'en
+   ajouter une autre. */
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  margin:0 0 var(--gap-4);flex-wrap:wrap}
+.pagehead>div{min-width:0;flex:1}
+/* Un titre posé sans son enveloppe prend quand même toute la ligne : la mise en
+   page ne doit pas dépendre d'un div qu'on aurait oublié. */
+.pagehead>h1{flex:1 1 100%}
+.pagehead h1{margin:0 0 3px}
+.pagehead p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px}
+.pageact{flex:0 0 auto}
 
-.pagehead{margin:2px 0 14px}
-.pagehead h1{margin:0 0 2px}
-.pagehead p{margin:0;max-width:52ch}
-
-.notice{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
-  border-radius:var(--radius-sm);padding:11px 14px;font-size:13.5px;line-height:1.45;margin:0 0 14px;color:var(--subtle)}
-.notice.ok{border-left-color:#55e6a6}
+.notice{display:flex;gap:11px;align-items:flex-start;background:var(--surface);
+  border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-sm);
+  padding:11px 14px;font-size:13.5px;line-height:1.45;margin:0 0 var(--gap-3);color:var(--subtle)}
+.notice.ok{border-left-color:var(--ok)}
 .notice b{color:var(--text)}
 .notice .linkbtn{display:block;padding:6px 0 0;color:var(--accent-soft)}
 
-.empty .ec{font-family:var(--display);font-stretch:110%;font-style:italic;font-size:19px;
-  text-transform:none;letter-spacing:-.01em;color:var(--text);margin:0 0 6px}
+.empty .ec{font-family:var(--display);font-stretch:110%;font-style:italic;font-size:20px;
+  text-transform:none;letter-spacing:-.02em;color:var(--text);margin:0 0 6px}
 .empty .btn{max-width:280px;margin:18px auto 0}
 
 /* Le second groupe du rail n'apparaît que sur grand écran : sur mobile,
@@ -27,19 +35,19 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 
 /* ============ Tiroir du compte ============ */
 /* Il part du bord droit, celui de l'avatar : le panneau vient de là où le doigt
-   a appuyé. Sur mobile il couvre presque tout, sur ordinateur il reste étroit. */
+   a appuyé. Sur mobile il couvre presque tout, sur ordinateur il n'existe pas. */
 #tiroir{position:fixed;inset:0;z-index:45}
 #tiroir[hidden]{display:none}
-.tiroir-bg{position:absolute;inset:0;background:rgba(6,4,8,.66);backdrop-filter:blur(5px);
+.tiroir-bg{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);
   opacity:0;transition:opacity .24s ease}
 #tiroir.on .tiroir-bg{opacity:1}
 
-.tiroir-panneau{position:absolute;top:0;right:0;bottom:0;width:min(330px,86vw);
+.tiroir-panneau{position:absolute;top:0;right:0;bottom:0;width:min(336px,88vw);
   display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
   background:linear-gradient(180deg,var(--surface-2),var(--bg-2) 46%);
-  border-left:1px solid var(--line-2);box-shadow:-18px 0 44px rgba(0,0,0,.55);
+  border-left:1px solid var(--line-2);box-shadow:var(--sh-4);
   padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));
-  transform:translateX(100%);transition:transform .26s cubic-bezier(.2,1,.35,1)}
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.2,1,.35,1)}
 #tiroir.on .tiroir-panneau{transform:translateX(0)}
 
 .tiroir-id{display:flex;align-items:center;gap:12px;padding:4px 0 16px}
@@ -48,8 +56,8 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
   font-size:19px;line-height:1.15;word-break:break-word}
 .tiroir-id p{margin:1px 0 0}
 .tiroir-x{align-self:flex-start;background:none;border:0;color:var(--muted);font-size:17px;
-  line-height:1;padding:6px;border-radius:8px}
-.tiroir-x:hover{color:var(--text)}
+  line-height:1;padding:6px;border-radius:var(--radius-xs)}
+.tiroir-x:hover{color:var(--text);background:var(--hover)}
 
 /* Les ressources, à portée de regard dès l'ouverture. */
 .tiroir-sacs{display:flex;flex-wrap:wrap;gap:7px;padding-bottom:16px;border-bottom:1px solid var(--line)}
@@ -62,13 +70,14 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 
 .tiroir-liste{list-style:none;margin:12px 0 0;padding:0;flex:1}
 .tiroir-liste button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;
-  background:none;border-radius:12px;padding:11px 10px;color:var(--subtle);
+  background:none;border-radius:var(--radius-sm);padding:11px 10px;color:var(--subtle);
   transition:background .14s,color .14s}
-.tiroir-liste button:hover{background:rgba(255,255,255,.04);color:var(--text)}
-.tiroir-liste button.on{background:linear-gradient(90deg,rgba(137,54,255,.22),rgba(137,54,255,.05));color:var(--text)}
-.tiroir-ico{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:11px;
-  background:linear-gradient(180deg,rgba(137,54,255,.26),rgba(137,54,255,.07));color:var(--accent-soft)}
-.tiroir-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tiroir-liste button:hover{background:var(--hover);color:var(--text)}
+.tiroir-liste button.on{background:linear-gradient(90deg,var(--accent-wash-2),transparent);color:var(--text)}
+.tiroir-ico{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--accent-soft)}
+.tiroir-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
 .tiroir-ico svg.ico-star{width:22px;height:16px;stroke:none;fill:currentColor}
 .tiroir-txt{min-width:0}
 .tiroir-txt b{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:800;color:var(--text)}
@@ -78,123 +87,283 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 .tiroir-pied p{margin:0 0 10px}
 .tiroir-ver{margin:14px 0 0;text-align:center;font-size:11.5px;opacity:.6}
 
-/* Un point sur l'avatar quand quelque chose attend derrière le tiroir. */
-.hdrbtn.alerte{position:relative}
-.hdrbtn.alerte::after{content:'';position:absolute;top:0;right:0;width:10px;height:10px;border-radius:50%;
-  background:var(--brand);box-shadow:0 0 0 2px var(--bg)}
-
 /* ============ Pastille de compte ============ */
 .pastille{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
   background:var(--brand);color:#fff;font-size:11px;font-weight:900;font-style:normal;line-height:1}
-.pastille.nav{position:absolute;top:2px;right:calc(50% - 22px);box-shadow:0 0 0 2px var(--bg)}
+.pastille.nav{position:absolute;top:1px;right:calc(50% - 24px);box-shadow:0 0 0 2px var(--bg-2);z-index:2}
+
+/* ============ En-tête ============ */
+.hdr{display:flex;align-items:center;gap:7px}
+.pill{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--surface);
+  border:1px solid var(--line);border-radius:999px;padding:6px 15px 6px 11px;
+  font-family:var(--display);font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;
+  transition:border-color .15s,background .15s}
+.pill:hover{border-color:var(--line-2);background:var(--surface-2)}
+.pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px var(--accent-glow))}
+.pill.ec{padding:6px 13px 6px 10px;gap:5px}
+.pill.ec .shard{width:15px;height:15px}
+
+.hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:50%;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--subtle)}
+.hdrbtn:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.hdrbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+/* L'avatar n'a ni fond ni cadre : c'est l'image qui fait le bouton. */
+.hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;width:auto;height:auto;overflow:visible}
+
+/* Le chevron qui dit « ça se déplie ». Il tourne quand le tiroir est ouvert. */
+.moicaret{position:absolute;right:-3px;bottom:-3px;display:grid;place-items:center;width:17px;height:17px;
+  border-radius:50%;background:var(--surface-2);color:var(--subtle);
+  box-shadow:0 0 0 2px var(--bg),var(--sh-1);transition:transform .24s,color .15s}
+.moicaret svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.ava-btn:hover .moicaret{color:var(--text)}
+.ava-btn[aria-expanded="true"] .moicaret{transform:rotate(180deg);color:var(--accent-soft)}
+
+/* Un point sur l'avatar quand quelque chose attend derrière le tiroir. */
+.hdrbtn.alerte::after{content:'';position:absolute;top:-1px;right:-1px;width:10px;height:10px;
+  border-radius:50%;background:var(--brand);box-shadow:0 0 0 2px var(--bg);z-index:2}
+
+/* ============ Sous-onglets ============ */
+/* Un second niveau de navigation, à l'intérieur d'une page : un rail segmenté
+   où le curseur glisse. Ce n'est pas un changement d'onglet, donc ce ne sont pas
+   les mêmes puces que les filtres. */
+.segbar{display:flex;gap:3px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;
+  padding:3px;margin:0 0 var(--gap-4);overflow-x:auto;scrollbar-width:none}
+.segbar::-webkit-scrollbar{display:none}
+.segbar button{flex:1 1 0;min-width:max-content;display:inline-flex;align-items:center;justify-content:center;
+  gap:7px;border:0;background:none;color:var(--muted);padding:9px 14px;border-radius:999px;
+  font-size:13px;font-weight:800;white-space:nowrap;transition:color .15s,background .15s}
+.segbar button:hover{color:var(--subtle)}
+.segbar button.on{background:var(--surface);color:var(--text);box-shadow:var(--sh-1),inset 0 0 0 1px var(--line-2)}
+.segbar .pastille{min-width:17px;height:17px;font-size:10px}
+.segbar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* La même barre, en version discrète (Social). */
+.souschips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.souschips::-webkit-scrollbar{display:none}
+.souschips button{flex:0 0 auto;border:0;background:var(--bg-2);color:var(--muted);padding:7px 14px;
+  font-size:12px;font-weight:800;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);
+  display:inline-flex;align-items:center;gap:6px;transition:color .14s,background .14s}
+.souschips button:hover{color:var(--subtle)}
+.souschips button.on{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.rappelrar{margin:0 0 12px}
 
 /* ============ Quêtes ============ */
-.qsec{margin:0 0 6px}
-.qsechead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:22px 0 10px}
-.qsechead h2{margin:0}
-.qallgood{margin:-4px 0 10px}
+/* Un bandeau par période : ce qu'il reste à faire, et dans combien de temps tout
+   repart à zéro. Le compte à rebours remplace la phrase d'explication — « remis
+   à zéro chaque nuit » ne dit pas quand, « dans 4 h 20 » si. */
+.qperiode{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--accent-wash),var(--surface) 64%);
+  border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;margin:0 0 var(--gap-3)}
+.qpico{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line-2)}
+.qpico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qptxt{flex:1;min-width:0}
+.qptxt b{display:block;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;
+  font-size:17px;letter-spacing:-.02em;line-height:1.15}
+.qptxt small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.qpreste{flex:0 0 auto;text-align:right}
+.qpreste b{display:block;font-family:var(--display);font-weight:900;font-size:19px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.qpreste small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-top:3px}
 
-.quest{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 14px;margin-bottom:9px}
-.quest.ready{border-color:rgba(85,230,166,.45);box-shadow:0 0 0 1px rgba(85,230,166,.18),0 6px 18px rgba(85,230,166,.08)}
-.quest.done{opacity:.52}
+/* Une quête : l'icône dit l'état, la barre dit où on en est, le bouton conclut.
+   Trois lignes, jamais plus — c'est une liste qu'on parcourt, pas un formulaire. */
+.quest{position:relative;display:flex;gap:13px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:13px 14px;margin-bottom:9px;box-shadow:var(--sh-1);
+  transition:border-color .16s,box-shadow .16s}
+.quest.ready{border-color:var(--ok-line);box-shadow:0 0 0 1px var(--ok-wash),var(--sh-2)}
+.quest.done{opacity:.5}
+.qico{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--accent-wash);color:var(--accent-soft);align-self:flex-start}
+.qico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.quest.ready .qico{background:var(--ok-wash);color:var(--ok)}
+.quest.done .qico{background:var(--surface-2);color:var(--muted)}
+.qcorps{flex:1;min-width:0}
+
 .qhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.qhead b{font-size:15px;font-weight:800}
-.qhead p{margin:2px 0 0;line-height:1.35}
-.qreward{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-family:var(--display);font-weight:900;
-  font-size:14px;color:var(--brand-light)}
-.qbar{height:6px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin:11px 0 8px;box-shadow:inset 0 0 0 1px var(--line)}
-.qbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+.qhead b{font-size:14.5px;font-weight:800;line-height:1.25}
+.qhead p{margin:2px 0 0;line-height:1.35;font-size:12.5px;color:var(--muted)}
+.qreward{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-family:var(--display);
+  font-weight:900;font-size:14px;color:var(--brand-light)}
+
+.qbar{height:7px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin:10px 0 7px;
+  box-shadow:inset 0 0 0 1px var(--line)}
+.qbar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-soft));
   transition:width .5s cubic-bezier(.2,1,.4,1)}
-.quest.ready .qbar i{background:linear-gradient(90deg,#3fbf8c,#55e6a6)}
-.qfoot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.quest.ready .qbar i{background:linear-gradient(90deg,var(--ok-deep),var(--ok))}
+.qfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:32px}
+.qcompte{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.qcompte b{color:var(--subtle);font-weight:800}
 .qtag{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-.qtag.ok{color:#55e6a6}
+.qtag.ok{color:var(--ok)}
+
+.qallgood{display:flex;align-items:center;gap:9px;background:var(--ok-wash);border:1px solid var(--ok-line);
+  border-radius:var(--radius);padding:13px 15px;color:var(--ok);font-size:13.5px;font-weight:700}
+.qallgood svg{width:19px;height:19px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
 
 .shard{width:15px;height:15px;color:var(--brand-light);flex:0 0 auto}
 
-/* Petit bouton plein, pour les actions posées dans une ligne. */
-.btn.tiny{width:auto;flex:0 0 auto;padding:9px 16px;font-size:12.5px;border-radius:999px;gap:5px;
-  box-shadow:0 4px 0 var(--accent-deep),inset 0 1px 0 rgba(255,255,255,.35)}
-.btn.tiny:active:not(:disabled){transform:translateY(4px);box-shadow:0 0 0 var(--accent-deep)}
-.btn.tiny.ghost{box-shadow:0 3px 0 #100c15,inset 0 0 0 1px var(--line-2)}
-.btn.tiny .shard{width:14px;height:14px;color:currentColor}
-
-/* Bandeau de quêtes, posé au-dessus du paquet. */
 /* ============ Boutique ============ */
-.walletrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+.walletrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 var(--gap-3)}
 .wallet{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--subtle)}
 .wallet b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
-.wallet.ghost svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.wallet svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.wallet .shard{stroke:none;fill:currentColor}
 
-.offres{display:flex;flex-direction:column;gap:9px}
-.offre{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius);padding:12px 13px}
-.offre.owned{opacity:.6}
-.ofcorps{flex:1;min-width:0}
-.ofcorps b{display:block;font-size:14.5px;font-weight:800}
-.ofcorps p{margin:2px 0 0;line-height:1.35}
-.ofico{display:grid;place-items:center;width:44px;height:44px;flex:0 0 auto;border-radius:12px;
-  background:linear-gradient(180deg,rgba(137,54,255,.3),rgba(137,54,255,.08));color:var(--brand-light)}
-.ofico svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.ofico svg.ico-star{width:24px;height:17px;stroke:none;fill:currentColor}
+/* Un rayon : une grille de vignettes qu'on parcourt du regard, comme un étal.
+   On clique pour voir l'article en grand, on reclique pour confirmer — jamais
+   d'achat au premier doigt posé. */
+.offres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.offre{position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;
+  background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);
+  border-radius:var(--radius);padding:14px 12px 12px;box-shadow:var(--sh-1);
+  transition:transform .14s,border-color .14s,box-shadow .14s}
+.offre:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:var(--sh-3)}
+.offre:active{transform:translateY(0)}
+.offre.owned{opacity:.58}
+.offre.owned:hover{transform:none}
+/* Un article hors de portée reste lisible : on doit pouvoir le convoiter. */
+.offre.cher .ofprix{color:var(--muted)}
+
+/* La vignette : l'objet, en grand, sur un fond qui en dit la nature. */
+.ofart{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1;max-height:112px;
+  border-radius:var(--radius-sm);background:radial-gradient(circle at 50% 38%,var(--accent-wash-2),var(--bg-2) 72%);
+  overflow:hidden}
+.ofart img{width:62%;height:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+.ofart .cwrap{width:64%}
+.ofart svg{width:40%;height:40%;stroke:currentColor;fill:none;stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+.ofart svg.ico-star{stroke:none;fill:currentColor;width:46%;height:auto}
+.ofart .ava{width:60%;height:60%}
+/* La quantité vendue, en pastille sur la vignette. */
+.ofqte{position:absolute;right:6px;bottom:6px;background:var(--surface);color:var(--text);
+  border-radius:999px;padding:2px 9px;font-family:var(--display);font-weight:900;font-size:12.5px;
+  box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1)}
+
+.ofnom{font-size:13.5px;font-weight:800;line-height:1.25}
+.ofprix{display:inline-flex;align-items:center;gap:5px;font-family:var(--display);font-weight:900;
+  font-size:15px;color:var(--brand-light);font-variant-numeric:tabular-nums}
+.ofprix .shard{width:15px;height:15px;color:currentColor}
+/* Les rubans passent au-dessus de la vignette : sans `z-index`, l'illustration
+   de l'article les recouvrait dès qu'elle atteignait le coin. */
+.ofbadge{position:absolute;z-index:2;top:8px;left:8px;background:var(--accent);color:var(--on-accent);
+  border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;letter-spacing:.07em;
+  text-transform:uppercase;box-shadow:var(--sh-1)}
+.ofbadge.eco{background:var(--ok);color:#06251a}
+.ofbadge.promo{background:linear-gradient(90deg,var(--r-pr),var(--accent-soft))}
+.ofcoche{position:absolute;z-index:2;top:8px;right:8px;display:grid;place-items:center;width:22px;height:22px;
+  border-radius:50%;background:var(--ok);color:#06251a}
+.ofcoche svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+
+/* Un rayon vide ou à venir : la case reste, barrée d'un cadenas. */
+.oflock{align-items:center;justify-content:center;min-height:150px;border-style:dashed;opacity:.72;
+  cursor:default;background:var(--bg-2)}
+.oflock:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}
+.oflockico{display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius-sm);
+  background:var(--surface-2);color:var(--muted)}
+.oflockico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.oflock small{font-size:11.5px;color:var(--muted);line-height:1.3;max-width:18ch}
+
+/* La fiche d'un article, dans la feuille : on voit ce qu'on achète avant de payer. */
+.achat{text-align:center}
+.achatart{display:grid;place-items:center;width:100%;max-width:210px;margin:0 auto 14px;aspect-ratio:1;
+  border-radius:var(--radius);background:radial-gradient(circle at 50% 38%,var(--accent-wash-2),var(--bg-2) 72%);
+  overflow:hidden}
+.achatart img{width:60%;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
+.achatart .cwrap{width:58%}
+.achatart .ava{width:56%;height:56%}
+.achatart svg{width:38%;height:38%;stroke:currentColor;fill:none;stroke-width:1.5;
+  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+.achatart svg.ico-star{stroke:none;fill:currentColor;height:auto}
+.achat p{color:var(--muted);font-size:13.5px;margin:0 auto 14px;max-width:38ch}
+.achatprix{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg-2);
+  border-radius:var(--radius-sm);padding:12px 15px;margin:0 0 4px;box-shadow:inset 0 0 0 1px var(--line)}
+.achatprix span{font-size:12.5px;font-weight:700;color:var(--muted)}
+.achatprix b{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;
+  font-size:19px;color:var(--brand-light);font-variant-numeric:tabular-nums}
+.achatprix b .shard{width:17px;height:17px;color:currentColor}
+.achatreste{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.achatreste.court{color:var(--danger)}
 
 /* ============ Avatars et cadres ============ */
-/* Deux cadrages : les photos et les cartes remplissent le cercle, les symboles
-   restent entiers au centre sur un fond de leur couleur. */
+/* Deux cadrages : les photos remplissent le cercle, les symboles restent entiers
+   au centre. Une carte, un dos de carte ou un booster sont des rectangles hauts :
+   les étirer en rond les déformait. Ils sont désormais posés entiers, sur un fond
+   qui prolonge leur couleur. */
 .ava{position:relative;display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:50%;
-  overflow:hidden;background:var(--surface-2);box-shadow:0 0 0 2px var(--f1,#3f3450)}
+  overflow:hidden;background:var(--surface-2);box-shadow:0 0 0 2px var(--f1,var(--line-2))}
 .ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:center}
-.ava.carte img{object-position:center 24%}
 /* Un voile sombre par-dessus la couleur : les symboles d'essence sont peints de
-   leur propre couleur et disparaîtraient sur un fond identique. Le voile garde
-   la teinte tout en rendant le symbole lisible. */
+   leur propre couleur et disparaîtraient sur un fond identique. */
 .ava.ico{background:linear-gradient(rgba(10,7,14,.62),rgba(10,7,14,.62)),var(--ab,var(--surface-2))}
-.ava.ico img{width:58%;height:58%;object-fit:contain;
+.ava.ico img{width:58%;height:58%;object-fit:contain;border-radius:0;
   filter:drop-shadow(0 0 5px rgba(0,0,0,.6)) drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+/* Objets hauts — carte, dos, booster : entiers, centrés, sur leur propre flou. */
+.ava.objet{background:var(--bg-2)}
+.ava.objet img{width:auto;height:84%;max-width:88%;object-fit:contain;border-radius:2px;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
+/* Le fond : la même image, agrandie et floutée, pour que le cercle ne soit pas
+   à moitié vide autour d'un rectangle. */
+.ava.objet::before{content:'';position:absolute;inset:0;background:inherit;
+  background-image:var(--abi);background-size:cover;background-position:center;
+  filter:blur(9px) saturate(1.5) brightness(.55);transform:scale(1.25)}
+.ava.objet img{position:relative;z-index:1}
+
 .ava.sm{width:34px;height:34px}
 .ava.md{width:56px;height:56px}
 .ava.lg{width:48px;height:48px}
-.ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,#3f3450),0 0 24px rgba(137,54,255,.25)}
+.ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--accent-glow)}
 .ava.prisme{animation:prisme 4s linear infinite}
-@keyframes prisme{0%{box-shadow:0 0 0 3px #ee0073}25%{box-shadow:0 0 0 3px #ffc73b}50%{box-shadow:0 0 0 3px #55e6a6}75%{box-shadow:0 0 0 3px #39b8ff}100%{box-shadow:0 0 0 3px #ee0073}}
+@keyframes prisme{
+  0%{box-shadow:0 0 0 3px #ee0073}
+  25%{box-shadow:0 0 0 3px #ffc73b}
+  50%{box-shadow:0 0 0 3px #55e6a6}
+  75%{box-shadow:0 0 0 3px #39b8ff}
+  100%{box-shadow:0 0 0 3px #ee0073}}
 .avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
 
-/* Une grille régulière : les avatars s'alignent quel que soit leur nombre. */
 .avagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;padding:4px 0 2px}
 .avapick{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
-  padding:8px 4px;border-radius:14px;transition:background .14s}
-.avapick:hover{background:rgba(255,255,255,.04)}
+  padding:8px 4px;border-radius:var(--radius);transition:background .14s}
+.avapick:hover{background:var(--hover)}
 .avapick>span{font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.2;text-align:center;
   overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
-.avapick.on{background:rgba(137,54,255,.2);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.avapick.on{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-soft)}
 .avapick.on>span{color:var(--text)}
 
 /* ============ Vitrine ============ */
-/* Quatre emplacements côte à côte, cerclés de la couleur du cadre choisi :
-   c'est ce que les cadres de la boutique encadrent vraiment. */
+/* Quatre cartes mises en avant, les premières choses qu'on voit sur un profil.
+   Elles sont montrées telles qu'elles sont : un cadre d'avatar autour d'une
+   carte, c'était deux objets qui se disputaient le même bord. */
 .vitpanel h2{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
 .vitrine{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 10px}
 .vit{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
-.vit.vide{justify-content:center;aspect-ratio:5/7;border:0;border-radius:10px;background:var(--bg-2);
-  box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);gap:2px}
+.vit.vide{justify-content:center;aspect-ratio:5/7;border:0;border-radius:var(--radius-sm);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);gap:2px}
 .vit.vide.muette{opacity:.4}
 .vitplus{font-size:22px;font-weight:300;line-height:1;color:var(--accent-soft)}
 .vit.vide.muette .vitplus{color:var(--muted)}
-.vitcarte{display:block;width:100%;background:none;border:0;padding:0;border-radius:9px;
-  box-shadow:0 0 0 2px var(--f1,#3f3450),0 4px 14px rgba(0,0,0,.45)}
-.vitrine.prisme .vitcarte{animation:prisme 4s linear infinite}
+.vitcarte{display:block;width:100%;background:none;border:0;padding:0;border-radius:var(--radius-xs);
+  box-shadow:var(--sh-2);transition:transform .16s}
+.vitcarte:hover{transform:translateY(-3px)}
 .vitnom{font-size:10px;font-weight:700;line-height:1.2;text-align:center;color:var(--subtle);
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .vitx{position:absolute;top:-5px;right:-5px;width:22px;height:22px;border:0;border-radius:50%;
   background:var(--surface-2);color:var(--muted);font-size:11px;line-height:1;
-  box-shadow:0 0 0 1px var(--line-2),0 2px 6px rgba(0,0,0,.5)}
+  box-shadow:0 0 0 1px var(--line-2),var(--sh-2)}
 .vitx:hover{color:var(--text);background:var(--line-2)}
 .sheet .vitrine{margin-bottom:16px}
 
 /* ============ Profil ============ */
-.idcard{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;background:linear-gradient(135deg,rgba(137,54,255,.16),var(--surface) 62%);
-  border:1px solid var(--line);border-radius:var(--radius);padding:16px 15px;margin-bottom:10px}
+.idcard{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  background:linear-gradient(135deg,var(--accent-wash-2),var(--surface) 62%);
+  border:1px solid var(--line);border-radius:var(--radius);padding:16px 15px;margin-bottom:10px;
+  box-shadow:var(--sh-1)}
 .idnom{flex:1;min-width:0}
 .idnom b{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;font-size:21px;
   display:inline-block;vertical-align:middle;margin-right:7px;word-break:break-word}
@@ -202,7 +371,8 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px}
-.stat b{display:block;font-family:var(--display);font-stretch:106%;font-weight:900;font-size:20px;line-height:1.1}
+.stat b{display:block;font-family:var(--display);font-stretch:106%;font-weight:900;font-size:20px;
+  line-height:1.1;font-variant-numeric:tabular-nums}
 .stat span{font-size:12px;color:var(--muted);font-weight:600}
 
 .found{display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:var(--radius-sm);
@@ -212,42 +382,83 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 .findrow input{flex:1;min-width:0}
 
 /* ============ Réglages ============ */
-.toggle small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:1px}
-.slider{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px;
-  background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 14px 13px;margin-bottom:8px}
-.slider.off{opacity:.45}
-.slider label{font-size:13px;font-weight:600;color:var(--subtle)}
+/* Un interrupteur qui glisse, pas une case à cocher du navigateur : le réglage
+   par défaut du système jurait avec tout le reste et changeait de forme d'un
+   appareil à l'autre. */
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface-2);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;font-weight:700;font-size:14px;
+  cursor:pointer;transition:background .14s}
+.toggle:hover{background:var(--surface-3)}
+.toggle>span{min-width:0}
+.toggle small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:2px;line-height:1.35}
+
+.toggle input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;flex:0 0 auto;
+  width:46px;height:27px;margin:0;border-radius:999px;background:var(--surface-3);cursor:pointer;
+  box-shadow:inset 0 0 0 1px var(--line-2);transition:background .2s,box-shadow .2s}
+.toggle input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;
+  border-radius:50%;background:var(--muted);box-shadow:var(--sh-1);
+  transition:transform .22s cubic-bezier(.3,1.4,.5,1),background .2s}
+.toggle input[type=checkbox]:checked{background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+  box-shadow:inset 0 0 0 1px var(--accent-deep)}
+.toggle input[type=checkbox]:checked::after{transform:translateX(19px);background:#fff}
+
+/* Un curseur dessiné de bout en bout : la piste, la partie remplie, la poignée.
+   `accent-color` laissait le navigateur décider du reste, et ça se voyait. */
+.slider{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 10px;
+  background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 14px 14px;margin-bottom:8px}
+.slider.off{opacity:.45;pointer-events:none}
+.slider label{font-size:13.5px;font-weight:700;color:var(--subtle)}
 /* Le curseur vient avant sa valeur dans le HTML (bindReglages() lit nextElementSibling) :
    on remet la valeur sur la première ligne, à droite du libellé. */
-.slider output{grid-row:1;grid-column:2;font-family:var(--display);font-weight:900;font-size:13px;
-  color:var(--text);min-width:2.4em;text-align:right}
-.slider input[type=range]{grid-row:2;grid-column:1/-1;width:100%;accent-color:var(--accent);height:22px;margin:0}
+.slider output{grid-row:1;grid-column:2;font-family:var(--display);font-weight:900;font-size:14px;
+  color:var(--text);min-width:2.6em;text-align:right;font-variant-numeric:tabular-nums}
+.slider input[type=range]{grid-row:2;grid-column:1/-1;width:100%;height:22px;margin:0;
+  appearance:none;-webkit-appearance:none;background:none;cursor:pointer}
+.slider input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent) var(--pct,50%),var(--surface-3) var(--pct,50%));
+  box-shadow:inset 0 0 0 1px var(--line-2)}
+.slider input[type=range]::-moz-range-track{height:7px;border-radius:99px;background:var(--surface-3);
+  box-shadow:inset 0 0 0 1px var(--line-2)}
+.slider input[type=range]::-moz-range-progress{height:7px;border-radius:99px;background:var(--accent)}
+.slider input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:20px;height:20px;
+  margin-top:-6.5px;border-radius:50%;background:#fff;box-shadow:var(--sh-2),0 0 0 1px var(--accent-deep);
+  transition:transform .12s}
+.slider input[type=range]::-moz-range-thumb{width:20px;height:20px;border:0;border-radius:50%;background:#fff;
+  box-shadow:var(--sh-2),0 0 0 1px var(--accent-deep)}
+.slider input[type=range]:active::-webkit-slider-thumb{transform:scale(1.16)}
+
+/* Un choix entre trois : les trois options côte à côte, celle qui est retenue
+   en plein. Plus direct qu'une liste déroulante pour trois mots. */
+.pickrow{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-bottom:8px}
+.pickopt{display:flex;flex-direction:column;align-items:center;gap:7px;border:0;
+  background:var(--surface-2);color:var(--subtle);border-radius:var(--radius-sm);padding:14px 8px 11px;
+  font-size:12.5px;font-weight:800;box-shadow:inset 0 0 0 1px var(--line);
+  transition:background .15s,color .15s,box-shadow .15s}
+.pickopt:hover{background:var(--surface-3);color:var(--text)}
+.pickopt svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.pickopt.on{background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--text);
+  box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.pickopt.on svg{color:var(--accent-soft)}
+
+.reglabel{font-size:12.5px;font-weight:700;color:var(--muted);margin:14px 0 7px}
 .about code{background:var(--bg-2);border-radius:5px;padding:1px 5px;font-size:12px}
+.mentions{max-width:46ch;margin:26px auto 0;color:var(--muted);font-size:11px;line-height:1.5;
+  text-align:center;text-wrap:pretty}
+.panel .mentions{margin:14px 0 0;text-align:left;max-width:none;padding-top:12px;border-top:1px solid var(--line)}
 
 /* ============ Social ============ */
-/* Un second niveau de puces, plus discret que le premier : on est déjà dans
-   une section, ce n'est plus un changement d'onglet. */
-.souschips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
-.souschips::-webkit-scrollbar{display:none}
-.souschips button{flex:0 0 auto;border:0;background:var(--bg-2);color:var(--muted);padding:7px 14px;
-  font-size:12px;font-weight:800;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);
-  display:inline-flex;align-items:center;gap:6px;transition:color .14s,background .14s}
-.souschips button:hover{color:var(--subtle)}
-.souschips button.on{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
-.rappelrar{margin:0 0 12px}
-
 .amiligne{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--radius);padding:9px 11px;margin-bottom:8px}
 .amiid{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;
   padding:0;text-align:left}
 .aminom{min-width:0}
 .aminom b{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:800}
-.aminom .qtag{font-size:9.5px;padding:1px 5px;border-radius:4px;background:rgba(85,230,166,.16)}
+.aminom .qtag{font-size:9.5px;padding:1px 5px;border-radius:4px;background:var(--ok-wash)}
 .aminom small{display:block;line-height:1.3}
 .amiacts{display:flex;gap:6px;flex:0 0 auto}
 .amiacts .btn.tiny{padding:8px 13px;font-size:11.5px}
 
-/* Fiche d'un joueur, dans la feuille modale */
 .fiche{display:flex;align-items:center;gap:14px;margin:4px 0 14px}
 .fichemeta{flex:1;min-width:0}
 .fichemeta p{margin:4px 0 0}
@@ -256,18 +467,18 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 /* ============ Recharge d'échange ============ */
 .cooldown{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--radius);padding:11px 12px;margin:0 0 12px}
-.cooldown.pret{border-color:rgba(85,230,166,.4)}
-.cdico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border-radius:10px;
-  background:rgba(137,54,255,.18);color:var(--accent-soft)}
-.cooldown.pret .cdico{background:rgba(85,230,166,.16);color:#55e6a6}
+.cooldown.pret{border-color:var(--ok-line)}
+.cdico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--accent-wash);color:var(--accent-soft)}
+.cooldown.pret .cdico{background:var(--ok-wash);color:var(--ok)}
 .cdico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .cdtxt{flex:1;min-width:0}
 .cdtxt b{display:block;font-size:13.5px;font-weight:800}
 .cdtxt small{display:block;font-size:12px}
 .cdbar{display:block;height:4px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin-top:6px;
   box-shadow:inset 0 0 0 1px var(--line)}
-.cdbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-soft));
-  transition:width 1s linear}
+.cdbar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-soft));transition:width 1s linear}
 .cdjetons{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;border:0;background:var(--surface-2);
   border-radius:999px;padding:7px 12px;color:var(--subtle);box-shadow:inset 0 0 0 1px var(--line)}
 .cdjetons b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
@@ -276,7 +487,8 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 .cdjetons.vide b{color:var(--muted)}
 
 /* ============ Échanges ============ */
-.trade{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 13px 14px;margin-bottom:10px}
+.trade{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:13px 13px 14px;margin-bottom:10px;box-shadow:var(--sh-1)}
 .trade.passe{opacity:.55}
 .trhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .trhead>div{flex:1;min-width:0}
@@ -295,8 +507,9 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 
 .mini{display:block;width:100%;background:none;border:0;padding:0;text-align:center}
 .mini .cwrap{max-width:118px;margin:0 auto}
-.mini.vide{display:grid;place-items:center;aspect-ratio:5/7;max-width:118px;margin:0 auto;border-radius:10px;
-  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);font-size:26px}
+.mini.vide{display:grid;place-items:center;aspect-ratio:5/7;max-width:118px;margin:0 auto;
+  border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);
+  color:var(--muted);font-size:26px}
 .mininom{display:block;font-size:12px;font-weight:700;margin-top:6px;line-height:1.25}
 .minimeta{display:block;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:1px}
 .trnote{background:var(--bg-2);border-radius:var(--radius-sm);padding:9px 12px;margin:12px 0 0;
@@ -305,7 +518,6 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 .tracts .btn{flex:1}
 .trade .muted.small{margin-top:6px;text-align:center}
 
-/* Composer une demande */
 .compose h2{margin-top:20px}
 .compose h2:first-child{margin-top:12px}
 .slots{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:4px 0 2px}
@@ -319,7 +531,6 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 .slotnom{display:block;font-size:12.5px;font-weight:700;margin-top:7px;line-height:1.25}
 .slotmeta{display:block;font-size:10.5px;font-weight:700;color:var(--muted)}
 
-/* Choisir une carte, dans la feuille modale */
 .pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:9px;margin-top:12px;
   max-height:52vh;overflow-y:auto;padding:2px 2px 6px;scrollbar-width:thin}
 .pick{background:none;border:0;padding:0;text-align:center}
@@ -335,22 +546,22 @@ h2 .small{text-transform:none;letter-spacing:0;font-weight:600}
 .soondeck.d0{transform:translateX(-74px) rotate(-14deg)}
 .soondeck.d1{transform:translateY(-10px) scale(1.06);z-index:2}
 .soondeck.d2{transform:translateX(74px) rotate(14deg)}
-.soontag{display:inline-block;background:rgba(137,54,255,.2);color:var(--accent-soft);border-radius:999px;
+.soontag{display:inline-block;background:var(--accent-wash-2);color:var(--accent-soft);border-radius:999px;
   padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
-  box-shadow:inset 0 0 0 1px rgba(137,54,255,.4)}
+  box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
 .soontitle{font-family:var(--display);font-stretch:114%;font-weight:900;font-style:italic;font-size:34px;
-  letter-spacing:-.03em;text-transform:none;color:var(--text);margin:12px 0 8px}
+  letter-spacing:-.03em;text-transform:none;color:var(--text);margin:12px 0 8px;padding:0}
+.soontitle::before{display:none}
 .soon p{max-width:38ch;margin-inline:auto}
 
 /* ============ Bulle d'installation (iPhone) ============ */
 .iossteps{list-style:none;margin:16px 0 4px;padding:0;display:flex;flex-direction:column;gap:12px;text-align:left}
 .iossteps li{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--subtle)}
 .iossteps b{color:var(--text)}
-.iosico,.iosnum{flex:0 0 auto;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+.iosico,.iosnum{flex:0 0 auto;width:34px;height:34px;border-radius:var(--radius-sm);display:grid;place-items:center;
   background:var(--surface-2);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line)}
 .iosico{padding:6px}
-.iosnum{font-weight:900;color:#55e6a6}
-/* La flèche pointe vers le bouton Partager, en bas de Safari. */
+.iosnum{font-weight:900;color:var(--ok)}
 .iosarrow{text-align:center;font-size:26px;color:var(--accent-soft);margin:14px 0 -6px;animation:bob 1.5s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(7px);opacity:.55}}
 body.installsheet .sheet{border-bottom:2px solid var(--accent)}
@@ -359,28 +570,18 @@ body.installsheet .sheet{border-bottom:2px solid var(--accent)}
 body.busy{cursor:progress}
 body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
 
-/* ============ En-tête ============ */
-.hdr{display:flex;align-items:center;gap:7px}
-.pill.ec{padding:6px 13px 6px 10px;gap:5px}
-.pill.ec .shard{width:15px;height:15px}
-.hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:50%;
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--subtle)}
-.hdrbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.hdrbtn.ava-btn{background:none;box-shadow:none;width:auto;height:auto}
-
 /* =====================================================================
-   Ordinateur : la barre du bas devient un rail à gauche, et le contenu
-   respire au lieu de s'étirer. Tout le reste est déjà bon tel quel.
+   Ordinateur : la barre du bas devient un rail à droite, et le contenu
+   respire au lieu de s'étirer.
    ===================================================================== */
 @media (min-width:900px){
-  /* Une grille, pas un flex qui passe à la ligne : avec `flex-wrap`, le
-     navigateur répartit la hauteur restante entre les lignes, et l'en-tête
-     s'allongeait dès que le contenu de la page était court.
-     Ici chaque zone a sa place, et seule celle du contenu s'étire. */
   /* Une seule mesure pour la largeur du rail : la mise en page, le décalage de
      l'en-tête et celui des notifications en découlent tous. */
   :root{--rail:236px}
 
+  /* Une grille, pas un flex qui passe à la ligne : avec `flex-wrap`, le
+     navigateur répartit la hauteur restante entre les lignes, et l'en-tête
+     s'allongeait dès que le contenu de la page était court. */
   body{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);grid-template-rows:auto minmax(0,1fr);
     grid-template-areas:"top top" "main nav";height:100%}
   .top{grid-area:top;padding:12px 26px}
@@ -392,60 +593,59 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
      retrouve décentré. */
   body.inauth,body.inlock{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
     grid-template-areas:"main"}
-  /* Les pages du jeu sont calées à gauche sous le rail ; ces deux écrans-là
-     n'ont rien autour et doivent rester au milieu. */
   body.inauth #main>*,body.inlock #main>*{max-width:none;margin-inline:auto}
   #brand img{height:44px}
 
   /* Le rail passe à droite : sous la main qui tient la souris, et à l'opposé
      du logo, pour que l'en-tête ne soit pas déséquilibré d'un seul côté.
-
      Il se lit comme un panneau posé sur la page — un fond franc, un filet, des
-     lignes qui respirent — et non comme une colonne de liens flottants. Le
-     dégradé de la barre du bas, lui, ne monte pas : sur toute une hauteur
-     d'écran il vire au sale. */
+     lignes qui respirent — et non comme une colonne de liens flottants. */
   #nav{grid-template-columns:none;grid-auto-rows:max-content;align-content:start;gap:2px;
     padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));
-    border-top:0;border-left:1px solid var(--line);background:var(--bg-2);
+    border-top:0;border-left:1px solid var(--line);background:var(--bg-2);backdrop-filter:none;
     overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
   #nav button{flex-direction:row;justify-content:flex-start;gap:13px;padding:11px 13px;font-size:13.5px;
-    font-weight:700;letter-spacing:.005em;border-radius:11px;color:var(--subtle)}
+    font-weight:700;letter-spacing:.005em;border-radius:var(--radius-sm);color:var(--subtle)}
   #nav button svg{width:20px;height:20px;flex:0 0 auto}
   #nav button svg.ico-star{width:22px;height:16px}
   #nav button span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis}
-  #nav button:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  #nav button:hover{color:var(--text);background:var(--hover)}
 
-  /* Sélection : une pastille pleine, calée sur les boutons de l'interface.
-     Le filet de la version mobile se plaquait ici contre le bord de la fenêtre,
-     où il ne désignait plus rien. */
-  #nav button.on{color:#fff;font-weight:800;
-    background:linear-gradient(180deg,var(--accent-soft),var(--accent));
-    box-shadow:0 2px 10px rgba(137,54,255,.34),inset 0 1px 0 rgba(255,255,255,.22)}
-  #nav button.on svg{stroke:#fff}
-  #nav button.on svg.ico-star{fill:#fff;filter:none}
-  #nav button.on::after{display:none}
+  /* Sélection : une pastille pleine sur toute la ligne. La pastille ronde de la
+     version mobile est dessinée pour une icône seule ; ici elle laisserait le
+     libellé dehors. */
+  #nav button .navbg{position:absolute;inset:0;width:auto;height:auto;translate:none;scale:1;opacity:0;
+    border-radius:var(--radius-sm);background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+    box-shadow:0 2px 10px var(--accent-glow),inset 0 1px 0 var(--gloss-soft);transition:opacity .18s}
+  #nav button.on .navbg{opacity:1}
+  #nav button.on{color:var(--on-accent);font-weight:800}
+  #nav button.on svg{stroke:var(--on-accent)}
+  #nav button.on svg.ico-star{fill:var(--on-accent);filter:none}
 
   /* Le compteur se range au bout de la ligne, à la place où l'œil le cherche. */
   .pastille.nav{position:static;margin-left:auto;box-shadow:none}
-  #nav button.on .pastille.nav{background:rgba(0,0,0,.28);color:#fff}
+  #nav button.on .pastille.nav{background:rgba(0,0,0,.3);color:#fff}
 
   /* Le contenu se centre dans la colonne qui lui reste, et non contre le rail :
      collé à gauche, la page paraissait décalée d'un côté sur un grand écran. */
-  main{min-width:0;min-height:0;padding:22px 36px 44px}
-  #main>*{max-width:840px;margin-inline:auto}
+  main{min-width:0;min-height:0;padding:24px 36px 44px}
+  #main>*{max-width:860px;margin-inline:auto}
   #main.tab-boosters>*,#main.tab-collection>*{max-width:1180px}
 
-  /* Plus de barre en bas : la notification n'a plus à l'enjamber, et elle se
-     recentre sur la zone de contenu plutôt que sur la fenêtre entière. */
+  /* Plus de barre en bas : les notifications se recentrent sur la zone de
+     contenu plutôt que sur la fenêtre entière. */
   #toast{bottom:26px;left:calc(50% - var(--rail) / 2)}
   #qnotif{top:88px;left:calc(50% - var(--rail) / 2)}
 
   .stats{grid-template-columns:repeat(4,1fr)}
-  .offres{display:grid;grid-template-columns:repeat(2,1fr)}
-  .quest:hover{border-color:var(--line-2)}
+  .offres{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
+  .pickrow{gap:10px}
 
-  /* Le rail a la place d'afficher les deux groupes : plus besoin de tiroir,
-     et l'avatar de l'en-tête mène directement au profil. */
+  /* Sur ordinateur, l'avatar mène droit au profil : il n'y a pas de tiroir à
+     déplier, donc pas de chevron à montrer. */
+  .moicaret{display:none}
+
+  /* Le rail a la place d'afficher les deux groupes : plus besoin de tiroir. */
   #nav .second{display:flex}
   #nav .navsep{display:block;height:1px;margin:14px 10px 12px;background:var(--line);border:0}
   #nav .second span{font-weight:inherit;color:inherit}
@@ -459,14 +659,26 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
 
   /* Les feuilles modales se centrent plutôt que de monter du bas. */
   .sheet-wrap{align-items:center}
-  .sheet{border-radius:var(--radius);border-bottom:1px solid var(--line);max-height:82vh;padding-bottom:20px}
+  .sheet{border-radius:var(--radius-lg);border-bottom:1px solid var(--line);max-height:82vh;padding-bottom:20px}
+  .sheet::before{display:none}
   .pickgrid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));max-height:46vh}
+}
+
+/* Écrans étroits : les trois sous-onglets des Quêtes doivent tenir d'un bloc.
+   Une barre segmentée qui déborde perd sa raison d'être — on ne voit plus le
+   choix qu'on n'a pas fait. */
+@media (max-width:420px){
+  .segbar button{padding:9px 8px;font-size:12px;gap:5px}
+  .segbar .pastille{min-width:15px;height:15px;font-size:9.5px;padding:0 4px}
 }
 
 /* Très petits écrans : cinq onglets tiennent encore, en serrant le texte. */
 @media (max-width:359px){
   #nav button{font-size:9.5px;gap:3px}
   #nav svg{width:20px;height:20px}
+  #nav button .navbg{width:46px}
+  .offres{grid-template-columns:repeat(2,1fr)}
+  .segbar button{padding:9px 5px;font-size:11px}
 }
 
 /* Animations réduites, forcées depuis les Réglages. */

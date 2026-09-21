@@ -14,12 +14,15 @@ import os, datetime
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SB = os.path.join(ROOT, 'supabase')
 
+# L'ordre compte : 03b_promos.sql cree les cartes Promo, et 04_seed.sql en
+# vend deux en boutique — il ne peut pas les referencer avant qu'elles existent.
 MORCEAUX = [
-    ('01_schema.sql', 'Les tables, les regles de securite, la recharge des boosters'),
-    ('02_cards.sql',  'Le catalogue des cartes (le serveur en a besoin pour tirer)'),
-    ('03_rpc.sql',    'Les actions du jeu : ouvrir, echanger, encaisser, acheter'),
-    ('04_seed.sql',   'Les quetes et le catalogue de la boutique'),
-    ('06_social.sql', 'Les amis et les fiches de joueur'),
+    ('01_schema.sql',  'Les tables, les regles de securite, la recharge des boosters'),
+    ('02_cards.sql',   'Le catalogue des cartes (le serveur en a besoin pour tirer)'),
+    ('03_rpc.sql',     'Les actions du jeu : ouvrir, echanger, encaisser, acheter'),
+    ('03b_promos.sql', 'Les cartes Promo et leurs paliers de collection'),
+    ('04_seed.sql',    'Les quetes et le catalogue de la boutique'),
+    ('06_social.sql',  'Les amis et les fiches de joueur'),
     ('07_vitrine.sql', 'La vitrine : quatre cartes mises en avant sur le profil'),
 ]
 

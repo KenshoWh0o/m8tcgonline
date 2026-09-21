@@ -1,32 +1,135 @@
-/* Onglet Réglages : son, animations, compte, données.
+/* Onglet Réglages : apparence, son, jeu, compte, données.
    Le Labo n'apparaît jamais ici : il est réservé aux profils marqués
-   administrateurs par le serveur (voir supabase/05_admin.sql). */
+   administrateurs par le serveur (voir supabase/05_admin.sql).
+
+   Tous les réglages de cette page vivent dans le navigateur, pas sur le compte :
+   ils décrivent cet appareil-ci — son écran, son haut-parleur, la patience de
+   celui qui le tient. On peut vouloir le thème clair sur le téléphone et le
+   sombre sur l'ordinateur. */
 "use strict";
 
+/* ---------- Apparence ---------- */
+const THEME_CLE = 'mtcg.theme';
+const THEMES = [
+  ['auto', 'Automatique', 'auto'],
+  ['light', 'Clair', 'sun'],
+  ['dark', 'Sombre', 'moon']
+];
+
+const reglageTheme = () => {
+  try { return localStorage.getItem(THEME_CLE) || 'auto'; }
+  catch (e) { return 'auto'; }
+};
+
+/* En « auto », on retire l'attribut : c'est la requête média de css/tokens.css
+   qui décide, et elle suit le système en direct, sans qu'on ait à l'écouter. */
+function poserTheme(v) {
+  try { localStorage.setItem(THEME_CLE, v); } catch (e) { /* mode privé */ }
+  const html = document.documentElement;
+  if (v === 'auto') html.removeAttribute('data-theme');
+  else html.setAttribute('data-theme', v);
+  majCouleurBarre();
+}
+
+/* La barre d'état du téléphone prend la couleur du fond : sans ça, une bande
+   noire reste collée en haut de l'écran en thème clair. */
+function majCouleurBarre() {
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (!m) return;
+  const fond = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  if (fond) m.setAttribute('content', fond);
+}
+
+/* ---------- Animations réduites ---------- */
+/* Deux états seulement : suivre le système (par défaut), ou forcer la réduction.
+   Personne ne veut forcer *plus* d'animations que ce que son système demande. */
+const RM_CLE = 'mtcg.rm';
+const reglageRM = () => {
+  try { return localStorage.getItem(RM_CLE) === '1'; } catch (e) { return false; }
+};
+
+function poserRM(v) {
+  try { localStorage.setItem(RM_CLE, v ? '1' : '0'); } catch (e) { /* mode privé */ }
+  document.documentElement.classList.toggle('rm', v);
+}
+
+/* ---------- Réglages de confort ---------- */
+/* Des préférences de jeu, pas d'affichage : elles changent ce qui se passe à
+   l'ouverture d'un booster. Rangées ensemble dans une seule clé. */
+const JEU_CLE = 'mtcg.jeu';
+const JEU = {
+  /* Passer directement au récap sans faire défiler les dix cartes. */
+  recapDirect: false,
+  /* Faire vibrer le téléphone sur les révélations. */
+  vibrer: true,
+  /* Incliner les cartes avec le gyroscope pendant l'ouverture. */
+  gyro: true
+};
+
+(function chargerJeu() {
+  try {
+    const v = JSON.parse(localStorage.getItem(JEU_CLE) || 'null');
+    if (v && typeof v === 'object') Object.assign(JEU, v);
+  } catch (e) { /* premier lancement */ }
+})();
+
+function sauverJeu() {
+  try { localStorage.setItem(JEU_CLE, JSON.stringify(JEU)); } catch (e) { /* mode privé */ }
+}
+
+/* Une pulsation courte, si l'appareil sait le faire et si on l'a demandé. */
+function vibrer(motif) {
+  if (!JEU.vibrer || RM()) return;
+  try { if (navigator.vibrate) navigator.vibrate(motif); } catch (e) { /* refusé */ }
+}
+
+/* ---------- L'écran ---------- */
 function vReglages() {
   const r = SFX.reglages;
   const enLigne = Backend.mode === 'cloud';
+  const theme = reglageTheme();
 
   const curseur = (id, label, val, on) =>
-    `<div class="slider${on ? '' : ' off'}"><label for="${id}">${label}</label>
+    `<div class="slider${on ? '' : ' off'}" style="--pct:${Math.round(val * 100)}%">
+      <label for="${id}">${label}</label>
       <input id="${id}" type="range" min="0" max="100" value="${Math.round(val * 100)}" ${on ? '' : 'disabled'}>
       <output>${Math.round(val * 100)}</output></div>`;
 
-  return `<div class="pagehead"><h1>Réglages</h1></div>
+  const bascule = (id, titre, sous, on) =>
+    `<label class="toggle"><span>${titre}<small>${sous}</small></span>
+      <input type="checkbox" id="${id}" ${on ? 'checked' : ''}></label>`;
+
+  return `<div class="pagehead"><div><h1>Réglages</h1></div></div>
 
   <section class="panel">
-    <h2>Son</h2>
-    <label class="toggle"><span>Bruitages<small class="muted">Cartes, paquets, boutons</small></span>
-      <input type="checkbox" id="set-sfx" ${r.sfx ? 'checked' : ''}></label>
-    ${curseur('set-volsfx', 'Volume des bruitages', r.volSfx, r.sfx)}
+    <h2>Apparence</h2>
+    <p class="reglabel">Thème</p>
+    <div class="pickrow">
+      ${THEMES.map(([k, nom, ico]) =>
+        `<button class="pickopt${theme === k ? ' on' : ''}" data-theme="${k}">
+          ${NAVICO[ico]}<span>${nom}</span></button>`).join('')}
+    </div>
+    <p class="muted small">« Automatique » suit le réglage clair/sombre de ton appareil.</p>
+    ${bascule('set-rm', 'Animations réduites', 'Moins de mouvement à l\'écran', reglageRM())}
+    <p class="muted small">Si ton appareil est déjà réglé sur « réduire les animations »,
+      le jeu le respecte sans rien toucher ici.</p>
   </section>
 
   <section class="panel">
-    <h2>Affichage</h2>
-    <label class="toggle"><span>Animations réduites<small class="muted">Moins de mouvement à l'écran</small></span>
-      <input type="checkbox" id="set-rm" ${reglageRM() ? 'checked' : ''}></label>
-    <p class="muted small">Si ton téléphone est déjà réglé sur « réduire les animations »,
-      le jeu le respecte sans rien toucher ici.</p>
+    <h2>Son</h2>
+    ${bascule('set-sfx', 'Bruitages', 'Cartes, paquets, boutons', r.sfx)}
+    ${curseur('set-volsfx', 'Volume', r.volSfx, r.sfx)}
+    <div class="row"><button class="btn ghost tiny" data-act="son-test">Tester le son</button></div>
+    <p class="muted small" style="margin-top:10px">Sur iPhone, le petit interrupteur
+      « silencieux » sur la tranche coupe aussi le son des sites : si tu n'entends rien,
+      c'est la première chose à vérifier.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Ouverture des boosters</h2>
+    ${bascule('set-recap', 'Aller droit au récap', 'Sans faire défiler les cartes une à une', JEU.recapDirect)}
+    ${bascule('set-vibrer', 'Vibrations', 'Une pulsation sur les révélations', JEU.vibrer)}
+    ${bascule('set-gyro', 'Incliner avec le téléphone', 'Les cartes suivent le mouvement de l\'appareil', JEU.gyro)}
   </section>
 
   <section class="panel">
@@ -72,37 +175,52 @@ function vReglages() {
 
   <section class="panel about">
     <h2>À propos</h2>
-    <p class="muted small">${h(GAME_NAME)} · extension « ${h(SET_NAME)} » · ${cards.length} cartes.
+    <p class="muted small">${h(GAME_NAME)} · extension « ${h(SET_NAME)} » · ${cards.length} cartes
+      ${promos.length ? `· ${promos.length} promos` : ''}.
       Jeu de collection sans argent réel : les ${MONNAIE.nom} se gagnent en jouant.</p>
     <p class="muted small">Version ${APP_VERSION}${Backend.mode === 'cloud' ? ' · compte en ligne' : ' · hors ligne'}</p>
     <p class="mentions">${MENTIONS}</p>
   </section>`;
 }
 
-/* ---------- Animations réduites ---------- */
-/* Trois états : suivre le système (par défaut), ou forcer dans un sens. */
-const RM_CLE = 'mtcg.rm';
-const reglageRM = () => {
-  try { return localStorage.getItem(RM_CLE) === '1'; } catch (e) { return false; }
-};
-
-function poserRM(v) {
-  try { localStorage.setItem(RM_CLE, v ? '1' : '0'); } catch (e) { /* mode privé */ }
-  document.documentElement.classList.toggle('rm', v);
-}
-
-/* Branche les réglages une fois la page dessinée. */
+/* ---------- Branchements ---------- */
+/* Rejoué après chaque rendu : les nœuds viennent d'être recréés, les anciens
+   écouteurs sont partis avec eux. */
 function bindReglages() {
   const b = (id, fn) => { const e = $('#' + id); if (e) fn(e); };
 
+  /* Un curseur dessine lui-même sa partie remplie : `--pct` suit la valeur. */
+  const suivre = (e, poser) => {
+    const maj = () => {
+      e.closest('.slider').style.setProperty('--pct', e.value + '%');
+      e.nextElementSibling.value = e.value;
+      poser(e.value / 100);
+    };
+    e.oninput = maj;
+  };
+
   b('set-sfx', e => e.onchange = () => {
-    SFX.reglages.sfx = e.checked; SFX.appliquer(); SFX.jouer('tap'); render();
+    SFX.reglages.sfx = e.checked;
+    SFX.appliquer();
+    if (e.checked) SFX.jouer('tap');
+    render();
   });
   b('set-volsfx', e => {
-    e.oninput = () => { SFX.reglages.volSfx = e.value / 100; SFX.appliquer(); e.nextElementSibling.value = e.value; };
+    suivre(e, v => { SFX.reglages.volSfx = v; SFX.appliquer(); });
     e.onchange = () => SFX.jouer('carte');
   });
+
   b('set-rm', e => e.onchange = () => { poserRM(e.checked); render(); });
+
+  b('set-recap', e => e.onchange = () => { JEU.recapDirect = e.checked; sauverJeu(); });
+  b('set-vibrer', e => e.onchange = () => {
+    JEU.vibrer = e.checked; sauverJeu();
+    if (e.checked) vibrer(18);
+  });
+  b('set-gyro', e => e.onchange = () => { JEU.gyro = e.checked; sauverJeu(); });
+
+  /* Collection : la case « seulement mes cartes ». */
+  b('col-poss', e => e.onchange = () => { colPossedees = e.checked; render(); });
 
   b('pf-pseudo', e => e.onkeydown = ev => { if (ev.key === 'Enter') changerPseudo(); });
   b('tr-pseudo', e => {
@@ -123,4 +241,18 @@ async function changerPseudo() {
   const p = valeur('pf-pseudo');
   if (!p || p === save.pseudo) return;
   await agir(() => Backend.setProfile({ p_pseudo: p }), 'Pseudo mis à jour.');
+}
+
+/* Un petit essai audible : c'est la réponse la plus courte à « je n'ai pas de son ». */
+function testerSon() {
+  SFX.reglages.sfx = true;
+  SFX.appliquer();
+  SFX.reveiller();
+  SFX.jouer('carte');
+  setTimeout(() => SFX.jouer('piece'), 220);
+  setTimeout(() => SFX.jouer('gagne'), 460);
+  setTimeout(() => {
+    toast(SFX.audible() ? 'Le son fonctionne.' : "Le navigateur refuse le son : vérifie le volume et le mode silencieux.");
+    render();
+  }, 900);
 }

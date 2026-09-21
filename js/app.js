@@ -26,10 +26,17 @@ function header() {
   const ec = $('#ec');
   if (ec) ec.querySelector('b').textContent = fmtN(save.shards);
 
+  /* Sur mobile, l'avatar ouvre le tiroir du compte — mais rien ne le disait :
+     une photo ronde ressemble à une décoration, pas à un bouton. Le chevron
+     posé dessus est le signe universel du panneau qui se déplie. Sur ordinateur
+     il n'y a pas de tiroir, donc pas de chevron (voir css/hub.css). */
   const av = $('#moi');
   if (av) {
-    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm');
+    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm')
+      + '<i class="moicaret" aria-hidden="true">' + NAVICO.caret + '</i>';
     av.classList.toggle('alerte', pastilleTiroir() > 0);
+    av.setAttribute('aria-label', surOrdi() ? 'Mon profil' : 'Menu du compte');
+    av.setAttribute('aria-expanded', String(tiroirOuvert));
   }
 }
 
@@ -44,7 +51,8 @@ function navHTML() {
   const bouton = (t, groupe) => {
     const n = pastilleOnglet(t.id);
     const cls = [groupe, tab === t.id ? 'on' : ''].filter(Boolean).join(' ');
-    return `<button data-tab="${t.id}" class="${cls}" aria-label="${h(t.nom)}">
+    return `<button data-tab="${t.id}" class="${cls}" aria-label="${h(t.nom)}"
+      ${tab === t.id ? 'aria-current="page"' : ''}><i class="navbg" aria-hidden="true"></i>
       ${NAVICO[t.ico]}<span>${h(t.nom)}</span>${n ? `<i class="pastille nav">${n}</i>` : ''}</button>`;
   };
   return TABS.filter(t => t.bas).map(t => bouton(t, '')).join('')
@@ -192,6 +200,10 @@ function render() {
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
+
+  /* Une carte Promo décrochée pendant l'appel serveur attend ici : l'écran est
+     posé, c'est le moment de lui laisser la scène. */
+  viderFilePromos();
 }
 
 /* Va sur un onglet, en remontant en haut de page. */
@@ -221,7 +233,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-tab],[data-auth],[data-tr],[data-soc],[data-quete],[data-achat],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-vit-on],[data-vit-off]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-vit-on],[data-vit-off],[data-promo]');
   if (!el) return;
   const d = el.dataset;
 
@@ -230,8 +242,14 @@ async function clicPage(e) {
   if (d.show) { const c = byId[d.show]; if (c) { SFX.jouer('carte'); showCard(c); } return; }
   if (d.filter) { colFilter = d.filter; return render(); }
   if (d.ess) { essFilter = d.ess; return render(); }
+  if (d.rar) { rarFilter = d.rar; return render(); }
   if (d.tr) { trVue = d.tr; return render(); }
   if (d.soc) { socVue = d.soc; return render(); }
+  if (d.qv) { qVue = d.qv; return render(); }
+  if (d.shv) { shopVue = d.shv; return render(); }
+  if (d.shop) return ouvrirArticle(d.shop);
+  if (d.theme) { poserTheme(d.theme); return render(); }
+  if (d.promo) return testPromo(d.promo);
 
   /* Amis */
   if (d.fiche) return ouvrirFiche(d.fiche);
@@ -244,7 +262,6 @@ async function clicPage(e) {
 
   /* Quêtes, boutique, échanges */
   if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.');
-  if (d.achat) return agir(() => Backend.buy(d.achat), 'Acheté.');
   if (d.trep) return agir(() => Backend.tradeRespond(d.trep, d.ok === '1'),
     d.ok === '1' ? 'Échange conclu.' : 'Demande refusée.');
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
@@ -268,6 +285,12 @@ async function clicPage(e) {
   switch (d.act) {
     case 'open': return openBooster();
     case 'connexion': return ouvrirConnexion();
+    case 'son-test': return testerSon();
+    case 'col-toggle': colOuvert = !colOuvert; return render();
+    case 'col-reset':
+      colFilter = essFilter = rarFilter = 'all';
+      colPossedees = false;
+      return render();
     case 'porte-ok': return porteEssayer();
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
@@ -308,6 +331,10 @@ async function clicPage(e) {
         ]
       });
     case 't-10': save.tickets += 10; persist(); header(); return toast('+10 boosters (affichage seulement).');
+    case 't-90': return testRemplir(90);
+    case 't-promo-file': return testFilePromos();
+    case 't-quete': return testQuete();
+    case 't-toast': return toast('Voilà à quoi ça ressemble.');
 
     /* --- Ouverture --- */
     case 'again': rv = null; render(); return setTimeout(openBooster, 60);
@@ -376,11 +403,14 @@ setInterval(() => {
     }
   }
 
+  /* Le compte à rebours des quêtes bat sans redessiner la page. */
+  if (tab === 'quetes') majRemiseQuetes();
+
   const cl = $('#tmclock');
   if (!cl) return;
   cl.textContent = timerClock();
-  const bar = $('#tmbar');
-  if (bar) bar.style.width = tickPct() + '%';
+  const jeton = document.querySelector('.resjeton.encours');
+  if (jeton) jeton.style.setProperty('--p', tickPct() + '%');
 }, 1000);
 
 /* Revenir sur l'onglet après un moment : on resynchronise. */
@@ -392,9 +422,11 @@ addEventListener('visibilitychange', () => {
 /* ---------- Démarrage ---------- */
 (async () => {
   cards = buildCards();
+  promos = buildPromos();
   rebuild();
   brand();
   rollPack();
+  poserTheme(reglageTheme());
   poserRM(reglageRM());
 
   /* Le service worker se branche toujours : c'est lui qui apporte les mises à

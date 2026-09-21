@@ -13,7 +13,7 @@ function vProfil() {
 
   const stat = (n, l) => `<div class="stat"><b>${fmtN(n)}</b><span>${l}</span></div>`;
 
-  return `<div class="pagehead"><h1>Profil</h1></div>
+  return `<div class="pagehead"><div><h1>Profil</h1></div></div>
 
   <section class="idcard">
     ${avatarHTML(save.avatar, save.frame, 'xl')}
@@ -28,8 +28,8 @@ function vProfil() {
 
   <section class="panel vitpanel">
     <h2>Ma vitrine <span class="muted small">— ce que les autres voient en premier</span></h2>
-    ${vVitrine(save.vitrine, save.frame, true)}
-    <p class="muted small">Le cadre est celui de ton avatar. Les autres s'achètent en boutique.</p>
+    ${vVitrine(save.vitrine, true)}
+    <p class="muted small">Quatre cartes au maximum, visibles par tous ceux qui ouvrent ta fiche.</p>
   </section>
 
   <div class="stats">
@@ -72,7 +72,7 @@ function vProfil() {
   </section>
 
   <section class="panel">
-    <h2>Cadre</h2>
+    <h2>Cadre de l'avatar</h2>
     ${cadres.length > 1 ? '' : '<p class="muted small">Les autres cadres s\'achètent en boutique.</p>'}
     <div class="avagrid">
       ${cadres.map(k => `<button class="avapick${save.frame === k ? ' on' : ''}" data-frame="${k}"
@@ -83,9 +83,10 @@ function vProfil() {
 
 /* Choisir une carte possédée comme avatar. */
 function ouvrirChoixAvatar() {
-  const liste = cards
+  /* Les Promos comptent : ce sont les cartes dont on est le plus fier. */
+  const liste = toutesCartes()
     .filter(c => (save.col[c.id] || 0) > 0 && c.img)
-    .sort((a, b) => rk(b) - rk(a) || a.num - b.num);
+    .sort(parRarete);
   openSheet({
     title: 'Une carte en avatar',
     body: liste.length
@@ -100,10 +101,14 @@ function ouvrirChoixAvatar() {
 
 /* ---------- La vitrine ---------- */
 /* Quatre cartes mises en avant, les premières choses qu'on voit sur un profil.
-   C'est ce que les cadres de la boutique encadrent. */
+
+   Elles ne portent plus le cadre d'avatar. Un cadre est fait pour cercler une
+   vignette ronde ; posé autour d'une carte il ajoutait un second bord au bord
+   déjà imprimé sur la carte, et les deux se disputaient l'œil. Les cartes se
+   montrent telles qu'elles sont. */
 const VITRINE_MAX = 4;
 
-function vVitrine(liste, cadre, modifiable) {
+function vVitrine(liste, modifiable) {
   const v = (liste || []).slice(0, VITRINE_MAX);
   const cases = [];
 
@@ -122,17 +127,15 @@ function vVitrine(liste, cadre, modifiable) {
     }
   }
 
-  const f = FRAMES[cadre] || FRAMES.default;
-  return `<div class="vitrine${f.prisme ? ' prisme' : ''}" style="--f1:${f.c1};--f2:${f.c2}">
-    ${cases.join('')}</div>`;
+  return `<div class="vitrine">${cases.join('')}</div>`;
 }
 
 /* Choisir une carte à exposer : tout ce qu'on possède, les plus rares d'abord. */
 function ouvrirChoixVitrine() {
   const deja = save.vitrine || [];
-  const liste = cards
+  const liste = toutesCartes()
     .filter(c => (save.col[c.id] || 0) > 0 && c.img && !deja.includes(c.id))
-    .sort((a, b) => rk(b) - rk(a) || a.num - b.num);
+    .sort(parRarete);
 
   openSheet({
     title: 'Exposer une carte',

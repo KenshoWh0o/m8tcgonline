@@ -37,6 +37,11 @@ grant execute on function public.set_vitrine to authenticated;
 -- me() est redefinie ici pour ajouter le champ : la version de 03_rpc.sql ne le
 -- connait pas. Rejouer 03_rpc.sql apres ce fichier l'effacerait — il faut alors
 -- rejouer celui-ci, ou plus simplement recoller TOUT.sql qui les met dans l'ordre.
+-- C'est la derniere version de me() : elle ajoute la vitrine au profil, et
+-- c'est donc ici que se pose l'appel a check_promos (supabase/03b_promos.sql).
+-- Une carte Promo de palier peut etre debloquee par un echange aussi bien que
+-- par un booster : sans cet appel, elle n'arriverait qu'a la prochaine
+-- ouverture de paquet.
 create or replace function public.me() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); pr profiles;
@@ -44,6 +49,7 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   pr := regen_tickets(p);
   perform sync_collection_quests(p);
+  perform check_promos(p);
 
   return jsonb_build_object(
     'profil', jsonb_build_object(

@@ -45,12 +45,17 @@ async function kvSet(k, v) {
 /* ---------- État global ---------- */
 let save = null;
 let cards = [];
+/* Les cartes Promo vivent à côté de l'extension, jamais dedans : voir
+   js/promos-data.js. `cards.length` doit rester le total de l'extension. */
+let promos = [];
 let packArt = PACK_ARTS[0];
 let byId = {};
 let tab = 'boosters';
 let rv = null;
 let colFilter = 'all';
 let essFilter = 'all';
+let rarFilter = 'all';
+let colPossedees = false;
 let opening = false;
 
 const persist = () => kvSet('save2', save);
@@ -65,10 +70,13 @@ function defaultSave() {
   };
 }
 
-/* Index des cartes par identifiant, pour les retrouver depuis la sauvegarde. */
+/* Index des cartes par identifiant, pour les retrouver depuis la sauvegarde.
+   Les Promos y entrent aussi : une carte affichée se cherche toujours par son
+   identifiant, qu'elle soit de l'extension ou non. */
 function rebuild() {
   byId = {};
   cards.forEach(c => byId[c.id] = c);
+  promos.forEach(c => byId[c.id] = c);
 }
 
 function poolFor() {

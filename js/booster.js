@@ -22,13 +22,26 @@ function brand() {
 }
 
 /* ---------- Compte à rebours ---------- */
+/* Avec une recharge de quatre heures, « 240:00 » n'a plus de sens : on passe en
+   heures et minutes tant qu'il en reste plus d'une, et on ne descend à la
+   seconde que sur la dernière minute, là où elle devient intéressante. */
 function timerClock() {
   if (save.unlimited) return '∞';
-  if (save.tickets >= TICKET_CAP) return 'Max';
+  if (save.tickets >= TICKET_CAP) return 'Pleine';
   const left = Math.max(0, INTERVAL - (Date.now() - save.lastTick));
-  const m = Math.floor(left / 60000);
-  const s = Math.floor(left / 1000) % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
+  const s = Math.floor(left / 1000);
+  const hh = Math.floor(s / 3600);
+  const mm = Math.floor(s / 60) % 60;
+  if (hh) return `${hh} h ${String(mm).padStart(2, '0')}`;
+  if (mm) return `${mm} min`;
+  return `${s} s`;
+}
+
+/* Ce que raconte la ligne sous l'horloge : un mot, jamais deux. */
+function timerLabel() {
+  if (save.unlimited) return 'Illimité';
+  if (save.tickets >= TICKET_CAP) return 'Réserve pleine';
+  return 'Prochain booster';
 }
 
 /* Part du délai déjà écoulée, pour la jauge de recharge. */
@@ -38,8 +51,11 @@ function tickPct() {
 }
 
 /* ---------- Tirage ---------- */
-/* SLOT4 : la quatrième carte hésite entre commune et peu commune. HIT : la dernière carte. */
-const RATES = { SLOT4: { C: 50, PC: 50 }, HIT: { R: 79.2, E: 16.63, L: 4.17 } };
+/* La dernière carte du paquet, celle qu'on attend. Le reste est fixe.
+   Ces taux doivent rester identiques à ceux de open_pack() dans
+   supabase/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux tests hors
+   ligne, mais deux tables divergentes rendraient le Labo menteur. */
+const RATES = { HIT: { R: 70, E: 26, L: 4 } };
 const GOD = 1 / 2000;
 
 function pickFrom(pool, r) {
@@ -64,25 +80,28 @@ function weighted(w) {
   return Object.keys(w)[0];
 }
 
-/* Huit cartes : 3 communes, une commune ou peu commune, 2 peu communes, 1 essence, puis le hit.
-   Godpack : 4 rares, 3 épiques et la légendaire en dernier. */
+/* Dix cartes : 4 communes, 3 peu communes, 1 essence, 1 rare garantie, puis le
+   hit — rare, épique ou légendaire. La rare garantie change tout par rapport à
+   l'ancienne formule : chaque paquet donne au moins deux cartes de rang R ou
+   mieux, donc chaque paquet fait avancer la collection quelque part.
+   Godpack : 5 rares, 4 épiques et la légendaire en dernier. */
 function makeBooster(pool, god) {
   const out = [];
 
   if (god) {
-    for (let i = 0; i < 4; i++) out.push(pickFrom(pool, 'R'));
-    for (let i = 0; i < 3; i++) out.push(pickFrom(pool, 'E'));
+    for (let i = 0; i < 5; i++) out.push(pickFrom(pool, 'R'));
+    for (let i = 0; i < 4; i++) out.push(pickFrom(pool, 'E'));
     out.push(pickFrom(pool, 'L'));
     return out.filter(Boolean);
   }
 
-  for (let i = 0; i < 3; i++) out.push(pickFrom(pool, 'C'));
-  out.push(pickFrom(pool, weighted(RATES.SLOT4)));
-  out.push(pickFrom(pool, 'PC'));
-  out.push(pickFrom(pool, 'PC'));
+  for (let i = 0; i < 4; i++) out.push(pickFrom(pool, 'C'));
+  for (let i = 0; i < 3; i++) out.push(pickFrom(pool, 'PC'));
 
   const ess = pool.filter(c => c.cat === 'essence');
   out.push(ess.length ? rnd(ess) : pickFrom(pool, 'C'));
+
+  out.push(pickFrom(pool, 'R'));
   out.push(pickFrom(pool, weighted(RATES.HIT)));
 
   return out.filter(Boolean);
@@ -115,15 +134,50 @@ function vBoosters() {
   </div>
 
   <footer class="packfoot">
-    <div class="packrail">
-      <span class="rchip"><img class="ic" src="${ART.seal}" alt="">
-        <b>${save.unlimited ? '∞' : save.tickets}</b>${save.unlimited ? '' : `<small>/${TICKET_CAP}</small>`}</span>
-      ${save.unlimited ? '' : `<span class="rchip time${full ? ' full' : ''}">${ICON.glass}<b id="tmclock">${timerClock()}</b>
-        <i class="rfill" id="tmbar" style="width:${tickPct()}%"></i></span>`}
-    </div>
+    ${vReserve(full)}
     <button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>
   </footer>
 </section>`;
+}
+
+/* La réserve : une rangée de jetons, un par booster disponible, et la recharge
+   en dessous. Le sablier et son « Max » ne disaient ni combien il en restait ni
+   combien de temps il fallait attendre — deux pastilles côte à côte qu'il
+   fallait lire l'une après l'autre pour comprendre.
+
+   Ici tout se voit d'un coup d'œil : cinq alvéoles, celles qui sont pleines
+   brillent, la dernière se remplit sous les yeux. */
+function vReserve(full) {
+  if (save.unlimited) {
+    return `<div class="reserve illimite">
+      <div class="resjetons"><img class="resinf" src="${ART.seal}" alt=""><b>∞</b></div>
+      <p class="reslab">Boosters illimités</p>
+    </div>`;
+  }
+
+  const n = Math.min(save.tickets, TICKET_CAP);
+  const pct = tickPct();
+  /* Le jeton en cours de remplissage est le premier vide : c'est lui qui porte
+     la jauge, pour que l'attente ait un endroit précis où se lire. */
+  const jetons = Array.from({ length: TICKET_CAP }, (_, i) => {
+    const plein = i < n;
+    const encours = !plein && i === n && !full;
+    return `<i class="resjeton${plein ? ' plein' : ''}${encours ? ' encours' : ''}"
+      ${encours ? `style="--p:${pct}%"` : ''}></i>`;
+  }).join('');
+
+  return `<div class="reserve${full ? ' pleine' : ''}">
+    <div class="resjetons" role="img" aria-label="${n} booster${n > 1 ? 's' : ''} sur ${TICKET_CAP}">
+      ${jetons}
+    </div>
+    <p class="reslab">
+      <b class="tnum">${n}</b><span class="resmax">/${TICKET_CAP}</span>
+      <span class="ressep" aria-hidden="true"></span>
+      ${full ? '' : NAVICO.clock}
+      <span class="restemps">${h(timerLabel())}${full ? '' : ' · '}</span>
+      ${full ? '' : `<b class="tnum" id="tmclock">${timerClock()}</b>`}
+    </p>
+  </div>`;
 }
 
 /* Le paquet suit le doigt en 3D ; une simple pression l'ouvre. */

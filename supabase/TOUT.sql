@@ -61,8 +61,13 @@ create table if not exists public.cards (
   cat        text not null,
   col        text not null,
   rar        text not null,
-  in_booster boolean not null default true
+  in_booster boolean not null default true,
+  -- Une carte Promo est dans le catalogue pour pouvoir entrer dans une
+  -- collection, mais elle n'appartient pas a l'extension : ni dans un booster,
+  -- ni dans le pourcentage de completion, ni dans un echange.
+  promo      boolean not null default false
 );
+alter table public.cards add column if not exists promo boolean not null default false;
 create index if not exists cards_rar_idx on public.cards (rar) where in_booster;
 
 -- ------------------------------------------------------------ collection
@@ -98,16 +103,25 @@ create table if not exists public.quest_progress (
 -- ------------------------------------------------------------- boutique
 create table if not exists public.shop_items (
   id       text primary key,
-  categ    text not null check (categ in ('boosters','echange','cosmetique')),
+  categ    text not null check (categ in ('boosters','echange','cosmetique','promo')),
   titre    text not null,
   detail   text not null default '',
   prix     integer not null check (prix >= 0),
-  effet    text not null,                -- tickets | trade_token | avatar_frame | refill
+  effet    text not null,                -- tickets | trade_token | cosmetique | refill | carte
   montant  integer not null default 1,
+  -- Pour effet = 'carte' : l'identifiant de la carte accordee (ex. 'p01').
+  carte_id text references public.cards,
   unique_buy boolean not null default false,
   ordre    integer not null default 0,
   actif    boolean not null default true
 );
+
+alter table public.shop_items add column if not exists carte_id text references public.cards;
+do $$ begin
+  alter table public.shop_items drop constraint if exists shop_items_categ_check;
+  alter table public.shop_items add constraint shop_items_categ_check
+    check (categ in ('boosters','echange','cosmetique','promo'));
+end $$;
 
 create table if not exists public.inventory (
   user_id uuid not null references public.profiles on delete cascade,
@@ -143,11 +157,15 @@ create or replace function public.cfg(k text) returns integer
 language sql immutable as $$
   select case k
     when 'ticket_cap'        then 5          -- boosters en reserve au maximum
-    when 'ticket_minutes'    then 30         -- un booster toutes les 30 min
-    when 'pack_size'         then 8
+    when 'ticket_minutes'    then 240        -- un booster toutes les 4 h, soit 6 par jour
+    when 'pack_size'         then 10
     when 'god_odds'          then 2000       -- 1 chance sur 2000
-    when 'trade_cooldown_h'  then 6          -- un echange gratuit toutes les 6 h
+    when 'trade_cooldown_h'  then 10         -- un echange gratuit toutes les 10 h
     when 'shards_per_dup'    then 0
+    -- Le palier de collection qui accorde la carte Promo « palier ».
+    -- 90 et non 50 : la moitie de l'extension se fait en une dizaine de
+    -- paquets, une recompense decrochee le deuxieme jour n'en est pas une.
+    when 'promo_palier_pct'  then 90
   end;
 $$;
 
@@ -289,10 +307,14 @@ create or replace function public.sync_collection_quests(p uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare pct int;
 begin
+  -- `where not k.promo` : les cartes Promo sont hors extension. Les compter
+  -- ferait bouger le total de 122, et le palier des 100 % deviendrait
+  -- inatteignable tant qu'on n'a pas achete les promos de la boutique.
   select case when count(*) = 0 then 0
          else floor(count(*) filter (where c.qty > 0) * 100.0 / count(*)) end
     into pct
-    from cards k left join collection c on c.card_id = k.id and c.user_id = p;
+    from cards k left join collection c on c.card_id = k.id and c.user_id = p
+   where not k.promo;
 
   insert into quest_progress (user_id, quest_id, period_key, progress)
   select p, q.id, 'all', pct from quests q where q.metric = 'collection_pct'
@@ -584,7 +606,7 @@ begin
 
   foreach essai in array ord loop
     select id into out_id from cards
-      where in_booster and rar = essai and cat <> 'essence'
+      where in_booster and not promo and rar = essai and cat <> 'essence'
       order by random() limit 1;
     if out_id is not null then return out_id; end if;
   end loop;
@@ -607,22 +629,29 @@ begin
 
   god := random() < 1.0 / cfg('god_odds');
 
+  -- Dix cartes : 4 communes, 3 peu communes, 1 essence, 1 rare garantie, puis
+  -- le hit (rare 70 %, epique 26 %, legendaire 4 %). La rare garantie assure
+  -- qu'aucun paquet ne soit vide de sens : il y a toujours au moins deux cartes
+  -- de rang R ou mieux.
+  -- Ces taux doivent rester identiques a RATES dans js/booster.js, qui sert
+  -- aux ouvertures de test du Labo.
   if god then
-    for i in 1..4 loop ids := ids || pick_card('R'); end loop;
-    for i in 1..3 loop ids := ids || pick_card('E'); end loop;
+    for i in 1..5 loop ids := ids || pick_card('R'); end loop;
+    for i in 1..4 loop ids := ids || pick_card('E'); end loop;
     ids := ids || pick_card('L');
   else
-    for i in 1..3 loop ids := ids || pick_card('C'); end loop;
-    ids := ids || pick_card(case when random() < 0.5 then 'C' else 'PC' end);
-    ids := ids || pick_card('PC');
-    ids := ids || pick_card('PC');
+    for i in 1..4 loop ids := ids || pick_card('C'); end loop;
+    for i in 1..3 loop ids := ids || pick_card('PC'); end loop;
 
-    select id into cid from cards where in_booster and cat = 'essence' order by random() limit 1;
+    select id into cid from cards
+      where in_booster and not promo and cat = 'essence' order by random() limit 1;
     ids := ids || coalesce(cid, pick_card('C'));
 
+    ids := ids || pick_card('R');
+
     x := random() * 100.0;
-    ids := ids || pick_card(case when x < 79.2 then 'R'
-                                 when x < 95.83 then 'E'
+    ids := ids || pick_card(case when x < 70.0 then 'R'
+                                 when x < 96.0 then 'E'
                                  else 'L' end);
   end if;
 
@@ -654,6 +683,7 @@ begin
   perform bump_quests(p, 'rarity_L', (select count(*)::int from cards
                                       where id = any(ids) and rar = 'L'));
   perform sync_collection_quests(p);
+  perform check_promos(p);
 
   return jsonb_build_object('cards', to_jsonb(ids), 'god', god, 'etat', me());
 end $$;
@@ -711,6 +741,14 @@ begin
   elsif it.effet = 'trade_token' then
     insert into inventory (user_id, item_id, qty) values (p, 'trade_token', it.montant)
       on conflict (user_id, item_id) do update set qty = inventory.qty + excluded.qty;
+  elsif it.effet = 'carte' then
+    -- Une carte achetee entre dans la collection comme n'importe quelle autre.
+    -- Elle est marquee `unique_buy` en boutique : on ne l'achete qu'une fois.
+    if it.carte_id is null then raise exception 'Article mal configure.'; end if;
+    insert into collection (user_id, card_id, qty) values (p, it.carte_id, 1)
+      on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+    insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
+      on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
   else -- cosmetique
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
       on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
@@ -741,6 +779,7 @@ begin
   if ro is null or rw is null then raise exception 'Carte inconnue.'; end if;
   if ro <> rw then raise exception 'Les deux cartes doivent etre de la meme rarete.'; end if;
   if ro = 'ES' then raise exception 'Les Essences ne s''echangent pas.'; end if;
+  if ro = 'PR' then raise exception 'Les cartes Promo ne s''echangent pas.'; end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
     raise exception 'Tu ne possedes pas la carte que tu proposes.';
@@ -884,67 +923,224 @@ grant execute on function public.me, public.set_profile, public.checkin, public.
 
 
 -- #####################################################################
+-- ###  03b_promos.sql
+-- ###  Les cartes Promo et leurs paliers de collection
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — les cartes Promo
+--
+--  Elles n'appartiennent pas a l'extension : jamais tirees dans un booster,
+--  jamais comptees dans les 122 cartes, jamais echangeables. On les obtient
+--  autrement — en boutique, ou en recompense d'un palier de collection.
+--
+--  A jouer apres 03_rpc.sql et AVANT 04_seed.sql : la boutique vend deux de
+--  ces cartes, et ne peut pas les referencer avant qu'elles existent.
+--  Rejouable sans danger.
+-- =====================================================================
+
+-- ------------------------------------------------------------ catalogue
+-- `promo = true` les exclut du tirage (pick_card) et du pourcentage de
+-- collection (sync_collection_quests) : c'est le seul drapeau a poser.
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo) values
+  ('p01',  1, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
+  ('p02',  2, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
+  ('p05',  5, 'Tout Commence Ici', 'joueur', 'rose',   'PR', false, true),
+  ('p06',  6, 'Le Marionnettiste', 'joueur', 'neutre', 'PR', false, true)
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
+
+-- =====================================================================
+--  Les paliers de collection
+--
+--  Deux cartes s'obtiennent en completant la collection. Le serveur les
+--  accorde lui-meme : le navigateur ne peut ni les reclamer, ni mentir sur
+--  son avancement.
+--
+--  Idempotent : une carte deja possedee n'est pas redonnee. C'est important,
+--  parce que check_promos() est appele a chaque ouverture de booster et a
+--  chaque visite — sans ce garde-fou, le compteur d'exemplaires grimperait
+--  tout seul.
+-- =====================================================================
+-- open_pack() (03_rpc.sql) appelle cette fonction alors qu'elle n'existe pas
+-- encore au moment ou il est cree : PL/pgSQL resout les appels a l'execution,
+-- pas a la creation, et ce fichier est joue juste apres. Au premier booster
+-- ouvert, elle est la.
+create or replace function public.check_promos(p uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare pct int;
+begin
+  -- Le meme calcul que sync_collection_quests : les Promos ne comptent pas
+  -- dans leur propre condition d'obtention.
+  select case when count(*) = 0 then 0
+         else floor(count(*) filter (where c.qty > 0) * 100.0 / count(*)) end
+    into pct
+    from cards k left join collection c on c.card_id = k.id and c.user_id = p
+   where not k.promo;
+
+  -- Palier intermediaire : la carte du milieu de parcours.
+  if pct >= cfg('promo_palier_pct') then
+    insert into collection (user_id, card_id, qty) values (p, 'p06', 1)
+      on conflict (user_id, card_id) do nothing;
+  end if;
+
+  -- Master Set : l'extension entiere.
+  if pct >= 100 then
+    insert into collection (user_id, card_id, qty) values (p, 'p05', 1)
+      on conflict (user_id, card_id) do nothing;
+  end if;
+end $$;
+
+-- me() appelle check_promos a chaque rafraichissement : une collection
+-- completee par un echange — et non par un booster — accorde la carte au
+-- rafraichissement suivant. Cet appel est pose dans 07_vitrine.sql, qui est le
+-- dernier fichier a redefinir me() : l'ajouter ici serait inutile, la version
+-- de 07 l'ecraserait.
+
+-- check_promos est un rouage interne : appele par me() et open_pack, jamais
+-- par le navigateur.
+revoke all on function public.check_promos from anon, authenticated;
+
+-- =====================================================================
+--  Outil : accorder une carte Promo a la main
+--
+--  Sert a tester l'animation d'obtention sans avoir a completer la
+--  collection. Remplace le pseudo et l'identifiant, puis execute.
+--  Pour rejouer l'animation, retire d'abord la carte (requete du bas).
+-- =====================================================================
+-- insert into public.collection (user_id, card_id, qty)
+-- select id, 'p05', 1 from public.profiles where lower(pseudo) = lower('TonPseudo')
+-- on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+
+-- delete from public.collection
+--  where card_id in ('p01','p02','p05','p06')
+--    and user_id = (select id from public.profiles where lower(pseudo) = lower('TonPseudo'));
+
+
+-- #####################################################################
 -- ###  04_seed.sql
 -- ###  Les quetes et le catalogue de la boutique
 -- #####################################################################
 
 -- =====================================================================
 --  Mate TCG Online — quetes et boutique
+--  A jouer apres 03b_promos.sql : deux articles referencent des cartes Promo.
 --  Rejouable a volonte : chaque ligne est mise a jour si elle existe deja.
 --  C'est ici qu'on equilibre le jeu, pas dans le navigateur.
+--
+--  ------------------------------------------------------------------
+--  L'equilibrage, en une page.
+--
+--  L'extension compte 122 cartes : 9 essences, 33 communes, 24 peu
+--  communes, 28 rares, 18 epiques, 10 legendaires.
+--
+--  Un booster donne 10 cartes : 4 C, 3 PC, 1 essence, 1 rare garantie, et
+--  un dernier tirage a 70 % rare / 26 % epique / 4 % legendaire.
+--  La reserve tient 5 boosters et se recharge de 1 toutes les 4 h — six
+--  boosters par jour pour qui passe regulierement.
+--
+--  Ce que ca donne, en mediane de simulation :
+--      25 % de la collection ......    4 boosters  (le premier jour)
+--      50 % .......................   10 boosters  (deux jours)
+--      75 % .......................   26 boosters  (une semaine)
+--      90 % .......................   85 boosters  (deux semaines)  -> promo P06
+--     100 % .......................  655 boosters  (~110 jours)     -> promo P05
+--  Le goulot, ce sont les legendaires : dix cartes a 4 % l'une.
+--
+--  Cote monnaie, un joueur regulier gagne ~300 Eclats par jour. A ce
+--  rythme :
+--      un booster (350) ...............  un peu plus d'une journee
+--      un lot de dix (3 000) ..........  dix jours
+--      un cadre (1 200 a 6 000) .......  de quatre a vingt jours
+--      une carte Promo (10 000) .......  un mois d'epargne
+--
+--  Tout depenser en boosters n'accelere la collection que d'environ 17 %
+--  (110 jours au lieu de 94) : les Eclats aident, ils ne remplacent pas
+--  le temps. Et une carte Promo coute assez cher pour que l'arbitrage
+--  « j'ouvre, ou j'economise » en soit vraiment un.
 -- =====================================================================
 
 -- ---------------------------------------------------------------- quetes
 -- metric : packs | new_cards | rarity_R | rarity_E | rarity_L | trades
 --          | checkin | collection_pct   (tous mesures cote serveur)
+--
+-- Les objectifs quotidiens sont calibres sur six boosters par jour : a ce
+-- rythme, « une Epique » tombe environ quatre jours sur cinq — assez souvent
+-- pour ne pas decourager, assez rarement pour valoir quelque chose.
 insert into public.quests (id, scope, metric, goal, reward, titre, detail, ordre) values
-  ('d_check',   'daily',     'checkin',        1,   20, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
-  ('d_packs',   'daily',     'packs',          3,   40, 'Trois paquets',        'Ouvre 3 boosters.', 2),
-  ('d_new',     'daily',     'new_cards',      5,   50, 'Du sang neuf',         'Trouve 5 cartes que tu n''avais pas.', 3),
-  ('d_rare',    'daily',     'rarity_R',       1,   30, 'Au moins une Rare',    'Decroche une Rare, une Epique ou une Legendaire.', 4),
+  ('d_check',   'daily',     'checkin',        1,   25, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
+  ('d_packs',   'daily',     'packs',          5,   50, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
+  ('d_epic',    'daily',     'rarity_E',       1,   75, 'Au moins une Epique',  'Decroche une Epique ou une Legendaire.', 3),
+  ('d_new',     'daily',     'new_cards',      3,   40, 'Du sang neuf',         'Trouve 3 cartes que tu n''avais pas.', 4),
   ('d_trade',   'daily',     'trades',         1,   60, 'Donnant-donnant',      'Conclus un echange avec un autre joueur.', 5),
 
+  -- Trente boosters sur les quarante-deux qu'une semaine complete rapporte :
+  -- on peut sauter deux jours et finir quand meme.
   ('w_check',   'weekly',    'checkin',        5,  200, 'Habitue de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
-  ('w_packs',   'weekly',    'packs',         20,  250, 'Ouvreur en serie',     'Ouvre 20 boosters cette semaine.', 2),
-  ('w_new',     'weekly',    'new_cards',     25,  350, 'Chasseur de vides',    'Trouve 25 cartes inedites.', 3),
-  ('w_epic',    'weekly',    'rarity_E',       3,  300, 'Triple Epique',        'Decroche 3 Epiques ou mieux.', 4),
-  ('w_trade',   'weekly',    'trades',         5,  400, 'Le marche',            'Conclus 5 echanges.', 5),
+  ('w_packs',   'weekly',    'packs',         30,  260, 'Ouvreur en serie',     'Ouvre 30 boosters cette semaine.', 2),
+  ('w_new',     'weekly',    'new_cards',     15,  320, 'Chasseur de vides',    'Trouve 15 cartes inedites.', 3),
+  ('w_epic',    'weekly',    'rarity_E',      10,  340, 'Dix Epiques',          'Decroche 10 Epiques ou mieux.', 4),
+  ('w_legend',  'weekly',    'rarity_L',       1,  420, 'Une Legendaire',       'Sors une Legendaire cette semaine.', 5),
+  ('w_trade',   'weekly',    'trades',         5,  380, 'Le marche',            'Conclus 5 echanges.', 6),
 
+  -- Saisonnieres : une seule fois, pour toujours. Elles portent les deux
+  -- cartes Promo de collection (voir 03b_promos.sql) : le palier des 90 %
+  -- donne P06, celui des 100 % donne P05.
   ('m_legend',  'milestone', 'rarity_L',       1,  500, 'Premiere Legendaire',  'Sors ta toute premiere Legendaire d''un booster.', 1),
-  ('m_col25',   'milestone', 'collection_pct',25,  300, 'Un quart du chemin',   'Possede 25 % de la collection.', 2),
-  ('m_col50',   'milestone', 'collection_pct',50,  700, 'La moitie',            'Possede 50 % de la collection.', 3),
-  ('m_col75',   'milestone', 'collection_pct',75, 1400, 'Presque complet',      'Possede 75 % de la collection.', 4),
-  ('m_col100',  'milestone', 'collection_pct',100,3000, 'Tout commence ici',    'Possede les 122 cartes de l''extension.', 5)
+  ('m_col25',   'milestone', 'collection_pct',25,  400, 'Un quart du chemin',   'Possede 25 % de la collection.', 2),
+  ('m_col50',   'milestone', 'collection_pct',50,  800, 'La moitie',            'Possede 50 % de la collection.', 3),
+  ('m_col75',   'milestone', 'collection_pct',75, 1500, 'Presque complet',      'Possede 75 % de la collection.', 4),
+  ('m_col90',   'milestone', 'collection_pct',90, 3000, 'Le Marionnettiste',    'Possede 90 % de la collection. Debloque la carte Promo P06.', 5),
+  ('m_col100',  'milestone', 'collection_pct',100,6000, 'Master Set',           'Possede les 122 cartes. Debloque la carte Promo P05.', 6),
+  ('m_packs100','milestone', 'packs',        100,  700, 'Cent paquets',         'Ouvre 100 boosters en tout.', 7),
+  ('m_packs500','milestone', 'packs',        500, 2200, 'Cinq cents paquets',   'Ouvre 500 boosters en tout.', 8),
+  ('m_trade25', 'milestone', 'trades',        25,  900, 'Negociant',            'Conclus 25 echanges en tout.', 9)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, titre = excluded.titre, detail = excluded.detail, ordre = excluded.ordre;
 
 delete from public.quests where id not in (
-  'd_check','d_packs','d_new','d_rare','d_trade',
-  'w_check','w_packs','w_new','w_epic','w_trade',
-  'm_legend','m_col25','m_col50','m_col75','m_col100');
+  'd_check','d_packs','d_epic','d_new','d_trade',
+  'w_check','w_packs','w_new','w_epic','w_legend','w_trade',
+  'm_legend','m_col25','m_col50','m_col75','m_col90','m_col100',
+  'm_packs100','m_packs500','m_trade25');
 
 -- -------------------------------------------------------------- boutique
--- effet : tickets | refill | trade_token | cosmetique
-insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, unique_buy, ordre) values
-  ('s_pack1',  'boosters',   'Un booster',          'Ajoute 1 booster a ta reserve, par-dessus le plafond.', 120, 'tickets',     1, false, 1),
-  ('s_pack5',  'boosters',   'Cinq boosters',       'Ajoute 5 boosters. Un peu moins cher a l''unite.',      550, 'tickets',     5, false, 2),
-  ('s_refill', 'boosters',   'Reserve pleine',      'Remplit la reserve et relance le compte a rebours.',     300, 'refill',      1, false, 3),
+-- effet : tickets | refill | trade_token | cosmetique | carte
+--
+-- Les boosters coutent volontairement plus qu'avant : a 120 Eclats piece,
+-- un joueur regulier doublait son rythme d'ouverture en depensant tout, et
+-- la collection se terminait en quelques semaines. A 350, l'achat reste un
+-- vrai coup de pouce sans remplacer le temps de jeu.
+insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre) values
+  ('s_pack1',  'boosters',   'Un booster',      'Ajoute 1 booster a ta reserve, par-dessus le plafond.',      350, 'tickets',     1, null, false, 1),
+  ('s_pack5',  'boosters',   'Cinq boosters',   'Cinq boosters d''un coup. Moins cher a l''unite.',          1600, 'tickets',     5, null, false, 2),
+  ('s_pack10', 'boosters',   'Dix boosters',    'Le meilleur prix a l''unite du rayon.',                     3000, 'tickets',    10, null, false, 3),
 
-  ('s_token1', 'echange',    'Jeton d''echange',     'Lance une demande sans attendre la fin du delai.',      200, 'trade_token', 1, false, 1),
-  ('s_token5', 'echange',    'Cinq jetons',         'Cinq demandes d''echange immediates.',                   900, 'trade_token', 5, false, 2),
+  ('s_token1', 'echange',    'Jeton d''echange', 'Lance une demande sans attendre la fin du delai.',           250, 'trade_token', 1, null, false, 1),
+  ('s_token5', 'echange',    'Cinq jetons',     'Cinq demandes d''echange immediates.',                       1100, 'trade_token', 5, null, false, 2),
 
-  ('f_azur',   'cosmetique', 'Cadre Azur',          'Un lisere bleu autour de ton avatar.',                   800, 'cosmetique',  1, true,  1),
-  ('f_rose',   'cosmetique', 'Cadre Rose',          'Le rose du logo, autour de ton avatar.',                 800, 'cosmetique',  1, true,  2),
-  ('f_or',     'cosmetique', 'Cadre Or',            'Dore, comme les Legendaires.',                          1500, 'cosmetique',  1, true,  3),
-  ('f_prisme', 'cosmetique', 'Cadre Prisme',        'Un cadre anime qui balaie toutes les essences.',        4000, 'cosmetique',  1, true,  4)
+  -- Les deux Promos achetables. Un mois d'epargne chacune : c'est le prix a
+  -- payer pour qu'economiser soit une decision, et non un reflexe.
+  ('s_p01',    'promo',      'Major de Paris',  'Carte Promo P01, illustree par Justice Wong & HL. Introuvable en booster.',
+                                                                                                            10000, 'carte',       1, 'p01', true, 1),
+  ('s_p02',    'promo',      'Major de Paris',  'Carte Promo P02, illustration alternative de Rexpo. Introuvable en booster.',
+                                                                                                            10000, 'carte',       1, 'p02', true, 2),
+
+  ('f_azur',   'cosmetique', 'Cadre Azur',      'Un lisere bleu autour de ton avatar.',                      1200, 'cosmetique',  1, null, true,  1),
+  ('f_rose',   'cosmetique', 'Cadre Rose',      'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique',  1, null, true,  2),
+  ('f_or',     'cosmetique', 'Cadre Or',        'Dore, comme les Legendaires.',                              2500, 'cosmetique',  1, null, true,  3),
+  ('f_prisme', 'cosmetique', 'Cadre Prisme',    'Un cadre anime qui balaie toutes les essences.',            6000, 'cosmetique',  1, null, true,  4)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
-  unique_buy = excluded.unique_buy, ordre = excluded.ordre, actif = true;
+  carte_id = excluded.carte_id, unique_buy = excluded.unique_buy,
+  ordre = excluded.ordre, actif = true;
 
 delete from public.shop_items where id not in (
-  's_pack1','s_pack5','s_refill','s_token1','s_token5',
+  's_pack1','s_pack5','s_pack10','s_token1','s_token5',
+  's_p01','s_p02',
   'f_azur','f_rose','f_or','f_prisme');
 
 
@@ -1157,6 +1353,11 @@ grant execute on function public.set_vitrine to authenticated;
 -- me() est redefinie ici pour ajouter le champ : la version de 03_rpc.sql ne le
 -- connait pas. Rejouer 03_rpc.sql apres ce fichier l'effacerait — il faut alors
 -- rejouer celui-ci, ou plus simplement recoller TOUT.sql qui les met dans l'ordre.
+-- C'est la derniere version de me() : elle ajoute la vitrine au profil, et
+-- c'est donc ici que se pose l'appel a check_promos (supabase/03b_promos.sql).
+-- Une carte Promo de palier peut etre debloquee par un echange aussi bien que
+-- par un booster : sans cet appel, elle n'arriverait qu'a la prochaine
+-- ouverture de paquet.
 create or replace function public.me() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); pr profiles;
@@ -1164,6 +1365,7 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   pr := regen_tickets(p);
   perform sync_collection_quests(p);
+  perform check_promos(p);
 
   return jsonb_build_object(
     'profil', jsonb_build_object(

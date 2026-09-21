@@ -3,18 +3,19 @@
 .packzone{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100%;width:100%;gap:4px}
 
 .setbar{position:relative;text-align:center;width:100%;max-width:520px}
-.setlogo{display:block;width:min(250px,58vw);margin:0 auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.7))}
+.setlogo{display:block;width:min(250px,58vw);margin:0 auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.7));
+  transition:padding .2s}
 .setmeta{margin:8px 0 0;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.02em}
 .edition{position:absolute;right:2%;top:2%;width:clamp(38px,11vw,52px);height:auto;rotate:8deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
 
 .packstage{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   perspective:1300px;padding:8px 0 0}
 .packglow{position:absolute;top:44%;left:50%;width:min(620px,124vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,rgba(137,54,255,.24),rgba(169,92,242,.1) 40%,transparent 68%)}
+  background:radial-gradient(circle,var(--accent-glow),transparent 64%)}
 /* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
 .pack3d{position:relative;transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
 @keyframes packbob{50%{translate:0 -10px}}
-.pack{position:relative;display:block;width:min(66vw,calc((100dvh - 420px) * .665),340px);height:auto;aspect-ratio:368/553;
+.pack{position:relative;display:block;width:min(66vw,calc((100dvh - 400px) * .665),340px);height:auto;aspect-ratio:368/553;
   touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform-style:preserve-3d;
   filter:drop-shadow(0 28px 40px rgba(0,0,0,.72));transition:filter .25s}
 .pack:active{cursor:grabbing}
@@ -24,27 +25,52 @@
   background-position:var(--fx,50%) 0}
 /* Paquet ouvrable : un halo respire derrière lui, le geste est évident sans ligne d'explication. */
 .pack.ready::after{content:'';position:absolute;inset:-8% -10%;border-radius:22px;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(137,54,255,.36),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
+  background:radial-gradient(closest-side,var(--accent-glow),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
 @keyframes packpulse{50%{opacity:.3}}
-.pack.ready:hover{filter:drop-shadow(0 28px 40px rgba(0,0,0,.72)) drop-shadow(0 0 26px rgba(169,92,242,.6))}
+.pack.ready:hover{filter:drop-shadow(0 28px 40px rgba(0,0,0,.72)) drop-shadow(0 0 26px var(--accent-glow))}
 .packshadow{width:min(190px,44vw);height:18px;margin-top:14px;border-radius:50%;flex:0 0 auto;
   background:radial-gradient(closest-side,rgba(0,0,0,.78),transparent)}
 
 /* ============ Réserve ============ */
-.packfoot{flex:0 0 auto;width:100%;max-width:390px;padding-top:14px;display:flex;flex-direction:column;gap:12px;align-items:center}
-.packrail{display:flex;gap:10px;justify-content:center;width:100%}
-.rchip{position:relative;flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;overflow:hidden;
-  background:linear-gradient(180deg,var(--surface-2),var(--surface));border-radius:999px;padding:9px 16px;
-  box-shadow:0 3px 0 #0c0810,inset 0 0 0 1px var(--line)}
-.rchip .ic{width:19px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 6px rgba(137,54,255,.45))}
-.rchip svg{width:17px;height:17px;flex:0 0 auto;color:var(--muted)}
-.rchip b{font-family:var(--display);font-weight:900;font-style:italic;font-size:17px;line-height:1;font-variant-numeric:tabular-nums}
-.rchip small{font-size:11px;font-weight:700;color:var(--muted);margin-left:-4px}
-.rchip.time b{color:var(--subtle)}
-.rchip.time.full b{color:var(--accent-soft)}
-/* Jauge de recharge : un liseré qui se remplit sous la pastille. */
-.rfill{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-soft));transition:width .9s linear}
-.rchip.time.full .rfill{background:var(--accent-soft)}
+/* Une rangée d'alvéoles, une par booster. Pleines, elles brillent ; la première
+   vide se remplit au fil de la recharge. On lit « il m'en reste trois, le
+   quatrième arrive dans deux heures » sans compter et sans lire.
+
+   Ce qu'il y avait avant : deux pastilles, un compteur et un sablier affichant
+   « Max », qu'il fallait décoder l'une après l'autre. */
+.packfoot{flex:0 0 auto;width:100%;max-width:390px;padding-top:14px;display:flex;flex-direction:column;
+  gap:13px;align-items:center}
+
+.reserve{width:100%;display:flex;flex-direction:column;align-items:center;gap:9px}
+.resjetons{display:flex;gap:7px;width:100%;max-width:320px;align-items:center;justify-content:center}
+
+.resjeton{position:relative;flex:1 1 0;height:11px;max-width:60px;border-radius:99px;overflow:hidden;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);
+  transition:box-shadow .3s,background .3s}
+/* Une alvéole pleine : un jeton de couleur, avec son reflet et son halo. */
+.resjeton.plein{background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+  box-shadow:inset 0 1px 0 var(--gloss-soft),0 0 12px var(--accent-glow);
+  animation:respop .34s cubic-bezier(.2,1.4,.4,1)}
+@keyframes respop{from{transform:scaleX(.5);opacity:.4}}
+/* L'alvéole en cours : la jauge de recharge, là où elle veut dire quelque chose. */
+.resjeton.encours::after{content:'';position:absolute;inset:0;width:var(--p,0%);border-radius:99px;
+  background:linear-gradient(90deg,var(--accent-deep),var(--accent));opacity:.85;
+  transition:width .9s linear}
+.reserve.pleine .resjeton.plein{box-shadow:inset 0 1px 0 var(--gloss-soft),0 0 16px var(--accent-glow)}
+
+.reslab{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;font-size:12.5px;
+  font-weight:700;color:var(--muted);flex-wrap:wrap}
+.reslab b{font-family:var(--display);font-weight:900;font-style:italic;font-size:17px;line-height:1;
+  color:var(--text)}
+.resmax{font-size:12px;font-weight:700;margin-left:-4px}
+.ressep{width:4px;height:4px;border-radius:50%;background:var(--line-2);flex:0 0 auto}
+.reslab svg{width:14px;height:14px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.restemps{font-weight:700}
+.reserve.pleine .reslab b{color:var(--accent-soft)}
+.reserve.illimite .resinf{width:20px;height:auto}
+.reserve.illimite .resjetons b{font-family:var(--display);font-weight:900;font-size:22px;color:var(--accent-soft)}
+
 .packbtn{max-width:340px}
 
 /* ============ Départ de l'ouverture ============ */
