@@ -101,9 +101,10 @@ const REVEAL = {
 const CONNEXION = { discord: true, email: false };
 
 /* ---------- Identité en ligne ---------- */
-/* Laisser vide tant que l'adresse finale n'est pas décidée : les balises de partage
-   se replient alors sur l'adresse courante. Sinon, mettre l'adresse complète, sans / final. */
-const SITE_URL = '';
+/* L'adresse officielle du jeu, sans barre oblique finale. Elle sert d'adresse de
+   retour après un détour par Discord — sauf en développement, où le retour se fait
+   sur la machine locale (voir retourURL() dans js/backend.js). */
+const SITE_URL = 'https://matetcg.com';
 
 /* ---------- Économie ---------- */
 const MONNAIE = { nom: 'Éclats', un: 'Éclat' };

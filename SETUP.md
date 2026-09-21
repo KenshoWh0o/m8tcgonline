@@ -257,6 +257,76 @@ avant tout le reste, c'est l'envoi des courriels — voir l'étape 5.
 
 ---
 
+## Brancher un nom de domaine
+
+Le jeu fonctionne sans. Cette section sert le jour où tu veux une vraie adresse.
+
+### 1. Chez ton registrar (exemple : Namecheap)
+
+*Domain List* › **Manage** › onglet **Advanced DNS**.
+
+**D'abord, supprime les enregistrements de parking** que le registrar a posés tout
+seul — sans ça, les tiens n'auront aucun effet :
+
+- `A Record` `@` vers une adresse du registrar
+- `CNAME Record` `www` vers `parkingpage.namecheap.com`
+- toute `URL Redirect Record`
+
+Un `TXT` de courrier (`v=spf1 …`) peut rester : il ne gêne pas le site.
+
+**Puis ajoute ces cinq lignes :**
+
+| Type | Host | Value | TTL |
+|---|---|---|---|
+| A Record | `@` | `185.199.108.153` | Automatic |
+| A Record | `@` | `185.199.109.153` | Automatic |
+| A Record | `@` | `185.199.110.153` | Automatic |
+| A Record | `@` | `185.199.111.153` | Automatic |
+| CNAME Record | `www` | `kenshowh0o.github.io.` | Automatic |
+
+Les quatre adresses sont celles de GitHub Pages, identiques pour tout le monde. Le
+`CNAME` du `www` renvoie vers ton compte GitHub, pas vers ton dépôt.
+
+Compte de quelques minutes à quelques heures avant que ça circule.
+
+### 2. Sur GitHub
+
+*Settings* › **Pages** › **Custom domain** : ton domaine, puis **Save**. GitHub
+vérifie le DNS ; tant qu'il n'est pas propagé, il affiche une erreur — c'est normal,
+il suffit de revenir plus tard.
+
+Une fois la vérification passée, coche **Enforce HTTPS**. La case peut rester grisée
+jusqu'à une heure, le temps que le certificat soit émis.
+
+GitHub ajoute alors un fichier `CNAME` à la racine du dépôt : c'est lui qui retient le
+domaine, **ne le supprime pas**.
+
+### 3. Dans Supabase
+
+*Authentication* › **URL Configuration** :
+
+- **Site URL** : `https://tondomaine.com`
+- **Redirect URLs** : ajoute `https://tondomaine.com/**` et
+  `https://www.tondomaine.com/**`. Garde l'ancienne adresse GitHub pendant la
+  transition, et `http://localhost:8765/**` pour développer.
+
+### 4. Dans le jeu
+
+Renseigne `SITE_URL` en haut de `js/config.js`, et mets à jour les balises de partage
+en haut de `index.html` (`og:url`, `og:image`, `twitter:image`, `canonical`) : Discord
+et Twitter veulent des adresses complètes pour l'image d'aperçu, un chemin relatif ne
+suffit pas toujours.
+
+`SITE_URL` ne s'applique pas sur `localhost` ni sur `*.github.io` : la connexion
+Discord continue de revenir là d'où tu es parti quand tu développes.
+
+### Rien à changer côté Discord
+
+L'adresse de retour de Discord pointe vers Supabase, pas vers ton site. Elle ne bouge
+pas quand tu changes de domaine.
+
+---
+
 ## Après : régler le jeu sans rien redéployer
 
 Tout ce qui touche à l'équilibrage vit sur le serveur. Tu le modifies dans le **SQL
@@ -298,3 +368,5 @@ sortiront jamais d'un booster.
 | Les boosters ne donnent que des communes | La liste de cartes du serveur est en retard : voir « Quand tu ajoutes une carte ». |
 | « Ce pseudo est déjà pris » | Il l'est vraiment (les majuscules ne comptent pas), ou il sort de 3 à 16 caractères : lettres, chiffres, point, tiret, souligné. |
 | Le site n'a pas changé après un `git push` | GitHub Pages met une à deux minutes. Ensuite, recharge en forçant : `Cmd+Shift+R`. |
+| Le domaine perso affiche la page de parking du registrar | Ses enregistrements de parking n'ont pas été supprimés : ils passent avant les tiens. |
+| GitHub refuse le domaine : « DNS check unsuccessful » | Le DNS n'a pas fini de circuler. Réessaie dans une heure. |

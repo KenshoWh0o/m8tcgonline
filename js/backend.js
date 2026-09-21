@@ -290,9 +290,15 @@ Backend.signOut = async function () {
   await Backend.sb.auth.signOut();
 };
 
-/* L'adresse où revenir après un courriel de confirmation ou un détour par Discord. */
+/* L'adresse où revenir après un détour par Discord.
+   En développement — sur la machine locale ou sur une adresse de test — on revient
+   là d'où l'on vient, sinon impossible d'essayer la connexion ailleurs que sur le
+   site en ligne. Partout ailleurs, l'adresse officielle : ça évite qu'un visiteur
+   arrivé par www. ou par l'ancienne adresse GitHub reste coincé dessus. */
 function retourURL() {
-  if (SITE_URL) return SITE_URL + '/';
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)
+    || location.hostname.endsWith('.github.io');
+  if (SITE_URL && !local) return SITE_URL + '/';
   return location.origin + location.pathname;
 }
 
