@@ -4,8 +4,10 @@
    magenta du relief, rose pâle du lettrage. Tout le reste en découle. */
 :root{
   box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  /* Aucune réserve d'encoche ici : la page occupe tout l'écran, et ce sont
+     l'en-tête et la barre du bas qui étendent leur fond sous le statut et
+     sous la barre d'accueil de l'iPhone. C'est ce que font les vraies
+     applications — et ça évite la bande noire sous la barre du bas. */
 
   /* Fonds : noir teinté prune, pour s'accorder au rose sans virer au gris froid */
   --bg:#0c0910;

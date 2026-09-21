@@ -302,6 +302,11 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   .top{grid-area:top;padding:12px 26px}
   #nav{grid-area:nav}
   main{grid-area:main}
+
+  /* Porte d'entrée : ni en-tête ni rail, donc une seule zone — sinon la colonne
+     du rail reste réservée et l'écran de connexion se retrouve décentré. */
+  body.inauth{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
+    grid-template-areas:"main"}
   #brand img{height:44px}
 
   /* Le rail passe à droite : sous la main qui tient la souris, et à l'opposé

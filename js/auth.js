@@ -87,15 +87,10 @@ function vAuth() {
              <button class="linkbtn" data-auth="vers-connexion">J'ai déjà un compte</button>`
           : ''}
       </div>
-      ${CONNEXION.discord && !CONNEXION.email
-        ? `<p class="muted small">Un seul clic : ni adresse à taper, ni mot de passe à
-             retenir, ni courriel à attendre. Ton pseudo et ton avatar Discord te suivent,
-             et tu pourras les changer ensuite.</p>`
-        : ''}
       <div class="authsep"><span>ou</span></div>
       <button class="linkbtn" data-auth="hors-ligne">Jouer sans compte sur cet appareil</button>
-      <p class="muted small">Sans compte, la progression reste dans ce navigateur
-        et les échanges ne sont pas disponibles.</p>`;
+      <p class="muted small">Sans compte, la progression est temporaire et l'accès
+        aux fonctionnalités est restreint.</p>`;
   }
 
   return `<div class="authwrap"><div class="authcard">

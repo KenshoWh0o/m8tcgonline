@@ -14,8 +14,8 @@ function vCombats() {
       </div>
       <span class="soontag">Bientôt disponible</span>
       <h2 class="soontitle">Coming soon</h2>
-      <p class="muted">Les règles du jeu de combat sont encore en écriture.
-        Cet onglet ouvrira quand elles seront prêtes.</p>
+      <p class="muted">Le mode combat arrivera dans une prochaine mise à jour,
+        lorsque les règles seront connues.</p>
       <p class="muted small">En attendant, remplis ta collection : elle servira de deck.</p>
     </section>`;
 }

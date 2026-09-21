@@ -313,6 +313,7 @@ $('#sheet').addEventListener('click', clicPage);
 
 /* ---------- En-tête cliquable ---------- */
 $('.top').addEventListener('click', e => {
+  if (e.target.closest('#brand')) return aller('boosters');
   if (e.target.closest('#moi')) return basculerTiroir();
   if (e.target.closest('#btn-install')) return ouvrirInstall(true);
   if (e.target.closest('#ec')) return aller('boutique');
