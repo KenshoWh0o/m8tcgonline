@@ -49,6 +49,7 @@ mate-tcg-online/
 │   └── og-image.png    Image affichée quand le lien du site est partagé (générée)
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
+│   ├── code-porte.py   Calcule l'empreinte d'un code d'accès
 │   └── gen-icons.py    Régénère icônes, favicons et image de partage
 ├── supabase/           Tout le code serveur : tables, sécurité, actions du jeu
 │   ├── TOUT.sql        Les quatre fichiers ci-dessous, en un seul (assemblé)
@@ -80,6 +81,7 @@ mate-tcg-online/
 │   ├── render-card.js  Affichage d'une carte
 │   ├── ui.js           Fenêtre modale, avatars, petits blocs répétés
 │   ├── backend.js      Un seul jeu d'appels, deux implantations (local / en ligne)
+│   ├── gate.js         Écran d'attente et code d'accès
 │   ├── auth.js         Écran de connexion et création de compte
 │   ├── fx.js           Particules
 │   ├── booster.js      Réserve, composition d'un booster, écran du paquet en 3D
@@ -117,6 +119,8 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Changer le nombre de boosters gratuits ou le délai | **en ligne :** `cfg()` dans `supabase/01_schema.sql` · **hors ligne :** `TICKET_CAP`, `INTERVAL` dans `js/config.js` |
 | Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
+| Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
+| Changer le code d'accès | `python3 tools/code-porte.py "NouveauCode"` |
 | Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
 | Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
@@ -296,6 +300,33 @@ Le service worker sert le code par le réseau d'abord (les corrections arrivent 
 `assets/favicon.svg` est écrit à la main et reste net à toutes les tailles ; les PNG sont là pour les navigateurs qui n'acceptent pas le SVG, et pour l'icône d'iPhone qui l'exige.
 
 Les balises de partage (Open Graph et Twitter Card) sont en haut de `index.html`. Elles pointent en relatif, ce qui marche partout ; si tu prends un vrai domaine, renseigne `SITE_URL` dans `js/config.js` — il sert aussi d'adresse de retour après un courriel de confirmation ou un détour par Discord.
+
+## Écran d'attente
+
+Le site peut rester fermé au public tout en étant en ligne : `PORTE.active` dans
+`js/gate.js`. Les visiteurs voient un paquet qui flotte, « Bientôt disponible », et un
+champ de code replié ; le reste du jeu n'est même pas initialisé — ni service worker, ni
+appel au serveur.
+
+Le code n'est pas écrit dans le fichier : seule son **empreinte SHA-256 salée** l'est,
+pour qu'on ne le trouve pas en clair en lisant la page. Pour en changer :
+
+```bash
+python3 tools/code-porte.py "NouveauCode"
+```
+
+puis recopier la ligne `empreinte:` obtenue. Les personnes qui avaient l'ancien code
+devront ressaisir le nouveau.
+
+`PORTE.lancement` accepte une date ISO (`'2026-10-15T18:00:00+02:00'`) : un compte à
+rebours s'affiche alors tout seul. Laissé à `null`, on annonce seulement « bientôt ».
+
+> **Ce que cette porte fait, et ce qu'elle ne fait pas.** Elle empêche d'arriver par
+> hasard sur le jeu, et permet de faire circuler le lien sans tout dévoiler. Elle
+> n'empêche pas quelqu'un de décidé d'ouvrir le code de la page et de passer outre : sur
+> un site statique, les fichiers sont téléchargeables par nature. Ce qui est réellement
+> protégé, ce sont les comptes et les collections — ils vivent sur le serveur, derrière
+> ses propres règles.
 
 ## Administrateurs
 

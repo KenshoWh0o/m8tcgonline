@@ -161,7 +161,16 @@ const VUES = {
 };
 
 function render() {
-  /* La porte d'entrée remplace tout : ni en-tête ni barre du bas. */
+  /* L'écran d'attente passe avant tout le reste : tant qu'il est là, le jeu
+     n'existe pas pour le visiteur. */
+  if (!porteOuverte()) {
+    document.body.className = 'inlock';
+    $('#main').innerHTML = vPorte();
+    bindPorte();
+    return;
+  }
+
+  /* La porte de connexion remplace tout : ni en-tête ni barre du bas. */
   const porte = porteVisible();
   document.body.classList.toggle('inauth', porte);
   if (porte) {
@@ -259,6 +268,7 @@ async function clicPage(e) {
   switch (d.act) {
     case 'open': return openBooster();
     case 'connexion': return ouvrirConnexion();
+    case 'porte-ok': return porteEssayer();
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
     case 'pf-carte': return ouvrirChoixAvatar();
@@ -386,8 +396,12 @@ addEventListener('visibilitychange', () => {
   brand();
   rollPack();
   poserRM(reglageRM());
-  brancherSW();
 
+  /* Porte fermée : on s'arrête là. Pas de service worker, pas d'appel au
+     serveur — un visiteur qui n'a pas le code ne déclenche rien du tout. */
+  if (!porteOuverte()) return render();
+
+  brancherSW();
   await Backend.init();
 
   if (Backend.mode === 'cloud') {

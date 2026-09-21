@@ -10,9 +10,9 @@ const VUES_EMAIL = ['inscription', 'connexion', 'oubli', 'confirme'];
 let authMail = '';
 let authErr = '';
 
-const PORTE_CLE = 'mtcg.horsligne';
-const veutHorsLigne = () => { try { return localStorage.getItem(PORTE_CLE) === '1'; } catch (e) { return false; } };
-const noterHorsLigne = v => { try { localStorage.setItem(PORTE_CLE, v ? '1' : '0'); } catch (e) { /* mode privé */ } };
+const HORSLIGNE_CLE = 'mtcg.horsligne';
+const veutHorsLigne = () => { try { return localStorage.getItem(HORSLIGNE_CLE) === '1'; } catch (e) { return false; } };
+const noterHorsLigne = v => { try { localStorage.setItem(HORSLIGNE_CLE, v ? '1' : '0'); } catch (e) { /* mode privé */ } };
 
 /* On montre la porte d'entrée si un compte est possible, qu'on n'en a pas,
    et qu'on n'a pas déjà choisi de jouer sans. */

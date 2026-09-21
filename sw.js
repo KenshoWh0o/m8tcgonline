@@ -7,7 +7,7 @@
    Rien de ce qui touche au compte n'est mis en cache. */
 "use strict";
 
-const VERSION = 'mtcg-v2.2.0';
+const VERSION = 'mtcg-v2.3.0';
 const COQUILLE = VERSION + '-coquille';
 const MEDIAS = VERSION + '-medias';
 
@@ -18,7 +18,7 @@ const ESSENTIEL = [
   'css/opening.css', 'css/viewer.css', 'css/lab.css', 'css/auth.css', 'css/hub.css',
   'js/config.js', 'js/supabase-config.js', 'js/utils.js', 'js/sfx.js', 'js/cards-data.js',
   'js/cards.js', 'js/storage.js', 'js/render-card.js', 'js/ui.js', 'js/backend.js',
-  'js/auth.js', 'js/fx.js', 'js/booster.js', 'js/opening.js', 'js/collection.js',
+  'js/gate.js', 'js/auth.js', 'js/fx.js', 'js/booster.js', 'js/opening.js', 'js/collection.js',
   'js/viewer.js', 'js/trade.js', 'js/social.js', 'js/quests.js', 'js/shop.js', 'js/battle.js',
   'js/profile.js', 'js/settings.js', 'js/pwa.js', 'js/lab.js', 'js/app.js',
   'assets/logo-m8.webp', 'assets/card-back.webp', 'assets/pack-star.svg',
