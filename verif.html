@@ -70,7 +70,7 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
 <script src="js/supabase-config.js"></script>
 <script>
 "use strict";
@@ -104,7 +104,8 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     poser({ etat: 'ko', titre: 'Les deux clés ne sont pas encore renseignées',
       detail: 'Le jeu fonctionne, mais en mode hors ligne : la progression reste dans ce navigateur, sans compte ni échanges.',
       faire: `Ouvre <code>js/supabase-config.js</code> et colle-y le <b>Project URL</b> et la clé
-        <b>anon public</b>, que Supabase affiche dans <b>Settings › API</b>.
+        <b>Publishable key</b> (ou <b>anon public</b> sur les projets plus anciens),
+        que Supabase affiche dans <b>Settings › API</b>.
         Étapes 1 à 3 de <code>SETUP.md</code>.` });
     return conclure();
   }
@@ -116,10 +117,14 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     poser({ etat: 'ok', titre: 'Les deux clés sont en place',
       detail: `Projet <code>${E(url)}</code>.` });
   }
-  if (cle.startsWith('eyJ') && cle.includes('service_role')) {
-    poser({ etat: 'ko', titre: 'Mauvaise clé : c’est la clé service_role',
-      detail: 'Cette clé contourne toutes les sécurités, et ce fichier est visible par tout le monde.',
-      faire: 'Remplace-la tout de suite par la clé <b>anon public</b>, puis dans Supabase, <b>Settings › API › Reset</b> la clé service_role.' });
+  /* Les deux formats de clé secrète : le nouveau (sb_secret_…) et l'ancien (un
+     jeton JWT dont la charge utile contient « service_role »). */
+  if (cle.startsWith('sb_secret_') || (cle.startsWith('eyJ') && cle.includes('service_role'))) {
+    poser({ etat: 'ko', titre: 'Mauvaise clé : c’est la clé SECRÈTE',
+      detail: 'Elle contourne toutes les sécurités, et ce fichier part en ligne avec le site : n’importe qui pourrait lire et modifier toute la base.',
+      faire: `Remplace-la par la clé publique (<b>Publishable key</b> ou <b>anon public</b>),
+        puis <b>révoque la clé secrète</b> dans Supabase › <b>Settings › API Keys</b> : tant
+        qu'elle n'est pas révoquée, elle reste valable.` });
   }
 
   /* ---- 2. Le projet répond ---- */

@@ -80,22 +80,34 @@ doublons.
 1. Dans Supabase, colonne de gauche, tout en bas : **Settings** (la roue dentée).
 2. Clique **API**.
 3. Tu vois deux choses à copier :
-   - **Project URL** — ressemble à `https://abcdefgh.supabase.co`
-   - **Project API keys → `anon` `public`** — une très longue suite de caractères qui
-     commence par `eyJ`
+   - **Project URL** — ressemble à `https://abcdefgh.supabase.co`.
+     Si Supabase t'affiche plutôt une adresse finissant par `/rest/v1/`, **enlève cette
+     partie** : on ne garde que jusqu'au `.co`.
+   - **La clé publique.** Selon l'âge du projet, elle s'appelle :
+     - **Publishable key**, et commence par `sb_publishable_` *(projets récents)*
+     - ou **`anon` `public`**, et commence par `eyJ` *(projets plus anciens)*
+
+     Les deux se collent au même endroit, ça ne change rien.
 4. Ouvre le fichier **`js/supabase-config.js`** du dossier du jeu et colle les deux valeurs
    entre les apostrophes :
 
 ```js
 const SUPABASE_URL = 'https://abcdefgh.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6...';
+const SUPABASE_ANON_KEY = 'sb_publishable_xxxxxxxxxxxxxxxx';
 ```
 
 5. Recharge `http://localhost:8765`. **L'écran de connexion doit apparaître.**
 
-> ⚠️ **Ne copie jamais la clé `service_role`.** Elle est juste en dessous, et elle
-> contourne toutes les sécurités. La clé `anon` est faite pour être publique ; l'autre
-> non. La page `verif.html` te prévient si tu te trompes.
+> ⚠️ **Ne copie jamais la clé secrète.** Elle est juste en dessous, et s'appelle
+> **Secret key** (`sb_secret_…`) ou **`service_role`** (`eyJ…`). Elle contourne toutes les
+> sécurités, et ce fichier part en ligne avec le site. La clé publique, elle, est faite
+> pour être publique : elle n'ouvre que ce que les règles autorisent.
+>
+> **Si tu as exposé une clé secrète par accident** (collée dans un fichier, un message, une
+> capture d'écran) : Supabase › **Settings › API Keys**, et révoque-la. Tant qu'elle n'est
+> pas révoquée, elle reste valable pour qui la possède.
+>
+> La page `verif.html` te prévient si tu te trompes de clé.
 
 **Va voir `http://localhost:8765/verif.html`** : les trois premiers points doivent être
 verts.
