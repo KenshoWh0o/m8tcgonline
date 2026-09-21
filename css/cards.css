@@ -25,10 +25,15 @@
 /* Un emplacement vide : discret, mais son numéro doit rester lisible — c'est
    lui qui dit quelle carte manque. En `--line-2`, il tombait sous 1,5:1 de
    contraste en thème clair, c'est-à-dire nulle part. */
-.card.ghost-card{position:relative;border:0;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);
+/* Un emplacement vide : un creux, pas un objet. Un cadre en retrait, un fond
+   légèrement plus sombre que la page, et le numéro au centre — rien d'autre.
+   L'étincelle rose qu'on y posait avant faisait briller le manque. */
+.card.ghost-card{position:relative;border:0;
+  background:linear-gradient(180deg,var(--bg-2),var(--bg));
+  box-shadow:inset 0 0 0 1px var(--line);
   display:flex;align-items:center;justify-content:center;color:var(--line-3);
-  font-family:var(--display);font-weight:900;font-style:italic;font-size:11cqi}
-.card.ghost-card img{position:absolute;width:34%;opacity:.12}
+  font-family:var(--display);font-weight:900;font-style:italic;font-size:10cqi;
+  letter-spacing:.02em}
 .card.ghost-card span{position:relative}
 
 /* Symboles d'essence */
@@ -95,7 +100,8 @@
 .rarchip.rR{--rc:var(--r-r)}.rarchip.rE{--rc:var(--r-e)}.rarchip.rL{--rc:var(--r-l)}
 .rarchip.rPR{--rc:var(--r-pr)}
 
-.essrow{display:flex;gap:6px;overflow-x:auto;padding:0 0 14px;scrollbar-width:none}
+.essrow{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  touch-action:pan-x;padding:0 0 14px;scrollbar-width:none}
 .essrow::-webkit-scrollbar{display:none}
 .essrow button{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--subtle);
   padding:6px 12px 6px 9px;border-radius:999px;font-size:12px;font-weight:700;transition:background .14s,border-color .14s,color .14s}
@@ -114,19 +120,20 @@ button.gcell:hover{transform:translateY(-3px)}
 
 /* ============ Secrets (à venir) ============ */
 /* Même emplacement vide que les autres : on n'ajoute que le reflet qui balaie la carte. */
-.card.ghost-card.secret-card{overflow:hidden;background:linear-gradient(165deg,var(--surface-3),var(--bg-2) 58%,var(--surface-2));
+.card.ghost-card.secret-card{overflow:hidden;
+  background:linear-gradient(165deg,var(--surface-3),var(--bg-2) 58%,var(--surface-2));
   box-shadow:inset 0 0 0 1px var(--line-2)}
-.card.ghost-card.secret-card::before{content:'';position:absolute;inset:0;opacity:.55;
-  background:linear-gradient(115deg,transparent 26%,rgba(169,92,242,.4) 44%,rgba(223,109,232,.3) 55%,transparent 72%);
+.card.ghost-card.secret-card::before{content:'';position:absolute;inset:0;opacity:.4;
+  background:linear-gradient(115deg,transparent 26%,rgba(169,92,242,.36) 44%,rgba(223,109,232,.26) 55%,transparent 72%);
   background-size:260% 100%;animation:holo 5.5s linear infinite}
 /* La couleur d'une rareté, utilisable partout où on la nomme. */
 .rES{color:var(--r-es)}.rC{color:var(--r-c)}.rPC{color:var(--r-pc)}
 .rR{color:var(--r-r)}.rE{color:var(--r-e)}.rL{color:var(--r-l)}.rPR{color:var(--r-pr)}
 
-/* Une carte Promo porte un liseré rose : dans une grille, on la repère avant
-   d'avoir lu son numéro. */
-.card.r-PR{box-shadow:inset 0 0 0 2px var(--r-pr),0 0 18px rgba(255,91,176,.28)}
+/* Une carte Promo a déjà son propre cadre imprimé. Lui ajouter un liseré rose,
+   c'était deux bords qui se disputaient le même millimètre. Il ne lui reste que
+   le reflet holographique, comme aux épiques et aux légendaires. */
 .card.r-PR::after{content:'';position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.3) 34%,rgba(255,91,176,.26) 46%,rgba(169,92,242,.22) 56%,transparent 70%);
+  background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.3) 34%,rgba(255,91,176,.24) 46%,rgba(169,92,242,.2) 56%,transparent 70%);
   background-size:260% 100%;background-position:40% 0}
 .stack .card.r-PR::after,.pr-face .card.r-PR::after{animation:holo 3.4s linear infinite}

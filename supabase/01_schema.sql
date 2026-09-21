@@ -139,9 +139,9 @@ language sql immutable as $$
     when 'trade_cooldown_h'  then 10         -- un echange gratuit toutes les 10 h
     when 'shards_per_dup'    then 0
     -- Le palier de collection qui accorde la carte Promo « palier ».
-    -- 90 et non 50 : la moitie de l'extension se fait en une dizaine de
-    -- paquets, une recompense decrochee le deuxieme jour n'en est pas une.
-    when 'promo_palier_pct'  then 90
+    -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
+    -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
+    when 'promo_palier_pct'  then 75
   end;
 $$;
 

@@ -82,6 +82,13 @@ function montrerPromo(c) {
   requestAnimationFrame(() => sc && sc.classList.add('go'));
 
   setTimeout(() => { if (document.body.contains(sc)) SFX.jouer('retourne'); }, 780);
+
+  /* Le quart de tour. L'animation `pr-come` fait 1150 ms : la carte arrive de
+     dos jusqu'à 52 %, puis pivote de 180° à 360°. Elle est donc sur la tranche
+     à 76 %, soit 874 ms — c'est là, et seulement là, qu'on échange les deux
+     faces sans que ça se voie. */
+  setTimeout(() => { if (document.body.contains(sc)) sc.classList.add('retourne'); }, 874);
+
   setTimeout(() => {
     if (!document.body.contains(sc)) return;
     sc.classList.add('face');

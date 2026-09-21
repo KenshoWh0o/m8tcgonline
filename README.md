@@ -122,6 +122,9 @@ Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `i
 | Ajouter ou modifier une carte Promo | `js/promos-data.js` (+ l'image dans `cards/promos/`) **et** `supabase/03b_promos.sql` |
 | Changer le palier qui donne une Promo | `PROMO_PALIER` dans `js/config.js` **et** `cfg('promo_palier_pct')` dans `supabase/01_schema.sql` |
 | Changer le thème par défaut | `poserTheme()` dans `js/settings.js` ; les deux palettes sont dans `css/tokens.css` |
+| Annoncer une Promo pas encore livrée | `PROMOS_A_VENIR` dans `js/config.js` |
+| Refaire les visuels de promotion | `python3 tools/kit-presse.py` — voir `presse/README.md` |
+| **Remettre à zéro tous les joueurs** | `supabase/10_reset-tout.sql` |
 | Régler la durée ou les particules d'une révélation | `js/config.js` (`REVEAL`) |
 | Modifier l'animation de déchirure du paquet | `showRip()` dans `js/opening.js` + bloc `Déchirure` de `css/booster.css` |
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
@@ -326,7 +329,11 @@ Objectifs, récompenses, articles et prix sont tous dans `supabase/04_seed.sql`.
 
 Une quête qui se termine se signale **deux fois**, et jamais en travers du chemin : une carte passe en haut de l'écran pendant quatre secondes (`notifQuete()`, `js/quests.js`), puis la pastille de l'onglet prend le relais et reste tant qu'il y a une récompense à encaisser. C'est `Backend.apply()` qui les repère, en comparant l'état reçu du serveur au précédent.
 
-**La boutique a deux rayons** — Cartes et Cosmétiques — et un étal plutôt qu'une liste : on voit l'objet avant son libellé. Un achat demande **toujours deux gestes**, ouvrir la fiche puis confirmer, avec le solde restant affiché avant de payer. Un article à 10 000 Éclats ne doit jamais partir sur un doigt posé de travers.
+**La boutique a deux rayons** — Cartes et Cosmétiques — et un étal plutôt qu'une liste : on voit l'objet avant son libellé. Un achat demande **toujours deux gestes**, ouvrir la fiche puis confirmer, avec le solde restant affiché avant de payer. Un article à 5 000 Éclats ne doit jamais partir sur un doigt posé de travers.
+
+**Et sur la fiche, on manipule ce qu'on achète.** Le paquet tourne sous le doigt, un lot s'ouvre en éventail — cinq paquets pour un lot de cinq —, la carte Promo se retourne recto-verso, le jeton s'empile. On n'achète pas une icône. La bascule recto-verso ne se fie pas à `backface-visibility` : la propriété ne s'hérite pas, et la carte imbriquée se retrouvait dessinée en miroir. On échange les deux faces au quart de tour exact, quand la carte est sur la tranche et que l'échange ne se voit pas.
+
+**Les remises sont calculées, pas décrétées.** « −14 % » se vérifie contre le prix à l'unité du même rayon ; « éco » se croyait sur parole.
 
 ## Les cartes Promo
 
@@ -334,16 +341,21 @@ Quatre cartes hors extension. Elles ne sortent d'aucun booster, ne comptent pas 
 
 | Carte | Comment l'obtenir |
 |---|---|
-| **P01** Major de Paris | Boutique, 10 000 Éclats |
-| **P02** Major de Paris *(illustration alternative)* | Boutique, 10 000 Éclats |
-| **P06** Le Marionnettiste | 90 % de la collection |
+| **P01** Major de Paris | Boutique, 5 000 Éclats |
+| **P02** Major de Paris *(illustration alternative)* | Boutique, 5 000 Éclats |
+| **P03**, **P04** | *À venir* — leur emplacement est déjà dans la grille |
+| **P06** Le Marionnettiste | 75 % de la collection |
 | **P05** Tout Commence Ici | Master Set complet (les 122 cartes) |
+
+Les deux paliers ne donnent **que** la carte, zéro Éclat. Une récompense qui paie deux fois dilue les deux : on se souvient d'avoir débloqué la carte, pas d'avoir touché six mille Éclats en même temps. Même chose pour les 500 boosters, qui donnent le **Cadre Sceau** — le seul objet du jeu qu'aucune boutique ne vend.
 
 Elles vivent dans `promos`, jamais dans `cards` : c'est ce qui garantit que « 122 » reste 122 partout, et que le pourcentage de collection ne bouge pas quand on en ajoute une. Côté serveur, la colonne `cards.promo` les exclut du tirage (`pick_card`) et du calcul d'avancement (`sync_collection_quests`).
 
 Les deux cartes de palier sont accordées par `check_promos()` (`supabase/03b_promos.sql`), appelée depuis `me()` et `open_pack()`. L'insertion est idempotente : une carte déjà possédée n'est pas redonnée, sinon le compteur d'exemplaires grimperait tout seul à chaque rafraîchissement.
 
-> **Pourquoi 90 % et non 50 %.** La moitié de l'extension se fait en une dizaine de paquets, c'est-à-dire le deuxième jour. Une récompense décrochée le deuxième jour n'en est pas une. À 90 % il faut une quinzaine de jours de jeu régulier, et ça laisse les 100 % comme dernier sommet.
+> **Pourquoi 75 % et non 50 %.** La moitié de l'extension se fait en une dizaine de paquets, c'est-à-dire le deuxième jour. Une récompense décrochée le deuxième jour n'en est pas une. À 75 % il faut une bonne semaine de jeu régulier, et ça laisse les 100 % — cent dix jours — comme dernier sommet.
+
+> **Pourquoi des emplacements pour P03 et P04.** Une série se lit entière ou pas du tout : un trou entre P02 et P05 se lirait comme un bug plutôt que comme une suite à venir. Les deux cases portent « Coming soon… », et le compteur affiche bien `/ 6`. La liste est dans `PROMOS_A_VENIR` (`js/config.js`) : le jour où les images arrivent, on déplace la ligne vers `js/promos-data.js`.
 
 **L'obtention a sa propre scène** (`js/promos.js`, `css/promo.css`) : la carte arrive de loin, dos tourné, se retourne, et le nom tombe. Rien à toucher avant la fin — le bouton ne devient cliquable qu'une fois la carte révélée, sinon un doigt posé au hasard fermait la scène avant le retournement. La détection suit le même principe que les quêtes : on compare deux états successifs envoyés par le serveur, et une file d'attente enchaîne les cartes si plusieurs tombent ensemble.
 
@@ -421,6 +433,36 @@ rebours s'affiche alors tout seul. Laissé à `null`, on annonce seulement « bi
 > un site statique, les fichiers sont téléchargeables par nature. Ce qui est réellement
 > protégé, ce sont les comptes et les collections — ils vivent sur le serveur, derrière
 > ses propres règles.
+
+## Remettre les compteurs à zéro
+
+Deux fichiers, deux portées. Aucun des deux ne touche aux comptes eux-mêmes :
+personne n'a jamais à se réinscrire.
+
+| Fichier | Pour qui | Ce qu'il efface |
+|---|---|---|
+| `supabase/08_reset-profil.sql` | **un** joueur | sa collection, ses Éclats, ses quêtes, ses compteurs |
+| `supabase/10_reset-tout.sql` | **tout le monde** | la même chose, pour tous les comptes |
+
+Le second est celui du jour du lancement, quand la période de test se termine et
+que tout le monde doit repartir du même point. Il demande une confirmation écrite
+dans le fichier avant de s'exécuter : tant qu'on n'a pas remplacé une ligne à la
+main, la requête refuse de tourner. Ce n'est pas un fichier qu'on joue par accident
+en le collant trop vite.
+
+Ce qu'il garde : les comptes, les pseudos, les listes d'amis, les droits
+d'administrateur. Ce qu'il remet à neuf : la réserve repart pleine, donc tout le
+monde ouvre cinq boosters le jour de l'ouverture.
+
+> Le cadre porté revient à « aucun », et un avatar qui pointait vers une carte
+> revient à l'étoile. Sans ça, `set_profile()` refuserait ensuite un cadre ou une
+> carte qu'on ne possède plus, et le joueur se retrouverait avec un profil qu'il
+> ne peut plus modifier.
+
+Les codes d'accès distribués pendant les tests, eux, continuent de marcher. Pour
+les invalider : `python3 tools/code-porte.py "NouveauCode"`. Le navigateur de
+chaque testeur garde l'ancienne empreinte, qui ne correspondra plus — ils
+repasseront par l'écran d'attente.
 
 ## Administrateurs
 

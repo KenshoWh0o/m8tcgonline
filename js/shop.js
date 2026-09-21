@@ -3,14 +3,18 @@
 
    Deux rayons, et un étal plutôt qu'une liste : on voit l'objet avant son
    libellé. Un achat demande toujours deux gestes — on ouvre la fiche, on
-   confirme — parce qu'un article à 10 000 Éclats ne doit jamais partir sur un
-   doigt posé de travers. */
+   confirme — parce qu'un article à 5 000 Éclats ne doit jamais partir sur un
+   doigt posé de travers.
+
+   Et sur la fiche, on manipule ce qu'on achète : le paquet tourne sous le
+   doigt, les lots se montrent en éventail, la carte Promo se regarde sous
+   toutes ses faces. On n'achète pas une icône. */
 "use strict";
 
 /* Les deux rayons, dans l'ordre des sous-onglets. `categs` dit quelles
    catégories du serveur atterrissent dans chacun : la boutique côté serveur en
-   compte trois, mais « boosters » et « échange » sont la même idée pour le
-   joueur — ce qui sert à jouer. */
+   compte quatre, mais « ce qui sert à jouer » et « ce qui décore » sont les
+   deux seules distinctions qui comptent pour le joueur. */
 const RAYONS = [
   { id: 'cartes', titre: 'Cartes', categs: ['boosters', 'echange', 'promo'],
     sous: 'De quoi ouvrir, échanger, et compléter.' },
@@ -20,37 +24,36 @@ const RAYONS = [
 
 let shopVue = 'cartes';
 
-/* Ce qui s'affiche dans la vignette, selon ce qu'on vend. Un booster montre un
-   booster, une carte montre la carte : personne n'achète une icône. */
+/* La carte vendue par un article, quand il en vend une. */
+const carteDe = it => byId[it.carte_id] || byId[it.montant_id] || null;
+
+/* ---------- Les vignettes du rayon ---------- */
+/* Ce qu'on voit dans la case : l'objet, en grand. Un booster montre un booster,
+   une carte montre la carte, un jeton montre le jeton — celui qui est frappé
+   du M8, pas une flèche dessinée au trait. */
 function vArticleArt(it) {
-  if (it.effet === 'carte') {
-    const c = byId[it.montant_id] || byId[it.detail_id];
-    if (c) return renderCard(c);
-  }
+  const c = carteDe(it);
+  if (c) return renderCard(c);
   if (FRAMES[it.id]) return avatarHTML(save.avatar, it.id, 'lg');
-  if (it.effet === 'tickets' || it.effet === 'refill') {
-    return `<img src="${PACK_ARTS[0]}" alt="">`;
-  }
-  if (it.effet === 'trade_token') return NAVICO.swap;
+  if (it.effet === 'trade_token') return `<img class="ofjeton" src="${ART.jeton}" alt="">`;
+  if (it.effet === 'tickets' || it.effet === 'refill') return `<img src="${PACK_ARTS[0]}" alt="">`;
   return ICON.star;
 }
 
-/* Le libellé de quantité posé sur la vignette : ×5 se lit d'un coup d'œil,
-   « Cinq boosters » demande une lecture. */
-function vArticleQte(it) {
-  if ((it.effet === 'tickets' || it.effet === 'trade_token') && it.montant > 1) {
-    return `<span class="ofqte">×${it.montant}</span>`;
-  }
-  return '';
-}
+const vArticleQte = it =>
+  (it.effet === 'tickets' || it.effet === 'trade_token') && it.montant > 1
+    ? `<span class="ofqte">×${it.montant}</span>` : '';
 
-/* Le meilleur prix à l'unité du rayon sert de repère : l'article qui le bat
-   porte le ruban « éco ». On ne l'invente pas, on le calcule. */
-function marqueEco(items) {
-  const lots = items.filter(i => i.effet === 'tickets' && i.montant > 0);
-  if (lots.length < 2) return null;
-  const unite = i => i.prix / i.montant;
-  return lots.reduce((m, i) => unite(i) < unite(m) ? i : m, lots[0]).id;
+/* ---------- Les remises ---------- */
+/* Un lot n'est intéressant que par rapport à l'unité. On calcule donc la
+   remise réelle plutôt que de coller un « éco » décoratif : « −14 % » se
+   vérifie, « éco » se croit sur parole. */
+function remiseDe(it, items) {
+  if (!it.montant || it.montant < 2) return 0;
+  const unite = items.find(x => x.effet === it.effet && x.montant === 1);
+  if (!unite) return 0;
+  const pct = Math.round((1 - (it.prix / it.montant) / unite.prix) * 100);
+  return pct > 0 ? pct : 0;
 }
 
 function vBoutique() {
@@ -67,7 +70,7 @@ function vBoutique() {
     </div>
     <div class="walletrow">
       <span class="wallet">${shardIco}<b>${fmtN(save.shards)}</b> ${MONNAIE.nom}</span>
-      ${jetons ? `<span class="wallet">${NAVICO.swap}<b>${jetons}</b> jeton${jetons > 1 ? 's' : ''}</span>` : ''}
+      ${jetons ? `<span class="wallet"><img class="wjeton" src="${ART.jeton}" alt=""><b>${jetons}</b> jeton${jetons > 1 ? 's' : ''}</span>` : ''}
     </div>`;
 
   if (!items.length) {
@@ -83,24 +86,23 @@ function vBoutique() {
 function vRayon(id, items) {
   const r = RAYONS.find(x => x.id === id) || RAYONS[0];
   const liste = items.filter(i => r.categs.includes(i.categ));
-  const eco = marqueEco(liste);
-
-  const cases = liste.map(it => vArticle(it, eco)).join('');
+  const cases = liste.map(it => vArticle(it, items)).join('');
   const teaser = id === 'cosmetique' ? vCosmetiquesAVenir() : '';
 
   return `<p class="muted small" style="margin:0 0 12px">${h(r.sous)}</p>
     <div class="offres">${cases}${teaser}</div>`;
 }
 
-function vArticle(it, eco) {
+function vArticle(it, items) {
   const possede = it.unique_buy && (save.inv || {})[it.id] > 0;
   const cher = save.shards < it.prix;
+  const remise = remiseDe(it, items);
 
   return `<article class="offre${possede ? ' owned' : ''}${cher ? ' cher' : ''}"
       ${possede ? '' : `data-shop="${h(it.id)}" role="button" tabindex="0"`}>
     ${possede ? `<span class="ofcoche">${NAVICO.check}</span>` : ''}
-    ${!possede && it.categ === 'promo' ? '<span class="ofbadge promo">Promo</span>' : ''}
-    ${!possede && it.id === eco ? '<span class="ofbadge eco">Éco</span>' : ''}
+    ${!possede && it.unique_buy ? '<span class="ofbadge unique">Unique</span>' : ''}
+    ${!possede && !it.unique_buy && remise ? `<span class="ofbadge eco">−${remise} %</span>` : ''}
     <span class="ofart">${vArticleArt(it)}${vArticleQte(it)}</span>
     <span class="ofnom">${h(it.titre)}</span>
     ${possede
@@ -127,23 +129,26 @@ const vCosmetiquesAVenir = () => COSMETIQUES_A_VENIR.map(([nom, quoi]) =>
     <span class="qtag">Avec les combats</span>
   </article>`).join('');
 
-/* ---------- La fiche, puis la confirmation ---------- */
+/* =====================================================================
+   La fiche d'achat
+   ===================================================================== */
 /* Premier geste : on montre. Second geste : on prélève. Entre les deux, le
-   joueur voit l'objet en grand, son prix, et ce qu'il lui restera après. */
+   joueur voit l'objet en grand — et peut le tourner. */
 function ouvrirArticle(id) {
   const it = (Backend.shop || []).find(x => x.id === id);
   if (!it) return;
 
   const cher = save.shards < it.prix;
   const reste = save.shards - it.prix;
+  const remise = remiseDe(it, Backend.shop || []);
 
   openSheet({
     title: it.titre,
     body: `<div class="achat">
-      <div class="achatart">${vArticleArt(it)}</div>
-      <p>${h(it.detail)}</p>
+      ${vAchatScene(it)}
+      <p class="achatdit">${h(it.detail)}</p>
       <div class="achatprix">
-        <span>Prix</span>
+        <span>Prix${remise ? ` <i class="achateco">−${remise} %</i>` : ''}</span>
         <b>${shardIco}${fmtN(it.prix)}</b>
       </div>
       <p class="achatreste${cher ? ' court' : ''}">${cher
@@ -156,6 +161,127 @@ function ouvrirArticle(id) {
       { label: 'Retour', fn: closeSheet }
     ]
   });
+
+  bindAchat3D();
+}
+
+/* La scène 3D de la fiche : ce qu'on tourne dépend de ce qu'on achète.
+     · un lot de boosters → autant de paquets, en éventail
+     · une carte Promo    → la carte, recto-verso
+     · un jeton           → la pièce, qui roule sur elle-même
+     · un cadre           → l'avatar, déjà bien assez rond pour qu'on le laisse
+   Le nombre de pièces est plafonné : à dix paquets, on en dessine cinq et on
+   écrit ×10. Un éventail de dix se chevauche jusqu'à ne plus rien montrer. */
+function vAchatScene(it) {
+  const c = carteDe(it);
+
+  if (c) {
+    return `<div class="a3d carte" id="a3d">
+      <div class="a3d-obj" id="a3dobj">
+        <div class="a3d-face">${renderCard(c)}</div>
+        <div class="a3d-dos"><img src="${ART.back}" alt=""></div>
+      </div>
+      <p class="a3d-dit">${NAVICO.rotate} Fais glisser pour la retourner</p>
+    </div>`;
+  }
+
+  if (FRAMES[it.id]) {
+    return `<div class="a3d cadre"><div class="a3d-cadre">${avatarHTML(save.avatar, it.id, 'xl')}</div></div>`;
+  }
+
+  if (it.effet === 'trade_token') {
+    const n = Math.min(it.montant || 1, 3);
+    return `<div class="a3d jeton" id="a3d">
+      <div class="a3d-obj" id="a3dobj">
+        ${Array.from({ length: n }, (_, i) =>
+          `<img class="a3d-piece p${i}" src="${ART.jeton}" alt="">`).join('')}
+      </div>
+      ${it.montant > 1 ? `<span class="a3d-qte">×${it.montant}</span>` : ''}
+      <p class="a3d-dit">${NAVICO.rotate} Fais glisser pour l'incliner</p>
+    </div>`;
+  }
+
+  /* Boosters. */
+  const n = Math.min(it.montant || 1, 5);
+  return `<div class="a3d paquets n${n}" id="a3d">
+    <div class="a3d-obj" id="a3dobj">
+      ${Array.from({ length: n }, (_, i) =>
+        `<img class="a3d-pack p${i}" src="${PACK_ARTS[i % PACK_ARTS.length]}" alt=""
+          style="--i:${i - (n - 1) / 2}">`).join('')}
+    </div>
+    ${it.montant > 1 ? `<span class="a3d-qte">×${it.montant}</span>` : ''}
+    <p class="a3d-dit">${NAVICO.rotate} Fais glisser pour l'incliner</p>
+  </div>`;
+}
+
+/* Le glisser-tourner de la fiche. Même principe que le paquet de l'écran
+   Boosters : on suit le doigt, et au repos l'objet respire tout seul. */
+function bindAchat3D() {
+  const box = $('#a3d');
+  const obj = $('#a3dobj');
+  if (!box || !obj) return;
+
+  const T = { rx: 0, ry: 0, mrx: 0, mry: 0, manual: false, grx: 0, gry: 0 };
+  const vivant = () => document.body.contains(obj);
+  let pid = null, x0 = 0, y0 = 0;
+
+  /* Une carte se retourne — donc une amplitude qui va jusqu'au dos. Un paquet
+     s'incline, il ne se retourne pas : on le retient à 34°. */
+  const carte = box.classList.contains('carte');
+  const max = carte ? 200 : 34;
+
+  box.addEventListener('pointerdown', e => {
+    if (pid != null) return;
+    pid = e.pointerId;
+    x0 = e.clientX - T.mry / (carte ? 1.1 : .55);
+    y0 = e.clientY + T.mrx / .5;
+    T.manual = true;
+    box.setPointerCapture(e.pointerId);
+  });
+
+  box.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    T.mry = Math.max(-max, Math.min(max, (e.clientX - x0) * (carte ? 1.1 : .55)));
+    T.mrx = Math.max(-26, Math.min(26, -(e.clientY - y0) * .5));
+  });
+
+  const fin = e => {
+    if (e.pointerId !== pid) return;
+    pid = null;
+    /* Une carte relâchée se range sur la face la plus proche : recto ou verso,
+       jamais de travers. */
+    if (carte) T.mry = Math.abs(T.mry) > 90 ? 180 * Math.sign(T.mry) : 0;
+    else T.manual = false;
+  };
+  box.addEventListener('pointerup', fin);
+  box.addEventListener('pointercancel', fin);
+  box.addEventListener('dragstart', e => e.preventDefault());
+
+  const debrancher = brancherGyro((rx, ry) => {
+    if (!vivant()) return debrancher();
+    T.grx = rx;
+    T.gry = ry;
+  }, .5);
+
+  const frame = now => {
+    if (!vivant()) return debrancher();
+    const cibleY = T.manual ? T.mry : T.gry + (RM() ? 0 : Math.sin(now / 2200) * 8);
+    const cibleX = T.manual ? T.mrx : T.grx + (RM() ? 0 : Math.sin(now / 2900) * 4);
+    T.ry += (cibleY - T.ry) * .12;
+    T.rx += (cibleX - T.rx) * .12;
+    obj.style.transform = `rotateX(${T.rx.toFixed(2)}deg) rotateY(${T.ry.toFixed(2)}deg)`;
+    box.style.setProperty('--fx', (50 + T.ry * 1.4).toFixed(1) + '%');
+    /* Quelle face regarde-t-on ? On ramène l'angle dans [0, 360[ : entre 90° et
+       270°, la carte nous tourne le dos. En dehors, c'est le recto.
+       (Comme sur la scène des Promos, on ne compte pas sur
+       `backface-visibility` : il ne tient pas à travers la carte imbriquée.) */
+    if (carte) {
+      const a = ((T.ry % 360) + 360) % 360;
+      box.classList.toggle('dos', a > 90 && a < 270);
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
 }
 
 /* Le serveur revérifie tout — le prix, le solde, l'unicité. Ce qui se passe ici

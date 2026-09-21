@@ -73,3 +73,48 @@ const costText = cost => Object.entries(cost).map(([k, n]) => `${n} ${(COLORS[k]
 
 /* ---------- Accessibilité ---------- */
 const RM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- Gyroscope ---------- */
+/* Incliner l'appareil fait tourner la carte. Deux écrans s'en servent —
+   l'ouverture d'un booster et la visionneuse — et chacun avait sa copie ; la
+   visionneuse, elle, n'en avait aucune, d'où « l'inclinaison ne marche pas
+   dans la collection ».
+
+   Deux choses à savoir :
+   · Sur iPhone, il faut **demander l'autorisation**, et la demande n'est
+     acceptée que si elle part d'un geste. Les deux écrans s'ouvrent sur une
+     pression : on appelle donc depuis leur ouverture, jamais plus tard.
+   · L'angle brut ne sert à rien. Ce qui compte, c'est l'écart avec la position
+     de départ : on retient la première mesure comme origine, sinon la carte
+     part de travers selon la façon dont on tient le téléphone. */
+let gyroAutorise = null;   /* null = pas encore demandé, true/false = réponse */
+
+function brancherGyro(surInclinaison, ampleur) {
+  if (!JEU.gyro || RM() || !window.DeviceOrientationEvent) return () => {};
+
+  let base = null;
+  const amp = ampleur || .6;
+  const lim = 18;
+  const on = e => {
+    if (e.beta == null && e.gamma == null) return;
+    if (base == null) base = { b: e.beta || 0, g: e.gamma || 0 };
+    surInclinaison(
+      Math.max(-lim, Math.min(lim, -((e.beta || 0) - base.b) * amp)),
+      Math.max(-lim, Math.min(lim, ((e.gamma || 0) - base.g) * amp)));
+  };
+
+  const ecouter = () => addEventListener('deviceorientation', on);
+  const detacher = () => removeEventListener('deviceorientation', on);
+
+  const demande = typeof DeviceOrientationEvent.requestPermission === 'function';
+  if (!demande || gyroAutorise === true) {
+    ecouter();
+  } else if (gyroAutorise === null) {
+    try {
+      DeviceOrientationEvent.requestPermission()
+        .then(r => { gyroAutorise = r === 'granted'; if (gyroAutorise) ecouter(); })
+        .catch(() => { gyroAutorise = false; });
+    } catch (e) { gyroAutorise = false; }
+  }
+  return detacher;
+}

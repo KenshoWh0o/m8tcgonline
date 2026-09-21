@@ -31,7 +31,8 @@ const ART = {
   set: 'assets/extension-logo.svg',    /* logo de l'extension */
   edition: 'assets/1st-edition.svg',   /* pastille 1re édition */
   seal: 'assets/pack-star.svg',        /* sceau, icône de la réserve */
-  star: 'assets/star-pink.svg'         /* étincelle des emplacements vides */
+  star: 'assets/star-pink.svg',        /* étincelle, repli d'avatar */
+  jeton: 'assets/jeton-echange.webp'   /* le jeton d'échange, frappé du M8 */
 };
 
 /* Petites icônes en ligne : elles héritent de la couleur du texte qui les entoure.
@@ -124,12 +125,16 @@ const SITE_URL = 'https://matetcg.com';
 const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
 
 /* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
+/* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
+   récompense les 500 boosters ouverts — c'est le seul objet du jeu qu'on ne
+   peut pas acheter, et c'est ce qui en fait la valeur. */
 const FRAMES = {
   default: { nom: 'Aucun', c1: '#3f3450', c2: '#2e2539' },
   f_azur:  { nom: 'Azur',  c1: '#39b8ff', c2: '#2f7fc9' },
   f_rose:  { nom: 'Rose',  c1: '#ee0073', c2: '#ffd7f0' },
   f_or:    { nom: 'Or',    c1: '#ffc73b', c2: '#fff3b0' },
-  f_prisme:{ nom: 'Prisme', prisme: true, c1: '#ee0073', c2: '#39b8ff' }
+  f_prisme:{ nom: 'Prisme', prisme: true, c1: '#ee0073', c2: '#39b8ff' },
+  f_sceau: { nom: 'Sceau', sceau: true, vente: false, c1: '#ffc73b', c2: '#8936ff' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
@@ -140,8 +145,8 @@ const FRAMES = {
    avatarHTML dans js/ui.js). */
 const AVATARS = {
   star: { nom: 'Étoile', art: 'assets/pack-star.svg', ico: true, bg: '#8936ff' },
-  back: { nom: 'Dos de carte', art: 'assets/card-back.webp', objet: true },
-  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp', objet: true },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp', objet: true, pos: '50%' },
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp', objet: true, pos: '40%' },
   set:  { nom: 'Extension', art: 'assets/extension-logo.svg', ico: true, bg: '#8936ff' },
   ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg', ico: true, bg: '#ee0073' }
 };
@@ -206,21 +211,27 @@ const NAVICO = {
   check: '<svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></svg>',
   lock:  '<svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
+  rotate:'<svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"/><path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"/><path d="M18 2.5V6h-3.5M6 21.5V18h3.5"/></svg>',
   filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>'
 };
 
 /* ---------- Cartes Promo ---------- */
-/* Le palier de collection qui accorde la promo « palier ». 90 % et non 50 % :
-   la moitié de l'extension se passe en une dizaine de paquets — une récompense
-   décrochée le deuxième jour n'en est pas une. À 90 % il faut une bonne
-   quinzaine de jours, et ça laisse les 100 % comme dernier sommet. */
-const PROMO_PALIER = 90;
+/* Le palier de collection qui accorde la promo « palier ». Doit rester égal à
+   `cfg('promo_palier_pct')` dans supabase/01_schema.sql : c'est le serveur qui
+   accorde la carte, ceci n'est que l'affichage. */
+const PROMO_PALIER = 75;
 
 /* Ce qu'on lit sous une promo qu'on n'a pas encore. */
 const PROMO_COMMENT = {
   boutique: 'En boutique',
   palier: PROMO_PALIER + ' % de la collection',
-  master: 'Master Set complet'
+  master: 'Master Set complet',
+  bientot: 'Coming soon…'
 };
+
+/* Les emplacements Promo tenus en réserve : les cartes existent dans la série
+   mais ne nous sont pas encore parvenues. Comme les Secrets de la collection,
+   ils occupent leur case pour que la suite de la numérotation se voie. */
+const PROMOS_A_VENIR = ['P03', 'P04'];
 
 const tabDef = id => TABS.find(t => t.id === id) || TABS[0];

@@ -316,30 +316,17 @@ function bindStack() {
     }, RM() ? 0 : 280);
   };
 
+  /* Une seule mécanique de gyroscope pour tout le jeu : voir brancherGyro()
+     dans js/utils.js. Branché à la première pression sur la pile — sur iPhone,
+     l'autorisation ne s'obtient que depuis un geste. */
   const reqGyro = () => {
-    /* Réglable : l'inclinaison au gyroscope plaît, mais elle demande une
-       autorisation sur iPhone et gêne ceux qui jouent couchés. */
-    if (T.gyro || !JEU.gyro) return;
+    if (T.gyro) return;
     T.gyro = true;
-    const on = e => {
-      if (!alive()) {
-        removeEventListener('deviceorientation', on);
-        return;
-      }
-      if (e.beta == null) return;
-      if (T.b0 == null) T.b0 = e.beta;
-      T.gry = Math.max(-18, Math.min(18, (e.gamma || 0) * .6));
-      T.grx = Math.max(-18, Math.min(18, -(e.beta - T.b0) * .6));
-    };
-    try {
-      if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then(r => {
-          if (r === 'granted') addEventListener('deviceorientation', on);
-        }).catch(() => {});
-      } else if (window.DeviceOrientationEvent) {
-        addEventListener('deviceorientation', on);
-      }
-    } catch (e) {}
+    T.debrancher = brancherGyro((rx, ry) => {
+      if (!alive()) return T.debrancher && T.debrancher();
+      T.grx = rx;
+      T.gry = ry;
+    });
   };
 
   let samples = [];

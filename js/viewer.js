@@ -23,9 +23,15 @@ function openViewer(c) {
 
   const el = $('#vwc');
   const sh = $('#vwsh');
-  const st = { rx: 0, ry: 0, drag: false, x0: 0, y0: 0, r0x: 0, r0y: 0, vx: 0, vy: 0, lx: 0, ly: 0, t: performance.now() };
+  const st = { rx: 0, ry: 0, drag: false, x0: 0, y0: 0, r0x: 0, r0y: 0, vx: 0, vy: 0, lx: 0, ly: 0,
+    grx: 0, gry: 0, t: performance.now() };
   VW = { st, alive: true };
   const me = VW;
+
+  /* L'inclinaison de l'appareil fait tourner la carte, comme à l'ouverture d'un
+     booster. Branché ici, c'est-à-dire pendant la pression qui ouvre la
+     visionneuse : sur iPhone, l'autorisation ne s'obtient pas autrement. */
+  me.debrancherGyro = brancherGyro((rx, ry) => { st.grx = rx; st.gry = ry; });
 
   el.addEventListener('pointerdown', e => {
     st.drag = true;
@@ -56,8 +62,10 @@ function openViewer(c) {
   const frame = now => {
     if (!me.alive) return;
     if (!st.drag) {
-      const idleY = RM() ? 0 : Math.sin(now / 1500) * 7;
-      const idleX = RM() ? 0 : Math.sin(now / 2100) * 4;
+      /* Au repos, la carte oscille doucement. L'inclinaison de l'appareil
+         s'ajoute à ce balancement : elle le déplace, elle ne le remplace pas. */
+      const idleY = st.gry + (RM() ? 0 : Math.sin(now / 1500) * 7);
+      const idleX = st.grx + (RM() ? 0 : Math.sin(now / 2100) * 4);
       st.vy *= .9;
       st.vx *= .9;
       st.ry += st.vy;
@@ -76,7 +84,10 @@ function openViewer(c) {
 }
 
 function closeViewer() {
-  if (VW) VW.alive = false;
+  if (VW) {
+    VW.alive = false;
+    if (VW.debrancherGyro) VW.debrancherGyro();
+  }
   VW = null;
   const v = $('#viewer');
   v.hidden = true;

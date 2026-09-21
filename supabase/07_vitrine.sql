@@ -68,7 +68,7 @@ begin
     'quetes', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', q.id, 'scope', q.scope, 'titre', q.titre, 'detail', q.detail,
-        'goal', q.goal, 'reward', q.reward, 'metric', q.metric,
+        'goal', q.goal, 'reward', q.reward, 'item', q.item_id, 'metric', q.metric,
         'progress', least(coalesce(qp.progress, 0), q.goal),
         'claimed', coalesce(qp.claimed, false)) order by q.scope, q.ordre)
       from quests q

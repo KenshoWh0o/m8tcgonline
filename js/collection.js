@@ -123,30 +123,62 @@ function vFiltres(all) {
 }
 
 /* ---------- Les cases ---------- */
+/* Un emplacement vide ne porte que son numéro. L'étincelle rose qu'on y posait
+   avant attirait l'œil sur ce qu'on n'a pas — c'est le contraire de ce qu'une
+   grille de collection doit faire. */
+const caseVide = (etiquette, cls, sous) =>
+  `<div class="gcell${cls ? ' ' + cls : ''}">
+    <div class="cwrap"><div class="card ghost-card${cls === 'secretcell' ? ' secret-card' : ''}">
+      <span>${h(etiquette)}</span></div></div>
+    ${sous ? `<span class="promocomment">${h(sous)}</span>` : '<span class="num">&nbsp;</span>'}
+  </div>`;
+
 function vCase(c) {
   const n = save.col[c.id] || 0;
   const no = '#' + String(c.num || 0).padStart(3, '0');
   return n
     ? `<button class="gcell" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(c)}<span class="num">${no}</span></button>`
-    : `<div class="gcell"><div class="cwrap"><div class="card ghost-card"><img src="${ART.star}" alt=""><span>${no}</span></div></div><span class="num">&nbsp;</span></div>`;
+    : caseVide(no);
 }
 
 /* Les Secrets prolongent la grille sans en changer le total : des emplacements vides
    comme les autres, seul le reflet les distingue. */
 function secretCells(from) {
-  return Array.from({ length: SECRETS }, (_, i) => {
-    const no = '#' + String(from + i).padStart(3, '0');
-    return `<div class="gcell"><div class="cwrap"><div class="card ghost-card secret-card"><img src="${ART.star}" alt=""><span>${no}</span></div></div><span class="num">&nbsp;</span></div>`;
-  }).join('');
+  return Array.from({ length: SECRETS }, (_, i) =>
+    caseVide('#' + String(from + i).padStart(3, '0'), 'secretcell')).join('');
 }
 
 /* ---------- Les Promos ---------- */
 /* Hors de l'extension, donc hors du total et hors de la grille principale. Une
    case vide y dit comment obtenir la carte : c'est la seule grille du jeu où
-   l'absence se répare autrement qu'en ouvrant des paquets. */
+   l'absence se répare autrement qu'en ouvrant des paquets.
+
+   Les cases sortent dans l'ordre des codes : celles qu'on a, celles qu'on peut
+   obtenir, et celles qui n'existent pas encore. Une série se lit entière ou pas
+   du tout — laisser un trou entre P02 et P05 donnerait l'impression d'un bug
+   plutôt que d'une suite à venir. */
+function cellulesPromo() {
+  const connues = promos.map(p => {
+    const n = save.col[p.id] || 0;
+    return { code: p.code, tri: p.num, html: n
+      ? `<button class="gcell" data-show="${p.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(p)}<span class="num">${h(p.code)}</span></button>`
+      : caseVide(p.code, 'promovide', PROMO_COMMENT[p.obtention] || '') };
+  });
+
+  const aVenir = PROMOS_A_VENIR.map(code => ({
+    code, tri: +code.replace(/\D/g, '') || 0,
+    html: caseVide(code, 'promovide avenir', PROMO_COMMENT.bientot)
+  }));
+
+  return connues.concat(aVenir).sort((a, b) => a.tri - b.tri).map(x => x.html).join('');
+}
+
 function vPromosSection() {
   if (!promos.length) return '';
   const eus = promos.filter(p => save.col[p.id] > 0).length;
+  /* Le total de la série, emplacements à venir compris : c'est le nombre que le
+     joueur voit dans la grille, et celui qu'il cherche à atteindre. */
+  const serie = promos.length + PROMOS_A_VENIR.length;
 
   return `<section class="promosec">
     <div class="promohead">
@@ -155,14 +187,8 @@ function vPromosSection() {
         <h2>Cartes Promo</h2>
         <p>Hors extension : elles ne comptent pas dans les ${cards.length} cartes.</p>
       </div>
-      <span class="qpreste"><b class="tnum">${eus}</b><small>/ ${promos.length}</small></span>
+      <span class="qpreste"><b class="tnum">${eus}</b><small>/ ${serie}</small></span>
     </div>
-    <div class="grid">${promos.map(p => {
-      const n = save.col[p.id] || 0;
-      return n
-        ? `<button class="gcell" data-show="${p.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(p)}<span class="num">${h(p.code)}</span></button>`
-        : `<div class="gcell promovide"><div class="cwrap"><div class="card ghost-card"><img src="${ART.star}" alt=""><span>${h(p.code)}</span></div></div>
-            <span class="promocomment">${h(PROMO_COMMENT[p.obtention] || '')}</span></div>`;
-    }).join('')}</div>
+    <div class="grid">${cellulesPromo()}</div>
   </section>`;
 }

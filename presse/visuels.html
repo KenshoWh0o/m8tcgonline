@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Kit de presse — visuels</title>
+<!--
+  Les visuels de promotion, composés en HTML plutôt qu'à la main.
+
+  Pourquoi une page plutôt que des images finies : parce qu'un visuel qui vit
+  dans le dépôt se refait. Le jour où une carte change, où le prix bouge, où
+  l'extension s'agrandit, on rouvre cette page et on recapture — on ne
+  rouvre pas un logiciel de retouche pour corriger un chiffre.
+
+  Chaque visuel occupe exactement la taille d'export demandée. `?v=1` dans
+  l'adresse ouvre le visuel n° 1 seul, au bon format, prêt à capturer
+  (voir tools/kit-presse.py, qui fait la capture tout seul).
+
+  Les polices et les couleurs viennent de la charte du jeu : c'est la même
+  identité, pas une déclinaison.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/tokens.css">
+<style>
+  :root{ color-scheme:dark }
+  body{margin:0;background:#0b0810;color:#f4eef7;font-family:var(--body);
+    display:flex;flex-direction:column;align-items:center;gap:26px;padding:26px}
+  body.solo{padding:0;gap:0;background:#000}
+
+  /* Chaque visuel est une scène à taille fixe : ce qu'on voit est exactement
+     ce qui sera exporté, au pixel près. */
+  .v{position:relative;overflow:hidden;flex:0 0 auto;
+    background:radial-gradient(circle at 50% 38%,#2c1040,#0c0512 62%,#050208);
+    display:flex;flex-direction:column;align-items:center;justify-content:center}
+  body.solo .v{display:none}
+  body.solo .v.on{display:flex}
+  .v.paysage{width:1200px;height:675px}
+  .v.carre{width:1080px;height:1080px}
+  .v.portrait{width:1080px;height:1350px}
+
+  .etiq{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#8a7f96}
+  body.solo .etiq{display:none}
+
+  /* --- Le fond commun : rayons lents et grain --- */
+  .rayons{position:absolute;top:50%;left:50%;width:250%;aspect-ratio:1;translate:-50% -50%;
+    background:repeating-conic-gradient(from 0deg at 50% 50%,
+      rgba(255,255,255,.07) 0deg 4deg,transparent 4deg 14deg);
+    -webkit-mask:radial-gradient(circle,#000 4%,rgba(0,0,0,.5) 32%,transparent 64%);
+    mask:radial-gradient(circle,#000 4%,rgba(0,0,0,.5) 32%,transparent 64%)}
+  .halo{position:absolute;top:44%;left:50%;width:150%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;
+    background:radial-gradient(circle,rgba(169,92,242,.4),rgba(238,0,115,.14) 38%,transparent 68%)}
+  .grain{position:absolute;inset:0;opacity:.5;
+    background:radial-gradient(rgba(255,255,255,.055) .8px,transparent .9px) 0 0/26px 26px;
+    -webkit-mask:linear-gradient(180deg,#000,transparent 70%);mask:linear-gradient(180deg,#000,transparent 70%)}
+
+  .corps{position:relative;display:flex;flex-direction:column;align-items:center;
+    text-align:center;padding:0 60px}
+
+  .logo{height:96px;width:auto;filter:drop-shadow(0 0 34px rgba(169,92,242,.55))}
+  .setlogo{width:440px;filter:drop-shadow(0 10px 30px rgba(0,0,0,.8))}
+
+  .tag{display:inline-block;background:linear-gradient(90deg,#ee0073,#a95cf2);color:#fff;
+    border-radius:999px;padding:9px 26px;font-size:16px;font-weight:900;letter-spacing:.18em;
+    text-transform:uppercase;box-shadow:0 8px 26px rgba(238,0,115,.4)}
+  .titre{font-family:var(--display);font-stretch:114%;font-weight:900;font-style:italic;
+    letter-spacing:-.035em;line-height:.98;margin:0;
+    text-shadow:0 3px 24px rgba(238,0,115,.5),0 2px 4px rgba(0,0,0,.7)}
+  .sous{margin:0;color:rgba(255,255,255,.72);line-height:1.45;max-width:26ch}
+  .url{font-family:var(--display);font-weight:900;font-style:italic;letter-spacing:.02em;
+    color:#ffd7f0;text-shadow:0 2px 18px rgba(238,0,115,.55)}
+
+  /* --- Les chiffres clés --- */
+  .chiffres{display:flex;gap:18px}
+  .ch{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1);border-radius:18px;
+    padding:18px 26px;min-width:150px;backdrop-filter:blur(6px)}
+  .ch b{display:block;font-family:var(--display);font-stretch:110%;font-weight:900;font-style:italic;
+    font-size:40px;line-height:1;background:linear-gradient(180deg,#fff,#ffd7f0);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .ch span{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:rgba(255,255,255,.55)}
+
+  /* --- L'éventail de cartes --- */
+  .eventail{position:relative;display:flex;align-items:center;justify-content:center}
+  .eventail img{position:absolute;border-radius:14px;
+    box-shadow:0 26px 50px rgba(0,0,0,.72),0 0 0 2px rgba(255,255,255,.1);
+    transform:translateX(calc(var(--i) * var(--ec,150px)))
+              rotate(calc(var(--i) * var(--a,9deg)))
+              translateY(calc(var(--i) * var(--i) * var(--d,16px)))}
+  .eventail img.mid{box-shadow:0 30px 60px rgba(0,0,0,.8),0 0 0 2px rgba(255,255,255,.18),
+    0 0 70px rgba(169,92,242,.55)}
+
+  /* --- Le paquet --- */
+  .pack{position:relative;filter:drop-shadow(0 40px 60px rgba(0,0,0,.8))
+    drop-shadow(0 0 60px rgba(169,92,242,.45))}
+
+  .mentions{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:12px;
+    color:rgba(255,255,255,.3);letter-spacing:.02em}
+</style>
+</head>
+<body>
+
+<!-- ========================================================= 1. Annonce -->
+<span class="etiq">1 · Annonce — 1200 × 675 (Twitter paysage)</span>
+<section class="v paysage" data-n="1">
+  <div class="rayons"></div><div class="halo"></div><div class="grain"></div>
+  <div class="corps" style="gap:22px">
+    <img class="logo" src="../assets/logo-m8.webp" alt="">
+    <img class="setlogo" src="../assets/extension-logo.svg" alt="" style="width:400px">
+    <p class="sous" style="font-size:20px;max-width:34ch">
+      Ouvre des boosters, complète les 122 cartes de l'extension,
+      échange avec les autres joueurs.</p>
+    <span class="url" style="font-size:30px">matetcg.com</span>
+  </div>
+  <p class="mentions">Projet non affilié à Gentle Mates. Images utilisées à titre informatif.</p>
+</section>
+
+<!-- ======================================================= 2. Les cartes -->
+<span class="etiq">2 · Les cartes — 1200 × 675</span>
+<section class="v paysage" data-n="2">
+  <div class="rayons"></div><div class="halo"></div><div class="grain"></div>
+  <div class="corps" style="gap:34px">
+    <div class="eventail" style="height:390px;--ec:190px;--a:8deg;--d:22px">
+      <img style="--i:-2;height:330px" src="../cards/115_L_Moment-Instant_Orange_Champions-Du-Monde.avif" alt="">
+      <img style="--i:-1;height:350px" src="../cards/118_L_Joueur_Mauve_Gotaga-Dance.avif" alt="">
+      <img class="mid" style="--i:0;height:380px" src="../cards/121_L_Joueur_Neutre_Le-Marionnettiste.avif" alt="">
+      <img style="--i:1;height:350px" src="../cards/116_L_Joueur_Mauve_The-French-Sorcerer.avif" alt="">
+      <img style="--i:2;height:330px" src="../cards/113_L_Joueur_Rose_Kampai.avif" alt="">
+    </div>
+    <h1 class="titre" style="font-size:54px">Dix légendaires.<br>Une seule collection.</h1>
+  </div>
+</section>
+
+<!-- ===================================================== 3. Les chiffres -->
+<span class="etiq">3 · Les chiffres — 1200 × 675</span>
+<section class="v paysage" data-n="3">
+  <div class="rayons"></div><div class="halo"></div><div class="grain"></div>
+  <div class="corps" style="gap:40px">
+    <span class="tag">Tout commence ici</span>
+    <div class="chiffres">
+      <div class="ch"><b>122</b><span>cartes</span></div>
+      <div class="ch"><b>10</b><span>par booster</span></div>
+      <div class="ch"><b>6</b><span>boosters / jour</span></div>
+      <div class="ch"><b>0 €</b><span>pour jouer</span></div>
+    </div>
+    <p class="sous" style="font-size:19px;max-width:44ch">
+      Gratuit, sans achat intégré, sans publicité.
+      La seule monnaie du jeu se gagne en jouant.</p>
+    <span class="url" style="font-size:28px">matetcg.com</span>
+  </div>
+</section>
+
+<!-- ======================================================== 4. Le paquet -->
+<span class="etiq">4 · Le booster — 1080 × 1350 (Twitter portrait)</span>
+<section class="v portrait" data-n="4">
+  <div class="rayons"></div><div class="halo"></div><div class="grain"></div>
+  <div class="corps" style="gap:40px">
+    <img class="logo" src="../assets/logo-m8.webp" alt="" style="height:76px">
+    <img class="pack" src="../assets/boosters/booster-01.webp" alt="" style="height:660px">
+    <h1 class="titre" style="font-size:62px">Le premier<br>est pour toi.</h1>
+    <span class="url" style="font-size:34px">matetcg.com</span>
+  </div>
+</section>
+
+<!-- ========================================================= 5. Les promos -->
+<span class="etiq">5 · Les cartes Promo — 1080 × 1080 (carré)</span>
+<section class="v carre" data-n="5">
+  <div class="rayons"></div><div class="halo"></div><div class="grain"></div>
+  <div class="corps" style="gap:40px">
+    <span class="tag" style="background:linear-gradient(90deg,#ff5bb0,#a95cf2)">Cartes promo</span>
+    <div class="eventail" style="height:440px;--ec:172px;--a:7deg;--d:20px">
+      <img style="--i:-1.5;height:390px" src="../cards/promos/P01-Major_De_Paris.webp" alt="">
+      <img style="--i:-.5;height:410px" src="../cards/promos/P02-Major_De_Paris.webp" alt="">
+      <img class="mid" style="--i:.5;height:410px" src="../cards/promos/P05-Tout_Commence_Ici.webp" alt="">
+      <img style="--i:1.5;height:390px" src="../cards/promos/P06-Le_Marionnettiste.webp" alt="">
+    </div>
+    <h1 class="titre" style="font-size:52px">Introuvables<br>en booster.</h1>
+    <p class="sous" style="font-size:19px;max-width:40ch">
+      Deux s'achètent. Deux se méritent.</p>
+  </div>
+</section>
+
+<!-- ======================================================== 6. Coming soon -->
+<span class="etiq">6 · Teaser — 1200 × 675</span>
+<section class="v paysage" data-n="6">
+  <div class="rayons"></div><div class="halo"></div><div class="grain"></div>
+  <div class="corps" style="gap:26px">
+    <img class="logo" src="../assets/logo-m8.webp" alt="" style="height:80px">
+    <h1 class="titre" style="font-size:96px">Coming soon</h1>
+    <p class="sous" style="font-size:21px;max-width:40ch">
+      L'extension <b style="color:#fff">Tout commence ici</b> et ses 122 cartes
+      arrivent bientôt. Boosters, collections, échanges,…</p>
+    <span class="url" style="font-size:28px">matetcg.com</span>
+  </div>
+  <p class="mentions">Projet non affilié à Gentle Mates. Images utilisées à titre informatif.</p>
+</section>
+
+<script>
+  /* `?v=3` isole le visuel n° 3 : la page ne montre plus que lui, au format
+     exact, sans marge ni étiquette. C'est ce que capture tools/kit-presse.py. */
+  const n = new URLSearchParams(location.search).get('v');
+  if (n) {
+    document.body.classList.add('solo');
+    const el = document.querySelector(`.v[data-n="${n}"]`);
+    if (el) el.classList.add('on');
+  }
+
+  /* Le script de capture attend ce drapeau : tant que les cartes ne sont pas
+     chargées, une capture donnerait des cases vides. */
+  window.pret = false;
+  Promise.all([...document.images].map(i => i.complete
+    ? Promise.resolve()
+    : new Promise(r => { i.onload = i.onerror = r; })))
+    .then(() => document.fonts ? document.fonts.ready : null)
+    .then(() => { window.pret = true; });
+</script>
+</body>
+</html>

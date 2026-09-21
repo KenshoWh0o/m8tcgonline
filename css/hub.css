@@ -129,7 +129,8 @@
    où le curseur glisse. Ce n'est pas un changement d'onglet, donc ce ne sont pas
    les mêmes puces que les filtres. */
 .segbar{display:flex;gap:3px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;
-  padding:3px;margin:0 0 var(--gap-4);overflow-x:auto;scrollbar-width:none}
+  padding:3px;margin:0 0 var(--gap-4);overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
 .segbar::-webkit-scrollbar{display:none}
 .segbar button{flex:1 1 0;min-width:max-content;display:inline-flex;align-items:center;justify-content:center;
   gap:7px;border:0;background:none;color:var(--muted);padding:9px 14px;border-radius:999px;
@@ -140,7 +141,8 @@
 .segbar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* La même barre, en version discrète (Social). */
-.souschips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.souschips{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;touch-action:pan-x;padding:2px 0 10px;scrollbar-width:none}
 .souschips::-webkit-scrollbar{display:none}
 .souschips button{flex:0 0 auto;border:0;background:var(--bg-2);color:var(--muted);padding:7px 14px;
   font-size:12px;font-weight:800;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);
@@ -240,6 +242,8 @@
   stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
 .ofart svg.ico-star{stroke:none;fill:currentColor;width:46%;height:auto}
 .ofart .ava{width:60%;height:60%}
+.ofart .ofjeton{width:72%;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.wallet .wjeton{width:17px;height:17px;flex:0 0 auto}
 /* La quantité vendue, en pastille sur la vignette. */
 .ofqte{position:absolute;right:6px;bottom:6px;background:var(--surface);color:var(--text);
   border-radius:999px;padding:2px 9px;font-family:var(--display);font-weight:900;font-size:12.5px;
@@ -254,8 +258,11 @@
 .ofbadge{position:absolute;z-index:2;top:8px;left:8px;background:var(--accent);color:var(--on-accent);
   border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;letter-spacing:.07em;
   text-transform:uppercase;box-shadow:var(--sh-1)}
-.ofbadge.eco{background:var(--ok);color:#06251a}
-.ofbadge.promo{background:linear-gradient(90deg,var(--r-pr),var(--accent-soft))}
+/* Une remise est une bonne nouvelle chiffrée : elle prend le vert des
+   signaux positifs, le même que les quêtes accomplies. « Unique » n'est pas
+   une bonne nouvelle, c'est une nature : il prend la couleur d'action. */
+.ofbadge.eco{background:var(--ok);color:#06251a;letter-spacing:.02em}
+.ofbadge.unique{background:linear-gradient(90deg,var(--accent),var(--accent-soft))}
 .ofcoche{position:absolute;z-index:2;top:8px;right:8px;display:grid;place-items:center;width:22px;height:22px;
   border-radius:50%;background:var(--ok);color:#06251a}
 .ofcoche svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
@@ -269,21 +276,99 @@
 .oflockico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .oflock small{font-size:11.5px;color:var(--muted);line-height:1.3;max-width:18ch}
 
-/* La fiche d'un article, dans la feuille : on voit ce qu'on achète avant de payer. */
+/* =====================================================================
+   La fiche d'achat : on manipule ce qu'on achète
+   =====================================================================
+   Un article à cinq mille Éclats mérite mieux qu'une vignette. La scène met
+   l'objet en volume et le laisse tourner sous le doigt — un paquet s'incline,
+   un lot s'ouvre en éventail, une carte se retourne. C'est le dernier écran
+   avant de payer : il doit donner envie autant qu'informer. */
 .achat{text-align:center}
-.achatart{display:grid;place-items:center;width:100%;max-width:210px;margin:0 auto 14px;aspect-ratio:1;
-  border-radius:var(--radius);background:radial-gradient(circle at 50% 38%,var(--accent-wash-2),var(--bg-2) 72%);
-  overflow:hidden}
-.achatart img{width:60%;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
-.achatart .cwrap{width:58%}
-.achatart .ava{width:56%;height:56%}
-.achatart svg{width:38%;height:38%;stroke:currentColor;fill:none;stroke-width:1.5;
-  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
-.achatart svg.ico-star{stroke:none;fill:currentColor;height:auto}
-.achat p{color:var(--muted);font-size:13.5px;margin:0 auto 14px;max-width:38ch}
+
+.a3d{position:relative;width:100%;max-width:260px;margin:0 auto 16px;aspect-ratio:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:var(--radius);perspective:1100px;touch-action:none;cursor:grab;
+  background:radial-gradient(circle at 50% 40%,var(--accent-wash-2),var(--bg-2) 74%);
+  box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;user-select:none;-webkit-user-select:none}
+.a3d:active{cursor:grabbing}
+/* Un balayage de lumière qui suit l'inclinaison : c'est ce qui donne l'idée
+   d'une surface, et pas d'un dessin posé à plat. */
+.a3d::after{content:'';position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.32;
+  background:linear-gradient(108deg,transparent 36%,rgba(255,255,255,.5) 50%,transparent 64%);
+  background-size:280% 100%;background-position:var(--fx,50%) 0}
+
+/* L'objet 3D occupe toute la scène. Il le faut : ses pièces sont posées en
+   absolu, et un conteneur qui n'a que des enfants absolus se réduit à rien —
+   les paquets héritaient alors d'une largeur de 52 % de zéro. */
+.a3d-obj{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  will-change:transform}
+
+/* ---- Les paquets ---- */
+/* `--i` est la position de chaque paquet depuis le centre : −2, −1, 0, +1, +2.
+   Un seul nombre pilote l'écart, l'angle et la profondeur, donc l'éventail
+   reste cohérent qu'il y ait un paquet ou cinq.
+   `translate` est une propriété à part : le centrage se compose avec la mise
+   en éventail posée dans `transform`, sans que l'un écrase l'autre. */
+.a3d.paquets{padding:10px}
+.a3d-pack{position:absolute;left:50%;top:50%;width:var(--larg,50%);height:auto;
+  translate:-50% -50%;
+  transform:translateX(calc(var(--i) * var(--eca,16%))) rotate(calc(var(--i) * var(--ang,7deg)))
+            translateZ(calc(var(--i) * var(--i) * -16px));
+  filter:drop-shadow(0 14px 22px rgba(0,0,0,.6))}
+.a3d.n1{--larg:58%}
+.a3d.n5{--larg:42%;--eca:26%;--ang:9deg}
+
+/* ---- Les jetons ---- */
+.a3d-piece{position:absolute;left:50%;top:50%;width:var(--larg,54%);translate:-50% -50%;
+  filter:drop-shadow(0 12px 20px rgba(0,0,0,.55))}
+.a3d.jeton{--larg:54%}
+.a3d.jeton .a3d-obj{--larg:54%}
+.a3d-piece.p0{transform:translateZ(16px)}
+.a3d-piece.p1{transform:translate(-15%,8%) translateZ(0) scale(.92)}
+.a3d-piece.p2{transform:translate(15%,14%) translateZ(-16px) scale(.85)}
+
+/* ---- La carte ---- */
+.a3d.carte .a3d-obj{width:56%;height:auto;aspect-ratio:5/7}
+.a3d-face,.a3d-dos{position:absolute;inset:0;border-radius:9px;overflow:hidden;
+  box-shadow:0 14px 26px rgba(0,0,0,.6)}
+.a3d-dos{transform:rotateY(180deg);background:var(--bg-2)}
+.a3d-dos img{width:100%;height:100%;object-fit:cover;display:block}
+.a3d-face .cwrap,.a3d-face .card{width:100%;height:100%;margin:0}
+.a3d-face img{width:100%;height:100%;object-fit:cover;display:block}
+/* Même raison que la scène des Promos : on ne se fie pas à
+   `backface-visibility`, on échange les faces au quart de tour. */
+.a3d-dos{visibility:hidden}
+.a3d.dos .a3d-dos{visibility:visible}
+.a3d.dos .a3d-face{visibility:hidden}
+
+/* ---- Un cadre ---- */
+.a3d.cadre{perspective:none;cursor:default}
+.a3d.cadre .a3d-obj,.a3d-cadre{display:grid;place-items:center}
+.a3d-cadre .ava{width:118px;height:118px}
+
+/* Sur un écran court, la scène cède la place au prix et au bouton : c'est là
+   qu'on décide, pas dans l'illustration. */
+@media (max-height:700px){
+  .a3d{max-width:190px}
+}
+
+/* ---- Les libellés posés sur la scène ---- */
+.a3d-qte{position:absolute;right:10px;bottom:10px;background:var(--surface);color:var(--text);
+  border-radius:999px;padding:3px 11px;font-family:var(--display);font-weight:900;font-size:14px;
+  box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1);pointer-events:none}
+.a3d-dit{position:absolute;left:0;right:0;bottom:10px;display:flex;align-items:center;
+  justify-content:center;gap:6px;margin:0;font-size:11px;font-weight:700;color:var(--muted);
+  pointer-events:none}
+.a3d-qte ~ .a3d-dit{justify-content:flex-start;padding-left:12px}
+.a3d-dit svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.achatdit{color:var(--muted);font-size:13.5px;margin:0 auto 14px;max-width:38ch}
 .achatprix{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg-2);
   border-radius:var(--radius-sm);padding:12px 15px;margin:0 0 4px;box-shadow:inset 0 0 0 1px var(--line)}
-.achatprix span{font-size:12.5px;font-weight:700;color:var(--muted)}
+.achatprix span{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.achateco{background:var(--ok-wash);color:var(--ok);border-radius:999px;padding:2px 8px;
+  font-size:11px;font-weight:900;font-style:normal;letter-spacing:.03em}
 .achatprix b{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;
   font-size:19px;color:var(--brand-light);font-variant-numeric:tabular-nums}
 .achatprix b .shard{width:17px;height:17px;color:currentColor}
@@ -297,22 +382,28 @@
    qui prolonge leur couleur. */
 .ava{position:relative;display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:50%;
   overflow:hidden;background:var(--surface-2);box-shadow:0 0 0 2px var(--f1,var(--line-2))}
-.ava img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:center}
+
+/* L'image qui remplit le cercle est posée en absolu, pas en enfant de grille.
+   Dans une grille centrée, la hauteur en pourcentage retombe sur `auto` : une
+   carte de ratio 5/7 ressortait 76 × 106 dans un cercle de 76 × 76, et
+   débordait par le haut et le bas. En absolu, elle épouse exactement le
+   cercle, et `object-fit:cover` fait le recadrage sans jamais déformer. */
+.ava img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;
+  object-fit:cover;object-position:center}
 /* Un voile sombre par-dessus la couleur : les symboles d'essence sont peints de
    leur propre couleur et disparaîtraient sur un fond identique. */
 .ava.ico{background:linear-gradient(rgba(10,7,14,.62),rgba(10,7,14,.62)),var(--ab,var(--surface-2))}
-.ava.ico img{width:58%;height:58%;object-fit:contain;border-radius:0;
+/* Un symbole, lui, reste entier au centre : il revient dans le flux de la
+   grille, où `place-items:center` le pose au milieu. */
+.ava.ico img{position:static;width:58%;height:58%;object-fit:contain;border-radius:0;
   filter:drop-shadow(0 0 5px rgba(0,0,0,.6)) drop-shadow(0 1px 1px rgba(0,0,0,.5))}
-/* Objets hauts — carte, dos, booster : entiers, centrés, sur leur propre flou. */
+/* Objets hauts — carte, dos, booster : ils **remplissent** le cercle.
+   `object-fit:cover` recadre sans jamais déformer ; ce qui compte, c'est *où*
+   il recadre. Une carte a son illustration dans le haut, un paquet au milieu :
+   `--apos` donne le point de visée, posé par avatarHTML() selon l'objet.
+   Posés entiers, ils laissaient un croissant de vide sur les côtés. */
 .ava.objet{background:var(--bg-2)}
-.ava.objet img{width:auto;height:84%;max-width:88%;object-fit:contain;border-radius:2px;
-  filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
-/* Le fond : la même image, agrandie et floutée, pour que le cercle ne soit pas
-   à moitié vide autour d'un rectangle. */
-.ava.objet::before{content:'';position:absolute;inset:0;background:inherit;
-  background-image:var(--abi);background-size:cover;background-position:center;
-  filter:blur(9px) saturate(1.5) brightness(.55);transform:scale(1.25)}
-.ava.objet img{position:relative;z-index:1}
+.ava.objet img{object-position:50% var(--apos,32%)}
 
 .ava.sm{width:34px;height:34px}
 .ava.md{width:56px;height:56px}
@@ -325,6 +416,14 @@
   50%{box-shadow:0 0 0 3px #55e6a6}
   75%{box-shadow:0 0 0 3px #39b8ff}
   100%{box-shadow:0 0 0 3px #ee0073}}
+
+/* Le Sceau : l'or du sceau de booster qui respire sur du violet. Plus lent et
+   plus court que le Prisme — il ne balaie pas tout le spectre, il pulse.
+   C'est le seul cadre qu'on ne peut pas acheter : il se gagne aux 500 boosters. */
+.ava.sceau{animation:sceau 3.2s ease-in-out infinite}
+@keyframes sceau{
+  0%,100%{box-shadow:0 0 0 3px #8936ff,0 0 14px rgba(137,54,255,.5)}
+  50%{box-shadow:0 0 0 3px #ffc73b,0 0 20px rgba(255,199,59,.6)}}
 .avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
 
 .avagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;padding:4px 0 2px}
@@ -683,3 +782,11 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
 
 /* Animations réduites, forcées depuis les Réglages. */
 html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition:none!important}
+
+/* Une récompense qui n'est pas de la monnaie : la carte ou le cadre, en petit,
+   à la place du montant. Le joueur doit voir ce qu'il va toucher. */
+.qreward.objet{flex-direction:column;gap:3px;align-items:center;font-family:var(--body)}
+.qrcarte{display:block;width:34px;border-radius:3px;overflow:hidden;box-shadow:var(--sh-2)}
+.qrcadre{display:block}
+.qreward.objet small{font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted)}

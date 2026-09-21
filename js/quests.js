@@ -118,9 +118,14 @@ function notifQuete(q) {
   const el = document.createElement('div');
   el.className = 'qn';
   el.setAttribute('role', 'status');
+  /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
+     bannière de réussite donnerait l'impression d'un bug. */
+  const gain = q.reward > 0
+    ? `${shardIco}${fmtN(q.reward)}`
+    : q.item ? 'Récompense' : '';
   el.innerHTML = `<span class="qnico">${NAVICO.check}</span>
     <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
-    <span class="qngain">${shardIco}${fmtN(q.reward)}</span>`;
+    ${gain ? `<span class="qngain">${gain}</span>` : ''}`;
 
   /* Deux quêtes peuvent tomber ensemble : un seul son pour la volée, sinon le
      même bruitage se superpose à lui-même. */
@@ -198,6 +203,25 @@ function vQuetesSection(scope) {
   return bandeau + fini + liste.map(vQuete).join('');
 }
 
+/* Ce que la quête rapporte. Un palier qui donne une carte ne donne pas
+   d'Éclats : afficher « ◆ 0 » serait un mensonge par omission. On montre donc
+   l'objet — la carte, le cadre — à la place du montant. */
+function vRecompense(q) {
+  const c = q.item ? byId[q.item] : null;
+  if (c) {
+    return `<span class="qreward objet" title="${h(c.nom)}">
+      <span class="qrcarte">${renderCard(c)}</span>
+      <small>${h(c.code || c.nom)}</small></span>`;
+  }
+  const f = q.item ? FRAMES[q.item] : null;
+  if (f) {
+    return `<span class="qreward objet" title="Cadre ${h(f.nom)}">
+      <span class="qrcadre">${avatarHTML(save.avatar, q.item, 'sm')}</span>
+      <small>Cadre</small></span>`;
+  }
+  return `<span class="qreward">${shardIco}${fmtN(q.reward)}</span>`;
+}
+
 function vQuete(q) {
   const fini = q.progress >= q.goal;
   const pct = Math.min(100, Math.round(q.progress / q.goal * 100));
@@ -208,7 +232,7 @@ function vQuete(q) {
     <div class="qcorps">
       <div class="qhead">
         <div><b>${h(q.titre)}</b><p>${h(q.detail)}</p></div>
-        <span class="qreward">${shardIco}${fmtN(q.reward)}</span>
+        ${vRecompense(q)}
       </div>
       <div class="qbar"><i style="width:${pct}%"></i></div>
       <div class="qfoot">

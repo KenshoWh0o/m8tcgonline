@@ -58,12 +58,28 @@
 @keyframes pr-float{50%{translate:0 -12px;rotate:.8deg}}
 .promoscene.direct .pr-card{transform:none}
 
-.pr-face,.pr-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  border-radius:12px;overflow:hidden}
+/* Les deux faces de la carte.
+
+   `backface-visibility:hidden` **ne suffit pas** ici : la propriété ne
+   s'hérite pas, et la carte posée à l'intérieur de `.pr-face` — avec son
+   `overflow`, son `border-radius` et son propre contexte — se retrouve
+   dessinée de dos, en miroir. C'est ce qu'on voyait : l'illustration inversée
+   au lieu du dos de carte.
+
+   On ne s'appuie donc sur rien d'implicite. Une seule face est visible à la
+   fois, et le basculement se fait au quart de tour exact, quand la carte est
+   sur la tranche et que personne ne peut voir l'échange (voir montrerPromo()
+   dans js/promos.js). */
+.pr-face,.pr-back{position:absolute;inset:0;border-radius:12px;overflow:hidden}
 .pr-back{transform:rotateY(180deg);background:var(--bg-2)}
 .pr-back img{width:100%;height:100%;object-fit:cover;display:block}
 .pr-face .cwrap,.pr-face .card{width:100%;height:100%;margin:0}
 .pr-face img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Au départ : le dos, et rien d'autre. */
+.pr-face{visibility:hidden}
+.promoscene.retourne .pr-face,.promoscene.direct .pr-face{visibility:visible}
+.promoscene.retourne .pr-back,.promoscene.direct .pr-back{visibility:hidden}
 
 /* Le halo rose qui déborde de la carte, une fois face visible. */
 .promoscene.face .pr-face::after,.promoscene.direct .pr-face::after{content:'';position:absolute;inset:0;
@@ -100,17 +116,24 @@
    total, elles ne doivent donc pas se fondre dans la même grille. */
 .promosec{margin-top:var(--gap-5);padding-top:var(--gap-4);border-top:1px solid var(--line)}
 .promohead{display:flex;align-items:center;gap:11px;margin:0 0 var(--gap-3)}
-.promohead .qpico{background:linear-gradient(135deg,var(--r-pr),var(--accent));color:#fff;box-shadow:none}
+.promohead .qpico{background:var(--surface-2);color:var(--accent-soft);
+  box-shadow:inset 0 0 0 1px var(--line-2)}
 .promohead>div{flex:1;min-width:0}
 .promohead h2{margin:0;padding:0}
 .promohead h2::before{display:none}
 .promohead p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
-.promohead .qpreste b{color:var(--r-pr)}
+.promohead .qpreste b{color:var(--text)}
 
 /* La case d'une promo non possédée dit comment l'obtenir : c'est la seule
-   grille du jeu où le vide a une réponse. */
-.gcell.promovide .ghost-card{border-color:var(--r-pr);
-  box-shadow:inset 0 0 0 1px rgba(255,91,176,.3),0 0 22px rgba(255,91,176,.12)}
-.promocomment{display:block;font-size:10px;font-weight:700;line-height:1.25;color:var(--r-pr);
-  margin-top:4px;text-align:center;overflow:hidden;display:-webkit-box;
-  -webkit-line-clamp:2;-webkit-box-orient:vertical}
+   grille du jeu où le vide a une réponse. Elle reste une case vide, sans
+   liseré de couleur : c'est la ligne dessous qui porte l'information, pas un
+   cadre rose qui crie. */
+.gcell.promovide .ghost-card{box-shadow:inset 0 0 0 1px var(--line-2)}
+.promocomment{display:-webkit-box;font-size:10px;font-weight:700;line-height:1.3;
+  color:var(--muted);margin-top:6px;text-align:center;overflow:hidden;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.6em}
+
+/* Un emplacement dont la carte n'existe pas encore : plus effacé que les
+   autres, et sans promesse de date. */
+.gcell.avenir .ghost-card{opacity:.55}
+.gcell.avenir .promocomment{color:var(--line-3);font-style:italic}

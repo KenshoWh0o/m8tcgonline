@@ -50,9 +50,11 @@ function avatarInfo(a) {
       ? { src: Backend.photoDiscord, plein: true }
       : { src: AVATARS.star.art, ico: true, bg: AVATARS.star.bg };
   }
+  /* `pos` : où viser en recadrant. L'illustration d'une carte occupe le haut ;
+     viser le centre aurait cadré sur la ligne d'attaque. */
   if (a.startsWith('card:')) {
     const c = byId[a.slice(5)];
-    return c && c.img ? { src: c.img, objet: true } : { src: ART.star, ico: true, bg: '#8936ff' };
+    return c && c.img ? { src: c.img, objet: true, pos: '30%' } : { src: ART.star, ico: true, bg: '#8936ff' };
   }
   if (a.startsWith('ess:')) {
     const k = a.slice(4);
@@ -63,7 +65,8 @@ function avatarInfo(a) {
   if (a.startsWith('http')) return { src: a, plein: true };
 
   const v = AVATARS[a] || AVATARS.star;
-  return { src: v.art, ico: !!v.ico, objet: !!v.objet, bg: v.bg, plein: !v.ico && !v.objet };
+  return { src: v.art, ico: !!v.ico, objet: !!v.objet, bg: v.bg, pos: v.pos,
+    plein: !v.ico && !v.objet };
 }
 
 const avatarSrc = a => avatarInfo(a).src;
@@ -71,18 +74,19 @@ const avatarSrc = a => avatarInfo(a).src;
 /* Trois cadrages, et un seul choix à faire : de quelle forme est l'image ?
      `plein`  une photo, déjà carrée : elle remplit le cercle.
      `ico`    un symbole : il reste entier, au centre, sur un fond de sa couleur.
-     `objet`  une carte, un dos, un booster — un rectangle haut. Le forcer dans
-              un rond l'écrasait : on le pose entier, et c'est sa propre image
-              floutée qui remplit le tour.
-   Le fond flouté passe par `--abi`, lu par `.ava.objet::before` (css/hub.css). */
+     `objet`  une carte, un dos, un booster — un rectangle haut. Il remplit le
+              cercle par recadrage, jamais par étirement : `--apos` dit où
+              viser, parce que l'endroit intéressant n'est pas au milieu.
+   Le cadre animé (Prisme, Sceau) est posé en classe, ses couleurs en variables. */
 function avatarHTML(a, frame, cls) {
   const f = FRAMES[frame] || FRAMES.default;
   const v = avatarInfo(a);
   const mode = v.ico ? ' ico' : v.objet ? ' objet' : '';
+  const anim = f.prisme ? ' prisme' : f.sceau ? ' sceau' : '';
   const vars = [`--f1:${f.c1}`, `--f2:${f.c2}`];
   if (v.bg) vars.push('--ab:' + v.bg);
-  if (v.objet) vars.push(`--abi:url("${encodeURI(v.src)}")`);
-  return `<span class="ava ${cls || ''}${f.prisme ? ' prisme' : ''}${mode}"
+  if (v.pos) vars.push('--apos:' + v.pos);
+  return `<span class="ava ${cls || ''}${anim}${mode}"
     style="${vars.join(';')}"><img src="${v.src}" alt=""></span>`;
 }
 

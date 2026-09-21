@@ -218,7 +218,28 @@ begin
 
   update quest_progress set claimed = true
     where user_id = p and quest_id = q.id and period_key = pk;
-  update profiles set shards = shards + q.reward where id = p;
+
+  if q.reward > 0 then
+    update profiles set shards = shards + q.reward where id = p;
+  end if;
+
+  -- Une quete peut payer en objet plutot qu'en Eclats : un cadre, une carte.
+  -- `item_id` sert d'abord a l'affichage — la fiche de quete montre ce qu'on
+  -- va toucher — et l'accorde ensuite si ce n'est pas deja fait.
+  --
+  -- `do nothing` et non `qty + 1` : les deux paliers de Promo sont deja
+  -- accordes par check_promos() des que le pourcentage est atteint, avant
+  -- meme qu'on encaisse la quete. Sans ce garde-fou, encaisser donnerait un
+  -- second exemplaire d'une carte qui n'existe qu'en un seul.
+  if q.item_id is not null then
+    if exists (select 1 from cards where id = q.item_id) then
+      insert into collection (user_id, card_id, qty) values (p, q.item_id, 1)
+        on conflict (user_id, card_id) do nothing;
+    else
+      insert into inventory (user_id, item_id, qty) values (p, q.item_id, 1)
+        on conflict (user_id, item_id) do nothing;
+    end if;
+  end if;
 
   return me();
 end $$;
