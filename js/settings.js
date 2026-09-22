@@ -155,6 +155,15 @@ function vReglages() {
   </section>
 
   <section class="panel">
+    <h2>Communauté</h2>
+    <p class="muted small">Les annonces, les nouvelles cartes, l'entraide et les
+      échanges se passent sur le Discord du jeu.</p>
+    <div class="row" style="margin-top:12px">
+      ${lienDiscord('btn discord', 'Rejoindre le Discord')}
+    </div>
+  </section>
+
+  <section class="panel">
     <h2>Installer le jeu</h2>
     <p class="muted small">Ajouté à l'écran d'accueil, Mate TCG s'ouvre en plein écran,
       sans barre de navigateur, comme une vraie application.</p>
@@ -177,7 +186,7 @@ function vReglages() {
     <h2>À propos</h2>
     <p class="muted small">${h(GAME_NAME)} — Jeu de collection sans argent réel :
       les ${MONNAIE.nom} se gagnent en jouant.</p>
-    <p class="muted small">Version bêta ${APP_VERSION}</p>
+    <p class="muted small">Version ${APP_VERSION}</p>
     <p class="mentions">${MENTIONS}</p>
   </section>`;
 }

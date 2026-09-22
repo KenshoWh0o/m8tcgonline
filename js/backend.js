@@ -110,6 +110,9 @@ Backend.apply = function (etat) {
   INTERVAL = p.ticket_minutes * 60 * 1000;
 
   save = {
+    /* L'identifiant du compte. Il ne sert qu'à savoir si on a déjà accueilli
+       cette personne sur cet appareil (js/bienvenue.js). */
+    id: p.id,
     tickets: p.tickets,
     lastTick: srvTime(p.last_tick),
     unlimited: false,

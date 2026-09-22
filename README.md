@@ -104,6 +104,7 @@ mate-tcg-online/
 │   ├── battle.js       Onglet Combats (à venir)
 │   ├── profile.js      Onglet Profil
 │   ├── settings.js     Onglet Réglages
+│   ├── bienvenue.js    Fenêtres d'accueil et lien vers le Discord
 │   ├── pwa.js          Ajout à l'écran d'accueil, service worker
 │   ├── lab.js          Onglet Labo (administrateurs)
 │   └── app.js          Navigation, clics, démarrage (chargé en dernier)
@@ -138,6 +139,7 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
 | Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
 | Modifier la mention légale | `MENTIONS` dans `js/config.js` (elle s'affiche aux trois endroits d'un coup) |
+| Changer l'adresse du Discord | `DISCORD_URL` dans `js/config.js` (elle est citée à cinq endroits) |
 | Inviter quelqu'un à la bêta | `supabase/09_beta.sql` |
 | Changer la date d'ouverture | `beta_ouverte()` dans `supabase/01_schema.sql` **et** `PORTE.lancement` dans `js/gate.js` |
 | Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
@@ -521,6 +523,27 @@ monde ouvre cinq boosters le jour de l'ouverture.
 Les invitations de la bêta, elles, ne sont pas touchées : la remise à zéro vide
 les collections, pas la table `beta_invites`. Pour retirer quelqu'un de la liste,
 c'est `supabase/09_beta.sql`.
+
+## Le Discord
+
+`DISCORD_URL` dans `js/config.js` porte l'adresse du serveur, et elle est citée partout où
+elle a sa place : sur l'écran d'attente (en bouton principal — avant l'ouverture, c'est la
+seule chose qu'un visiteur puisse faire), au pied du tiroir du compte et du rail
+d'ordinateur, dans un panneau des Réglages, et dans les deux fenêtres d'accueil.
+
+Ces fenêtres vivent dans `js/bienvenue.js` :
+
+- **La bienvenue** — une fois par compte et par appareil. Elle pose le cadre en trois
+  points : ce qu'on fait ici, à quel rythme, et qu'aucun argent réel n'entre dans
+  l'affaire. C'est la première question qu'on se pose devant un jeu de cartes.
+- **Le rappel du Discord** — une seule fois, après trois boosters, et seulement pour qui
+  n'est pas déjà passé par le lien de la bienvenue.
+
+Les deux passent par `quandCalme()`, qui attend que l'écran soit rendu au joueur et
+n'autorise **qu'une proposition par session** — la bienvenue, le Discord et l'installation
+sur l'écran d'accueil (`js/pwa.js`) partagent la même file. Sans ça, elles pouvaient se
+succéder juste après la déchirure d'un paquet, c'est-à-dire au seul moment du jeu où l'on
+ne veut voir personne.
 
 ## Administrateurs
 

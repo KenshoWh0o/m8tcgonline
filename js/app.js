@@ -60,7 +60,8 @@ function navHTML() {
   return TABS.filter(t => t.bas).map(t => bouton(t, '')).join('')
     + '<i class="navsep" aria-hidden="true"></i>'
     + TABS.filter(t => t.tiroir && ongletDispo(t)).map(t => bouton(t, 'second')).join('')
-    + `<p class="navpied mentions courtes">${MENTIONS_COURT}</p>`;
+    + `<div class="navpied">${lienDiscord('discordlien', 'Rejoindre le Discord')}
+         <p class="mentions courtes">${MENTIONS_COURT}</p></div>`;
 }
 
 /* Ce qui réclame l'attention, onglet par onglet. */
@@ -127,6 +128,7 @@ function vTiroir() {
                ? 'Créer un compte' : 'Se connecter avec Discord'}</button>`
           : `<p class="muted small">Le serveur n'est pas encore branché sur ce site :
                ta progression reste dans ce navigateur.</p>`}
+      ${lienDiscord('discordlien', 'Rejoindre le Discord')}
       <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${APP_VERSION}</p>
       <p class="mentions courtes">${MENTIONS_COURT}</p>
     </footer>
@@ -221,6 +223,10 @@ function render() {
   /* Une carte Promo décrochée pendant l'appel serveur attend ici : l'écran est
      posé, c'est le moment de lui laisser la scène. */
   viderFilePromos();
+
+  /* Puis, s'il y a lieu, la bienvenue ou le rappel du Discord — jamais plus
+     d'une fenêtre par session, et jamais par-dessus autre chose. */
+  proposerAccueil();
 }
 
 /* Va sur un onglet, en remontant en haut de page. */

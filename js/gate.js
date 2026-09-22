@@ -74,7 +74,6 @@ function porteLancee() {
 
 const porteOuverte = () => etatPorte() === 'ouvert';
 
-const DISCORD_ICO_PORTE = '<svg viewBox="0 0 24 18" aria-hidden="true" fill="currentColor"><path d="M20.3 1.6A19.8 19.8 0 0 0 15.4.1a14 14 0 0 0-.6 1.3 18.3 18.3 0 0 0-5.5 0A13.6 13.6 0 0 0 8.6.1 19.7 19.7 0 0 0 3.7 1.6C.6 6.2-.3 10.7.2 15.1a19.9 19.9 0 0 0 6 3 14.7 14.7 0 0 0 1.3-2.1 13 13 0 0 1-2-1c.2-.1.3-.2.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4a13 13 0 0 1-2 1 14.5 14.5 0 0 0 1.3 2.1 19.8 19.8 0 0 0 6-3c.6-5.1-.9-9.6-3.6-13.5ZM8.0 12.4c-1.2 0-2.2-1.1-2.2-2.4S6.8 7.6 8 7.6s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>';
 
 /* ---------- L'écran ---------- */
 function vPorte() {
@@ -99,11 +98,15 @@ function vPorte() {
 function vPorteAttente() {
   /* Sans serveur configuré, il n'y a personne pour vérifier une invitation :
      on le dit, plutôt que de montrer un bouton qui ne mènerait nulle part. */
-  const entree = Backend.dispo
-    ? `<button class="btn discord" data-act="porte-discord">
-         ${DISCORD_ICO_PORTE} Se connecter avec Discord</button>`
+  const connexion = Backend.dispo
+    ? `<button class="btn ghost" data-act="porte-discord">J'ai déjà un accès</button>`
     : `<p class="muted small lockaide">Le serveur n'est pas encore branché sur
          ce site : l'accès rouvrira avec lui.</p>`;
+
+  const entree = `${lienDiscord('btn discord', 'Rejoindre le Discord')}
+    <p class="muted small lockaide">La date de sortie, les cartes en avant-première
+      et les accès à la bêta passent par là.</p>
+    ${connexion}`;
 
   return `<span class="locktag">Bientôt disponible</span>
     <h1 class="locktitle">Coming soon</h1>

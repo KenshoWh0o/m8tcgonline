@@ -5,7 +5,7 @@
    marche à suivre, une seule fois, et seulement après quelques minutes de jeu. */
 "use strict";
 
-const APP_VERSION = '2.9.1';
+const APP_VERSION = '1.0.0';
 
 const PWA = { invite: null, installe: false, dejaVu: false };
 const PWA_CLE = 'mtcg.install';
@@ -117,21 +117,14 @@ function peutProposer() {
 function noterPaquetOuvert() {
   const m = memoire();
   noterMemoire({ paquets: (m.paquets || 0) + 1 });
+  /* `quandCalme` (js/bienvenue.js) attend que l'écran soit rendu au joueur et
+     n'autorise qu'une proposition par session — sans quoi la bienvenue, le
+     Discord et l'installation pourraient se succéder au même moment, juste
+     après la déchirure d'un paquet. */
   if (peutProposer() && !PWA.dejaVu) {
     PWA.dejaVu = true;
-    attendreLeCalme();
+    quandCalme(ouvrirInstall);
   }
-}
-
-/* La proposition attend que l'écran soit rendu au joueur. Elle partait jusqu'ici
-   2,6 s après l'ouverture d'un booster — c'est-à-dire en plein milieu de la
-   déchirure et du défilé des cartes, la seule mise en scène du jeu. Le garde-fou
-   ne regardait que la feuille modale, pas le théâtre. */
-function attendreLeCalme() {
-  const occupe = () => document.body.classList.contains('intheater')
-    || !$('#sheet').hidden || !$('#viewer').hidden;
-  const essayer = () => (occupe() ? setTimeout(essayer, 1500) : ouvrirInstall());
-  setTimeout(essayer, 2600);
 }
 
 /* ---------- Service worker ---------- */

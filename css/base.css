@@ -131,6 +131,10 @@ a{color:var(--accent-soft)}
 .btn.tiny.ghost{box-shadow:0 3px 0 var(--sh-press),inset 0 0 0 1px var(--line-2)}
 .btn.tiny.ghost:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--sh-press),inset 0 0 0 1px var(--line-2)}
 
+/* Un bouton peut être un lien : les destinations extérieures s'ouvrent comme
+   des liens, pas comme des gestes de l'application. */
+a.btn{text-decoration:none}
+
 .linkbtn{background:none;border:0;color:var(--muted);font-weight:700;font-size:13px;padding:6px}
 .linkbtn:hover{color:var(--text)}
 /* Une rangée d'actions. Elle passe à la ligne plutôt que de déborder : deux

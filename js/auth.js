@@ -42,7 +42,6 @@ function lireErreurRetour() {
   try { history.replaceState(null, '', location.pathname); } catch (e) { /* sans gravité */ }
 }
 
-const DISCORD_ICO = '<svg viewBox="0 0 24 18" aria-hidden="true" fill="currentColor"><path d="M20.3 1.6A19.8 19.8 0 0 0 15.4.1a14 14 0 0 0-.6 1.3 18.3 18.3 0 0 0-5.5 0A13.6 13.6 0 0 0 8.6.1 19.7 19.7 0 0 0 3.7 1.6C.6 6.2-.3 10.7.2 15.1a19.9 19.9 0 0 0 6 3 14.7 14.7 0 0 0 1.3-2.1 13 13 0 0 1-2-1c.2-.1.3-.2.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4a13 13 0 0 1-2 1 14.5 14.5 0 0 0 1.3 2.1 19.8 19.8 0 0 0 6-3c.6-5.1-.9-9.6-3.6-13.5ZM8.0 12.4c-1.2 0-2.2-1.1-2.2-2.4S6.8 7.6 8 7.6s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>';
 
 function vAuth() {
   if (!CONNEXION.email && VUES_EMAIL.includes(authVue)) authVue = 'accueil';
@@ -104,7 +103,7 @@ function vAuth() {
       ${err}
       <div class="authacts">
         ${CONNEXION.discord
-          ? `<button class="btn discord" data-auth="discord">${DISCORD_ICO} Continuer avec Discord</button>`
+          ? `<button class="btn discord" data-auth="discord">${ICON.discord} Continuer avec Discord</button>`
           : ''}
         ${CONNEXION.email
           ? `<button class="btn ${CONNEXION.discord ? 'ghost' : ''}" data-auth="vers-inscription">Créer un compte avec une adresse</button>

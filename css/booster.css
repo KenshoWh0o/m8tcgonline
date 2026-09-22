@@ -1,6 +1,17 @@
 /* Écran du booster : bandeau d'extension, paquet 3D, réserve, et la déchirure d'ouverture. */
 /* ============ Écran booster ============ */
-.packzone{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100%;width:100%;gap:4px}
+/* L'écran Boosters est une vitrine : un paquet, une réserve, un bouton. Il
+   tient dans la fenêtre, quelle qu'en soit la hauteur, et ne défile jamais.
+
+   La hauteur du paquet n'est pas devinée : `.pack3d` absorbe la place qui
+   reste une fois l'en-tête, la réserve et le bouton posés, le paquet la
+   remplit, et `aspect-ratio` en déduit sa largeur. C'est la seule façon d'être
+   juste à 568 px de haut comme à 1080 — une constante retranchée à `100dvh`
+   tombait forcément à côté quelque part, et l'écran débordait de dix-huit
+   pixels sur les fenêtres où elle tombait court. */
+#main.tab-boosters{overflow:hidden}
+.packzone{display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  height:100%;min-height:0;width:100%;gap:4px}
 
 .setbar{position:relative;text-align:center;width:100%;max-width:520px}
 .setlogo{display:block;width:min(250px,58vw);margin:0 auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.7));
@@ -9,17 +20,20 @@
 .edition{position:absolute;right:2%;top:2%;width:clamp(38px,11vw,52px);height:auto;rotate:8deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
 
 .packstage{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  perspective:1300px;padding:8px 0 0}
+  perspective:1300px;padding:14px 0 0}
 .packglow{position:absolute;top:44%;left:50%;width:min(620px,124vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle,var(--accent-glow),transparent 64%)}
 /* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
-.pack3d{position:relative;transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
+.pack3d{position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
+  transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
 @keyframes packbob{50%{translate:0 -10px}}
-/* `aspect-ratio` et le facteur du `calc` disent la même chose — les
-   proportions du visuel de paquet (337 x 460). Les deux doivent bouger
-   ensemble si les images changent : le premier dessine la boîte, le second
-   empêche qu'elle dépasse en hauteur sur un écran bas. */
-.pack{position:relative;display:block;width:min(66vw,calc((100dvh - 400px) * .733),340px);height:auto;aspect-ratio:337/460;
+/* Le paquet remplit la hauteur qu'on lui laisse ; `aspect-ratio` en déduit la
+   largeur (337 x 460, les proportions du visuel — à corriger ici si les images
+   changent). `max-height` est la même contrainte exprimée dans l'autre sens :
+   elle borne la hauteur pour que la largeur ne dépasse jamais 66 % de l'écran
+   ni 340 px, sans quoi un écran large et bas donnerait un paquet démesuré. */
+.pack{position:relative;display:block;width:auto;height:100%;aspect-ratio:337/460;
+  max-height:calc(min(66vw,340px) * 460 / 337);
   touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform-style:preserve-3d;
   filter:drop-shadow(0 28px 40px rgba(0,0,0,.72));transition:filter .25s}
 .pack:active{cursor:grabbing}
@@ -166,29 +180,14 @@
   28%{transform:translateY(9%) rotateX(9deg) rotateZ(-2deg)}
   100%{transform:translateY(128%) rotateX(32deg) rotateZ(-9deg);opacity:0}}
 
-/* =====================================================================
-   Téléphone : l'écran Boosters tient dans la fenêtre
-   =====================================================================
-   C'est une vitrine — un paquet, une réserve, un bouton — pas une page. Le
-   faire défiler enverrait le bouton d'ouverture sous la ligne de flottaison,
-   sur le seul écran où il n'y a qu'un geste à faire.
-
-   La hauteur du paquet n'est donc plus devinée à partir de la fenêtre : c'est
-   `.pack3d` qui absorbe la place restante une fois l'en-tête, la réserve et le
-   bouton posés, et le paquet la remplit. `aspect-ratio` en déduit sa largeur,
-   `max-height` l'empêche de devenir plus large que l'écran.
-   ===================================================================== */
+/* ---- Téléphone : le paquet a le droit d'être un peu plus large ---- */
 @media (max-width:560px){
-  #main.tab-boosters{overflow:hidden;padding-bottom:12px}
-  .packzone{height:100%;min-height:0;gap:0}
-  /* 14 px en haut : l'amplitude du flottement (10 px) plus une marge. Sans ça,
-     le paquet monte par-dessus la ligne « 122 cartes · 6 par booster ». */
-  .packstage{min-height:0;padding:14px 0 0}
-  .pack3d{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center}
+  #main.tab-boosters{padding-bottom:12px}
+  .packzone{gap:0}
   /* 72vw plutôt que 66 : sur un téléphone haut, le plafond de largeur était
      atteint bien avant celui de hauteur, et le paquet flottait au milieu d'un
      grand vide. */
-  .pack{height:100%;width:auto;max-height:calc(min(72vw,360px) * 460 / 337)}
+  .pack{max-height:calc(min(72vw,360px) * 460 / 337)}
   .packfoot{padding-top:10px;gap:11px}
 }
 
