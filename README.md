@@ -47,13 +47,15 @@ mate-tcg-online/
 │   ├── essences/       Les dix symboles d'essence
 │   ├── icon-*.png      Icônes de l'application installée (générées)
 │   └── og-image.png    Image affichée quand le lien du site est partagé (générée)
+├── presse/             Kit presse : visuels prêts à publier et leur mode d'emploi
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
 │   ├── code-porte.py   Calcule l'empreinte d'un code d'accès
 │   ├── version.py      Pose le numéro de version et marque les fichiers
-│   └── gen-icons.py    Régénère icônes, favicons et image de partage
+│   ├── gen-icons.py    Régénère icônes, favicons et image de partage
+│   └── kit-presse.py   Régénère les visuels de presse/visuels/
 ├── supabase/           Tout le code serveur : tables, sécurité, actions du jeu
-│   ├── TOUT.sql        Les quatre fichiers ci-dessous, en un seul (assemblé)
+│   ├── TOUT.sql        Les fichiers d'installation ci-dessous, en un seul (assemblé)
 │   ├── 01_schema.sql   Tables, règles d'accès, recharge des boosters
 │   ├── 02_cards.sql    Catalogue des cartes (généré depuis js/cards-data.js)
 │   ├── 03_rpc.sql      Ouvrir un booster, échanger, encaisser une quête, acheter
@@ -62,6 +64,8 @@ mate-tcg-online/
 │   ├── 06_social.sql   Amis et fiches de joueur
 │   ├── 07_vitrine.sql  La vitrine du profil
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
+│   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
+│   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
 │   └── gen-cards-sql.py  Régénère 02_cards.sql
 ├── css/
 │   ├── tokens.css      Couleurs, typos, rythme (la charte)
@@ -73,7 +77,7 @@ mate-tcg-online/
 │   ├── lab.css         Onglet Labo
 │   ├── auth.css        Écran de connexion
 │   ├── promo.css       Scène d'obtention d'une carte Promo
-│   └── hub.css         Onglets v2 + adaptation ordinateur
+│   └── hub.css         En-tête, navigation, et les écrans autour du jeu
 ├── js/
 │   ├── config.js       Nom du jeu, habillage, couleurs, raretés, onglets, révélations
 │   ├── supabase-config.js  Les deux clés du compte en ligne (vides = hors ligne)
@@ -107,6 +111,8 @@ mate-tcg-online/
 ```
 
 Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `index.html`. Ils partagent leurs variables et fonctions. **L'ordre compte** : un fichier peut utiliser ce qui est défini dans un fichier chargé avant lui, et `app.js` doit rester en dernier.
+
+Chaque feuille de style porte aussi ses propres règles d'adaptation — téléphone, écran court, ordinateur. Une règle qui concerne l'écran Boosters vit dans `booster.css`, y compris quand elle ne s'applique qu'au mobile : chercher à deux endroits pour comprendre un écran, c'est ainsi qu'on finit par en corriger un seul.
 
 ## Où modifier quoi
 

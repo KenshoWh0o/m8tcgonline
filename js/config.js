@@ -1,4 +1,13 @@
-/* Configuration : identité du jeu, couleurs, catégories, raretés, réglages des révélations. Aucune logique ici. */
+/* Configuration : tout ce qui décrit le jeu sans le faire tourner.
+
+   Identité et mentions légales, palette des essences, échelle de raretés,
+   réglages de tirage et de révélation, cadres et avatars, liste des onglets et
+   jeu d'icônes. Aucune logique ici : ce fichier est lu, jamais exécuté.
+
+   Les valeurs qui touchent à l'économie — taille d'un booster, plafond de la
+   réserve, délai d'échange, palier des Promos — ont toutes un jumeau côté
+   serveur (cfg() dans supabase/01_schema.sql). Celles d'ici ne servent qu'à
+   l'affichage et au mode hors ligne : c'est le serveur qui tranche. */
 "use strict";
 
 /* ---------- Identité du jeu ---------- */
@@ -11,6 +20,11 @@ const SET_NAME = 'Tout commence ici';
 const MENTIONS = 'Projet non affilié à Gentle Mates. Toutes les images présentes '
   + 'sur le site sont utilisées à titre informatif. Les marques et logos affichés '
   + 'demeurent la propriété de leurs détenteurs respectifs.';
+
+/* La même chose en une ligne, pour les pieds de menu : la version longue y
+   tiendrait sur huit lignes et se lirait comme un bas de page oublié. */
+const MENTIONS_COURT = 'Projet non affilié à Gentle Mates. '
+  + 'Marques et images appartenant à leurs détenteurs respectifs.';
 
 /* Dossier des images, ajouté devant le champ "fichier" de chaque carte de js/cards-data.js. */
 const CARD_DIR = 'cards/';
@@ -55,14 +69,6 @@ const COLORS = {
   bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg' },
   azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg' },
   neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png' }
-};
-
-const CATS = {
-  joueur: 'Joueur',
-  coach: 'Coach',
-  moment: 'Moment',
-  objet: 'Objet',
-  essence: 'Essence'
 };
 
 /* `PR` n'est pas une rareté de plus dans l'échelle : c'est une case à part.
@@ -243,4 +249,3 @@ const PROMO_COMMENT = {
    ils occupent leur case pour que la suite de la numérotation se voie. */
 const PROMOS_A_VENIR = ['P03', 'P04'];
 
-const tabDef = id => TABS.find(t => t.id === id) || TABS[0];

@@ -3,7 +3,7 @@
    la progression reste dans le navigateur, et les onglets qui ont besoin des
    autres joueurs (Échanges, Quêtes, Boutique) invitent à se connecter.
 
-   Où trouver ces valeurs : Supabase › ton projet › Settings › API.
+   Où trouver ces valeurs : Supabase › le projet › Settings › API.
 
    La clé publique est faite pour être publique : elle n'ouvre que ce que les
    règles de supabase/01_schema.sql autorisent. Selon l'âge du projet, elle

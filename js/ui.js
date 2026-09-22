@@ -1,4 +1,6 @@
-/* Feuille modale (fenêtre qui monte du bas). */
+/* Les briques d'interface partagées par tous les écrans : la feuille modale
+   qui monte du bas, les avatars, et les petits blocs qu'on répète — un écran
+   vide, un compte à rebours court, l'enveloppe des actions serveur. */
 "use strict";
 
 /* ---------- Feuille modale ---------- */
@@ -76,7 +78,6 @@ function avatarInfo(a, photo) {
     plein: !v.ico && !v.objet };
 }
 
-const avatarSrc = (a, photo) => avatarInfo(a, photo).src;
 
 /* Trois cadrages, et un seul choix à faire : de quelle forme est l'image ?
      `plein`  une photo, déjà carrée : elle remplit le cercle.

@@ -1,5 +1,5 @@
-/* Écran d'attente : le site est en ligne, mais fermé au public tant que tu ne
-   décides pas de l'ouvrir. Un code donne accès au vrai jeu.
+/* Écran d'attente : le site est en ligne, mais fermé au public tant que
+   PORTE.active vaut true. Un code donne accès au vrai jeu.
 
    Ce que ça fait : personne n'arrive par hasard sur le jeu, et le lien peut
    circuler sans tout dévoiler.

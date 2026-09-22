@@ -157,4 +157,8 @@
 /* Un emplacement dont la carte n'existe pas encore : plus effacé que les
    autres, et sans promesse de date. */
 .gcell.avenir .ghost-card{opacity:.55}
-.gcell.avenir .promocomment{color:var(--line-3);font-style:italic}
+.gcell.avenir .promocomment{color:var(--muted);font-style:italic;opacity:.8}
+
+@media (max-width:560px){
+  .promocomment{font-size:9px;min-height:2.4em;margin-top:4px}
+}

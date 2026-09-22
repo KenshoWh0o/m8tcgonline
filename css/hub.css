@@ -1,8 +1,14 @@
-/* Les onglets ajoutés en v2 : tiroir, quêtes, boutique, échanges, combats,
-   profil, réglages. Pensé pour le pouce d'abord ; l'adaptation ordinateur est
-   tout en bas du fichier.
+/* Les écrans qui vivent autour du jeu : en-tête, navigation, tiroir du compte,
+   quêtes, boutique, social et échanges, profil, réglages, combats.
 
-   Aucune couleur en dur : tout passe par les jetons de css/tokens.css. */
+   L'écran Boosters (css/booster.css), les cartes et la collection
+   (css/cards.css), l'ouverture (css/opening.css), la visionneuse
+   (css/viewer.css) et la scène des Promos (css/promo.css) ont chacun leur
+   fichier — règles d'adaptation comprises.
+
+   Pensé pour le pouce d'abord. L'adaptation ordinateur est tout en bas, suivie
+   des écrans étroits. Aucune couleur en dur : tout passe par les jetons de
+   css/tokens.css, sinon le thème clair s'effondre. */
 
 /* ============ Titres de page ============ */
 /* L'en-tête d'un onglet : le titre, une ligne d'explication, et si besoin une
@@ -18,13 +24,6 @@
 .pagehead p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px}
 .pageact{flex:0 0 auto}
 
-.notice{display:flex;gap:11px;align-items:flex-start;background:var(--surface);
-  border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-sm);
-  padding:11px 14px;font-size:13.5px;line-height:1.45;margin:0 0 var(--gap-3);color:var(--subtle)}
-.notice.ok{border-left-color:var(--ok)}
-.notice b{color:var(--text)}
-.notice .linkbtn{display:block;padding:6px 0 0;color:var(--accent-soft)}
-
 .empty .ec{font-family:var(--display);font-stretch:110%;font-style:italic;font-size:20px;
   text-transform:none;letter-spacing:-.02em;color:var(--text);margin:0 0 6px;padding-left:0}
 /* Le titre d'un écran vide est centré : le trait d'accent des <h2> se
@@ -32,9 +31,13 @@
 .empty .ec::before{display:none}
 .empty .btn{max-width:280px;margin:18px auto 0}
 
-/* Le second groupe du rail n'apparaît que sur grand écran : sur mobile,
-   ces destinations sont dans le tiroir. */
-#nav .second,#nav .navsep{display:none}
+/* Le second groupe du rail et son pied n'apparaissent que sur grand écran :
+   sur mobile, ces destinations sont dans le tiroir du compte. */
+#nav .second,#nav .navsep,#nav .navpied{display:none}
+
+/* La mention légale en pied de menu : présente, jamais encombrante. */
+.mentions.courtes{margin:12px 0 0;font-size:10.5px;line-height:1.45;text-align:left;
+  color:var(--muted);max-width:none;padding:0;border:0}
 
 /* ============ Tiroir du compte ============ */
 /* Il part du bord droit, celui de l'avatar : le panneau vient de là où le doigt
@@ -56,7 +59,7 @@
 .tiroir-id{display:flex;align-items:center;gap:12px;padding:4px 0 16px}
 .tiroir-id>div{flex:1;min-width:0}
 .tiroir-id b{display:block;font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
-  font-size:19px;line-height:1.15;word-break:break-word}
+  font-size:19px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tiroir-id p{margin:1px 0 0}
 .tiroir-x{align-self:flex-start;background:none;border:0;color:var(--muted);font-size:17px;
   line-height:1;padding:6px;border-radius:var(--radius-xs)}
@@ -81,7 +84,7 @@
   background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--accent-soft)}
 .tiroir-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
-.tiroir-ico svg.ico-star{width:22px;height:16px;stroke:none;fill:currentColor}
+.tiroir-ico svg.ico-star{width:22px;height:20px;stroke:none;fill:currentColor}
 .tiroir-txt{min-width:0}
 .tiroir-txt b{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:800;color:var(--text)}
 .tiroir-txt small{display:block;font-size:12px;line-height:1.3;margin-top:1px}
@@ -679,9 +682,12 @@
 .soondeck.d0{transform:translateX(-74px) rotate(-14deg)}
 .soondeck.d1{transform:translateY(-10px) scale(1.06);z-index:2}
 .soondeck.d2{transform:translateX(74px) rotate(14deg)}
-.soontag{display:inline-block;background:var(--accent-wash-2);color:var(--accent-soft);border-radius:999px;
+/* Du texte d'accent posé sur un lavis d'accent : 1,3:1 de contraste, une
+   étiquette qu'on devinait plus qu'on ne la lisait. La couleur du texte courant
+   sur le même lavis tient dans les deux thèmes. */
+.soontag{display:inline-block;background:var(--accent-wash-2);color:var(--text);border-radius:999px;
   padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
-  box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+  box-shadow:inset 0 0 0 1px var(--accent-soft)}
 .soontitle{font-family:var(--display);font-stretch:114%;font-weight:900;font-style:italic;font-size:34px;
   letter-spacing:-.03em;text-transform:none;color:var(--text);margin:12px 0 8px;padding:0}
 .soontitle::before{display:none}
@@ -733,14 +739,18 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
      du logo, pour que l'en-tête ne soit pas déséquilibré d'un seul côté.
      Il se lit comme un panneau posé sur la page — un fond franc, un filet, des
      lignes qui respirent — et non comme une colonne de liens flottants. */
-  #nav{grid-template-columns:none;grid-auto-rows:max-content;align-content:start;gap:2px;
+  /* Une colonne, et non une grille : c'est ce qui permet au pied de menu
+     d'être poussé tout en bas par `margin-top:auto`, quelle que soit la
+     hauteur de la liste au-dessus. */
+  #nav{display:flex;flex-direction:column;gap:2px;
     padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));
     border-top:0;border-left:1px solid var(--line);background:var(--bg-2);backdrop-filter:none;
     overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  #nav>*{flex:0 0 auto}
   #nav button{flex-direction:row;justify-content:flex-start;gap:13px;padding:11px 13px;font-size:13.5px;
     font-weight:700;letter-spacing:.005em;border-radius:var(--radius-sm);color:var(--subtle)}
   #nav button svg{width:20px;height:20px;flex:0 0 auto}
-  #nav button svg.ico-star{width:22px;height:16px}
+  #nav button svg.ico-star{width:22px;height:20px}
   #nav button span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis}
   #nav button:hover{color:var(--text);background:var(--hover)}
 
@@ -784,6 +794,8 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   #nav .second span{font-weight:inherit;color:inherit}
   #nav button.second{padding:9px 13px;font-size:12.5px}
   #nav button.second svg{width:18px;height:18px}
+  #nav .navpied{display:block;margin-top:auto;padding:16px 13px 0;
+    border-top:1px solid var(--line)}
 
   .soonart{height:250px;max-width:380px}
   .soondeck{width:156px;margin-left:-78px}
@@ -967,24 +979,6 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 @media (max-width:560px){
   main{padding:12px 12px 24px}
 
-  /* ---- Boosters : une vitrine, pas une page ---- */
-  #main.tab-boosters{overflow:hidden;padding-bottom:12px}
-  .packzone{height:100%;min-height:0;gap:0}
-  .packstage{min-height:0;padding:4px 0 0}
-  /* C'est ce bloc qui absorbe la place restante ; le paquet le remplit en
-     hauteur, et `aspect-ratio` en déduit sa largeur. `max-height` borne le
-     résultat pour qu'il ne devienne jamais plus large que l'écran. */
-  .pack3d{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center}
-  .pack{height:100%;width:auto;max-height:calc(min(66vw,340px) * 460 / 337)}
-  .packfoot{padding-top:10px;gap:11px}
-
-  /* ---- Collection ---- */
-  .grid{grid-template-columns:repeat(4,1fr);gap:13px 7px}
-  .num{font-size:9.5px;margin-top:4px}
-  .count{top:-5px;right:-4px;font-size:9.5px;padding:1px 6px}
-  .promocomment{font-size:9px;min-height:2.4em;margin-top:4px}
-  .colheadtop{gap:10px}
-
   /* ---- Boutique ---- */
   .offres{grid-template-columns:repeat(3,1fr);gap:8px}
   .offre{gap:7px;padding:10px 7px;border-radius:var(--radius-sm)}
@@ -1009,15 +1003,4 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   .segbar{margin-bottom:var(--gap-3)}
   .stats{gap:7px}
   .stat{padding:10px 11px}
-}
-
-/* Téléphone court — le SE, les vieux Android. Le paquet a déjà rétréci tout
-   seul ; on lui rend quelques pixels en serrant ce qui l'entoure. */
-@media (max-width:560px) and (max-height:700px){
-  .setlogo{width:min(190px,46vw)}
-  .setmeta{margin-top:5px;font-size:11px}
-  .edition{width:clamp(32px,9vw,42px)}
-  .packshadow{margin-top:8px;height:12px}
-  .packfoot{padding-top:8px;gap:9px}
-  .reserve{gap:7px}
 }

@@ -62,7 +62,6 @@
 .op-rar.rR{color:var(--r-r)}.op-rar.rE{color:#c79bff}.op-rar.rL{color:var(--r-l)}
 .op-rar em{font-style:normal;font-family:var(--body);font-size:10.5px;font-weight:900;letter-spacing:.08em;background:var(--accent);
   color:#fff;padding:3px 10px;border-radius:999px;box-shadow:0 0 14px rgba(137,54,255,.55)}
-.op-rar .qmark{color:rgba(255,255,255,.75)}
 .op-rar.big{font-size:38px;font-stretch:125%}
 .op-rar.big.rL .slam{background:linear-gradient(180deg,#fff6d0,#ffc73b 55%,#e08a00);-webkit-background-clip:text;background-clip:text;
   color:transparent;filter:drop-shadow(0 3px 0 rgba(120,60,0,.6))}

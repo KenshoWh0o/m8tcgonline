@@ -85,7 +85,8 @@ body.inlock main { padding:0 }
 .compte span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .lockpret{color:var(--ok);font-weight:700;margin:20px 0 0}
 
-/* Le champ de code reste replié : discret pour le public, à portée pour toi. */
+/* Le champ de code reste replié : discret pour le public, à portée pour qui
+   possède le code. */
 .lockcode{background:none;border:0;padding:0;margin:26px 0 0;text-align:left}
 .lockcode summary{list-style:none;text-align:center;color:var(--muted);font-size:12.5px;
   font-weight:700;padding:8px;border-radius:8px;transition:color .15s}

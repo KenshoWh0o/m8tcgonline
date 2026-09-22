@@ -200,8 +200,6 @@ const RECETTES = {
 
   /* Cartes : du papier, pas du synthé. */
   carte:  () => { souffle({ f0: 1100, f1: 3400, duree: .13, gain: .16, q: .55, vitesse: 1.3 }); },
-  frotte: () => { for (let i = 0; i < 3; i++)
-                    souffle({ f0: 900 + i * 400, f1: 2600, duree: .11, gain: .10, q: .5, delai: i * .045 }); },
   retourne: () => { souffle({ f0: 700, f1: 2800, duree: .10, gain: .14, q: .7 });
                     note({ f0: 300, f1: 180, duree: .09, gain: .06, onde: 'sine' }); },
 

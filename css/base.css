@@ -52,7 +52,7 @@ body::after{content:'';position:fixed;left:0;right:0;bottom:0;z-index:2;pointer-
 #nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round}
 /* L'étoile du logo est pleine : elle sert de marque, pas d'icône au trait. */
-#nav svg.ico-star,.btn svg.ico-star{width:24px;height:17px;stroke:none;fill:currentColor}
+#nav svg.ico-star,.btn svg.ico-star{width:24px;height:22px;stroke:none;fill:currentColor}
 
 /* L'onglet en cours : la pastille se dessine derrière l'icône seule, pas
    derrière toute la colonne. Un bloc de couleur haut de 46 px écrasait la barre ;
@@ -121,9 +121,6 @@ a{color:var(--accent-soft)}
 .btn.ghost.dark{background:rgba(255,255,255,.12);color:#fff;
   box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.18)}
 .btn.ghost.dark:active:not(:disabled){box-shadow:0 0 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.18)}
-.btn.danger{background:linear-gradient(180deg,var(--danger),#c1005c);
-  box-shadow:0 5px 0 #7d003b,var(--sh-3),inset 0 1px 0 var(--gloss)}
-.btn.danger:active:not(:disabled){box-shadow:0 0 0 #7d003b,var(--sh-1)}
 .btn:disabled{opacity:.38;cursor:not-allowed;box-shadow:0 4px 0 var(--sh-press);filter:grayscale(.3)}
 .btn svg{width:19px;height:19px;flex:0 0 auto}
 
@@ -136,8 +133,11 @@ a{color:var(--accent-soft)}
 
 .linkbtn{background:none;border:0;color:var(--muted);font-weight:700;font-size:13px;padding:6px}
 .linkbtn:hover{color:var(--text)}
-.row{display:flex;gap:10px;align-items:center}
-.row>.btn{flex:1}
+/* Une rangée d'actions. Elle passe à la ligne plutôt que de déborder : deux
+   boutons dont les libellés sont longs ne tiennent pas côte à côte sur un écran
+   de 320 px, et le second sortait de l'écran — avec son texte. */
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row>.btn{flex:1 1 150px;min-width:0;padding-inline:16px}
 
 /* ============ Puces de filtre ============ */
 /* `overflow-y:hidden` et `touch-action:pan-x` : une rangée de puces se fait

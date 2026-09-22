@@ -1,4 +1,5 @@
-/* Petits outils partagés : sélecteur, échappement HTML, hasard, notifications. */
+/* Petits outils partagés : sélecteur, échappement HTML, hasard, message court,
+   lecture d'une carte, et le branchement du gyroscope. */
 "use strict";
 
 /* ---------- Sélecteur et texte ---------- */
@@ -14,7 +15,6 @@ const noacc = s => String(s == null ? '' : s)
   .trim();
 
 /* ---------- Hasard ---------- */
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rnd = a => a[Math.floor(Math.random() * a.length)];
 
 function shuffle(a) {
@@ -23,16 +23,6 @@ function shuffle(a) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-}
-
-/* Hash déterministe (FNV-1a) : utilisé pour tirer un rendu stable à partir de l'id d'une carte. */
-function hash(s) {
-  let x = 2166136261;
-  for (const ch of String(s)) {
-    x ^= ch.charCodeAt(0);
-    x = Math.imul(x, 16777619);
-  }
-  return x >>> 0;
 }
 
 /* ---------- Notifications ---------- */
@@ -66,10 +56,6 @@ const essIcon = (k, cls) => {
     ? `<img class="ess ${cls || ''}" src="${col.ic}" alt="${col.nom}">`
     : `<i class="ess dot ${cls || ''}" style="background:${col.c}"></i>`;
 };
-
-const dot = k => essIcon(k);
-const costDots = cost => Object.entries(cost).map(([k, n]) => dot(k).repeat(n)).join('');
-const costText = cost => Object.entries(cost).map(([k, n]) => `${n} ${(COLORS[k] || COLORS.neutre).nom}`).join(', ');
 
 /* ---------- Accessibilité ---------- */
 const RM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;

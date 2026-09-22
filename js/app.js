@@ -55,9 +55,12 @@ function navHTML() {
       ${tab === t.id ? 'aria-current="page"' : ''}><i class="navbg" aria-hidden="true"></i>
       ${NAVICO[t.ico]}<span>${h(t.nom)}</span>${n ? `<i class="pastille nav">${n}</i>` : ''}</button>`;
   };
+  /* Le pied n'existe que sur le rail d'ordinateur : sur mobile, ces destinations
+     et cette mention vivent dans le tiroir du compte. */
   return TABS.filter(t => t.bas).map(t => bouton(t, '')).join('')
     + '<i class="navsep" aria-hidden="true"></i>'
-    + TABS.filter(t => t.tiroir && ongletDispo(t)).map(t => bouton(t, 'second')).join('');
+    + TABS.filter(t => t.tiroir && ongletDispo(t)).map(t => bouton(t, 'second')).join('')
+    + `<p class="navpied mentions courtes">${MENTIONS_COURT}</p>`;
 }
 
 /* Ce qui réclame l'attention, onglet par onglet. */
@@ -125,6 +128,7 @@ function vTiroir() {
           : `<p class="muted small">Le serveur n'est pas encore branché sur ce site :
                ta progression reste dans ce navigateur.</p>`}
       <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${APP_VERSION}</p>
+      <p class="mentions courtes">${MENTIONS_COURT}</p>
     </footer>
   </nav>`;
 }
@@ -193,8 +197,13 @@ function render() {
   tab = ongletValide(tab);
   const vue = VUES[tab] || VUES.boosters;
   const m = $('#main');
+  /* Remplacer le contenu remet le défilement à zéro. Sur le même onglet, la
+     position de lecture appartient au joueur : un rafraîchissement de fond ne
+     doit pas le renvoyer en haut de ses 122 cases. */
+  const haut = m.className === 'tab-' + tab ? m.scrollTop : 0;
   m.className = 'tab-' + tab;
   m.innerHTML = vue();
+  if (haut) m.scrollTop = haut;
 
   if (tab === 'boosters') bindPack();
   bindReglages();
@@ -336,16 +345,13 @@ async function clicPage(e) {
           { label: 'Annuler', fn: closeSheet }
         ]
       });
-    case 't-10': save.tickets += 10; persist(); header(); return toast('+10 boosters (affichage seulement).');
+    case 't-10':
+      save.tickets += 10; persist(); render();
+      return toast('+10 boosters (affichage seulement).');
     case 't-90': return testRemplir(90);
     case 't-promo-file': return testFilePromos();
     case 't-quete': return testQuete();
     case 't-toast': return toast('Voilà à quoi ça ressemble.');
-
-    /* --- Ouverture --- */
-    case 'again': rv = null; render(); return setTimeout(openBooster, 60);
-    case 'back': rv = null; return render();
-    case 'skip': rv.idx = rv.cards.length; return render();
 
     case 'reset':
       return openSheet({
@@ -419,10 +425,29 @@ setInterval(() => {
   if (jeton) jeton.style.setProperty('--p', tickPct() + '%');
 }, 1000);
 
+/* ---------- Quand il est prudent de redessiner ---------- */
+/* Deux moments où un rendu venu de l'arrière-plan ferait des dégâts :
+     · pendant une ouverture ou une scène de Promo — l'écran appartient aux
+       cartes, et le redessiner couperait la mise en scène ;
+     · pendant qu'une demande d'échange se compose — le champ de saisie perdrait
+       le curseur et le texte déjà tapé.
+   Les deux tests vivent ici, et nulle part ailleurs. */
+const ecranOccupe = () => !!rv || opening || promoEnCours;
+const enTrainDEcrire = () => tab === 'social' && socVue === 'echanges' && trVue === 'nouvelle';
+
+/* Les compteurs, la barre et le tiroir se remettent à jour sans toucher à la
+   page. Le contenu, lui, n'est redessiné que si ça ne dérange personne. */
+function majDiscrete(pageAussi) {
+  header();
+  $('#nav').innerHTML = navHTML();
+  if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
+  if (pageAussi && !ecranOccupe() && !enTrainDEcrire()) render();
+}
+
 /* Revenir sur l'onglet après un moment : on resynchronise. */
 addEventListener('visibilitychange', () => {
   if (document.hidden || Backend.mode !== 'cloud') return;
-  Backend.pull().then(() => { header(); render(); }).catch(() => {});
+  Backend.pull().then(() => majDiscrete(true)).catch(() => {});
   releverSocial();
 });
 
@@ -434,20 +459,12 @@ addEventListener('visibilitychange', () => {
 const RELEVE_SOCIAL = 60000;
 
 function releverSocial() {
-  if (Backend.mode !== 'cloud' || document.hidden) return;
-  /* Jamais pendant une ouverture ni une scène de promo : l'écran appartient
-     aux cartes, et un rendu par-dessus la couperait. */
-  if (rv || opening || promoEnCours) return;
-
-  Promise.all([Backend.loadTrades(), Backend.loadAmis()]).then(() => {
-    header();
-    $('#nav').innerHTML = navHTML();
-    if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
-    /* On ne redessine la page que si elle montre ces données — et jamais
-       pendant qu'une demande est en cours de composition : le champ de saisie
-       perdrait le curseur et le texte déjà tapé. */
-    if (tab === 'social' && !(socVue === 'echanges' && trVue === 'nouvelle')) render();
-  }).catch(() => {});
+  if (Backend.mode !== 'cloud' || document.hidden || ecranOccupe()) return;
+  Promise.all([Backend.loadTrades(), Backend.loadAmis()])
+    /* Seul l'onglet Social montre ces données : ailleurs, les pastilles
+       suffisent, et un rendu de plus ne servirait qu'à déranger. */
+    .then(() => majDiscrete(tab === 'social'))
+    .catch(() => {});
 }
 
 setInterval(releverSocial, RELEVE_SOCIAL);
