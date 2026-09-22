@@ -471,7 +471,11 @@ function montrerCollectionDe(pseudo) {
 
   const listes = {
     manque: sienne.filter(c => !mesEx(c.id)),
-    doubles: sienne.filter(c => col[c.id] > 1),
+    /* Même définition qu'en fiche : un doublon est une carte cessible. Les
+       Essences et les Promos restent visibles dans « Tout », mais elles ne
+       s'échangent pas — les ranger sous « ses doublons » ferait espérer un
+       échange que le serveur refusera. */
+    doubles: sienne.filter(c => col[c.id] > 1 && c.cat !== 'essence' && !c.promo),
     tout: sienne
   };
   const liste = (listes[trColVue] || sienne).slice().sort(parRarete);

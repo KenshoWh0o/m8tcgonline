@@ -92,8 +92,18 @@ begin
     select 1 from friendships
      where a = least(moi, o.id) and b = greatest(moi, o.id) and accepte);
 
-  select count(*) into total from cards;
-  select count(*) into possede from collection where user_id = o.id and qty > 0;
+  -- `not promo`, des deux cotes. Les cartes Promo vivent dans `cards` pour
+  -- pouvoir entrer dans une collection, mais elles n'appartiennent pas a
+  -- l'extension : ni dans son total, ni dans son pourcentage (voir la table
+  -- `cards` et sync_collection_quests dans 01_schema.sql).
+  --
+  -- Sans ce garde-fou, la fiche d'un joueur annoncait « / 126 » pendant que
+  -- son propre ecran Collection et le palier des 100 % comptaient 122. Deux
+  -- ecrans, deux verites, et un joueur a 122/122 qui se voyait incomplet.
+  select count(*) into total from cards where not promo;
+  select count(*) into possede
+    from collection c join cards k on k.id = c.card_id
+   where c.user_id = o.id and c.qty > 0 and not k.promo;
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
