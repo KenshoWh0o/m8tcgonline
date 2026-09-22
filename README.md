@@ -181,7 +181,7 @@ Il n'a ni écran, ni lettrage, ni surbrillance carte par carte : **c'est la lumi
 
 Dans un godpack, `announce()` **n'ajoute pas** la surbrillance de rareté carte par carte : toutes les cartes sont des hits, les éclairs bleus et violets ne feraient que brouiller l'or. Seule la légendaire finale garde sa révélation complète.
 
-> `PACK_SIZE` sert à l'affichage ; c'est `makeBooster()` qui décide vraiment du contenu — et, en ligne, `open_pack()` dans `supabase/03_rpc.sql`, qui seul fait foi. Les trois doivent bouger ensemble. Les visuels de paquet fournis portent la mention imprimée « Booster de 10 cartes » : elle vient des images d'origine, pas du jeu.
+> `PACK_SIZE` sert à l'affichage ; c'est `makeBooster()` qui décide vraiment du contenu — et, en ligne, `open_pack()` dans `supabase/03_rpc.sql`, qui seul fait foi. Les trois doivent bouger ensemble. Les visuels de paquet portent la mention imprimée « Booster de 6 cartes » : si le nombre change, il faut refaire les images, sinon le paquet ment sur ce qu'il contient.
 
 ## Ajouter une carte
 
@@ -221,7 +221,7 @@ Dans un godpack, `announce()` **n'ajoute pas** la surbrillance de rareté carte 
 
 Les visuels de la marque vivent dans `assets/` et sont déclarés dans `js/config.js` :
 
-- `boosters/booster-01…04.webp` — les quatre paquets. Un est tiré au sort à chaque ouverture, **sans aucun effet sur le contenu**.
+- `boosters/booster-01…04.webp` — les quatre paquets, 337 × 460, recadrés au ras du plastique. Un est tiré au sort à chaque ouverture, **sans aucun effet sur le contenu**. Leurs proportions sont reprises à la main dans `css/booster.css` (`aspect-ratio` de `.pack` et de `.packrip`, et le facteur du `calc()` qui plafonne la largeur) : remplacer les images sans toucher à ces trois valeurs laisserait le paquet flotter dans une boîte qui n'est plus la sienne.
 - `essences/<couleur>.svg` et `essences/neutre.png` — les dix symboles d'essence, utilisés dans les filtres de collection et la fiche d'une carte. Leurs couleurs officielles sont reprises dans `COLORS` (`js/config.js`), avec un bleu légèrement éclairci pour rester lisible sur fond sombre.
 - `card-back.webp` — le dos affiché quand la dernière carte se retourne.
 - `extension-logo.svg` — le logo de l'extension, en haut de l'écran Boosters et sur le récap.

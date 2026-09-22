@@ -15,7 +15,11 @@
 /* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
 .pack3d{position:relative;transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
 @keyframes packbob{50%{translate:0 -10px}}
-.pack{position:relative;display:block;width:min(66vw,calc((100dvh - 400px) * .665),340px);height:auto;aspect-ratio:368/553;
+/* `aspect-ratio` et le facteur du `calc` disent la même chose — les
+   proportions du visuel de paquet (337 x 460). Les deux doivent bouger
+   ensemble si les images changent : le premier dessine la boîte, le second
+   empêche qu'elle dépasse en hauteur sur un écran bas. */
+.pack{position:relative;display:block;width:min(66vw,calc((100dvh - 400px) * .733),340px);height:auto;aspect-ratio:337/460;
   touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform-style:preserve-3d;
   filter:drop-shadow(0 28px 40px rgba(0,0,0,.72));transition:filter .25s}
 .pack:active{cursor:grabbing}
@@ -88,7 +92,7 @@
 
 /* ============ Déchirure (le paquet vit dans la même scène que la pile) ============ */
 /* Posé par-dessus la pile : tant qu'il est là, les cartes sont « dedans ». */
-.packrip{position:absolute;left:50%;top:50%;z-index:5;width:113%;aspect-ratio:368/553;translate:-50% -50%;
+.packrip{position:absolute;left:50%;top:50%;z-index:5;width:113%;aspect-ratio:337/460;translate:-50% -50%;
   transform-style:preserve-3d;pointer-events:none;filter:drop-shadow(0 26px 38px rgba(0,0,0,.75))}
 .rp-body{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 /* Bord déchiré : la même ligne en dents de scie sur les deux moitiés du paquet. */

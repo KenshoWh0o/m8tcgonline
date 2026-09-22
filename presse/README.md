@@ -22,7 +22,7 @@ un chiffre.
 |---|---|---|
 | `01-annonce-paysage.png` | 1200 × 675 | Le tweet d'annonce. Logo, nom de l'extension, promesse, adresse. |
 | `02-cartes-paysage.png` | 1200 × 675 | Cinq légendaires en éventail. Le visuel qui donne envie d'ouvrir. |
-| `03-chiffres-paysage.png` | 1200 × 675 | 122 cartes, 10 par booster, 6 par jour, 0 €. Pour couper court aux questions. |
+| `03-chiffres-paysage.png` | 1200 × 675 | 122 cartes, 6 par booster, 6 par jour, 0 €. Pour couper court aux questions. |
 | `04-booster-portrait.png` | 1080 × 1350 | Portrait, occupe toute la hauteur du fil sur mobile. |
 | `05-promos-carre.png` | 1080 × 1080 | Les quatre cartes Promo. Le post « pour les collectionneurs ». |
 | `06-teaser-paysage.png` | 1200 × 675 | « Coming soon », à poster **avant** l'ouverture. |
@@ -121,7 +121,7 @@ simulation.
 3. Les écrans qui valent le détour :
    - **Boosters** — le paquet et la réserve pleine
    - **l'ouverture** — juste après la révélation d'une légendaire
-   - **le récap** — la grille des dix cartes
+   - **le récap** — la grille des six cartes
    - **Collection** — avec une bonne moitié des cases remplies
    - **une carte en grand** — depuis la Collection, elle tourne en 3D
    - **les Promos** — le bas de l'onglet Collection

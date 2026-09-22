@@ -298,7 +298,7 @@ def v3_chiffres():
     im = fond(l, h, .40)
     d = ImageDraw.Draw(im)
     ruban(im, l / 2, 148, 'Tout commence ici', GRAS(17))
-    for k, (v, lib) in enumerate([('122', 'cartes'), ('10', 'par booster'),
+    for k, (v, lib) in enumerate([('122', 'cartes'), ('6', 'par booster'),
                                   ('6', 'boosters / jour'), ('0 €', 'pour jouer')]):
         chiffre(im, d, l / 2 + (k - 1.5) * 224, 318, v, lib)
     texte(im, (l / 2, 470),
