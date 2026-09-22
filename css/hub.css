@@ -26,7 +26,10 @@
 .notice .linkbtn{display:block;padding:6px 0 0;color:var(--accent-soft)}
 
 .empty .ec{font-family:var(--display);font-stretch:110%;font-style:italic;font-size:20px;
-  text-transform:none;letter-spacing:-.02em;color:var(--text);margin:0 0 6px}
+  text-transform:none;letter-spacing:-.02em;color:var(--text);margin:0 0 6px;padding-left:0}
+/* Le titre d'un écran vide est centré : le trait d'accent des <h2> se
+   retrouverait posé tout seul dans la marge, à côté de rien. */
+.empty .ec::before{display:none}
 .empty .btn{max-width:280px;margin:18px auto 0}
 
 /* Le second groupe du rail n'apparaît que sur grand écran : sur mobile,
@@ -149,7 +152,6 @@
   display:inline-flex;align-items:center;gap:6px;transition:color .14s,background .14s}
 .souschips button:hover{color:var(--subtle)}
 .souschips button.on{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
-.rappelrar{margin:0 0 12px}
 
 /* ============ Quêtes ============ */
 /* Un bandeau par période : ce qu'il reste à faire, et dans combien de temps tout
@@ -202,9 +204,14 @@
 .qtag{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .qtag.ok{color:var(--ok)}
 
-.qallgood{display:flex;align-items:center;gap:9px;background:var(--ok-wash);border:1px solid var(--ok-line);
-  border-radius:var(--radius);padding:13px 15px;color:var(--ok);font-size:13.5px;font-weight:700}
-.qallgood svg{width:19px;height:19px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2.4;
+/* Période bouclée : le bandeau lui-même le dit. Une coche à la place du
+   compteur, et le compte à rebours reste — c'est lui qui dit quand revenir. */
+.qperiode.fini{background:linear-gradient(135deg,var(--ok-wash),var(--surface) 64%);border-color:var(--ok-line)}
+.qperiode.fini .qpico{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.qperiode.fini .qpreste small{color:var(--ok)}
+.qpok{display:grid;place-items:center;width:26px;height:26px;margin:0 0 3px auto;border-radius:50%;
+  background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.qpok svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.6;
   stroke-linecap:round;stroke-linejoin:round}
 
 .shard{width:15px;height:15px;color:var(--brand-light);flex:0 0 auto}
@@ -216,6 +223,12 @@
 .wallet b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
 .wallet svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
 .wallet .shard{stroke:none;fill:currentColor}
+
+/* La ligne d'intro d'un rayon. En classe et non en style en ligne : une
+   propriété raccourcie `margin` posée sur un enfant direct de #main efface le
+   `margin-inline:auto` qui centre la page, et le texte repart à gauche pendant
+   que le reste reste au milieu. */
+.rayondit{margin:0 0 12px}
 
 /* Un rayon : une grille de vignettes qu'on parcourt du regard, comme un étal.
    On clique pour voir l'article en grand, on reclique pour confirmer — jamais
@@ -463,9 +476,17 @@
   background:linear-gradient(135deg,var(--accent-wash-2),var(--surface) 62%);
   border:1px solid var(--line);border-radius:var(--radius);padding:16px 15px;margin-bottom:10px;
   box-shadow:var(--sh-1)}
-.idnom{flex:1;min-width:0}
-.idnom b{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;font-size:21px;
-  display:inline-block;vertical-align:middle;margin-right:7px;word-break:break-word}
+/* `flex:1 1 150px` et non `flex:1` : avec une base de zéro, la colonne du nom
+   se laissait comprimer jusqu'à une lettre de large — le pseudo s'écrivait
+   alors à la verticale au lieu de faire passer le portefeuille à la ligne. */
+.idnom{flex:1 1 150px;min-width:0}
+.idnomligne{display:flex;align-items:center;gap:7px;min-width:0}
+/* La taille suit la largeur : sur un petit écran, un pseudo de seize
+   caractères tient encore plutôt que de finir en points de suspension. */
+.idnomligne b{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
+  font-size:clamp(17px,5.4vw,21px);
+  line-height:1.15;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.idnomligne .qtag{flex:0 0 auto}
 .idnom p{margin:2px 0 0}
 
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
@@ -582,6 +603,11 @@
   border-radius:999px;padding:7px 12px;color:var(--subtle);box-shadow:inset 0 0 0 1px var(--line)}
 .cdjetons b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
 .cdjetons svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+/* Le jeton d'échange se voit tel qu'il est vendu : c'est le même objet, il
+   doit porter la même image en boutique et dans l'onglet où on le dépense. */
+.cdjeton{width:21px;height:21px;flex:0 0 auto;object-fit:contain;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
+.cdjetons.vide .cdjeton{filter:grayscale(.75)}
 .cdjetons.vide{opacity:.6}
 .cdjetons.vide b{color:var(--muted)}
 
@@ -790,3 +816,130 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .qrcadre{display:block}
 .qreward.objet small{font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
   color:var(--muted)}
+
+/* =====================================================================
+   Échanges — la refonte
+   =====================================================================
+   L'écran répondait à « qui, quoi, contre quoi » dans le désordre : un champ
+   de pseudo à taper de mémoire, puis deux emplacements muets. Il répond
+   maintenant dans l'ordre des décisions, et chaque carte montrée dit ce
+   qu'elle change pour les deux collections. */
+
+/* Une section de liste : un titre, et ce qui suit. Ces deux classes étaient
+   employées sans jamais avoir été écrites — le <h2> tombait donc dans le style
+   générique, avec son trait d'accent, au milieu d'une pile de cartes. */
+.qsec{margin-top:var(--gap-4)}
+.qsechead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  margin:0 0 var(--gap-2)}
+.qsechead h2{margin:0}
+
+/* ---------- Composer ---------- */
+.compose{display:flex;flex-direction:column;gap:10px}
+
+/* La règle du jeu, une fois, à l'endroit où elle sert. Répétée en petit sous
+   chaque liste, elle ne se lisait plus. */
+.trregles{list-style:none;margin:0;padding:12px 15px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  display:flex;flex-direction:column;gap:7px}
+.trregles li{position:relative;padding-left:18px;font-size:13px;line-height:1.4;color:var(--muted)}
+.trregles li::before{content:'';position:absolute;left:4px;top:.55em;width:6px;height:6px;
+  border-radius:50%;background:var(--accent-soft)}
+.trregles b{color:var(--text)}
+
+/* Une étape : un numéro, un titre, un corps. Le numéro devient une coche dès
+   qu'elle est remplie — on voit ce qu'il reste à faire sans avoir à lire. */
+.etape{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:13px 15px 16px;box-shadow:var(--sh-1);transition:border-color .16s}
+.etape.faite{border-color:var(--ok-line)}
+.etapehead{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.etapehead h2{margin:0;padding:0;font-size:15.5px}
+.etapehead h2::before{display:none}
+.etapeno{display:grid;place-items:center;width:26px;height:26px;flex:0 0 auto;border-radius:50%;
+  font-family:var(--display);font-weight:900;font-style:italic;font-size:13px;line-height:1;
+  background:var(--accent-wash);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line-2)}
+.etape.faite .etapeno{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.etapeno svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.etapecorps>p:first-child{margin-top:0}
+.etapecorps .filab{margin:15px 0 6px}
+.etapecorps .found{margin-top:0}
+
+/* Les amis, d'un geste : c'est le chemin normal vers un échange. Le champ de
+   pseudo reste dessous, pour les autres. */
+.amirow{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  touch-action:pan-x;padding:2px 0 4px;scrollbar-width:none}
+.amirow::-webkit-scrollbar{display:none}
+.amichip{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;border:0;
+  background:var(--surface-2);color:var(--subtle);border-radius:999px;padding:5px 15px 5px 5px;
+  font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px var(--line);
+  transition:background .14s,color .14s,box-shadow .14s}
+.amichip:hover{background:var(--surface-3);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.amichip span{max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trvoir{margin-top:11px}
+
+/* Sous un emplacement rempli : ce qu'il change pour l'une et l'autre collection. */
+.slotdit{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-top:2px;line-height:1.3}
+.slotdit.bon{color:var(--ok)}
+.slotdit.lui{color:var(--accent-soft)}
+/* Une alerte qui explique plutôt qu'elle ne bloque. */
+.autherr.doux{background:var(--surface-2);border-color:var(--line-2);color:var(--muted)}
+
+.trenvoi{display:flex;flex-direction:column;gap:10px;margin-top:2px}
+.troccout{display:flex;align-items:center;justify-content:center;gap:7px;margin:0;
+  flex-wrap:wrap;text-align:center;font-size:12.5px;font-weight:600;color:var(--muted)}
+.troccout.ok{color:var(--ok)}
+.troccout b{color:var(--text)}
+.troccout svg{width:15px;height:15px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
+.troccout .linkbtn{padding:0;font-size:12.5px;color:var(--accent-soft)}
+.trenvoi .btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Une demande, lue de chez soi ---------- */
+/* Une demande qui apporte une carte jamais obtenue ne doit pas ressembler aux
+   autres : c'est la seule information qui décide vraiment. */
+.trade.inedite{border-color:var(--accent-wash-2);box-shadow:0 0 0 1px var(--accent-wash),var(--sh-1)}
+.qtag.neuf{color:var(--accent-soft)}
+.trlab.gain{color:var(--ok)}
+.trswap .trside .minietat{display:block;font-size:10.5px;font-weight:700;line-height:1.3;
+  color:var(--muted);margin-top:3px}
+.minietat{display:block;font-size:10.5px;font-weight:700;line-height:1.3;
+  color:var(--muted);margin-top:3px}
+.minietat.neuf{color:var(--ok)}
+.minietat.chaud{color:var(--r-l)}
+.trraison{margin:8px 0 0;text-align:center;font-size:12px;font-weight:600;color:var(--muted)}
+
+/* ---------- Ce que l'autre possède ---------- */
+.picklui{display:block;margin-top:1px;font-size:9.5px;font-weight:800;color:var(--muted)}
+.picklui.a{color:var(--ok)}
+/* Une carte qu'il n'a pas : on la laisse choisissable — il peut l'obtenir d'ici
+   là — mais elle s'efface, et l'étape 2 dit pourquoi. */
+.pick.hors{opacity:.42}
+.pickn{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;
+  margin-left:5px;border-radius:9px;background:var(--surface-3);color:var(--subtle);
+  font-size:10px;font-weight:900;font-style:normal;line-height:1}
+.souschips button.on .pickn{background:var(--accent-wash-2);color:var(--accent-soft)}
+.trcolvues{padding-top:10px}
+/* Dans une fiche, la grille est déjà courte : elle n'a pas à défiler dans son
+   coin à l'intérieur d'une feuille qui défile déjà. */
+.pickgrid.court{max-height:none;overflow:visible}
+
+/* Les comptes d'une collection amie, en tête de fiche. Trois nombres qui
+   répondent à « est-ce que ça vaut le coup de lui demander quelque chose ? ». */
+.colchips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 10px}
+.colchip{display:inline-flex;align-items:baseline;gap:5px;background:var(--surface-2);
+  border-radius:999px;padding:5px 13px;font-size:12px;font-weight:600;color:var(--muted);
+  box-shadow:inset 0 0 0 1px var(--line)}
+.colchip b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
+.colchip.fort b{color:var(--accent-soft)}
+.ficheacts{margin-top:12px}
+
+/* ---------- La carte qui annonce un échange ---------- */
+/* Même forme que celle des quêtes, mais l'avatar d'en face en tête : on
+   reconnaît qui avant de lire quoi. */
+.qn.troc{border-color:var(--line-2)}
+.qn.troc .qntxt small{color:var(--accent-soft)}
+.qn.troc .qnico{background:var(--accent-wash);color:var(--accent-soft)}
+.qn.froid .qnico{background:var(--surface-3);color:var(--muted)}
+.qn.froid .qntxt small{color:var(--muted)}
+.qnav{flex:0 0 auto;display:grid;place-items:center}

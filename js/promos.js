@@ -81,14 +81,13 @@ function montrerPromo(c) {
   /* Une image d'attente avant d'animer, sinon la transition est avalée. */
   requestAnimationFrame(() => sc && sc.classList.add('go'));
 
-  setTimeout(() => { if (document.body.contains(sc)) SFX.jouer('retourne'); }, 780);
+  /* Le retournement commence à 52 % des 1150 ms de `pr-come`, soit 598 ms. */
+  setTimeout(() => { if (document.body.contains(sc)) SFX.jouer('retourne'); }, 600);
 
-  /* Le quart de tour. L'animation `pr-come` fait 1150 ms : la carte arrive de
-     dos jusqu'à 52 %, puis pivote de 180° à 360°. Elle est donc sur la tranche
-     à 76 %, soit 874 ms — c'est là, et seulement là, qu'on échange les deux
-     faces sans que ça se voie. */
-  setTimeout(() => { if (document.body.contains(sc)) sc.classList.add('retourne'); }, 874);
-
+  /* L'échange des deux faces, lui, n'est plus piloté d'ici : il est devenu une
+     animation calée sur la même horloge que la carte (voir css/promo.css).
+     Un minuteur dérive d'une image ou deux — et une image de trop montrait le
+     dos de la carte retourné en miroir. */
   setTimeout(() => {
     if (!document.body.contains(sc)) return;
     sc.classList.add('face');

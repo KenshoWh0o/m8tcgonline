@@ -96,21 +96,43 @@ async function ouvrirFiche(pseudo) {
 
   const pct = f.total ? Math.round(f.possede / f.total * 100) : 0;
 
-  /* Entre amis, on voit ce qu'il possède : les doublons sont les cartes
-     qu'il peut céder sans se démunir, donc les meilleures à demander. */
-  let doubles = '';
+  /* Entre amis, sa collection est lisible. Mais ce qui se décide dans une
+     fiche, c'est « est-ce que ça vaut le coup de lui demander quelque chose ? »
+     — trois comptes y répondent. Le détail, lui, a besoin d'un écran à lui :
+     vingt-quatre vignettes empilées ici faisaient un mur où plus rien ne
+     ressortait dès que la collection avançait.
+
+     Les doublons montrés en fiche s'arrêtent donc aux Rares et au-dessus :
+     c'est là que se jouent les échanges qu'on a envie de proposer. */
+  let collection = '';
   if (f.col) {
-    const d = Object.entries(f.col)
-      .filter(([id, n]) => n > 1 && byId[id] && byId[id].cat !== 'essence')
-      .map(([id]) => byId[id])
-      .sort((a, b) => rk(b) - rk(a) || a.num - b.num);
-    doubles = d.length
-      ? `<h2>Ses doublons <span class="muted small">— ${d.length} cartes qu'il a en plusieurs exemplaires</span></h2>
-         <div class="pickgrid">${d.slice(0, 24).map(c =>
-           `<button class="pick" data-show="${c.id}" data-snd="carte">${renderCard(c)}
-             <span class="picknom">${h(c.nom)}</span>
-             <span class="pickmeta r${c.rar}">×${f.col[c.id]}</span></button>`).join('')}</div>`
-      : '<p class="muted small">Aucun doublon pour le moment.</p>';
+    /* On en profite pour garnir le cache des échanges : la même collection
+       sert ensuite à composer une demande (voir js/trade.js). */
+    trCols[noacc(f.pseudo)] = f.col;
+
+    const sienne = toutesCartes().filter(c => f.col[c.id] > 0);
+    const doubles = sienne.filter(c => f.col[c.id] > 1 && c.cat !== 'essence');
+    const forts = doubles.filter(c => rk(c) >= 3).sort(parRarete).slice(0, 12);
+    const manque = sienne.filter(c => !(save.col[c.id] > 0)).length;
+
+    collection = `<h2>Sa collection</h2>
+      <div class="colchips">
+        <span class="colchip"><b>${f.possede}</b> cartes</span>
+        <span class="colchip"><b>${doubles.length}</b> doublon${doubles.length > 1 ? 's' : ''}</span>
+        <span class="colchip fort"><b>${manque}</b> qu'il a, pas toi</span>
+      </div>
+      ${forts.length
+        ? `<p class="muted small">Ses doublons rares et au-dessus — ceux qu'il peut céder sans se démunir.</p>
+           <div class="pickgrid court">${forts.map(c =>
+             `<button class="pick" data-show="${c.id}" data-qui="${h(f.pseudo)}" data-snd="carte">${renderCard(c)}
+               <span class="picknom">${h(c.nom)}</span>
+               <span class="pickmeta r${c.rar}">×${f.col[c.id]}</span>
+               <span class="picklui${save.col[c.id] ? '' : ' a'}">${save.col[c.id] ? 'tu en as ' + save.col[c.id] : 'tu ne l\'as pas'}</span>
+             </button>`).join('')}</div>`
+        : '<p class="muted small">Aucun doublon rare pour le moment.</p>'}
+      <div class="row ficheacts">
+        <button class="btn ghost tiny" data-colde="${h(f.pseudo)}">Voir toute sa collection</button>
+      </div>`;
   }
 
   openSheet({
@@ -129,7 +151,7 @@ async function ouvrirFiche(pseudo) {
       <div class="stat"><b>${fmtN(f.trades_done)}</b><span>échanges conclus</span></div>
       <div class="stat"><b>${fmtN(f.streak)}</b><span>jours d'affilée</span></div>
     </div>
-    ${f.ami ? doubles : '<p class="muted small">Ajoute-le en ami pour voir sa collection et lui proposer un échange.</p>'}`,
+    ${f.ami ? collection : '<p class="muted small">Ajoute-le en ami pour voir sa collection et lui proposer un échange.</p>'}`,
     actions: f.moi ? [{ label: 'Fermer', fn: closeSheet }]
       : f.ami
         ? [{ label: 'Proposer un échange', primary: true, fn: () => { closeSheet(); versEchange(f.pseudo); } },
@@ -140,15 +162,19 @@ async function ouvrirFiche(pseudo) {
   });
 }
 
-/* Ouvre la composition d'un échange, destinataire déjà rempli. */
+/* Ouvre la composition d'un échange, destinataire déjà rempli. On va chercher
+   sa collection dans la foulée : sans elle, l'étape « quoi contre quoi »
+   travaille à l'aveugle, et c'était tout le problème de l'ancien écran. */
 function versEchange(pseudo) {
   socVue = 'echanges';
   trVue = 'nouvelle';
   trBrouillon = { pseudo, offre: null, veut: null, note: '' };
-  trCible = { pseudo, avatar: 'star', frame: 'default' };
   const a = (Backend.amis || []).find(x => x.pseudo === pseudo);
-  if (a) trCible = { pseudo: a.pseudo, avatar: a.avatar, frame: a.frame };
+  trCible = a
+    ? { pseudo: a.pseudo, avatar: a.avatar, frame: a.frame, photo: a.photo }
+    : { pseudo, avatar: 'star', frame: 'default' };
   render();
+  chargerCollection(trCible.pseudo).then(col => { if (col) render(); });
 }
 
 async function socAjouter() {

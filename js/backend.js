@@ -228,6 +228,10 @@ Backend.loadShop = async function () {
 Backend.loadTrades = async function () {
   if (Backend.mode !== 'cloud') return [];
   Backend.trades = await Backend.rpc('trade_list') || [];
+  /* Une demande d'échange n'est déclenchée par rien de ce que fait le joueur :
+     c'est ici, en comparant deux réponses successives, qu'on peut repérer ce
+     qui vient d'arriver — et l'annoncer. */
+  signalerEchanges(Backend.trades);
   return Backend.trades;
 };
 

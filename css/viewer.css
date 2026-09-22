@@ -37,3 +37,8 @@
    raconte pas. */
 .vw-promo{position:relative;z-index:2;margin:6px auto 0;max-width:38ch;text-align:center;
   font-size:12px;line-height:1.4;color:var(--r-pr)}
+
+/* Combien j'en ai, et combien il en a. C'est la question qu'on se pose en
+   ouvrant une carte depuis un échange, et elle n'avait pas de réponse ici. */
+.vw-own.zero{color:rgba(255,255,255,.55)}
+.vw-own.autre{background:rgba(169,92,242,.28);color:#fff}

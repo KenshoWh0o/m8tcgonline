@@ -18,8 +18,8 @@ function vProfil() {
   <section class="idcard">
     ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
     <div class="idnom">
-      <b>${h(save.pseudo)}</b>
-      ${save.isAdmin ? '<span class="qtag ok">Admin</span>' : ''}
+      <span class="idnomligne"><b>${h(save.pseudo)}</b>
+        ${save.isAdmin ? '<span class="qtag ok">Admin</span>' : ''}</span>
       <p class="muted small">${save.streak > 1 ? save.streak + ' jours d\'affilée' : 'Membre'}</p>
     </div>
     <span class="wallet">${shardIco}<b>${fmtN(save.shards)}</b></span>

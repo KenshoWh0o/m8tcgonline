@@ -26,15 +26,26 @@
    lui qui dit quelle carte manque. En `--line-2`, il tombait sous 1,5:1 de
    contraste en thème clair, c'est-à-dire nulle part. */
 /* Un emplacement vide : un creux, pas un objet. Un cadre en retrait, un fond
-   légèrement plus sombre que la page, et le numéro au centre — rien d'autre.
-   L'étincelle rose qu'on y posait avant faisait briller le manque. */
+   légèrement plus sombre que la page, le numéro au centre, et derrière lui une
+   marque très en retrait qui lui donne une silhouette. */
 .card.ghost-card{position:relative;border:0;
   background:linear-gradient(180deg,var(--bg-2),var(--bg));
   box-shadow:inset 0 0 0 1px var(--line);
   display:flex;align-items:center;justify-content:center;color:var(--line-3);
   font-family:var(--display);font-weight:900;font-style:italic;font-size:10cqi;
   letter-spacing:.02em}
-.card.ghost-card span{position:relative}
+/* Le numéro passe devant : c'est lui qu'on vient lire. */
+.card.ghost-card span{position:relative;z-index:1}
+
+/* La marque du fond. Assez présente pour qu'on la voie, assez discrète pour
+   qu'on lise le numéro par-dessus sans effort. */
+.ghostmark{position:absolute;top:50%;left:50%;translate:-50% -50%;z-index:0;
+  display:grid;place-items:center;width:38cqi;height:38cqi;pointer-events:none;
+  color:var(--r-pr);opacity:.17}
+.ghostmark svg{width:100%;height:auto;fill:currentColor;stroke:none}
+/* Le point d'interrogation des cases encore inconnues. */
+.ghostmark.inconnue{width:auto;height:auto;font-size:34cqi;line-height:1;
+  color:var(--accent-soft);opacity:.28}
 
 /* Symboles d'essence */
 .ess{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;object-fit:contain}
@@ -84,7 +95,12 @@
 .filigne{margin-top:12px}
 .filab{display:block;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
   color:var(--muted);margin:0 0 6px}
-.filcorps .chips,.filcorps .essrow{padding-bottom:0}
+/* Dépliées dans le tiroir, les rangées de puces passent à la ligne au lieu de
+   défiler de côté. Un défilement horizontal ne s'annonce pas — sur ordinateur
+   il n'y a même aucun geste pour l'atteindre, et les dernières raretés étaient
+   hors de portée dès que la fenêtre se resserrait. */
+.filcorps .chips,.filcorps .essrow{flex-wrap:wrap;overflow:visible;
+  touch-action:auto;padding-bottom:0;row-gap:7px}
 .filtoggle{margin:14px 0 0}
 .filreset{display:block;margin:10px auto 0}
 
@@ -107,7 +123,7 @@
   padding:6px 12px 6px 9px;border-radius:999px;font-size:12px;font-weight:700;transition:background .14s,border-color .14s,color .14s}
 .essrow button:hover{background:var(--surface-2);color:var(--text)}
 .essrow button.on{border-color:var(--ec,var(--accent-soft));color:var(--text);background:color-mix(in srgb,var(--ec,var(--accent-soft)) 18%,var(--surface))}
-.essrow .ess{width:17px;height:17px}
+.essrow .ess{width:19px;height:19px}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(94px,27vw,138px),1fr));gap:18px 10px;padding-top:2px}
 .gcell{position:relative;background:none;border:0;padding:0;text-align:left;transition:transform .16s}

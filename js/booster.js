@@ -51,11 +51,25 @@ function tickPct() {
 }
 
 /* ---------- Tirage ---------- */
-/* La dernière carte du paquet, celle qu'on attend. Le reste est fixe.
-   Ces taux doivent rester identiques à ceux de open_pack() dans
-   supabase/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux tests hors
-   ligne, mais deux tables divergentes rendraient le Labo menteur. */
-const RATES = { HIT: { R: 70, E: 26, L: 4 } };
+/* Les cases tirées au sort du paquet. Le reste est fixe.
+   Ces tables doivent rester identiques à celles de open_pack() dans
+   supabase/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux ouvertures de
+   test du Labo, mais deux tables divergentes rendraient le Labo menteur. */
+const RATES = {
+  /* Troisième carte : encore une commune, ou déjà une peu commune. */
+  MIXTE: { C: 60, PC: 40 },
+  /* La dernière, celle qu'on attend. */
+  HIT: { R: 80, E: 16, L: 4 },
+  /* Le godpack, case par case : ça monte jusqu'à la légendaire garantie. */
+  GODPACK: [
+    { R: 90, E: 10 },
+    { R: 70, E: 30 },
+    { R: 50, E: 50 },
+    { E: 90, L: 10 },
+    { E: 60, L: 40 },
+    { L: 100 }
+  ]
+};
 const GOD = 1 / 2000;
 
 function pickFrom(pool, r) {
@@ -80,28 +94,32 @@ function weighted(w) {
   return Object.keys(w)[0];
 }
 
-/* Dix cartes : 4 communes, 3 peu communes, 1 essence, 1 rare garantie, puis le
-   hit — rare, épique ou légendaire. La rare garantie change tout par rapport à
-   l'ancienne formule : chaque paquet donne au moins deux cartes de rang R ou
-   mieux, donc chaque paquet fait avancer la collection quelque part.
-   Godpack : 5 rares, 4 épiques et la légendaire en dernier. */
+/* Six cartes, chacune à sa place :
+     1 · Commune
+     2 · Commune
+     3 · Commune (60 %) ou Peu commune (40 %)
+     4 · Peu commune
+     5 · Essence
+     6 · le hit : Rare 80 %, Épique 16 %, Légendaire 4 %
+   L'ordre compte : la pile se feuillette de la première à la dernière, et
+   c'est la dernière qui porte la mise en scène de la révélation.
+   Godpack : six cartes qui montent, de la rare à la légendaire garantie. */
 function makeBooster(pool, god) {
   const out = [];
 
   if (god) {
-    for (let i = 0; i < 5; i++) out.push(pickFrom(pool, 'R'));
-    for (let i = 0; i < 4; i++) out.push(pickFrom(pool, 'E'));
-    out.push(pickFrom(pool, 'L'));
+    RATES.GODPACK.forEach(table => out.push(pickFrom(pool, weighted(table))));
     return out.filter(Boolean);
   }
 
-  for (let i = 0; i < 4; i++) out.push(pickFrom(pool, 'C'));
-  for (let i = 0; i < 3; i++) out.push(pickFrom(pool, 'PC'));
+  out.push(pickFrom(pool, 'C'));
+  out.push(pickFrom(pool, 'C'));
+  out.push(pickFrom(pool, weighted(RATES.MIXTE)));
+  out.push(pickFrom(pool, 'PC'));
 
   const ess = pool.filter(c => c.cat === 'essence');
   out.push(ess.length ? rnd(ess) : pickFrom(pool, 'C'));
 
-  out.push(pickFrom(pool, 'R'));
   out.push(pickFrom(pool, weighted(RATES.HIT)));
 
   return out.filter(Boolean);
@@ -155,7 +173,13 @@ function vReserve(full) {
     </div>`;
   }
 
-  const n = Math.min(save.tickets, TICKET_CAP);
+  /* On n'ecrete pas : un achat peut faire monter la réserve au-dessus du
+     plafond, et ces boosters-là existent pour de bon. Le plafond ne borne que
+     la recharge automatique — voir regen_tickets() dans supabase/01_schema.sql
+     et shop_buy(), qui ajoute sans rien plafonner. */
+  const total = save.tickets;
+  const n = Math.min(total, TICKET_CAP);
+  const surplus = Math.max(0, total - TICKET_CAP);
   const pct = tickPct();
   /* Le jeton en cours de remplissage est le premier vide : c'est lui qui porte
      la jauge, pour que l'attente ait un endroit précis où se lire. */
@@ -167,14 +191,16 @@ function vReserve(full) {
   }).join('');
 
   return `<div class="reserve${full ? ' pleine' : ''}">
-    <div class="resjetons" role="img" aria-label="${n} booster${n > 1 ? 's' : ''} sur ${TICKET_CAP}">
-      ${jetons}
+    <div class="resjetons" role="img" aria-label="${total} booster${total > 1 ? 's' : ''} en réserve">
+      ${jetons}${surplus ? `<i class="ressurplus">+${surplus}</i>` : ''}
     </div>
     <p class="reslab">
-      <b class="tnum">${n}</b><span class="resmax">/${TICKET_CAP}</span>
+      <b class="tnum">${total}</b>
+      <span class="resmax">${surplus ? `booster${total > 1 ? 's' : ''}` : '/' + TICKET_CAP}</span>
       <span class="ressep" aria-hidden="true"></span>
       ${full ? '' : NAVICO.clock}
-      <span class="restemps">${h(timerLabel())}${full ? '' : ' · '}</span>
+      <span class="restemps">${surplus ? 'Réserve pleine, et ' + surplus + ' d\'avance'
+        : h(timerLabel())}${full ? '' : ' · '}</span>
       ${full ? '' : `<b class="tnum" id="tmclock">${timerClock()}</b>`}
     </p>
   </div>`;

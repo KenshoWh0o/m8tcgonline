@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-09-21
+--   Assemble le 2026-09-22
 --
 -- =====================================================================
 
@@ -158,9 +158,9 @@ language sql immutable as $$
   select case k
     when 'ticket_cap'        then 5          -- boosters en reserve au maximum
     when 'ticket_minutes'    then 240        -- un booster toutes les 4 h, soit 6 par jour
-    when 'pack_size'         then 10
+    when 'pack_size'         then 6
     when 'god_odds'          then 2000       -- 1 chance sur 2000
-    when 'trade_cooldown_h'  then 10         -- un echange gratuit toutes les 10 h
+    when 'trade_cooldown_h'  then 6          -- un echange gratuit toutes les 6 h
     when 'shards_per_dup'    then 0
     -- Le palier de collection qui accorde la carte Promo « palier ».
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
@@ -726,28 +726,39 @@ begin
 
   god := random() < 1.0 / cfg('god_odds');
 
-  -- Dix cartes : 4 communes, 3 peu communes, 1 essence, 1 rare garantie, puis
-  -- le hit (rare 70 %, epique 26 %, legendaire 4 %). La rare garantie assure
-  -- qu'aucun paquet ne soit vide de sens : il y a toujours au moins deux cartes
-  -- de rang R ou mieux.
+  -- Six cartes, chacune a sa place :
+  --   1 · Commune
+  --   2 · Commune
+  --   3 · Commune (60 %) ou Peu commune (40 %)
+  --   4 · Peu commune
+  --   5 · Essence
+  --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
+  -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
+  -- derniere carte porte la mise en scene de la revelation.
+  --
+  -- Godpack : six cartes qui montent, de la rare a la legendaire garantie.
+  --
   -- Ces taux doivent rester identiques a RATES dans js/booster.js, qui sert
   -- aux ouvertures de test du Labo.
   if god then
-    for i in 1..5 loop ids := ids || pick_card('R'); end loop;
-    for i in 1..4 loop ids := ids || pick_card('E'); end loop;
+    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'R' else 'E' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 70.0 then 'R' else 'E' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 50.0 then 'R' else 'E' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'E' else 'L' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'E' else 'L' end);
     ids := ids || pick_card('L');
   else
-    for i in 1..4 loop ids := ids || pick_card('C'); end loop;
-    for i in 1..3 loop ids := ids || pick_card('PC'); end loop;
+    ids := ids || pick_card('C');
+    ids := ids || pick_card('C');
+    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'C' else 'PC' end);
+    ids := ids || pick_card('PC');
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
     ids := ids || coalesce(cid, pick_card('C'));
 
-    ids := ids || pick_card('R');
-
     x := random() * 100.0;
-    ids := ids || pick_card(case when x < 70.0 then 'R'
+    ids := ids || pick_card(case when x < 80.0 then 'R'
                                  when x < 96.0 then 'E'
                                  else 'L' end);
   end if;
@@ -1154,18 +1165,22 @@ revoke all on function public.check_promos from anon, authenticated;
 --  L'extension compte 122 cartes : 9 essences, 33 communes, 24 peu
 --  communes, 28 rares, 18 epiques, 10 legendaires.
 --
---  Un booster donne 10 cartes : 4 C, 3 PC, 1 essence, 1 rare garantie, et
---  un dernier tirage a 70 % rare / 26 % epique / 4 % legendaire.
+--  Un booster donne 6 cartes : deux communes, une commune ou peu commune
+--  (60/40), une peu commune, une essence, et un dernier tirage a
+--  80 % rare / 16 % epique / 4 % legendaire.
 --  La reserve tient 5 boosters et se recharge de 1 toutes les 4 h — six
 --  boosters par jour pour qui passe regulierement.
 --
 --  Ce que ca donne, en mediane de simulation :
---      25 % de la collection ......    4 boosters  (le premier jour)
---      50 % .......................   10 boosters  (deux jours)
---      75 % .......................   26 boosters  (une semaine)   -> promo P06
---      90 % .......................   85 boosters  (deux semaines)
---     100 % .......................  655 boosters  (~110 jours)    -> promo P05
---  Le goulot, ce sont les legendaires : dix cartes a 4 % l'une.
+--      25 % de la collection ......    7 boosters  (le premier jour)
+--      50 % .......................   17 boosters  (trois jours)
+--      75 % .......................   45 boosters  (une semaine)   -> promo P06
+--      90 % .......................  125 boosters  (trois semaines)
+--     100 % .......................  693 boosters  (~115 jours)    -> promo P05
+--  Le goulot, ce sont les legendaires : dix cartes a 4 % l'une. C'est aussi
+--  pourquoi le passage de dix a six cartes n'a presque pas bouge le Master
+--  Set (655 -> 693) : le taux de legendaire par paquet, lui, n'a pas change.
+--  Ce sont les premiers paliers qui s'allongent, la ou il y avait du gras.
 --
 --  ------------------------------------------------------------------
 --  Ce qui paie, et ce qui ne paie pas.
@@ -1197,9 +1212,10 @@ alter table public.quests add column if not exists item_id text;
 -- metric : packs | new_cards | rarity_R | rarity_E | rarity_L | trades
 --          | checkin | collection_pct   (tous mesures cote serveur)
 --
--- Les objectifs quotidiens sont calibres sur six boosters par jour : a ce
--- rythme, « une Epique » tombe environ quatre jours sur cinq — assez souvent
--- pour ne pas decourager, assez rarement pour valoir quelque chose.
+-- Les objectifs quotidiens sont calibres sur six boosters par jour. A ce
+-- rythme, « une Epique » tombe environ trois jours sur quatre (20 % de
+-- chances par paquet, six paquets) — assez souvent pour ne pas decourager,
+-- assez rarement pour valoir quelque chose.
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_check',   'daily',     'checkin',        1,   25, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
   ('d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
@@ -1212,7 +1228,11 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('w_check',   'weekly',    'checkin',        5,  200, null, 'Habitue de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
   ('w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en serie',     'Ouvre 30 boosters cette semaine.', 2),
   ('w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inedites.', 3),
-  ('w_epic',    'weekly',    'rarity_E',      10,  340, null, 'Dix Epiques',          'Decroche 10 Epiques ou mieux.', 4),
+  -- Huit et non dix : la derniere carte du paquet donne desormais une Epique
+  -- ou mieux une fois sur cinq, contre pres d'une sur trois avant. A dix, la
+  -- quete passait de huit semaines sur dix a une sur trois — un objectif qu'on
+  -- rate sans avoir rien fait de mal n'apprend rien a personne.
+  ('w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Epiques',         'Decroche 8 Epiques ou mieux.', 4),
   ('w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Legendaire',       'Sors une Legendaire cette semaine.', 5),
   ('w_trade',   'weekly',    'trades',         5,  380, null, 'Le marche',            'Conclus 5 echanges.', 6),
 

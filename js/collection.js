@@ -123,15 +123,26 @@ function vFiltres(all) {
 }
 
 /* ---------- Les cases ---------- */
-/* Un emplacement vide ne porte que son numéro. L'étincelle rose qu'on y posait
-   avant attirait l'œil sur ce qu'on n'a pas — c'est le contraire de ce qu'une
-   grille de collection doit faire. */
-const caseVide = (etiquette, cls, sous) =>
-  `<div class="gcell${cls ? ' ' + cls : ''}">
-    <div class="cwrap"><div class="card ghost-card${cls === 'secretcell' ? ' secret-card' : ''}">
+/* Un emplacement vide porte son numéro, et derrière lui une marque très en
+   retrait qui lui donne une forme — sans elle, la case n'est qu'un rectangle
+   gris.
+
+   Deux marques, et la distinction compte : l'étincelle veut dire « une carte
+   de l'extension, que tu n'as pas encore ». Le point d'interrogation veut dire
+   « on ne sait pas encore laquelle » — les emplacements Secrets et les Promos
+   annoncées mais pas encore sorties. Promettre une carte précise là où il n'y
+   en a pas encore, ce serait mentir avec une icône. */
+const caseVide = (etiquette, cls, sous) => {
+  const classes = cls || '';
+  const secret = classes.includes('secretcell');
+  const inconnue = secret || classes.includes('avenir');
+  return `<div class="gcell${cls ? ' ' + cls : ''}">
+    <div class="cwrap"><div class="card ghost-card${secret ? ' secret-card' : ''}">
+      <i class="ghostmark${inconnue ? ' inconnue' : ''}" aria-hidden="true">${inconnue ? '?' : ICON.star}</i>
       <span>${h(etiquette)}</span></div></div>
     ${sous ? `<span class="promocomment">${h(sous)}</span>` : '<span class="num">&nbsp;</span>'}
   </div>`;
+};
 
 function vCase(c) {
   const n = save.col[c.id] || 0;

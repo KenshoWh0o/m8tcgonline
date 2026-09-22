@@ -57,6 +57,13 @@
   background:linear-gradient(90deg,var(--accent-deep),var(--accent));opacity:.85;
   transition:width .9s linear}
 .reserve.pleine .resjeton.plein{box-shadow:inset 0 1px 0 var(--gloss-soft),0 0 16px var(--accent-glow)}
+/* Au-dessus du plafond : les alvéoles ne peuvent plus compter, un compteur
+   prend le relais. Ces boosters-là sont bien là — le plafond n'arrête que la
+   recharge, pas les achats. */
+.ressurplus{display:inline-grid;place-items:center;flex:0 0 auto;height:19px;padding:0 8px;
+  border-radius:99px;font-family:var(--display);font-weight:900;font-size:12px;font-style:italic;
+  color:var(--on-accent);background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+  box-shadow:0 0 12px var(--accent-glow);margin-left:2px}
 
 .reslab{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;font-size:12.5px;
   font-weight:700;color:var(--muted);flex-wrap:wrap}

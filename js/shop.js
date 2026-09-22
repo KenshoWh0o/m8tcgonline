@@ -89,7 +89,7 @@ function vRayon(id, items) {
   const cases = liste.map(it => vArticle(it, items)).join('');
   const teaser = id === 'cosmetique' ? vCosmetiquesAVenir() : '';
 
-  return `<p class="muted small" style="margin:0 0 12px">${h(r.sous)}</p>
+  return `<p class="muted small rayondit">${h(r.sous)}</p>
     <div class="offres">${cases}${teaser}</div>`;
 }
 

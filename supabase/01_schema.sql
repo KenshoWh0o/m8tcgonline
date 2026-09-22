@@ -134,9 +134,9 @@ language sql immutable as $$
   select case k
     when 'ticket_cap'        then 5          -- boosters en reserve au maximum
     when 'ticket_minutes'    then 240        -- un booster toutes les 4 h, soit 6 par jour
-    when 'pack_size'         then 10
+    when 'pack_size'         then 6
     when 'god_odds'          then 2000       -- 1 chance sur 2000
-    when 'trade_cooldown_h'  then 10         -- un echange gratuit toutes les 10 h
+    when 'trade_cooldown_h'  then 6          -- un echange gratuit toutes les 6 h
     when 'shards_per_dup'    then 0
     -- Le palier de collection qui accorde la carte Promo « palier ».
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a

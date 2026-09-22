@@ -181,26 +181,25 @@ function vQuetesSection(scope) {
   const restantes = liste.filter(q => !q.claimed).length;
   const reste = resteAvantRemise(scope);
 
-  const bandeau = `<div class="qperiode">
-    <span class="qpico">${NAVICO[reste == null ? 'promo' : 'clock']}</span>
+  /* Rien à faire : le bandeau passe au vert et sa coche remplace le compteur.
+     Un second bandeau pour l'annoncer répétait, deux centimètres plus bas, ce
+     que « 0 restante » disait déjà. */
+  const fini = !restantes;
+
+  const bandeau = `<div class="qperiode${fini ? ' fini' : ''}">
+    <span class="qpico">${NAVICO[fini ? 'check' : reste == null ? 'promo' : 'clock']}</span>
     <span class="qptxt">
       <b>${h(def.plein)}</b>
       <small>${reste == null
-        ? 'Une seule fois, pour toujours.'
-        : `Remise à zéro dans <b class="tnum" id="qremise">${dureeCourte(reste)}</b>`}</small>
+        ? fini ? 'Il n\'en reste aucune : tu les as toutes.' : 'Une seule fois, pour toujours.'
+        : `${fini ? 'De nouvelles dans' : 'Remise à zéro dans'} <b class="tnum" id="qremise">${dureeCourte(reste)}</b>`}</small>
     </span>
-    <span class="qpreste"><b class="tnum">${restantes}</b><small>${restantes > 1 ? 'restantes' : 'restante'}</small></span>
+    <span class="qpreste">${fini
+      ? `<i class="qpok">${NAVICO.check}</i><small>tout est fait</small>`
+      : `<b class="tnum">${restantes}</b><small>${restantes > 1 ? 'restantes' : 'restante'}</small>`}</span>
   </div>`;
 
-  const fini = !restantes
-    ? `<div class="qallgood">${NAVICO.check}
-        <span>${reste == null
-          ? 'Toutes les quêtes de saison sont derrière toi.'
-          : 'Tout est fait. Reviens ' + (scope === 'daily' ? 'demain' : 'la semaine prochaine') + '.'}</span>
-      </div>`
-    : '';
-
-  return bandeau + fini + liste.map(vQuete).join('');
+  return bandeau + liste.map(vQuete).join('');
 }
 
 /* Ce que la quête rapporte. Un palier qui donne une carte ne donne pas

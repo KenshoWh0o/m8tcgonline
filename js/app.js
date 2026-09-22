@@ -100,7 +100,7 @@ function vTiroir() {
       <span class="sac"><img src="${ART.seal}" alt=""><b>${save.unlimited ? '∞' : save.tickets}</b>
         <small>booster${save.tickets > 1 ? 's' : ''}</small></span>
       <span class="sac">${shardIco}<b>${fmtN(save.shards)}</b><small>${MONNAIE.nom}</small></span>
-      ${jetons ? `<span class="sac">${NAVICO.swap}<b>${jetons}</b><small>jeton${jetons > 1 ? 's' : ''}</small></span>` : ''}
+      ${jetons ? `<span class="sac"><img src="${ART.jeton}" alt=""><b>${jetons}</b><small>jeton${jetons > 1 ? 's' : ''}</small></span>` : ''}
     </div>
 
     <ul class="tiroir-liste">
@@ -233,13 +233,15 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-vit-on],[data-vit-off],[data-promo]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo]');
   if (!el) return;
   const d = el.dataset;
 
   if (d.tab) return aller(d.tab);
   if (d.auth) return authFaire(d.auth);
-  if (d.show) { const c = byId[d.show]; if (c) { SFX.jouer('carte'); showCard(c); } return; }
+  /* `data-qui` accompagne les cartes ouvertes depuis un écran d'échange : la
+     visionneuse montre alors aussi combien l'autre en possède. */
+  if (d.show) { const c = byId[d.show]; if (c) { SFX.jouer('carte'); openViewer(c, d.qui || null); } return; }
   if (d.filter) { colFilter = d.filter; return render(); }
   if (d.ess) { essFilter = d.ess; return render(); }
   if (d.rar) { rarFilter = d.rar; return render(); }
@@ -257,6 +259,8 @@ async function clicPage(e) {
   if (d.amiNon) return agir(() => Backend.amiRepondre(d.amiNon, false).catch(
     () => Backend.amiRetirer(d.amiNon)), 'C\'est fait.');
   if (d.troc) return versEchange(d.troc);
+  if (d.colde) return ouvrirCollectionDe(d.colde, () => ouvrirFiche(d.colde));
+  if (d.trcol) { trColVue = d.trcol; return montrerCollectionDe(d.qui); }
   if (d.vitOn) { closeSheet(); return vitrineAjouter(d.vitOn); }
   if (d.vitOff) return vitrineRetirer(d.vitOff);
 
@@ -299,6 +303,8 @@ async function clicPage(e) {
     case 'soc-add': return socAjouter();
     case 'tr-find': return trChercher();
     case 'tr-send': return trEnvoyer();
+    case 'tr-changer': return trChanger();
+    case 'tr-voir': return trCible ? ouvrirCollectionDe(trCible.pseudo) : null;
 
     case 'deconnexion':
       return openSheet({
@@ -417,7 +423,34 @@ setInterval(() => {
 addEventListener('visibilitychange', () => {
   if (document.hidden || Backend.mode !== 'cloud') return;
   Backend.pull().then(() => { header(); render(); }).catch(() => {});
+  releverSocial();
 });
+
+/* ---------- Ce qui arrive des autres joueurs ---------- */
+/* Une demande d'échange ou d'ami n'est déclenchée par rien de ce qu'on fait :
+   sans relève régulière, la pastille n'apparaîtrait qu'en ouvrant l'onglet
+   Social — c'est-à-dire trop tard pour prévenir. Une minute suffit : ce n'est
+   pas une conversation, personne n'attend à la seconde près. */
+const RELEVE_SOCIAL = 60000;
+
+function releverSocial() {
+  if (Backend.mode !== 'cloud' || document.hidden) return;
+  /* Jamais pendant une ouverture ni une scène de promo : l'écran appartient
+     aux cartes, et un rendu par-dessus la couperait. */
+  if (rv || opening || promoEnCours) return;
+
+  Promise.all([Backend.loadTrades(), Backend.loadAmis()]).then(() => {
+    header();
+    $('#nav').innerHTML = navHTML();
+    if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
+    /* On ne redessine la page que si elle montre ces données — et jamais
+       pendant qu'une demande est en cours de composition : le champ de saisie
+       perdrait le curseur et le texte déjà tapé. */
+    if (tab === 'social' && !(socVue === 'echanges' && trVue === 'nouvelle')) render();
+  }).catch(() => {});
+}
+
+setInterval(releverSocial, RELEVE_SOCIAL);
 
 /* ---------- Démarrage ---------- */
 (async () => {

@@ -91,8 +91,10 @@ const DEFD = { ES: 0, C: 60, PC: 80, R: 100, E: 120, L: 150 };
 let INTERVAL = 4 * 60 * 60 * 1000;
 let TICKET_CAP = 5;
 
-/* Nombre de cartes par booster. La composition slot par slot est dans makeBooster() (js/booster.js). */
-const PACK_SIZE = 10;
+/* Nombre de cartes par booster. La composition case par case est dans
+   makeBooster() (js/booster.js) et, pour de vrai, dans open_pack()
+   (supabase/03_rpc.sql). */
+const PACK_SIZE = 6;
 
 /* Emplacements Secrets tenus en réserve dans la collection : numérotés à la suite des cartes
    existantes, mais hors du total puisqu'ils ne sont pas encore sortis. 0 pour les masquer. */
@@ -154,7 +156,7 @@ const AVATARS = {
 /* ---------- Échanges ---------- */
 /* Une demande gratuite passé le délai, sinon un jeton acheté en boutique.
    Le serveur applique la même règle : ces valeurs ne servent qu'à l'affichage. */
-const TRADE_COOLDOWN_H = 10;
+const TRADE_COOLDOWN_H = 6;
 
 /* ---------- Onglets ---------- */
 /* `bas` : la barre du bas sur mobile, le rail sur ordinateur. Cinq places, pas une

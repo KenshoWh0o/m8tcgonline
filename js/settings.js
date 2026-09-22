@@ -58,7 +58,7 @@ function poserRM(v) {
    l'ouverture d'un booster. Rangées ensemble dans une seule clé. */
 const JEU_CLE = 'mtcg.jeu';
 const JEU = {
-  /* Passer directement au récap sans faire défiler les dix cartes. */
+  /* Passer directement au récap sans faire défiler les cartes une à une. */
   recapDirect: false,
   /* Faire vibrer le téléphone sur les révélations. */
   vibrer: true,

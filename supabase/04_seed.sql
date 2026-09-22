@@ -10,18 +10,22 @@
 --  L'extension compte 122 cartes : 9 essences, 33 communes, 24 peu
 --  communes, 28 rares, 18 epiques, 10 legendaires.
 --
---  Un booster donne 10 cartes : 4 C, 3 PC, 1 essence, 1 rare garantie, et
---  un dernier tirage a 70 % rare / 26 % epique / 4 % legendaire.
+--  Un booster donne 6 cartes : deux communes, une commune ou peu commune
+--  (60/40), une peu commune, une essence, et un dernier tirage a
+--  80 % rare / 16 % epique / 4 % legendaire.
 --  La reserve tient 5 boosters et se recharge de 1 toutes les 4 h — six
 --  boosters par jour pour qui passe regulierement.
 --
 --  Ce que ca donne, en mediane de simulation :
---      25 % de la collection ......    4 boosters  (le premier jour)
---      50 % .......................   10 boosters  (deux jours)
---      75 % .......................   26 boosters  (une semaine)   -> promo P06
---      90 % .......................   85 boosters  (deux semaines)
---     100 % .......................  655 boosters  (~110 jours)    -> promo P05
---  Le goulot, ce sont les legendaires : dix cartes a 4 % l'une.
+--      25 % de la collection ......    7 boosters  (le premier jour)
+--      50 % .......................   17 boosters  (trois jours)
+--      75 % .......................   45 boosters  (une semaine)   -> promo P06
+--      90 % .......................  125 boosters  (trois semaines)
+--     100 % .......................  693 boosters  (~115 jours)    -> promo P05
+--  Le goulot, ce sont les legendaires : dix cartes a 4 % l'une. C'est aussi
+--  pourquoi le passage de dix a six cartes n'a presque pas bouge le Master
+--  Set (655 -> 693) : le taux de legendaire par paquet, lui, n'a pas change.
+--  Ce sont les premiers paliers qui s'allongent, la ou il y avait du gras.
 --
 --  ------------------------------------------------------------------
 --  Ce qui paie, et ce qui ne paie pas.
@@ -53,9 +57,10 @@ alter table public.quests add column if not exists item_id text;
 -- metric : packs | new_cards | rarity_R | rarity_E | rarity_L | trades
 --          | checkin | collection_pct   (tous mesures cote serveur)
 --
--- Les objectifs quotidiens sont calibres sur six boosters par jour : a ce
--- rythme, « une Epique » tombe environ quatre jours sur cinq — assez souvent
--- pour ne pas decourager, assez rarement pour valoir quelque chose.
+-- Les objectifs quotidiens sont calibres sur six boosters par jour. A ce
+-- rythme, « une Epique » tombe environ trois jours sur quatre (20 % de
+-- chances par paquet, six paquets) — assez souvent pour ne pas decourager,
+-- assez rarement pour valoir quelque chose.
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_check',   'daily',     'checkin',        1,   25, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
   ('d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
@@ -68,7 +73,11 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('w_check',   'weekly',    'checkin',        5,  200, null, 'Habitue de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
   ('w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en serie',     'Ouvre 30 boosters cette semaine.', 2),
   ('w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inedites.', 3),
-  ('w_epic',    'weekly',    'rarity_E',      10,  340, null, 'Dix Epiques',          'Decroche 10 Epiques ou mieux.', 4),
+  -- Huit et non dix : la derniere carte du paquet donne desormais une Epique
+  -- ou mieux une fois sur cinq, contre pres d'une sur trois avant. A dix, la
+  -- quete passait de huit semaines sur dix a une sur trois — un objectif qu'on
+  -- rate sans avoir rien fait de mal n'apprend rien a personne.
+  ('w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Epiques',         'Decroche 8 Epiques ou mieux.', 4),
   ('w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Legendaire',       'Sors une Legendaire cette semaine.', 5),
   ('w_trade',   'weekly',    'trades',         5,  380, null, 'Le marche',            'Conclus 5 echanges.', 6),
 

@@ -48,11 +48,17 @@
   /* Départ : loin, de dos, penchée. */
   transform:translateZ(-620px) rotateY(180deg) rotateZ(-16deg);
   filter:drop-shadow(0 30px 46px rgba(0,0,0,.8))}
-.promoscene.go .pr-card{animation:pr-come 1.15s cubic-bezier(.22,.78,.3,1) forwards}
+.promoscene.go .pr-card{animation:pr-come 1.15s forwards}
+/* Chaque étape porte sa propre courbe, et ce n'est pas un détail de style :
+   l'arrivée freine, le retournement est symétrique. C'est cette symétrie qui
+   place le quart de tour au milieu exact de l'intervalle — à 76 % de
+   l'animation — et permet d'y caler l'échange des deux faces (plus bas). */
 @keyframes pr-come{
-  0%{transform:translateZ(-620px) rotateY(180deg) rotateZ(-16deg)}
-  52%{transform:translateZ(0) rotateY(180deg) rotateZ(0)}
+  0%{animation-timing-function:cubic-bezier(.22,.78,.3,1);
+     transform:translateZ(-620px) rotateY(180deg) rotateZ(-16deg)}
   /* Le retournement part après l'arrivée : deux gestes, pas un seul flou. */
+  52%{animation-timing-function:cubic-bezier(.5,0,.5,1);
+      transform:translateZ(0) rotateY(180deg) rotateZ(0)}
   100%{transform:translateZ(0) rotateY(360deg) rotateZ(0)}}
 .promoscene.face .pr-card{transform:none;animation:pr-float 5.5s ease-in-out infinite 1.2s}
 @keyframes pr-float{50%{translate:0 -12px;rotate:.8deg}}
@@ -76,10 +82,25 @@
 .pr-face .cwrap,.pr-face .card{width:100%;height:100%;margin:0}
 .pr-face img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* Au départ : le dos, et rien d'autre. */
-.pr-face{visibility:hidden}
-.promoscene.retourne .pr-face,.promoscene.direct .pr-face{visibility:visible}
-.promoscene.retourne .pr-back,.promoscene.direct .pr-back{visibility:hidden}
+/* Au départ : le dos, et rien d'autre. L'échange se fait à 76 % de
+   l'animation, c'est-à-dire au quart de tour exact, quand la carte est sur la
+   tranche et que personne ne peut voir le remplacement.
+
+   En animation et non par un `setTimeout` : le minuteur du navigateur ne suit
+   pas l'horloge de l'animation, il dérive d'une image ou deux — et une image
+   de trop, ici, c'est le dos de la carte montré à l'envers. `steps(1,end)`
+   fait une bascule franche, sans fondu.
+
+   `opacity` plutôt que `visibility` : entre `visible` et `hidden`, une
+   animation garde `visible` du début à la fin de l'intervalle, ce qui rendrait
+   ces images-clés inopérantes. */
+.pr-face{opacity:0}
+.promoscene.go .pr-face{animation:pr-montre 1.15s steps(1,end) forwards}
+.promoscene.go .pr-back{animation:pr-cache 1.15s steps(1,end) forwards}
+@keyframes pr-montre{0%{opacity:0}76%{opacity:1}100%{opacity:1}}
+@keyframes pr-cache{0%{opacity:1}76%{opacity:0}100%{opacity:0}}
+.promoscene.face .pr-face,.promoscene.direct .pr-face{opacity:1}
+.promoscene.face .pr-back,.promoscene.direct .pr-back{opacity:0}
 
 /* Le halo rose qui déborde de la carte, une fois face visible. */
 .promoscene.face .pr-face::after,.promoscene.direct .pr-face::after{content:'';position:absolute;inset:0;

@@ -139,28 +139,39 @@ begin
 
   god := random() < 1.0 / cfg('god_odds');
 
-  -- Dix cartes : 4 communes, 3 peu communes, 1 essence, 1 rare garantie, puis
-  -- le hit (rare 70 %, epique 26 %, legendaire 4 %). La rare garantie assure
-  -- qu'aucun paquet ne soit vide de sens : il y a toujours au moins deux cartes
-  -- de rang R ou mieux.
+  -- Six cartes, chacune a sa place :
+  --   1 · Commune
+  --   2 · Commune
+  --   3 · Commune (60 %) ou Peu commune (40 %)
+  --   4 · Peu commune
+  --   5 · Essence
+  --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
+  -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
+  -- derniere carte porte la mise en scene de la revelation.
+  --
+  -- Godpack : six cartes qui montent, de la rare a la legendaire garantie.
+  --
   -- Ces taux doivent rester identiques a RATES dans js/booster.js, qui sert
   -- aux ouvertures de test du Labo.
   if god then
-    for i in 1..5 loop ids := ids || pick_card('R'); end loop;
-    for i in 1..4 loop ids := ids || pick_card('E'); end loop;
+    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'R' else 'E' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 70.0 then 'R' else 'E' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 50.0 then 'R' else 'E' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'E' else 'L' end);
+    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'E' else 'L' end);
     ids := ids || pick_card('L');
   else
-    for i in 1..4 loop ids := ids || pick_card('C'); end loop;
-    for i in 1..3 loop ids := ids || pick_card('PC'); end loop;
+    ids := ids || pick_card('C');
+    ids := ids || pick_card('C');
+    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'C' else 'PC' end);
+    ids := ids || pick_card('PC');
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
     ids := ids || coalesce(cid, pick_card('C'));
 
-    ids := ids || pick_card('R');
-
     x := random() * 100.0;
-    ids := ids || pick_card(case when x < 70.0 then 'R'
+    ids := ids || pick_card(case when x < 80.0 then 'R'
                                  when x < 96.0 then 'E'
                                  else 'L' end);
   end if;

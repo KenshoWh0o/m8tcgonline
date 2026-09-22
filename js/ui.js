@@ -29,10 +29,6 @@ $('#sheet').addEventListener('click', e => {
   if (e.target.id === 'sheet' && !sheetLocked) closeSheet();
 });
 
-function showCard(c) {
-  openViewer(c);
-}
-
 /* ---------- Avatars ---------- */
 /* Ma photo Discord à moi, lue dans ma session. À ne passer qu'en dessinant mon
    propre avatar : pour tous les autres, c'est le serveur qui fournit l'adresse

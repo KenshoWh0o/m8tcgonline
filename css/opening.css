@@ -119,7 +119,13 @@
 .rc-stats b small{font-size:13px;opacity:.55}
 .rc-stats span{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.6)}
 @keyframes fadeup{from{transform:translateY(12px);opacity:0}}
-.rc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;width:100%;max-width:440px}
+/* Six cartes : deux rangées de trois. À quatre colonnes, la seconde rangée
+   n'en portait que deux et le bloc paraissait inachevé. */
+.rc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 12px;width:100%;max-width:340px}
+@media (min-width:640px){
+  /* Assez large pour les aligner d'un trait : le paquet se lit d'un coup. */
+  .rc-grid{grid-template-columns:repeat(6,1fr);max-width:640px}
+}
 .rc-cell{position:relative;background:none;border:0;padding:0;color:#fff;animation:deal .5s var(--d) cubic-bezier(.2,1.3,.4,1) both}
 @keyframes deal{from{transform:translateY(160px) rotate(-18deg) scale(.5);opacity:0}}
 .rc-actions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px;margin-top:26px}

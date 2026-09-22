@@ -8,15 +8,20 @@ document.addEventListener('dragstart', e => {
 
 let VW = null;
 
-function openViewer(c) {
+/* `qui` : le pseudo du joueur avec qui on est en train d'échanger, quand la
+   carte est ouverte depuis un écran d'échange. Sa collection est alors déjà
+   connue, et son compte s'affiche à côté du nôtre : c'est exactement ce qu'on
+   vient vérifier avant d'accepter. */
+function openViewer(c, qui) {
   const n = save.col[c.id] || 0;
+  const lui = qui ? sesEx(qui, c.id) : null;
   const R = RAR[c.rar] || RAR.C;
   const v = $('#viewer');
 
   v.innerHTML = `<div class="vw-bg" data-v="close"></div><button class="vw-close" data-v="close" aria-label="Fermer">✕</button>
   <div class="vw-stage"><div class="vw-card r${c.rar}" id="vwc">${renderCard(c)}<div class="vw-holo"></div><div class="vw-glare"></div></div></div>
   <div class="vw-shadow" id="vwsh"></div>
-  <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span><span class="vw-col">${essIcon(c.col)}${colOf(c).nom}</span><span class="vw-num">${c.promo ? h(c.code) : '#' + String(c.num || 0).padStart(3, '0')}</span>${n ? `<span class="vw-own">×${n}</span>` : ''}</div></div>
+  <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span><span class="vw-col">${essIcon(c.col)}${colOf(c).nom}</span><span class="vw-num">${c.promo ? h(c.code) : '#' + String(c.num || 0).padStart(3, '0')}</span><span class="vw-own${n ? '' : ' zero'}">${n ? `Tu en as ${n}` : 'Tu ne l\'as pas'}</span>${lui != null ? `<span class="vw-own autre">${h(qui)} en a ${lui}</span>` : ''}</div></div>
   ${c.promo ? `<p class="vw-promo">${h(promoSousTitre(c))}${c.illustrateur ? ' · Illustration : ' + h(c.illustrateur) : ''}</p>` : ''}
   <p class="vw-hint">Fais glisser la carte pour la faire pivoter</p>`;
   v.hidden = false;
