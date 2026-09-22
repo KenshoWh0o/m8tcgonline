@@ -37,10 +37,17 @@ const PORTE = {
      `false` : le jeu est ouvert à tous, cet écran ne s'affiche plus. */
   active: true,
 
-  /* Date d'ouverture, au format ISO avec le décalage horaire — par exemple
-     '2026-10-15T18:00:00+02:00'. Tant que c'est null, aucun compte à rebours
-     n'est affiché : on annonce seulement « bientôt ». */
-  lancement: null
+  /* L'heure d'ouverture au public, au format ISO avec le décalage horaire.
+     Passé cet instant, l'écran s'efface de lui-même : rien à rejouer, rien à
+     pousser.
+
+     ELLE DOIT RESTER IDENTIQUE à beta_ouverte() dans supabase/01_schema.sql :
+     celle-ci ouvre l'écran, celle-là ouvre le serveur. Deux dates différentes
+     donneraient un écran ouvert sur un serveur qui refuse, ou l'inverse.
+
+     À `null`, aucun compte à rebours n'est affiché : on annonce seulement
+     « bientôt », et l'accès reste sur invitation jusqu'à nouvel ordre. */
+  lancement: '2026-09-24T18:00:00+02:00'
 };
 
 let porteMinuteur = null;
@@ -50,9 +57,19 @@ let porteMinuteur = null;
    'attente' pas de compte : l'écran d'attente, avec le bouton de connexion
    'refus'   connecté, mais pas sur la liste des invités */
 function etatPorte() {
-  if (!PORTE.active) return 'ouvert';
+  if (!PORTE.active || porteLancee()) return 'ouvert';
   if (Backend.mode !== 'cloud') return 'attente';
   return save && save.invite ? 'ouvert' : 'refus';
+}
+
+/* L'heure d'ouverture est-elle passée ? La réponse vient de l'horloge de
+   l'appareil, donc elle ne protège rien : une montre avancée ouvre l'écran en
+   avance, et c'est sans conséquence. La vraie décision est prise par le
+   serveur, à chaque action (beta_ouverte(), supabase/01_schema.sql). */
+function porteLancee() {
+  if (!PORTE.lancement) return false;
+  const t = Date.parse(PORTE.lancement);
+  return !isNaN(t) && Date.now() >= t;
 }
 
 const porteOuverte = () => etatPorte() === 'ouvert';
@@ -84,9 +101,7 @@ function vPorteAttente() {
      on le dit, plutôt que de montrer un bouton qui ne mènerait nulle part. */
   const entree = Backend.dispo
     ? `<button class="btn discord" data-act="porte-discord">
-         ${DISCORD_ICO_PORTE} Se connecter avec Discord</button>
-       <p class="muted small lockaide">L'accès est nominatif : ton compte doit
-         figurer sur la liste des invités. Rien à retenir, rien à transmettre.</p>`
+         ${DISCORD_ICO_PORTE} Se connecter avec Discord</button>`
     : `<p class="muted small lockaide">Le serveur n'est pas encore branché sur
          ce site : l'accès rouvrira avec lui.</p>`;
 
@@ -120,7 +135,9 @@ function vCompteARebours() {
   if (!PORTE.lancement) return '';
   const reste = Date.parse(PORTE.lancement) - Date.now();
   if (isNaN(reste)) return '';
-  if (reste <= 0) return '<p class="lockpret">C\'est ouvert. Recharge la page.</p>';
+  /* Filet de sécurité : la page ne devrait jamais rester ici une fois l'heure
+     passée — ouvrirLaPorte() s'en charge à la seconde près. */
+  if (reste <= 0) return '<p class="lockpret">C\'est ouvert.</p>';
 
   const s = Math.floor(reste / 1000);
   const parts = [
@@ -153,6 +170,29 @@ async function porteSortir() {
   location.reload();
 }
 
+/* ---------- L'heure dite ---------- */
+/* Le jeu s'ouvre de lui-même, sans un geste et sans rechargement.
+
+   Pas de `location.reload()` : à la seconde dite, tous ceux qui attendent
+   rechargeraient ensemble, et la première chose que verrait le serveur serait
+   une vague de connexions simultanées. On redessine sur place — c'est
+   instantané — et on ne va chercher l'état du compte qu'après un délai tiré au
+   hasard, pour étaler la vague sur une vingtaine de secondes. */
+function ouvrirLaPorte() {
+  clearInterval(porteMinuteur);
+  porteMinuteur = null;
+  SFX.jouer('gagne');
+  render();
+
+  if (Backend.mode !== 'cloud') return;
+  /* Le premier appel sert aussi de pointage du jour : ceux qui attendaient
+     l'ouverture n'en avaient pas eu, puisque le jeu ne leur était pas ouvert. */
+  setTimeout(() => {
+    const premier = visiteDuJourFaite() ? Backend.pull() : Backend.checkin();
+    premier.then(render).catch(() => {});
+  }, Math.random() * 20000);
+}
+
 /* Le compte à rebours bat sans redessiner toute la page. */
 function bindPorte() {
   clearInterval(porteMinuteur);
@@ -160,6 +200,7 @@ function bindPorte() {
   porteMinuteur = setInterval(() => {
     const c = $('#lockcompte');
     if (!c) return clearInterval(porteMinuteur);
+    if (porteLancee()) return ouvrirLaPorte();
     c.innerHTML = vCompteARebours();
   }, 1000);
 }

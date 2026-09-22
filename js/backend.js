@@ -128,6 +128,9 @@ Backend.apply = function (etat) {
     tradeFreeAt: srvTime(p.trade_free_at),
     packsOpened: p.packs_opened,
     tradesDone: p.trades_done,
+    /* La date de la dernière visite comptée, au format du serveur. Elle évite
+       de redemander un pointage déjà fait — voir visiteDuJourFaite(). */
+    lastCheckin: p.last_checkin,
     streak: p.streak,
     vitrine: p.vitrine || []
   };

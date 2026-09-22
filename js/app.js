@@ -182,6 +182,14 @@ function render() {
     return;
   }
 
+  /* On sort de l'écran d'attente : il faut lui reprendre sa classe.
+     `body.inlock` masque l'en-tête ET la barre du bas, et annule les marges
+     (css/auth.css). Tant que la porte ne s'ouvrait qu'au rechargement, la
+     classe repartait avec la page. Depuis que le compte à rebours ouvre le jeu
+     sur place, à l'heure dite, l'oublier revenait à livrer le jeu sans
+     navigation à tous ceux qui attendaient l'ouverture. */
+  document.body.classList.remove('inlock');
+
   /* La porte de connexion remplace tout : ni en-tête ni barre du bas. */
   const porte = porteVisible();
   document.body.classList.toggle('inauth', porte);
@@ -471,6 +479,23 @@ function releverSocial() {
 setInterval(releverSocial, RELEVE_SOCIAL);
 
 /* ---------- Démarrage ---------- */
+/* `checkin()` ne fait quelque chose qu'une fois par jour : passé le premier
+   appel, il recalcule tout l'état du compte pour ne rien changer. Or c'est
+   l'appel le plus lourd du serveur — recharge des boosters, pourcentage de
+   collection, paliers de Promo. On s'en passe quand la visite du jour est
+   déjà enregistrée : une ouverture de page sur deux l'économise, et davantage
+   pour qui revient souvent.
+
+   La journée est celle de Paris, comme côté serveur (checkin dans
+   supabase/03_rpc.sql) : sans ça, les deux ne changeraient pas de jour au
+   même moment. */
+function visiteDuJourFaite() {
+  if (!save || !save.lastCheckin) return false;
+  const p = heureParis(new Date(Date.now() + Backend.skew));
+  const jour = `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+  return String(save.lastCheckin).slice(0, 10) === jour;
+}
+
 (async () => {
   cards = buildCards();
   promos = buildPromos();
@@ -497,7 +522,7 @@ setInterval(releverSocial, RELEVE_SOCIAL);
 
   if (Backend.mode === 'cloud') {
     try {
-      await Backend.checkin();
+      if (!visiteDuJourFaite()) await Backend.checkin();
       Backend.loadShop().catch(() => {});
       Promise.all([Backend.loadTrades(), Backend.loadAmis()])
         .then(() => { if (tab === 'social') render(); }).catch(() => {});

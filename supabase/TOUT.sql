@@ -171,11 +171,28 @@ language sql immutable as $$
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
-    -- Beta fermee : seules les personnes inscrites dans `beta_invites`
-    -- peuvent creer un compte. Passer a 0 le jour de l'ouverture au public,
-    -- puis rejouer ce fichier.
-    when 'beta_fermee'       then 1
   end;
+$$;
+
+-- =====================================================================
+--  L'heure d'ouverture au public
+--
+--  Une seule date, et elle s'applique toute seule : passe cet instant, le
+--  serveur repond a tout le monde, sans qu'on ait quoi que ce soit a rejouer.
+--  Avant, il ne repond qu'aux comptes inscrits dans `beta_invites`.
+--
+--  ELLE DOIT RESTER IDENTIQUE a PORTE.lancement dans js/gate.js : celle-ci
+--  ouvre le serveur, celle-la ouvre l'ecran d'attente. Deux dates differentes
+--  donneraient soit un ecran ouvert sur un serveur qui refuse, soit l'inverse.
+--
+--  Le fuseau est ecrit en clair : +02 est l'heure d'ete francaise, en vigueur
+--  jusqu'au 25 octobre 2026.
+--
+--  `stable` et non `immutable` : la reponse depend de now().
+-- =====================================================================
+create or replace function public.beta_ouverte() returns boolean
+language sql stable as $$
+  select now() >= timestamptz '2026-09-24 18:00:00+02';
 $$;
 
 -- =====================================================================
@@ -228,10 +245,10 @@ create policy p_trades_read on public.trades for select
 --  n'importe qui sachant ouvrir la console passe derriere. C'est dit dans
 --  l'en-tete de ce fichier-la depuis le premier jour.
 --
---  La serrure, c'est ici. Tant que cfg('beta_fermee') vaut 1, la creation
---  d'un compte est refusee a qui ne figure pas dans cette table. Le rideau
---  continue de filtrer les curieux ; la table, elle, ne se contourne pas
---  depuis le navigateur.
+--  La serrure, c'est ici. Jusqu'a l'heure fixee par beta_ouverte(), aucune
+--  action du jeu n'aboutit pour qui ne figure pas dans cette table — pas
+--  seulement l'inscription, mais chaque appel (voir garde_beta). Elle ne se
+--  contourne pas depuis le navigateur.
 --
 --  La cle est au choix une adresse e-mail ou un identifiant Discord : selon
 --  le fournisseur, on ne recoit pas toujours les deux.
@@ -241,6 +258,10 @@ create table if not exists public.beta_invites (
   note      text,
   ajoute_le timestamptz not null default now()
 );
+-- La cle se compare sans tenir compte de la casse (une adresse e-mail s'ecrit
+-- comme on veut). La cle primaire ne sert donc a rien pour cette recherche :
+-- il faut son propre index, sinon chaque action du jeu parcourt la table.
+create index if not exists beta_invites_cle_idx on public.beta_invites (lower(cle));
 
 alter table public.beta_invites enable row level security;
 -- Aucune policy, aucun droit : cette table ne se lit pas depuis le navigateur.
@@ -271,7 +292,10 @@ $$;
 create or replace function public.garde_beta() returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  if cfg('beta_fermee') = 1 and not est_invite(auth.uid()) then
+  -- L'ordre des deux tests compte : passe la date d'ouverture, on ne consulte
+  -- plus la liste du tout. C'est le cas de la quasi-totalite des appels apres
+  -- le lancement, et il ne coute alors rien.
+  if not beta_ouverte() and not est_invite(auth.uid()) then
     raise exception 'BETA_FERMEE';
   end if;
 end $$;
@@ -300,7 +324,7 @@ create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare base text; try text; n int := 0; cle_discord text;
 begin
-  if cfg('beta_fermee') = 1 then
+  if not beta_ouverte() then
     cle_discord := coalesce(new.raw_user_meta_data->>'provider_id',
                             new.raw_user_meta_data->>'sub', '');
     if not exists (
@@ -1705,7 +1729,7 @@ begin
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
-      'invite', (cfg('beta_fermee') = 0 or est_invite(p)),
+      'invite', (beta_ouverte() or est_invite(p)),
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
       'serveur', now()),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection

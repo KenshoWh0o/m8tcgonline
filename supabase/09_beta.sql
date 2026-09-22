@@ -14,12 +14,16 @@
 --  pretendu faire autre chose — son en-tete le dit depuis le premier jour.
 --  Il ecarte les curieux, il n'arrete pas quelqu'un de decide.
 --
---  La serrure, c'est cette table. Tant que cfg('beta_fermee') vaut 1, une
---  inscription est refusee a qui ne figure pas dedans, et le refus tombe
---  cote serveur : il ne se contourne pas depuis le navigateur.
+--  La serrure, c'est cette table. Jusqu'a l'heure d'ouverture fixee dans
+--  beta_ouverte() (supabase/01_schema.sql), AUCUNE action du jeu n'aboutit
+--  pour qui ne figure pas dedans : ni ouvrir un booster, ni consulter un
+--  profil, ni meme creer un compte. Le refus tombe cote serveur, il ne se
+--  contourne pas depuis le navigateur.
 --
---  Ce que ca ne change pas : les comptes DEJA crees. Le controle ne
---  s'applique qu'a la creation. Pour un compte de trop, voir plus bas.
+--  Les comptes DEJA crees sont concernes eux aussi : le controle est pose a
+--  l'entree de chaque action (garde_beta), pas seulement a l'inscription.
+--  Retirer une invitation suffit donc a fermer la porte a quelqu'un ; pour
+--  effacer aussi ce qu'il a accumule, voir le point 5.
 -- =====================================================================
 
 
@@ -99,13 +103,18 @@ on conflict (cle) do update set note = excluded.note;
 
 
 -- =====================================================================
---  6. LE JOUR DE L'OUVERTURE AU PUBLIC
+--  6. L'OUVERTURE AU PUBLIC
 --
---  Une seule valeur a changer, dans supabase/01_schema.sql :
---      when 'beta_fermee'       then 1     -->   then 0
---  puis rejouer ce fichier-la (il est rejouable sans danger).
+--  Elle est datee, et elle se fait toute seule : le 24 septembre 2026 a
+--  18 h, beta_ouverte() bascule et le serveur repond a tout le monde. Rien
+--  a rejouer, rien a pousser ce soir-la.
 --
---  La table `beta_invites` peut rester : elle ne sert simplement plus a
---  rien tant que l'interrupteur est a 0.
+--  Pour avancer ou reculer la date, il faut la changer AUX DEUX ENDROITS :
+--      beta_ouverte()    dans supabase/01_schema.sql   (le serveur)
+--      PORTE.lancement   dans js/gate.js               (l'ecran)
+--  puis rejouer le SQL et pousser le site.
+--
+--  La table `beta_invites` peut rester : passe la date, elle n'est plus
+--  consultee du tout.
 -- =====================================================================
--- select cfg('beta_fermee') as beta_fermee;
+-- select beta_ouverte() as ouvert, now() as maintenant;

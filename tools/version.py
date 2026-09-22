@@ -51,4 +51,37 @@ for page in ('index.html', 'verif.html'):
     n += compteur[0]
 
 print('Version %s posee sur %d references.' % (V, n))
+
+
+# --- le cache hors reseau suit la page, automatiquement ---
+# La liste ESSENTIEL de sw.js doit contenir exactement les css et les js que
+# charge index.html. Tenue a la main, elle avait deja divergé : js/promos.js
+# manquait, et comme render() l'appelle a chaque rendu, l'application ne
+# demarrait plus du tout sans reseau. On la regenere depuis la page plutot que
+# d'esperer que personne n'oublie une ligne.
+html = open(os.path.join(ROOT, 'index.html'), encoding='utf-8').read()
+# La marque ?v= vient d'etre posee juste au-dessus : on s'arrete au ? comme au ".
+fichiers = re.findall(r'(?:href|src)="((?:css|js)/[^"?]+)', html)
+
+sw = open(os.path.join(ROOT, 'sw.js'), encoding='utf-8').read()
+deb = sw.index('const ESSENTIEL')
+i = sw.index("'./', 'index.html', 'manifest.webmanifest',", deb)
+j = sw.index("'assets/logo-m8.webp'", i)
+
+lignes, courante = [], "  './', 'index.html', 'manifest.webmanifest',"
+for f in fichiers:
+    bout = " '%s'," % f
+    if len(courante) + len(bout) > 96:
+        lignes.append(courante)
+        courante = ' '
+    courante += bout
+lignes.append(courante)
+neuf = chr(10).join(lignes).strip() + chr(10) + '  '
+
+if sw[i:j] != neuf:
+    open(os.path.join(ROOT, 'sw.js'), 'w', encoding='utf-8').write(sw[:i] + neuf + sw[j:])
+    print('  sw.js        cache hors reseau resynchronise (%d css/js)' % len(fichiers))
+else:
+    print('  sw.js        cache hors reseau deja a jour (%d css/js)' % len(fichiers))
+
 print('Pense a `git add -A && git commit && git push` pour la mettre en ligne.')

@@ -139,7 +139,7 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
 | Modifier la mention légale | `MENTIONS` dans `js/config.js` (elle s'affiche aux trois endroits d'un coup) |
 | Inviter quelqu'un à la bêta | `supabase/09_beta.sql` |
-| Ouvrir la bêta à tous | `cfg('beta_fermee')` dans `supabase/01_schema.sql` |
+| Changer la date d'ouverture | `beta_ouverte()` dans `supabase/01_schema.sql` **et** `PORTE.lancement` dans `js/gate.js` |
 | Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
 | Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
@@ -460,8 +460,20 @@ booster, ni consulter un profil, ni chercher un joueur. Le mode hors ligne ne fr
 plus cet écran non plus : c'était la vraie faille, puisqu'il donnait accès à tout le jeu
 sans le moindre compte.
 
-`PORTE.lancement` accepte une date ISO (`'2026-10-15T18:00:00+02:00'`) : un compte à
-rebours s'affiche alors tout seul. Laissé à `null`, on annonce seulement « bientôt ».
+### L'ouverture est datée
+
+`PORTE.lancement` porte la date d'ouverture au public — **jeudi 24 septembre 2026 à 18 h**.
+Un compte à rebours s'affiche tout seul, et à la seconde dite l'écran s'efface : pas de
+rechargement, pas de geste à faire, rien à pousser ce soir-là.
+
+La même date vit dans `beta_ouverte()`, côté serveur. **Les deux doivent rester
+identiques** : c'est l'écran d'un côté, le serveur de l'autre, et deux dates différentes
+donneraient un jeu ouvert qui refuse tout, ou l'inverse.
+
+Le passage est étalé exprès. Personne ne recharge : la page se redessine sur place, et le
+premier appel au serveur part après un délai tiré au hasard entre 0 et 20 secondes. Sans
+ça, tous ceux qui attendent le compte à rebours frapperaient le serveur à la même
+seconde.
 
 > **Ce que cet écran protège, et ce qu'il ne protège pas.** Il protège le *jeu* : sans
 > invitation, le serveur ne répond rien. Il ne protège pas les *fichiers*. Le site est
@@ -474,9 +486,12 @@ rebours s'affiche alors tout seul. Laissé à `null`, on annonce seulement « bi
 
 ### Ouvrir le jeu à tout le monde
 
-1. `cfg('beta_fermee')` → `0` dans `supabase/01_schema.sql`, puis rejouer le fichier.
-2. `PORTE.active` → `false` dans `js/gate.js`.
-3. `python3 tools/version.py X.Y.Z`, puis pousser.
+Il n'y a rien à faire : la date suffit. Le 24 septembre à 18 h, `beta_ouverte()` bascule
+côté serveur et `PORTE.lancement` côté écran, au même instant.
+
+Une fois l'ouverture passée et la poussière retombée, on peut faire le ménage :
+`PORTE.active` → `false` dans `js/gate.js`, ce qui retire définitivement l'écran d'attente
+du chemin. Ce n'est qu'un nettoyage — le jeu est déjà ouvert sans ça.
 
 ## Remettre les compteurs à zéro
 

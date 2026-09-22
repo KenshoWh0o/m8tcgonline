@@ -63,7 +63,7 @@ begin
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
-      'invite', (cfg('beta_fermee') = 0 or est_invite(p)),
+      'invite', (beta_ouverte() or est_invite(p)),
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
       'serveur', now()),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
