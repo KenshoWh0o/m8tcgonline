@@ -63,7 +63,7 @@ function vAmis() {
       <button class="btn tiny" data-act="soc-add">Ajouter</button>
     </div>
     <p class="muted small">Les majuscules ne comptent pas. Ton pseudo à toi est
-      <b>${h(save.pseudo)}</b> — c'est celui qu'on doit taper pour t'ajouter.</p>
+      <b>${h(save.pseudo)}</b>.</p>
   </section>
 
   ${bloc('Demandes reçues', recues, a => `

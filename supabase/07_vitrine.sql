@@ -21,7 +21,7 @@ begin
     if c = any(propre) then continue; end if;                 -- pas deux fois la meme
     if not exists (select 1 from collection
                    where user_id = moi and card_id = c and qty > 0) then
-      raise exception 'Tu ne possedes pas une des cartes choisies.';
+      raise exception 'Tu ne possèdes pas une des cartes choisies.';
     end if;
     propre := propre || c;
   end loop;

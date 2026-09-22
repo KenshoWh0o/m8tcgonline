@@ -145,8 +145,13 @@ create table if not exists public.trades (
   status      public.trade_status not null default 'pending',
   created_at  timestamptz not null default now(),
   resolved_at timestamptz,
+  -- Comment la demande a ete payee. Sans cette memoire, impossible de
+  -- rembourser : au moment ou l'autre refuse, on ne sait plus si le demandeur
+  -- avait depense un jeton ou consomme sa demande gratuite.
+  jeton       boolean not null default false,
   constraint no_self_trade check (from_user <> to_user)
 );
+alter table public.trades add column if not exists jeton boolean not null default false;
 create index if not exists trades_to_idx   on public.trades (to_user,   status);
 create index if not exists trades_from_idx on public.trades (from_user, status);
 
@@ -566,6 +571,11 @@ begin
       vendues;
   end if;
 
+  -- Ces annulations-la ne sont PAS remboursees, et c'est deliberate :
+  -- rembourser_demande() vit dans 03_rpc.sql, qui est joue apres ce
+  -- fichier-ci. L'appeler d'ici ferait dependre l'installation de son propre
+  -- ordre. Le cas est de toute facon une operation d'administration — on
+  -- retire une carte du jeu —, pas quelque chose qu'un joueur declenche.
   update public.trades set status = 'cancelled', resolved_at = now()
    where status = 'pending'
      and (offer_card = any (a_retirer) or want_card = any (a_retirer));
@@ -636,10 +646,10 @@ begin
 
   if p_pseudo is not null then
     if p_pseudo !~ '^[A-Za-z0-9_.\-]{3,16}$' then
-      raise exception 'Pseudo invalide : 3 a 16 caracteres, lettres, chiffres, . _ -';
+      raise exception 'Pseudo invalide : 3 à 16 caractères, lettres, chiffres, . _ -';
     end if;
     if exists (select 1 from profiles where lower(pseudo) = lower(p_pseudo) and id <> p) then
-      raise exception 'Ce pseudo est deja pris.';
+      raise exception 'Ce pseudo est déjà pris.';
     end if;
   end if;
 
@@ -647,14 +657,14 @@ begin
   if p_avatar is not null and p_avatar like 'card:%' then
     if not exists (select 1 from collection
                    where user_id = p and card_id = substr(p_avatar, 6) and qty > 0) then
-      raise exception 'Tu ne possedes pas cette carte.';
+      raise exception 'Tu ne possèdes pas cette carte.';
     end if;
   end if;
 
   -- Un cadre achete doit etre dans l'inventaire.
   if p_frame is not null and p_frame <> 'default'
      and not exists (select 1 from inventory where user_id = p and item_id = p_frame and qty > 0) then
-    raise exception 'Cadre non debloque.';
+    raise exception 'Cadre non débloqué.';
   end if;
 
   update profiles set
@@ -805,14 +815,14 @@ declare p uuid := auth.uid(); q quests; pk text; prog int; deja boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
   select * into q from quests where id = p_quest;
-  if not found then raise exception 'Quete inconnue.'; end if;
+  if not found then raise exception 'Quête inconnue.'; end if;
 
   pk := period_key(q.scope);
   select progress, claimed into prog, deja
     from quest_progress where user_id = p and quest_id = q.id and period_key = pk for update;
 
-  if deja then raise exception 'Recompense deja recuperee.'; end if;
-  if coalesce(prog, 0) < q.goal then raise exception 'Quete non terminee.'; end if;
+  if deja then raise exception 'Récompense déjà récupérée.'; end if;
+  if coalesce(prog, 0) < q.goal then raise exception 'Quête non terminée.'; end if;
 
   update quest_progress set claimed = true
     where user_id = p and quest_id = q.id and period_key = pk;
@@ -854,10 +864,10 @@ begin
   if not found then raise exception 'Article indisponible.'; end if;
 
   select * into pr from profiles where id = p for update;
-  if pr.shards < it.prix then raise exception 'Pas assez d''Eclats.'; end if;
+  if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
 
   if it.unique_buy and exists (select 1 from inventory where user_id = p and item_id = it.id) then
-    raise exception 'Tu possedes deja cet article.';
+    raise exception 'Tu possèdes déjà cet article.';
   end if;
 
   update profiles set shards = shards - it.prix where id = p;
@@ -873,7 +883,7 @@ begin
   elsif it.effet = 'carte' then
     -- Une carte achetee entre dans la collection comme n'importe quelle autre.
     -- Elle est marquee `unique_buy` en boutique : on ne l'achete qu'une fois.
-    if it.carte_id is null then raise exception 'Article mal configure.'; end if;
+    if it.carte_id is null then raise exception 'Article mal configuré.'; end if;
     insert into collection (user_id, card_id, qty) values (p, it.carte_id, 1)
       on conflict (user_id, card_id) do update set qty = collection.qty + 1;
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
@@ -890,6 +900,34 @@ end $$;
 --  Echanges : demande, reponse, validation mutuelle.
 --  Rarete identique obligatoire ; cout paye par le demandeur.
 -- =====================================================================
+-- Une demande qui n'aboutit pas ne coute rien.
+--
+--  Seul un echange CONCLU consomme la demande. Un refus, une annulation, une
+--  demande devenue impossible : dans les trois cas rien n'a eu lieu, et le
+--  demandeur recupere ce qu'il avait avance — son jeton, ou sa demande
+--  gratuite. Le contraire punissait quelqu'un pour une decision qui n'est pas
+--  la sienne : on appuyait sur « Proposer », l'autre refusait, et on repartait
+--  pour six heures d'attente sans avoir rien obtenu.
+--
+--  Ca n'ouvre pas la porte a un contournement du delai : un echange qui aboutit
+--  n'est jamais rembourse, donc le rythme reel — un echange conclu toutes les
+--  six heures — ne bouge pas d'un pouce.
+create or replace function public.rembourser_demande(t public.trades)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if t.jeton then
+    insert into inventory (user_id, item_id, qty) values (t.from_user, 'trade_token', 1)
+      on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
+  else
+    -- La demande gratuite redevient disponible tout de suite. `> now()` evite
+    -- de repousser une echeance deja passee dans le passe.
+    update profiles set trade_free_at = now()
+     where id = t.from_user and trade_free_at > now();
+  end if;
+end $$;
+
+revoke all on function public.rembourser_demande from public, anon, authenticated;
+
 create or replace function public.trade_create(
   p_pseudo text, p_offer text, p_want text, p_note text default '')
 returns jsonb language plpgsql security definer set search_path = public as $$
@@ -901,25 +939,25 @@ begin
 
   select * into dest from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
-  if dest.id = p then raise exception 'Tu ne peux pas echanger avec toi-meme.'; end if;
+  if dest.id = p then raise exception 'Tu ne peux pas échanger avec toi-même.'; end if;
 
   select rar into ro from cards where id = p_offer;
   select rar into rw from cards where id = p_want;
   if ro is null or rw is null then raise exception 'Carte inconnue.'; end if;
-  if ro <> rw then raise exception 'Les deux cartes doivent etre de la meme rarete.'; end if;
-  if ro = 'ES' then raise exception 'Les Essences ne s''echangent pas.'; end if;
-  if ro = 'PR' then raise exception 'Les cartes Promo ne s''echangent pas.'; end if;
+  if ro <> rw then raise exception 'Les deux cartes doivent être de la même rareté.'; end if;
+  if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
+  if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
-    raise exception 'Tu ne possedes pas la carte que tu proposes.';
+    raise exception 'Tu ne possèdes pas la carte que tu proposes.';
   end if;
 
   if exists (select 1 from trades where from_user = p and to_user = dest.id
              and offer_card = p_offer and want_card = p_want and status = 'pending') then
-    raise exception 'Cette demande est deja en attente.';
+    raise exception 'Cette demande est déjà en attente.';
   end if;
   if (select count(*) from trades where from_user = p and status = 'pending') >= 10 then
-    raise exception 'Tu as deja 10 demandes en attente.';
+    raise exception 'Tu as déjà 10 demandes en attente.';
   end if;
 
   -- Cout : l'echange gratuit si le delai est passe, sinon un jeton d'echange.
@@ -934,8 +972,8 @@ begin
     update inventory set qty = qty - 1 where user_id = p and item_id = 'trade_token';
   end if;
 
-  insert into trades (from_user, to_user, offer_card, want_card, note)
-  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140));
+  insert into trades (from_user, to_user, offer_card, want_card, note, jeton)
+  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit);
 
   return me();
 end $$;
@@ -947,11 +985,12 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   select * into t from trades where id = p_trade for update;
   if not found then raise exception 'Demande introuvable.'; end if;
-  if t.to_user <> p then raise exception 'Cette demande ne t''est pas adressee.'; end if;
-  if t.status <> 'pending' then raise exception 'Cette demande est deja traitee.'; end if;
+  if t.to_user <> p then raise exception 'Cette demande ne t''est pas adressée.'; end if;
+  if t.status <> 'pending' then raise exception 'Cette demande est déjà traitée.'; end if;
 
   if not p_accept then
     update trades set status = 'declined', resolved_at = now() where id = t.id;
+    perform rembourser_demande(t);
     return me();
   end if;
 
@@ -962,11 +1001,20 @@ begin
   perform 1 from profiles where id = b for update;
 
   if not exists (select 1 from collection where user_id = t.from_user and card_id = t.offer_card and qty > 0) then
-    update trades set status = 'cancelled', resolved_at = now() where id = t.id;
-    raise exception 'Le demandeur ne possede plus cette carte.';
+    -- La demande reste EN ATTENTE, volontairement. Il y avait ici un
+    -- `update ... status = 'cancelled'` juste avant le `raise` : il ne servait
+    -- a rien. Un `raise exception` annule toute la transaction, donc l'ecriture
+    -- qui le precede aussi — la ligne restait « pending » de toute facon, et le
+    -- code racontait le contraire de ce qui se passait.
+    --
+    -- Et c'est tres bien ainsi : le demandeur peut retomber sur cette carte au
+    -- prochain booster, et l'echange redevient honorable. Si celui qui recoit
+    -- ne veut pas attendre, il a le bouton « Refuser » — qui, lui, rend sa
+    -- demande au demandeur.
+    raise exception 'Le demandeur ne possède plus cette carte.';
   end if;
   if not exists (select 1 from collection where user_id = p and card_id = t.want_card and qty > 0) then
-    raise exception 'Tu ne possedes pas la carte demandee.';
+    raise exception 'Tu ne possèdes pas la carte demandée.';
   end if;
 
   update collection set qty = qty - 1 where user_id = t.from_user and card_id = t.offer_card;
@@ -995,8 +1043,9 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   select * into t from trades where id = p_trade for update;
   if not found or t.from_user <> p then raise exception 'Demande introuvable.'; end if;
-  if t.status <> 'pending' then raise exception 'Cette demande est deja traitee.'; end if;
+  if t.status <> 'pending' then raise exception 'Cette demande est déjà traitée.'; end if;
   update trades set status = 'cancelled', resolved_at = now() where id = t.id;
+  perform rembourser_demande(t);
   return me();
 end $$;
 
@@ -1219,31 +1268,31 @@ alter table public.quests add column if not exists item_id text;
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_check',   'daily',     'checkin',        1,   25, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
   ('d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
-  ('d_epic',    'daily',     'rarity_E',       1,   75, null, 'Au moins une Epique',  'Decroche une Epique ou une Legendaire.', 3),
+  ('d_epic',    'daily',     'rarity_E',       1,   75, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3),
   ('d_new',     'daily',     'new_cards',      3,   40, null, 'Du sang neuf',         'Trouve 3 cartes que tu n''avais pas.', 4),
-  ('d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un echange avec un autre joueur.', 5),
+  ('d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un échange avec un autre joueur.', 5),
 
   -- Trente boosters sur les quarante-deux qu'une semaine complete rapporte :
   -- on peut sauter deux jours et finir quand meme.
-  ('w_check',   'weekly',    'checkin',        5,  200, null, 'Habitue de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
-  ('w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en serie',     'Ouvre 30 boosters cette semaine.', 2),
-  ('w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inedites.', 3),
+  ('w_check',   'weekly',    'checkin',        5,  200, null, 'Habitué de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
+  ('w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en série',     'Ouvre 30 boosters cette semaine.', 2),
+  ('w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inédites.', 3),
   -- Huit et non dix : la derniere carte du paquet donne desormais une Epique
   -- ou mieux une fois sur cinq, contre pres d'une sur trois avant. A dix, la
   -- quete passait de huit semaines sur dix a une sur trois — un objectif qu'on
   -- rate sans avoir rien fait de mal n'apprend rien a personne.
-  ('w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Epiques',         'Decroche 8 Epiques ou mieux.', 4),
-  ('w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Legendaire',       'Sors une Legendaire cette semaine.', 5),
-  ('w_trade',   'weekly',    'trades',         5,  380, null, 'Le marche',            'Conclus 5 echanges.', 6),
+  ('w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Épiques',         'Décroche 8 Épiques ou mieux.', 4),
+  ('w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Légendaire',       'Sors une Légendaire cette semaine.', 5),
+  ('w_trade',   'weekly',    'trades',         5,  380, null, 'Le marché',            'Conclus 5 échanges.', 6),
 
   -- Saisonnieres : une seule fois, pour toujours.
-  ('m_legend',  'milestone', 'rarity_L',       1,  500, null, 'Premiere Legendaire',  'Sors ta toute premiere Legendaire d''un booster.', 1),
+  ('m_legend',  'milestone', 'rarity_L',       1,  500, null, 'Première Légendaire',  'Sors ta toute première Légendaire d''un booster.', 1),
 
   -- Les paliers de collection. Ceux qui donnent une Promo ne donnent rien d'autre.
-  ('m_col25',   'milestone', 'collection_pct', 25,  400, null,  'Un quart du chemin', 'Possede 25 % de la collection.', 2),
-  ('m_col50',   'milestone', 'collection_pct', 50,  800, null,  'La moitie',          'Possede 50 % de la collection.', 3),
-  ('m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possede 75 % de la collection.', 4),
-  ('m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Master Set',         'Possede les 122 cartes de l''extension.', 5),
+  ('m_col25',   'milestone', 'collection_pct', 25,  400, null,  'Un quart du chemin', 'Possède 25 % de la collection.', 2),
+  ('m_col50',   'milestone', 'collection_pct', 50,  800, null,  'La moitié',          'Possède 50 % de la collection.', 3),
+  ('m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possède 75 % de la collection.', 4),
+  ('m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Tout Commence Ici',  'Possède les 122 cartes de l''extension.', 5),
 
   -- Les paliers de boosters ouverts : la seule progression qui ne depende que
   -- du temps passe, et pas de la chance.
@@ -1253,7 +1302,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 9),
   ('m_packs500','milestone', 'packs',         500,    0, 'f_sceau', 'Cinq cents paquets', 'Ouvre 500 boosters en tout.', 10),
 
-  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Negociant',           'Conclus 25 echanges en tout.', 11)
+  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 11)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -1273,25 +1322,25 @@ delete from public.quests where id not in (
 -- coup d'oeil la ou « Cinq boosters » demande une lecture. C'est une liste
 -- qu'on parcourt, pas un catalogue qu'on epluche.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre) values
-  ('s_pack1',  'boosters',   'x1 Booster',   'Ajoute 1 booster a ta reserve, par-dessus le plafond.',      350, 'tickets',  1, null, false, 1),
-  ('s_pack5',  'boosters',   'x5 Boosters',  'Cinq boosters d''un coup, un peu moins cher a l''unite.',   1600, 'tickets',  5, null, false, 2),
-  ('s_pack10', 'boosters',   'x10 Boosters', 'Le meilleur prix a l''unite du rayon.',                     3000, 'tickets', 10, null, false, 3),
+  ('s_pack1',  'boosters',   'x1 Booster',   'Ajoute 1 booster à ta réserve, par-dessus le plafond.',      350, 'tickets',  1, null, false, 1),
+  ('s_pack5',  'boosters',   'x5 Boosters',  'Cinq boosters d''un coup, un peu moins cher à l''unité.',   1600, 'tickets',  5, null, false, 2),
+  ('s_pack10', 'boosters',   'x10 Boosters', 'Le meilleur prix à l''unité du rayon.',                     3000, 'tickets', 10, null, false, 3),
 
-  ('s_token1', 'echange',    'x1 Jeton d''echange',   'Lance une demande d''echange sans attendre la fin du delai.',  600, 'trade_token', 1, null, false, 1),
-  ('s_token5', 'echange',    'x5 Jetons d''echanges', 'Cinq demandes d''echange immediates.',                        2500, 'trade_token', 5, null, false, 2),
+  ('s_token1', 'echange',    'x1 Jeton d''échange',   'Lance une demande d''échange sans attendre la fin du délai.',  600, 'trade_token', 1, null, false, 1),
+  ('s_token5', 'echange',    'x5 Jetons d''échanges', 'Cinq demandes d''échange immédiates.',                        2500, 'trade_token', 5, null, false, 2),
 
   -- Les deux Promos achetables. A 5 000, c'est un peu plus de deux semaines
   -- d'epargne : assez pour que le choix « j'ouvre ou j'economise » existe,
   -- pas assez pour decourager.
-  ('s_p01',    'promo',      'Carte Promo P01', 'Major de Paris, illustre par Justice Wong & HL. Introuvable en booster.',
+  ('s_p01',    'promo',      'Carte Promo P01', 'Major de Paris, illustré par Justice Wong & HL. Introuvable en booster.',
                                                                                                           5000, 'carte', 1, 'p01', true, 1),
   ('s_p02',    'promo',      'Carte Promo P02', 'Major de Paris, illustration alternative de Rexpo. Introuvable en booster.',
                                                                                                           5000, 'carte', 1, 'p02', true, 2),
 
-  ('f_azur',   'cosmetique', 'Cadre Azur',   'Un lisere bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
+  ('f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
   ('f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2),
-  ('f_or',     'cosmetique', 'Cadre Or',     'Dore, comme les Legendaires.',                              2500, 'cosmetique', 1, null, true, 3),
-  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre anime qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4)
+  ('f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3),
+  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre animé qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -1347,23 +1396,23 @@ begin
 
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
-  if autre.id = moi then raise exception 'Tu ne peux pas t''ajouter toi-meme.'; end if;
+  if autre.id = moi then raise exception 'Tu ne peux pas t''ajouter toi-même.'; end if;
 
   x := least(moi, autre.id); y := greatest(moi, autre.id);
   select * into ligne from friendships where a = x and b = y for update;
 
   if found then
-    if ligne.accepte then raise exception 'Vous etes deja amis.'; end if;
+    if ligne.accepte then raise exception 'Vous êtes déjà amis.'; end if;
     -- Une demande croisee vaut acceptation : les deux se sont choisis.
     if ligne.demandeur <> moi then
       update friendships set accepte = true, resolved_at = now() where a = x and b = y;
       return friend_list();
     end if;
-    raise exception 'Ta demande est deja en attente.';
+    raise exception 'Ta demande est déjà en attente.';
   end if;
 
   if (select count(*) from friendships where demandeur = moi and not accepte) >= 25 then
-    raise exception 'Tu as deja 25 demandes en attente.';
+    raise exception 'Tu as déjà 25 demandes en attente.';
   end if;
 
   insert into friendships (a, b, demandeur) values (x, y, moi);
@@ -1511,7 +1560,7 @@ begin
     if c = any(propre) then continue; end if;                 -- pas deux fois la meme
     if not exists (select 1 from collection
                    where user_id = moi and card_id = c and qty > 0) then
-      raise exception 'Tu ne possedes pas une des cartes choisies.';
+      raise exception 'Tu ne possèdes pas une des cartes choisies.';
     end if;
     propre := propre || c;
   end loop;

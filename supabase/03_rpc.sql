@@ -49,10 +49,10 @@ begin
 
   if p_pseudo is not null then
     if p_pseudo !~ '^[A-Za-z0-9_.\-]{3,16}$' then
-      raise exception 'Pseudo invalide : 3 a 16 caracteres, lettres, chiffres, . _ -';
+      raise exception 'Pseudo invalide : 3 à 16 caractères, lettres, chiffres, . _ -';
     end if;
     if exists (select 1 from profiles where lower(pseudo) = lower(p_pseudo) and id <> p) then
-      raise exception 'Ce pseudo est deja pris.';
+      raise exception 'Ce pseudo est déjà pris.';
     end if;
   end if;
 
@@ -60,14 +60,14 @@ begin
   if p_avatar is not null and p_avatar like 'card:%' then
     if not exists (select 1 from collection
                    where user_id = p and card_id = substr(p_avatar, 6) and qty > 0) then
-      raise exception 'Tu ne possedes pas cette carte.';
+      raise exception 'Tu ne possèdes pas cette carte.';
     end if;
   end if;
 
   -- Un cadre achete doit etre dans l'inventaire.
   if p_frame is not null and p_frame <> 'default'
      and not exists (select 1 from inventory where user_id = p and item_id = p_frame and qty > 0) then
-    raise exception 'Cadre non debloque.';
+    raise exception 'Cadre non débloqué.';
   end if;
 
   update profiles set
@@ -218,14 +218,14 @@ declare p uuid := auth.uid(); q quests; pk text; prog int; deja boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
   select * into q from quests where id = p_quest;
-  if not found then raise exception 'Quete inconnue.'; end if;
+  if not found then raise exception 'Quête inconnue.'; end if;
 
   pk := period_key(q.scope);
   select progress, claimed into prog, deja
     from quest_progress where user_id = p and quest_id = q.id and period_key = pk for update;
 
-  if deja then raise exception 'Recompense deja recuperee.'; end if;
-  if coalesce(prog, 0) < q.goal then raise exception 'Quete non terminee.'; end if;
+  if deja then raise exception 'Récompense déjà récupérée.'; end if;
+  if coalesce(prog, 0) < q.goal then raise exception 'Quête non terminée.'; end if;
 
   update quest_progress set claimed = true
     where user_id = p and quest_id = q.id and period_key = pk;
@@ -267,10 +267,10 @@ begin
   if not found then raise exception 'Article indisponible.'; end if;
 
   select * into pr from profiles where id = p for update;
-  if pr.shards < it.prix then raise exception 'Pas assez d''Eclats.'; end if;
+  if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
 
   if it.unique_buy and exists (select 1 from inventory where user_id = p and item_id = it.id) then
-    raise exception 'Tu possedes deja cet article.';
+    raise exception 'Tu possèdes déjà cet article.';
   end if;
 
   update profiles set shards = shards - it.prix where id = p;
@@ -286,7 +286,7 @@ begin
   elsif it.effet = 'carte' then
     -- Une carte achetee entre dans la collection comme n'importe quelle autre.
     -- Elle est marquee `unique_buy` en boutique : on ne l'achete qu'une fois.
-    if it.carte_id is null then raise exception 'Article mal configure.'; end if;
+    if it.carte_id is null then raise exception 'Article mal configuré.'; end if;
     insert into collection (user_id, card_id, qty) values (p, it.carte_id, 1)
       on conflict (user_id, card_id) do update set qty = collection.qty + 1;
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
@@ -303,6 +303,34 @@ end $$;
 --  Echanges : demande, reponse, validation mutuelle.
 --  Rarete identique obligatoire ; cout paye par le demandeur.
 -- =====================================================================
+-- Une demande qui n'aboutit pas ne coute rien.
+--
+--  Seul un echange CONCLU consomme la demande. Un refus, une annulation, une
+--  demande devenue impossible : dans les trois cas rien n'a eu lieu, et le
+--  demandeur recupere ce qu'il avait avance — son jeton, ou sa demande
+--  gratuite. Le contraire punissait quelqu'un pour une decision qui n'est pas
+--  la sienne : on appuyait sur « Proposer », l'autre refusait, et on repartait
+--  pour six heures d'attente sans avoir rien obtenu.
+--
+--  Ca n'ouvre pas la porte a un contournement du delai : un echange qui aboutit
+--  n'est jamais rembourse, donc le rythme reel — un echange conclu toutes les
+--  six heures — ne bouge pas d'un pouce.
+create or replace function public.rembourser_demande(t public.trades)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if t.jeton then
+    insert into inventory (user_id, item_id, qty) values (t.from_user, 'trade_token', 1)
+      on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
+  else
+    -- La demande gratuite redevient disponible tout de suite. `> now()` evite
+    -- de repousser une echeance deja passee dans le passe.
+    update profiles set trade_free_at = now()
+     where id = t.from_user and trade_free_at > now();
+  end if;
+end $$;
+
+revoke all on function public.rembourser_demande from public, anon, authenticated;
+
 create or replace function public.trade_create(
   p_pseudo text, p_offer text, p_want text, p_note text default '')
 returns jsonb language plpgsql security definer set search_path = public as $$
@@ -314,25 +342,25 @@ begin
 
   select * into dest from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
-  if dest.id = p then raise exception 'Tu ne peux pas echanger avec toi-meme.'; end if;
+  if dest.id = p then raise exception 'Tu ne peux pas échanger avec toi-même.'; end if;
 
   select rar into ro from cards where id = p_offer;
   select rar into rw from cards where id = p_want;
   if ro is null or rw is null then raise exception 'Carte inconnue.'; end if;
-  if ro <> rw then raise exception 'Les deux cartes doivent etre de la meme rarete.'; end if;
-  if ro = 'ES' then raise exception 'Les Essences ne s''echangent pas.'; end if;
-  if ro = 'PR' then raise exception 'Les cartes Promo ne s''echangent pas.'; end if;
+  if ro <> rw then raise exception 'Les deux cartes doivent être de la même rareté.'; end if;
+  if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
+  if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
-    raise exception 'Tu ne possedes pas la carte que tu proposes.';
+    raise exception 'Tu ne possèdes pas la carte que tu proposes.';
   end if;
 
   if exists (select 1 from trades where from_user = p and to_user = dest.id
              and offer_card = p_offer and want_card = p_want and status = 'pending') then
-    raise exception 'Cette demande est deja en attente.';
+    raise exception 'Cette demande est déjà en attente.';
   end if;
   if (select count(*) from trades where from_user = p and status = 'pending') >= 10 then
-    raise exception 'Tu as deja 10 demandes en attente.';
+    raise exception 'Tu as déjà 10 demandes en attente.';
   end if;
 
   -- Cout : l'echange gratuit si le delai est passe, sinon un jeton d'echange.
@@ -347,8 +375,8 @@ begin
     update inventory set qty = qty - 1 where user_id = p and item_id = 'trade_token';
   end if;
 
-  insert into trades (from_user, to_user, offer_card, want_card, note)
-  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140));
+  insert into trades (from_user, to_user, offer_card, want_card, note, jeton)
+  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit);
 
   return me();
 end $$;
@@ -360,11 +388,12 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   select * into t from trades where id = p_trade for update;
   if not found then raise exception 'Demande introuvable.'; end if;
-  if t.to_user <> p then raise exception 'Cette demande ne t''est pas adressee.'; end if;
-  if t.status <> 'pending' then raise exception 'Cette demande est deja traitee.'; end if;
+  if t.to_user <> p then raise exception 'Cette demande ne t''est pas adressée.'; end if;
+  if t.status <> 'pending' then raise exception 'Cette demande est déjà traitée.'; end if;
 
   if not p_accept then
     update trades set status = 'declined', resolved_at = now() where id = t.id;
+    perform rembourser_demande(t);
     return me();
   end if;
 
@@ -375,11 +404,20 @@ begin
   perform 1 from profiles where id = b for update;
 
   if not exists (select 1 from collection where user_id = t.from_user and card_id = t.offer_card and qty > 0) then
-    update trades set status = 'cancelled', resolved_at = now() where id = t.id;
-    raise exception 'Le demandeur ne possede plus cette carte.';
+    -- La demande reste EN ATTENTE, volontairement. Il y avait ici un
+    -- `update ... status = 'cancelled'` juste avant le `raise` : il ne servait
+    -- a rien. Un `raise exception` annule toute la transaction, donc l'ecriture
+    -- qui le precede aussi — la ligne restait « pending » de toute facon, et le
+    -- code racontait le contraire de ce qui se passait.
+    --
+    -- Et c'est tres bien ainsi : le demandeur peut retomber sur cette carte au
+    -- prochain booster, et l'echange redevient honorable. Si celui qui recoit
+    -- ne veut pas attendre, il a le bouton « Refuser » — qui, lui, rend sa
+    -- demande au demandeur.
+    raise exception 'Le demandeur ne possède plus cette carte.';
   end if;
   if not exists (select 1 from collection where user_id = p and card_id = t.want_card and qty > 0) then
-    raise exception 'Tu ne possedes pas la carte demandee.';
+    raise exception 'Tu ne possèdes pas la carte demandée.';
   end if;
 
   update collection set qty = qty - 1 where user_id = t.from_user and card_id = t.offer_card;
@@ -408,8 +446,9 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   select * into t from trades where id = p_trade for update;
   if not found or t.from_user <> p then raise exception 'Demande introuvable.'; end if;
-  if t.status <> 'pending' then raise exception 'Cette demande est deja traitee.'; end if;
+  if t.status <> 'pending' then raise exception 'Cette demande est déjà traitée.'; end if;
   update trades set status = 'cancelled', resolved_at = now() where id = t.id;
+  perform rembourser_demande(t);
   return me();
 end $$;
 

@@ -196,7 +196,6 @@ function vPromosSection() {
       <span class="qpico">${NAVICO.promo}</span>
       <div>
         <h2>Cartes Promo</h2>
-        <p>Hors extension : elles ne comptent pas dans les ${cards.length} cartes.</p>
       </div>
       <span class="qpreste"><b class="tnum">${eus}</b><small>/ ${serie}</small></span>
     </div>

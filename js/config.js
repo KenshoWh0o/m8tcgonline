@@ -123,6 +123,10 @@ const CONNEXION = { discord: true, email: false };
    sur la machine locale (voir retourURL() dans js/backend.js). */
 const SITE_URL = 'https://matetcg.com';
 
+/* L'adresse où l'on nous écrit : suppression de compte, remise à zéro, bug.
+   Elle est affichée dans les Réglages, et nulle part ailleurs. */
+const CONTACT = 'matetcgonline@gmail.com';
+
 /* ---------- Économie ---------- */
 const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
 
@@ -223,11 +227,14 @@ const NAVICO = {
    accorde la carte, ceci n'est que l'affichage. */
 const PROMO_PALIER = 75;
 
-/* Ce qu'on lit sous une promo qu'on n'a pas encore. */
+/* Ce qu'on lit sous une promo qu'on n'a pas encore : l'endroit du jeu où aller
+   la chercher, pas la condition exacte. Le détail est dans la quête — le
+   répéter ici obligeait à tenir deux textes d'accord, et le palier avait déjà
+   bougé une fois sans que celui-ci suive. */
 const PROMO_COMMENT = {
   boutique: 'En boutique',
-  palier: PROMO_PALIER + ' % de la collection',
-  master: 'Master Set complet',
+  palier: 'Quêtes saisonnières',
+  master: 'Quêtes saisonnières',
   bientot: 'Coming soon…'
 };
 

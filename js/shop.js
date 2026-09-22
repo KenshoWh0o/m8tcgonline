@@ -16,10 +16,17 @@
    compte quatre, mais « ce qui sert à jouer » et « ce qui décore » sont les
    deux seules distinctions qui comptent pour le joueur. */
 const RAYONS = [
-  { id: 'cartes', titre: 'Cartes', categs: ['boosters', 'echange', 'promo'],
-    sous: 'De quoi ouvrir, échanger, et compléter.' },
-  { id: 'cosmetique', titre: 'Cosmétiques', categs: ['cosmetique'],
-    sous: 'Purement décoratif : aucun effet sur le jeu.' }
+  { id: 'cartes', titre: 'Cartes', sous: 'De quoi ouvrir, échanger, et compléter.',
+    sections: [
+      { categ: 'boosters', titre: 'Boosters' },
+      { categ: 'echange', titre: 'Jetons d\'échange' },
+      { categ: 'promo', titre: 'Cartes Promo' }
+    ] },
+  { id: 'cosmetique', titre: 'Cosmétiques', sous: 'Purement décoratif : aucun effet sur le jeu.',
+    sections: [
+      { categ: 'cosmetique', titre: 'Cadres d\'avatar' },
+      { titre: 'Avec les combats', avenir: true }
+    ] }
 ];
 
 let shopVue = 'cartes';
@@ -83,14 +90,23 @@ function vBoutique() {
   return tete + `<div class="segbar">${onglets}</div>${vRayon(shopVue, items)}`;
 }
 
+/* Une section vide ne s'annonce pas : si le serveur ne vend aucun jeton, il n'y
+   a pas de titre « Jetons d'échange » suivi de rien. */
 function vRayon(id, items) {
   const r = RAYONS.find(x => x.id === id) || RAYONS[0];
-  const liste = items.filter(i => r.categs.includes(i.categ));
-  const cases = liste.map(it => vArticle(it, items)).join('');
-  const teaser = id === 'cosmetique' ? vCosmetiquesAVenir() : '';
 
-  return `<p class="muted small rayondit">${h(r.sous)}</p>
-    <div class="offres">${cases}${teaser}</div>`;
+  const blocs = r.sections.map(sec => {
+    const cases = sec.avenir
+      ? vCosmetiquesAVenir()
+      : items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
+    if (!cases) return '';
+    return `<section class="rayon${sec.avenir ? ' avenir' : ''}">
+      <h2>${h(sec.titre)}</h2>
+      <div class="offres">${cases}</div>
+    </section>`;
+  }).join('');
+
+  return `<p class="muted small rayondit">${h(r.sous)}</p>${blocs}`;
 }
 
 function vArticle(it, items) {
@@ -121,12 +137,13 @@ const COSMETIQUES_A_VENIR = [
   ['Titres', 'Une mention sous ton pseudo']
 ];
 
+/* Plus d'étiquette « Avec les combats » sur chaque case : c'est le titre de la
+   section, juste au-dessus. Le répéter quatre fois ne renseignait personne. */
 const vCosmetiquesAVenir = () => COSMETIQUES_A_VENIR.map(([nom, quoi]) =>
   `<article class="offre oflock">
     <span class="oflockico">${NAVICO.lock}</span>
     <span class="ofnom">${h(nom)}</span>
     <small>${h(quoi)}</small>
-    <span class="qtag">Avec les combats</span>
   </article>`).join('');
 
 /* =====================================================================

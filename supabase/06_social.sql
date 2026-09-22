@@ -34,23 +34,23 @@ begin
 
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
-  if autre.id = moi then raise exception 'Tu ne peux pas t''ajouter toi-meme.'; end if;
+  if autre.id = moi then raise exception 'Tu ne peux pas t''ajouter toi-même.'; end if;
 
   x := least(moi, autre.id); y := greatest(moi, autre.id);
   select * into ligne from friendships where a = x and b = y for update;
 
   if found then
-    if ligne.accepte then raise exception 'Vous etes deja amis.'; end if;
+    if ligne.accepte then raise exception 'Vous êtes déjà amis.'; end if;
     -- Une demande croisee vaut acceptation : les deux se sont choisis.
     if ligne.demandeur <> moi then
       update friendships set accepte = true, resolved_at = now() where a = x and b = y;
       return friend_list();
     end if;
-    raise exception 'Ta demande est deja en attente.';
+    raise exception 'Ta demande est déjà en attente.';
   end if;
 
   if (select count(*) from friendships where demandeur = moi and not accepte) >= 25 then
-    raise exception 'Tu as deja 25 demandes en attente.';
+    raise exception 'Tu as déjà 25 demandes en attente.';
   end if;
 
   insert into friendships (a, b, demandeur) values (x, y, moi);

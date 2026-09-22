@@ -290,6 +290,7 @@ const vRegles = () => `<ol class="trregles">
   <li><b>Carte contre carte</b>, à rareté égale.</li>
   <li>Les <b>Essences</b> et les <b>Promos</b> ne s'échangent pas.</li>
   <li>L'autre joueur <b>valide quand il veut</b> : rien n'est immédiat.</li>
+  <li>Refusée ou annulée, ta demande <b>t'est rendue</b> — jeton compris.</li>
 </ol>`;
 
 const vEtape = (n, titre, faite, corps) => `<section class="etape${faite ? ' faite' : ''}">

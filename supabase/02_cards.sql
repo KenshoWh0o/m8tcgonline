@@ -184,6 +184,11 @@ begin
       vendues;
   end if;
 
+  -- Ces annulations-la ne sont PAS remboursees, et c'est deliberate :
+  -- rembourser_demande() vit dans 03_rpc.sql, qui est joue apres ce
+  -- fichier-ci. L'appeler d'ici ferait dependre l'installation de son propre
+  -- ordre. Le cas est de toute facon une operation d'administration — on
+  -- retire une carte du jeu —, pas quelque chose qu'un joueur declenche.
   update public.trades set status = 'cancelled', resolved_at = now()
    where status = 'pending'
      and (offer_card = any (a_retirer) or want_card = any (a_retirer));

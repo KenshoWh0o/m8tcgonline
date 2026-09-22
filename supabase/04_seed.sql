@@ -64,31 +64,31 @@ alter table public.quests add column if not exists item_id text;
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_check',   'daily',     'checkin',        1,   25, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
   ('d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
-  ('d_epic',    'daily',     'rarity_E',       1,   75, null, 'Au moins une Epique',  'Decroche une Epique ou une Legendaire.', 3),
+  ('d_epic',    'daily',     'rarity_E',       1,   75, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3),
   ('d_new',     'daily',     'new_cards',      3,   40, null, 'Du sang neuf',         'Trouve 3 cartes que tu n''avais pas.', 4),
-  ('d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un echange avec un autre joueur.', 5),
+  ('d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un échange avec un autre joueur.', 5),
 
   -- Trente boosters sur les quarante-deux qu'une semaine complete rapporte :
   -- on peut sauter deux jours et finir quand meme.
-  ('w_check',   'weekly',    'checkin',        5,  200, null, 'Habitue de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
-  ('w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en serie',     'Ouvre 30 boosters cette semaine.', 2),
-  ('w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inedites.', 3),
+  ('w_check',   'weekly',    'checkin',        5,  200, null, 'Habitué de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
+  ('w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en série',     'Ouvre 30 boosters cette semaine.', 2),
+  ('w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inédites.', 3),
   -- Huit et non dix : la derniere carte du paquet donne desormais une Epique
   -- ou mieux une fois sur cinq, contre pres d'une sur trois avant. A dix, la
   -- quete passait de huit semaines sur dix a une sur trois — un objectif qu'on
   -- rate sans avoir rien fait de mal n'apprend rien a personne.
-  ('w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Epiques',         'Decroche 8 Epiques ou mieux.', 4),
-  ('w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Legendaire',       'Sors une Legendaire cette semaine.', 5),
-  ('w_trade',   'weekly',    'trades',         5,  380, null, 'Le marche',            'Conclus 5 echanges.', 6),
+  ('w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Épiques',         'Décroche 8 Épiques ou mieux.', 4),
+  ('w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Légendaire',       'Sors une Légendaire cette semaine.', 5),
+  ('w_trade',   'weekly',    'trades',         5,  380, null, 'Le marché',            'Conclus 5 échanges.', 6),
 
   -- Saisonnieres : une seule fois, pour toujours.
-  ('m_legend',  'milestone', 'rarity_L',       1,  500, null, 'Premiere Legendaire',  'Sors ta toute premiere Legendaire d''un booster.', 1),
+  ('m_legend',  'milestone', 'rarity_L',       1,  500, null, 'Première Légendaire',  'Sors ta toute première Légendaire d''un booster.', 1),
 
   -- Les paliers de collection. Ceux qui donnent une Promo ne donnent rien d'autre.
-  ('m_col25',   'milestone', 'collection_pct', 25,  400, null,  'Un quart du chemin', 'Possede 25 % de la collection.', 2),
-  ('m_col50',   'milestone', 'collection_pct', 50,  800, null,  'La moitie',          'Possede 50 % de la collection.', 3),
-  ('m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possede 75 % de la collection.', 4),
-  ('m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Master Set',         'Possede les 122 cartes de l''extension.', 5),
+  ('m_col25',   'milestone', 'collection_pct', 25,  400, null,  'Un quart du chemin', 'Possède 25 % de la collection.', 2),
+  ('m_col50',   'milestone', 'collection_pct', 50,  800, null,  'La moitié',          'Possède 50 % de la collection.', 3),
+  ('m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possède 75 % de la collection.', 4),
+  ('m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Tout Commence Ici',  'Possède les 122 cartes de l''extension.', 5),
 
   -- Les paliers de boosters ouverts : la seule progression qui ne depende que
   -- du temps passe, et pas de la chance.
@@ -98,7 +98,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 9),
   ('m_packs500','milestone', 'packs',         500,    0, 'f_sceau', 'Cinq cents paquets', 'Ouvre 500 boosters en tout.', 10),
 
-  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Negociant',           'Conclus 25 echanges en tout.', 11)
+  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 11)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -118,25 +118,25 @@ delete from public.quests where id not in (
 -- coup d'oeil la ou « Cinq boosters » demande une lecture. C'est une liste
 -- qu'on parcourt, pas un catalogue qu'on epluche.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre) values
-  ('s_pack1',  'boosters',   'x1 Booster',   'Ajoute 1 booster a ta reserve, par-dessus le plafond.',      350, 'tickets',  1, null, false, 1),
-  ('s_pack5',  'boosters',   'x5 Boosters',  'Cinq boosters d''un coup, un peu moins cher a l''unite.',   1600, 'tickets',  5, null, false, 2),
-  ('s_pack10', 'boosters',   'x10 Boosters', 'Le meilleur prix a l''unite du rayon.',                     3000, 'tickets', 10, null, false, 3),
+  ('s_pack1',  'boosters',   'x1 Booster',   'Ajoute 1 booster à ta réserve, par-dessus le plafond.',      350, 'tickets',  1, null, false, 1),
+  ('s_pack5',  'boosters',   'x5 Boosters',  'Cinq boosters d''un coup, un peu moins cher à l''unité.',   1600, 'tickets',  5, null, false, 2),
+  ('s_pack10', 'boosters',   'x10 Boosters', 'Le meilleur prix à l''unité du rayon.',                     3000, 'tickets', 10, null, false, 3),
 
-  ('s_token1', 'echange',    'x1 Jeton d''echange',   'Lance une demande d''echange sans attendre la fin du delai.',  600, 'trade_token', 1, null, false, 1),
-  ('s_token5', 'echange',    'x5 Jetons d''echanges', 'Cinq demandes d''echange immediates.',                        2500, 'trade_token', 5, null, false, 2),
+  ('s_token1', 'echange',    'x1 Jeton d''échange',   'Lance une demande d''échange sans attendre la fin du délai.',  600, 'trade_token', 1, null, false, 1),
+  ('s_token5', 'echange',    'x5 Jetons d''échanges', 'Cinq demandes d''échange immédiates.',                        2500, 'trade_token', 5, null, false, 2),
 
   -- Les deux Promos achetables. A 5 000, c'est un peu plus de deux semaines
   -- d'epargne : assez pour que le choix « j'ouvre ou j'economise » existe,
   -- pas assez pour decourager.
-  ('s_p01',    'promo',      'Carte Promo P01', 'Major de Paris, illustre par Justice Wong & HL. Introuvable en booster.',
+  ('s_p01',    'promo',      'Carte Promo P01', 'Major de Paris, illustré par Justice Wong & HL. Introuvable en booster.',
                                                                                                           5000, 'carte', 1, 'p01', true, 1),
   ('s_p02',    'promo',      'Carte Promo P02', 'Major de Paris, illustration alternative de Rexpo. Introuvable en booster.',
                                                                                                           5000, 'carte', 1, 'p02', true, 2),
 
-  ('f_azur',   'cosmetique', 'Cadre Azur',   'Un lisere bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
+  ('f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
   ('f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2),
-  ('f_or',     'cosmetique', 'Cadre Or',     'Dore, comme les Legendaires.',                              2500, 'cosmetique', 1, null, true, 3),
-  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre anime qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4)
+  ('f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3),
+  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre animé qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,

@@ -167,7 +167,7 @@ function vReglages() {
     <h2>Données</h2>
     ${enLigne
       ? `<p class="muted small">Pour repartir de zéro ou supprimer ton compte,
-           écris-nous : la suppression se fait côté serveur.</p>`
+           écris-nous : <a href="mailto:${CONTACT}">${CONTACT}</a></p>`
       : `<p class="muted small">Remet les boosters et la collection au départ.
            Les cartes du jeu ne bougent pas.</p>
          <div class="row"><button class="btn ghost" data-act="reset">Réinitialiser ma progression</button></div>`}
@@ -175,10 +175,9 @@ function vReglages() {
 
   <section class="panel about">
     <h2>À propos</h2>
-    <p class="muted small">${h(GAME_NAME)} · extension « ${h(SET_NAME)} » · ${cards.length} cartes
-      ${promos.length ? `· ${promos.length} promos` : ''}.
-      Jeu de collection sans argent réel : les ${MONNAIE.nom} se gagnent en jouant.</p>
-    <p class="muted small">Version ${APP_VERSION}${Backend.mode === 'cloud' ? ' · compte en ligne' : ' · hors ligne'}</p>
+    <p class="muted small">${h(GAME_NAME)} — Jeu de collection sans argent réel :
+      les ${MONNAIE.nom} se gagnent en jouant.</p>
+    <p class="muted small">Version bêta ${APP_VERSION}</p>
     <p class="mentions">${MENTIONS}</p>
   </section>`;
 }

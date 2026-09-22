@@ -121,8 +121,13 @@ create table if not exists public.trades (
   status      public.trade_status not null default 'pending',
   created_at  timestamptz not null default now(),
   resolved_at timestamptz,
+  -- Comment la demande a ete payee. Sans cette memoire, impossible de
+  -- rembourser : au moment ou l'autre refuse, on ne sait plus si le demandeur
+  -- avait depense un jeton ou consomme sa demande gratuite.
+  jeton       boolean not null default false,
   constraint no_self_trade check (from_user <> to_user)
 );
+alter table public.trades add column if not exists jeton boolean not null default false;
 create index if not exists trades_to_idx   on public.trades (to_user,   status);
 create index if not exists trades_from_idx on public.trades (from_user, status);
 

@@ -155,7 +155,10 @@ function showStack() {
     <div class="stackwrap">${rv.god ? '<div class="godaura" aria-hidden="true"></div><div class="godwash" aria-hidden="true"></div>' : ''}<div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
       <div class="stack3d" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
         const f = i === last && fin;
-        return `<div class="scard${f ? ' veiled final' : ''}" data-i="${i}" style="--z:${i}">${f ? `<div class="lifter"><div class="spinner">${renderCard(c)}<div class="spinback"><img src="${ART.back}" alt=""></div></div></div>` : renderCard(c)}<div class="sheen"></div></div>`;
+        /* Le reflet (`.sheen`) est posé sur la FACE, pas sur l'emplacement :
+           la dernière carte pivote sur elle-même, et un reflet resté face à la
+           caméra se détachait en grand rectangle blanchâtre derrière elle. */
+        return `<div class="scard${f ? ' veiled final' : ''}" data-i="${i}" style="--z:${i}">${f ? `<div class="lifter"><div class="spinner">${renderCard(c)}<div class="sheen"></div><div class="spinback"><img src="${ART.back}" alt=""></div></div></div>` : `${renderCard(c)}<div class="sheen"></div>`}</div>`;
       }).join('')}</div></div>
       ${anim ? `<div class="packrip" id="packrip" aria-hidden="true">
         <img class="rp-body" src="${packArt}" alt="">
