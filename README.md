@@ -50,7 +50,6 @@ mate-tcg-online/
 ├── presse/             Kit presse : visuels prêts à publier et leur mode d'emploi
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
-│   ├── code-porte.py   Calcule l'empreinte d'un code d'accès
 │   ├── version.py      Pose le numéro de version et marque les fichiers
 │   ├── gen-icons.py    Régénère icônes, favicons et image de partage
 │   └── kit-presse.py   Régénère les visuels de presse/visuels/
@@ -139,7 +138,8 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
 | Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
 | Modifier la mention légale | `MENTIONS` dans `js/config.js` (elle s'affiche aux trois endroits d'un coup) |
-| Changer le code d'accès | `python3 tools/code-porte.py "NouveauCode"` |
+| Inviter quelqu'un à la bêta | `supabase/09_beta.sql` |
+| Ouvrir la bêta à tous | `cfg('beta_fermee')` dans `supabase/01_schema.sql` |
 | Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
 | Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
@@ -435,32 +435,48 @@ Le service worker sert le code par le réseau d'abord (les corrections arrivent 
 
 Les balises de partage (Open Graph et Twitter Card) sont en haut de `index.html`. Elles pointent en relatif, ce qui marche partout ; si tu prends un vrai domaine, renseigne `SITE_URL` dans `js/config.js` — il sert aussi d'adresse de retour après un courriel de confirmation ou un détour par Discord.
 
-## Écran d'attente
+## Écran d'attente et bêta fermée
 
-Le site peut rester fermé au public tout en étant en ligne : `PORTE.active` dans
-`js/gate.js`. Les visiteurs voient un paquet qui flotte, « Bientôt disponible », et un
-champ de code replié ; le reste du jeu n'est même pas initialisé — ni service worker, ni
-appel au serveur.
+Tant que `PORTE.active` vaut `true` dans `js/gate.js`, le jeu n'est ouvert qu'aux comptes
+invités. Les autres voient un paquet qui flotte, « Bientôt disponible », et un bouton de
+connexion Discord.
 
-Le code n'est pas écrit dans le fichier : seule son **empreinte SHA-256 salée** l'est,
-pour qu'on ne le trouve pas en clair en lisant la page. Pour en changer :
+**L'accès est nominatif.** Il n'y a plus de code à saisir : on se connecte avec son compte
+Discord, et c'est le serveur qui vérifie que ce compte figure dans la table
+`beta_invites`. On invite, on retire, on regarde qui est entré depuis
+`supabase/09_beta.sql`.
 
-```bash
-python3 tools/code-porte.py "NouveauCode"
-```
+Deux raisons d'avoir abandonné le code d'accès, et les deux ont servi contre nous :
 
-puis recopier la ligne `empreinte:` obtenue. Les personnes qui avaient l'ancien code
-devront ressaisir le nouveau.
+1. **L'empreinte était dans la page.** Le code n'y figurait pas en clair, mais son
+   empreinte si — et la comparaison se faisait dans le navigateur. Ouvrir la console et
+   écrire la valeur attendue dans le stockage local suffisait à entrer.
+2. **Un code se transmet.** Une fois dans un salon Discord, il n'appartient plus à
+   personne et ne se reprend plus. Une invitation, elle, se retire.
+
+Le contrôle vit maintenant côté serveur, dans `garde_beta()` : tant que la bêta est
+fermée, **aucune action du jeu n'aboutit** pour un compte non invité — ni ouvrir un
+booster, ni consulter un profil, ni chercher un joueur. Le mode hors ligne ne franchit
+plus cet écran non plus : c'était la vraie faille, puisqu'il donnait accès à tout le jeu
+sans le moindre compte.
 
 `PORTE.lancement` accepte une date ISO (`'2026-10-15T18:00:00+02:00'`) : un compte à
 rebours s'affiche alors tout seul. Laissé à `null`, on annonce seulement « bientôt ».
 
-> **Ce que cette porte fait, et ce qu'elle ne fait pas.** Elle empêche d'arriver par
-> hasard sur le jeu, et permet de faire circuler le lien sans tout dévoiler. Elle
-> n'empêche pas quelqu'un de décidé d'ouvrir le code de la page et de passer outre : sur
-> un site statique, les fichiers sont téléchargeables par nature. Ce qui est réellement
-> protégé, ce sont les comptes et les collections — ils vivent sur le serveur, derrière
-> ses propres règles.
+> **Ce que cet écran protège, et ce qu'il ne protège pas.** Il protège le *jeu* : sans
+> invitation, le serveur ne répond rien. Il ne protège pas les *fichiers*. Le site est
+> statique : ses scripts, ses images et la liste des cartes se téléchargent à l'adresse
+> où ils sont publiés, écran d'attente ou non — et le dépôt lui-même est lisible s'il est
+> public. La seule réponse à ça est du côté de l'hébergement : dépôt privé, et un
+> hébergeur capable de demander une identité avant de servir le premier octet
+> (Cloudflare Access, un mot de passe Netlify, un proxy). Aucune ligne de JavaScript ne
+> peut le faire à leur place.
+
+### Ouvrir le jeu à tout le monde
+
+1. `cfg('beta_fermee')` → `0` dans `supabase/01_schema.sql`, puis rejouer le fichier.
+2. `PORTE.active` → `false` dans `js/gate.js`.
+3. `python3 tools/version.py X.Y.Z`, puis pousser.
 
 ## Remettre les compteurs à zéro
 
@@ -487,10 +503,9 @@ monde ouvre cinq boosters le jour de l'ouverture.
 > carte qu'on ne possède plus, et le joueur se retrouverait avec un profil qu'il
 > ne peut plus modifier.
 
-Les codes d'accès distribués pendant les tests, eux, continuent de marcher. Pour
-les invalider : `python3 tools/code-porte.py "NouveauCode"`. Le navigateur de
-chaque testeur garde l'ancienne empreinte, qui ne correspondra plus — ils
-repasseront par l'écran d'attente.
+Les invitations de la bêta, elles, ne sont pas touchées : la remise à zéro vide
+les collections, pas la table `beta_invites`. Pour retirer quelqu'un de la liste,
+c'est `supabase/09_beta.sql`.
 
 ## Administrateurs
 

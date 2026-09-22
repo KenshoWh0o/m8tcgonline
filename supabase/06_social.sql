@@ -31,6 +31,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); autre profiles; x uuid; y uuid; ligne friendships;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
@@ -63,6 +64,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); autre profiles; x uuid; y uuid; ligne friendships;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Joueur introuvable.'; end if;
 
@@ -86,6 +88,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); autre profiles;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Joueur introuvable.'; end if;
   delete from friendships
@@ -100,6 +103,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid();
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
         'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -128,6 +132,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into o from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then return 'null'::jsonb; end if;
 

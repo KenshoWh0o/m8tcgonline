@@ -18,6 +18,30 @@ const noterHorsLigne = v => { try { localStorage.setItem(HORSLIGNE_CLE, v ? '1' 
    et qu'on n'a pas déjà choisi de jouer sans. */
 const porteVisible = () => Backend.dispo && Backend.mode !== 'cloud' && !veutHorsLigne();
 
+/* ---------- Retour d'un détour par Discord ---------- */
+/* Quand le serveur refuse l'inscription — la bêta est fermée et le compte n'est
+   pas sur la liste (voir handle_new_user dans supabase/01_schema.sql) —,
+   Supabase nous renvoie ici avec l'erreur dans l'adresse. Sans cette lecture,
+   l'écran de connexion réapparaissait sans un mot : on croyait que le bouton
+   n'avait rien fait.
+
+   À appeler AVANT Backend.init() : la bibliothèque nettoie l'adresse en
+   cherchant sa session. */
+function lireErreurRetour() {
+  const brut = (location.hash || '') + '&' + (location.search || '');
+  const src = new URLSearchParams(brut.replace(/[#?]/g, '&'));
+  const msg = src.get('error_description') || src.get('error');
+  if (!msg) return;
+
+  authErr = /beta_fermee|beta/i.test(msg)
+    ? "Le jeu est en bêta fermée : ce compte n'est pas encore sur la liste des invités."
+    : 'La connexion a échoué. Réessaie dans un instant.';
+
+  /* On efface l'erreur de l'adresse : recharger la page ne doit pas la
+     remontrer, et un lien recopié ne doit pas la transporter. */
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* sans gravité */ }
+}
+
 const DISCORD_ICO = '<svg viewBox="0 0 24 18" aria-hidden="true" fill="currentColor"><path d="M20.3 1.6A19.8 19.8 0 0 0 15.4.1a14 14 0 0 0-.6 1.3 18.3 18.3 0 0 0-5.5 0A13.6 13.6 0 0 0 8.6.1 19.7 19.7 0 0 0 3.7 1.6C.6 6.2-.3 10.7.2 15.1a19.9 19.9 0 0 0 6 3 14.7 14.7 0 0 0 1.3-2.1 13 13 0 0 1-2-1c.2-.1.3-.2.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4a13 13 0 0 1-2 1 14.5 14.5 0 0 0 1.3 2.1 19.8 19.8 0 0 0 6-3c.6-5.1-.9-9.6-3.6-13.5ZM8.0 12.4c-1.2 0-2.2-1.1-2.2-2.4S6.8 7.6 8 7.6s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>';
 
 function vAuth() {

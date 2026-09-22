@@ -171,6 +171,10 @@ language sql immutable as $$
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
+    -- Beta fermee : seules les personnes inscrites dans `beta_invites`
+    -- peuvent creer un compte. Passer a 0 le jour de l'ouverture au public,
+    -- puis rejouer ce fichier.
+    when 'beta_fermee'       then 1
   end;
 $$;
 
@@ -217,6 +221,64 @@ create policy p_trades_read on public.trades for select
 -- security definer ci-dessous, qui verifient les regles du jeu.
 
 -- =====================================================================
+--  La liste des invites de la beta
+--
+--  L'ecran d'attente de js/gate.js n'est PAS une serrure : c'est un rideau.
+--  Il vit dans le navigateur, son empreinte est ecrite dans la page, et
+--  n'importe qui sachant ouvrir la console passe derriere. C'est dit dans
+--  l'en-tete de ce fichier-la depuis le premier jour.
+--
+--  La serrure, c'est ici. Tant que cfg('beta_fermee') vaut 1, la creation
+--  d'un compte est refusee a qui ne figure pas dans cette table. Le rideau
+--  continue de filtrer les curieux ; la table, elle, ne se contourne pas
+--  depuis le navigateur.
+--
+--  La cle est au choix une adresse e-mail ou un identifiant Discord : selon
+--  le fournisseur, on ne recoit pas toujours les deux.
+-- =====================================================================
+create table if not exists public.beta_invites (
+  cle       text primary key,
+  note      text,
+  ajoute_le timestamptz not null default now()
+);
+
+alter table public.beta_invites enable row level security;
+-- Aucune policy, aucun droit : cette table ne se lit pas depuis le navigateur.
+-- Seules les fonctions `security definer` la consultent.
+revoke all on public.beta_invites from anon, authenticated;
+
+-- Est-ce que ce compte figure sur la liste ? On regarde les deux cles
+-- possibles : l'adresse e-mail et l'identifiant Discord.
+create or replace function public.est_invite(p uuid) returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1
+      from auth.users u
+      join beta_invites b
+        on (nullif(u.email, '') is not null and lower(b.cle) = lower(u.email))
+        or (nullif(u.raw_user_meta_data->>'provider_id', '') is not null
+            and b.cle = u.raw_user_meta_data->>'provider_id')
+     where u.id = p);
+$$;
+
+-- Le garde-fou pose a l'entree de chaque action du jeu.
+--
+-- Verrouiller la seule inscription ne suffisait pas : les comptes crees avant
+-- la fermeture continuaient de jouer, et le mode hors ligne du navigateur
+-- donnait acces a tout le jeu sans aucun compte. Tant que la beta est fermee,
+-- une action n'aboutit que pour une personne invitee — et c'est le serveur qui
+-- le dit, pas la page.
+create or replace function public.garde_beta() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if cfg('beta_fermee') = 1 and not est_invite(auth.uid()) then
+    raise exception 'BETA_FERMEE';
+  end if;
+end $$;
+
+revoke all on function public.est_invite, public.garde_beta from anon, authenticated;
+
+-- =====================================================================
 --  Creation du profil a l'inscription
 -- =====================================================================
 create or replace function public.slugify_pseudo(src text) returns text
@@ -228,10 +290,29 @@ begin
   return left(s, 16);
 end $$;
 
+-- Le declencheur tourne DANS la transaction qui cree le compte : lever une
+-- exception ici annule l'inscription entiere, et aucune ligne ne subsiste dans
+-- auth.users. C'est ce qu'on veut — un refus, pas un compte a moitie cree.
+--
+-- Les comptes existants ne sont pas concernes : ce declencheur ne se lance
+-- qu'a l'insertion.
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare base text; try text; n int := 0;
+declare base text; try text; n int := 0; cle_discord text;
 begin
+  if cfg('beta_fermee') = 1 then
+    cle_discord := coalesce(new.raw_user_meta_data->>'provider_id',
+                            new.raw_user_meta_data->>'sub', '');
+    if not exists (
+      select 1 from beta_invites b
+       where (nullif(new.email, '') is not null and lower(b.cle) = lower(new.email))
+          or (nullif(cle_discord, '') is not null and b.cle = cle_discord)
+    ) then
+      raise exception 'BETA_FERMEE'
+        using hint = 'Le jeu est en beta fermee : ce compte n''est pas sur la liste.';
+    end if;
+  end if;
+
   base := slugify_pseudo(coalesce(
     new.raw_user_meta_data->>'pseudo',
     new.raw_user_meta_data->>'global_name',
@@ -372,8 +453,15 @@ end $$;
 grant usage on schema public to anon, authenticated;
 
 grant select on public.cards, public.quests, public.shop_items to anon, authenticated;
-grant select on public.profiles, public.collection, public.quest_progress,
-                public.inventory, public.trades to authenticated;
+
+-- Le navigateur ne lit PAS ces cinq tables : il passe par me(), friend_list(),
+-- player_profile() et trade_list(), qui sont `security definer` et n'ont donc
+-- besoin d'aucun droit cote joueur. Le droit de lecture qui trainait ici
+-- laissait enumerer les Eclats, la serie de jours et le drapeau administrateur
+-- de tout le monde — une fuite sans utilite. Les policies RLS restent en place :
+-- elles sont la seconde serrure, pas la premiere.
+revoke select on public.profiles, public.collection, public.quest_progress,
+                 public.inventory, public.trades from anon, authenticated;
 
 revoke insert, update, delete on public.profiles, public.collection, public.cards,
   public.quests, public.quest_progress, public.shop_items, public.inventory,
@@ -643,6 +731,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid();
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   if p_pseudo is not null then
     if p_pseudo !~ '^[A-Za-z0-9_.\-]{3,16}$' then
@@ -682,6 +771,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); pr profiles; today date;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   today := (now() at time zone 'Europe/Paris')::date;
   select * into pr from profiles where id = p for update;
 
@@ -728,6 +818,7 @@ declare
   nouvelles int := 0; i int;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   pr := regen_tickets(p);
   if pr.tickets < 1 then
@@ -814,6 +905,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); q quests; pk text; prog int; deja boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into q from quests where id = p_quest;
   if not found then raise exception 'Quête inconnue.'; end if;
 
@@ -860,6 +952,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); it shop_items; pr profiles;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into it from shop_items where id = p_item and actif;
   if not found then raise exception 'Article indisponible.'; end if;
 
@@ -936,6 +1029,7 @@ declare
   ro text; rw text; jeton int; gratuit boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   select * into dest from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
@@ -983,6 +1077,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); t trades; a uuid; b uuid;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into t from trades where id = p_trade for update;
   if not found then raise exception 'Demande introuvable.'; end if;
   if t.to_user <> p then raise exception 'Cette demande ne t''est pas adressée.'; end if;
@@ -1041,6 +1136,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); t trades;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into t from trades where id = p_trade for update;
   if not found or t.from_user <> p then raise exception 'Demande introuvable.'; end if;
   if t.status <> 'pending' then raise exception 'Cette demande est déjà traitée.'; end if;
@@ -1055,6 +1151,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid();
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', t.id, 'sens', case when t.from_user = p then 'envoyee' else 'recue' end,
@@ -1078,6 +1175,7 @@ language plpgsql security definer set search_path = public as $$
 declare r profiles;
 begin
   if auth.uid() is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into r from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then return 'null'::jsonb; end if;
   return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
@@ -1393,6 +1491,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); autre profiles; x uuid; y uuid; ligne friendships;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
@@ -1425,6 +1524,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); autre profiles; x uuid; y uuid; ligne friendships;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Joueur introuvable.'; end if;
 
@@ -1448,6 +1548,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); autre profiles;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into autre from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Joueur introuvable.'; end if;
   delete from friendships
@@ -1462,6 +1563,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid();
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
         'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -1490,6 +1592,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into o from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then return 'null'::jsonb; end if;
 
@@ -1552,6 +1655,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); propre text[]; c text;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   p_cards := coalesce(p_cards, '{}');
   if array_length(p_cards, 1) > 4 then raise exception 'Quatre cartes au maximum.'; end if;
 
@@ -1598,6 +1702,10 @@ begin
       'packs_opened', pr.packs_opened, 'trades_done', pr.trades_done,
       'streak', pr.streak, 'last_checkin', pr.last_checkin,
       'vitrine', to_jsonb(pr.vitrine),
+      -- La seule fonction qui reponde a un compte non invite : c'est elle qui
+      -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
+      -- d'une erreur muette. Toutes les autres refusent (garde_beta).
+      'invite', (cfg('beta_fermee') = 0 or est_invite(p)),
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
       'serveur', now()),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
@@ -1624,6 +1732,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into o from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then return 'null'::jsonb; end if;
 

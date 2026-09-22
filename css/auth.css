@@ -85,16 +85,15 @@ body.inlock main { padding:0 }
 .compte span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .lockpret{color:var(--ok);font-weight:700;margin:20px 0 0}
 
-/* Le champ de code reste replié : discret pour le public, à portée pour qui
-   possède le code. */
-.lockcode{background:none;border:0;padding:0;margin:26px 0 0;text-align:left}
-.lockcode summary{list-style:none;text-align:center;color:var(--muted);font-size:12.5px;
-  font-weight:700;padding:8px;border-radius:8px;transition:color .15s}
-.lockcode summary::-webkit-details-marker{display:none}
-.lockcode summary:hover{color:var(--subtle)}
-.lockcode[open] summary{color:var(--subtle);margin-bottom:6px}
-.lockcode .findrow{margin-top:4px}
-.lockcode .autherr{margin:0 0 10px}
+/* L'entrée dans la bêta. Il n'y a plus de champ de code à déplier : l'accès
+   est nominatif, et c'est le serveur qui vérifie l'invitation. */
+.lockentree{margin:24px 0 0;display:flex;flex-direction:column;gap:10px}
+.lockaide{margin:0;max-width:36ch;margin-inline:auto}
+
+/* « Bêta fermée » est un refus, pas une annonce : l'étiquette prend la couleur
+   des états neutres plutôt que celle de l'accent. */
+.lockcard .locktag.refus{background:var(--surface-2);color:var(--muted);
+  box-shadow:inset 0 0 0 1px var(--line-2)}
 
 /* Les deux écrans pleine page n'ont pas de sections : leurs titres ne portent
    donc pas le filet vertical des h2 du reste du site. */

@@ -304,7 +304,8 @@ async function clicPage(e) {
       colFilter = essFilter = rarFilter = 'all';
       colPossedees = false;
       return render();
-    case 'porte-ok': return porteEssayer();
+    case 'porte-discord': return porteConnexion();
+    case 'porte-sortir': return porteSortir();
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
     case 'pf-carte': return ouvrirChoixAvatar();
@@ -397,7 +398,7 @@ document.addEventListener('keydown', e => {
    au serveur dès que le compte à rebours devrait avoir abouti. */
 let attenteServeur = false;
 setInterval(() => {
-  if (!save || porteVisible()) return;
+  if (!save || !porteOuverte() || porteVisible()) return;
 
   if (Backend.mode === 'cloud') {
     if (save.tickets < TICKET_CAP && Date.now() - save.lastTick >= INTERVAL && !attenteServeur) {
@@ -484,10 +485,15 @@ setInterval(releverSocial, RELEVE_SOCIAL);
      sur la version qu'un visiteur a déjà en cache. */
   brancherSW();
 
-  /* Porte fermée : on s'arrête là, sans contacter le serveur du jeu. */
-  if (!porteOuverte()) return render();
+  /* Un retour de Discord peut porter un refus : on le lit avant d'ouvrir la
+     session, car la bibliothèque nettoie l'adresse en cherchant la sienne. */
+  lireErreurRetour();
 
+  /* La session est nécessaire même quand la bêta est fermée : c'est elle qui
+     dit si ce compte a le droit d'entrer. */
   await Backend.init();
+
+  if (!porteOuverte()) return render();
 
   if (Backend.mode === 'cloud') {
     try {

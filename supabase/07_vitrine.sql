@@ -13,6 +13,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); propre text[]; c text;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   p_cards := coalesce(p_cards, '{}');
   if array_length(p_cards, 1) > 4 then raise exception 'Quatre cartes au maximum.'; end if;
 
@@ -59,6 +60,10 @@ begin
       'packs_opened', pr.packs_opened, 'trades_done', pr.trades_done,
       'streak', pr.streak, 'last_checkin', pr.last_checkin,
       'vitrine', to_jsonb(pr.vitrine),
+      -- La seule fonction qui reponde a un compte non invite : c'est elle qui
+      -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
+      -- d'une erreur muette. Toutes les autres refusent (garde_beta).
+      'invite', (cfg('beta_fermee') = 0 or est_invite(p)),
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
       'serveur', now()),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
@@ -85,6 +90,7 @@ language plpgsql security definer set search_path = public as $$
 declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into o from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then return 'null'::jsonb; end if;
 

@@ -121,6 +121,10 @@ Backend.apply = function (etat) {
     avatar: p.avatar,
     frame: p.frame,
     isAdmin: !!p.is_admin,
+    /* Bêta fermée : le serveur dit si ce compte est sur la liste. C'est la
+       seule réponse qu'il accorde à un compte qui n'y est pas — toutes les
+       autres actions sont refusées (garde_beta, supabase/01_schema.sql). */
+    invite: p.invite !== false,
     tradeFreeAt: srvTime(p.trade_free_at),
     packsOpened: p.packs_opened,
     tradesDone: p.trades_done,
@@ -148,6 +152,7 @@ Backend.rpc = async function (nom, args) {
 
 /* Les refus que le serveur signale par un mot-clé, traduits pour le joueur. */
 const MSG_SERVEUR = {
+  BETA_FERMEE: "Le jeu est en bêta fermée : ce compte n'est pas sur la liste des invités.",
   RESERVE_VIDE: 'Plus de booster pour le moment.',
   BOOSTER_VIDE: 'Ce booster est vide : aucune carte à tirer.',
   ECHANGE_EN_RECHARGE: 'Ton échange gratuit est encore en recharge. Il te faut un jeton.',

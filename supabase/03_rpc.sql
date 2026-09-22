@@ -46,6 +46,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid();
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   if p_pseudo is not null then
     if p_pseudo !~ '^[A-Za-z0-9_.\-]{3,16}$' then
@@ -85,6 +86,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); pr profiles; today date;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   today := (now() at time zone 'Europe/Paris')::date;
   select * into pr from profiles where id = p for update;
 
@@ -131,6 +133,7 @@ declare
   nouvelles int := 0; i int;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   pr := regen_tickets(p);
   if pr.tickets < 1 then
@@ -217,6 +220,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); q quests; pk text; prog int; deja boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into q from quests where id = p_quest;
   if not found then raise exception 'Quête inconnue.'; end if;
 
@@ -263,6 +267,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); it shop_items; pr profiles;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into it from shop_items where id = p_item and actif;
   if not found then raise exception 'Article indisponible.'; end if;
 
@@ -339,6 +344,7 @@ declare
   ro text; rw text; jeton int; gratuit boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
 
   select * into dest from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then raise exception 'Aucun joueur ne porte ce pseudo.'; end if;
@@ -386,6 +392,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); t trades; a uuid; b uuid;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into t from trades where id = p_trade for update;
   if not found then raise exception 'Demande introuvable.'; end if;
   if t.to_user <> p then raise exception 'Cette demande ne t''est pas adressée.'; end if;
@@ -444,6 +451,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); t trades;
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into t from trades where id = p_trade for update;
   if not found or t.from_user <> p then raise exception 'Demande introuvable.'; end if;
   if t.status <> 'pending' then raise exception 'Cette demande est déjà traitée.'; end if;
@@ -458,6 +466,7 @@ language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid();
 begin
   if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', t.id, 'sens', case when t.from_user = p then 'envoyee' else 'recue' end,
@@ -481,6 +490,7 @@ language plpgsql security definer set search_path = public as $$
 declare r profiles;
 begin
   if auth.uid() is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
   select * into r from profiles where lower(pseudo) = lower(trim(p_pseudo));
   if not found then return 'null'::jsonb; end if;
   return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
