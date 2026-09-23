@@ -181,7 +181,8 @@ const TRADE_COOLDOWN_H = 6;
 /* `bas` : la barre du bas sur mobile, le rail sur ordinateur. Cinq places, pas une
    de plus : ce sont les cinq endroits où l'on revient tout le temps.
    `tiroir` : le menu qui se déplie sous l'avatar — le compte et ses réglages,
-   pas le jeu. `admin` : réservé aux profils administrateurs. */
+   pas le jeu. `admin` : réservé aux profils administrateurs. `cache` : une
+   page qui n'apparaît dans aucun menu, et qu'on ouvre d'ailleurs. */
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
@@ -193,27 +194,42 @@ const TABS = [
     desc: 'Pseudo, avatar, cadre et statistiques' },
   { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,
     desc: 'Dépenser tes Éclats' },
+  { id: 'recyclage', nom: 'Recyclage', tiroir: true, ico: 'recycle', online: true,
+    desc: 'Tes doublons contre des Éclats' },
   { id: 'reglages', nom: 'Réglages',   tiroir: true, ico: 'gear',
     desc: 'Son, animations, compte, installation' },
   { id: 'labo',     nom: 'Labo',       tiroir: true, ico: 'flask', admin: true,
-    desc: 'Ouvertures de test — administrateurs' }
+    desc: 'Ouvertures de test — administrateurs' },
+
+  /* La boite de réception n'est dans aucune barre : on y entre par la cloche
+     de l'en-tête, visible partout (voir js/boite.js). */
+  { id: 'boite', nom: 'Boîte de réception', cache: true, ico: 'bell', online: true }
 ];
 
 /* Icônes de navigation : tracées au trait, sauf l'étoile du logo qui est pleine. */
 const NAVICO = {
   star:  ICON.star,
-  /* Collection : un classeur à cartes — la reliure à gauche, les pochettes à droite.
-     Deux rectangles et une barre ne disaient rien ; un classeur, tout le monde
-     l'a déjà eu entre les mains. */
-  cards: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7.5 3v18"/><rect x="11" y="7" width="3.6" height="4.4" rx=".8"/><rect x="16.4" y="7" width="3.6" height="4.4" rx=".8"/><rect x="11" y="13.6" width="3.6" height="4.4" rx=".8"/><rect x="16.4" y="13.6" width="3.6" height="4.4" rx=".8"/></svg>',
+  /* Collection : trois cartes en éventail, l'étoile du logo sur celle du
+     dessus. Le classeur à pochettes se lisait comme un tableur ; une main de
+     cartes, c'est ce qu'on tient en jouant. */
+  cards: '<svg viewBox="0 0 24 24"><path d="M7.6 6.3 4.3 7.2a1.5 1.5 0 0 0-1 1.8l2.9 10.8a1.5 1.5 0 0 0 1.8 1l2.3-.6"/><path d="M16.4 6.3l3.3.9a1.5 1.5 0 0 1 1 1.8l-2.9 10.8a1.5 1.5 0 0 1-1.8 1l-2.3-.6"/><rect x="7.3" y="2.5" width="9.4" height="15.5" rx="1.8"/><path d="m12 7.2.8 1.7 1.9.3-1.4 1.3.4 1.9-1.7-.9-1.7.9.4-1.9-1.4-1.3 1.9-.3Z"/></svg>',
   swap:  '<svg viewBox="0 0 24 24"><path d="M4 8h13l-3.2-3.2M20 16H7l3.2 3.2"/></svg>',
   amis:  '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.6 20a6.4 6.4 0 0 1 12.8 0"/><path d="M16.5 5.4a3.4 3.4 0 0 1 0 6.6M17.6 14.4A6.4 6.4 0 0 1 21.4 20"/></svg>',
   shop:  '<svg viewBox="0 0 24 24"><path d="M4 8h16l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H6.7a1.5 1.5 0 0 1-1.5-1.3Z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>',
   more:  '<svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.5" cy="12" r="1.4"/></svg>',
   quest: '<svg viewBox="0 0 24 24"><path d="M9 11.5 11 13.5l4.5-4.5"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',
-  /* Combats : deux épées croisées. L'ancienne icône était une forme sans nom —
-     personne ne devinait qu'on se battait derrière. */
-  sword: '<svg viewBox="0 0 24 24"><path d="M14.8 3H21v6.2L12.6 17.6"/><path d="M9.2 3H3v6.2l8.4 8.4"/><path d="m4.6 19.4 2.8-2.8M6 21l3.4-3.4"/><path d="m19.4 19.4-2.8-2.8M18 21l-3.4-3.4"/></svg>',
+  /* Combats : deux épées croisées, lame, garde et pommeau. La version
+     précédente n'en gardait que les pointes : on voyait un blason vide. La
+     seconde lame passe sous la première, comme sur n'importe quelle enseigne
+     de duel. */
+  sword: '<svg viewBox="0 0 24 24"><path d="M3.5 3.5h3.2l10 10M3.5 3.5v3.2l10 10"/><path d="M12.1 18.1l6-6M15.1 15.1l3.4 3.4M18.3 20.3l2-2"/><path d="M12 8.8l5.3-5.3h3.2v3.2L15.2 12"/><path d="M8.8 12l-1.5 1.5M12 15.2l-1.5 1.5"/><path d="M11.9 18.1l-6-6M8.9 15.1l-3.4 3.4M5.7 20.3l-2-2"/></svg>',
+  /* La boite de réception, dans l'en-tête. */
+  bell:  '<svg viewBox="0 0 24 24"><path d="M18 16.2V11a6 6 0 0 0-12 0v5.2L4.4 18h15.2Z"/><path d="M10 20.6a2.3 2.3 0 0 0 4 0"/></svg>',
+  /* Recyclage : deux flèches qui tournent autour d'un Éclat — la carte revient
+     sous une autre forme. */
+  recycle: '<svg viewBox="0 0 24 24"><path d="M19.6 13.4A7.8 7.8 0 0 1 6.4 17.6"/><path d="M4.4 10.6A7.8 7.8 0 0 1 17.6 6.4"/><path d="M17.9 2.9v3.8h-3.8M6.1 21.1v-3.8h3.8"/><path d="M12 8.4 14.6 12 12 15.6 9.4 12Z"/></svg>',
+  /* Une annonce, dans la boite de réception. */
+  annonce: '<svg viewBox="0 0 24 24"><path d="M4 10.2v3.6a1.4 1.4 0 0 0 1.4 1.4H7l8.5 4.6V4.2L7 8.8H5.4A1.4 1.4 0 0 0 4 10.2Z"/><path d="M7 15.2l1.1 4.1a1.2 1.2 0 0 0 2.3-.6l-.9-3.5"/><path d="M19 9.4a3.5 3.5 0 0 1 0 5.2"/></svg>',
   user:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>',
   /* Réglages : un vrai rouage, à dents. Le cercle entouré de huit rayons se
      lisait comme un soleil — on cherchait la météo, pas les paramètres. */

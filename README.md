@@ -62,6 +62,8 @@ mate-tcg-online/
 │   ├── 04_seed.sql     Quêtes et boutique — c'est ici qu'on équilibre
 │   ├── 06_social.sql   Amis et fiches de joueur
 │   ├── 07_vitrine.sql  La vitrine du profil
+│   ├── 11_boite.sql    Boîte de réception : notifications, annonces, temps réel
+│   ├── 12_recyclage.sql  Recyclage des doublons et son plafond hebdomadaire
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -100,7 +102,9 @@ mate-tcg-online/
 │   ├── social.js       Onglet Social : amis, fiches de joueur
 │   ├── quests.js       Onglet Quêtes
 │   ├── promos.js       Détection et mise en scène des cartes Promo
+│   ├── boite.js        Boîte de réception, pings, relève et temps réel
 │   ├── shop.js         Onglet Boutique
+│   ├── recyclage.js    Onglet Recyclage
 │   ├── battle.js       Onglet Combats (à venir)
 │   ├── profile.js      Onglet Profil
 │   ├── settings.js     Onglet Réglages
@@ -136,12 +140,14 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
 | Changer le nombre de boosters gratuits ou le délai | **en ligne :** `cfg()` dans `supabase/01_schema.sql` · **hors ligne :** `TICKET_CAP`, `INTERVAL` dans `js/config.js` |
 | Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
+| Changer ce que rapporte le recyclage, ou son plafond | `cfg()` dans `supabase/01_schema.sql` (clés `recyclage_*`) |
+| Publier une annonce à tous les joueurs | Labo › *Annonce à tous les joueurs*, ou à la main en bas de `supabase/11_boite.sql` |
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
 | Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
 | Modifier la mention légale | `MENTIONS` dans `js/config.js` (elle s'affiche aux trois endroits d'un coup) |
 | Changer l'adresse du Discord | `DISCORD_URL` dans `js/config.js` (elle est citée à cinq endroits) |
 | Inviter quelqu'un à la bêta | `supabase/09_beta.sql` |
-| Changer la date d'ouverture | `beta_ouverte()` dans `supabase/01_schema.sql` **et** `PORTE.lancement` dans `js/gate.js` |
+| Changer la date d'ouverture | `beta_lancement()` dans `supabase/01_schema.sql` — et nulle part ailleurs |
 | Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
 | Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
@@ -256,8 +262,10 @@ Ils sont décrits dans `TABS` (`js/config.js`), sur deux niveaux : ce qu'on joue
 | Quêtes | barre du bas / rail | oui |
 | Mon profil | tiroir (mobile) · rail (ordinateur) | oui |
 | Boutique | tiroir (mobile) · rail (ordinateur) | oui |
+| Recyclage | tiroir (mobile) · rail (ordinateur) | oui |
 | Réglages | tiroir (mobile) · rail (ordinateur) | non |
 | Labo | tiroir · rail | **administrateurs seulement** |
+| Boîte de réception | la cloche de l'en-tête | oui |
 
 Pour déplacer un onglet, il suffit de changer son drapeau : `bas: true` le met dans la barre du bas, `tiroir: true` le range dans le menu du compte.
 
@@ -275,7 +283,9 @@ Sur ordinateur, la page est une **grille** (en-tête sur toute la largeur, puis 
 
 > Les règles de la barre du bas sont accrochées à `#nav`, jamais à l'élément `<nav>` : le panneau du tiroir en est un aussi, et héritait sinon de sa mise en colonne.
 
-**L'en-tête montre toujours les deux compteurs et l'avatar**, même hors ligne. Ce sont les seules portes vers la boutique et vers le menu du compte : les cacher revenait à cacher qu'ils existent.
+**L'en-tête montre toujours les deux compteurs et l'avatar**, même hors ligne. Ce sont les seules portes vers la boutique et vers le menu du compte : les cacher revenait à cacher qu'ils existent. Avec un compte, **la cloche** s'y ajoute : c'est l'entrée de la boîte de réception (voir plus bas).
+
+**Les icônes.** Collection : trois cartes en éventail, l'étoile du logo sur celle du dessus — le classeur à pochettes d'avant se lisait comme un tableur. Combats : deux épées croisées complètes, lame, garde et pommeau ; l'ancienne n'en gardait que les pointes et ressemblait à un blason vide.
 
 ## Les avatars des autres joueurs
 
@@ -309,9 +319,42 @@ Les échanges vivent dans l'onglet **Social**, pas à côté : on n'échange pas
 
 **Les échanges.** Une carte contre une carte, **de rareté identique**, et jamais en simultané : quelqu'un propose, l'autre répond quand il veut, et l'échange ne se fait que si les deux ont validé.
 
+**L'écran des échanges ne dit que ce que les cartes ne disent pas.** Une illustration porte déjà son nom et sa rareté, et un toucher l'ouvre en grand : les trois lignes de texte qu'on empilait sous chaque vignette sont parties. Il reste une étiquette posée sur la carte — combien *j'en ai* : « Nouvelle » si aucune, « Dernière » si je donne mon seul exemplaire — et une légende dessous, « Tu reçois » ou « Tu donnes ». Partout le même ordre, dans les demandes comme dans la composition : à gauche ce qu'on reçoit, à droite ce qu'on donne. La composition tient en trois blocs (avec qui, quoi contre quoi, un mot) et une seule phrase d'aide, celle de l'étape où l'on en est ; la première carte choisie, d'un côté ou de l'autre, fixe la rareté. L'historique est une liste d'une ligne par échange.
+
 Le coût est payé par celui qui lance la demande : **une demande gratuite toutes les 6 heures**, ou un **jeton d'échange** acheté en boutique pour ne pas attendre. Une barre de recharge le montre en haut de la section. Le délai et le jeton sont vérifiés par le serveur, pas par la page.
 
 Au moment où la demande est acceptée, le serveur revérifie **tout** : que les deux joueurs possèdent encore leur carte, que les raretés correspondent toujours, et il échange les deux cartes dans une seule transaction. Personne ne peut donner deux fois la même carte en lançant deux demandes.
+
+## La boîte de réception
+
+Tout ce qui arrive des autres — demande d'ami, demande d'échange, réponse à ses propres demandes — et les annonces publiées pour tout le monde. On l'ouvre par **la cloche de l'en-tête** : ce qui arrive ne concerne pas un onglet en particulier, et l'en-tête est la seule bande visible sur tous les écrans.
+
+**C'est le serveur qui écrit.** Avant, le navigateur comparait deux listes successives pour deviner ce qui était nouveau : une demande d'ami n'était jamais annoncée, et rien de ce qui arrivait pendant qu'on était ailleurs ne l'était non plus. Désormais `friend_request`, `friend_respond`, `trade_create` et `trade_respond` écrivent l'événement dans la boîte du destinataire (`notifier()`, `supabase/11_boite.sql`), au moment où il a lieu.
+
+**Le ping.** Quand quelque chose arrive : la cloche prend une pastille et le titre de l'onglet un « (2) » ; deux notes courtes et une vibration brève ; une carte passe en haut de l'écran avec le visage de celui qui écrit, et la toucher mène là où l'on répond. Rien ne passe pendant l'ouverture d'un paquet ou la scène d'une Promo : les nouveautés attendent la fin. Onglet en arrière-plan, la boîte est quand même relevée — le « (2) » du titre et la pastille de l'icône installée servent justement là — et le bandeau part au retour.
+
+**Deux voies d'arrivée.** Le temps réel de Supabase pousse une ligne dès qu'elle est écrite ; une relève toutes les trente secondes prend le relais s'il ne répond pas. On ne dépend jamais de lui.
+
+**Lu ou non lu** tient en une date par joueur, `profiles.boite_vue_le` : tout ce qui est plus récent est nouveau. Ouvrir la boîte, c'est tout lire. Les demandes d'ami s'y acceptent directement ; une demande d'échange mène à l'onglet Social.
+
+**Les annonces** se publient depuis le Labo (réservé aux administrateurs, et vérifié par le serveur), ou à la main dans le SQL Editor — la requête est en bas de `supabase/11_boite.sql`. On les retire depuis sa propre boîte. Un mois d'historique est gardé, pas plus.
+
+## Le recyclage
+
+Les doublons deviennent des Éclats. Toutes les raretés se recyclent sauf les Promos, et **on garde toujours un exemplaire** de chaque carte : recycler ne fait jamais reculer la collection. Les exemplaires proposés dans une demande d'échange encore en attente sont mis de côté — sinon l'échange, une fois accepté, prendrait le dernier.
+
+| Rareté | Éclats |
+|---|---|
+| Essence | 5 |
+| Commune | 10 |
+| Peu commune | 20 |
+| Rare | 100 |
+| Épique | 500 |
+| Légendaire | 1 000 |
+
+**Le plafond : 1 500 Éclats par semaine**, remis à zéro le lundi (heure de Paris, comme les quêtes hebdomadaires). Il n'est pas décoratif. Une fois la collection bien avancée, un booster recyclé rend ~260 Éclats — la dernière carte est une Rare quatre fois sur cinq, et une Rare vaut 100. Sans plafond, un joueur régulier aurait touché 7 000 à 10 000 Éclats par semaine au recyclage, quatre fois ce que paient les quêtes ; et comme un booster acheté 350 en rend ~260, racheter des boosters avec faisait passer de 42 à ~135 boosters par semaine. La collection allait trois fois plus vite, et les Promos de la boutique tombaient en quelques jours. À 1 500, le recyclage ajoute ~70 % aux Éclats des quêtes et ~10 % de boosters : il aide, il ne remplace pas le temps. Le calcul est en tête de `supabase/12_recyclage.sql`.
+
+**Pas de bêtise.** On choisit carte par carte, exemplaire par exemplaire ; « Tout sélectionner » laisse les Épiques et les Légendaires de côté. Un récapitulatif liste chaque carte et ce qu'elle rapporte — avec une case à cocher s'il y a une Épique ou une Légendaire dedans —, puis une dernière confirmation dont le bouton ne répond qu'au bout de trois secondes. Le serveur revérifie tout (doublons, réservations, plafond) et refuse l'envoi entier si un seul point ne tient pas. Chaque recyclage est journalisé dans la table `recyclages`.
 
 ## L'équilibrage
 
@@ -440,8 +483,9 @@ Les balises de partage (Open Graph et Twitter Card) sont en haut de `index.html`
 ## Écran d'attente et bêta fermée
 
 Tant que `PORTE.active` vaut `true` dans `js/gate.js`, le jeu n'est ouvert qu'aux comptes
-invités. Les autres voient un paquet qui flotte, « Bientôt disponible », et un bouton de
-connexion Discord.
+invités. Les autres voient un paquet qui flotte, « Bientôt disponible », le lien vers le
+Discord — pour suivre l'actualité du jeu et discuter avec la communauté — et, en discret,
+« J'ai déjà un accès » pour les comptes invités.
 
 **L'accès est nominatif.** Il n'y a plus de code à saisir : on se connecte avec son compte
 Discord, et c'est le serveur qui vérifie que ce compte figure dans la table
@@ -462,15 +506,28 @@ booster, ni consulter un profil, ni chercher un joueur. Le mode hors ligne ne fr
 plus cet écran non plus : c'était la vraie faille, puisqu'il donnait accès à tout le jeu
 sans le moindre compte.
 
-### L'ouverture est datée
+### L'ouverture est datée — par le serveur
 
-`PORTE.lancement` porte la date d'ouverture au public — **jeudi 24 septembre 2026 à 18 h**.
-Un compte à rebours s'affiche tout seul, et à la seconde dite l'écran s'efface : pas de
-rechargement, pas de geste à faire, rien à pousser ce soir-là.
+La date d'ouverture au public — **jeudi 24 septembre 2026 à 18 h** — vit à un seul endroit :
+`beta_lancement()`, dans `supabase/01_schema.sql`. Un compte à rebours s'affiche tout seul,
+et à la seconde dite l'écran s'efface : pas de rechargement, pas de geste à faire, rien à
+pousser ce soir-là.
 
-La même date vit dans `beta_ouverte()`, côté serveur. **Les deux doivent rester
-identiques** : c'est l'écran d'un côté, le serveur de l'autre, et deux dates différentes
-donneraient un jeu ouvert qui refuse tout, ou l'inverse.
+**L'écran ne consulte plus la montre de l'appareil.** Il comparait l'heure d'ouverture à
+`Date.now()` : avancer la date du téléphone suffisait à l'effacer, et derrière lui le mode
+hors ligne donnait accès à tout le jeu, sans compte. C'est par là que des visiteurs
+passaient. Désormais il demande au serveur (`porte()`, appelable sans compte) si c'est
+ouvert, quand ça ouvre et quelle heure il est chez lui, puis compte le temps qui passe avec
+`performance.now()` — une horloge qui démarre avec la page et qu'on ne règle pas. Sans
+réponse du serveur, l'écran reste fermé. Au retour sur l'onglet, il redemande l'heure : un
+téléphone en veille peut avoir arrêté l'horloge de la page.
+
+Trois autres fermetures vont avec : le drapeau `invite` renvoyé par `me()` doit valoir
+`true` explicitement (un champ absent valait « invité ») ; `PORTE` est figé et les fonctions
+de l'écran sont des constantes, qu'on ne remplace plus d'une ligne dans la console ; et
+`est_invite()`, `garde_beta()`, `photo_discord()` et `check_promos()` ne sont plus
+appelables sans compte — le droit n'avait été retiré qu'à `anon` et `authenticated`, pas au
+rôle `public` dont ils héritent.
 
 Le passage est étalé exprès. Personne ne recharge : la page se redessine sur place, et le
 premier appel au serveur part après un délai tiré au hasard entre 0 et 20 secondes. Sans
@@ -489,7 +546,7 @@ seconde.
 ### Ouvrir le jeu à tout le monde
 
 Il n'y a rien à faire : la date suffit. Le 24 septembre à 18 h, `beta_ouverte()` bascule
-côté serveur et `PORTE.lancement` côté écran, au même instant.
+côté serveur, et l'écran, qui lit l'heure du serveur, s'efface au même instant.
 
 Une fois l'ouverture passée et la poussière retombée, on peut faire le ménage :
 `PORTE.active` → `false` dans `js/gate.js`, ce qui retire définitivement l'écran d'attente
@@ -555,7 +612,8 @@ Le Labo sert à **voir ce qu'on ne peut pas provoquer** :
 
 - les cinq ouvertures de test (normale, rare, épique, légendaire, godpack) ;
 - **l'animation d'obtention de chaque carte Promo**, une par une ou toutes à la suite — c'est exactement ce que verra un joueur, seule l'écriture dans la collection est sautée ;
-- les notifications qui passent en haut de l'écran ;
+- les notifications qui passent en haut de l'écran, dont le ping de la boîte de réception ;
+- **publier une annonce** dans la boîte de réception de tous les joueurs ;
 - la collection remplie à 90 %, pour regarder la grille et la jauge dans un état intermédiaire ;
 - un tableau des valeurs d'équilibrage en cours, telles que le serveur les impose.
 

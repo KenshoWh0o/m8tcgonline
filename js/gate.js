@@ -1,84 +1,104 @@
-/* Écran d'attente et accès à la bêta fermée.
+/* Écran d'attente et accès avant l'ouverture.
 
    ------------------------------------------------------------------------
-   Pourquoi il n'y a plus de code d'accès
+   Qui décide que c'est ouvert : le serveur, et lui seul
 
-   Il y en avait un : on tapait une chaîne, le navigateur la hachait, comparait
-   l'empreinte écrite dans ce fichier et retenait la réponse dans le stockage
-   local. Deux défauts, et les deux ont servi.
+   L'écran comparait l'heure d'ouverture à la montre de l'appareil. Avancer la
+   date du téléphone suffisait donc à l'effacer — et derrière lui, le mode hors
+   ligne donnait accès à tout le jeu, sans compte. C'est par là que des
+   visiteurs passaient.
 
-   1. L'empreinte était dans la page. Qui ouvrait la console entrait sans
-      connaître le code. C'était écrit ici dès le premier jour — un rideau, pas
-      une serrure — mais un rideau finit par se lever.
-   2. Un code se transmet. Une fois dans un salon Discord, il n'appartient plus
-      à personne et ne se reprend plus.
+   Désormais, l'écran demande au serveur (porte(), supabase/01_schema.sql) si
+   c'est ouvert, quand ça ouvre, et quelle heure il est chez lui. Le temps qui
+   passe ensuite est compté avec performance.now() : une horloge qui démarre
+   avec la page et que l'utilisateur ne peut pas régler. Changer la date de
+   l'appareil ne fait plus rien.
 
-   L'accès est donc devenu nominatif. On se connecte avec son compte Discord,
-   et c'est le SERVEUR qui dit si ce compte figure sur la liste des invités
-   (table `beta_invites`, fonction garde_beta() — voir supabase/01_schema.sql).
-   Rien à transmettre, rien à deviner, et une invitation se retire.
+   Sans réponse du serveur, l'écran reste fermé : on ne sait pas, donc on
+   n'ouvre pas.
 
    ------------------------------------------------------------------------
    Ce que ça protège, et ce que ça ne protège pas
 
-   Ça protège le JEU : sans invitation, aucune action du serveur n'aboutit —
-   ni ouvrir un booster, ni voir un profil, ni même jouer hors ligne, puisque
-   le mode hors ligne ne franchit plus cet écran.
+   Le JEU est protégé par le serveur : sans invitation, aucune action
+   n'aboutit (garde_beta) et aucun compte ne se crée (handle_new_user).
 
-   Ça ne protège pas les FICHIERS. Le site est un site statique : ses scripts,
-   ses images et la liste des cartes se téléchargent à l'adresse où ils sont
-   publiés, écran d'attente ou non. Tant que le dépôt et l'hébergement sont
-   publics, le contenu l'est aussi. La seule réponse à ça est du côté de
-   l'hébergement, pas du code. */
+   L'ÉCRAN, lui, vit dans le navigateur. Il ne se contourne plus en réglant
+   une montre, mais quelqu'un qui ouvre la console finira toujours par passer
+   derrière un écran : le site est fait de fichiers publics. Ce qu'il trouvera
+   derrière, c'est le mode hors ligne — des paquets tirés dans son navigateur,
+   qui ne comptent nulle part. */
 "use strict";
 
-const PORTE = {
-  /* `true` : bêta fermée — seuls les comptes invités entrent.
-     `false` : le jeu est ouvert à tous, cet écran ne s'affiche plus. */
-  active: true,
+/* `true` : l'écran d'attente est en place — seuls les comptes invités entrent,
+   jusqu'à l'heure d'ouverture fixée par le serveur.
+   `false` : le jeu est ouvert à tous, cet écran ne s'affiche plus.
+   Figé : on ne le bascule pas depuis la console. */
+const PORTE = Object.freeze({ active: true });
 
-  /* L'heure d'ouverture au public, au format ISO avec le décalage horaire.
-     Passé cet instant, l'écran s'efface de lui-même : rien à rejouer, rien à
-     pousser.
+/* Ce que le serveur a répondu. Tenu dans une fermeture : la page lit l'état,
+   elle ne peut pas l'écrire. */
+const Porte = (() => {
+  let connu = false;          /* le serveur a-t-il répondu ? */
+  let ouvert = false;         /* ouvert au moment de la réponse */
+  let lancement = null;       /* l'heure d'ouverture, en temps serveur */
+  let serveurA = 0;           /* l'heure du serveur à sa réponse… */
+  let perfA = 0;              /* …et l'horloge interne de la page au même instant */
 
-     ELLE DOIT RESTER IDENTIQUE à beta_ouverte() dans supabase/01_schema.sql :
-     celle-ci ouvre l'écran, celle-là ouvre le serveur. Deux dates différentes
-     donneraient un écran ouvert sur un serveur qui refuse, ou l'inverse.
+  const maintenant = () => serveurA + (performance.now() - perfA);
 
-     À `null`, aucun compte à rebours n'est affiché : on annonce seulement
-     « bientôt », et l'accès reste sur invitation jusqu'à nouvel ordre. */
-  lancement: '2026-09-24T18:00:00+02:00'
-};
+  return Object.freeze({
+    async lire() {
+      if (!Backend.sb) { connu = false; return false; }
+      try {
+        const r = await Backend.rpc('porte');
+        const t = Date.parse(r && r.serveur);
+        if (isNaN(t)) throw new Error('réponse illisible');
+        serveurA = t;
+        perfA = performance.now();
+        ouvert = r.ouvert === true;
+        lancement = r.lancement ? Date.parse(r.lancement) : null;
+        connu = true;
+      } catch (e) {
+        /* On garde la dernière réponse connue, s'il y en a une : une coupure
+           réseau passagère ne doit pas refermer un écran déjà ouvert. */
+      }
+      return connu;
+    },
+    connu: () => connu,
+    /* Ouvert, d'après le serveur — et à l'heure du serveur. */
+    lancee: () => connu && (ouvert || (lancement != null && maintenant() >= lancement)),
+    /* Millisecondes avant l'ouverture, ou null si on ne sait pas. */
+    reste: () => (connu && lancement != null ? lancement - maintenant() : null)
+  });
+})();
 
 let porteMinuteur = null;
+/* Un refus de Discord à afficher sur l'écran d'attente (voir lireErreurRetour
+   dans js/auth.js). */
+let porteRefus = '';
 
 /* ---------- Où en est le visiteur ---------- */
 /* 'ouvert'  le jeu peut s'afficher
    'attente' pas de compte : l'écran d'attente, avec le bouton de connexion
-   'refus'   connecté, mais pas sur la liste des invités */
-function etatPorte() {
-  if (!PORTE.active || porteLancee()) return 'ouvert';
-  if (Backend.mode !== 'cloud') return 'attente';
-  return save && save.invite ? 'ouvert' : 'refus';
-}
+   'refus'   connecté, mais pas encore autorisé
 
-/* L'heure d'ouverture est-elle passée ? La réponse vient de l'horloge de
-   l'appareil, donc elle ne protège rien : une montre avancée ouvre l'écran en
-   avance, et c'est sans conséquence. La vraie décision est prise par le
-   serveur, à chaque action (beta_ouverte(), supabase/01_schema.sql). */
-function porteLancee() {
-  if (!PORTE.lancement) return false;
-  const t = Date.parse(PORTE.lancement);
-  return !isNaN(t) && Date.now() >= t;
-}
+   Tout est en `const` : une fonction déclarée se remplace d'une ligne dans la
+   console, une constante non. Ce n'est pas une serrure — rien, dans un
+   navigateur, n'en est une —, mais l'écran ne s'ouvre plus d'un geste. */
+const etatPorte = () => {
+  if (!PORTE.active || Porte.lancee()) return 'ouvert';
+  if (Backend.mode !== 'cloud') return 'attente';
+  /* `=== true` : sans réponse claire du serveur, on n'entre pas. */
+  return save && save.invite === true ? 'ouvert' : 'refus';
+};
 
 const porteOuverte = () => etatPorte() === 'ouvert';
 
 
 /* ---------- L'écran ---------- */
 function vPorte() {
-  const etat = etatPorte();
-  const corps = etat === 'refus' ? vPorteRefus() : vPorteAttente();
+  const corps = etatPorte() === 'refus' ? vPorteRefus() : vPorteAttente();
 
   return `<div class="lockwrap"><div class="lockcard">
     <img class="locklogo" src="${ART.logo}" alt="${h(GAME_NAME)}">
@@ -96,17 +116,9 @@ function vPorte() {
 }
 
 function vPorteAttente() {
-  /* Sans serveur configuré, il n'y a personne pour vérifier une invitation :
-     on le dit, plutôt que de montrer un bouton qui ne mènerait nulle part. */
   const connexion = Backend.dispo
-    ? `<button class="btn ghost" data-act="porte-discord">J'ai déjà un accès</button>`
-    : `<p class="muted small lockaide">Le serveur n'est pas encore branché sur
-         ce site : l'accès rouvrira avec lui.</p>`;
-
-  const entree = `${lienDiscord('btn discord', 'Rejoindre le Discord')}
-    <p class="muted small lockaide">La date de sortie, les cartes en avant-première
-      et les accès à la bêta passent par là.</p>
-    ${connexion}`;
+    ? `<button class="linkbtn lockacces" data-act="porte-discord">J'ai déjà un accès</button>`
+    : '';
 
   return `<span class="locktag">Bientôt disponible</span>
     <h1 class="locktitle">Coming soon</h1>
@@ -115,29 +127,38 @@ function vPorteAttente() {
 
     <div id="lockcompte">${vCompteARebours()}</div>
 
-    <div class="lockentree">${entree}</div>`;
+    <div class="lockentree">
+      ${porteRefus ? `<p class="autherr doux lockrefus">${h(porteRefus)}</p>` : ''}
+      ${lienDiscord('btn discord', 'Rejoindre le Discord')}
+      <p class="muted small lockaide">Pour suivre l'actualité du jeu et discuter
+        avec la communauté.</p>
+      ${connexion}
+    </div>`;
 }
 
 function vPorteRefus() {
-  const qui = save && save.pseudo ? save.pseudo : 'Ce compte';
-  return `<span class="locktag refus">Bêta fermée</span>
-    <h1 class="locktitle">Pas encore</h1>
-    <p class="muted lockdit"><b>${h(qui)}</b> n'est pas sur la liste des invités.
-      Le jeu ouvrira à tout le monde bientôt — d'ici là, l'accès se fait par
-      invitation.</p>
+  const qui = save && save.pseudo ? save.pseudo : 'Ton compte';
+  return `<span class="locktag refus">Pas encore ouvert</span>
+    <h1 class="locktitle">Patience</h1>
+    <p class="muted lockdit"><b>${h(qui)}</b> est bien enregistré, mais le jeu n'est
+      pas encore ouvert. Reviens à l'ouverture : tout sera prêt.</p>
 
     <div id="lockcompte">${vCompteARebours()}</div>
 
     <div class="lockentree">
+      ${lienDiscord('btn discord', 'Rejoindre le Discord')}
       <button class="btn ghost" data-act="porte-sortir">Changer de compte</button>
     </div>`;
 }
 
-/* Compte à rebours, seulement si une date d'ouverture est fixée. */
+/* Le compte à rebours, à l'heure du serveur. */
 function vCompteARebours() {
-  if (!PORTE.lancement) return '';
-  const reste = Date.parse(PORTE.lancement) - Date.now();
-  if (isNaN(reste)) return '';
+  if (!Porte.connu()) {
+    return `<p class="muted small lockattente">${Backend.dispo
+      ? 'Connexion au serveur…' : 'Le serveur est injoignable pour le moment.'}</p>`;
+  }
+  const reste = Porte.reste();
+  if (reste == null) return '';
   /* Filet de sécurité : la page ne devrait jamais rester ici une fois l'heure
      passée — ouvrirLaPorte() s'en charge à la seconde près. */
   if (reste <= 0) return '<p class="lockpret">C\'est ouvert.</p>';
@@ -192,18 +213,29 @@ function ouvrirLaPorte() {
      l'ouverture n'en avaient pas eu, puisque le jeu ne leur était pas ouvert. */
   setTimeout(() => {
     const premier = visiteDuJourFaite() ? Backend.pull() : Backend.checkin();
-    premier.then(render).catch(() => {});
+    premier.then(() => { render(); demarrerBoite(); }).catch(() => {});
   }, Math.random() * 20000);
 }
 
-/* Le compte à rebours bat sans redessiner toute la page. */
+/* Le compte à rebours bat sans redessiner toute la page. Sans réponse du
+   serveur, on lui redemande de temps en temps plutôt que de rester bloqué. */
 function bindPorte() {
   clearInterval(porteMinuteur);
-  if (!PORTE.lancement) return;
+  let tic = 0;
   porteMinuteur = setInterval(() => {
     const c = $('#lockcompte');
     if (!c) return clearInterval(porteMinuteur);
-    if (porteLancee()) return ouvrirLaPorte();
+    if (Porte.lancee()) return ouvrirLaPorte();
+    if (!Porte.connu() && ++tic % 15 === 0) {
+      Porte.lire().then(ok => { if (ok) render(); });
+    }
     c.innerHTML = vCompteARebours();
   }, 1000);
+}
+
+/* Au retour sur l'onglet : l'horloge interne a pu s'arrêter pendant la mise
+   en veille du téléphone. On redemande l'heure au serveur. */
+function relirePorte() {
+  if (!PORTE.active || porteOuverte()) return;
+  Porte.lire().then(() => { if (porteOuverte()) ouvrirLaPorte(); else render(); });
 }

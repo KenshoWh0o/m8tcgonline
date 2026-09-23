@@ -246,6 +246,11 @@ const RECETTES = {
                   note({ f0: 2093, duree: .22, gain: .09, onde: 'triangle', delai: .07 }); },
   gagne:  () => carillon([523, 659, 784, 1046], .6, .11),
   ouvre:  () => { note({ f0: 300, f1: 640, duree: .16, gain: .10, onde: 'sine', filtre: 2000 }); },
+  /* Le ping de la boite de réception : deux notes claires qui montent, plus
+     court que le carillon d'une récompense — quelqu'un frappe, rien n'est
+     encore gagné. */
+  notif:  () => { note({ f0: 1175, duree: .16, gain: .10, onde: 'sine' });
+                  note({ f0: 1760, duree: .32, gain: .09, onde: 'sine', delai: .1 }); },
   erreur: () => { note({ f0: 220, f1: 150, duree: .18, gain: .13, onde: 'square', filtre: 900 }); }
 };
 

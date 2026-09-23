@@ -100,8 +100,8 @@ function montrerDiscord() {
   accueilNoter({ discord: 'vu' });
   openSheet({
     title: 'Rejoins le Discord',
-    body: `<p class="muted">C'est là que tombent les annonces, les nouvelles cartes
-        et les dates. C'est aussi là qu'on trouve quelqu'un pour un échange.</p>
+    body: `<p class="muted">C'est là qu'on suit l'actualité du jeu et qu'on discute avec
+        la communauté. C'est aussi là qu'on trouve quelqu'un pour un échange.</p>
       ${lienDiscord('btn discord', 'Rejoindre le Discord')}`,
     actions: [{ label: 'Plus tard', fn: closeSheet }]
   });

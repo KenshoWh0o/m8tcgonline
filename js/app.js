@@ -38,6 +38,9 @@ function header() {
     av.setAttribute('aria-label', surOrdi() ? 'Mon profil' : 'Menu du compte');
     av.setAttribute('aria-expanded', String(tiroirOuvert));
   }
+
+  /* La cloche de la boite de réception (js/boite.js). */
+  majSignalBoite();
 }
 
 /* ---------- Barre du bas et rail ---------- */
@@ -169,6 +172,8 @@ const VUES = {
   boutique: () => vBoutique(),
   quetes: () => vQuetes(),
   combats: () => vCombats(),
+  recyclage: () => vRecyclage(),
+  boite: () => vBoite(),
   profil: () => vProfil(),
   reglages: () => vReglages(),
   labo: () => vTest()
@@ -243,6 +248,10 @@ function aller(id) {
       Promise.all([Backend.loadTrades(), Backend.loadAmis()]).then(render).catch(() => {});
     }
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
+    /* Le recyclage met de côté les cartes promises dans un échange : il lui
+       faut la liste à jour. */
+    if (tab === 'recyclage') Backend.loadTrades().then(render).catch(() => {});
+    if (tab === 'boite') ouvrirBoite();
   }
 }
 
@@ -256,7 +265,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off]');
   if (!el) return;
   const d = el.dataset;
 
@@ -268,7 +277,7 @@ async function clicPage(e) {
   if (d.filter) { colFilter = d.filter; return render(); }
   if (d.ess) { essFilter = d.ess; return render(); }
   if (d.rar) { rarFilter = d.rar; return render(); }
-  if (d.tr) { trVue = d.tr; return render(); }
+  if (d.tr) { trRetenirMot(); trVue = d.tr; return render(); }
   if (d.soc) { socVue = d.soc; return render(); }
   if (d.qv) { qVue = d.qv; return render(); }
   if (d.shv) { shopVue = d.shv; return render(); }
@@ -276,11 +285,18 @@ async function clicPage(e) {
   if (d.theme) { poserTheme(d.theme); return render(); }
   if (d.promo) return testPromo(d.promo);
 
-  /* Amis */
+  /* Amis. Une réponse donnée depuis la boite de réception la met à jour : la
+     demande ne doit plus proposer « Accepter ». */
+  const majBoite = () => (tab === 'boite' ? Backend.loadBoite() : null);
   if (d.fiche) return ouvrirFiche(d.fiche);
-  if (d.amiOk) return agir(() => Backend.amiRepondre(d.amiOk, true), 'Vous êtes amis.');
-  if (d.amiNon) return agir(() => Backend.amiRepondre(d.amiNon, false).catch(
-    () => Backend.amiRetirer(d.amiNon)), 'C\'est fait.');
+  if (d.amiOk) return agir(async () => { await Backend.amiRepondre(d.amiOk, true); await majBoite(); },
+    'Vous êtes amis.');
+  if (d.amiNon) return agir(async () => {
+    await Backend.amiRepondre(d.amiNon, false).catch(() => Backend.amiRetirer(d.amiNon));
+    await majBoite();
+  }, 'C\'est fait.');
+  if (d.voirtroc) { socVue = 'echanges'; trVue = 'recues'; return aller('social'); }
+  if (d.annonceOff) return agir(() => Backend.annonceRetirer(+d.annonceOff), 'Annonce retirée.');
   if (d.troc) return versEchange(d.troc);
   if (d.colde) return ouvrirCollectionDe(d.colde, () => ouvrirFiche(d.colde));
   if (d.trcol) { trColVue = d.trcol; return montrerCollectionDe(d.qui); }
@@ -292,17 +308,14 @@ async function clicPage(e) {
   if (d.trep) return agir(() => Backend.tradeRespond(d.trep, d.ok === '1'),
     d.ok === '1' ? 'Échange conclu.' : 'Demande refusée.');
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
-  if (d.pick) return ouvrirChoixCarte(d.pick);
-  if (d.cardpick) {
-    trBrouillon[d.role] = d.cardpick;
-    /* Changer la carte donnée peut invalider la rareté demandée. */
-    if (d.role === 'offre' && trBrouillon.veut) {
-      const v = byId[trBrouillon.veut];
-      if (!v || v.rar !== byId[d.cardpick].rar) trBrouillon.veut = null;
-    }
-    closeSheet();
-    return render();
-  }
+  if (d.pick) { trRetenirMot(); trPickRar = 'all'; return ouvrirChoixCarte(d.pick); }
+  if (d.pickrar) return ouvrirChoixCarte(d.role, d.pickrar);
+  if (d.cardpick) return trChoisir(d.role, d.cardpick);
+
+  /* Recyclage */
+  if (d.recplus) return recAjuster(d.recplus, 1);
+  if (d.recmoins) return recAjuster(d.recmoins, -1);
+  if (d.recrar) { recRar = d.recrar; return render(); }
 
   /* Profil */
   if (d.ava) return agir(() => Backend.setProfile({ p_avatar: d.ava }));
@@ -328,6 +341,10 @@ async function clicPage(e) {
     case 'tr-find': return trChercher();
     case 'tr-send': return trEnvoyer();
     case 'tr-changer': return trChanger();
+    case 'rec-tout': return recToutPrendre();
+    case 'rec-vider': recSel = {}; return render();
+    case 'rec-go': return recConfirmer();
+    case 'annonce-publier': return publierAnnonce();
     case 'tr-voir': return trCible ? ouvrirCollectionDe(trCible.pseudo) : null;
 
     case 'deconnexion':
@@ -366,6 +383,7 @@ async function clicPage(e) {
     case 't-90': return testRemplir(90);
     case 't-promo-file': return testFilePromos();
     case 't-quete': return testQuete();
+    case 't-ping': return testPing();
     case 't-toast': return toast('Voilà à quoi ça ressemble.');
 
     case 'reset':
@@ -391,6 +409,7 @@ $('#sheet').addEventListener('click', clicPage);
 $('.top').addEventListener('click', e => {
   if (e.target.closest('#brand')) return aller('boosters');
   if (e.target.closest('#moi')) return basculerTiroir();
+  if (e.target.closest('#cloche')) return aller('boite');
   if (e.target.closest('#btn-install')) return ouvrirInstall(true);
   if (e.target.closest('#ec')) return aller('boutique');
   if (e.target.closest('.pill')) return aller('boosters');
@@ -444,11 +463,12 @@ setInterval(() => {
 /* Deux moments où un rendu venu de l'arrière-plan ferait des dégâts :
      · pendant une ouverture ou une scène de Promo — l'écran appartient aux
        cartes, et le redessiner couperait la mise en scène ;
-     · pendant qu'une demande d'échange se compose — le champ de saisie perdrait
-       le curseur et le texte déjà tapé.
+     · pendant qu'une demande d'échange ou une annonce se compose — le champ
+       de saisie perdrait le curseur et le texte déjà tapé.
    Les deux tests vivent ici, et nulle part ailleurs. */
 const ecranOccupe = () => !!rv || opening || promoEnCours;
-const enTrainDEcrire = () => tab === 'social' && socVue === 'echanges' && trVue === 'nouvelle';
+const enTrainDEcrire = () => (tab === 'social' && socVue === 'echanges' && trVue === 'nouvelle')
+  || tab === 'labo';
 
 /* Les compteurs, la barre et le tiroir se remettent à jour sans toucher à la
    page. Le contenu, lui, n'est redessiné que si ça ne dérange personne. */
@@ -459,30 +479,20 @@ function majDiscrete(pageAussi) {
   if (pageAussi && !ecranOccupe() && !enTrainDEcrire()) render();
 }
 
-/* Revenir sur l'onglet après un moment : on resynchronise. */
+/* Revenir sur l'onglet après un moment : on resynchronise. Devant l'écran
+   d'attente, on redemande l'heure au serveur — l'horloge interne de la page a
+   pu s'arrêter pendant la veille du téléphone. */
 addEventListener('visibilitychange', () => {
-  if (document.hidden || Backend.mode !== 'cloud') return;
+  if (document.hidden) return;
+  if (!porteOuverte()) return relirePorte();
+  if (Backend.mode !== 'cloud') return;
   Backend.pull().then(() => majDiscrete(true)).catch(() => {});
-  releverSocial();
+  releverBoite();
 });
 
-/* ---------- Ce qui arrive des autres joueurs ---------- */
-/* Une demande d'échange ou d'ami n'est déclenchée par rien de ce qu'on fait :
-   sans relève régulière, la pastille n'apparaîtrait qu'en ouvrant l'onglet
-   Social — c'est-à-dire trop tard pour prévenir. Une minute suffit : ce n'est
-   pas une conversation, personne n'attend à la seconde près. */
-const RELEVE_SOCIAL = 60000;
-
-function releverSocial() {
-  if (Backend.mode !== 'cloud' || document.hidden || ecranOccupe()) return;
-  Promise.all([Backend.loadTrades(), Backend.loadAmis()])
-    /* Seul l'onglet Social montre ces données : ailleurs, les pastilles
-       suffisent, et un rendu de plus ne servirait qu'à déranger. */
-    .then(() => majDiscrete(tab === 'social'))
-    .catch(() => {});
-}
-
-setInterval(releverSocial, RELEVE_SOCIAL);
+/* Ce qui arrive des autres joueurs — demandes d'ami, d'échange, réponses — et
+   les annonces passent par la boite de réception : relève, temps réel et
+   pings vivent dans js/boite.js. */
 
 /* ---------- Démarrage ---------- */
 /* `checkin()` ne fait quelque chose qu'une fois par jour : passé le premier
@@ -524,6 +534,10 @@ function visiteDuJourFaite() {
      dit si ce compte a le droit d'entrer. */
   await Backend.init();
 
+  /* L'écran d'attente demande au serveur si c'est ouvert, et quelle heure il
+     est chez lui : ni la montre de l'appareil ni la page n'en décident. */
+  if (PORTE.active) await Porte.lire();
+
   if (!porteOuverte()) return render();
 
   if (Backend.mode === 'cloud') {
@@ -531,7 +545,8 @@ function visiteDuJourFaite() {
       if (!visiteDuJourFaite()) await Backend.checkin();
       Backend.loadShop().catch(() => {});
       Promise.all([Backend.loadTrades(), Backend.loadAmis()])
-        .then(() => { if (tab === 'social') render(); }).catch(() => {});
+        .then(() => { if (tab === 'social' || tab === 'recyclage') render(); }).catch(() => {});
+      demarrerBoite();
     } catch (e) {
       toast(e.message || 'Le serveur a répondu de travers.');
     }

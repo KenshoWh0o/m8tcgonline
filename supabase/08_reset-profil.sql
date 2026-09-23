@@ -6,7 +6,7 @@
 --
 --  Ce qui est efface : collection, Eclats, jetons, cadres achetes, vitrine,
 --  progression des quetes, compteurs, serie de connexion, demandes d'echange
---  en attente.
+--  en attente, boite de reception, journal du recyclage.
 --  Ce qui est garde : le compte lui-meme, le pseudo, l'avatar, le cadre en
 --  cours, les amis, et les droits d'administrateur.
 --
@@ -27,6 +27,8 @@ begin
   delete from public.collection     where user_id = uid;
   delete from public.quest_progress where user_id = uid;
   delete from public.inventory      where user_id = uid;
+  delete from public.notifications  where user_id = uid;
+  delete from public.recyclages     where user_id = uid;
 
   -- Les demandes d'echange en cours n'ont plus d'objet sans collection.
   update public.trades set status = 'cancelled', resolved_at = now()

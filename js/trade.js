@@ -5,16 +5,23 @@
    qui vérifie tout au moment de l'accord — possession comprise, pour que
    personne n'échange une carte qu'il vient de donner ailleurs.
 
-   Tout l'écran répond à une seule question : « est-ce que cet échange est bon
-   pour moi ? ». Trois choses doivent donc être lisibles sans cliquer :
-     · combien d'exemplaires j'ai de chaque carte montrée ;
-     · si ce qu'on me propose est une carte que je n'ai pas encore ;
-     · ce que l'autre possède — sinon on demande dans le vide.
-   C'est ce qui manquait : on voyait deux images et deux noms, et il fallait
-   aller vérifier sa propre collection dans un autre onglet pour décider. */
+   ------------------------------------------------------------------------
+   La règle de l'écran : une carte parle d'elle-même
+
+   La version précédente empilait sous chaque vignette son nom, sa rareté et
+   une phrase sur ma collection — trois lignes de 10 px par carte, deux cartes
+   par demande, et une page qui se lisait comme une notice. Or l'illustration
+   porte déjà le nom et la rareté, et un toucher l'ouvre en grand.
+
+   Il ne reste donc, autour de chaque carte, que ce que l'image ne dit pas :
+     · une étiquette sur la carte : combien J'EN AI — « Nouvelle » si aucune,
+       « Dernière » si je donne mon seul exemplaire ;
+     · une légende dessous : « Tu reçois » ou « Tu donnes ».
+   Et partout le même ordre, dans les demandes comme dans la composition : à
+   gauche ce qu'on reçoit, à droite ce qu'on donne. */
 "use strict";
 
-let trVue = 'recues';                  /* 'recues' | 'envoyees' | 'nouvelle' */
+let trVue = 'recues';                  /* 'recues' | 'envoyees' | 'historique' | 'nouvelle' */
 let trBrouillon = { pseudo: '', offre: null, veut: null, note: '' };
 let trCible = null;                    /* joueur visé : { pseudo, avatar, frame, photo } */
 
@@ -52,67 +59,42 @@ async function chargerCollection(pseudo) {
   }
 }
 
-/* ---------- Ce qui arrive pendant qu'on regarde ailleurs ---------- */
-/* Même principe que les quêtes : on ne croit pas le navigateur, on compare
-   deux réponses successives du serveur. La pastille de l'onglet dit « il y a
-   quelque chose » ; la carte qui passe dit quoi, et de la part de qui.
+/* Une carte échangeable : ni Essence, ni Promo — le serveur refuse les deux. */
+const echangeable = c => c && c.cat !== 'essence' && !c.promo;
 
-   Le premier chargement n'annonce rien : sinon, ouvrir le jeu déclencherait la
-   pile de toutes les demandes déjà en attente. */
-let trEtats = null;
-
-function signalerEchanges(liste) {
-  const etats = new Map((liste || []).map(t => [t.id, t.status]));
-  if (trEtats === null) { trEtats = etats; return; }
-  (liste || []).forEach(t => {
-    const avant = trEtats.get(t.id);
-    /* Une demande qu'on n'avait jamais vue, et qui nous est adressée. */
-    if (t.sens === 'recue' && t.status === 'pending' && avant === undefined) return notifEchange(t, 'nouvelle');
-    /* Une des nôtres qui vient d'être tranchée. Les annulations ne sont pas
-       annoncées : c'est nous qui les faisons. */
-    if (t.sens === 'envoyee' && avant === 'pending'
-        && (t.status === 'accepted' || t.status === 'declined')) notifEchange(t, t.status);
-  });
-  trEtats = etats;
+/* ---------- L'étiquette posée sur une carte ---------- */
+/* Toujours la même question : combien j'en ai. Seul le mot change selon le
+   sens — une carte qui entre et que je n'ai pas est une bonne nouvelle, une
+   carte qui sort et que je n'aurai plus est une perte. */
+function etiquette(c, sens) {
+  const n = mesEx(c.id);
+  if (sens === 'entre') {
+    return n ? `<i class="tpill" title="Tu en as déjà ${n}">×${n}</i>`
+             : '<i class="tpill neuf">Nouvelle</i>';
+  }
+  if (n > 1) return `<i class="tpill" title="Tu en as ${n}">×${n}</i>`;
+  return n === 1 ? '<i class="tpill perte" title="Ton seul exemplaire">Dernière</i>'
+                 : '<i class="tpill perte" title="Tu ne l\'as plus">×0</i>';
 }
 
-const TROC_NOTIF = {
-  nouvelle: ['te propose un échange', 'Nouvelle demande'],
-  accepted: ['a accepté ton échange', 'Échange conclu'],
-  declined: ['a refusé ton échange', 'Demande close']
-};
-
-function notifEchange(t, quoi) {
-  const pile = $('#qnotif');
-  if (!pile) return;
-
-  const [dit, sous] = TROC_NOTIF[quoi] || TROC_NOTIF.nouvelle;
-  const el = document.createElement('div');
-  el.className = 'qn troc' + (quoi === 'declined' ? ' froid' : '');
-  el.setAttribute('role', 'status');
-  el.innerHTML = `<span class="qnav">${avatarHTML(t.avatar, 'default', 'sm', t.photo)}</span>
-    <span class="qntxt"><b>${h(t.pseudo)} ${dit}</b><small>${sous}</small></span>
-    <span class="qnico">${NAVICO.swap}</span>`;
-
-  if (!pile.children.length) SFX.jouer(quoi === 'declined' ? 'retour' : 'gagne');
-  pile.appendChild(el);
-
-  const partir = () => {
-    if (!el.isConnected) return;
-    el.classList.add('out');
-    setTimeout(() => el.remove(), 320);
-  };
-  setTimeout(partir, QNOTIF_DUREE);
-  el.onclick = () => {
-    partir();
-    socVue = 'echanges';
-    trVue = t.sens === 'recue' ? 'recues' : 'envoyees';
-    aller('social');
-  };
+/* Une carte d'une demande : l'image, son étiquette, sa légende. */
+function tCarte(c, sens, pseudo) {
+  const legende = sens === 'entre' ? 'Tu reçois' : 'Tu donnes';
+  if (!c) {
+    return `<figure class="tcarte ${sens}"><div class="tcarte-vide">?</div>
+      <figcaption>${legende}</figcaption></figure>`;
+  }
+  return `<figure class="tcarte ${sens}">
+    <button class="tcarte-img" data-show="${c.id}" data-qui="${h(pseudo || '')}" data-snd="carte"
+      aria-label="${h(c.nom)}">${renderCard(c)}${etiquette(c, sens)}</button>
+    <figcaption>${legende}</figcaption>
+  </figure>`;
 }
 
 /* ---------- La section Échanges ---------- */
 function vEchanges() {
+  if (trVue === 'nouvelle') return vNouvelleDemande();
+
   const list = Backend.trades || [];
   const recues = list.filter(t => t.sens === 'recue' && t.status === 'pending');
   const envoyees = list.filter(t => t.sens === 'envoyee' && t.status === 'pending');
@@ -121,322 +103,272 @@ function vEchanges() {
   const sous = [
     ['recues', 'Reçues', recues.length],
     ['envoyees', 'Envoyées', envoyees.length],
-    ['nouvelle', 'Proposer', 0]
+    ['historique', 'Historique', 0]
   ];
 
-  const proposer = '<button class="btn" data-tr="nouvelle">Proposer un échange</button>';
-
   let corps;
-  if (trVue === 'nouvelle') corps = vNouvelleDemande();
-  else if (trVue === 'envoyees') {
+  if (trVue === 'historique') {
+    corps = passees.length
+      ? `<div class="thisto">${passees.map(ligneHisto).join('')}</div>`
+      : vide('Rien pour l\'instant', 'Les échanges des sept derniers jours apparaîtront ici.');
+  } else if (trVue === 'envoyees') {
     corps = envoyees.length
       ? envoyees.map(ligneTrade).join('')
-      : vide('Aucune demande en cours',
-             'Propose un échange à un ami, puis attends sa réponse.', proposer);
+      : vide('Aucune demande en cours', 'Propose un échange à un ami : il répondra quand il veut.');
   } else {
     corps = recues.length
       ? recues.map(ligneTrade).join('')
-      : vide('Boîte vide', "Personne ne t'a proposé d'échange pour le moment.", proposer);
+      : vide('Rien à trancher', 'Personne ne t\'a proposé d\'échange pour le moment.');
   }
 
-  const histo = trVue !== 'nouvelle' && passees.length
-    ? `<section class="qsec"><div class="qsechead"><h2>Ces sept derniers jours</h2></div>
-       ${passees.slice(0, 8).map(ligneTrade).join('')}</section>`
-    : '';
-
-  return `${bandeauCout()}
+  return `<div class="tbar">
+      ${vRecharge()}
+      <button class="btn tiny" data-tr="nouvelle">${NAVICO.swap}Proposer</button>
+    </div>
     <div class="souschips">${sous.map(([k, l, n]) =>
       `<button data-tr="${k}" class="${trVue === k ? 'on' : ''}">${l}${n ? ` <i class="pastille">${n}</i>` : ''}</button>`).join('')}</div>
-    ${corps}${histo}`;
+    ${corps}`;
 }
 
-/* Une ligne de recharge, lisible d'un coup d'œil : prête, ou le temps restant,
-   avec les jetons qui permettent de passer devant. */
-function bandeauCout() {
-  const j = tradeJetons();
-  const piece = `<img class="cdjeton" src="${ART.jeton}" alt="">`;
-  const jetons = j
-    ? `<span class="cdjetons" title="${j} jeton${j > 1 ? 's' : ''} d'échange">${piece}<b>${j}</b></span>`
-    : `<button class="cdjetons vide" data-tab="boutique" title="Acheter un jeton">${piece}<b>0</b></button>`;
-
+/* La recharge, en une pastille : prête, ou le temps restant. Les jetons n'y
+   sont pas : ils ne comptent qu'au moment d'envoyer, et c'est là que l'écran
+   de composition les montre (vCout). À côté du bouton, sur un téléphone, les
+   deux ne tenaient pas ensemble et le délai se lisait « Gratuite d… ». */
+function vRecharge() {
   if (tradeGratuit()) {
-    return `<div class="cooldown pret">
-      <span class="cdico">${NAVICO.check}</span>
-      <span class="cdtxt"><b>Demande disponible</b>
-        <small class="muted">Une gratuite toutes les ${TRADE_COOLDOWN_H} h</small></span>
-      ${jetons}</div>`;
+    return `<span class="trecharge pret">${NAVICO.check}<span>Demande gratuite prête</span></span>`;
   }
-
   const reste = save.tradeFreeAt - Date.now();
   const pct = Math.max(0, Math.min(100, 100 - reste / (TRADE_COOLDOWN_H * 3600e3) * 100));
-  return `<div class="cooldown">
-    <span class="cdico">${ICON.glass}</span>
-    <span class="cdtxt"><b>Prochaine gratuite dans ${dans(reste)}</b>
-      <i class="cdbar"><i style="width:${pct.toFixed(1)}%"></i></i></span>
-    ${jetons}</div>`;
+  const j = tradeJetons();
+  return `<span class="trecharge" style="--p:${pct.toFixed(1)}%"
+      title="${j ? `${j} jeton${j > 1 ? 's' : ''} d'échange pour passer devant` : 'Un jeton d\'échange permet de passer devant'}">${ICON.glass}
+    <span>Gratuite dans <b>${dans(reste)}</b></span></span>`;
 }
 
 /* ---------- Une demande ---------- */
 function ligneTrade(t) {
   const off = byId[t.offer];
   const veut = byId[t.want];
-  const attente = t.status === 'pending';
   const recue = t.sens === 'recue';
-
-  const ETAT = { accepted: ['Acceptée', 'ok'], declined: ['Refusée', ''], cancelled: ['Annulée', ''] };
-  const et = ETAT[t.status];
 
   /* Vu de chez soi, toujours dans le même sens : à gauche ce qui entre, à
      droite ce qui sort. Que la demande vienne de l'autre ou de nous ne change
      pas la question qu'on se pose en la lisant. */
   const entre = recue ? off : veut;
   const sort = recue ? veut : off;
-  const inedite = entre && attente && !mesEx(entre.id);
+  const inedite = entre && !mesEx(entre.id);
 
-  return `<article class="trade${attente ? '' : ' passe'}${inedite ? ' inedite' : ''}">
-    <header class="trhead">
+  const actions = recue
+    ? `<div class="tacts">
+         <button class="btn tiny ghost" data-trep="${t.id}" data-ok="0">Refuser</button>
+         <button class="btn tiny" data-trep="${t.id}" data-ok="1" ${t.possible ? '' : 'disabled'}>Accepter</button>
+       </div>
+       ${t.possible ? '' : '<p class="traison">Tu n\'as plus la carte demandée.</p>'}`
+    : `<div class="tacts seul">
+         <span class="tattente">En attente de sa réponse</span>
+         <button class="btn tiny ghost" data-trann="${t.id}">Annuler</button>
+       </div>`;
+
+  return `<article class="troc${inedite ? ' inedite' : ''}">
+    <header class="troc-tete">
       ${avatarHTML(t.avatar, 'default', 'sm', t.photo)}
-      <div><b>${h(t.pseudo)}</b>
-        <p class="muted small">${recue ? 'te propose un échange' : 'a reçu ta demande'}
-          · ${dateCourte(t.created_at)}</p></div>
-      ${et ? `<span class="qtag ${et[1]}">${et[0]}</span>`
-           : inedite ? '<span class="qtag neuf">Carte inédite</span>' : ''}
+      <b>${h(t.pseudo)}</b>
+      <time>${ilya(t.created_at)}</time>
     </header>
-
-    <div class="trswap">
-      <div class="trside"><span class="trlab gain">Tu reçois</span>${miniCarte(entre, 'entre', t.pseudo)}</div>
-      <span class="trarrow">${NAVICO.swap}</span>
-      <div class="trside"><span class="trlab perte">Tu donnes</span>${miniCarte(sort, 'sort', t.pseudo)}</div>
+    <div class="troc-cartes">
+      ${tCarte(entre, 'entre', t.pseudo)}
+      <span class="troc-fleche" aria-hidden="true">${NAVICO.swap}</span>
+      ${tCarte(sort, 'sort', t.pseudo)}
     </div>
-
-    ${t.note ? `<p class="trnote">« ${h(t.note)} »</p>` : ''}
-
-    ${attente ? (recue
-      ? `<div class="row tracts">
-           <button class="btn tiny" data-trep="${t.id}" data-ok="1" ${t.possible ? '' : 'disabled'}>Accepter</button>
-           <button class="btn tiny ghost" data-trep="${t.id}" data-ok="0">Refuser</button>
-         </div>
-         ${t.possible ? '' : '<p class="trraison">Tu ne possèdes pas la carte demandée : impossible d\'accepter.</p>'}`
-      : `<div class="row tracts"><button class="btn tiny ghost" data-trann="${t.id}">Annuler la demande</button></div>`)
-      : ''}
+    ${t.note ? `<p class="troc-mot">${h(t.note)}</p>` : ''}
+    ${actions}
   </article>`;
 }
 
-/* Une carte dans une demande. Sous l'image, la seule phrase qui compte : ce
-   que cet échange change pour ma collection. « Peu commune » ne le disait pas ;
-   « tu ne l'as pas encore » et « ton seul exemplaire », si. */
-function miniCarte(c, sens, pseudo) {
-  if (!c) return '<div class="mini vide"><span>?</span></div>';
-  const n = mesEx(c.id);
+/* L'historique tient sur une ligne par échange : ce qui est tranché ne se
+   relit pas, il se retrouve. */
+function ligneHisto(t) {
+  const recue = t.sens === 'recue';
+  const entre = byId[recue ? t.offer : t.want];
+  const sort = byId[recue ? t.want : t.offer];
+  const ETAT = { accepted: ['Conclu', 'ok'], declined: ['Refusé', ''], cancelled: ['Annulé', ''] };
+  const [mot, cls] = ETAT[t.status] || ['', ''];
+  const mini = c => c
+    ? `<button class="thmini" data-show="${c.id}" data-snd="carte" aria-label="${h(c.nom)}">${renderCard(c)}</button>`
+    : '<span class="thmini"></span>';
 
-  const etat = sens === 'entre'
-    ? (n ? `<span class="minietat">Tu en as déjà ${n}</span>`
-         : '<span class="minietat neuf">Tu ne l\'as pas encore</span>')
-    : (n > 1 ? `<span class="minietat">Il t'en restera ${n - 1}</span>`
-       : n === 1 ? '<span class="minietat chaud">Ton seul exemplaire</span>'
-       : '<span class="minietat chaud">Tu ne l\'as pas</span>');
-
-  return `<button class="mini" data-show="${c.id}" data-qui="${h(pseudo || '')}" data-snd="carte">
-    ${renderCard(c)}
-    <span class="mininom">${h(c.nom)}</span>
-    <span class="minimeta r${c.rar}">${(RAR[c.rar] || RAR.C).nom}</span>
-    ${etat}
-  </button>`;
+  return `<div class="thligne">
+    ${avatarHTML(t.avatar, 'default', 'sm', t.photo)}
+    <span class="thqui"><b>${h(t.pseudo)}</b><small>${ilya(t.created_at)}</small></span>
+    <span class="thcartes">${mini(entre)}<i>${NAVICO.swap}</i>${mini(sort)}</span>
+    <span class="thetat ${cls}">${mot}</span>
+  </div>`;
 }
-
-const dateCourte = iso => {
-  const d = new Date(iso);
-  return isNaN(d) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-    + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-};
 
 /* =====================================================================
    Composer une demande
    =====================================================================
-   Trois étapes numérotées, dans l'ordre où les décisions se prennent : à qui,
-   quoi contre quoi, et un mot. Avant, l'écran demandait d'abord de taper un
-   pseudo exact — ce qui suppose de le connaître par cœur — puis de choisir une
-   carte à donner parmi tout ce qu'on possède, sans jamais dire ce que l'autre
-   avait. On travaillait à l'aveugle. */
+   Trois décisions, dans l'ordre où on les prend : avec qui, quoi contre quoi,
+   et un mot si on veut. Pas d'étapes numérotées ni de règlement en tête : la
+   règle tient en une ligne au pied de l'écran, et la seule phrase qui change
+   est celle qui dit quoi faire ensuite. */
 function vNouvelleDemande() {
   const off = trBrouillon.offre ? byId[trBrouillon.offre] : null;
   const veut = trBrouillon.veut ? byId[trBrouillon.veut] : null;
-  const rarOK = off && veut && off.rar === veut.rar;
-  const pret = trCible && off && veut && rarOK;
+  const pret = trCible && off && veut && off.rar === veut.rar;
+  const pseudo = trCible ? trCible.pseudo : null;
+  const ilManque = veut && pseudo && sesEx(pseudo, veut.id) === 0;
 
-  return `<section class="compose">
-    ${vRegles()}
-    ${vEtape(1, 'À qui ?', !!trCible, vEtapeQui())}
-    ${vEtape(2, 'Quoi contre quoi ?', !!(off && veut && rarOK), vEtapeCartes(off, veut, rarOK))}
-    ${vEtape(3, 'Un mot ?', false, `
-      <input id="tr-note" type="text" maxlength="140"
-        placeholder="« Je cherche celle-là depuis deux semaines »"
-        value="${h(trBrouillon.note)}">
-      <p class="muted small">Facultatif. Il s'affiche sous ta demande.</p>`)}
+  const slot = (role, c, sens) => c
+    ? `<figure class="tcarte ${sens}">
+         <button class="tcarte-img" data-pick="${role}" aria-label="Changer : ${h(c.nom)}">${renderCard(c)}${etiquette(c, sens)}</button>
+         <figcaption>${sens === 'entre' ? 'Tu reçois' : 'Tu donnes'}</figcaption>
+       </figure>`
+    : `<figure class="tcarte ${sens}">
+         <button class="tslot" data-pick="${role}" ${trCible ? '' : 'disabled'}><span>+</span></button>
+         <figcaption>${sens === 'entre' ? 'Tu reçois' : 'Tu donnes'}</figcaption>
+       </figure>`;
 
-    <div class="trenvoi">
-      ${vCout()}
-      <button class="btn" data-act="tr-send" ${pret ? '' : 'disabled'}>
-        ${NAVICO.swap}${tradeGratuit() ? 'Envoyer la demande'
-          : tradeJetons() ? 'Envoyer (1 jeton)' : 'Demande en recharge'}
-      </button>
+  /* Une seule phrase d'aide, celle de l'étape où l'on en est. */
+  let aide;
+  if (!trCible) aide = 'Choisis d\'abord avec qui échanger.';
+  else if (ilManque) aide = `<span class="warn">${h(pseudo)} n'a pas cette carte : il ne pourra pas accepter.</span>`;
+  else if (pret) aide = `Tu reçois <b>${h(veut.nom)}</b>, tu donnes <b>${h(off.nom)}</b>.`;
+  else if (off || veut) aide = `Rareté imposée : <b>${(RAR[(off || veut).rar] || RAR.C).nom}</b>.`;
+  else aide = 'Touche une case : la carte que tu veux, puis celle que tu donnes.';
+
+  return `<section class="compo">
+    <div class="compo-tete">
+      <button class="compo-retour" data-tr="recues" aria-label="Retour aux échanges">${NAVICO.caret}</button>
+      <h2>Nouvel échange</h2>
     </div>
+
+    <div class="compo-bloc">${vAvecQui()}</div>
+
+    <div class="compo-bloc">
+      <div class="troc-cartes">
+        ${slot('veut', veut, 'entre')}
+        <span class="troc-fleche" aria-hidden="true">${NAVICO.swap}</span>
+        ${slot('offre', off, 'sort')}
+      </div>
+      <p class="compo-aide">${aide}</p>
+    </div>
+
+    <input id="tr-note" class="compo-mot" type="text" maxlength="140"
+      placeholder="Un petit mot (facultatif)" value="${h(trBrouillon.note)}">
+
+    <div class="compo-pied">
+      ${vCout()}
+      <button class="btn" data-act="tr-send" ${pret && !ilManque ? '' : 'disabled'}>Envoyer la demande</button>
+    </div>
+    <p class="compo-regle">Carte contre carte, même rareté · Essences et Promos exclues ·
+      Refusée ou annulée, ta demande t'est rendue.</p>
   </section>`;
 }
 
-/* La règle du jeu, une bonne fois, à l'endroit où elle sert : au moment de
-   composer. Répétée en petit sous chaque liste, elle ne se lisait plus. */
-const vRegles = () => `<ol class="trregles">
-  <li><b>Carte contre carte</b>, à rareté égale.</li>
-  <li>Les <b>Essences</b> et les <b>Promos</b> ne s'échangent pas.</li>
-  <li>L'autre joueur <b>valide quand il veut</b> : rien n'est immédiat.</li>
-  <li>Refusée ou annulée, ta demande <b>t'est rendue</b> — jeton compris.</li>
-</ol>`;
-
-const vEtape = (n, titre, faite, corps) => `<section class="etape${faite ? ' faite' : ''}">
-  <div class="etapehead"><i class="etapeno">${faite ? NAVICO.check : n}</i><h2>${h(titre)}</h2></div>
-  <div class="etapecorps">${corps}</div>
-</section>`;
-
-/* Étape 1 : d'abord ses amis, d'un geste. Le champ de pseudo reste, mais en
-   second : c'est le recours, pas le chemin normal. */
-function vEtapeQui() {
+/* Avec qui : ses amis d'un geste, un pseudo en recours. */
+function vAvecQui() {
   if (trCible) {
     const col = trCols[noacc(trCible.pseudo)];
-    return `<div class="found">
-        ${avatarHTML(trCible.avatar, trCible.frame, 'sm', trCible.photo)}
-        <b>${h(trCible.pseudo)}</b>
-        <button class="linkbtn" data-act="tr-changer">Changer</button>
-      </div>
-      ${col
-        ? '<button class="btn tiny ghost trvoir" data-act="tr-voir">Voir sa collection</button>'
-        : `<p class="muted small">Sa collection n'est pas visible : ajoutez-vous en amis
-             pour savoir ce qu'il possède avant de demander.</p>`}`;
+    return `<div class="compo-qui">
+      ${avatarHTML(trCible.avatar, trCible.frame, 'sm', trCible.photo)}
+      <b>${h(trCible.pseudo)}</b>
+      ${col ? '<button class="linkbtn" data-act="tr-voir">Sa collection</button>' : ''}
+      <button class="linkbtn" data-act="tr-changer">Changer</button>
+    </div>
+    ${col ? '' : '<p class="compo-note">Sa collection n\'est visible qu\'entre amis.</p>'}`;
   }
 
   const amis = (Backend.amis || []).filter(a => a.lien === 'ami');
-
-  return `${amis.length
+  return `<span class="compo-lab">Avec</span>
+    ${amis.length
       ? `<div class="amirow">${amis.map(a =>
           `<button class="amichip" data-troc="${h(a.pseudo)}">
             ${avatarHTML(a.avatar, a.frame, 'sm', a.photo)}<span>${h(a.pseudo)}</span></button>`).join('')}</div>`
-      : `<p class="muted small">Tu n'as encore aucun ami. Entre amis, on voit la collection
-           de l'autre avant de proposer — c'est tout l'intérêt.</p>`}
-    <p class="filab">Ou par son pseudo</p>
+      : '<p class="compo-note">Ajoute des amis dans l\'onglet Amis : entre amis, on voit la collection de l\'autre.</p>'}
     <div class="findrow">
-      <input id="tr-pseudo" type="text" maxlength="16" placeholder="Pseudo exact"
+      <input id="tr-pseudo" type="text" maxlength="16" placeholder="Ou un pseudo exact"
         value="${h(trBrouillon.pseudo)}" autocomplete="off" autocapitalize="off" spellcheck="false">
       <button class="btn tiny ghost" data-act="tr-find">Chercher</button>
     </div>`;
 }
 
-/* Étape 2 : les deux emplacements. Chacun dit ce qu'il change pour les deux
-   collections — la mienne toujours, la sienne dès qu'on la connaît. */
-function vEtapeCartes(off, veut, rarOK) {
-  const pseudo = trCible ? trCible.pseudo : null;
-
-  const empl = (role, c, libelle, aide) => {
-    if (!c) {
-      return `<button class="slot" data-pick="${role}">
-        <span class="slotplus">+</span><span class="slotlab">${libelle}</span>
-        <span class="muted small">${aide}</span></button>`;
-    }
-    const n = mesEx(c.id);
-    const lui = sesEx(pseudo, c.id);
-    const dit = role === 'offre'
-      ? (n > 1 ? `Il t'en restera ${n - 1}` : 'Ton seul exemplaire')
-      : (n ? `Tu en as déjà ${n}` : 'Carte inédite pour toi');
-    return `<button class="slot rempli" data-pick="${role}">${renderCard(c)}
-      <span class="slotnom">${h(c.nom)}</span>
-      <span class="slotmeta r${c.rar}">${(RAR[c.rar] || RAR.C).nom}</span>
-      <span class="slotdit${role === 'veut' && !n ? ' bon' : ''}">${h(dit)}</span>
-      ${lui != null ? `<span class="slotdit lui">${h(pseudo)} : ${lui}</span>` : ''}</button>`;
-  };
-
-  const alerte = off && veut && !rarOK
-    ? '<p class="autherr">Les deux cartes doivent être de la même rareté.</p>'
-    : veut && pseudo && sesEx(pseudo, veut.id) === 0
-      ? `<p class="autherr doux">${h(pseudo)} ne possède pas cette carte : il ne pourra pas accepter.</p>`
-      : '';
-
-  return `<div class="slots">
-      ${empl('offre', off, 'Ce que tu donnes', 'Parmi ce que tu possèdes')}
-      <span class="trarrow big">${NAVICO.swap}</span>
-      ${empl('veut', veut, 'Ce que tu veux',
-        off ? `Une ${(RAR[off.rar] || RAR.C).nom}` : 'Choisis d\'abord à gauche')}
-    </div>${alerte}`;
-}
-
 /* Ce que la demande va coûter, dit avant d'appuyer et non après le refus. */
 function vCout() {
-  if (tradeGratuit()) {
-    return `<p class="troccout ok">${NAVICO.check} Ta demande gratuite est disponible.</p>`;
-  }
+  if (tradeGratuit()) return `<p class="compo-cout ok">${NAVICO.check}Gratuite</p>`;
   if (tradeJetons()) {
-    return `<p class="troccout"><img class="cdjeton" src="${ART.jeton}" alt="">
-      Elle coûtera <b>1 jeton d'échange</b> — il t'en reste ${tradeJetons()}.</p>`;
+    return `<p class="compo-cout"><img src="${ART.jeton}" alt="">1 jeton — il t'en reste ${tradeJetons()}</p>`;
   }
-  return `<p class="troccout court">Plus de demande gratuite avant
-    <b>${dans(save.tradeFreeAt - Date.now())}</b>.
-    <button class="linkbtn" data-tab="boutique">Un jeton permet de passer devant</button></p>`;
+  return `<p class="compo-cout court">Prochaine gratuite dans ${dans(save.tradeFreeAt - Date.now())} ·
+    <button class="linkbtn" data-tab="boutique">un jeton</button></p>`;
 }
 
 /* ---------- Choisir une carte ---------- */
-/* Pour ce qu'on donne : seulement ce qu'on possède, les doublons en tête — ce
-   sont les cartes qu'on cède sans se démunir. Pour ce qu'on veut : la même
-   rareté, ce que l'autre possède d'abord, et parmi elles ce qui me manque. */
-function ouvrirChoixCarte(role) {
-  const off = trBrouillon.offre ? byId[trBrouillon.offre] : null;
+/* Ce que je veux : dans SA collection quand on la connaît — demander une carte
+   qu'il n'a pas ne mène nulle part —, ce qui me manque en tête.
+   Ce que je donne : dans la mienne, mes doublons en tête — ce sont ceux que
+   je cède sans me démunir.
+   La première carte choisie, quel que soit le côté, fixe la rareté de l'autre. */
+let trPickRar = 'all';
+
+function ouvrirChoixCarte(role, rar) {
+  const autre = byId[trBrouillon[role === 'veut' ? 'offre' : 'veut']];
   const pseudo = trCible ? trCible.pseudo : null;
+  const connue = !!(pseudo && trCols[noacc(pseudo)]);
+  if (rar) trPickRar = rar;
+  const impose = autre ? autre.rar : null;
 
-  let liste = cards.filter(c => c.cat !== 'essence');
+  let liste = cards.filter(echangeable);
   if (role === 'offre') liste = liste.filter(c => mesEx(c.id) > 0);
-  else if (off) liste = liste.filter(c => c.rar === off.rar);
+  else if (connue) liste = liste.filter(c => sesEx(pseudo, c.id) > 0);
+  if (impose) liste = liste.filter(c => c.rar === impose);
 
-  liste.sort((a, b) => {
-    if (role === 'offre') {
-      const d = (mesEx(b.id) > 1) - (mesEx(a.id) > 1);
-      if (d) return d;
-    } else {
-      const sa = sesEx(pseudo, a.id);
-      const sb = sesEx(pseudo, b.id);
-      if (sa != null && sb != null && (sa > 0) !== (sb > 0)) return sb > 0 ? 1 : -1;
-      const ma = mesEx(a.id) > 0;
-      const mb = mesEx(b.id) > 0;
-      if (ma !== mb) return ma ? 1 : -1;
-    }
-    return RAR_ORDRE.indexOf(b.rar) - RAR_ORDRE.indexOf(a.rar) || a.num - b.num;
+  const rars = RAR_ORDRE.filter(r => liste.some(c => c.rar === r));
+  if (!impose && trPickRar !== 'all' && !rars.includes(trPickRar)) trPickRar = 'all';
+  const vue = impose || trPickRar === 'all' ? liste : liste.filter(c => c.rar === trPickRar);
+
+  vue.sort((a, b) => {
+    const d = role === 'offre'
+      ? (mesEx(b.id) > 1) - (mesEx(a.id) > 1)
+      : (!mesEx(b.id)) - (!mesEx(a.id));
+    return d || RAR_ORDRE.indexOf(b.rar) - RAR_ORDRE.indexOf(a.rar) || a.num - b.num;
   });
 
-  const corps = liste.length
-    ? `<div class="pickgrid">${liste.map(c => {
-        const n = mesEx(c.id);
-        const lui = sesEx(pseudo, c.id);
-        const hors = role === 'veut' && lui === 0;
-        return `<button class="pick${hors ? ' hors' : ''}" data-cardpick="${c.id}" data-role="${role}" data-snd="carte">
-          ${renderCard(c)}
-          <span class="picknom">${h(c.nom)}</span>
-          <span class="pickmeta r${c.rar}">${(RAR[c.rar] || RAR.C).sym}${n ? ` ×${n}` : ''}</span>
-          ${lui != null ? `<span class="picklui${lui ? ' a' : ''}">${lui ? 'il en a ' + lui : 'il ne l\'a pas'}</span>` : ''}
-        </button>`;
-      }).join('')}</div>`
-    : `<p class="muted">${role === 'offre'
-        ? 'Tu ne possèdes encore aucune carte échangeable.'
-        : 'Aucune carte de cette rareté dans l\'extension.'}</p>`;
+  const sens = role === 'veut' ? 'entre' : 'sort';
+  const chips = impose ? '' : `<div class="souschips">
+    <button data-pickrar="all" data-role="${role}" class="${trPickRar === 'all' ? 'on' : ''}">Toutes</button>
+    ${rars.map(r => `<button data-pickrar="${r}" data-role="${role}" class="rarchip r${r} ${trPickRar === r ? 'on' : ''}">
+      <i class="rardot"></i>${(RAR[r] || RAR.C).nom}</button>`).join('')}</div>`;
 
-  const connue = !!trCols[noacc(pseudo || '')];
-  const aide = role === 'offre'
-    ? 'Tes doublons d\'abord : ce sont ceux que tu peux céder sans rien perdre. Les Essences ne s\'échangent pas.'
-    : off
-      ? `Rareté imposée : ${(RAR[off.rar] || RAR.C).nom}, comme la carte que tu donnes.`
-        + (connue ? ' Ce qu\'il possède est en tête.' : '')
-      : 'Choisis d\'abord la carte que tu donnes : c\'est elle qui fixe la rareté.';
+  const dit = role === 'offre'
+    ? 'Tes doublons d\'abord.'
+    : connue ? `Dans la collection de ${h(pseudo)}.` : 'Sa collection n\'est pas visible : toutes les cartes sont proposées.';
 
   openSheet({
-    title: role === 'offre' ? 'Choisis ce que tu donnes' : 'Choisis ce que tu veux',
-    body: `<p class="muted small">${aide}</p>${corps}`,
+    title: role === 'offre' ? 'Ce que tu donnes' : 'Ce que tu veux',
+    body: `<p class="muted small">${dit}${impose ? ` Rareté imposée : ${(RAR[impose] || RAR.C).nom}.` : ''}</p>
+      ${chips}
+      ${vue.length
+        ? `<div class="pickgrid">${vue.map(c => `<button class="pick" data-cardpick="${c.id}" data-role="${role}" data-snd="carte">
+            <span class="pickimg">${renderCard(c)}${etiquette(c, sens)}</span>
+            <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`
+        : `<p class="muted">${role === 'offre'
+            ? 'Tu n\'as aucune carte échangeable de cette rareté.'
+            : 'Aucune carte à demander ici.'}</p>`}`,
     actions: [{ label: 'Fermer', fn: closeSheet }]
   });
+}
+
+/* Une carte choisie. Si l'autre côté n'a plus la même rareté, il se vide :
+   c'était une paire qui ne pouvait plus partir. */
+function trChoisir(role, id) {
+  trBrouillon[role] = id;
+  const autre = role === 'offre' ? 'veut' : 'offre';
+  const a = byId[trBrouillon[autre]];
+  if (a && a.rar !== byId[id].rar) trBrouillon[autre] = null;
+  closeSheet();
+  render();
 }
 
 /* ---------- Voir la collection d'un autre ---------- */
@@ -472,11 +404,8 @@ function montrerCollectionDe(pseudo) {
 
   const listes = {
     manque: sienne.filter(c => !mesEx(c.id)),
-    /* Même définition qu'en fiche : un doublon est une carte cessible. Les
-       Essences et les Promos restent visibles dans « Tout », mais elles ne
-       s'échangent pas — les ranger sous « ses doublons » ferait espérer un
-       échange que le serveur refusera. */
-    doubles: sienne.filter(c => col[c.id] > 1 && c.cat !== 'essence' && !c.promo),
+    /* Même définition qu'en fiche : un doublon est une carte cessible. */
+    doubles: sienne.filter(c => col[c.id] > 1 && echangeable(c)),
     tout: sienne
   };
   const liste = (listes[trColVue] || sienne).slice().sort(parRarete);
@@ -485,25 +414,19 @@ function montrerCollectionDe(pseudo) {
     `<button data-trcol="${k}" data-qui="${h(pseudo)}" class="${trColVue === k ? 'on' : ''}">${l}
       <i class="pickn">${listes[k].length}</i></button>`).join('');
 
+  /* Ici l'étiquette dit combien LUI en a : c'est sa collection qu'on lit. Ce
+     qui me manque se reconnaît au liseré. */
   const grille = liste.length
-    ? `<div class="pickgrid">${liste.map(c => {
-        const n = mesEx(c.id);
-        return `<button class="pick" data-show="${c.id}" data-qui="${h(pseudo)}" data-snd="carte">
-          ${renderCard(c)}
-          <span class="picknom">${h(c.nom)}</span>
-          <span class="pickmeta r${c.rar}">${(RAR[c.rar] || RAR.C).sym} ×${col[c.id]}</span>
-          <span class="picklui${n ? '' : ' a'}">${n ? `tu en as ${n}` : 'tu ne l\'as pas'}</span>
-        </button>`;
-      }).join('')}</div>`
+    ? `<div class="pickgrid">${liste.map(c => `<button class="pick${mesEx(c.id) ? '' : ' manque'}" data-show="${c.id}" data-qui="${h(pseudo)}" data-snd="carte">
+        <span class="pickimg">${renderCard(c)}<i class="tpill">×${col[c.id]}</i></span>
+        <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`
     : `<p class="muted">${trColVue === 'manque'
         ? 'Il n\'a rien que tu n\'aies déjà.'
         : trColVue === 'doubles' ? 'Aucun doublon de son côté.' : 'Sa collection est vide.'}</p>`;
 
   openSheet({
     title: 'La collection de ' + pseudo,
-    body: `<p class="muted small">${sienne.length} carte${sienne.length > 1 ? 's' : ''} différente${sienne.length > 1 ? 's' : ''}.
-        Les Essences et les Promos ne s'échangent pas.</p>
-      <div class="souschips trcolvues">${chips}</div>${grille}`,
+    body: `<div class="souschips trcolvues">${chips}</div>${grille}`,
     actions: trColRetour
       ? [{ label: 'Retour au profil', fn: () => { const r = trColRetour; trColRetour = null; r(); } },
          { label: 'Fermer', fn: closeSheet }]
@@ -530,12 +453,19 @@ async function trChercher() {
   }
 }
 
-/* Changer de destinataire remet les cartes à zéro : la rareté imposée et la
-   liste de ce qu'il possède dépendaient de lui. */
+/* Changer de destinataire remet les cartes à zéro : ce qu'on pouvait lui
+   demander dépendait de lui. */
 function trChanger() {
   trCible = null;
   trBrouillon = { pseudo: '', offre: null, veut: null, note: trBrouillon.note };
   render();
+}
+
+/* Le mot tapé survit aux rendus : un rafraîchissement de fond ne doit pas
+   effacer une phrase à moitié écrite. */
+function trRetenirMot() {
+  const el = $('#tr-note');
+  if (el) trBrouillon.note = el.value;
 }
 
 async function trEnvoyer() {

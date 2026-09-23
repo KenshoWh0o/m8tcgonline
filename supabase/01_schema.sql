@@ -147,6 +147,18 @@ language sql immutable as $$
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
+    -- Recyclage (supabase/12_recyclage.sql) : ce que rapporte un doublon jete,
+    -- selon sa rarete, et le plafond de la semaine. Sans plafond, recycler
+    -- rapportait trois a cinq fois ce que paient les quetes, et racheter des
+    -- boosters avec faisait tourner une boucle qui triplait le rythme de la
+    -- collection. Le calcul est en tete de 12_recyclage.sql.
+    when 'recyclage_ES'      then 5
+    when 'recyclage_C'       then 10
+    when 'recyclage_PC'      then 20
+    when 'recyclage_R'       then 100
+    when 'recyclage_E'       then 500
+    when 'recyclage_L'       then 1000
+    when 'recyclage_plafond' then 1500     -- Eclats par semaine, remise le lundi
   end;
 $$;
 
@@ -157,19 +169,38 @@ $$;
 --  serveur repond a tout le monde, sans qu'on ait quoi que ce soit a rejouer.
 --  Avant, il ne repond qu'aux comptes inscrits dans `beta_invites`.
 --
---  ELLE DOIT RESTER IDENTIQUE a PORTE.lancement dans js/gate.js : celle-ci
---  ouvre le serveur, celle-la ouvre l'ecran d'attente. Deux dates differentes
---  donneraient soit un ecran ouvert sur un serveur qui refuse, soit l'inverse.
+--  C'est le SEUL endroit ou vit cette date. L'ecran d'attente (js/gate.js)
+--  la demande au serveur par porte(), avec l'heure du serveur : il n'a plus
+--  sa propre copie, et il ne consulte plus la montre du telephone. Avancer
+--  la date de l'appareil ouvrait l'ecran — et avec lui tout le jeu hors
+--  ligne. C'est par la que des visiteurs passaient.
 --
 --  Le fuseau est ecrit en clair : +02 est l'heure d'ete francaise, en vigueur
 --  jusqu'au 25 octobre 2026.
---
---  `stable` et non `immutable` : la reponse depend de now().
 -- =====================================================================
+create or replace function public.beta_lancement() returns timestamptz
+language sql immutable as $$
+  select timestamptz '2026-09-24 18:00:00+02';
+$$;
+
+-- `stable` et non `immutable` : la reponse depend de now().
 create or replace function public.beta_ouverte() returns boolean
 language sql stable as $$
-  select now() >= timestamptz '2026-09-24 18:00:00+02';
+  select now() >= beta_lancement();
 $$;
+
+-- Ce que l'ecran d'attente a besoin de savoir, sans compte : est-ce ouvert,
+-- quand ca ouvre, et quelle heure il est ICI. Le navigateur compte ensuite le
+-- temps ecoule avec une horloge que l'utilisateur ne peut pas regler
+-- (performance.now()), jamais avec la date de l'appareil.
+create or replace function public.porte() returns jsonb
+language sql stable as $$
+  select jsonb_build_object('ouvert', beta_ouverte(),
+                            'lancement', beta_lancement(),
+                            'serveur', now());
+$$;
+
+grant execute on function public.porte to anon, authenticated;
 
 -- =====================================================================
 --  Securite : chaque joueur ne voit et ne modifie que ce qui le regarde.
@@ -276,7 +307,11 @@ begin
   end if;
 end $$;
 
-revoke all on function public.est_invite, public.garde_beta from anon, authenticated;
+-- `public` d'abord : Postgres accorde l'execution a tout le monde par defaut,
+-- et `anon` en herite. Ne retirer le droit qu'a `anon` et `authenticated`
+-- laissait donc ces deux fonctions appelables sans compte — on pouvait sonder
+-- la liste des invites identifiant par identifiant.
+revoke all on function public.est_invite, public.garde_beta from public, anon, authenticated;
 
 -- =====================================================================
 --  Creation du profil a l'inscription
@@ -401,7 +436,7 @@ $$;
 -- Rouage interne : appele par friend_list, player_profile, trade_list et
 -- find_player, jamais par le navigateur. Le laisser ouvert permettrait de
 -- parcourir les photos par identifiant.
-revoke all on function public.photo_discord from anon, authenticated;
+revoke all on function public.photo_discord from public, anon, authenticated;
 
 create or replace function public.period_key(sc text) returns text
 language sql stable as $$

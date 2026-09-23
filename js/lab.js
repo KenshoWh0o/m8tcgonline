@@ -62,11 +62,24 @@ function vTest() {
   </section>
 
   <section class="panel">
+    <h2>Annonce à tous les joueurs</h2>
+    <p class="muted small">Elle arrive dans la boîte de réception de chacun, avec un ping
+      pour ceux qui sont en jeu. Pour la retirer : « Retirer l'annonce » dans ta boîte.</p>
+    <label class="field"><span>Titre</span>
+      <input id="an-titre" type="text" maxlength="80" placeholder="Le jeu est ouvert !"></label>
+    <label class="field"><span>Texte <small class="muted">(facultatif)</small></span>
+      <textarea id="an-texte" maxlength="600" rows="3"
+        placeholder="Quelques lignes, 600 caractères au plus."></textarea></label>
+    <button class="btn" data-act="annonce-publier">Publier l'annonce</button>
+  </section>
+
+  <section class="panel">
     <h2>Notifications</h2>
     <p class="muted small">Les bandeaux qui passent en haut de l'écran, pour vérifier
       qu'ils ne recouvrent rien.</p>
     <div class="row">
       <button class="btn ghost" data-act="t-quete">Quête accomplie</button>
+      <button class="btn ghost" data-act="t-ping">Ping de la boîte</button>
       <button class="btn ghost" data-act="t-toast">Message court</button>
     </div>
   </section>
@@ -121,6 +134,35 @@ function testFilePromos() {
   if (!promos.length) return;
   filePromos.push(...promos);
   viderFilePromos();
+}
+
+/* Le ping d'une demande d'échange, tel qu'il arrive à un joueur. */
+function testPing() {
+  annoncer([{ id: 'test', type: 'echange_recu', pseudo: save.pseudo, avatar: save.avatar,
+    frame: save.frame, photo: maPhoto(), quand: new Date().toISOString() }]);
+}
+
+/* Publier une annonce. Deux gestes : on relit avant que ça parte chez tout le
+   monde. Le serveur vérifie de son côté que c'est bien un administrateur. */
+function publierAnnonce() {
+  const titre = valeur('an-titre');
+  const texte = $('#an-texte') ? $('#an-texte').value.trim() : '';
+  if (!titre) return toast('Il manque un titre.');
+  openSheet({
+    title: 'Publier cette annonce ?',
+    body: `<div class="bmsg annonce"><span class="bico">${NAVICO.annonce}</span>
+        <div class="bcorps"><p class="btxt"><b>${h(titre)}</b></p>
+          ${texte ? `<p class="bannonce">${h(texte)}</p>` : ''}</div></div>
+      <p class="muted small">Elle arrive tout de suite dans la boîte de tous les joueurs.</p>`,
+    actions: [
+      { label: 'Publier', primary: true, fn: async () => {
+        closeSheet();
+        /* Le rendu qui suit redessine le Labo : les deux champs repartent vides. */
+        await agir(() => Backend.annoncePublier(titre, texte), 'Annonce publiée.');
+      }},
+      { label: 'Annuler', fn: closeSheet }
+    ]
+  });
 }
 
 function testQuete() {

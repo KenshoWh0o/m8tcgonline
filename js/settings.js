@@ -156,8 +156,8 @@ function vReglages() {
 
   <section class="panel">
     <h2>Communauté</h2>
-    <p class="muted small">Les annonces, les nouvelles cartes, l'entraide et les
-      échanges se passent sur le Discord du jeu.</p>
+    <p class="muted small">L'actualité du jeu, l'entraide et les échanges : la
+      communauté se retrouve sur le Discord.</p>
     <div class="row" style="margin-top:12px">
       ${lienDiscord('btn discord', 'Rejoindre le Discord')}
     </div>

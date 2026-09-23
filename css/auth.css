@@ -15,12 +15,13 @@ body.inauth main { padding:0 }
 
 .field{display:block;text-align:left;margin:0 0 12px}
 .field>span{display:block;font-size:12.5px;font-weight:800;color:var(--subtle);margin:0 0 6px;letter-spacing:.02em}
-.field input,.findrow input,.compose input,.panel input[type=text]{
+.field input,.field textarea,.findrow input,.compo input,.panel input[type=text]{
   width:100%;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius-sm);
   color:var(--text);font:inherit;font-size:16px;padding:13px 14px;transition:border-color .15s,box-shadow .15s}
-.field input:focus,.findrow input:focus,.compose input:focus,.panel input[type=text]:focus{
+.field input:focus,.field textarea:focus,.findrow input:focus,.compo input:focus,.panel input[type=text]:focus{
   outline:0;border-color:var(--accent-soft);box-shadow:0 0 0 3px var(--accent-wash-2)}
-.field input::placeholder,.findrow input::placeholder,.compose input::placeholder{color:var(--muted)}
+.field input::placeholder,.field textarea::placeholder,.findrow input::placeholder,.compo input::placeholder{color:var(--muted)}
+.field textarea{resize:vertical;min-height:84px;line-height:1.45}
 
 .authacts{display:flex;flex-direction:column;gap:10px;margin-top:18px}
 .autherr{background:var(--danger-wash);border:1px solid var(--danger-line);color:var(--danger);
@@ -89,6 +90,12 @@ body.inlock main { padding:0 }
    est nominatif, et c'est le serveur qui vérifie l'invitation. */
 .lockentree{margin:24px 0 0;display:flex;flex-direction:column;gap:10px}
 .lockaide{margin:0;max-width:36ch;margin-inline:auto}
+/* L'entrée des comptes qui ont déjà accès : un lien discret, sous le bouton
+   Discord. Le public, lui, n'a rien à y faire avant l'ouverture. */
+.lockacces{align-self:center;margin-top:4px;color:var(--muted);text-decoration:underline;
+  text-underline-offset:3px}
+.lockrefus{margin:0;text-align:center}
+.lockattente{margin:22px 0 4px}
 
 /* « Bêta fermée » est un refus, pas une annonce : l'étiquette prend la couleur
    des états neutres plutôt que celle de l'accent. */

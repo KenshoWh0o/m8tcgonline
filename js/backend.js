@@ -16,6 +16,8 @@ const Backend = {
   trades: [],
   amis: [],
   shop: [],
+  /* La boite de réception : `null` tant qu'on ne l'a pas lue une fois. */
+  boite: null,
   /* La photo du compte Discord, relue à chaque session : l'avatar « discord »
      suit donc les changements faits sur Discord, sans rien stocker chez nous. */
   photoDiscord: null,
@@ -124,10 +126,13 @@ Backend.apply = function (etat) {
     avatar: p.avatar,
     frame: p.frame,
     isAdmin: !!p.is_admin,
-    /* Bêta fermée : le serveur dit si ce compte est sur la liste. C'est la
-       seule réponse qu'il accorde à un compte qui n'y est pas — toutes les
-       autres actions sont refusées (garde_beta, supabase/01_schema.sql). */
-    invite: p.invite !== false,
+    /* Avant l'ouverture : le serveur dit si ce compte a accès. C'est la seule
+       réponse qu'il accorde à un compte qui ne l'a pas — toutes les autres
+       actions sont refusées (garde_beta, supabase/01_schema.sql).
+       `=== true` et non `!== false` : un champ absent — une base pas encore
+       à jour, une réponse tronquée — valait « invité ». Dans le doute, on
+       n'ouvre pas. */
+    invite: p.invite === true,
     tradeFreeAt: srvTime(p.trade_free_at),
     packsOpened: p.packs_opened,
     tradesDone: p.trades_done,
@@ -135,7 +140,13 @@ Backend.apply = function (etat) {
        de redemander un pointage déjà fait — voir visiteDuJourFaite(). */
     lastCheckin: p.last_checkin,
     streak: p.streak,
-    vitrine: p.vitrine || []
+    vitrine: p.vitrine || [],
+    /* Les nouveautés de la boite de réception, pour la cloche de l'en-tête
+       tant que la boite elle-même n'est pas chargée (js/boite.js). */
+    boiteNonLues: etat.boite || 0,
+    /* Le recyclage : valeurs par rareté et plafond de la semaine, tels que le
+       serveur les applique (supabase/12_recyclage.sql). */
+    recyclage: etat.recyclage || null
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -158,7 +169,8 @@ Backend.rpc = async function (nom, args) {
 
 /* Les refus que le serveur signale par un mot-clé, traduits pour le joueur. */
 const MSG_SERVEUR = {
-  BETA_FERMEE: "Le jeu est en bêta fermée : ce compte n'est pas sur la liste des invités.",
+  BETA_FERMEE: "Le jeu n'est pas encore ouvert.",
+  PLAFOND_RECYCLAGE: 'Ça dépasse ton plafond de recyclage de la semaine.',
   RESERVE_VIDE: 'Plus de booster pour le moment.',
   BOOSTER_VIDE: 'Ce booster est vide : aucune carte à tirer.',
   ECHANGE_EN_RECHARGE: 'Ton échange gratuit est encore en recharge. Il te faut un jeton.',
@@ -236,13 +248,12 @@ Backend.loadShop = async function () {
   return Backend.shop;
 };
 
+/* Ce qui arrive des autres joueurs n'est plus deviné ici en comparant deux
+   listes : le serveur l'écrit dans la boite de réception, et c'est elle qui
+   l'annonce (js/boite.js). */
 Backend.loadTrades = async function () {
   if (Backend.mode !== 'cloud') return [];
   Backend.trades = await Backend.rpc('trade_list') || [];
-  /* Une demande d'échange n'est déclenchée par rien de ce que fait le joueur :
-     c'est ici, en comparant deux réponses successives, qu'on peut repérer ce
-     qui vient d'arriver — et l'annoncer. */
-  signalerEchanges(Backend.trades);
   return Backend.trades;
 };
 
@@ -275,6 +286,50 @@ Backend.tradeCancel = async function (id) {
   Backend.apply(await Backend.rpc('trade_cancel', { p_trade: id }));
   await Backend.loadTrades();
 };
+
+/* ---- Boite de réception (supabase/11_boite.sql) ---- */
+Backend.loadBoite = async function () {
+  if (Backend.mode !== 'cloud') return null;
+  Backend.boite = await Backend.rpc('boite');
+  return Backend.boite;
+};
+
+Backend.boiteLue = async function () {
+  const r = await Backend.rpc('boite_lue');
+  if (Backend.boite && r) Backend.boite.vue_le = r.vue_le;
+  if (save) save.boiteNonLues = 0;
+};
+
+Backend.annoncePublier = async (titre, texte) => {
+  Backend.boite = await Backend.rpc('annonce_publier', { p_titre: titre, p_texte: texte });
+};
+Backend.annonceRetirer = async id => {
+  Backend.boite = await Backend.rpc('annonce_retirer', { p_id: id });
+};
+
+/* Le temps réel : une ligne qui arrive dans la boite est poussée tout de
+   suite, au lieu d'attendre la prochaine relève. S'il ne répond pas, la relève
+   régulière prend le relais — on ne dépend jamais de lui. */
+Backend.ecouterBoite = function (surNouveau) {
+  if (Backend.mode !== 'cloud' || Backend.canalBoite || !Backend.sb.channel) return;
+  const moi = Backend.session && Backend.session.user && Backend.session.user.id;
+  if (!moi) return;
+  try {
+    Backend.canalBoite = Backend.sb.channel('boite-' + moi)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + moi },
+        () => surNouveau())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'annonces' },
+        () => surNouveau())
+      .subscribe();
+  } catch (e) {
+    Backend.canalBoite = null;
+  }
+};
+
+/* ---- Recyclage (supabase/12_recyclage.sql) ---- */
+Backend.recycler = async lots =>
+  Backend.apply(await Backend.rpc('recycler', { p_lots: lots }));
 
 /* ==================================================================== Comptes */
 Backend.signUp = async function (email, motdepasse, pseudo) {

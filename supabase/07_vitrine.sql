@@ -43,6 +43,10 @@ grant execute on function public.set_vitrine to authenticated;
 -- Une carte Promo de palier peut etre debloquee par un echange aussi bien que
 -- par un booster : sans cet appel, elle n'arriverait qu'a la prochaine
 -- ouverture de paquet.
+--
+-- Elle lit aussi la boite de reception et le recyclage, dont les fonctions
+-- sont creees plus loin (11_boite.sql, 12_recyclage.sql). PL/pgSQL resout les
+-- appels a l'execution : a la fin de TOUT.sql, tout est la.
 create or replace function public.me() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); pr profiles;
@@ -66,6 +70,17 @@ begin
       'invite', (beta_ouverte() or est_invite(p)),
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
       'serveur', now()),
+    -- La pastille de la boite de reception (supabase/11_boite.sql).
+    'boite', boite_non_lues(p),
+    -- Le recyclage (supabase/12_recyclage.sql) : ce que vaut chaque rarete,
+    -- et ou en est le plafond de la semaine. Les montants partent d'ici pour
+    -- que le navigateur n'en garde pas une copie qui finirait par mentir.
+    'recyclage', jsonb_build_object(
+      'semaine', recyclage_semaine(p),
+      'plafond', cfg('recyclage_plafond'),
+      'valeurs', jsonb_build_object(
+        'ES', cfg('recyclage_ES'), 'C', cfg('recyclage_C'), 'PC', cfg('recyclage_PC'),
+        'R', cfg('recyclage_R'), 'E', cfg('recyclage_E'), 'L', cfg('recyclage_L'))),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory

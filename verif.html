@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#0c0910">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=1.0.0">
-<link rel="stylesheet" href="css/base.css?v=1.0.0">
+<link rel="stylesheet" href="css/tokens.css?v=1.1.0">
+<link rel="stylesheet" href="css/base.css?v=1.1.0">
 <style>
 /* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
 body{display:block;height:auto;min-height:100%}
@@ -71,8 +71,8 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="js/config.js?v=1.0.0"></script>
-<script src="js/supabase-config.js?v=1.0.0"></script>
+<script src="js/config.js?v=1.1.0"></script>
+<script src="js/supabase-config.js?v=1.1.0"></script>
 <script>
 "use strict";
 
@@ -238,6 +238,24 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
         affiche une erreur en rouge — auquel cas, copie-la, elle dit exactement ce qui coince.` });
   }
 
+  /* ---- 6 bis. Les ajouts de la version 1.1 ---- */
+  /* L'écran d'attente demande l'heure d'ouverture au serveur (porte), et deux
+     onglets s'appuient sur des fonctions récentes. Sans elles, l'écran
+     d'attente reste bloqué sur « Connexion au serveur… » : c'est voulu — dans
+     le doute, il n'ouvre pas —, mais il faut le savoir. */
+  const manquantes = [];
+  for (const [fn, quoi] of [['porte', 'l\'écran d\'attente'], ['boite', 'la boîte de réception'],
+                            ['recycler', 'le recyclage']]) {
+    const { error } = await sb.rpc(fn, fn === 'recycler' ? { p_lots: [] } : {});
+    if (error && error.code === 'PGRST202') manquantes.push(quoi);
+  }
+  poser(manquantes.length
+    ? { etat: 'ko', titre: 'Le serveur n\'est pas à jour',
+        detail: `Il manque les fonctions de : ${manquantes.join(', ')}. Tant que
+          <code>porte()</code> manque, l'écran d'attente reste fermé pour tout le monde.`,
+        faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
+    : { etat: 'ok', titre: 'Écran d\'attente, boîte de réception et recyclage sont installés' });
+
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');
   poser({ etat: 'warn', titre: 'Les adresses de retour sont à vérifier à la main',
@@ -254,7 +272,11 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
       faire: 'Ouvre le jeu, crée ton compte, confirme ton adresse par courriel, puis reviens ici.' });
   } else {
     try {
-      const { data } = await sb.from('profiles').select('pseudo,is_admin').eq('id', session.user.id).single();
+      /* Par me(), et non par la table : le navigateur n'a pas le droit de lire
+         `profiles` directement (voir la fin de supabase/01_schema.sql). */
+      const { data: etat, error } = await sb.rpc('me');
+      if (error) throw error;
+      const data = etat && etat.profil;
       poser(data && data.is_admin
         ? { etat: 'ok', titre: `Connecté en administrateur : ${data.pseudo}`,
             detail: 'L’onglet Labo t’est accessible dans le jeu.' }

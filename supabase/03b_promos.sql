@@ -71,7 +71,7 @@ end $$;
 
 -- check_promos est un rouage interne : appele par me() et open_pack, jamais
 -- par le navigateur.
-revoke all on function public.check_promos from anon, authenticated;
+revoke all on function public.check_promos from public, anon, authenticated;
 
 -- =====================================================================
 --  Outil : accorder une carte Promo a la main

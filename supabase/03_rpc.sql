@@ -341,7 +341,7 @@ create or replace function public.trade_create(
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles; dest profiles;
-  ro text; rw text; jeton int; gratuit boolean;
+  ro text; rw text; jeton int; gratuit boolean; tid uuid;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -382,7 +382,13 @@ begin
   end if;
 
   insert into trades (from_user, to_user, offer_card, want_card, note, jeton)
-  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit);
+  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit)
+  returning id into tid;
+
+  -- Dans la boite du destinataire (supabase/11_boite.sql). Les deux cartes
+  -- voyagent avec l'evenement : la boite les montre sans autre appel.
+  perform notifier(dest.id, 'echange_recu', p, tid::text,
+                   jsonb_build_object('offer', p_offer, 'want', p_want));
 
   return me();
 end $$;
@@ -401,6 +407,8 @@ begin
   if not p_accept then
     update trades set status = 'declined', resolved_at = now() where id = t.id;
     perform rembourser_demande(t);
+    perform notifier(t.from_user, 'echange_refuse', p, t.id::text,
+                     jsonb_build_object('offer', t.offer_card, 'want', t.want_card));
     return me();
   end if;
 
@@ -437,6 +445,8 @@ begin
 
   update trades set status = 'accepted', resolved_at = now() where id = t.id;
   update profiles set trades_done = trades_done + 1 where id in (p, t.from_user);
+  perform notifier(t.from_user, 'echange_accepte', p, t.id::text,
+                   jsonb_build_object('offer', t.offer_card, 'want', t.want_card));
 
   perform bump_quests(p, 'trades', 1);
   perform bump_quests(t.from_user, 'trades', 1);

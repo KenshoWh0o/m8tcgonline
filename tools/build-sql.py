@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Assemble les quatre fichiers SQL en un seul, a coller d'un bloc dans Supabase.
+"""Assemble les fichiers SQL d'installation en un seul, a coller d'un bloc dans Supabase.
     python3 tools/build-sql.py
 
 Seuls les fichiers d'installation entrent dans TOUT.sql : 05_admin.sql et
@@ -24,6 +24,8 @@ MORCEAUX = [
     ('04_seed.sql',    'Les quetes et le catalogue de la boutique'),
     ('06_social.sql',  'Les amis et les fiches de joueur'),
     ('07_vitrine.sql', 'La vitrine : quatre cartes mises en avant sur le profil'),
+    ('11_boite.sql',   'La boite de reception : notifications et annonces'),
+    ('12_recyclage.sql', 'Le recyclage des doublons contre des Eclats'),
 ]
 
 entete = """-- =====================================================================

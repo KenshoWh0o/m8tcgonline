@@ -125,12 +125,11 @@ async function ouvrirFiche(pseudo) {
         <span class="colchip fort"><b>${manque}</b> qu'il a, pas toi</span>
       </div>
       ${forts.length
-        ? `<p class="muted small">Ses doublons rares et au-dessus — ceux qu'il peut céder sans se démunir.</p>
+        ? `<p class="muted small">Ses doublons rares et au-dessus. Liseré violet : tu ne l'as pas.</p>
            <div class="pickgrid court">${forts.map(c =>
-             `<button class="pick" data-show="${c.id}" data-qui="${h(f.pseudo)}" data-snd="carte">${renderCard(c)}
+             `<button class="pick${save.col[c.id] ? '' : ' manque'}" data-show="${c.id}" data-qui="${h(f.pseudo)}" data-snd="carte">
+               <span class="pickimg">${renderCard(c)}<i class="tpill">×${f.col[c.id]}</i></span>
                <span class="picknom">${h(c.nom)}</span>
-               <span class="pickmeta r${c.rar}">×${f.col[c.id]}</span>
-               <span class="picklui${save.col[c.id] ? '' : ' a'}">${save.col[c.id] ? 'tu en as ' + save.col[c.id] : 'tu ne l\'as pas'}</span>
              </button>`).join('')}</div>`
         : '<p class="muted small">Aucun doublon rare pour le moment.</p>'}
       <div class="row ficheacts">

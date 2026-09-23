@@ -9,10 +9,10 @@
 --  POURQUOI CETTE TABLE EXISTE
 --
 --  L'ecran d'attente (js/gate.js) n'est pas une serrure. Il vit dans le
---  navigateur : son empreinte est ecrite en clair dans la page, et deux
---  lignes dans la console suffisent a passer derriere. Il n'a jamais
---  pretendu faire autre chose — son en-tete le dit depuis le premier jour.
---  Il ecarte les curieux, il n'arrete pas quelqu'un de decide.
+--  navigateur, et quelqu'un qui sait ouvrir la console finit toujours par
+--  passer derriere un ecran. Il ecarte les curieux — y compris ceux qui
+--  avancent la date de leur telephone, depuis qu'il demande l'heure au
+--  serveur — mais il n'arrete pas quelqu'un de decide.
 --
 --  La serrure, c'est cette table. Jusqu'a l'heure d'ouverture fixee dans
 --  beta_ouverte() (supabase/01_schema.sql), AUCUNE action du jeu n'aboutit
@@ -109,12 +109,12 @@ on conflict (cle) do update set note = excluded.note;
 --  18 h, beta_ouverte() bascule et le serveur repond a tout le monde. Rien
 --  a rejouer, rien a pousser ce soir-la.
 --
---  Pour avancer ou reculer la date, il faut la changer AUX DEUX ENDROITS :
---      beta_ouverte()    dans supabase/01_schema.sql   (le serveur)
---      PORTE.lancement   dans js/gate.js               (l'ecran)
---  puis rejouer le SQL et pousser le site.
+--  Pour avancer ou reculer la date : beta_lancement() dans
+--  supabase/01_schema.sql, puis rejouer TOUT.sql. C'est le seul endroit :
+--  l'ecran d'attente la demande au serveur (porte()), avec l'heure du
+--  serveur. Rien a pousser sur le site.
 --
 --  La table `beta_invites` peut rester : passe la date, elle n'est plus
 --  consultee du tout.
 -- =====================================================================
--- select beta_ouverte() as ouvert, now() as maintenant;
+-- select porte();

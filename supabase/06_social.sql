@@ -45,6 +45,7 @@ begin
     -- Une demande croisee vaut acceptation : les deux se sont choisis.
     if ligne.demandeur <> moi then
       update friendships set accepte = true, resolved_at = now() where a = x and b = y;
+      perform notifier(autre.id, 'ami_accepte', moi);
       return friend_list();
     end if;
     raise exception 'Ta demande est déjà en attente.';
@@ -55,6 +56,11 @@ begin
   end if;
 
   insert into friendships (a, b, demandeur) values (x, y, moi);
+
+  -- Dans la boite de l'autre (supabase/11_boite.sql). Une demande annulee puis
+  -- renvoyee ne doit pas s'empiler : on retire d'abord l'ancienne annonce.
+  delete from notifications where user_id = autre.id and acteur = moi and type = 'ami_demande';
+  perform notifier(autre.id, 'ami_demande', moi);
   return friend_list();
 end $$;
 
@@ -75,6 +81,7 @@ begin
 
   if p_accept then
     update friendships set accepte = true, resolved_at = now() where a = x and b = y;
+    perform notifier(autre.id, 'ami_accepte', moi);
   else
     delete from friendships where a = x and b = y;
   end if;

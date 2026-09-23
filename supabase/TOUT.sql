@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-09-22
+--   Assemble le 2026-09-23
 --
 -- =====================================================================
 
@@ -171,6 +171,18 @@ language sql immutable as $$
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
+    -- Recyclage (supabase/12_recyclage.sql) : ce que rapporte un doublon jete,
+    -- selon sa rarete, et le plafond de la semaine. Sans plafond, recycler
+    -- rapportait trois a cinq fois ce que paient les quetes, et racheter des
+    -- boosters avec faisait tourner une boucle qui triplait le rythme de la
+    -- collection. Le calcul est en tete de 12_recyclage.sql.
+    when 'recyclage_ES'      then 5
+    when 'recyclage_C'       then 10
+    when 'recyclage_PC'      then 20
+    when 'recyclage_R'       then 100
+    when 'recyclage_E'       then 500
+    when 'recyclage_L'       then 1000
+    when 'recyclage_plafond' then 1500     -- Eclats par semaine, remise le lundi
   end;
 $$;
 
@@ -181,19 +193,38 @@ $$;
 --  serveur repond a tout le monde, sans qu'on ait quoi que ce soit a rejouer.
 --  Avant, il ne repond qu'aux comptes inscrits dans `beta_invites`.
 --
---  ELLE DOIT RESTER IDENTIQUE a PORTE.lancement dans js/gate.js : celle-ci
---  ouvre le serveur, celle-la ouvre l'ecran d'attente. Deux dates differentes
---  donneraient soit un ecran ouvert sur un serveur qui refuse, soit l'inverse.
+--  C'est le SEUL endroit ou vit cette date. L'ecran d'attente (js/gate.js)
+--  la demande au serveur par porte(), avec l'heure du serveur : il n'a plus
+--  sa propre copie, et il ne consulte plus la montre du telephone. Avancer
+--  la date de l'appareil ouvrait l'ecran — et avec lui tout le jeu hors
+--  ligne. C'est par la que des visiteurs passaient.
 --
 --  Le fuseau est ecrit en clair : +02 est l'heure d'ete francaise, en vigueur
 --  jusqu'au 25 octobre 2026.
---
---  `stable` et non `immutable` : la reponse depend de now().
 -- =====================================================================
+create or replace function public.beta_lancement() returns timestamptz
+language sql immutable as $$
+  select timestamptz '2026-09-24 18:00:00+02';
+$$;
+
+-- `stable` et non `immutable` : la reponse depend de now().
 create or replace function public.beta_ouverte() returns boolean
 language sql stable as $$
-  select now() >= timestamptz '2026-09-24 18:00:00+02';
+  select now() >= beta_lancement();
 $$;
+
+-- Ce que l'ecran d'attente a besoin de savoir, sans compte : est-ce ouvert,
+-- quand ca ouvre, et quelle heure il est ICI. Le navigateur compte ensuite le
+-- temps ecoule avec une horloge que l'utilisateur ne peut pas regler
+-- (performance.now()), jamais avec la date de l'appareil.
+create or replace function public.porte() returns jsonb
+language sql stable as $$
+  select jsonb_build_object('ouvert', beta_ouverte(),
+                            'lancement', beta_lancement(),
+                            'serveur', now());
+$$;
+
+grant execute on function public.porte to anon, authenticated;
 
 -- =====================================================================
 --  Securite : chaque joueur ne voit et ne modifie que ce qui le regarde.
@@ -300,7 +331,11 @@ begin
   end if;
 end $$;
 
-revoke all on function public.est_invite, public.garde_beta from anon, authenticated;
+-- `public` d'abord : Postgres accorde l'execution a tout le monde par defaut,
+-- et `anon` en herite. Ne retirer le droit qu'a `anon` et `authenticated`
+-- laissait donc ces deux fonctions appelables sans compte — on pouvait sonder
+-- la liste des invites identifiant par identifiant.
+revoke all on function public.est_invite, public.garde_beta from public, anon, authenticated;
 
 -- =====================================================================
 --  Creation du profil a l'inscription
@@ -425,7 +460,7 @@ $$;
 -- Rouage interne : appele par friend_list, player_profile, trade_list et
 -- find_player, jamais par le navigateur. Le laisser ouvert permettrait de
 -- parcourir les photos par identifiant.
-revoke all on function public.photo_discord from anon, authenticated;
+revoke all on function public.photo_discord from public, anon, authenticated;
 
 create or replace function public.period_key(sc text) returns text
 language sql stable as $$
@@ -1050,7 +1085,7 @@ create or replace function public.trade_create(
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles; dest profiles;
-  ro text; rw text; jeton int; gratuit boolean;
+  ro text; rw text; jeton int; gratuit boolean; tid uuid;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -1091,7 +1126,13 @@ begin
   end if;
 
   insert into trades (from_user, to_user, offer_card, want_card, note, jeton)
-  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit);
+  values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit)
+  returning id into tid;
+
+  -- Dans la boite du destinataire (supabase/11_boite.sql). Les deux cartes
+  -- voyagent avec l'evenement : la boite les montre sans autre appel.
+  perform notifier(dest.id, 'echange_recu', p, tid::text,
+                   jsonb_build_object('offer', p_offer, 'want', p_want));
 
   return me();
 end $$;
@@ -1110,6 +1151,8 @@ begin
   if not p_accept then
     update trades set status = 'declined', resolved_at = now() where id = t.id;
     perform rembourser_demande(t);
+    perform notifier(t.from_user, 'echange_refuse', p, t.id::text,
+                     jsonb_build_object('offer', t.offer_card, 'want', t.want_card));
     return me();
   end if;
 
@@ -1146,6 +1189,8 @@ begin
 
   update trades set status = 'accepted', resolved_at = now() where id = t.id;
   update profiles set trades_done = trades_done + 1 where id in (p, t.from_user);
+  perform notifier(t.from_user, 'echange_accepte', p, t.id::text,
+                   jsonb_build_object('offer', t.offer_card, 'want', t.want_card));
 
   perform bump_quests(p, 'trades', 1);
   perform bump_quests(t.from_user, 'trades', 1);
@@ -1301,7 +1346,7 @@ end $$;
 
 -- check_promos est un rouage interne : appele par me() et open_pack, jamais
 -- par le navigateur.
-revoke all on function public.check_promos from anon, authenticated;
+revoke all on function public.check_promos from public, anon, authenticated;
 
 -- =====================================================================
 --  Outil : accorder une carte Promo a la main
@@ -1529,6 +1574,7 @@ begin
     -- Une demande croisee vaut acceptation : les deux se sont choisis.
     if ligne.demandeur <> moi then
       update friendships set accepte = true, resolved_at = now() where a = x and b = y;
+      perform notifier(autre.id, 'ami_accepte', moi);
       return friend_list();
     end if;
     raise exception 'Ta demande est déjà en attente.';
@@ -1539,6 +1585,11 @@ begin
   end if;
 
   insert into friendships (a, b, demandeur) values (x, y, moi);
+
+  -- Dans la boite de l'autre (supabase/11_boite.sql). Une demande annulee puis
+  -- renvoyee ne doit pas s'empiler : on retire d'abord l'ancienne annonce.
+  delete from notifications where user_id = autre.id and acteur = moi and type = 'ami_demande';
+  perform notifier(autre.id, 'ami_demande', moi);
   return friend_list();
 end $$;
 
@@ -1559,6 +1610,7 @@ begin
 
   if p_accept then
     update friendships set accepte = true, resolved_at = now() where a = x and b = y;
+    perform notifier(autre.id, 'ami_accepte', moi);
   else
     delete from friendships where a = x and b = y;
   end if;
@@ -1709,6 +1761,10 @@ grant execute on function public.set_vitrine to authenticated;
 -- Une carte Promo de palier peut etre debloquee par un echange aussi bien que
 -- par un booster : sans cet appel, elle n'arriverait qu'a la prochaine
 -- ouverture de paquet.
+--
+-- Elle lit aussi la boite de reception et le recyclage, dont les fonctions
+-- sont creees plus loin (11_boite.sql, 12_recyclage.sql). PL/pgSQL resout les
+-- appels a l'execution : a la fin de TOUT.sql, tout est la.
 create or replace function public.me() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); pr profiles;
@@ -1732,6 +1788,17 @@ begin
       'invite', (beta_ouverte() or est_invite(p)),
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
       'serveur', now()),
+    -- La pastille de la boite de reception (supabase/11_boite.sql).
+    'boite', boite_non_lues(p),
+    -- Le recyclage (supabase/12_recyclage.sql) : ce que vaut chaque rarete,
+    -- et ou en est le plafond de la semaine. Les montants partent d'ici pour
+    -- que le navigateur n'en garde pas une copie qui finirait par mentir.
+    'recyclage', jsonb_build_object(
+      'semaine', recyclage_semaine(p),
+      'plafond', cfg('recyclage_plafond'),
+      'valeurs', jsonb_build_object(
+        'ES', cfg('recyclage_ES'), 'C', cfg('recyclage_C'), 'PC', cfg('recyclage_PC'),
+        'R', cfg('recyclage_R'), 'E', cfg('recyclage_E'), 'L', cfg('recyclage_L'))),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
@@ -1794,6 +1861,378 @@ begin
 end $$;
 
 grant execute on function public.me, public.player_profile to authenticated;
+
+
+-- #####################################################################
+-- ###  11_boite.sql
+-- ###  La boite de reception : notifications et annonces
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — la boite de reception
+--  A executer apres 07_vitrine.sql. Rejouable sans danger.
+--
+--  Ce qui arrive des autres ne se voyait qu'en ouvrant l'onglet Social, et
+--  encore : le navigateur comparait deux listes successives pour deviner ce
+--  qui etait nouveau. Une demande d'ami n'etait jamais annoncee, une demande
+--  acceptee pendant qu'on etait ailleurs ne l'etait pas non plus.
+--
+--  Desormais, c'est le serveur qui ecrit l'evenement au moment ou il a lieu,
+--  dans la boite du destinataire. Le navigateur n'a plus rien a deviner : il
+--  lit la boite, et tout ce qu'il n'a pas encore vu est nouveau.
+--
+--  Deux sources dans la meme boite :
+--    · `notifications` : ce qui concerne un joueur — demande d'ami, demande
+--      d'echange, reponse a une demande. Ecrit par notifier(), appele depuis
+--      friend_request, friend_respond, trade_create et trade_respond.
+--    · `annonces` : ce qui concerne tout le monde. Publiees depuis le Labo par
+--      un administrateur (annonce_publier), ou a la main dans le SQL Editor.
+--
+--  Lu ou non lu : une seule date par joueur, `profiles.boite_vue_le`. Tout ce
+--  qui est plus recent est nouveau. Pas de case a cocher par message : on
+--  ouvre la boite, on a tout vu.
+-- =====================================================================
+
+alter table public.profiles
+  add column if not exists boite_vue_le timestamptz not null default now();
+
+-- --------------------------------------------------------- notifications
+create table if not exists public.notifications (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references public.profiles on delete cascade,
+  -- ami_demande | ami_accepte | echange_recu | echange_accepte | echange_refuse
+  type       text not null,
+  -- L'autre joueur : celui qui demande, qui accepte, qui refuse.
+  acteur     uuid references public.profiles on delete cascade,
+  -- Ce dont on parle : l'identifiant d'un echange, par exemple.
+  ref        text,
+  data       jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists notifications_user_idx on public.notifications (user_id, id desc);
+
+alter table public.notifications enable row level security;
+drop policy if exists p_notif_read on public.notifications;
+create policy p_notif_read on public.notifications for select using (user_id = auth.uid());
+
+-- Le droit de lecture sert au temps reel : Supabase ne pousse une ligne qu'a
+-- qui a le droit de la lire, et la policy ci-dessus limite chacun a la sienne.
+-- Le navigateur, lui, passe par boite(). Aucune ecriture : seul notifier()
+-- ajoute une ligne.
+grant select on public.notifications to authenticated;
+revoke insert, update, delete on public.notifications from anon, authenticated;
+
+-- --------------------------------------------------------------- annonces
+create table if not exists public.annonces (
+  id         bigint generated always as identity primary key,
+  titre      text not null check (length(titre) between 1 and 80),
+  texte      text not null default '' check (length(texte) <= 600),
+  auteur     uuid references public.profiles on delete set null,
+  created_at timestamptz not null default now(),
+  actif      boolean not null default true
+);
+
+alter table public.annonces enable row level security;
+drop policy if exists p_annonces_read on public.annonces;
+create policy p_annonces_read on public.annonces for select using (actif);
+grant select on public.annonces to authenticated;
+revoke insert, update, delete on public.annonces from anon, authenticated;
+
+-- ------------------------------------------------------------ l'ecriture
+-- Rouage interne, appele par les actions du jeu. Jamais par le navigateur :
+-- sinon n'importe qui pourrait remplir la boite de n'importe qui.
+create or replace function public.notifier(dest uuid, t text, qui uuid,
+                                           r text default null, d jsonb default '{}'::jsonb)
+returns void language sql security definer set search_path = public as $$
+  insert into notifications (user_id, type, acteur, ref, data)
+  values (dest, t, qui, r, coalesce(d, '{}'::jsonb));
+$$;
+
+revoke all on function public.notifier from public, anon, authenticated;
+
+-- --------------------------------------------------------------- la boite
+-- Les cinquante derniers evenements et les dix dernieres annonces, avec de
+-- quoi les afficher sans autre appel : le pseudo et l'avatar d'en face, et si
+-- la demande attend encore une reponse — une demande d'ami deja acceptee ne
+-- doit plus proposer « Accepter ».
+create or replace function public.boite() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); vue timestamptz;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+
+  -- Le menage se fait en passant : un mois d'historique suffit.
+  delete from notifications where user_id = p and created_at < now() - interval '30 days';
+
+  select boite_vue_le into vue from profiles where id = p;
+
+  return jsonb_build_object(
+    'vue_le', vue,
+    'serveur', now(),
+    'items', coalesce((
+      select jsonb_agg(jsonb_build_object(
+          'id', 'n' || n.id, 'type', n.type, 'quand', n.created_at,
+          'ref', n.ref, 'data', n.data,
+          'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+          'photo', photo_discord(o.id),
+          'en_attente', case n.type
+            when 'ami_demande' then exists (
+              select 1 from friendships f
+               where f.a = least(p, n.acteur) and f.b = greatest(p, n.acteur)
+                 and not f.accepte and f.demandeur = n.acteur)
+            when 'echange_recu' then exists (
+              select 1 from trades t where t.id = n.ref::uuid and t.status = 'pending')
+            else false end,
+          'statut', case when n.type = 'echange_recu'
+            then (select t.status::text from trades t where t.id = n.ref::uuid) end)
+        order by n.id desc)
+      from (select * from notifications where user_id = p order by id desc limit 50) n
+      left join profiles o on o.id = n.acteur
+    ), '[]'::jsonb),
+    'annonces', coalesce((
+      select jsonb_agg(jsonb_build_object(
+          'id', 'a' || a.id, 'num', a.id, 'titre', a.titre, 'texte', a.texte,
+          'quand', a.created_at)
+        order by a.id desc)
+      from (select * from annonces where actif order by id desc limit 10) a
+    ), '[]'::jsonb));
+end $$;
+
+-- Ouvrir la boite, c'est tout lire.
+create or replace function public.boite_lue() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  update profiles set boite_vue_le = now() where id = p;
+  return jsonb_build_object('vue_le', now());
+end $$;
+
+-- Le nombre de nouveautes, pour la pastille. Appele par me().
+create or replace function public.boite_non_lues(p uuid) returns int
+language sql stable security definer set search_path = public as $$
+  select ((select count(*) from notifications n, profiles pr
+            where pr.id = p and n.user_id = p and n.created_at > pr.boite_vue_le)
+        + (select count(*) from annonces a, profiles pr
+            where pr.id = p and a.actif and a.created_at > pr.boite_vue_le))::int;
+$$;
+
+revoke all on function public.boite_non_lues from public, anon, authenticated;
+
+-- ------------------------------------------------------------- les annonces
+-- Reservees aux administrateurs, et verifiees ici : cacher le formulaire du
+-- Labo ne protegerait rien.
+create or replace function public.annonce_publier(p_titre text, p_texte text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'non connecte'; end if;
+  if not exists (select 1 from profiles where id = auth.uid() and is_admin) then
+    raise exception 'Réservé aux administrateurs.';
+  end if;
+  if length(trim(coalesce(p_titre, ''))) = 0 then raise exception 'Il manque un titre.'; end if;
+
+  insert into annonces (titre, texte, auteur)
+  values (left(trim(p_titre), 80), left(trim(coalesce(p_texte, '')), 600), auth.uid());
+  return boite();
+end $$;
+
+create or replace function public.annonce_retirer(p_id bigint)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'non connecte'; end if;
+  if not exists (select 1 from profiles where id = auth.uid() and is_admin) then
+    raise exception 'Réservé aux administrateurs.';
+  end if;
+  update annonces set actif = false where id = p_id;
+  return boite();
+end $$;
+
+revoke all on function public.boite, public.boite_lue, public.annonce_publier,
+  public.annonce_retirer from public, anon;
+grant execute on function public.boite, public.boite_lue, public.annonce_publier,
+  public.annonce_retirer to authenticated;
+
+-- ------------------------------------------------------------- temps reel
+-- Une demande qui arrive est poussee tout de suite au navigateur concerne,
+-- au lieu d'attendre la prochaine releve. Si le temps reel n'est pas
+-- disponible, rien ne casse : le navigateur releve la boite de lui-meme
+-- toutes les trente secondes.
+--
+-- Un refus ici (droits, publication absente) ne doit pas faire echouer toute
+-- l'installation : on le signale et on continue.
+do $$ begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    begin
+      alter publication supabase_realtime add table public.notifications;
+    exception
+      when duplicate_object then null;
+      when others then raise notice 'Temps reel non active pour notifications : %', sqlerrm;
+    end;
+    begin
+      alter publication supabase_realtime add table public.annonces;
+    exception
+      when duplicate_object then null;
+      when others then raise notice 'Temps reel non active pour annonces : %', sqlerrm;
+    end;
+  end if;
+end $$;
+
+-- =====================================================================
+--  Publier une annonce a la main, sans passer par le Labo :
+-- =====================================================================
+-- insert into public.annonces (titre, texte) values
+--   ('Le jeu est ouvert !', 'Merci d''etre la. Les echanges se passent dans l''onglet Social.');
+--
+--  La retirer (elle disparait de toutes les boites) :
+-- update public.annonces set actif = false where id = 1;
+
+
+-- #####################################################################
+-- ###  12_recyclage.sql
+-- ###  Le recyclage des doublons contre des Eclats
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — le recyclage des doublons
+--  A executer apres 11_boite.sql. Rejouable sans danger.
+--
+--  On jette un doublon, on touche des Eclats. Toutes les raretes se
+--  recyclent sauf les Promos, et on garde toujours au moins un exemplaire de
+--  chaque carte : recycler ne fait jamais reculer la collection.
+--
+--  Les montants et le plafond sont dans cfg() (supabase/01_schema.sql) :
+--      Essence 5 · Commune 10 · Peu commune 20 · Rare 100
+--      Epique 500 · Legendaire 1 000
+--      plafond : 1 500 Eclats par semaine, remis a zero le lundi (Paris)
+--
+--  ------------------------------------------------------------------
+--  POURQUOI UN PLAFOND
+--
+--  Un booster rapporte en moyenne ~260 Eclats une fois recycle, des que la
+--  collection est bien avancee : la derniere carte est une Rare quatre fois
+--  sur cinq, et une Rare vaut 100. Simulation, joueur regulier (42 boosters
+--  par semaine), mediane :
+--
+--                         sans plafond      avec 1 500 / semaine
+--      semaine 1 ........   3 700 Eclats        1 500
+--      semaine 4 ........   8 700               1 500
+--      semaine 8 ........   9 900               1 500
+--
+--  Les quetes, elles, paient ~2 100 Eclats par semaine. Sans plafond, le
+--  recyclage aurait paye quatre fois plus que tout le reste du jeu reuni.
+--  Pire : un booster achete 350 et recycle en rend ~260. En rachetant des
+--  boosters avec ce que rapporte le recyclage, on passait de 42 a ~135
+--  boosters par semaine — la collection allait trois fois plus vite, et les
+--  cartes Promo de la boutique tombaient en quelques jours.
+--
+--  A 1 500 par semaine, le recyclage ajoute ~70 % aux Eclats des quetes et
+--  ~10 % de boosters. Il aide, il ne remplace pas le temps : c'est la regle
+--  que suit tout le reste de l'economie (voir 04_seed.sql).
+--
+--  Les montants par carte restent ceux qu'on a choisis : une Legendaire
+--  recyclee, c'est un evenement. Le plafond ne touche qu'au total.
+-- =====================================================================
+
+-- Le journal : qui a recycle quoi, et quand. Il sert au plafond de la semaine,
+-- et a retrouver ce qui s'est passe si quelqu'un ecrit « j'ai perdu une carte ».
+create table if not exists public.recyclages (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references public.profiles on delete cascade,
+  card_id    text not null references public.cards on delete cascade,
+  qty        integer not null check (qty > 0),
+  eclats     integer not null check (eclats >= 0),
+  created_at timestamptz not null default now()
+);
+create index if not exists recyclages_user_idx on public.recyclages (user_id, created_at desc);
+
+alter table public.recyclages enable row level security;
+-- Aucune policy : le navigateur ne lit pas le journal, il recoit le total de
+-- la semaine dans me().
+revoke all on public.recyclages from anon, authenticated;
+
+-- Le lundi minuit, heure de Paris : la meme frontiere que les quetes
+-- hebdomadaires (period_key dans 01_schema.sql).
+create or replace function public.debut_semaine() returns timestamptz
+language sql stable as $$
+  select date_trunc('week', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris';
+$$;
+
+-- Ce qu'un joueur a deja touche cette semaine.
+create or replace function public.recyclage_semaine(p uuid) returns integer
+language sql stable security definer set search_path = public as $$
+  select coalesce(sum(eclats), 0)::int from recyclages
+   where user_id = p and created_at >= debut_semaine();
+$$;
+
+revoke all on function public.recyclage_semaine from public, anon, authenticated;
+
+-- ------------------------------------------------------------- recycler
+-- `p_lots` : [{ "carte": "c012", "n": 2 }, …]. Tout passe, ou rien : un seul
+-- lot refuse annule l'ensemble, et le plafond est verifie sur le total.
+--
+-- Ce qui est recyclable, carte par carte : ce qu'on possede, moins l'exemplaire
+-- qu'on garde toujours, moins ceux qu'on a proposes dans une demande
+-- d'echange encore en attente — sinon l'echange, une fois accepte, prendrait
+-- le dernier exemplaire et ferait reculer la collection.
+create or replace function public.recycler(p_lots jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  p uuid := auth.uid(); lot jsonb; cid text; n int; k cards;
+  possede int; reserve int; prix int; total int := 0; vus text[] := '{}';
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+
+  if p_lots is null or jsonb_typeof(p_lots) <> 'array' or jsonb_array_length(p_lots) = 0 then
+    raise exception 'Rien à recycler.';
+  end if;
+  if jsonb_array_length(p_lots) > 150 then raise exception 'Trop de cartes d''un coup.'; end if;
+
+  -- Un recyclage a la fois par joueur. Sans ce verrou, deux envois partis
+  -- ensemble liraient le meme total de la semaine, et passeraient tous les
+  -- deux sous le plafond.
+  perform 1 from profiles where id = p for update;
+
+  for lot in select value from jsonb_array_elements(p_lots) loop
+    cid := lot->>'carte';
+    if jsonb_typeof(lot->'n') <> 'number' then raise exception 'Quantité invalide.'; end if;
+    n := (lot->>'n')::int;
+    if cid is null or n < 1 then raise exception 'Quantité invalide.'; end if;
+    if cid = any(vus) then raise exception 'Une carte apparaît deux fois.'; end if;
+    vus := vus || cid;
+
+    select * into k from cards where id = cid;
+    if not found then raise exception 'Carte inconnue.'; end if;
+    if k.promo or k.rar = 'PR' then raise exception 'Les cartes Promo ne se recyclent pas.'; end if;
+    prix := cfg('recyclage_' || k.rar);
+    if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
+
+    select qty into possede from collection where user_id = p and card_id = cid for update;
+    select count(*) into reserve from trades
+     where from_user = p and offer_card = cid and status = 'pending';
+    if coalesce(possede, 0) - 1 - reserve < n then
+      raise exception 'Pas assez de doublons de « % » : tu gardes toujours un exemplaire.', k.nom;
+    end if;
+
+    update collection set qty = qty - n where user_id = p and card_id = cid;
+    insert into recyclages (user_id, card_id, qty, eclats) values (p, cid, n, n * prix);
+    total := total + n * prix;
+  end loop;
+
+  -- Apres la boucle, et non avant : c'est le total de l'envoi qui compte. Le
+  -- `raise` annule tout ce que la boucle a deja ecrit.
+  if recyclage_semaine(p) > cfg('recyclage_plafond') then
+    raise exception 'PLAFOND_RECYCLAGE';
+  end if;
+
+  update profiles set shards = shards + total where id = p;
+  return me();
+end $$;
+
+revoke all on function public.recycler from public, anon;
+grant execute on function public.recycler to authenticated;
 
 
 -- =====================================================================

@@ -13,6 +13,7 @@
 --    · la progression et les recompenses de quetes
 --    · les compteurs : boosters ouverts, echanges conclus, serie de jours
 --    · les demandes d'echange, y compris celles en attente
+--    · la boite de reception de chacun, et le journal du recyclage
 --
 --  CE QUI EST GARDE :
 --    · les comptes eux-memes — personne n'a a se reinscrire
@@ -66,6 +67,11 @@ begin
   delete from public.inventory;
   delete from public.quest_progress;
   delete from public.trades;
+  -- La boite de reception parle d'echanges qui n'existent plus, et le journal
+  -- du recyclage compterait contre le plafond de la semaine du lancement.
+  -- Les annonces, elles, restent : elles s'adressent a tout le monde.
+  delete from public.notifications;
+  delete from public.recyclages;
 
   -- ------------------------------------------------------- remettre a neuf
   -- La reserve repart pleine et le compte a rebours a zero : tout le monde
@@ -128,8 +134,6 @@ end $$;
 --
 --  · Pense a rouvrir le site : `PORTE.active = false` dans js/gate.js.
 --
---  · Les codes d'acces distribues pendant les tests continuent de marcher.
---    Pour les invalider, change le code : `python3 tools/code-porte.py "..."`.
---    Le navigateur de chaque testeur garde l'ancienne empreinte, qui ne
---    correspondra plus — ils repasseront par l'ecran d'attente.
+--  · Les invitations (table `beta_invites`) ne sont pas touchees : voir
+--    supabase/09_beta.sql pour en retirer.
 -- =====================================================================

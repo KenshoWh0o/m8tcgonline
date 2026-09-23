@@ -119,6 +119,29 @@ function dans(ms) {
   return hh + ' h' + (m % 60 ? ' ' + (m % 60) : '');
 }
 
+/* Une date lisible : « 12 sept. à 18:40 ». */
+const dateCourte = iso => {
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+};
+
+/* Depuis quand : « à l'instant », « il y a 12 min », « hier ». Un horodatage
+   du serveur, ramené à l'horloge de l'appareil (srvTime, js/backend.js). */
+function ilya(iso) {
+  const t = srvTime(iso);
+  if (isNaN(t)) return '';
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return 'à l\'instant';
+  if (m < 60) return `il y a ${m} min`;
+  const hh = Math.floor(m / 60);
+  if (hh < 24) return `il y a ${hh} h`;
+  const j = Math.floor(hh / 24);
+  if (j === 1) return 'hier';
+  if (j < 7) return `il y a ${j} j`;
+  return new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
 /* Un écran vide, toujours dessiné pareil. */
 const vide = (titre, texte, bouton) =>
   `<div class="empty"><h2 class="ec">${h(titre)}</h2><p class="muted">${h(texte)}</p>${bouton || ''}</div>`;
