@@ -179,12 +179,12 @@ $$;
 --  jusqu'au 25 octobre 2026.
 -- =====================================================================
 --
---  PROJET ANNULE (24 septembre 2026) : l'ouverture au public n'aura pas
---  lieu. La date devient 'infinity' — beta_ouverte() reste faux pour
---  toujours, et seuls les comptes de `beta_invites` entrent.
+--  OUVERT A TOUS pour le moment. Pour refermer (seuls les comptes de
+--  `beta_invites` entrent), remplacer la date par 'infinity' et passer
+--  PORTE.active a true dans js/gate.js.
 create or replace function public.beta_lancement() returns timestamptz
 language sql immutable as $$
-  select timestamptz 'infinity';
+  select timestamptz '2026-09-24 18:00:00+02';
 $$;
 
 -- `stable` et non `immutable` : la reponse depend de now().
