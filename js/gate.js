@@ -30,8 +30,12 @@
    qui ne comptent nulle part. */
 "use strict";
 
-/* `true` : l'écran d'attente est en place — seuls les comptes invités entrent,
-   jusqu'à l'heure d'ouverture fixée par le serveur.
+/* Le projet est annulé : le site ne s'ouvrira pas au public. L'écran annonce
+   l'arrêt, et seuls les comptes invités (supabase/09_beta.sql) peuvent encore
+   se connecter et jouer. La date d'ouverture n'ouvre plus rien, ni ici (voir
+   etatPorte) ni sur le serveur (beta_lancement, supabase/01_schema.sql).
+
+   `true` : l'écran d'annonce est en place — seuls les comptes invités entrent.
    `false` : le jeu est ouvert à tous, cet écran ne s'affiche plus.
    Figé : on ne le bascule pas depuis la console. */
 const PORTE = Object.freeze({ active: true });
@@ -87,7 +91,8 @@ let porteRefus = '';
    console, une constante non. Ce n'est pas une serrure — rien, dans un
    navigateur, n'en est une —, mais l'écran ne s'ouvre plus d'un geste. */
 const etatPorte = () => {
-  if (!PORTE.active || Porte.lancee()) return 'ouvert';
+  /* Plus de date : l'heure d'ouverture est annulée, seule l'invitation compte. */
+  if (!PORTE.active) return 'ouvert';
   if (Backend.mode !== 'cloud') return 'attente';
   /* `=== true` : sans réponse claire du serveur, on n'entre pas. */
   return save && save.invite === true ? 'ouvert' : 'refus';
@@ -115,40 +120,52 @@ function vPorte() {
   </div></div>`;
 }
 
+/* L'annonce d'arrêt, commune aux deux écrans. */
+const MATEPEDIA_URL = 'https://matepedia.com/fr/trading-card-game';
+
+function vAnnonceArret() {
+  return `<span class="locktag refus">Projet annulé</span>
+    <h1 class="locktitle">Merci</h1>
+    <div class="muted lockdit lockarret">
+      <p><b>M8 TCG Online</b> ne verra finalement pas le jour.</p>
+      <p>Après échange avec Gentle Mates, certaines fonctionnalités essentielles
+        du projet ne peuvent pas être proposées. Nous avons donc décidé
+        d'annuler son lancement.</p>
+      <p>Merci à toutes les personnes qui ont suivi et soutenu le projet. 🩷</p>
+    </div>`;
+}
+
+function vMatepedia() {
+  return `<p class="muted small lockmatepedia">Si vous souhaitez retrouver toutes les
+      cartes du TCG et leurs informations, rendez-vous sur
+      <a href="${MATEPEDIA_URL}" target="_blank" rel="noopener">Matepedia</a>.
+      <br>Un projet communautaire dédié au TCG Gentle Mates.</p>`;
+}
+
 function vPorteAttente() {
   const connexion = Backend.dispo
     ? `<button class="linkbtn lockacces" data-act="porte-discord">J'ai déjà un accès</button>`
     : '';
 
-  return `<span class="locktag">Bientôt disponible</span>
-    <h1 class="locktitle">Coming soon</h1>
-    <p class="muted lockdit">L'extension <b>${h(SET_NAME)}</b> et ses ${cards.length} cartes
-      arrivent bientôt. Boosters, collections, échanges,…</p>
-
-    <div id="lockcompte">${vCompteARebours()}</div>
-
+  return `${vAnnonceArret()}
     <div class="lockentree">
       ${porteRefus ? `<p class="autherr doux lockrefus">${h(porteRefus)}</p>` : ''}
       ${lienDiscord('btn discord', 'Rejoindre le Discord')}
-      <p class="muted small lockaide">Pour suivre l'actualité du jeu et discuter
-        avec la communauté.</p>
       ${connexion}
-    </div>`;
+    </div>
+    ${vMatepedia()}`;
 }
 
+/* Connecté, mais sans invitation : le jeu ne lui ouvrira pas. */
 function vPorteRefus() {
-  const qui = save && save.pseudo ? save.pseudo : 'Ton compte';
-  return `<span class="locktag refus">Pas encore ouvert</span>
-    <h1 class="locktitle">Patience</h1>
-    <p class="muted lockdit"><b>${h(qui)}</b> est bien enregistré, mais le jeu n'est
-      pas encore ouvert. Reviens à l'ouverture : tout sera prêt.</p>
-
-    <div id="lockcompte">${vCompteARebours()}</div>
-
+  const qui = save && save.pseudo ? save.pseudo : 'Ce compte';
+  return `${vAnnonceArret()}
+    <p class="muted small lockaide"><b>${h(qui)}</b> n'a pas d'accès au jeu.</p>
     <div class="lockentree">
       ${lienDiscord('btn discord', 'Rejoindre le Discord')}
       <button class="btn ghost" data-act="porte-sortir">Changer de compte</button>
-    </div>`;
+    </div>
+    ${vMatepedia()}`;
 }
 
 /* Le compte à rebours, à l'heure du serveur. */
@@ -225,7 +242,6 @@ function bindPorte() {
   porteMinuteur = setInterval(() => {
     const c = $('#lockcompte');
     if (!c) return clearInterval(porteMinuteur);
-    if (Porte.lancee()) return ouvrirLaPorte();
     if (!Porte.connu() && ++tic % 15 === 0) {
       Porte.lire().then(ok => { if (ok) render(); });
     }

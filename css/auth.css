@@ -106,3 +106,11 @@ body.inlock main { padding:0 }
    donc pas le filet vertical des h2 du reste du site. */
 .authtitle,.locktitle{padding-left:0}
 .authtitle::before,.locktitle::before{display:none}
+
+/* L'annonce d'arrêt du projet (js/gate.js) : plusieurs paragraphes, un peu
+   plus larges que la phrase d'attente d'avant. */
+.lockarret{max-width:40ch}
+.lockarret p{margin:0 0 10px}
+.lockarret p:last-child{margin:0}
+.lockmatepedia{margin:22px auto 0;max-width:40ch;line-height:1.5}
+.lockmatepedia a{color:var(--accent-soft);font-weight:700}

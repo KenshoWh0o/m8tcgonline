@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-09-23
+--   Assemble le 2026-09-24
 --
 -- =====================================================================
 
@@ -202,9 +202,13 @@ $$;
 --  Le fuseau est ecrit en clair : +02 est l'heure d'ete francaise, en vigueur
 --  jusqu'au 25 octobre 2026.
 -- =====================================================================
+--
+--  PROJET ANNULE (24 septembre 2026) : l'ouverture au public n'aura pas
+--  lieu. La date devient 'infinity' — beta_ouverte() reste faux pour
+--  toujours, et seuls les comptes de `beta_invites` entrent.
 create or replace function public.beta_lancement() returns timestamptz
 language sql immutable as $$
-  select timestamptz '2026-09-24 18:00:00+02';
+  select timestamptz 'infinity';
 $$;
 
 -- `stable` et non `immutable` : la reponse depend de now().

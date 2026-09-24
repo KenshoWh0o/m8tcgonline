@@ -105,9 +105,9 @@ on conflict (cle) do update set note = excluded.note;
 -- =====================================================================
 --  6. L'OUVERTURE AU PUBLIC
 --
---  Elle est datee, et elle se fait toute seule : le 24 septembre 2026 a
---  18 h, beta_ouverte() bascule et le serveur repond a tout le monde. Rien
---  a rejouer, rien a pousser ce soir-la.
+--  ANNULEE : le projet ne sera pas publie. beta_lancement() vaut
+--  'infinity', beta_ouverte() reste faux, et seuls les comptes invites
+--  ci-dessus peuvent jouer.
 --
 --  Pour avancer ou reculer la date : beta_lancement() dans
 --  supabase/01_schema.sql, puis rejouer TOUT.sql. C'est le seul endroit :
