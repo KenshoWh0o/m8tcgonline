@@ -48,8 +48,10 @@ mate-tcg-online/
 │   ├── icon-*.png      Icônes de l'application installée (générées)
 │   └── og-image.png    Image affichée quand le lien du site est partagé (générée)
 ├── presse/             Kit presse : visuels prêts à publier et leur mode d'emploi
+├── _demo/              La démo autonome : faux serveur, réglages, mode d'emploi (non publié)
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
+│   ├── demo.py         Fabrique la démo autonome dans _build/
 │   ├── version.py      Pose le numéro de version et marque les fichiers
 │   ├── gen-icons.py    Régénère icônes, favicons et image de partage
 │   └── kit-presse.py   Régénère les visuels de presse/visuels/
@@ -153,7 +155,27 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
 | Regénérer l'image de partage et les icônes | `python3 tools/gen-icons.py` |
 | Donner les droits d'administrateur | `supabase/05_admin.sql` |
+| Fabriquer la démo autonome à envoyer | `python3 tools/demo.py` — voir « La démo autonome » |
+| Régler la démo (pseudo, Éclats de départ, recharge) | `_demo/reglages.js` |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
+
+## La démo autonome
+
+Une version du jeu **entière, sans compte ni serveur**, à envoyer en fichier : boosters, collection, quêtes, boutique, recyclage, profil, amis, échanges et boîte de réception. Tout est enregistré dans le navigateur de celui qui l'ouvre.
+
+```
+python3 tools/demo.py
+```
+
+produit `_build/m8tcg-demo/` (ouvrir `index.html`) et `_build/m8tcg-demo.zip` à envoyer. `_build/` n'est pas versionné.
+
+**Comment ça marche.** Le jeu ne parle au serveur que par le client Supabase (`Backend.sb`). La démo remplace la bibliothèque Supabase par un faux client (`_demo/serveur.js`) qui répond aux mêmes appels avec les mêmes réponses : chaque fonction y est la traduction de sa jumelle SQL, citée en commentaire. Le code du jeu est copié tel quel : **rien ne change sur le site**, et le site ne contient pas la démo — GitHub Pages ne publie pas les dossiers qui commencent par `_`.
+
+**Les autres joueurs sont simulés** : Lumen et Mira sont amis dès le départ, Kairo envoie une demande d'ami peu après l'arrivée, Nova.92 attend qu'on l'ajoute. Ils acceptent les demandes d'ami, répondent aux échanges (le premier est toujours accepté s'il est possible, les suivants trois fois sur quatre) et proposent des échanges de temps en temps.
+
+> **À garder synchronisé.** Les quêtes, la boutique, les taux de drop, `cfg()` et les règles des actions sont recopiés dans `_demo/serveur.js`. Quand ils changent dans `supabase/`, il faut les changer là aussi, puis relancer `tools/demo.py`. Le script s'arrête avec un message clair si `index.html` ou `sw.js` ont changé au point qu'il ne s'y retrouve plus.
+
+Pour repartir de zéro dans la démo : ajouter `?reinitialiser` à la fin de l'adresse.
 
 ## Composition d'un booster
 
