@@ -179,10 +179,13 @@ summary{font-weight:700;cursor:pointer}
 @keyframes fadein{from{opacity:0}}
 .sheet{position:relative;background:var(--surface);border:1px solid var(--line);border-bottom:0;
   width:100%;max-width:520px;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));
-  max-height:90%;overflow-y:auto;border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  max-height:90%;overflow-y:auto;overscroll-behavior-y:none;border-radius:var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow:var(--sh-4);animation:up .3s cubic-bezier(.2,1.1,.4,1)}
 @keyframes up{from{transform:translateY(60px);opacity:.3}}
-/* La poignée : elle dit que le panneau vient du bas et qu'il y repartira. */
+/* La poignée : elle dit que le panneau vient du bas et qu'il y repartira — on
+   le tire vers le bas pour le fermer (voir « Glisser vers le bas », js/ui.js).
+   `overscroll-behavior` : arrivé en haut du contenu, le doigt tire la feuille
+   au lieu de faire rebondir son contenu. */
 .sheet::before{content:'';position:absolute;top:8px;left:50%;width:38px;height:4px;translate:-50% 0;
   border-radius:99px;background:var(--line-2)}
 .sheet h3{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;

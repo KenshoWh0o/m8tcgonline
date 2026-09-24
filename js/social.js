@@ -157,10 +157,26 @@ async function ouvrirFiche(pseudo) {
     actions: f.moi ? [{ label: 'Fermer', fn: closeSheet }]
       : f.ami
         ? [{ label: 'Proposer un échange', primary: true, fn: () => { closeSheet(); versEchange(f.pseudo); } },
-           { label: 'Retirer des amis', fn: () => agir(() => Backend.amiRetirer(f.pseudo), 'Retiré de tes amis.').then(closeSheet) },
+           { label: 'Retirer des amis', fn: () => confirmerRetrait(f.pseudo) },
            { label: 'Fermer', fn: closeSheet }]
         : [{ label: 'Ajouter en ami', primary: true, fn: () => { closeSheet(); agir(() => Backend.amiDemander(f.pseudo), 'Demande envoyée.'); } },
            { label: 'Fermer', fn: closeSheet }]
+  });
+}
+
+/* Retirer un ami se fait en deux temps : le bouton est juste au-dessus de
+   « Fermer », et un pouce qui glisse suffisait à défaire une amitié. La
+   confirmation remplace la fiche ; « Annuler » y ramène. */
+function confirmerRetrait(pseudo) {
+  openSheet({
+    title: `Retirer ${pseudo} de tes amis ?`,
+    body: `<p class="muted">Vous ne verrez plus la collection l'un de l'autre. Pour
+      redevenir amis, il faudra renvoyer une demande.</p>`,
+    actions: [
+      { label: 'Retirer des amis', primary: true,
+        fn: () => agir(() => Backend.amiRetirer(pseudo), 'Retiré de tes amis.').then(closeSheet) },
+      { label: 'Annuler', fn: () => ouvrirFiche(pseudo) }
+    ]
   });
 }
 

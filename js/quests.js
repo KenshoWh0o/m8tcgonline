@@ -204,13 +204,18 @@ function vQuetesSection(scope) {
 
 /* Ce que la quête rapporte. Un palier qui donne une carte ne donne pas
    d'Éclats : afficher « ◆ 0 » serait un mensonge par omission. On montre donc
-   l'objet — la carte, le cadre — à la place du montant. */
+   l'objet — la carte, le cadre — à la place du montant.
+
+   La carte, en vignette de 34 px, ne se lit pas : une pression l'ouvre dans la
+   visionneuse, comme partout ailleurs dans le jeu. On veut voir ce qu'on va
+   gagner avant de s'y mettre. */
 function vRecompense(q) {
   const c = q.item ? byId[q.item] : null;
   if (c) {
-    return `<span class="qreward objet" title="${h(c.nom)}">
+    return `<button class="qreward objet voir" data-show="${c.id}" data-snd="carte"
+      title="${h(c.nom)}" aria-label="Voir la carte ${h(c.nom)}">
       <span class="qrcarte">${renderCard(c)}</span>
-      <small>${h(c.code || c.nom)}</small></span>`;
+      <small>${h(c.code || c.nom)}</small></button>`;
   }
   const f = q.item ? FRAMES[q.item] : null;
   if (f) {

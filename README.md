@@ -179,7 +179,7 @@ Tout se joue dans **un seul écran, sans jamais remplacer le DOM** : c'est ce qu
 
 1. Le paquet de l'écran Boosters grossit et se fond — on plonge dedans (`.pack.tear`).
 2. Le paquet tremble en 3D, un trait lumineux coupe le haut, la bande se détache en dents de scie et bascule vers l'arrière en s'assombrissant (`riptop`, perspective posée par `.stackwrap`).
-3. La classe `packed` est retirée : la pile, jusque-là tassée *dans* le paquet (`translateY(17%) scale(.82) rotateX(-16deg)`), revient à sa position de repos en une seule transition. Les six cartes sortent alignées et se présentent de face pendant que le paquet vide bascule et descend hors champ.
+3. La classe `packed` est retirée : la pile, jusque-là tassée *dans* le paquet (`translateY(11%) scale(.82) rotateX(-16deg)`, calée pour que le bas des cartes ne dépasse jamais sous le sachet), revient à sa position de repos en une seule transition. Les six cartes sortent alignées et se présentent de face pendant que le paquet vide bascule et descend hors champ.
 
 Les délais sont dans `packOpen()`, le reste dans le bloc `Déchirure` de `css/booster.css`.
 

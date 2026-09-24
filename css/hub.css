@@ -771,6 +771,11 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .qrcadre{display:block}
 .qreward.objet small{font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
   color:var(--muted)}
+/* La carte se touche pour s'ouvrir dans la visionneuse (js/quests.js). */
+.qreward.voir{background:none;border:0;padding:2px 4px;margin:-2px -4px;min-width:44px;border-radius:6px;
+  transition:transform .15s}
+.qreward.voir:hover .qrcarte{box-shadow:var(--sh-2),0 0 0 2px var(--accent-soft)}
+.qreward.voir:active{transform:scale(.94)}
 
 /* =====================================================================
    Échanges

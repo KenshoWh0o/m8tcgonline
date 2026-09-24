@@ -31,6 +31,86 @@ $('#sheet').addEventListener('click', e => {
   if (e.target.id === 'sheet' && !sheetLocked) closeSheet();
 });
 
+/* ---------- Glisser vers le bas pour fermer ---------- */
+/* La poignée promet que le panneau repart par où il est venu : on le tire vers
+   le bas, il suit le doigt, et lâché assez loin (ou assez vite), il s'en va.
+   Même règle que le clic sur le fond : une feuille verrouillée ne se ferme pas
+   comme ça, et sur grand écran — feuille centrée, sans poignée — le geste
+   n'existe pas.
+
+   Le geste ne vole jamais un défilement : si le contenu (ou un bloc qui défile
+   dedans) n'est pas tout en haut, le doigt fait défiler, comme partout. Il ne
+   vole pas non plus un glissé horizontal, ni une carte qu'on fait tourner. */
+(() => {
+  const w = $('#sheet');
+  let g = null;
+
+  const defile = el => {
+    for (; el && el !== w; el = el.parentElement) if (el.scrollTop > 0) return true;
+    return false;
+  };
+  const sansAnim = () => RM() || document.documentElement.classList.contains('rm');
+
+  w.addEventListener('touchstart', e => {
+    g = null;
+    const feuille = w.querySelector('.sheet');
+    if (sheetLocked || !feuille || e.touches.length > 1 || !feuille.contains(e.target)) return;
+    if (getComputedStyle(feuille, '::before').display === 'none') return;
+    if (e.target.closest('input,textarea,select,.a3d')) return;
+    const t = e.touches[0];
+    const poignee = t.clientY - feuille.getBoundingClientRect().top < 28;
+    g = { feuille, x0: t.clientX, y0: t.clientY, dy: 0, parti: false,
+      defile: !poignee && defile(e.target), y: t.clientY, t: performance.now(), v: 0 };
+  }, { passive: true });
+
+  w.addEventListener('touchmove', e => {
+    if (!g) return;
+    const t = e.touches[0];
+    const dx = t.clientX - g.x0;
+    const dy = t.clientY - g.y0;
+    if (!g.parti) {
+      if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+      if (g.defile || dy <= 0 || Math.abs(dx) > Math.abs(dy)) { g = null; return; }
+      g.parti = true;
+      g.feuille.style.animation = 'none';
+      g.feuille.style.transition = 'none';
+    }
+    if (e.cancelable) e.preventDefault();
+    const now = performance.now();
+    if (now > g.t) g.v = (t.clientY - g.y) / (now - g.t);
+    g.y = t.clientY;
+    g.t = now;
+    g.dy = Math.max(0, dy);
+    g.feuille.style.transform = `translateY(${g.dy}px)`;
+  }, { passive: false });
+
+  const lacher = () => {
+    const x = g;
+    g = null;
+    if (!x || !x.parti) return;
+    const f = x.feuille;
+    const haut = f.offsetHeight;
+    if (x.dy > Math.min(haut * .3, 160) || (x.v > .5 && x.dy > 30)) {
+      if (sansAnim()) return closeSheet();
+      f.style.transition = 'transform .22s cubic-bezier(.4,0,1,1)';
+      f.style.transform = `translateY(${haut + 40}px)`;
+      w.style.transition = 'opacity .22s';
+      w.style.opacity = '0';
+      setTimeout(() => {
+        w.style.transition = '';
+        w.style.opacity = '';
+        /* Une autre feuille a pu s'ouvrir entre-temps : on ne ferme que la nôtre. */
+        if (f.isConnected) closeSheet();
+      }, 220);
+    } else {
+      f.style.transition = 'transform .28s cubic-bezier(.2,1.1,.4,1)';
+      f.style.transform = '';
+    }
+  };
+  w.addEventListener('touchend', lacher);
+  w.addEventListener('touchcancel', lacher);
+})();
+
 /* ---------- Avatars ---------- */
 /* Ma photo Discord à moi, lue dans ma session. À ne passer qu'en dessinant mon
    propre avatar : pour tous les autres, c'est le serveur qui fournit l'adresse

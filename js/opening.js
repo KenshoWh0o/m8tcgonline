@@ -206,7 +206,7 @@ function announce() {
 
   el.className = 'op-rar r' + c.rar;
   el.innerHTML = `${rk(c) >= 3 ? R.nom : ''}${nw ? ' <em>NEW</em>' : ''}`;
-  $('#ophint').textContent = rv.idx === rv.cards.length - 1 ? 'Glisse pour voir ton récap' : 'Glisse d\'un coup sec ou touche pour passer';
+  $('#ophint').textContent = rv.idx === rv.cards.length - 1 ? 'Glisse d\'un coup sec ou touche pour voir ton récap' : 'Glisse d\'un coup sec ou touche pour passer';
 
   if (rk(c) >= 3 && !rv.god) top.classList.add('hitcard', 'h' + c.rar);
 }
@@ -277,7 +277,7 @@ function doReveal(done) {
 
     $('#oprar').className = 'op-rar big r' + c.rar;
     $('#oprar').innerHTML = `<span class="slam">${cfg.label}</span>${rv.news[rv.idx] ? '<em>NEW</em>' : ''}`;
-    $('#ophint').textContent = 'Glisse d\'un coup sec pour voir ton récap';
+    $('#ophint').textContent = 'Glisse d\'un coup sec ou touche pour voir ton récap';
 
     setTimeout(done, c.rar === 'L' ? 900 : c.rar === 'E' ? 600 : 250);
   }, RM() ? 0 : cfg.charge);
