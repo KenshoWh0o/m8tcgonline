@@ -105,9 +105,10 @@ on conflict (cle) do update set note = excluded.note;
 -- =====================================================================
 --  6. L'OUVERTURE AU PUBLIC
 --
---  OUVERT pour le moment (beta_lancement() est passee). Pour refermer :
---  beta_lancement() a 'infinity' dans 01_schema.sql, et PORTE.active a
---  true dans js/gate.js — seuls les comptes invites ci-dessus joueront.
+--  ANNULEE : le projet ne sera pas publie. beta_lancement() vaut
+--  'infinity', beta_ouverte() reste faux, et seuls les comptes invites
+--  ci-dessus peuvent jouer. Pour rouvrir : une date passee dans
+--  beta_lancement(), et PORTE.active a false dans js/gate.js.
 --
 --  Pour avancer ou reculer la date : beta_lancement() dans
 --  supabase/01_schema.sql, puis rejouer TOUT.sql. C'est le seul endroit :

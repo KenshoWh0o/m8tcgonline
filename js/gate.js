@@ -30,16 +30,19 @@
    qui ne comptent nulle part. */
 "use strict";
 
-/* Le site est OUVERT À TOUS pour le moment. L'écran d'annonce d'arrêt du
-   projet (vAnnonceArret, plus bas) reste prêt : pour le remettre, passer
-   `active` à `true` ici ET remettre beta_lancement() à 'infinity' dans
-   supabase/01_schema.sql (puis jouer la fonction dans Supabase). L'écran
-   seul ne suffit pas : c'est le serveur qui refuse les non-invités.
+/* Le projet est annulé : le site affiche l'annonce d'arrêt (vAnnonceArret,
+   plus bas), et seuls les comptes invités (supabase/09_beta.sql) entrent
+   encore. Côté serveur, beta_lancement() vaut 'infinity' dans
+   supabase/01_schema.sql : c'est lui qui refuse vraiment les non-invités,
+   l'écran seul ne suffit pas.
+
+   Pour rouvrir à tous : `active` à `false` ici ET une date passée dans
+   beta_lancement() (puis jouer la fonction dans Supabase).
 
    `true` : l'écran d'annonce est en place — seuls les comptes invités entrent.
    `false` : le jeu est ouvert à tous, cet écran ne s'affiche plus.
    Figé : on ne le bascule pas depuis la console. */
-const PORTE = Object.freeze({ active: false });
+const PORTE = Object.freeze({ active: true });
 
 /* Ce que le serveur a répondu. Tenu dans une fermeture : la page lit l'état,
    elle ne peut pas l'écrire. */
