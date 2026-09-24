@@ -1,6 +1,6 @@
-/* Écran de connexion : création de compte par adresse e-mail (avec confirmation)
-   ou par Discord. Tant qu'on n'est pas connecté, on peut aussi jouer hors ligne :
-   la progression reste alors dans ce navigateur, sans échanges ni quêtes. */
+/* Écran de connexion : par Discord (ou par adresse e-mail, si cette voie est
+   rouverte dans CONNEXION). Il n'y a plus de jeu sans compte : tant qu'on
+   n'est pas connecté, c'est cet écran, et rien d'autre. */
 "use strict";
 
 /* 'accueil' | 'inscription' | 'connexion' | 'oubli' | 'confirme' */
@@ -10,13 +10,10 @@ const VUES_EMAIL = ['inscription', 'connexion', 'oubli', 'confirme'];
 let authMail = '';
 let authErr = '';
 
-const HORSLIGNE_CLE = 'mtcg.horsligne';
-const veutHorsLigne = () => { try { return localStorage.getItem(HORSLIGNE_CLE) === '1'; } catch (e) { return false; } };
-const noterHorsLigne = v => { try { localStorage.setItem(HORSLIGNE_CLE, v ? '1' : '0'); } catch (e) { /* mode privé */ } };
-
-/* On montre la porte d'entrée si un compte est possible, qu'on n'en a pas,
-   et qu'on n'a pas déjà choisi de jouer sans. */
-const porteVisible = () => Backend.dispo && Backend.mode !== 'cloud' && !veutHorsLigne();
+/* Pas connecté (ou serveur injoignable) : la porte d'entrée, toujours. Le
+   mode hors ligne n'est plus proposé — l'ancien choix « jouer sans compte »
+   gardé dans le navigateur (clé mtcg.horsligne) n'est plus lu. */
+const porteVisible = () => Backend.mode !== 'cloud';
 
 /* ---------- Retour d'un détour par Discord ---------- */
 /* Quand le serveur refuse l'inscription — le jeu n'est pas encore ouvert et le
@@ -109,19 +106,20 @@ function vAuth() {
       <p class="muted">Un compte garde tes cartes, tes boosters et ton pseudo,
         et te donne accès aux échanges entre joueurs.</p>
       ${err}
+      ${Backend.dispo ? '' : `<p class="autherr">Le serveur est injoignable pour le moment.
+        Réessaie dans un instant.</p>`}
       <div class="authacts">
-        ${CONNEXION.discord
+        ${!Backend.dispo || Backend.panne
+          ? '<button class="btn" data-auth="reessayer">Réessayer</button>'
+          : ''}
+        ${Backend.dispo && CONNEXION.discord
           ? `<button class="btn discord" data-auth="discord">${ICON.discord} Continuer avec Discord</button>`
           : ''}
-        ${CONNEXION.email
+        ${Backend.dispo && CONNEXION.email
           ? `<button class="btn ${CONNEXION.discord ? 'ghost' : ''}" data-auth="vers-inscription">Créer un compte avec une adresse</button>
              <button class="linkbtn" data-auth="vers-connexion">J'ai déjà un compte</button>`
           : ''}
-      </div>
-      <div class="authsep"><span>ou</span></div>
-      <button class="linkbtn" data-auth="hors-ligne">Jouer sans compte sur cet appareil</button>
-      <p class="muted small">Sans compte, la progression est temporaire et l'accès
-        aux fonctionnalités est restreint.</p>`;
+      </div>`;
   }
 
   return `<div class="authwrap"><div class="authcard">
@@ -148,11 +146,7 @@ async function authFaire(quoi) {
   if (quoi === 'vers-inscription') return aller('inscription');
   if (quoi === 'vers-connexion') return aller('connexion');
   if (quoi === 'vers-oubli') return aller('oubli');
-  if (quoi === 'hors-ligne') {
-    noterHorsLigne(true);
-    toast('Tu joues hors ligne. Tu pourras créer un compte plus tard dans les Réglages.');
-    return render();
-  }
+  if (quoi === 'reessayer') return location.reload();
 
   occupe(true);
   try {
@@ -208,7 +202,6 @@ async function authFaire(quoi) {
 
 /* Repasser par la porte d'entrée depuis les Réglages. */
 function ouvrirConnexion() {
-  noterHorsLigne(false);
   authVue = 'accueil';
   authErr = '';
   render();

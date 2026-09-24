@@ -206,7 +206,6 @@ async function porteConnexion() {
 async function porteSortir() {
   occupe(true);
   try {
-    noterHorsLigne(false);
     await Backend.signOut();
   } catch (e) { /* on recharge quand même */ }
   location.reload();

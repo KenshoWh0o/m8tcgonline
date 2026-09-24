@@ -21,6 +21,8 @@ const Backend = {
   /* La photo du compte Discord, relue à chaque session : l'avatar « discord »
      suit donc les changements faits sur Discord, sans rien stocker chez nous. */
   photoDiscord: null,
+  /* Une session existe, mais le serveur n'a pas répondu au démarrage. */
+  panne: false,
   ready: false
 };
 
@@ -61,11 +63,13 @@ Backend.init = async function () {
     try {
       await Backend.pull();
     } catch (e) {
-      /* Le serveur ne répond pas : on ne perd pas la partie, on passe hors ligne. */
-      console.warn('Serveur injoignable, repli hors ligne :', e);
+      /* Le serveur ne répond pas. Plus de repli hors ligne : on revient à la
+         porte d'entrée, qui propose de réessayer (voir vAuth, js/auth.js). */
+      console.warn('Serveur injoignable :', e);
       Backend.mode = 'local';
+      Backend.panne = true;
+      authErr = 'Le serveur ne répond pas pour le moment. Réessaie dans un instant.';
       await Backend.loadLocal();
-      toast('Serveur injoignable : tu joues hors ligne pour le moment.');
     }
   } else {
     await Backend.loadLocal();

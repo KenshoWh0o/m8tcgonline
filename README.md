@@ -4,7 +4,7 @@ Jeu de collection de cartes façon TCG Pocket. Les 122 cartes de l'extension *To
 
 Le site est fait de fichiers statiques — aucune étape de compilation, aucun paquet à installer. Il fonctionne dans **deux régimes** :
 
-- **Hors ligne.** Rien à configurer : la progression est enregistrée dans le navigateur de l'appareil (IndexedDB). Les onglets qui ont besoin des autres joueurs invitent à créer un compte.
+- **Hors ligne.** Rien à configurer : la progression est enregistrée dans le navigateur de l'appareil (IndexedDB). **Ce régime n'est plus proposé aux joueurs : on ne joue qu'en se connectant avec Discord** (`porteVisible()`, `js/auth.js`). Sans serveur joignable, le site affiche l'écran de connexion avec « Réessayer ». Il n'y a plus de « jouer sans compte ».
 - **En ligne.** Un projet [Supabase](https://supabase.com) gratuit apporte les comptes, la collection sauvegardée sur le compte, un cooldown que la montre du téléphone ne peut pas tromper, les échanges, les quêtes et la boutique. Marche à suivre : **[SETUP.md](SETUP.md)**.
 
 La connexion se fait **par Discord**, en un clic : le public du jeu y est déjà, le pseudo et l'avatar arrivent tout faits, et surtout aucun courriel n'est envoyé — donc aucun joueur bloqué faute d'avoir reçu son lien. L'inscription par adresse existe dans le code et se rouvre en passant `email` à `true` dans `CONNEXION` (`js/config.js`).

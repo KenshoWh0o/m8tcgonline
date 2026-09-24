@@ -353,7 +353,7 @@ async function clicPage(e) {
         body: '<p class="muted">Ta collection reste sur ton compte : tu la retrouveras en revenant.</p>',
         actions: [
           { label: 'Se déconnecter', primary: true, fn: async () => {
-            closeSheet(); noterHorsLigne(false); await Backend.signOut(); location.reload();
+            closeSheet(); await Backend.signOut(); location.reload();
           }},
           { label: 'Annuler', fn: closeSheet }
         ]
