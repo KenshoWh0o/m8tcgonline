@@ -173,6 +173,7 @@ const VUES = {
   quetes: () => vQuetes(),
   combats: () => vCombats(),
   recyclage: () => vRecyclage(),
+  classement: () => vClassement(),
   boite: () => vBoite(),
   profil: () => vProfil(),
   reglages: () => vReglages(),
@@ -252,6 +253,7 @@ function aller(id) {
        faut la liste à jour. */
     if (tab === 'recyclage') Backend.loadTrades().then(render).catch(() => {});
     if (tab === 'boite') ouvrirBoite();
+    if (tab === 'classement') chargerClassement();
   }
 }
 
@@ -265,7 +267,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv]');
   if (!el) return;
   const d = el.dataset;
 
@@ -280,6 +282,7 @@ async function clicPage(e) {
   if (d.tr) { trRetenirMot(); trVue = d.tr; return render(); }
   if (d.soc) { socVue = d.soc; return render(); }
   if (d.qv) { qVue = d.qv; return render(); }
+  if (d.clv) { clVue = d.clv; render(); return chargerClassement(); }
   if (d.shv) { shopVue = d.shv; return render(); }
   if (d.shop) return ouvrirArticle(d.shop);
   if (d.theme) { poserTheme(d.theme); return render(); }

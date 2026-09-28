@@ -7,7 +7,7 @@
    Rien de ce qui touche au compte n'est mis en cache. */
 "use strict";
 
-const VERSION = 'mtcg-v1.3.2';
+const VERSION = 'mtcg-v1.4.0';
 const COQUILLE = VERSION + '-coquille';
 const MEDIAS = VERSION + '-medias';
 
@@ -19,9 +19,9 @@ const ESSENTIEL = [
   'js/sfx.js', 'js/cards-data.js', 'js/promos-data.js', 'js/cards.js', 'js/storage.js',
   'js/render-card.js', 'js/ui.js', 'js/backend.js', 'js/gate.js', 'js/auth.js', 'js/fx.js',
   'js/booster.js', 'js/opening.js', 'js/collection.js', 'js/viewer.js', 'js/trade.js',
-  'js/social.js', 'js/quests.js', 'js/promos.js', 'js/boite.js', 'js/shop.js',
-  'js/recyclage.js', 'js/battle.js', 'js/profile.js', 'js/settings.js', 'js/bienvenue.js',
-  'js/pwa.js', 'js/lab.js', 'js/app.js',
+  'js/social.js', 'js/quests.js', 'js/classement.js', 'js/promos.js', 'js/boite.js',
+  'js/shop.js', 'js/recyclage.js', 'js/battle.js', 'js/profile.js', 'js/settings.js',
+  'js/bienvenue.js', 'js/pwa.js', 'js/lab.js', 'js/app.js',
   'assets/logo-m8.webp', 'assets/card-back.webp', 'assets/pack-star.svg',
   'assets/star-pink.svg', 'assets/extension-logo.svg', 'assets/1st-edition.svg',
   'assets/icon-192.png', 'assets/apple-touch-icon.png', 'assets/favicon.svg'

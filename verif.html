@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#0c0910">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=1.3.2">
-<link rel="stylesheet" href="css/base.css?v=1.3.2">
+<link rel="stylesheet" href="css/tokens.css?v=1.4.0">
+<link rel="stylesheet" href="css/base.css?v=1.4.0">
 <style>
 /* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
 body{display:block;height:auto;min-height:100%}
@@ -71,8 +71,8 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="js/config.js?v=1.3.2"></script>
-<script src="js/supabase-config.js?v=1.3.2"></script>
+<script src="js/config.js?v=1.4.0"></script>
+<script src="js/supabase-config.js?v=1.4.0"></script>
 <script>
 "use strict";
 
@@ -245,8 +245,9 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
      le doute, il n'ouvre pas —, mais il faut le savoir. */
   const manquantes = [];
   for (const [fn, quoi] of [['porte', 'l\'écran d\'attente'], ['boite', 'la boîte de réception'],
-                            ['recycler', 'le recyclage']]) {
-    const { error } = await sb.rpc(fn, fn === 'recycler' ? { p_lots: [] } : {});
+                            ['recycler', 'le recyclage'], ['classement', 'le classement']]) {
+    const { error } = await sb.rpc(fn, fn === 'recycler' ? { p_lots: [] }
+      : fn === 'classement' ? { p_critere: 'collection' } : {});
     if (error && error.code === 'PGRST202') manquantes.push(quoi);
   }
   poser(manquantes.length
@@ -254,7 +255,7 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
         detail: `Il manque les fonctions de : ${manquantes.join(', ')}. Tant que
           <code>porte()</code> manque, l'écran d'attente reste fermé pour tout le monde.`,
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
-    : { etat: 'ok', titre: 'Écran d\'attente, boîte de réception et recyclage sont installés' });
+    : { etat: 'ok', titre: 'Écran d\'attente, boîte de réception, recyclage et classement sont installés' });
 
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');

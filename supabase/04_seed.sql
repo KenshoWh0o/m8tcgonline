@@ -33,8 +33,7 @@
 --  Les deux paliers qui donnent une carte Promo ne donnent QUE la carte :
 --  zero Eclat. C'est volontaire. Une recompense qui paie deux fois dilue
 --  les deux : on se souvient d'avoir debloque la carte, pas d'avoir touche
---  six mille Eclats en meme temps. Idem pour la collection complete des
---  Legendaires, qui donne un cadre qu'aucune boutique ne vend.
+--  six mille Eclats en meme temps.
 --
 --  ------------------------------------------------------------------
 --  Les raretes completes.
@@ -46,12 +45,11 @@
 --      Peu communes (24) .......   61 boosters  (~10 jours) .....   600
 --      Rares (28) ..............  128 boosters  (~3 semaines) ...  1 500
 --      Epiques (18) ............  366 boosters  (~2 mois) .......  3 000
---      Legendaires (10) ........  670 boosters  (~110 jours) ....  Cadre Sceau
+--      Legendaires (10) ........  670 boosters  (~110 jours) ....  6 000
 --  Les montants suivent la courbe des paliers deja en place (400 a trois
 --  jours, 1 500 a deux semaines et demie, 2 500 a un mois). Les Legendaires
---  se completent a peu pres en meme temps que le Master Set : leur
---  recompense est un objet, le seul cadre qu'on ne peut pas acheter, pour
---  ne pas empiler les Eclats sur la carte Promo P05.
+--  se completent a peu pres en meme temps que le Master Set, qui donne la
+--  carte Promo P05 : les deux recompenses tombent donc presque ensemble.
 --
 --  L'objectif de chaque quete est calcule sur le catalogue (`count(*)` plus
 --  bas) : ajouter une carte a l'extension deplace l'objectif tout seul.
@@ -123,7 +121,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_setE',    'milestone', 'set_E',  (select count(*)::int from public.cards where rar = 'E'  and not promo),
                                               3000, null,      'Toutes les Épiques',      'Possède toutes les Épiques de l''extension.', 10),
   ('m_setL',    'milestone', 'set_L',  (select count(*)::int from public.cards where rar = 'L'  and not promo),
-                                                 0, 'f_sceau', 'Toutes les Légendaires',  'Possède toutes les Légendaires de l''extension.', 11),
+                                              6000, null,      'Toutes les Légendaires',  'Possède toutes les Légendaires de l''extension.', 11),
 
   -- Les paliers de boosters ouverts : la seule progression qui ne depende que
   -- du temps passe, et pas de la chance.
@@ -178,9 +176,9 @@ on conflict (id) do update set
   carte_id = excluded.carte_id, unique_buy = excluded.unique_buy,
   ordre = excluded.ordre, actif = true;
 
--- Le Cadre Sceau ne se vend pas : il s'obtient en possedant toutes les
--- Legendaires, et nulle part ailleurs. On le retire donc de la boutique s'il
--- y trainait.
+-- Le Cadre Sceau ne se vend pas, et aucune quete ne le donne pour l'instant
+-- (voir FRAMES dans js/config.js). On le retire de la boutique s'il y
+-- trainait.
 delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',

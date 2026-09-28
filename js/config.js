@@ -147,8 +147,9 @@ const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
 
 /* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
-   récompense la collection complète des Légendaires — c'est le seul objet du
-   jeu qu'on ne peut pas acheter, et c'est ce qui en fait la valeur. */
+   n'est pour l'instant donné par aucune quête : ceux qui l'ont déjà le
+   gardent. Pour le rendre de nouveau accessible, le poser en `item_id` d'une
+   quête dans supabase/04_seed.sql. */
 const FRAMES = {
   default: { nom: 'Aucun', c1: '#3f3450', c2: '#2e2539' },
   f_azur:  { nom: 'Azur',  c1: '#39b8ff', c2: '#2f7fc9' },
@@ -192,6 +193,8 @@ const TABS = [
 
   { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user', online: true,
     desc: 'Pseudo, avatar, cadre et statistiques' },
+  { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy', online: true,
+    desc: 'Les meilleurs joueurs, tous confondus' },
   { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,
     desc: 'Dépenser tes Éclats' },
   { id: 'recyclage', nom: 'Recyclage', tiroir: true, ico: 'recycle', online: true,
@@ -236,6 +239,7 @@ const NAVICO = {
   gear:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><path d="M19.6 14.4a1.6 1.6 0 0 0 .32 1.76l.06.06a1.9 1.9 0 1 1-2.7 2.7l-.05-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.46v.17a1.9 1.9 0 1 1-3.8 0v-.09a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.76.32l-.06.06a1.9 1.9 0 1 1-2.7-2.7l.06-.06a1.6 1.6 0 0 0 .32-1.76 1.6 1.6 0 0 0-1.46-.97h-.17a1.9 1.9 0 0 1 0-3.8h.09a1.6 1.6 0 0 0 1.46-1.05 1.6 1.6 0 0 0-.32-1.76l-.06-.06a1.9 1.9 0 1 1 2.7-2.7l.06.06a1.6 1.6 0 0 0 1.76.32h.08a1.6 1.6 0 0 0 .97-1.46v-.17a1.9 1.9 0 1 1 3.8 0v.09a1.6 1.6 0 0 0 .97 1.46 1.6 1.6 0 0 0 1.77-.32l.05-.06a1.9 1.9 0 1 1 2.7 2.7l-.06.06a1.6 1.6 0 0 0-.32 1.76v.08a1.6 1.6 0 0 0 1.46.97h.17a1.9 1.9 0 0 1 0 3.8h-.09a1.6 1.6 0 0 0-1.46.97Z"/></svg>',
   flask: '<svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3M7 15h10"/></svg>',
   coin:  '<svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.5 6 .9-4.3 4.3 1 6.1L12 17l-5.3 2.8 1-6.1L3.4 9.4l6-.9Z"/></svg>',
+  trophy:'<svg viewBox="0 0 24 24"><path d="M7.5 4h9v5a4.5 4.5 0 0 1-9 0Z"/><path d="M7.5 5.5H4.5v1.2a3.3 3.3 0 0 0 3.3 3.3M16.5 5.5h3v1.2a3.3 3.3 0 0 1-3.3 3.3"/><path d="M12 13.5V17M8.5 20.5h7M9.5 17h5v3.5h-5Z"/></svg>',
 
   /* Le menu du compte, sur mobile : trois lignes, le signe universel du panneau
      qui se déplie. Posé sur l'avatar, il dit que l'avatar est un bouton. */

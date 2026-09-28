@@ -1,5 +1,7 @@
 -- =====================================================================
---  Mise a jour du 28 septembre 2026 : recyclage et quetes de raretes.
+--  Mise a jour du 28 septembre 2026 : recyclage et quetes de raretes
+--  (Legendaires : 6 000 Eclats). Rejouable : le relancer applique les
+--  valeurs du jour sans rien casser.
 --  Pour une base deja installee : ne contient que ce qui a change.
 --  Une seule transaction : tout passe, ou rien.
 --  Ce contenu est aussi dans TOUT.sql (01_schema.sql, 04_seed.sql).
@@ -60,7 +62,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_setPC', 'milestone', 'set_PC', (select count(*)::int from public.cards where rar = 'PC' and not promo), 600, null, 'Toutes les Peu communes', 'Possède toutes les Peu communes de l''extension.', 8),
   ('m_setR', 'milestone', 'set_R', (select count(*)::int from public.cards where rar = 'R' and not promo), 1500, null, 'Toutes les Rares', 'Possède toutes les Rares de l''extension.', 9),
   ('m_setE', 'milestone', 'set_E', (select count(*)::int from public.cards where rar = 'E' and not promo), 3000, null, 'Toutes les Épiques', 'Possède toutes les Épiques de l''extension.', 10),
-  ('m_setL', 'milestone', 'set_L', (select count(*)::int from public.cards where rar = 'L' and not promo), 0, 'f_sceau', 'Toutes les Légendaires', 'Possède toutes les Légendaires de l''extension.', 11)
+  ('m_setL', 'milestone', 'set_L', (select count(*)::int from public.cards where rar = 'L' and not promo), 6000, null, 'Toutes les Légendaires', 'Possède toutes les Légendaires de l''extension.', 11)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,

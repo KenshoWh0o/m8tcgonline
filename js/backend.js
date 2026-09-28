@@ -331,6 +331,9 @@ Backend.ecouterBoite = function (surNouveau) {
   }
 };
 
+/* ---- Classement (supabase/14_classement.sql) ---- */
+Backend.classement = critere => Backend.rpc('classement', { p_critere: critere });
+
 /* ---- Recyclage (supabase/12_recyclage.sql) ---- */
 Backend.recycler = async lots =>
   Backend.apply(await Backend.rpc('recycler', { p_lots: lots }));

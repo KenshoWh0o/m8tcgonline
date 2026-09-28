@@ -114,7 +114,7 @@
     ['m_setPC',   'milestone', 'set_PC',      null,  600, null,      'Toutes les Peu communes', 'Possède toutes les Peu communes de l\'extension.', 8],
     ['m_setR',    'milestone', 'set_R',       null, 1500, null,      'Toutes les Rares',        'Possède toutes les Rares de l\'extension.', 9],
     ['m_setE',    'milestone', 'set_E',       null, 3000, null,      'Toutes les Épiques',      'Possède toutes les Épiques de l\'extension.', 10],
-    ['m_setL',    'milestone', 'set_L',       null,    0, 'f_sceau', 'Toutes les Légendaires',  'Possède toutes les Légendaires de l\'extension.', 11],
+    ['m_setL',    'milestone', 'set_L',       null, 6000, null,      'Toutes les Légendaires',  'Possède toutes les Légendaires de l\'extension.', 11],
     ['m_packs25', 'milestone', 'packs',          25,  400, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 12],
     ['m_packs50', 'milestone', 'packs',          50,  800, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13],
     ['m_packs100','milestone', 'packs',         100, 1500, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14],
@@ -675,6 +675,24 @@
   RPC.annonce_publier = () => refuser('Réservé aux administrateurs.');
   RPC.annonce_retirer = () => refuser('Réservé aux administrateurs.');
 
+  /* ------------------------------------ classement, 14_classement.sql */
+  RPC.classement = (moi, { p_critere }) => {
+    if (!['collection', 'boosters', 'echanges', 'serie'].includes(p_critere)) refuser('Classement inconnu.');
+    const auj = jourParis(now());
+    const valeur = pr => p_critere === 'collection'
+      ? extension().filter(k => (colDe(pr.id)[k.id] || 0) > 0).length
+      : p_critere === 'boosters' ? pr.packs_opened
+      : p_critere === 'echanges' ? pr.trades_done
+      : (pr.last_checkin === auj || pr.last_checkin === hier(auj)) ? pr.streak : 0;
+    const l = Object.values(S.profils).map(pr => ({ pr, valeur: valeur(pr) }))
+      .filter(x => x.valeur > 0)
+      .sort((a, b) => b.valeur - a.valeur || a.pr.pseudo.toLowerCase().localeCompare(b.pr.pseudo.toLowerCase()));
+    const ligne = x => ({ rang: 1 + l.filter(y => y.valeur > x.valeur).length, pseudo: x.pr.pseudo,
+      avatar: x.pr.avatar, frame: x.pr.frame, photo: null, valeur: x.valeur, moi: x.pr.id === moi });
+    const m = l.find(x => x.pr.id === moi);
+    return { critere: p_critere, classes: l.length, top: l.slice(0, 50).map(ligne), moi: m ? ligne(m) : null };
+  };
+
   /* ------------------------------------ recycler, 12_recyclage.sql */
   RPC.recycler = (p, { p_lots }) => {
     if (!Array.isArray(p_lots) || !p_lots.length) refuser('Rien à recycler.');
@@ -791,6 +809,15 @@
   function vivre() {
     const t = now();
     let change = false;
+
+    /* Les joueurs simulés passent tous les jours : leur série continue. */
+    const auj = jourParis(t);
+    BOTS.forEach(b => {
+      const pr = profil(b.id);
+      if (pr.last_checkin === auj) return;
+      pr.streak = pr.last_checkin === hier(auj) ? pr.streak + 1 : 1;
+      pr.last_checkin = auj;
+    });
 
     /* Les demandes d'ami adressées à un joueur simulé. */
     S.amities.forEach(f => {

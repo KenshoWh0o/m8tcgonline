@@ -67,6 +67,7 @@ mate-tcg-online/
 │   ├── 11_boite.sql    Boîte de réception : notifications, annonces, temps réel
 │   ├── 12_recyclage.sql  Recyclage des doublons et son plafond hebdomadaire
 │   ├── 13_maj-recyclage-quetes.sql  Mise à jour d'une base déjà installée (28 sept.)
+│   ├── 14_classement.sql  Le classement global
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -104,6 +105,7 @@ mate-tcg-online/
 │   ├── trade.js        Échanges (section de Social)
 │   ├── social.js       Onglet Social : amis, fiches de joueur
 │   ├── quests.js       Onglet Quêtes
+│   ├── classement.js   Onglet Classement (menu du compte)
 │   ├── promos.js       Détection et mise en scène des cartes Promo
 │   ├── boite.js        Boîte de réception, pings, relève et temps réel
 │   ├── shop.js         Onglet Boutique
@@ -156,6 +158,7 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
 | Regénérer l'image de partage et les icônes | `python3 tools/gen-icons.py` |
 | Donner les droits d'administrateur | `supabase/05_admin.sql` |
+| Changer les critères du classement | `classement()` dans `supabase/14_classement.sql` + `CRITERES` dans `js/classement.js` |
 | Fabriquer la démo autonome à envoyer | `python3 tools/demo.py` — voir « La démo autonome » |
 | Régler la démo (pseudo, Éclats de départ, recharge) | `_demo/reglages.js` |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
@@ -362,6 +365,19 @@ Tout ce qui arrive des autres — demande d'ami, demande d'échange, réponse à
 
 **Les annonces** se publient depuis le Labo (réservé aux administrateurs, et vérifié par le serveur), ou à la main dans le SQL Editor — la requête est en bas de `supabase/11_boite.sql`. On les retire depuis sa propre boîte. Un mois d'historique est gardé, pas plus.
 
+## Le classement
+
+Un classement **global** : tous les joueurs, pas seulement les amis. On l'ouvre depuis le menu du compte. Quatre sous-onglets :
+
+| Critère | Ce qui est compté |
+|---|---|
+| Collection | Cartes différentes de l'extension, sur 122 (les Promos n'y entrent pas, comme partout) |
+| Boosters | Boosters ouverts depuis le début |
+| Échanges | Échanges conclus |
+| Série | Jours de connexion d'affilée **en cours** : une série dont le dernier jour est avant-hier compte zéro |
+
+Le serveur fait tout le calcul (`classement()`, `supabase/14_classement.sql`) et renvoie les cinquante premiers, plus la ligne du joueur qui regarde s'il est plus bas. Les ex æquo partagent leur rang ; un joueur à zéro n'est pas classé. Tant que le jeu est fermé au public, seuls les comptes invités apparaissent. D'un joueur, on ne voit que ce que le jeu montrait déjà à tout le monde : pseudo, avatar, cadre, et le chiffre du critère. Une ligne se touche pour ouvrir sa fiche.
+
 ## Le recyclage
 
 Les doublons deviennent des Éclats. Toutes les raretés se recyclent sauf les Promos, et **on garde toujours un exemplaire** de chaque carte : recycler ne fait jamais reculer la collection. Les exemplaires proposés dans une demande d'échange encore en attente sont mis de côté — sinon l'échange, une fois accepté, prendrait le dernier.
@@ -428,7 +444,7 @@ La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est 
 | Peu communes | 24 | 10 jours | 600 Éclats |
 | Rares | 28 | 3 semaines | 1 500 Éclats |
 | Épiques | 18 | 2 mois | 3 000 Éclats |
-| Légendaires | 10 | ~110 jours | **Cadre Sceau** |
+| Légendaires | 10 | ~110 jours | 6 000 Éclats |
 
 Objectifs, récompenses, articles et prix sont tous dans `supabase/04_seed.sql`. On équilibre là, on rejoue le fichier, c'est pris en compte : ni déploiement, ni mise à jour du site.
 
@@ -454,7 +470,7 @@ Quatre cartes hors extension. Elles ne sortent d'aucun booster, ne comptent pas 
 | **P06** Le Marionnettiste | 75 % de la collection |
 | **P05** Tout Commence Ici | Master Set complet (les 122 cartes) |
 
-Les deux paliers ne donnent **que** la carte, zéro Éclat. Une récompense qui paie deux fois dilue les deux : on se souvient d'avoir débloqué la carte, pas d'avoir touché six mille Éclats en même temps. Même chose pour la collection complète des Légendaires, qui donne le **Cadre Sceau** — le seul objet du jeu qu'aucune boutique ne vend.
+Les deux paliers ne donnent **que** la carte, zéro Éclat. Une récompense qui paie deux fois dilue les deux : on se souvient d'avoir débloqué la carte, pas d'avoir touché six mille Éclats en même temps. Le **Cadre Sceau** n'est vendu nulle part et n'est plus donné par aucune quête : ceux qui l'ont déjà le gardent. Pour le rendre accessible, le poser en `item_id` d'une quête dans `supabase/04_seed.sql`.
 
 Elles vivent dans `promos`, jamais dans `cards` : c'est ce qui garantit que « 122 » reste 122 partout, et que le pourcentage de collection ne bouge pas quand on en ajoute une. Côté serveur, la colonne `cards.promo` les exclut du tirage (`pick_card`) et du calcul d'avancement (`sync_collection_quests`).
 
