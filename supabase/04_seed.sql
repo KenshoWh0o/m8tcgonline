@@ -33,8 +33,28 @@
 --  Les deux paliers qui donnent une carte Promo ne donnent QUE la carte :
 --  zero Eclat. C'est volontaire. Une recompense qui paie deux fois dilue
 --  les deux : on se souvient d'avoir debloque la carte, pas d'avoir touche
---  six mille Eclats en meme temps. Idem pour les 500 boosters, qui donnent
---  un cadre qu'aucune boutique ne vend.
+--  six mille Eclats en meme temps. Idem pour la collection complete des
+--  Legendaires, qui donne un cadre qu'aucune boutique ne vend.
+--
+--  ------------------------------------------------------------------
+--  Les raretes completes.
+--
+--  Une quete par rarete : posseder toutes ses cartes. En mediane de
+--  simulation (six boosters par jour, sans echange) :
+--      Essences (9) ............   23 boosters  (~4 jours) ......   250
+--      Communes (33) ...........   50 boosters  (~8 jours) ......   500
+--      Peu communes (24) .......   61 boosters  (~10 jours) .....   600
+--      Rares (28) ..............  128 boosters  (~3 semaines) ...  1 500
+--      Epiques (18) ............  366 boosters  (~2 mois) .......  3 000
+--      Legendaires (10) ........  670 boosters  (~110 jours) ....  Cadre Sceau
+--  Les montants suivent la courbe des paliers deja en place (400 a trois
+--  jours, 1 500 a deux semaines et demie, 2 500 a un mois). Les Legendaires
+--  se completent a peu pres en meme temps que le Master Set : leur
+--  recompense est un objet, le seul cadre qu'on ne peut pas acheter, pour
+--  ne pas empiler les Eclats sur la carte Promo P05.
+--
+--  L'objectif de chaque quete est calcule sur le catalogue (`count(*)` plus
+--  bas) : ajouter une carte a l'extension deplace l'objectif tout seul.
 --
 --  Les Eclats viennent donc du quotidien, de l'hebdomadaire et des paliers
 --  chiffres — environ 300 par jour pour un joueur regulier :
@@ -55,7 +75,7 @@ alter table public.quests add column if not exists item_id text;
 
 -- ---------------------------------------------------------------- quetes
 -- metric : packs | new_cards | rarity_R | rarity_E | rarity_L | trades
---          | checkin | collection_pct   (tous mesures cote serveur)
+--          | checkin | collection_pct | set_ES … set_L   (tous mesures cote serveur)
 --
 -- Les objectifs quotidiens sont calibres sur six boosters par jour. A ce
 -- rythme, « une Epique » tombe environ trois jours sur quatre (20 % de
@@ -90,15 +110,29 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possède 75 % de la collection.', 4),
   ('m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Tout Commence Ici',  'Possède les 122 cartes de l''extension.', 5),
 
+  -- Les raretes completes : toutes les cartes d'une rarete. L'objectif est le
+  -- nombre de cartes de cette rarete dans le catalogue.
+  ('m_setES',   'milestone', 'set_ES', (select count(*)::int from public.cards where rar = 'ES' and not promo),
+                                               250, null,      'Toutes les Essences',     'Possède toutes les Essences de l''extension.', 6),
+  ('m_setC',    'milestone', 'set_C',  (select count(*)::int from public.cards where rar = 'C'  and not promo),
+                                               500, null,      'Toutes les Communes',     'Possède toutes les Communes de l''extension.', 7),
+  ('m_setPC',   'milestone', 'set_PC', (select count(*)::int from public.cards where rar = 'PC' and not promo),
+                                               600, null,      'Toutes les Peu communes', 'Possède toutes les Peu communes de l''extension.', 8),
+  ('m_setR',    'milestone', 'set_R',  (select count(*)::int from public.cards where rar = 'R'  and not promo),
+                                              1500, null,      'Toutes les Rares',        'Possède toutes les Rares de l''extension.', 9),
+  ('m_setE',    'milestone', 'set_E',  (select count(*)::int from public.cards where rar = 'E'  and not promo),
+                                              3000, null,      'Toutes les Épiques',      'Possède toutes les Épiques de l''extension.', 10),
+  ('m_setL',    'milestone', 'set_L',  (select count(*)::int from public.cards where rar = 'L'  and not promo),
+                                                 0, 'f_sceau', 'Toutes les Légendaires',  'Possède toutes les Légendaires de l''extension.', 11),
+
   -- Les paliers de boosters ouverts : la seule progression qui ne depende que
   -- du temps passe, et pas de la chance.
-  ('m_packs25', 'milestone', 'packs',          25,  400, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 6),
-  ('m_packs50', 'milestone', 'packs',          50,  800, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 7),
-  ('m_packs100','milestone', 'packs',         100, 1500, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 8),
-  ('m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 9),
-  ('m_packs500','milestone', 'packs',         500,    0, 'f_sceau', 'Cinq cents paquets', 'Ouvre 500 boosters en tout.', 10),
+  ('m_packs25', 'milestone', 'packs',          25,  400, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 12),
+  ('m_packs50', 'milestone', 'packs',          50,  800, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13),
+  ('m_packs100','milestone', 'packs',         100, 1500, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14),
+  ('m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15),
 
-  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 11)
+  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -108,7 +142,8 @@ delete from public.quests where id not in (
   'd_check','d_packs','d_epic','d_new','d_trade',
   'w_check','w_packs','w_new','w_epic','w_legend','w_trade',
   'm_legend','m_col25','m_col50','m_col75','m_col100',
-  'm_packs25','m_packs50','m_packs100','m_packs200','m_packs500',
+  'm_setES','m_setC','m_setPC','m_setR','m_setE','m_setL',
+  'm_packs25','m_packs50','m_packs100','m_packs200',
   'm_trade25');
 
 -- -------------------------------------------------------------- boutique
@@ -143,8 +178,9 @@ on conflict (id) do update set
   carte_id = excluded.carte_id, unique_buy = excluded.unique_buy,
   ordre = excluded.ordre, actif = true;
 
--- Le Cadre Sceau ne se vend pas : il s'obtient aux 500 boosters ouverts, et
--- nulle part ailleurs. On le retire donc de la boutique s'il y trainait.
+-- Le Cadre Sceau ne se vend pas : il s'obtient en possedant toutes les
+-- Legendaires, et nulle part ailleurs. On le retire donc de la boutique s'il
+-- y trainait.
 delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',

@@ -84,8 +84,8 @@
   const CFG = {
     ticket_cap: 5, ticket_minutes: D.ticket_minutes, pack_size: 6, god_odds: 2000,
     trade_cooldown_h: 6, promo_palier_pct: 75,
-    recyclage_ES: 5, recyclage_C: 10, recyclage_PC: 20, recyclage_R: 100,
-    recyclage_E: 500, recyclage_L: 1000, recyclage_plafond: 1500
+    recyclage_ES: 5, recyclage_C: 10, recyclage_PC: 20, recyclage_R: 50,
+    recyclage_E: 200, recyclage_L: 500, recyclage_plafond: 2500
   };
   const cfg = k => CFG[k];
 
@@ -107,12 +107,19 @@
     ['m_col50',   'milestone', 'collection_pct', 50,  800, null,  'La moitié',          'Possède 50 % de la collection.', 3],
     ['m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possède 75 % de la collection.', 4],
     ['m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Tout Commence Ici',  'Possède les 122 cartes de l\'extension.', 5],
-    ['m_packs25', 'milestone', 'packs',          25,  400, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 6],
-    ['m_packs50', 'milestone', 'packs',          50,  800, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 7],
-    ['m_packs100','milestone', 'packs',         100, 1500, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 8],
-    ['m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 9],
-    ['m_packs500','milestone', 'packs',         500,    0, 'f_sceau', 'Cinq cents paquets', 'Ouvre 500 boosters en tout.', 10],
-    ['m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 11]
+    /* L'objectif `null` des raretés complètes est le total de la rareté,
+       calculé sur le catalogue plus bas — comme le `count(*)` du SQL. */
+    ['m_setES',   'milestone', 'set_ES',      null,  250, null,      'Toutes les Essences',     'Possède toutes les Essences de l\'extension.', 6],
+    ['m_setC',    'milestone', 'set_C',       null,  500, null,      'Toutes les Communes',     'Possède toutes les Communes de l\'extension.', 7],
+    ['m_setPC',   'milestone', 'set_PC',      null,  600, null,      'Toutes les Peu communes', 'Possède toutes les Peu communes de l\'extension.', 8],
+    ['m_setR',    'milestone', 'set_R',       null, 1500, null,      'Toutes les Rares',        'Possède toutes les Rares de l\'extension.', 9],
+    ['m_setE',    'milestone', 'set_E',       null, 3000, null,      'Toutes les Épiques',      'Possède toutes les Épiques de l\'extension.', 10],
+    ['m_setL',    'milestone', 'set_L',       null,    0, 'f_sceau', 'Toutes les Légendaires',  'Possède toutes les Légendaires de l\'extension.', 11],
+    ['m_packs25', 'milestone', 'packs',          25,  400, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 12],
+    ['m_packs50', 'milestone', 'packs',          50,  800, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13],
+    ['m_packs100','milestone', 'packs',         100, 1500, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14],
+    ['m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15],
+    ['m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16]
   ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre]) =>
     ({ id, scope, metric, goal, reward, item_id, titre, detail, ordre }));
 
@@ -133,6 +140,12 @@
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true }));
 
   /* Le catalogue : celui du jeu (js/cards-data.js, js/promos-data.js). */
+  /* L'objectif d'une rareté complète : le total de la rareté dans le catalogue,
+     lu au premier besoin (le catalogue n'existe pas encore quand ce fichier
+     se charge). */
+  const objectif = q => q.goal != null ? q.goal
+    : cards.filter(k => k.rar === q.metric.slice(4)).length;
+
   const carte = id => byId[id];
   const extension = () => cards;                                  /* 122 cartes, sans les Promos */
   const dansBooster = () => cards.filter(c => c.inBoost !== false);
@@ -201,14 +214,19 @@
     return Math.floor(tout.filter(k => (c[k.id] || 0) > 0).length * 100 / tout.length);
   }
 
-  /* sync_collection_quests, 01_schema.sql */
+  /* sync_collection_quests, 01_schema.sql : le pourcentage de collection, et
+     pour chaque rareté le nombre de cartes différentes possédées. */
   function syncCollection(p) {
     const pct = pctCollection(p);
-    QUETES.filter(q => q.metric === 'collection_pct').forEach(q => {
+    const c = colDe(p);
+    const valeur = q => q.metric === 'collection_pct' ? pct
+      : extension().filter(k => k.rar === q.metric.slice(4) && (c[k.id] || 0) > 0).length;
+    QUETES.filter(q => q.metric === 'collection_pct' || q.metric.startsWith('set_')).forEach(q => {
       const k = `${p}|${q.id}|all`;
       const qp = S.qp[k];
-      if (!qp) S.qp[k] = { progress: pct, claimed: false };
-      else qp.progress = Math.max(qp.progress, pct);
+      const v = valeur(q);
+      if (!qp) S.qp[k] = { progress: v, claimed: false };
+      else qp.progress = Math.max(qp.progress, v);
     });
   }
 
@@ -271,8 +289,8 @@
         .map(q => {
           const qp = S.qp[cleQp(p, q)];
           return { id: q.id, scope: q.scope, titre: q.titre, detail: q.detail,
-            goal: q.goal, reward: q.reward, item: q.item_id, metric: q.metric,
-            progress: Math.min(qp ? qp.progress : 0, q.goal),
+            goal: objectif(q), reward: q.reward, item: q.item_id, metric: q.metric,
+            progress: Math.min(qp ? qp.progress : 0, objectif(q)),
             claimed: qp ? qp.claimed : false };
         })
     };
@@ -388,7 +406,7 @@
     if (!q) refuser('Quête inconnue.');
     const qp = S.qp[cleQp(p, q)];
     if (qp && qp.claimed) refuser('Récompense déjà récupérée.');
-    if ((qp ? qp.progress : 0) < q.goal) refuser('Quête non terminée.');
+    if ((qp ? qp.progress : 0) < objectif(q)) refuser('Quête non terminée.');
     qp.claimed = true;
     if (q.reward > 0) profil(p).shards += q.reward;
     if (q.item_id) {

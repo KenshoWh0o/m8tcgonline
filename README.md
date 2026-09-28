@@ -370,11 +370,11 @@ Les doublons deviennent des Éclats. Toutes les raretés se recyclent sauf les P
 | Essence | 5 |
 | Commune | 10 |
 | Peu commune | 20 |
-| Rare | 100 |
-| Épique | 500 |
-| Légendaire | 1 000 |
+| Rare | 50 |
+| Épique | 200 |
+| Légendaire | 500 |
 
-**Le plafond : 1 500 Éclats par semaine**, remis à zéro le lundi (heure de Paris, comme les quêtes hebdomadaires). Il n'est pas décoratif. Une fois la collection bien avancée, un booster recyclé rend ~260 Éclats — la dernière carte est une Rare quatre fois sur cinq, et une Rare vaut 100. Sans plafond, un joueur régulier aurait touché 7 000 à 10 000 Éclats par semaine au recyclage, quatre fois ce que paient les quêtes ; et comme un booster acheté 350 en rend ~260, racheter des boosters avec faisait passer de 42 à ~135 boosters par semaine. La collection allait trois fois plus vite, et les Promos de la boutique tombaient en quelques jours. À 1 500, le recyclage ajoute ~70 % aux Éclats des quêtes et ~10 % de boosters : il aide, il ne remplace pas le temps. Le calcul est en tête de `supabase/12_recyclage.sql`.
+**Le plafond : 2 500 Éclats par semaine**, remis à zéro le lundi (heure de Paris, comme les quêtes hebdomadaires). Il n'est pas décoratif. Une fois la collection bien avancée, un booster recyclé rend ~150 Éclats — la dernière carte est une Rare quatre fois sur cinq, et une Rare vaut 50. Sans plafond, un joueur régulier toucherait ~2 600 Éclats la première semaine et ~6 000 à partir de la huitième, près de trois fois ce que paient les quêtes. Le plafond est donc atteint dès la première ou la deuxième semaine, et le recyclage devient la première source d'Éclats d'un joueur régulier (~2 500 contre ~2 100 pour les quêtes). Racheter des boosters avec ne s'emballe pas : un booster acheté 350 n'en rend que ~150, et 2 500 par semaine font ~7 boosters de plus (+17 %). Avant la baisse des valeurs (Rare 100, Épique 500, Légendaire 1 000, plafond 1 500), un booster en rendait ~260. Le calcul est en tête de `supabase/12_recyclage.sql`.
 
 **Pas de bêtise.** On choisit carte par carte, exemplaire par exemplaire ; « Tout sélectionner » laisse les Épiques et les Légendaires de côté. Un récapitulatif liste chaque carte et ce qu'elle rapporte — avec une case à cocher s'il y a une Épique ou une Légendaire dedans —, puis une dernière confirmation dont le bouton ne répond qu'au bout de trois secondes. Le serveur revérifie tout (doublons, réservations, plafond) et refuse l'envoi entier si un seul point ne tient pas. Chaque recyclage est journalisé dans la table `recyclages`.
 
@@ -416,7 +416,18 @@ Le détail du calcul est en tête de `supabase/04_seed.sql`, à côté des valeu
 
 Les quêtes paient en **Éclats**, la seule monnaie du jeu. La boutique les dépense. Aucun achat avec de l'argent réel, nulle part.
 
-La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est le serveur qui l'incrémente au moment où l'événement arrive vraiment, dans `open_pack()` et `trade_respond()`. C'est pour ça que toutes les quêtes portent sur des choses qu'il peut constater lui-même — boosters ouverts, cartes inédites, raretés sorties, échanges conclus, jours de connexion, pourcentage de collection.
+La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est le serveur qui l'incrémente au moment où l'événement arrive vraiment, dans `open_pack()` et `trade_respond()`. C'est pour ça que toutes les quêtes portent sur des choses qu'il peut constater lui-même — boosters ouverts, cartes inédites, raretés sorties, échanges conclus, jours de connexion, pourcentage de collection, raretés complètes.
+
+**Les raretés complètes** sont six quêtes saisonnières : posséder toutes les Essences, toutes les Communes, et ainsi de suite jusqu'aux Légendaires. L'objectif est le nombre de cartes de la rareté, calculé sur le catalogue ; l'avancement est recompté par `sync_collection_quests()`, comme le pourcentage de collection, et ne recule pas si l'on cède une carte ensuite. Les récompenses suivent le temps médian qu'il faut (simulation, six boosters par jour) :
+
+| Rareté | Cartes | Environ | Récompense |
+|---|---|---|---|
+| Essences | 9 | 4 jours | 250 Éclats |
+| Communes | 33 | 8 jours | 500 Éclats |
+| Peu communes | 24 | 10 jours | 600 Éclats |
+| Rares | 28 | 3 semaines | 1 500 Éclats |
+| Épiques | 18 | 2 mois | 3 000 Éclats |
+| Légendaires | 10 | ~110 jours | **Cadre Sceau** |
 
 Objectifs, récompenses, articles et prix sont tous dans `supabase/04_seed.sql`. On équilibre là, on rejoue le fichier, c'est pris en compte : ni déploiement, ni mise à jour du site.
 
@@ -442,7 +453,7 @@ Quatre cartes hors extension. Elles ne sortent d'aucun booster, ne comptent pas 
 | **P06** Le Marionnettiste | 75 % de la collection |
 | **P05** Tout Commence Ici | Master Set complet (les 122 cartes) |
 
-Les deux paliers ne donnent **que** la carte, zéro Éclat. Une récompense qui paie deux fois dilue les deux : on se souvient d'avoir débloqué la carte, pas d'avoir touché six mille Éclats en même temps. Même chose pour les 500 boosters, qui donnent le **Cadre Sceau** — le seul objet du jeu qu'aucune boutique ne vend.
+Les deux paliers ne donnent **que** la carte, zéro Éclat. Une récompense qui paie deux fois dilue les deux : on se souvient d'avoir débloqué la carte, pas d'avoir touché six mille Éclats en même temps. Même chose pour la collection complète des Légendaires, qui donne le **Cadre Sceau** — le seul objet du jeu qu'aucune boutique ne vend.
 
 Elles vivent dans `promos`, jamais dans `cards` : c'est ce qui garantit que « 122 » reste 122 partout, et que le pourcentage de collection ne bouge pas quand on en ajoute une. Côté serveur, la colonne `cards.promo` les exclut du tirage (`pick_card`) et du calcul d'avancement (`sync_collection_quests`).
 

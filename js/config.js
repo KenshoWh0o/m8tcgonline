@@ -147,8 +147,8 @@ const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
 
 /* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
-   récompense les 500 boosters ouverts — c'est le seul objet du jeu qu'on ne
-   peut pas acheter, et c'est ce qui en fait la valeur. */
+   récompense la collection complète des Légendaires — c'est le seul objet du
+   jeu qu'on ne peut pas acheter, et c'est ce qui en fait la valeur. */
 const FRAMES = {
   default: { nom: 'Aucun', c1: '#3f3450', c2: '#2e2539' },
   f_azur:  { nom: 'Azur',  c1: '#39b8ff', c2: '#2f7fc9' },

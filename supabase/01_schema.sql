@@ -155,10 +155,10 @@ language sql immutable as $$
     when 'recyclage_ES'      then 5
     when 'recyclage_C'       then 10
     when 'recyclage_PC'      then 20
-    when 'recyclage_R'       then 100
-    when 'recyclage_E'       then 500
-    when 'recyclage_L'       then 1000
-    when 'recyclage_plafond' then 1500     -- Eclats par semaine, remise le lundi
+    when 'recyclage_R'       then 50
+    when 'recyclage_E'       then 200
+    when 'recyclage_L'       then 500
+    when 'recyclage_plafond' then 2500     -- Eclats par semaine, remise le lundi
   end;
 $$;
 
@@ -478,6 +478,19 @@ begin
 
   insert into quest_progress (user_id, quest_id, period_key, progress)
   select p, q.id, 'all', pct from quests q where q.metric = 'collection_pct'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress);
+
+  -- Les raretes completes (metric « set_ES », « set_C », … « set_L ») : le
+  -- nombre de cartes differentes possedees dans cette rarete. L'objectif de
+  -- la quete est le total de la rarete (voir 04_seed.sql). `greatest` comme
+  -- au-dessus : une carte cedee plus tard ne fait pas reculer une quete.
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, 'all',
+         (select count(*) from collection c join cards k on k.id = c.card_id
+           where c.user_id = p and c.qty > 0 and not k.promo
+             and k.rar = substr(q.metric, 5))
+    from quests q where q.metric like 'set\_%'
   on conflict (user_id, quest_id, period_key)
     do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;

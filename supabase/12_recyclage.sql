@@ -7,36 +7,39 @@
 --  chaque carte : recycler ne fait jamais reculer la collection.
 --
 --  Les montants et le plafond sont dans cfg() (supabase/01_schema.sql) :
---      Essence 5 · Commune 10 · Peu commune 20 · Rare 100
---      Epique 500 · Legendaire 1 000
---      plafond : 1 500 Eclats par semaine, remis a zero le lundi (Paris)
+--      Essence 5 · Commune 10 · Peu commune 20 · Rare 50
+--      Epique 200 · Legendaire 500
+--      plafond : 2 500 Eclats par semaine, remis a zero le lundi (Paris)
 --
 --  ------------------------------------------------------------------
 --  POURQUOI UN PLAFOND
 --
---  Un booster rapporte en moyenne ~260 Eclats une fois recycle, des que la
+--  Un booster rapporte en moyenne ~150 Eclats une fois recycle, des que la
 --  collection est bien avancee : la derniere carte est une Rare quatre fois
---  sur cinq, et une Rare vaut 100. Simulation, joueur regulier (42 boosters
---  par semaine), mediane :
+--  sur cinq, et une Rare vaut 50. Simulation, joueur regulier (42 boosters
+--  par semaine, tous les doublons recycles chaque semaine), mediane :
 --
---                         sans plafond      avec 1 500 / semaine
---      semaine 1 ........   3 700 Eclats        1 500
---      semaine 4 ........   8 700               1 500
---      semaine 8 ........   9 900               1 500
+--                         sans plafond      avec 2 500 / semaine
+--      semaine 1 ........   2 600 Eclats        2 500
+--      semaine 4 ........   5 450               2 500
+--      semaine 8 ........   6 000               2 500
 --
 --  Les quetes, elles, paient ~2 100 Eclats par semaine. Sans plafond, le
---  recyclage aurait paye quatre fois plus que tout le reste du jeu reuni.
---  Pire : un booster achete 350 et recycle en rend ~260. En rachetant des
---  boosters avec ce que rapporte le recyclage, on passait de 42 a ~135
---  boosters par semaine — la collection allait trois fois plus vite, et les
---  cartes Promo de la boutique tombaient en quelques jours.
+--  recyclage paierait pres de trois fois plus que tout le reste du jeu.
 --
---  A 1 500 par semaine, le recyclage ajoute ~70 % aux Eclats des quetes et
---  ~10 % de boosters. Il aide, il ne remplace pas le temps : c'est la regle
---  que suit tout le reste de l'economie (voir 04_seed.sql).
+--  Avant (Rare 100, Epique 500, Legendaire 1 000, plafond 1 500), un
+--  booster recycle en rendait ~260 pour 350 a l'achat : racheter des
+--  boosters avec le recyclage faisait tourner une boucle. A ~150, la boucle
+--  ne rend plus que 43 % de la mise, et le plafond plus haut ne la relance
+--  pas : 2 500 par semaine, c'est ~7 boosters de plus (+17 %), contre ~4
+--  (+10 %) avant.
 --
---  Les montants par carte restent ceux qu'on a choisis : une Legendaire
---  recyclee, c'est un evenement. Le plafond ne touche qu'au total.
+--  Ce que ca change pour le joueur : le plafond est atteint des la premiere
+--  ou la deuxieme semaine, et le recyclage devient la premiere source
+--  d'Eclats d'un joueur regulier (~2 500 contre ~2 100 pour les quetes). Il
+--  se remplit surtout de doublons courants : une Legendaire recyclee n'en
+--  fait plus qu'un cinquieme (500 sur 2 500), au lieu des deux tiers (1 000
+--  sur 1 500).
 -- =====================================================================
 
 -- Le journal : qui a recycle quoi, et quand. Il sert au plafond de la semaine,

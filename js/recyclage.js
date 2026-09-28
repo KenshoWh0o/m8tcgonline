@@ -28,9 +28,9 @@
 let recSel = {};
 let recRar = 'all';
 
-const REC_DEFAUT = { ES: 5, C: 10, PC: 20, R: 100, E: 500, L: 1000 };
+const REC_DEFAUT = { ES: 5, C: 10, PC: 20, R: 50, E: 200, L: 500 };
 const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAUT;
-const recPlafond = () => (save.recyclage ? save.recyclage.plafond : 1500);
+const recPlafond = () => (save.recyclage ? save.recyclage.plafond : 2500);
 const recSemaine = () => (save.recyclage ? save.recyclage.semaine : 0);
 const recPrix = c => recValeurs()[c.rar] || 0;
 
@@ -179,7 +179,7 @@ function recAjuster(id, d) {
 
 /* Tout sélectionner, dans le filtre en cours, jusqu'au plafond. Les Épiques et
    les Légendaires n'y entrent que si on les a filtrées exprès : une carte qui
-   vaut 500 ou 1 000 se choisit, elle ne s'emporte pas dans un lot. */
+   vaut 200 ou 500 se choisit, elle ne s'emporte pas dans un lot. */
 function recToutPrendre() {
   const garder = recRar === 'E' || recRar === 'L' ? [] : ['E', 'L'];
   const liste = cards.filter(c => !c.promo && recDispo(c) > 0
