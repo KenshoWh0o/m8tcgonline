@@ -66,6 +66,7 @@ mate-tcg-online/
 │   ├── 07_vitrine.sql  La vitrine du profil
 │   ├── 11_boite.sql    Boîte de réception : notifications, annonces, temps réel
 │   ├── 12_recyclage.sql  Recyclage des doublons et son plafond hebdomadaire
+│   ├── 13_maj-recyclage-quetes.sql  Mise à jour d'une base déjà installée (28 sept.)
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
