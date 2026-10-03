@@ -44,7 +44,7 @@ const rk = c => (RAR[c.rar] || RAR.C).rank;
    deux ont leur place — un choix d'avatar, une vitrine. Partout où l'on compte
    la collection, c'est `cards` seul : les Promos sont hors extension, et le
    total de 122 ne doit jamais bouger. */
-const toutesCartes = () => cards.concat(promos);
+const toutesCartes = () => cards.concat(promos, brillantes, uniques);
 
 /* Les plus rares d'abord, puis par numéro. */
 const parRarete = (a, b) => rk(b) - rk(a) || (a.num || 0) - (b.num || 0);

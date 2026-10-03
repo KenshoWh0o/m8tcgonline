@@ -1,49 +1,48 @@
 -- =====================================================================
---  Mate TCG Online — le recyclage des doublons
+--  Mate TCG Online — le recyclage des doublons, et la fabrication
 --  A executer apres 11_boite.sql. Rejouable sans danger.
 --
---  On jette un doublon, on touche des Eclats. Toutes les raretes se
---  recyclent sauf les Promos, et on garde toujours au moins un exemplaire de
---  chaque carte : recycler ne fait jamais reculer la collection.
+--  On jette un doublon, on touche des Fragments. Avec des Fragments, on
+--  fabrique une carte qui manque. Toutes les raretes de l'extension se
+--  recyclent et se fabriquent ; jamais ce qui est hors extension (Promos,
+--  Essences Brillantes, carte unique). On garde toujours au moins un
+--  exemplaire de chaque carte : recycler ne fait jamais reculer la
+--  collection.
 --
---  Les montants et le plafond sont dans cfg() (supabase/01_schema.sql) :
---      Essence 5 · Commune 10 · Peu commune 20 · Rare 50
---      Epique 200 · Legendaire 500
---      plafond : 2 500 Eclats par semaine, remis a zero le lundi (Paris)
+--  Les montants sont dans cfg() (supabase/01_schema.sql) :
+--      recyclage    Essence 1 · Commune 2 · Peu commune 5 · Rare 20
+--                   Epique 80 · Legendaire 250
+--      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
+--                   Epique 2 000 · Legendaire 8 000
 --
 --  ------------------------------------------------------------------
---  POURQUOI UN PLAFOND
+--  POURQUOI DES FRAGMENTS, ET PLUS D'ECLATS
 --
---  Un booster rapporte en moyenne ~150 Eclats une fois recycle, des que la
---  collection est bien avancee : la derniere carte est une Rare quatre fois
---  sur cinq, et une Rare vaut 50. Simulation, joueur regulier (42 boosters
---  par semaine, tous les doublons recycles chaque semaine), mediane :
+--  Recycler contre des Eclats posait un probleme sans solution : un joueur
+--  regulier produit ~6 300 Eclats de doublons par semaine une fois sa
+--  collection avancee. Plafonne, le recyclage ne permettait pas de se
+--  debarrasser de ses cartes ; deplafonne, il triplait les Eclats, et les
+--  Eclats achetent des boosters — la boucle s'emballait.
 --
---                         sans plafond      avec 2 500 / semaine
---      semaine 1 ........   2 600 Eclats        2 500
---      semaine 4 ........   5 450               2 500
---      semaine 8 ........   6 000               2 500
+--  Les Fragments n'achetent qu'une chose : une carte qu'on n'a pas. Ils ne
+--  rachetent pas de boosters, il n'y a donc plus de boucle, et plus de
+--  plafond. Ils transforment aussi la fin de collection : la derniere
+--  Legendaire mettait ~42 jours a sortir en moyenne, sans le moindre progres
+--  visible ; chaque booster rempli de doublons la rapproche desormais.
 --
---  Les quetes, elles, paient ~2 100 Eclats par semaine. Sans plafond, le
---  recyclage paierait pres de trois fois plus que tout le reste du jeu.
---
---  Avant (Rare 100, Epique 500, Legendaire 1 000, plafond 1 500), un
---  booster recycle en rendait ~260 pour 350 a l'achat : racheter des
---  boosters avec le recyclage faisait tourner une boucle. A ~150, la boucle
---  ne rend plus que 43 % de la mise, et le plafond plus haut ne la relance
---  pas : 2 500 par semaine, c'est ~7 boosters de plus (+17 %), contre ~4
---  (+10 %) avant.
---
---  Ce que ca change pour le joueur : le plafond est atteint des la premiere
---  ou la deuxieme semaine, et le recyclage devient la premiere source
---  d'Eclats d'un joueur regulier (~2 500 contre ~2 100 pour les quetes). Il
---  se remplit surtout de doublons courants : une Legendaire recyclee n'en
---  fait plus qu'un cinquieme (500 sur 2 500), au lieu des deux tiers (1 000
---  sur 1 500).
+--  Simulation (six boosters par jour, tous les doublons recycles), mediane
+--  du temps pour finir l'extension :
+--                               sans fabrication   avec   (quart le plus lent)
+--      joueur a  60 boosters ....   112 jours      72 j      147 -> 86 j
+--      joueur a 120 boosters ....    92 jours      62 j      124 -> 73 j
+--  ~2 200 Fragments par semaine pour un joueur regulier : une Epique tous
+--  les six jours, ou une Legendaire en un peu moins de quatre semaines.
 -- =====================================================================
 
--- Le journal : qui a recycle quoi, et quand. Il sert au plafond de la semaine,
--- et a retrouver ce qui s'est passe si quelqu'un ecrit « j'ai perdu une carte ».
+-- Le journal : qui a recycle quoi, et quand. Il sert a retrouver ce qui
+-- s'est passe si quelqu'un ecrit « j'ai perdu une carte ». `eclats` date de
+-- l'ancien recyclage ; les recyclages d'aujourd'hui y mettent 0 et remplissent
+-- `fragments`.
 create table if not exists public.recyclages (
   id         bigint generated always as identity primary key,
   user_id    uuid not null references public.profiles on delete cascade,
@@ -52,11 +51,11 @@ create table if not exists public.recyclages (
   eclats     integer not null check (eclats >= 0),
   created_at timestamptz not null default now()
 );
+alter table public.recyclages add column if not exists fragments integer not null default 0;
 create index if not exists recyclages_user_idx on public.recyclages (user_id, created_at desc);
 
 alter table public.recyclages enable row level security;
--- Aucune policy : le navigateur ne lit pas le journal, il recoit le total de
--- la semaine dans me().
+-- Aucune policy : le navigateur ne lit pas le journal.
 revoke all on public.recyclages from anon, authenticated;
 
 -- Le lundi minuit, heure de Paris : la meme frontiere que les quetes
@@ -66,7 +65,8 @@ language sql stable as $$
   select date_trunc('week', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris';
 $$;
 
--- Ce qu'un joueur a deja touche cette semaine.
+-- Les Eclats touches cette semaine avec l'ancien recyclage. Plus rien ne
+-- l'appelle ; elle reste pour qui voudrait relire le journal.
 create or replace function public.recyclage_semaine(p uuid) returns integer
 language sql stable security definer set search_path = public as $$
   select coalesce(sum(eclats), 0)::int from recyclages
@@ -77,7 +77,7 @@ revoke all on function public.recyclage_semaine from public, anon, authenticated
 
 -- ------------------------------------------------------------- recycler
 -- `p_lots` : [{ "carte": "c012", "n": 2 }, …]. Tout passe, ou rien : un seul
--- lot refuse annule l'ensemble, et le plafond est verifie sur le total.
+-- lot refuse annule l'ensemble.
 --
 -- Ce qui est recyclable, carte par carte : ce qu'on possede, moins l'exemplaire
 -- qu'on garde toujours, moins ceux qu'on a proposes dans une demande
@@ -97,9 +97,8 @@ begin
   end if;
   if jsonb_array_length(p_lots) > 150 then raise exception 'Trop de cartes d''un coup.'; end if;
 
-  -- Un recyclage a la fois par joueur. Sans ce verrou, deux envois partis
-  -- ensemble liraient le meme total de la semaine, et passeraient tous les
-  -- deux sous le plafond.
+  -- Un recyclage a la fois par joueur : deux envois partis ensemble ne
+  -- doivent pas compter deux fois le meme exemplaire.
   perform 1 from profiles where id = p for update;
 
   for lot in select value from jsonb_array_elements(p_lots) loop
@@ -112,7 +111,7 @@ begin
 
     select * into k from cards where id = cid;
     if not found then raise exception 'Carte inconnue.'; end if;
-    if k.promo or k.rar = 'PR' then raise exception 'Les cartes Promo ne se recyclent pas.'; end if;
+    if k.promo then raise exception 'Cette carte ne se recycle pas.'; end if;
     prix := cfg('recyclage_' || k.rar);
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 
@@ -124,19 +123,46 @@ begin
     end if;
 
     update collection set qty = qty - n where user_id = p and card_id = cid;
-    insert into recyclages (user_id, card_id, qty, eclats) values (p, cid, n, n * prix);
+    insert into recyclages (user_id, card_id, qty, eclats, fragments) values (p, cid, n, 0, n * prix);
     total := total + n * prix;
   end loop;
 
-  -- Apres la boucle, et non avant : c'est le total de l'envoi qui compte. Le
-  -- `raise` annule tout ce que la boucle a deja ecrit.
-  if recyclage_semaine(p) > cfg('recyclage_plafond') then
-    raise exception 'PLAFOND_RECYCLAGE';
-  end if;
-
-  update profiles set shards = shards + total where id = p;
+  update profiles set fragments = fragments + total where id = p;
   return me();
 end $$;
 
-revoke all on function public.recycler from public, anon;
-grant execute on function public.recycler to authenticated;
+-- ------------------------------------------------------------- fabriquer
+-- Une carte de l'extension qu'on ne possede pas, contre des Fragments.
+-- Seulement une carte qui manque : fabriquer un doublon pour le recycler ne
+-- rapporterait rien, mais fabriquer une Legendaire qu'on a deja ne sert a
+-- rien non plus, et c'est ce qui garde les doublons de haute rarete rares.
+create or replace function public.fabriquer(p_carte text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); k cards; cout int; reste int;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+
+  select * into k from cards where id = p_carte;
+  if not found then raise exception 'Carte inconnue.'; end if;
+  if k.promo then raise exception 'Cette carte ne se fabrique pas.'; end if;
+  cout := cfg('fabrication_' || k.rar);
+  if cout is null then raise exception 'Cette carte ne se fabrique pas.'; end if;
+
+  select fragments into reste from profiles where id = p for update;
+  if exists (select 1 from collection where user_id = p and card_id = p_carte and qty > 0) then
+    raise exception 'Tu possèdes déjà cette carte.';
+  end if;
+  if reste < cout then raise exception 'Pas assez de Fragments.'; end if;
+
+  update profiles set fragments = fragments - cout, fabrications = fabrications + 1 where id = p;
+  insert into collection (user_id, card_id, qty) values (p, p_carte, 1)
+    on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+
+  perform sync_collection_quests(p);
+  perform check_promos(p);
+  return me();
+end $$;
+
+revoke all on function public.recycler, public.fabriquer from public, anon;
+grant execute on function public.recycler, public.fabriquer to authenticated;

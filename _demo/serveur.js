@@ -84,8 +84,11 @@
   const CFG = {
     ticket_cap: 5, ticket_minutes: D.ticket_minutes, pack_size: 6, god_odds: 2000,
     trade_cooldown_h: 6, promo_palier_pct: 75,
-    recyclage_ES: 5, recyclage_C: 10, recyclage_PC: 20, recyclage_R: 50,
-    recyclage_E: 200, recyclage_L: 500, recyclage_plafond: 2500
+    recyclage_ES: 1, recyclage_C: 2, recyclage_PC: 5, recyclage_R: 20,
+    recyclage_E: 80, recyclage_L: 250,
+    fabrication_ES: 20, fabrication_C: 40, fabrication_PC: 100, fabrication_R: 400,
+    fabrication_E: 2000, fabrication_L: 8000,
+    foil_odds: 50, chasse_odds: 250
   };
   const cfg = k => CFG[k];
 
@@ -165,7 +168,8 @@
       id, pseudo, avatar: 'star', frame: 'default', is_admin: false,
       shards: 0, tickets: 5, last_tick: now(), trade_free_at: now(),
       packs_opened: 0, trades_done: 0, streak: 0, last_checkin: null,
-      created_at: now(), vitrine: [], boite_vue_le: now()
+      created_at: now(), vitrine: [], boite_vue_le: now(),
+      fragments: 0, fabrications: 0, serie_max: 0
     }, champs || {});
   }
 
@@ -244,10 +248,38 @@
     if (dest === MOI) S.aSignaler = true;
   }
 
-  /* recyclage_semaine, 12_recyclage.sql */
-  const recyclageSemaine = p => S.recyclages
-    .filter(r => r.user_id === p && r.created_at >= debutSemaine(now()))
-    .reduce((s, r) => s + r.eclats, 0);
+  /* succes_de, 15_evenements.sql */
+  function succesDe(p) {
+    const pr = profil(p);
+    const c = colDe(p);
+    const a = id => (c[id] || 0) > 0;
+    const ext = extension().filter(k => a(k.id)).length;
+    const leg = extension().filter(k => k.rar === 'L');
+    const br = brillantes.filter(k => a(k.id)).length;
+    const serie = Math.max(pr.serie_max || 0, pr.streak || 0);
+    const s = [];
+    if (pr.packs_opened >= 1) s.push('premier_booster');
+    if (pr.packs_opened >= 100) s.push('boosters_100');
+    if (pr.packs_opened >= 500) s.push('boosters_500');
+    if (ext * 2 >= extension().length) s.push('collection_50');
+    if (ext >= extension().length) s.push('master_set');
+    if (leg.every(k => a(k.id))) s.push('toutes_legendaires');
+    if (pr.trades_done >= 1) s.push('premier_echange');
+    if (pr.trades_done >= 25) s.push('negociant');
+    if (serie >= 7) s.push('serie_7');
+    if (serie >= 30) s.push('serie_30');
+    if (S.tirages.some(t => t.user_id === p && t.god)) s.push('godpack');
+    if (br >= 1) s.push('brillante');
+    if (brillantes.length && br >= brillantes.length) s.push('toutes_brillantes');
+    if ((pr.fabrications || 0) >= 1) s.push('artisan');
+    if (uniques.some(u => a(u.id))) s.push('unique');
+    return s;
+  }
+
+  /* chasse_etat, 15_evenements.sql */
+  const chasseEtat = () => ({ carte: S.chasse.carte, active: S.chasse.active,
+    trouvee: !!S.chasse.gagnant, gagnant: S.chasse.gagnant ? profil(S.chasse.gagnant).pseudo : null,
+    trouvee_le: S.chasse.trouvee_le ? iso(S.chasse.trouvee_le) : null });
 
   /* boite_non_lues, 11_boite.sql */
   function boiteNonLues(p) {
@@ -271,17 +303,21 @@
         packs_opened: pr.packs_opened, trades_done: pr.trades_done,
         streak: pr.streak, last_checkin: pr.last_checkin,
         vitrine: pr.vitrine.slice(),
+        fragments: pr.fragments || 0,
         invite: true,
         ticket_cap: cfg('ticket_cap'), ticket_minutes: cfg('ticket_minutes'),
         serveur: iso(now())
       },
       boite: boiteNonLues(p),
       recyclage: {
-        semaine: recyclageSemaine(p),
-        plafond: cfg('recyclage_plafond'),
         valeurs: { ES: cfg('recyclage_ES'), C: cfg('recyclage_C'), PC: cfg('recyclage_PC'),
-          R: cfg('recyclage_R'), E: cfg('recyclage_E'), L: cfg('recyclage_L') }
+          R: cfg('recyclage_R'), E: cfg('recyclage_E'), L: cfg('recyclage_L') },
+        couts: { ES: cfg('fabrication_ES'), C: cfg('fabrication_C'), PC: cfg('fabrication_PC'),
+          R: cfg('fabrication_R'), E: cfg('fabrication_E'), L: cfg('fabrication_L') }
       },
+      succes: succesDe(p),
+      evenement: null,
+      chasse: chasseEtat(),
       col: garde(colDe(p)),
       inv: garde(invDe(p)),
       quetes: QUETES.slice()
@@ -328,6 +364,7 @@
     if (pr.last_checkin !== auj) {
       pr.streak = pr.last_checkin === hier(auj) ? pr.streak + 1 : 1;
       pr.last_checkin = auj;
+      pr.serie_max = Math.max(pr.serie_max || 0, pr.streak);
       bump(p, 'checkin', 1);
     }
     return me(p);
@@ -346,6 +383,12 @@
     return null;
   }
   const tirage = seuils => { const x = Math.random() * 100; return seuils.find(([s]) => x < s)[1]; };
+  /* La case Essence : une fois sur cfg('foil_odds'), la version Brillante. */
+  const essence = ess => {
+    if (!ess.length) return pickCard('C');
+    const e = choix(ess).id;
+    return Math.random() < 1 / cfg('foil_odds') && carte('b' + e.slice(1)) ? 'b' + e.slice(1) : e;
+  };
 
   /* Les six cartes d'open_pack, sans rien écrire : sert aussi à garnir la
      collection des joueurs simulés. */
@@ -367,7 +410,7 @@
         pickCard('C'), pickCard('C'),
         pickCard(tirage([[60, 'C'], [100, 'PC']])),
         pickCard('PC'),
-        ess.length ? choix(ess).id : pickCard('C'),
+        essence(ess),
         pickCard(tirage([[80, 'R'], [96, 'E'], [100, 'L']]))
       ];
     }
@@ -380,6 +423,16 @@
     const { ids, god } = tirerPaquet();
     if (!ids.length) refuser('BOOSTER_VIDE');
 
+    /* La chasse : la carte unique en septième position, une seule fois. */
+    if (S.chasse.active && !S.chasse.gagnant && Math.random() < 1 / cfg('chasse_odds')) {
+      S.chasse.gagnant = p;
+      S.chasse.trouvee_le = now();
+      ids.push(S.chasse.carte);
+      S.annonces.push({ id: ++S.seq, actif: true, created_at: now(),
+        titre: (carte(S.chasse.carte) || {}).nom + ' a été trouvée !',
+        texte: pr.pseudo + ' l\'a tirée d\'un booster. Il n\'en existe qu\'une seule dans tout le jeu.' });
+    }
+
     /* Comme le SQL : chaque exemplaire non possédé compte, doublons du même
        paquet compris. */
     const nouvelles = ids.filter(id => !possede(p, id)).length;
@@ -388,6 +441,7 @@
     pr.last_tick = pr.tickets >= cfg('ticket_cap') ? now() : pr.last_tick;
     pr.tickets -= 1;
     pr.packs_opened += 1;
+    S.tirages.push({ user_id: p, cartes: ids.slice(), god, created_at: now() });
 
     /* `where id = any(ids)` : chaque carte distincte compte une fois. */
     const distinctes = [...new Set(ids)].map(carte).filter(Boolean);
@@ -455,6 +509,7 @@
     if (co.rar !== cw.rar) refuser('Les deux cartes doivent être de la même rareté.');
     if (co.rar === 'ES') refuser('Les Essences ne s\'échangent pas.');
     if (co.rar === 'PR') refuser('Les cartes Promo ne s\'échangent pas.');
+    if (co.promo || cw.promo) refuser('Cette carte ne s\'échange pas.');
     if (!possede(p, offer)) refuser('Tu ne possèdes pas la carte que tu proposes.');
     if (S.trades.some(t => t.from_user === p && t.to_user === dest.id && t.offer_card === offer
       && t.want_card === want && t.status === 'pending')) refuser('Cette demande est déjà en attente.');
@@ -629,6 +684,7 @@
       possede: extension().filter(k => (c[k.id] || 0) > 0).length,
       total: extension().length,
       vitrine: o.vitrine.slice(),
+      succes: succesDe(o.id),
       ami, moi: o.id === moi,
       col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null
     };
@@ -711,21 +767,55 @@
       vus.push(cid);
       const k = carte(cid);
       if (!k) refuser('Carte inconnue.');
-      if (k.promo || k.rar === 'PR') refuser('Les cartes Promo ne se recyclent pas.');
+      if (k.promo) refuser('Cette carte ne se recycle pas.');
       const prix = cfg('recyclage_' + k.rar);
       if (prix == null) refuser('Cette carte ne se recycle pas.');
       const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === cid && t.status === 'pending').length;
       if ((col[cid] || 0) - 1 - reserve < n)
         refuser(`Pas assez de doublons de « ${k.nom} » : tu gardes toujours un exemplaire.`);
       col[cid] -= n;
-      journal.push({ user_id: p, card_id: cid, qty: n, eclats: n * prix, created_at: now() });
+      journal.push({ user_id: p, card_id: cid, qty: n, eclats: 0, fragments: n * prix, created_at: now() });
       total += n * prix;
     });
-    if (recyclageSemaine(p) + total > cfg('recyclage_plafond')) refuser('PLAFOND_RECYCLAGE');
     S.col[p] = col;
     S.recyclages.push(...journal);
-    profil(p).shards += total;
+    profil(p).fragments = (profil(p).fragments || 0) + total;
     return me(p);
+  };
+
+  /* fabriquer, 12_recyclage.sql */
+  RPC.fabriquer = (p, { p_carte }) => {
+    const k = carte(p_carte);
+    if (!k) refuser('Carte inconnue.');
+    if (k.promo) refuser('Cette carte ne se fabrique pas.');
+    const cout = cfg('fabrication_' + k.rar);
+    if (cout == null) refuser('Cette carte ne se fabrique pas.');
+    if (possede(p, p_carte)) refuser('Tu possèdes déjà cette carte.');
+    const pr = profil(p);
+    if ((pr.fragments || 0) < cout) refuser('Pas assez de Fragments.');
+    pr.fragments -= cout;
+    pr.fabrications = (pr.fabrications || 0) + 1;
+    colDe(p)[p_carte] = 1;
+    syncCollection(p);
+    checkPromos(p);
+    return me(p);
+  };
+
+  /* mes_tirages, 15_evenements.sql */
+  RPC.mes_tirages = p => {
+    const miens = S.tirages.filter(t => t.user_id === p);
+    const raretes = {};
+    miens.forEach(t => t.cartes.forEach(id => {
+      const k = carte(id);
+      if (k) raretes[k.rar] = (raretes[k.rar] || 0) + 1;
+    }));
+    return {
+      total: miens.length,
+      god: miens.filter(t => t.god).length,
+      depuis: miens.length ? iso(miens[0].created_at) : null,
+      raretes,
+      liste: miens.slice(-30).reverse().map(t => ({ quand: iso(t.created_at), cartes: t.cartes, god: t.god }))
+    };
   };
 
   /* =================================================== Les joueurs simulés
@@ -748,7 +838,8 @@
   function creerMonde() {
     const t0 = now();
     S = { v: 1, seq: 0, debut: t0, profils: {}, col: {}, inv: {}, qp: {}, amities: [], trades: [],
-      notifs: [], annonces: [], recyclages: [], prochaineOffre: t0 + 75000, kairo: t0 + 25000 };
+      notifs: [], annonces: [], recyclages: [], prochaineOffre: t0 + 75000, kairo: t0 + 25000,
+      tirages: [], chasse: { carte: 'u01', active: true, gagnant: null, trouvee_le: null } };
 
     S.profils[MOI] = nouveauProfil(MOI, D.pseudo, { shards: D.eclats });
 
@@ -876,6 +967,9 @@
         }
         S = await kvGet(CLE);
         if (!S || S.v !== 1) { creerMonde(); await sauver(); }
+        /* Une démo commencée avant la version 1.5 : ce qui lui manque. */
+        S.tirages = S.tirages || [];
+        S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
       })();
     }
     return pret;

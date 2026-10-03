@@ -27,6 +27,7 @@ MORCEAUX = [
     ('11_boite.sql',   'La boite de reception : notifications et annonces'),
     ('12_recyclage.sql', 'Le recyclage des doublons contre des Eclats'),
     ('14_classement.sql', 'Le classement global des joueurs'),
+    ('15_evenements.sql', 'Tirages, succes, evenements et chasse a la carte unique'),
 ]
 
 entete = """-- =====================================================================

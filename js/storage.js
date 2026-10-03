@@ -48,6 +48,9 @@ let cards = [];
 /* Les cartes Promo vivent à côté de l'extension, jamais dedans : voir
    js/promos-data.js. `cards.length` doit rester le total de l'extension. */
 let promos = [];
+/* Hors extension eux aussi : les Essences Brillantes et la carte unique. */
+let brillantes = [];
+let uniques = [];
 let packArt = PACK_ARTS[0];
 let byId = {};
 let tab = 'boosters';
@@ -77,6 +80,8 @@ function rebuild() {
   byId = {};
   cards.forEach(c => byId[c.id] = c);
   promos.forEach(c => byId[c.id] = c);
+  brillantes.forEach(c => byId[c.id] = c);
+  uniques.forEach(c => byId[c.id] = c);
 }
 
 function poolFor() {

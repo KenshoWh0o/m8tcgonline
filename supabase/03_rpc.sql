@@ -95,6 +95,9 @@ begin
       streak = case when pr.last_checkin = today - 1 then pr.streak + 1 else 1 end,
       last_checkin = today
     where id = p;
+    -- La plus longue serie : elle sert aux succes, qui ne doivent pas
+    -- disparaitre le jour ou la serie en cours retombe.
+    update profiles set serie_max = greatest(serie_max, streak) where id = p;
     perform bump_quests(p, 'checkin', 1);
   end if;
   return me();
@@ -130,7 +133,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles;
   god boolean; ids text[] := '{}'; cid text; x double precision;
-  nouvelles int := 0; i int;
+  nouvelles int := 0; i int; ch_active boolean; ch_gagnant uuid; unique_id text;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -171,6 +174,11 @@ begin
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
+    -- Une fois sur cfg('foil_odds'), l'Essence sort dans sa version
+    -- Brillante (03b_promos.sql) : meme Essence, `b` au lieu de `c`.
+    if cid is not null and random() < 1.0 / cfg('foil_odds') then
+      cid := coalesce((select k.id from cards k where k.id = 'b' || substr(cid, 2)), cid);
+    end if;
     ids := ids || coalesce(cid, pick_card('C'));
 
     x := random() * 100.0;
@@ -181,6 +189,25 @@ begin
 
   ids := array_remove(ids, null);
   if array_length(ids, 1) is null then raise exception 'BOOSTER_VIDE'; end if;
+
+  -- La chasse (15_evenements.sql) : tant qu'elle est ouverte et que personne
+  -- n'a la carte unique, chaque booster a une chance sur cfg('chasse_odds')
+  -- de la contenir, en septieme carte — la derniere revelee. La mise a jour
+  -- `where gagnant is null` tranche entre deux tirages simultanes : le second
+  -- relit la ligne apres le premier, n'y trouve plus de place, et repart
+  -- avec un booster ordinaire.
+  select active, gagnant into ch_active, ch_gagnant from chasse where id = 1;
+  if coalesce(ch_active, false) and ch_gagnant is null and random() < 1.0 / cfg('chasse_odds') then
+    update chasse set gagnant = p, trouvee_le = now()
+     where id = 1 and gagnant is null
+     returning carte into unique_id;
+    if unique_id is not null then
+      ids := ids || unique_id;
+      insert into annonces (titre, texte) values (
+        (select nom from cards where id = unique_id) || ' a été trouvée !',
+        pr.pseudo || ' l''a tirée d''un booster. Il n''en existe qu''une seule dans tout le jeu.');
+    end if;
+  end if;
 
   -- Les cartes encore jamais obtenues, avant de mettre a jour la collection.
   select count(*) into nouvelles from unnest(ids) u(cid2)
@@ -197,6 +224,10 @@ begin
     last_tick    = case when pr.tickets >= cfg('ticket_cap') then now() else last_tick end,
     packs_opened = packs_opened + 1
   where id = p;
+
+  -- Le journal des tirages : l'historique et les statistiques du joueur
+  -- (mes_tirages, 15_evenements.sql), et le succes « godpack ».
+  insert into tirages (user_id, cartes, god) values (p, ids, god);
 
   perform bump_quests(p, 'packs', 1);
   perform bump_quests(p, 'new_cards', nouvelles);
@@ -356,6 +387,11 @@ begin
   if ro <> rw then raise exception 'Les deux cartes doivent être de la même rareté.'; end if;
   if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
+  -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
+  -- unique — reste a qui l'a obtenu.
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo) then
+    raise exception 'Cette carte ne s''échange pas.';
+  end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
     raise exception 'Tu ne possèdes pas la carte que tu proposes.';

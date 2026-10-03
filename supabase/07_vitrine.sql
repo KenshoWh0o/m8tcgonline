@@ -64,23 +64,32 @@ begin
       'packs_opened', pr.packs_opened, 'trades_done', pr.trades_done,
       'streak', pr.streak, 'last_checkin', pr.last_checkin,
       'vitrine', to_jsonb(pr.vitrine),
+      'fragments', pr.fragments,
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
       'invite', (beta_ouverte() or est_invite(p)),
-      'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
+      -- Le rythme en cours : plus court pendant un evenement (minutes_recharge,
+      -- 15_evenements.sql). Le compte a rebours du navigateur suit celui-ci.
+      'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', minutes_recharge(),
       'serveur', now()),
     -- La pastille de la boite de reception (supabase/11_boite.sql).
     'boite', boite_non_lues(p),
-    -- Le recyclage (supabase/12_recyclage.sql) : ce que vaut chaque rarete,
-    -- et ou en est le plafond de la semaine. Les montants partent d'ici pour
-    -- que le navigateur n'en garde pas une copie qui finirait par mentir.
+    -- Le recyclage et la fabrication (supabase/12_recyclage.sql) : ce que
+    -- rapporte chaque rarete en Fragments, et ce que coute une carte. Les
+    -- montants partent d'ici pour que le navigateur n'en garde pas une copie
+    -- qui finirait par mentir.
     'recyclage', jsonb_build_object(
-      'semaine', recyclage_semaine(p),
-      'plafond', cfg('recyclage_plafond'),
       'valeurs', jsonb_build_object(
         'ES', cfg('recyclage_ES'), 'C', cfg('recyclage_C'), 'PC', cfg('recyclage_PC'),
-        'R', cfg('recyclage_R'), 'E', cfg('recyclage_E'), 'L', cfg('recyclage_L'))),
+        'R', cfg('recyclage_R'), 'E', cfg('recyclage_E'), 'L', cfg('recyclage_L')),
+      'couts', jsonb_build_object(
+        'ES', cfg('fabrication_ES'), 'C', cfg('fabrication_C'), 'PC', cfg('fabrication_PC'),
+        'R', cfg('fabrication_R'), 'E', cfg('fabrication_E'), 'L', cfg('fabrication_L'))),
+    -- Les succes, l'evenement en cours et la chasse (15_evenements.sql).
+    'succes', succes_de(p),
+    'evenement', evenement_actif(),
+    'chasse', chasse_etat(),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
@@ -134,6 +143,7 @@ begin
     'membre_depuis', o.created_at,
     'possede', possede, 'total', total,
     'vitrine', to_jsonb(o.vitrine),
+    'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,
     'col', case when ami then

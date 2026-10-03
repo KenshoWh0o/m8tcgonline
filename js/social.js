@@ -153,6 +153,7 @@ async function ouvrirFiche(pseudo) {
       <div class="stat"><b>${fmtN(f.trades_done)}</b><span>échanges conclus</span></div>
       <div class="stat"><b>${fmtN(f.streak)}</b><span>jours d'affilée</span></div>
     </div>
+    ${(f.succes || []).length ? `<h2>Succès</h2>${vSucces(f.succes, false)}` : ''}
     ${f.ami ? collection : '<p class="muted small">Ajoute-le en ami pour voir sa collection et lui proposer un échange.</p>'}`,
     actions: f.moi ? [{ label: 'Fermer', fn: closeSheet }]
       : f.ami

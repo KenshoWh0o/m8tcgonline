@@ -1064,6 +1064,20 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .recbarre i.sel{background:repeating-linear-gradient(135deg,var(--ok) 0 5px,var(--ok-deep) 5px 10px)}
 .recplafond small{font-size:12px;color:var(--muted)}
 
+/* Les Fragments : le même losange que les Éclats, en creux. */
+.fragico{display:inline-flex;vertical-align:-2px}
+.fragico svg{width:1.05em;height:1.05em;fill:none;stroke:var(--accent-soft);stroke-width:2;stroke-linejoin:round}
+.wallet .fragico svg{width:17px;height:17px}
+.fabinfo small{display:block;margin-top:5px;line-height:1.45}
+.fabinfo .linkbtn{margin-top:6px;font-size:12.5px}
+/* La fiche de fabrication : la carte, son nom, son prix. */
+.fabfiche{display:flex;gap:16px;align-items:center}
+.fabcarte{flex:0 0 38%;max-width:170px;background:none;border:0;padding:0}
+.fabmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.fabmeta>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
+.fabmeta>span{font-size:12.5px;font-weight:800}
+.fabmeta .achatreste{margin:0;text-align:left}
+
 /* Le barème, une ligne de pastilles. */
 .recbareme{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 .recbareme span{display:inline-flex;align-items:center;gap:6px;background:var(--surface);
@@ -1209,3 +1223,67 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   stroke-linecap:round;stroke-linejoin:round}
 .bvico svg.ico-star{width:20px;height:14px;stroke:none;fill:currentColor}
 .sheet .btn.discord{margin-top:12px}
+
+/* ============ Succès ============ */
+/* Un médaillon par succès. Obtenu, il prend la couleur de sa rareté ;
+   pas encore, il reste en creux et dit ce qu'il faut faire. */
+.succes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:4px 0 10px}
+.succes.compact{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.badge{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--radius);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);opacity:.5;filter:grayscale(1)}
+.badge.on{opacity:1;filter:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--sh-1)}
+.sucico{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--muted)}
+.sucico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.sucico svg.ico-star{fill:currentColor;stroke:none}
+.badge.on.tC .sucico{background:var(--surface-3);color:var(--text)}
+.badge.on.tR .sucico{background:#39b8ff;color:#06263a}
+.badge.on.tE .sucico{background:#a95cf2;color:#fff}
+.badge.on.tL .sucico{background:#ffc73b;color:#3a2600}
+.badge.on.tUN .sucico{background:conic-gradient(#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
+.suctxt{min-width:0;display:flex;flex-direction:column}
+.suctxt b{font-size:13px;font-weight:800;line-height:1.2}
+.suctxt small{font-size:11px;color:var(--muted);line-height:1.3}
+.succes.compact .suctxt small{display:none}
+
+/* ============ Fenêtre des nouveautés ============ */
+/* La carte unique en vedette, inclinée, dans un halo qui tourne. */
+.nvhero{position:relative;display:flex;align-items:center;gap:16px;margin:2px 0 12px;padding:16px;
+  border-radius:var(--radius);overflow:hidden;color:#fff;
+  background:radial-gradient(120% 140% at 20% 30%,#5a1fa8 0%,#2a0f45 55%,#140a20 100%)}
+.nvrayons{position:absolute;left:22%;top:50%;width:420px;aspect-ratio:1;translate:-50% -50%;opacity:.35;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.6) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 10%,transparent 62%);mask:radial-gradient(circle,#000 10%,transparent 62%);
+  animation:nvtourne 26s linear infinite}
+@keyframes nvtourne{to{rotate:360deg}}
+.nvcarte{position:relative;flex:0 0 34%;max-width:150px;rotate:-6deg}
+.nvtexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.nvkicker{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  background:#ffc73b;color:#3a2600;padding:3px 9px;border-radius:999px}
+.nvhero.trouvee .nvkicker{background:rgba(255,255,255,.2);color:#fff}
+.nvtexte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
+.nvtexte small{font-size:12.5px;line-height:1.4;opacity:.88}
+.nvevent{display:flex;align-items:flex-start;gap:10px;margin:0 0 4px;padding:10px 12px;border-radius:var(--radius);
+  background:var(--accent-wash);color:var(--muted);font-size:13px;line-height:1.4}
+.nvevent b{color:var(--text)}
+.nvevent small{display:block;margin-top:2px}
+.nvevent svg{flex:0 0 auto;width:20px;height:14px;margin-top:3px;fill:var(--accent-soft)}
+.nvpoints{margin-top:12px}
+
+/* ============ Mes tirages ============ */
+.tirchance{display:flex;flex-direction:column;gap:6px;margin:4px 0 10px}
+.tirligne{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:12px;font-size:13px;
+  padding:7px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
+.tirrar{display:inline-flex;align-items:center;gap:7px;font-weight:800}
+.tirligne b{font-family:var(--display);font-weight:900;font-size:16px}
+.tirratio{font-weight:800;min-width:46px;text-align:right}
+.tirratio.haut{color:var(--ok)}.tirratio.bas{color:var(--danger)}
+.rardot.rBR{background:linear-gradient(135deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff)}
+.tirliste h2{margin-top:18px}
+.tirage{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:9px}
+.tirage.god{border-color:#ffc73b}
+.tirtete{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.tirtete>span{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.tirtete .btn{display:inline-flex;align-items:center;gap:6px}
+.tirtete .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tircartes{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.tirmini{background:none;border:0;padding:0}

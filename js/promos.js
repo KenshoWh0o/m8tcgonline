@@ -115,6 +115,8 @@ function finirEntreePromo(c) {
 /* D'où vient la carte : c'est la seule chose que le joueur ne peut pas déduire
    de l'image. */
 function promoSousTitre(c) {
+  if (c.unique) return 'Carte unique — un seul exemplaire dans tout le jeu.';
+  if (c.foil) return 'Essence Brillante — une Essence sur ' + FOIL_ODDS + ' sort dans cette version.';
   if (c.obtention === 'master') return 'Récompense du Master Set — les ' + cards.length + ' cartes réunies.';
   if (c.obtention === 'palier') return 'Récompense de collection — ' + PROMO_PALIER + ' % de l\'extension.';
   return 'Achetée en boutique.';

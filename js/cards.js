@@ -128,6 +128,42 @@ function buildPromos() {
   return PROMO_DATA.map(makePromo).sort((a, b) => a.num - b.num);
 }
 
+/* ---------- Les Essences Brillantes ---------- */
+/* La version brillante de chaque Essence : même illustration, autre finition
+   (le reflet est posé par renderCard). `b` + le numéro de l'Essence, comme
+   côté serveur (supabase/03b_promos.sql). Hors extension, comme les Promos. */
+function buildBrillantes(liste) {
+  return liste.filter(c => c.cat === 'essence').map(e => Object.assign({}, e, {
+    id: 'b' + e.id.slice(1),
+    nom: e.nom + ' Brillante',
+    rar: 'BR',
+    inBoost: false,
+    promo: true,
+    foil: true,
+    base: e.id,
+    code: '#' + String(e.num || 0).padStart(3, '0') + ' ✧'
+  }));
+}
+
+/* ---------- La carte unique ---------- */
+function buildUniques() {
+  if (typeof UNIQUE_DATA === 'undefined') return [];
+  return UNIQUE_DATA.map(meta => {
+    const num = +String(meta.code).replace(/\D/g, '') || 1;
+    const c = makeCard({
+      nom: meta.nom, categorie: meta.categorie, sous_type: meta.sous_type,
+      couleur: meta.couleur, rarete: 'UN', effets: meta.effets,
+      fichier: meta.fichier, booster: false, num
+    }, num - 1);
+    c.id = 'u' + String(num).padStart(2, '0');
+    c.code = meta.code;
+    c.promo = true;
+    c.unique = true;
+    c.illustrateur = meta.illustrateur || '';
+    return c;
+  });
+}
+
 /* ---------- La liste complète ---------- */
 function buildCards() {
   const list = CARD_DATA.map(makeCard).sort((a, b) => a.num - b.num);

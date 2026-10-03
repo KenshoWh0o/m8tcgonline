@@ -53,3 +53,19 @@ const PROMO_DATA = [
     obtention: 'palier'
   }
 ];
+
+/* La carte unique : un seul exemplaire dans tout le jeu, distribué par la
+   chasse (supabase/15_evenements.sql). Comme les Promos, elle vit hors de
+   l'extension. */
+const UNIQUE_DATA = [
+  {
+    code: 'U01', fichier: 'uniques/U01-L_Unique_Chevaliere.webp', nom: 'L\'Unique Chevalière',
+    categorie: 'Objet', sous_type: 'Lien', couleur: 'Neutre',
+    effets: [
+      { texte: 'Lorsque vous déclenchez une attaque, vous pouvez défausser cet Objet pour qu\'elle coûte 2 Énergie Neutre.' }
+    ],
+    resilience: 'Les prochaines attaques de votre adversaire coûtent une Énergie Neutre de plus.',
+    illustrateur: 'Lévinky',
+    ambiance: 'Une Chevalière pour les honorer tous'
+  }
+];

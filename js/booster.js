@@ -118,11 +118,35 @@ function makeBooster(pool, god) {
   out.push(pickFrom(pool, 'PC'));
 
   const ess = pool.filter(c => c.cat === 'essence');
-  out.push(ess.length ? rnd(ess) : pickFrom(pool, 'C'));
+  let e = ess.length ? rnd(ess) : pickFrom(pool, 'C');
+  /* Une fois sur FOIL_ODDS, l'Essence sort Brillante — comme open_pack(). */
+  if (e && e.cat === 'essence' && Math.random() < 1 / FOIL_ODDS) e = byId['b' + e.id.slice(1)] || e;
+  out.push(e);
 
   out.push(pickFrom(pool, weighted(RATES.HIT)));
 
   return out.filter(Boolean);
+}
+
+/* ---------- L'événement en cours ---------- */
+/* Un bandeau au-dessus du paquet : ce qui se passe, et jusqu'à quand. Il mène
+   à la fenêtre des nouveautés (js/bienvenue.js). Rien s'il n'y a ni événement
+   ni chasse ouverte. */
+function vBandeauEvenement() {
+  if (Backend.mode !== 'cloud' || !save) return '';
+  const ev = save.evenement;
+  const ch = save.chasse;
+  const chasse = ch && ch.active && !ch.trouvee;
+  if (!ev && !chasse) return '';
+  const reste = ev ? srvTime(ev.fin) - Date.now() : 0;
+  return `<button class="evbandeau" data-act="nouveautes">
+    <span class="evico">${NAVICO.promo}</span>
+    <span class="evtxt">
+      ${ev ? `<b>${h(ev.titre)}</b><small>encore ${h(dureeCourte(reste))}</small>` : ''}
+      ${chasse ? `<b class="evchasse">La chasse à l'Unique est ouverte</b>` : ''}
+    </span>
+    <span class="evplus">${NAVICO.caret}</span>
+  </button>`;
 }
 
 /* ---------- Écran booster ---------- */
@@ -134,6 +158,7 @@ function vBoosters() {
   const full = save.unlimited || save.tickets >= TICKET_CAP;
 
   return `<section class="packzone">
+  ${vBandeauEvenement()}
   <header class="setbar">
     <img class="setlogo" src="${ART.set}" alt="${h(SET_NAME)}">
     <img class="edition" src="${ART.edition}" alt="Première édition">

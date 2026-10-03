@@ -206,6 +206,19 @@ function announce() {
 
   el.className = 'op-rar r' + c.rar;
   el.innerHTML = `${rk(c) >= 3 ? R.nom : ''}${nw ? ' <em>NEW</em>' : ''}`;
+
+  /* Une Essence Brillante tombe au milieu du paquet : elle n'a pas la
+     révélation de la dernière carte, mais elle ne passe pas inaperçue. */
+  if (c.foil && !rv.vuBrillante) {
+    rv.vuBrillante = true;
+    SFX.jouer('epique');
+    vibrer([20, 40, 20]);
+    if (!RM()) {
+      const r = top.getBoundingClientRect();
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2,
+        { n: 90, colors: ['#ff5bb0', '#ffc73b', '#55e6a6', '#39b8ff', '#ffffff'], speed: 10, shape: 'star', g: .05, size: 3.6, life: 44 });
+    }
+  }
   $('#ophint').textContent = rv.idx === rv.cards.length - 1 ? 'Glisse d\'un coup sec ou touche pour voir ton récap' : 'Glisse d\'un coup sec ou touche pour passer';
 
   if (rk(c) >= 3 && !rv.god) top.classList.add('hitcard', 'h' + c.rar);
@@ -236,11 +249,13 @@ function doReveal(done) {
     stage.classList.remove('charging');
     top.classList.remove('veiled', 'charging');
     top.classList.add('unveil', 'hitcard', 'h' + c.rar);
-    SFX.jouer(c.rar === 'L' ? 'legend' : c.rar === 'E' ? 'epique' : 'rare');
+    const haut = c.rar === 'L' || c.rar === 'UN';
+    SFX.jouer(haut ? 'legend' : c.rar === 'E' ? 'epique' : 'rare');
     /* La vibration double le son : sur un téléphone en silencieux, c'est tout ce
        qui reste pour dire qu'il vient de se passer quelque chose. */
-    vibrer(c.rar === 'L' ? [30, 50, 30, 50, 60] : c.rar === 'E' ? [25, 45, 40] : 30);
+    vibrer(c.rar === 'UN' ? [40, 60, 40, 60, 40, 60, 120] : haut ? [30, 50, 30, 50, 60] : c.rar === 'E' ? [25, 45, 40] : 30);
     if (c.rar === 'E' || c.rar === 'L') top.classList.add('spin' + c.rar);
+    if (c.rar === 'UN') top.classList.add('spinL');
     rv.revealed = true;
 
     const r = top.getBoundingClientRect();
@@ -251,7 +266,7 @@ function doReveal(done) {
     sh.className = 'shock';
     void sh.offsetWidth;
     sh.className = 'shock go r' + c.rar;
-    if (c.rar === 'L') {
+    if (haut) {
       setTimeout(() => {
         const s2 = $('#shock');
         if (!s2) return;
@@ -272,14 +287,15 @@ function doReveal(done) {
 
     FX.burst(cx, cy, { n: cfg.n, colors: cfg.colors, speed: cfg.speed, shape: 'star', g: .06, size: 4, life: 45 });
     FX.burst(cx, cy, { n: Math.round(cfg.n / 2), colors: cfg.colors, speed: cfg.speed * .55, g: .03, size: 2.2, life: 40 });
-    if (c.rar === 'L') setTimeout(() => FX.sparkle({ n: 120, colors: cfg.colors, size: 4 }), 200);
+    if (haut) setTimeout(() => FX.sparkle({ n: c.rar === 'UN' ? 220 : 120, colors: cfg.colors, size: 4 }), 200);
+    if (c.rar === 'UN') setTimeout(() => FX.sparkle({ n: 160, colors: cfg.colors, size: 3.4 }), 1100);
     else if (c.rar === 'E') setTimeout(() => FX.sparkle({ n: 45, colors: cfg.colors }), 200);
 
     $('#oprar').className = 'op-rar big r' + c.rar;
     $('#oprar').innerHTML = `<span class="slam">${cfg.label}</span>${rv.news[rv.idx] ? '<em>NEW</em>' : ''}`;
     $('#ophint').textContent = 'Glisse d\'un coup sec ou touche pour voir ton récap';
 
-    setTimeout(done, c.rar === 'L' ? 900 : c.rar === 'E' ? 600 : 250);
+    setTimeout(done, c.rar === 'UN' ? 1400 : c.rar === 'L' ? 900 : c.rar === 'E' ? 600 : 250);
   }, RM() ? 0 : cfg.charge);
 }
 
@@ -436,8 +452,13 @@ function showRecap() {
   </div>`);
 
   SFX.jouer('gagne');
-  if (best.rar === 'L' && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: REVEAL.L.colors }), 500);
+  if ((best.rar === 'L' || best.rar === 'UN') && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: (REVEAL[best.rar] || REVEAL.L).colors }), 500);
+  /* Le paquet qu'on vient d'ouvrir, gardé pour le bouton « Partager ». */
+  dernierTirage = { ids: drawn.map(c => c.id), god: rv.god, quand: new Date().toISOString() };
 }
+
+/* Le dernier booster ouvert, pour le partage depuis le récap. */
+let dernierTirage = null;
 
 /* Les deux boutons du récap. « Ouvrir un autre booster » ne disait pas s'il en
    restait un : on appuyait, et le jeu répondait « réserve vide ». Le compte est
@@ -451,7 +472,8 @@ function vRecapActions() {
 
   const reste = save.unlimited ? Infinity : save.tickets;
   if (!reste) {
-    return `<button class="btn" data-t="done">Terminer</button>
+    return `<div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
+      <button class="btn" data-t="done">Terminer</button></div>
       <p class="rc-vide">${NAVICO.clock} Réserve vide · prochain booster dans
         <b class="tnum">${h(timerClock())}</b></p>`;
   }
@@ -460,7 +482,8 @@ function vRecapActions() {
     ? '<span class="rc-reste">∞</span>'
     : `<span class="rc-reste">${reste}</span>`;
   return `<button class="btn" data-t="again">${ICON.star}Ouvrir un autre${compte}</button>
-    <button class="btn ghost dark" data-t="done">Terminer</button>`;
+    <div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
+    <button class="btn ghost dark" data-t="done">Terminer</button></div>`;
 }
 
 $('#theater').addEventListener('click', e => {
@@ -487,6 +510,9 @@ $('#theater').addEventListener('click', e => {
     }
     case 'done':
       closeTheater();
+      break;
+    case 'share':
+      if (dernierTirage) partagerTirage(dernierTirage);
       break;
     /* La scène d'obtention d'une Promo vit dans le même théâtre, mais elle a
        sa propre sortie : voir fermerPromo() dans js/promos.js. */

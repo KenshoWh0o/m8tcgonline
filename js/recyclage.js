@@ -1,14 +1,17 @@
-/* Onglet Recyclage : les doublons deviennent des Éclats.
+/* Onglet Recyclage : les doublons deviennent des Fragments, et les Fragments
+   fabriquent les cartes qui manquent.
 
-   Toutes les raretés se recyclent, sauf les Promos. On garde toujours un
+   Toutes les raretés de l'extension se recyclent ; jamais ce qui est hors
+   extension (Promos, Brillantes, carte unique). On garde toujours un
    exemplaire de chaque carte — recycler ne fait jamais reculer la
    collection —, et les exemplaires proposés dans une demande d'échange encore
    en attente sont mis de côté : l'échange, s'il est accepté, doit pouvoir
    partir.
 
-   Le serveur vérifie tout cela une seconde fois, et applique le plafond de la
-   semaine (supabase/12_recyclage.sql). Les montants viennent de lui, par me() :
-   la page n'en garde qu'une copie de secours, pour le premier affichage.
+   Plus de plafond : les Fragments n'achètent que des cartes manquantes, ils
+   ne font tourner aucune boucle avec les boosters (le calcul est en tête de
+   supabase/12_recyclage.sql). Le serveur revérifie tout. Les montants
+   viennent de lui, par me() : la page n'en garde qu'une copie de secours.
 
    ------------------------------------------------------------------------
    Pas de bêtise
@@ -28,11 +31,13 @@
 let recSel = {};
 let recRar = 'all';
 
-const REC_DEFAUT = { ES: 5, C: 10, PC: 20, R: 50, E: 200, L: 500 };
+const REC_DEFAUT = { ES: 1, C: 2, PC: 5, R: 20, E: 80, L: 250 };
+const FAB_DEFAUT = { ES: 20, C: 40, PC: 100, R: 400, E: 2000, L: 8000 };
 const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAUT;
-const recPlafond = () => (save.recyclage ? save.recyclage.plafond : 2500);
-const recSemaine = () => (save.recyclage ? save.recyclage.semaine : 0);
+const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
 const recPrix = c => recValeurs()[c.rar] || 0;
+const fabCout = c => fabCouts()[c.rar] || 0;
+const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
 
 /* Les exemplaires proposés dans une de mes demandes d'échange en attente. */
 const recReserve = id => (Backend.trades || [])
@@ -43,8 +48,6 @@ const recReserve = id => (Backend.trades || [])
 const recDispo = c => Math.max(0, mesEx(c.id) - 1 - recReserve(c.id));
 const recTotal = () => Object.keys(recSel).reduce((s, id) => s + recSel[id] * recPrix(byId[id]), 0);
 const recNombre = () => Object.values(recSel).reduce((s, n) => s + n, 0);
-/* Ce qu'il reste à gagner cette semaine, sélection comprise. */
-const recMarge = () => Math.max(0, recPlafond() - recSemaine() - recTotal());
 
 /* Une sélection faite avant un échange ou une autre session peut ne plus
    tenir : on la ramène à ce qui est vraiment disponible. */
@@ -71,13 +74,14 @@ function vRecyclage() {
   const tete = `<div class="pagehead">
       <div>
         <h1>Recyclage</h1>
-        <p>Tes doublons deviennent des ${MONNAIE.nom}. Tu gardes toujours un exemplaire de chaque carte.</p>
+        <p>Tes doublons deviennent des ${FRAGMENTS.nom}, qui fabriquent les cartes qui te manquent.
+          Tu gardes toujours un exemplaire de chaque carte.</p>
       </div>
-      <span class="wallet pageact">${shardIco}<b>${fmtN(save.shards)}</b></span>
+      <span class="wallet pageact">${fragIco}<b>${fmtN(save.fragments || 0)}</b></span>
     </div>`;
 
   return `${tete}
-    ${vPlafond()}
+    ${vFabInfo()}
     ${vBareme()}
     ${doublons.length
       ? `<div class="recfiltres">
@@ -92,24 +96,18 @@ function vRecyclage() {
       : vide('Aucun doublon', 'Chaque carte que tu as en double apparaîtra ici.')}`;
 }
 
-/* Le plafond de la semaine : ce qu'on a déjà touché, ce qu'on s'apprête à
-   toucher, et quand ça repart. */
-function vPlafond() {
-  const plafond = recPlafond();
-  const fait = recSemaine();
-  const sel = recTotal();
-  const plein = fait >= plafond;
-  const pct = v => Math.min(100, v / plafond * 100).toFixed(1);
-
-  return `<section class="recplafond${plein ? ' plein' : ''}">
+/* À quoi servent les Fragments, et combien il en faut. */
+function vFabInfo() {
+  const manque = cards.filter(c => !(save.col[c.id] > 0));
+  const c = fabCouts();
+  return `<section class="recplafond fabinfo">
     <div class="recplafond-tete">
-      <b>Cette semaine</b>
-      <span class="tnum"><b>${fmtN(fait + sel)}</b> / ${fmtN(plafond)} ${shardIco}</span>
+      <b>Fabriquer une carte</b>
+      <span class="tnum">${manque.length ? `<b>${manque.length}</b> à fabriquer` : 'Collection complète'}</span>
     </div>
-    <div class="recbarre"><i style="width:${pct(fait)}%"></i><i class="sel" style="width:${pct(sel)}%"></i></div>
-    <small>${plein
-      ? `Plafond atteint. Il repart à zéro dans ${dureeCourte(resteAvantRemise('weekly'))}.`
-      : `Remise à zéro dans ${dureeCourte(resteAvantRemise('weekly'))}.`}</small>
+    <small>Dans la Collection, touche une case vide : la carte est à toi contre des ${FRAGMENTS.nom}.
+      Une Rare coûte ${fmtN(c.R)}, une Épique ${fmtN(c.E)}, une Légendaire ${fmtN(c.L)}.</small>
+    ${manque.length ? '<button class="linkbtn" data-tab="collection">Voir ce qui me manque</button>' : ''}
   </section>`;
 }
 
@@ -145,7 +143,7 @@ function vPiedRec() {
   const nb = recNombre();
   return `<div class="recpied${nb ? ' actif' : ''}">
     <span class="recpied-txt">${nb
-      ? `<b>${nb}</b> carte${nb > 1 ? 's' : ''} · <b class="recgain">+${fmtN(recTotal())}</b> ${shardIco}
+      ? `<b>${nb}</b> carte${nb > 1 ? 's' : ''} · <b class="recgain">+${fmtN(recTotal())}</b> ${fragIco}
          <button class="linkbtn" data-act="rec-vider">Vider</button>`
       : 'Touche une carte pour la sélectionner.'}</span>
     <button class="btn tiny" data-act="rec-go" ${nb ? '' : 'disabled'}>Recycler</button>
@@ -166,10 +164,6 @@ function recAjuster(id, d) {
         ? 'Le reste est gardé : un exemplaire, et ceux promis dans un échange.'
         : 'Tu gardes toujours un exemplaire de chaque carte.');
     }
-    if (recPrix(c) > recMarge()) {
-      SFX.jouer('erreur');
-      return toast(`Plafond de la semaine : il te reste ${fmtN(recMarge())} ${MONNAIE.nom} à gagner.`);
-    }
   }
 
   if (n) recSel[id] = n; else delete recSel[id];
@@ -177,7 +171,7 @@ function recAjuster(id, d) {
   render();
 }
 
-/* Tout sélectionner, dans le filtre en cours, jusqu'au plafond. Les Épiques et
+/* Tout sélectionner, dans le filtre en cours. Les Épiques et
    les Légendaires n'y entrent que si on les a filtrées exprès : une carte qui
    vaut 200 ou 500 se choisit, elle ne s'emporte pas dans un lot. */
 function recToutPrendre() {
@@ -187,17 +181,12 @@ function recToutPrendre() {
     .sort((a, b) => rk(a) - rk(b) || a.num - b.num);
 
   let pris = 0;
-  let bloque = false;
   liste.forEach(c => {
-    while ((recSel[c.id] || 0) < recDispo(c)) {
-      if (recPrix(c) > recMarge()) { bloque = true; break; }
-      recSel[c.id] = (recSel[c.id] || 0) + 1;
-      pris++;
-    }
+    const d = recDispo(c) - (recSel[c.id] || 0);
+    if (d > 0) { recSel[c.id] = recDispo(c); pris += d; }
   });
 
-  if (!pris) toast(bloque ? 'Plafond de la semaine atteint.' : 'Rien de plus à sélectionner ici.');
-  else if (bloque) toast('Sélection arrêtée au plafond de la semaine.');
+  if (!pris) toast('Rien de plus à sélectionner ici.');
   else if (garder.length && recRar === 'all' && cards.some(c => ['E', 'L'].includes(c.rar) && recDispo(c) > 0)) {
     toast('Les Épiques et les Légendaires se choisissent une par une.');
   }
@@ -219,7 +208,7 @@ function recConfirmer() {
         <span class="recln"><b>${h(l.c.nom)}</b><small class="r${l.c.rar}">${(RAR[l.c.rar] || RAR.C).nom}</small></span>
         <span class="reclq">×${l.n}</span>
         <span class="reclv">+${fmtN(l.n * recPrix(l.c))}</span></li>`).join('')}</ul>
-      <div class="rectotal"><span>Tu gagnes</span><b>+${fmtN(recTotal())} ${shardIco}</b></div>
+      <div class="rectotal"><span>Tu gagnes</span><b>+${fmtN(recTotal())} ${fragIco}</b></div>
       <p class="muted small">Il te restera au moins un exemplaire de chacune.</p>
       ${hauts.length ? `<label class="toggle recgarde">
           <span>Je recycle bien ${hauts.length > 1 ? 'ces cartes' : 'cette carte'}
@@ -249,7 +238,7 @@ function recConfirmerEncore() {
     locked: true,
     body: `<div class="recfinal">
         <span class="recfinal-ico">${NAVICO.recycle}</span>
-        <b>+${fmtN(total)} ${shardIco}</b>
+        <b>+${fmtN(total)} ${fragIco}</b>
         <p>${nb} carte${nb > 1 ? 's' : ''} ${nb > 1 ? 'vont être détruites' : 'va être détruite'}.
           C'est définitif : on ne peut pas revenir en arrière.</p>
       </div>`,
@@ -280,6 +269,48 @@ async function recEnvoyer() {
   const ok = await agir(async () => {
     await Backend.recycler(lots);
     recSel = {};
-  }, `+${fmtN(gain)} ${MONNAIE.nom} : c'est recyclé.`);
+  }, `+${fmtN(gain)} ${FRAGMENTS.nom} : c'est recyclé.`);
   if (ok) SFX.jouer('piece');
+}
+
+/* ---------- Fabriquer ---------- */
+/* Une carte de l'extension qu'on n'a pas, contre des Fragments. Deux gestes,
+   comme un achat : la fiche montre la carte, son prix et le solde qui
+   restera ; le bouton ne répond que si le compte y est. */
+function ouvrirFabrication(id) {
+  const c = byId[id];
+  if (!c || c.promo || save.col[id] > 0) return;
+  const cout = fabCout(c);
+  const solde = save.fragments || 0;
+  const manque = Math.max(0, cout - solde);
+  const R = RAR[c.rar] || RAR.C;
+
+  openSheet({
+    title: 'Fabriquer cette carte ?',
+    body: `<div class="fabfiche">
+        <button class="fabcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
+        <div class="fabmeta">
+          <b>${h(c.nom)}</b>
+          <span class="r${c.rar}">${R.nom} · #${String(c.num || 0).padStart(3, '0')}</span>
+          <div class="achatprix"><span>Coût</span><b>${fragIco}${fmtN(cout)}</b></div>
+          <p class="achatreste${manque ? ' court' : ''}">${manque
+            ? `Il te manque ${fmtN(manque)} ${FRAGMENTS.nom}. Recycle des doublons pour en gagner.`
+            : `Il te restera ${fmtN(solde - cout)} ${FRAGMENTS.nom}.`}</p>
+        </div>
+      </div>`,
+    actions: manque
+      ? [{ label: 'Aller au recyclage', primary: true, fn: () => { closeSheet(); aller('recyclage'); } },
+         { label: 'Fermer', fn: closeSheet }]
+      : [{ label: `Fabriquer (${fmtN(cout)})`, primary: true, fn: () => fabriquerCarte(c) },
+         { label: 'Annuler', fn: closeSheet }]
+  });
+}
+
+async function fabriquerCarte(c) {
+  closeSheet();
+  const ok = await agir(() => Backend.fabriquer(c.id), `${c.nom} rejoint ta collection.`);
+  if (ok) {
+    SFX.jouer(c.rar === 'L' ? 'legend' : rk(c) >= 3 ? 'rare' : 'carte');
+    vibrer(rk(c) >= 4 ? [25, 45, 40] : 30);
+  }
 }

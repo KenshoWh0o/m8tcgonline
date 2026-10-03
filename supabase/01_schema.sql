@@ -28,6 +28,16 @@ create table if not exists public.profiles (
 
 create unique index if not exists profiles_pseudo_key on public.profiles (lower(pseudo));
 
+-- Version 1.5 : les Fragments du recyclage, le nombre de cartes fabriquees et
+-- la plus longue serie de jours (les succes en ont besoin : la serie en cours,
+-- elle, retombe a zero).
+alter table public.profiles add column if not exists fragments    integer not null default 0;
+alter table public.profiles add column if not exists fabrications integer not null default 0;
+alter table public.profiles add column if not exists serie_max    integer not null default 0;
+do $$ begin
+  alter table public.profiles add constraint fragments_positifs check (fragments >= 0);
+exception when duplicate_object then null; end $$;
+
 -- ------------------------------------------------------------- catalogue
 -- Rempli par 02_cards.sql. Le serveur en a besoin pour tirer les boosters.
 create table if not exists public.cards (
@@ -148,17 +158,34 @@ language sql immutable as $$
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
     -- Recyclage (supabase/12_recyclage.sql) : ce que rapporte un doublon jete,
-    -- selon sa rarete, et le plafond de la semaine. Sans plafond, recycler
-    -- rapportait trois a cinq fois ce que paient les quetes, et racheter des
-    -- boosters avec faisait tourner une boucle qui triplait le rythme de la
-    -- collection. Le calcul est en tete de 12_recyclage.sql.
-    when 'recyclage_ES'      then 5
-    when 'recyclage_C'       then 10
-    when 'recyclage_PC'      then 20
-    when 'recyclage_R'       then 50
-    when 'recyclage_E'       then 200
-    when 'recyclage_L'       then 500
-    when 'recyclage_plafond' then 2500     -- Eclats par semaine, remise le lundi
+    -- en Fragments. Les Fragments n'achetent qu'une chose — une carte qui
+    -- manque (fabriquer) — : ils ne font pas tourner de boucle avec les
+    -- boosters, il n'y a donc plus de plafond. Le calcul est en tete de
+    -- 12_recyclage.sql.
+    when 'recyclage_ES'      then 1
+    when 'recyclage_C'       then 2
+    when 'recyclage_PC'      then 5
+    when 'recyclage_R'       then 20
+    when 'recyclage_E'       then 80
+    when 'recyclage_L'       then 250
+    -- Fabriquer une carte qui manque, en Fragments. Simulation (six boosters
+    -- par jour, tous les doublons recycles) : un joueur a 120 boosters finit
+    -- l'extension en ~62 jours au lieu de ~92, et le quart le plus malchanceux
+    -- en ~73 au lieu de ~124. Moins cher, la fin de collection ne valait plus
+    -- rien ; plus cher, la fabrication ne changeait presque rien.
+    when 'fabrication_ES'    then 20
+    when 'fabrication_C'     then 40
+    when 'fabrication_PC'    then 100
+    when 'fabrication_R'     then 400
+    when 'fabrication_E'     then 2000
+    when 'fabrication_L'     then 8000
+    -- Une Essence Brillante remplace l'Essence du paquet une fois sur 50 :
+    -- environ une tous les huit jours pour un joueur regulier.
+    when 'foil_odds'         then 50
+    -- La chasse a la carte unique (supabase/15_evenements.sql) : une chance
+    -- sur 250 par booster, tant que personne ne l'a trouvee. Avec ~70 boosters
+    -- ouverts par jour dans la communaute, elle sort en ~3 a 4 jours.
+    when 'chasse_odds'       then 250
   end;
 $$;
 
@@ -386,7 +413,11 @@ begin
   select * into pr from profiles where id = p for update;
   if not found then raise exception 'profil introuvable'; end if;
 
-  step := make_interval(mins => cfg('ticket_minutes'));
+  -- minutes_recharge() (15_evenements.sql) : 240 d'ordinaire, moins pendant
+  -- un evenement « boosters doubles ». Le pas s'applique a tout le temps ecoule
+  -- depuis last_tick : au debut et a la fin d'un evenement, le premier booster
+  -- arrive un peu plus tot ou un peu plus tard. Ecart d'un booster au plus.
+  step := make_interval(mins => minutes_recharge());
   if pr.tickets >= cfg('ticket_cap') then
     if pr.last_tick < now() then
       update profiles set last_tick = now() where id = p returning * into pr;

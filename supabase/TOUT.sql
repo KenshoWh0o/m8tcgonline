@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-09-28
+--   Assemble le 2026-10-03
 --
 -- =====================================================================
 
@@ -51,6 +51,16 @@ create table if not exists public.profiles (
 );
 
 create unique index if not exists profiles_pseudo_key on public.profiles (lower(pseudo));
+
+-- Version 1.5 : les Fragments du recyclage, le nombre de cartes fabriquees et
+-- la plus longue serie de jours (les succes en ont besoin : la serie en cours,
+-- elle, retombe a zero).
+alter table public.profiles add column if not exists fragments    integer not null default 0;
+alter table public.profiles add column if not exists fabrications integer not null default 0;
+alter table public.profiles add column if not exists serie_max    integer not null default 0;
+do $$ begin
+  alter table public.profiles add constraint fragments_positifs check (fragments >= 0);
+exception when duplicate_object then null; end $$;
 
 -- ------------------------------------------------------------- catalogue
 -- Rempli par 02_cards.sql. Le serveur en a besoin pour tirer les boosters.
@@ -172,17 +182,34 @@ language sql immutable as $$
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
     -- Recyclage (supabase/12_recyclage.sql) : ce que rapporte un doublon jete,
-    -- selon sa rarete, et le plafond de la semaine. Sans plafond, recycler
-    -- rapportait trois a cinq fois ce que paient les quetes, et racheter des
-    -- boosters avec faisait tourner une boucle qui triplait le rythme de la
-    -- collection. Le calcul est en tete de 12_recyclage.sql.
-    when 'recyclage_ES'      then 5
-    when 'recyclage_C'       then 10
-    when 'recyclage_PC'      then 20
-    when 'recyclage_R'       then 50
-    when 'recyclage_E'       then 200
-    when 'recyclage_L'       then 500
-    when 'recyclage_plafond' then 2500     -- Eclats par semaine, remise le lundi
+    -- en Fragments. Les Fragments n'achetent qu'une chose — une carte qui
+    -- manque (fabriquer) — : ils ne font pas tourner de boucle avec les
+    -- boosters, il n'y a donc plus de plafond. Le calcul est en tete de
+    -- 12_recyclage.sql.
+    when 'recyclage_ES'      then 1
+    when 'recyclage_C'       then 2
+    when 'recyclage_PC'      then 5
+    when 'recyclage_R'       then 20
+    when 'recyclage_E'       then 80
+    when 'recyclage_L'       then 250
+    -- Fabriquer une carte qui manque, en Fragments. Simulation (six boosters
+    -- par jour, tous les doublons recycles) : un joueur a 120 boosters finit
+    -- l'extension en ~62 jours au lieu de ~92, et le quart le plus malchanceux
+    -- en ~73 au lieu de ~124. Moins cher, la fin de collection ne valait plus
+    -- rien ; plus cher, la fabrication ne changeait presque rien.
+    when 'fabrication_ES'    then 20
+    when 'fabrication_C'     then 40
+    when 'fabrication_PC'    then 100
+    when 'fabrication_R'     then 400
+    when 'fabrication_E'     then 2000
+    when 'fabrication_L'     then 8000
+    -- Une Essence Brillante remplace l'Essence du paquet une fois sur 50 :
+    -- environ une tous les huit jours pour un joueur regulier.
+    when 'foil_odds'         then 50
+    -- La chasse a la carte unique (supabase/15_evenements.sql) : une chance
+    -- sur 250 par booster, tant que personne ne l'a trouvee. Avec ~70 boosters
+    -- ouverts par jour dans la communaute, elle sort en ~3 a 4 jours.
+    when 'chasse_odds'       then 250
   end;
 $$;
 
@@ -410,7 +437,11 @@ begin
   select * into pr from profiles where id = p for update;
   if not found then raise exception 'profil introuvable'; end if;
 
-  step := make_interval(mins => cfg('ticket_minutes'));
+  -- minutes_recharge() (15_evenements.sql) : 240 d'ordinaire, moins pendant
+  -- un evenement « boosters doubles ». Le pas s'applique a tout le temps ecoule
+  -- depuis last_tick : au debut et a la fin d'un evenement, le premier booster
+  -- arrive un peu plus tot ou un peu plus tard. Ecart d'un booster au plus.
+  step := make_interval(mins => minutes_recharge());
   if pr.tickets >= cfg('ticket_cap') then
     if pr.last_tick < now() then
       update profiles set last_tick = now() where id = p returning * into pr;
@@ -857,6 +888,9 @@ begin
       streak = case when pr.last_checkin = today - 1 then pr.streak + 1 else 1 end,
       last_checkin = today
     where id = p;
+    -- La plus longue serie : elle sert aux succes, qui ne doivent pas
+    -- disparaitre le jour ou la serie en cours retombe.
+    update profiles set serie_max = greatest(serie_max, streak) where id = p;
     perform bump_quests(p, 'checkin', 1);
   end if;
   return me();
@@ -892,7 +926,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles;
   god boolean; ids text[] := '{}'; cid text; x double precision;
-  nouvelles int := 0; i int;
+  nouvelles int := 0; i int; ch_active boolean; ch_gagnant uuid; unique_id text;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -933,6 +967,11 @@ begin
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
+    -- Une fois sur cfg('foil_odds'), l'Essence sort dans sa version
+    -- Brillante (03b_promos.sql) : meme Essence, `b` au lieu de `c`.
+    if cid is not null and random() < 1.0 / cfg('foil_odds') then
+      cid := coalesce((select k.id from cards k where k.id = 'b' || substr(cid, 2)), cid);
+    end if;
     ids := ids || coalesce(cid, pick_card('C'));
 
     x := random() * 100.0;
@@ -943,6 +982,25 @@ begin
 
   ids := array_remove(ids, null);
   if array_length(ids, 1) is null then raise exception 'BOOSTER_VIDE'; end if;
+
+  -- La chasse (15_evenements.sql) : tant qu'elle est ouverte et que personne
+  -- n'a la carte unique, chaque booster a une chance sur cfg('chasse_odds')
+  -- de la contenir, en septieme carte — la derniere revelee. La mise a jour
+  -- `where gagnant is null` tranche entre deux tirages simultanes : le second
+  -- relit la ligne apres le premier, n'y trouve plus de place, et repart
+  -- avec un booster ordinaire.
+  select active, gagnant into ch_active, ch_gagnant from chasse where id = 1;
+  if coalesce(ch_active, false) and ch_gagnant is null and random() < 1.0 / cfg('chasse_odds') then
+    update chasse set gagnant = p, trouvee_le = now()
+     where id = 1 and gagnant is null
+     returning carte into unique_id;
+    if unique_id is not null then
+      ids := ids || unique_id;
+      insert into annonces (titre, texte) values (
+        (select nom from cards where id = unique_id) || ' a été trouvée !',
+        pr.pseudo || ' l''a tirée d''un booster. Il n''en existe qu''une seule dans tout le jeu.');
+    end if;
+  end if;
 
   -- Les cartes encore jamais obtenues, avant de mettre a jour la collection.
   select count(*) into nouvelles from unnest(ids) u(cid2)
@@ -959,6 +1017,10 @@ begin
     last_tick    = case when pr.tickets >= cfg('ticket_cap') then now() else last_tick end,
     packs_opened = packs_opened + 1
   where id = p;
+
+  -- Le journal des tirages : l'historique et les statistiques du joueur
+  -- (mes_tirages, 15_evenements.sql), et le succes « godpack ».
+  insert into tirages (user_id, cartes, god) values (p, ids, god);
 
   perform bump_quests(p, 'packs', 1);
   perform bump_quests(p, 'new_cards', nouvelles);
@@ -1118,6 +1180,11 @@ begin
   if ro <> rw then raise exception 'Les deux cartes doivent être de la même rareté.'; end if;
   if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
+  -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
+  -- unique — reste a qui l'a obtenu.
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo) then
+    raise exception 'Cette carte ne s''échange pas.';
+  end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
     raise exception 'Tu ne possèdes pas la carte que tu proposes.';
@@ -1311,6 +1378,29 @@ insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo) values
   ('p02',  2, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
   ('p05',  5, 'Tout Commence Ici', 'joueur', 'rose',   'PR', false, true),
   ('p06',  6, 'Le Marionnettiste', 'joueur', 'neutre', 'PR', false, true)
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
+
+-- ------------------------------------------- les Essences Brillantes
+-- La version brillante de chacune des Essences : meme carte, autre finition.
+-- `b` + le numero de l'Essence (c001 -> b001). Hors extension (promo = true) :
+-- jamais dans le total de 122, jamais echangeables, jamais recyclees ni
+-- fabriquees. Elles ne sortent que de la case Essence d'un booster, une fois
+-- sur cfg('foil_odds') (voir open_pack, 03_rpc.sql).
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo)
+select 'b' || substr(k.id, 2), k.num, k.nom || ' Brillante', k.cat, k.col, 'BR', false, true
+  from public.cards k
+ where k.cat = 'essence' and not k.promo and k.id like 'c%'
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
+
+-- ------------------------------------------------- la carte unique
+-- Un seul exemplaire dans tout le jeu : celui ou celle qui la tire la garde.
+-- C'est la chasse (15_evenements.sql) qui la distribue, une seule fois.
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo) values
+  ('u01', 1, 'L''Unique Chevalière', 'objet', 'neutre', 'UN', false, true)
 on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
   rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
@@ -1834,23 +1924,32 @@ begin
       'packs_opened', pr.packs_opened, 'trades_done', pr.trades_done,
       'streak', pr.streak, 'last_checkin', pr.last_checkin,
       'vitrine', to_jsonb(pr.vitrine),
+      'fragments', pr.fragments,
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
       'invite', (beta_ouverte() or est_invite(p)),
-      'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', cfg('ticket_minutes'),
+      -- Le rythme en cours : plus court pendant un evenement (minutes_recharge,
+      -- 15_evenements.sql). Le compte a rebours du navigateur suit celui-ci.
+      'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', minutes_recharge(),
       'serveur', now()),
     -- La pastille de la boite de reception (supabase/11_boite.sql).
     'boite', boite_non_lues(p),
-    -- Le recyclage (supabase/12_recyclage.sql) : ce que vaut chaque rarete,
-    -- et ou en est le plafond de la semaine. Les montants partent d'ici pour
-    -- que le navigateur n'en garde pas une copie qui finirait par mentir.
+    -- Le recyclage et la fabrication (supabase/12_recyclage.sql) : ce que
+    -- rapporte chaque rarete en Fragments, et ce que coute une carte. Les
+    -- montants partent d'ici pour que le navigateur n'en garde pas une copie
+    -- qui finirait par mentir.
     'recyclage', jsonb_build_object(
-      'semaine', recyclage_semaine(p),
-      'plafond', cfg('recyclage_plafond'),
       'valeurs', jsonb_build_object(
         'ES', cfg('recyclage_ES'), 'C', cfg('recyclage_C'), 'PC', cfg('recyclage_PC'),
-        'R', cfg('recyclage_R'), 'E', cfg('recyclage_E'), 'L', cfg('recyclage_L'))),
+        'R', cfg('recyclage_R'), 'E', cfg('recyclage_E'), 'L', cfg('recyclage_L')),
+      'couts', jsonb_build_object(
+        'ES', cfg('fabrication_ES'), 'C', cfg('fabrication_C'), 'PC', cfg('fabrication_PC'),
+        'R', cfg('fabrication_R'), 'E', cfg('fabrication_E'), 'L', cfg('fabrication_L'))),
+    -- Les succes, l'evenement en cours et la chasse (15_evenements.sql).
+    'succes', succes_de(p),
+    'evenement', evenement_actif(),
+    'chasse', chasse_etat(),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
@@ -1904,6 +2003,7 @@ begin
     'membre_depuis', o.created_at,
     'possede', possede, 'total', total,
     'vitrine', to_jsonb(o.vitrine),
+    'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,
     'col', case when ami then
@@ -2147,51 +2247,50 @@ end $$;
 -- #####################################################################
 
 -- =====================================================================
---  Mate TCG Online — le recyclage des doublons
+--  Mate TCG Online — le recyclage des doublons, et la fabrication
 --  A executer apres 11_boite.sql. Rejouable sans danger.
 --
---  On jette un doublon, on touche des Eclats. Toutes les raretes se
---  recyclent sauf les Promos, et on garde toujours au moins un exemplaire de
---  chaque carte : recycler ne fait jamais reculer la collection.
+--  On jette un doublon, on touche des Fragments. Avec des Fragments, on
+--  fabrique une carte qui manque. Toutes les raretes de l'extension se
+--  recyclent et se fabriquent ; jamais ce qui est hors extension (Promos,
+--  Essences Brillantes, carte unique). On garde toujours au moins un
+--  exemplaire de chaque carte : recycler ne fait jamais reculer la
+--  collection.
 --
---  Les montants et le plafond sont dans cfg() (supabase/01_schema.sql) :
---      Essence 5 · Commune 10 · Peu commune 20 · Rare 50
---      Epique 200 · Legendaire 500
---      plafond : 2 500 Eclats par semaine, remis a zero le lundi (Paris)
+--  Les montants sont dans cfg() (supabase/01_schema.sql) :
+--      recyclage    Essence 1 · Commune 2 · Peu commune 5 · Rare 20
+--                   Epique 80 · Legendaire 250
+--      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
+--                   Epique 2 000 · Legendaire 8 000
 --
 --  ------------------------------------------------------------------
---  POURQUOI UN PLAFOND
+--  POURQUOI DES FRAGMENTS, ET PLUS D'ECLATS
 --
---  Un booster rapporte en moyenne ~150 Eclats une fois recycle, des que la
---  collection est bien avancee : la derniere carte est une Rare quatre fois
---  sur cinq, et une Rare vaut 50. Simulation, joueur regulier (42 boosters
---  par semaine, tous les doublons recycles chaque semaine), mediane :
+--  Recycler contre des Eclats posait un probleme sans solution : un joueur
+--  regulier produit ~6 300 Eclats de doublons par semaine une fois sa
+--  collection avancee. Plafonne, le recyclage ne permettait pas de se
+--  debarrasser de ses cartes ; deplafonne, il triplait les Eclats, et les
+--  Eclats achetent des boosters — la boucle s'emballait.
 --
---                         sans plafond      avec 2 500 / semaine
---      semaine 1 ........   2 600 Eclats        2 500
---      semaine 4 ........   5 450               2 500
---      semaine 8 ........   6 000               2 500
+--  Les Fragments n'achetent qu'une chose : une carte qu'on n'a pas. Ils ne
+--  rachetent pas de boosters, il n'y a donc plus de boucle, et plus de
+--  plafond. Ils transforment aussi la fin de collection : la derniere
+--  Legendaire mettait ~42 jours a sortir en moyenne, sans le moindre progres
+--  visible ; chaque booster rempli de doublons la rapproche desormais.
 --
---  Les quetes, elles, paient ~2 100 Eclats par semaine. Sans plafond, le
---  recyclage paierait pres de trois fois plus que tout le reste du jeu.
---
---  Avant (Rare 100, Epique 500, Legendaire 1 000, plafond 1 500), un
---  booster recycle en rendait ~260 pour 350 a l'achat : racheter des
---  boosters avec le recyclage faisait tourner une boucle. A ~150, la boucle
---  ne rend plus que 43 % de la mise, et le plafond plus haut ne la relance
---  pas : 2 500 par semaine, c'est ~7 boosters de plus (+17 %), contre ~4
---  (+10 %) avant.
---
---  Ce que ca change pour le joueur : le plafond est atteint des la premiere
---  ou la deuxieme semaine, et le recyclage devient la premiere source
---  d'Eclats d'un joueur regulier (~2 500 contre ~2 100 pour les quetes). Il
---  se remplit surtout de doublons courants : une Legendaire recyclee n'en
---  fait plus qu'un cinquieme (500 sur 2 500), au lieu des deux tiers (1 000
---  sur 1 500).
+--  Simulation (six boosters par jour, tous les doublons recycles), mediane
+--  du temps pour finir l'extension :
+--                               sans fabrication   avec   (quart le plus lent)
+--      joueur a  60 boosters ....   112 jours      72 j      147 -> 86 j
+--      joueur a 120 boosters ....    92 jours      62 j      124 -> 73 j
+--  ~2 200 Fragments par semaine pour un joueur regulier : une Epique tous
+--  les six jours, ou une Legendaire en un peu moins de quatre semaines.
 -- =====================================================================
 
--- Le journal : qui a recycle quoi, et quand. Il sert au plafond de la semaine,
--- et a retrouver ce qui s'est passe si quelqu'un ecrit « j'ai perdu une carte ».
+-- Le journal : qui a recycle quoi, et quand. Il sert a retrouver ce qui
+-- s'est passe si quelqu'un ecrit « j'ai perdu une carte ». `eclats` date de
+-- l'ancien recyclage ; les recyclages d'aujourd'hui y mettent 0 et remplissent
+-- `fragments`.
 create table if not exists public.recyclages (
   id         bigint generated always as identity primary key,
   user_id    uuid not null references public.profiles on delete cascade,
@@ -2200,11 +2299,11 @@ create table if not exists public.recyclages (
   eclats     integer not null check (eclats >= 0),
   created_at timestamptz not null default now()
 );
+alter table public.recyclages add column if not exists fragments integer not null default 0;
 create index if not exists recyclages_user_idx on public.recyclages (user_id, created_at desc);
 
 alter table public.recyclages enable row level security;
--- Aucune policy : le navigateur ne lit pas le journal, il recoit le total de
--- la semaine dans me().
+-- Aucune policy : le navigateur ne lit pas le journal.
 revoke all on public.recyclages from anon, authenticated;
 
 -- Le lundi minuit, heure de Paris : la meme frontiere que les quetes
@@ -2214,7 +2313,8 @@ language sql stable as $$
   select date_trunc('week', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris';
 $$;
 
--- Ce qu'un joueur a deja touche cette semaine.
+-- Les Eclats touches cette semaine avec l'ancien recyclage. Plus rien ne
+-- l'appelle ; elle reste pour qui voudrait relire le journal.
 create or replace function public.recyclage_semaine(p uuid) returns integer
 language sql stable security definer set search_path = public as $$
   select coalesce(sum(eclats), 0)::int from recyclages
@@ -2225,7 +2325,7 @@ revoke all on function public.recyclage_semaine from public, anon, authenticated
 
 -- ------------------------------------------------------------- recycler
 -- `p_lots` : [{ "carte": "c012", "n": 2 }, …]. Tout passe, ou rien : un seul
--- lot refuse annule l'ensemble, et le plafond est verifie sur le total.
+-- lot refuse annule l'ensemble.
 --
 -- Ce qui est recyclable, carte par carte : ce qu'on possede, moins l'exemplaire
 -- qu'on garde toujours, moins ceux qu'on a proposes dans une demande
@@ -2245,9 +2345,8 @@ begin
   end if;
   if jsonb_array_length(p_lots) > 150 then raise exception 'Trop de cartes d''un coup.'; end if;
 
-  -- Un recyclage a la fois par joueur. Sans ce verrou, deux envois partis
-  -- ensemble liraient le meme total de la semaine, et passeraient tous les
-  -- deux sous le plafond.
+  -- Un recyclage a la fois par joueur : deux envois partis ensemble ne
+  -- doivent pas compter deux fois le meme exemplaire.
   perform 1 from profiles where id = p for update;
 
   for lot in select value from jsonb_array_elements(p_lots) loop
@@ -2260,7 +2359,7 @@ begin
 
     select * into k from cards where id = cid;
     if not found then raise exception 'Carte inconnue.'; end if;
-    if k.promo or k.rar = 'PR' then raise exception 'Les cartes Promo ne se recyclent pas.'; end if;
+    if k.promo then raise exception 'Cette carte ne se recycle pas.'; end if;
     prix := cfg('recyclage_' || k.rar);
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 
@@ -2272,22 +2371,49 @@ begin
     end if;
 
     update collection set qty = qty - n where user_id = p and card_id = cid;
-    insert into recyclages (user_id, card_id, qty, eclats) values (p, cid, n, n * prix);
+    insert into recyclages (user_id, card_id, qty, eclats, fragments) values (p, cid, n, 0, n * prix);
     total := total + n * prix;
   end loop;
 
-  -- Apres la boucle, et non avant : c'est le total de l'envoi qui compte. Le
-  -- `raise` annule tout ce que la boucle a deja ecrit.
-  if recyclage_semaine(p) > cfg('recyclage_plafond') then
-    raise exception 'PLAFOND_RECYCLAGE';
-  end if;
-
-  update profiles set shards = shards + total where id = p;
+  update profiles set fragments = fragments + total where id = p;
   return me();
 end $$;
 
-revoke all on function public.recycler from public, anon;
-grant execute on function public.recycler to authenticated;
+-- ------------------------------------------------------------- fabriquer
+-- Une carte de l'extension qu'on ne possede pas, contre des Fragments.
+-- Seulement une carte qui manque : fabriquer un doublon pour le recycler ne
+-- rapporterait rien, mais fabriquer une Legendaire qu'on a deja ne sert a
+-- rien non plus, et c'est ce qui garde les doublons de haute rarete rares.
+create or replace function public.fabriquer(p_carte text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); k cards; cout int; reste int;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+
+  select * into k from cards where id = p_carte;
+  if not found then raise exception 'Carte inconnue.'; end if;
+  if k.promo then raise exception 'Cette carte ne se fabrique pas.'; end if;
+  cout := cfg('fabrication_' || k.rar);
+  if cout is null then raise exception 'Cette carte ne se fabrique pas.'; end if;
+
+  select fragments into reste from profiles where id = p for update;
+  if exists (select 1 from collection where user_id = p and card_id = p_carte and qty > 0) then
+    raise exception 'Tu possèdes déjà cette carte.';
+  end if;
+  if reste < cout then raise exception 'Pas assez de Fragments.'; end if;
+
+  update profiles set fragments = fragments - cout, fabrications = fabrications + 1 where id = p;
+  insert into collection (user_id, card_id, qty) values (p, p_carte, 1)
+    on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+
+  perform sync_collection_quests(p);
+  perform check_promos(p);
+  return me();
+end $$;
+
+revoke all on function public.recycler, public.fabriquer from public, anon;
+grant execute on function public.recycler, public.fabriquer to authenticated;
 
 
 -- #####################################################################
@@ -2373,6 +2499,209 @@ end $$;
 
 revoke all on function public.classement from public, anon;
 grant execute on function public.classement to authenticated;
+
+
+-- #####################################################################
+-- ###  15_evenements.sql
+-- ###  Tirages, succes, evenements et chasse a la carte unique
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — tirages, succes, evenements et chasse
+--  A executer apres 14_classement.sql. Rejouable sans danger.
+--
+--  Quatre choses, qui se tiennent :
+--    · tirages   : le journal de chaque booster ouvert. Il nourrit
+--                  l'historique et les statistiques du joueur (mes_tirages),
+--                  et le succes « godpack ».
+--    · succes    : des badges calcules a la volee a partir de ce que le
+--                  serveur sait deja (succes_de). Rien a stocker, rien a
+--                  synchroniser : un succes ne peut pas mentir.
+--    · evenements: une periode, avec ce qu'elle change. Aujourd'hui, une
+--                  seule chose : le rythme de recharge des boosters.
+--    · chasse    : la carte unique. Une ligne, un gagnant, une seule fois.
+-- =====================================================================
+
+-- --------------------------------------------------------------- tirages
+create table if not exists public.tirages (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references public.profiles on delete cascade,
+  cartes     text[] not null,
+  god        boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists tirages_user_idx on public.tirages (user_id, id desc);
+
+alter table public.tirages enable row level security;
+-- Aucune policy : le navigateur passe par mes_tirages().
+revoke all on public.tirages from anon, authenticated;
+
+-- ------------------------------------------------------------ evenements
+-- `ticket_minutes` : la recharge pendant l'evenement (120 = boosters
+-- doubles). Vide : l'evenement ne change pas le rythme.
+create table if not exists public.evenements (
+  id             bigint generated always as identity primary key,
+  titre          text not null,
+  texte          text not null default '',
+  debut          timestamptz not null,
+  fin            timestamptz not null,
+  ticket_minutes integer check (ticket_minutes is null or ticket_minutes between 10 and 1440),
+  constraint evenement_dans_l_ordre check (fin > debut)
+);
+
+alter table public.evenements enable row level security;
+revoke all on public.evenements from anon, authenticated;
+
+-- -------------------------------------------------------------- chasse
+-- Une seule ligne. `gagnant` vide : la carte est encore a trouver. La mise a
+-- jour qui le remplit (open_pack, 03_rpc.sql) porte `where gagnant is null` :
+-- c'est elle, et pas le navigateur, qui garantit qu'il n'y a qu'un gagnant.
+create table if not exists public.chasse (
+  id         int primary key check (id = 1),
+  carte      text not null references public.cards,
+  active     boolean not null default false,
+  gagnant    uuid references public.profiles on delete set null,
+  trouvee_le timestamptz
+);
+insert into public.chasse (id, carte, active) values (1, 'u01', false)
+on conflict (id) do nothing;
+
+alter table public.chasse enable row level security;
+revoke all on public.chasse from anon, authenticated;
+
+-- ----------------------------------------------------- le rythme en cours
+-- 240 minutes d'ordinaire ; celui de l'evenement en cours s'il en change.
+create or replace function public.minutes_recharge() returns integer
+language plpgsql stable security definer set search_path = public as $$
+declare m int;
+begin
+  select e.ticket_minutes into m from evenements e
+   where e.ticket_minutes is not null and now() >= e.debut and now() < e.fin
+   order by e.debut desc limit 1;
+  return coalesce(m, cfg('ticket_minutes'));
+end $$;
+
+-- L'evenement en cours, pour le bandeau et la fenetre des nouveautes.
+create or replace function public.evenement_actif() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  return (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
+                                    'debut', e.debut, 'fin', e.fin,
+                                    'ticket_minutes', e.ticket_minutes)
+            from evenements e
+           where now() >= e.debut and now() < e.fin
+           order by e.debut desc limit 1);
+end $$;
+
+-- Ou en est la chasse : ouverte ou non, trouvee ou non, et par qui. Le
+-- gagnant est public : c'est tout l'interet.
+create or replace function public.chasse_etat() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  return (select jsonb_build_object('carte', c.carte, 'active', c.active,
+                                    'trouvee', c.gagnant is not null,
+                                    'gagnant', (select pseudo from profiles where id = c.gagnant),
+                                    'trouvee_le', c.trouvee_le)
+            from chasse c where c.id = 1);
+end $$;
+
+-- ---------------------------------------------------------------- succes
+-- Les identifiants doivent rester ceux de SUCCES dans js/config.js, qui
+-- porte les noms et les descriptions. Un succes lie a la collection peut
+-- disparaitre si l'on cede la carte qui le tenait : c'est le prix d'un calcul
+-- sans stockage, et c'est rare (les Promos et les Brillantes ne s'echangent
+-- pas).
+create or replace function public.succes_de(p uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  pr profiles; s text[] := '{}';
+  ext int; ext_total int; leg int; leg_total int; br int; br_total int; uni boolean;
+begin
+  select * into pr from profiles where id = p;
+  if not found then return '[]'::jsonb; end if;
+
+  select count(*) filter (where not k.promo),
+         count(*) filter (where not k.promo and k.rar = 'L'),
+         count(*) filter (where k.rar = 'BR'),
+         coalesce(bool_or(k.rar = 'UN'), false)
+    into ext, leg, br, uni
+    from collection c join cards k on k.id = c.card_id
+   where c.user_id = p and c.qty > 0;
+  select count(*) filter (where not promo),
+         count(*) filter (where not promo and rar = 'L'),
+         count(*) filter (where rar = 'BR')
+    into ext_total, leg_total, br_total
+    from cards;
+
+  if pr.packs_opened >= 1   then s := array_append(s, 'premier_booster'); end if;
+  if pr.packs_opened >= 100 then s := array_append(s, 'boosters_100'); end if;
+  if pr.packs_opened >= 500 then s := array_append(s, 'boosters_500'); end if;
+  if ext * 2 >= ext_total   then s := array_append(s, 'collection_50'); end if;
+  if ext >= ext_total       then s := array_append(s, 'master_set'); end if;
+  if leg >= leg_total       then s := array_append(s, 'toutes_legendaires'); end if;
+  if pr.trades_done >= 1    then s := array_append(s, 'premier_echange'); end if;
+  if pr.trades_done >= 25   then s := array_append(s, 'negociant'); end if;
+  if greatest(pr.serie_max, pr.streak) >= 7  then s := array_append(s, 'serie_7'); end if;
+  if greatest(pr.serie_max, pr.streak) >= 30 then s := array_append(s, 'serie_30'); end if;
+  if exists (select 1 from tirages t where t.user_id = p and t.god) then s := array_append(s, 'godpack'); end if;
+  if br >= 1                then s := array_append(s, 'brillante'); end if;
+  if br_total > 0 and br >= br_total then s := array_append(s, 'toutes_brillantes'); end if;
+  if pr.fabrications >= 1   then s := array_append(s, 'artisan'); end if;
+  if uni                    then s := array_append(s, 'unique'); end if;
+  -- Ceux qui etaient la avant la version 1.5.
+  if pr.created_at < timestamptz '2026-10-04 00:00:00+02' then s := array_append(s, 'pionnier'); end if;
+
+  return to_jsonb(s);
+end $$;
+
+-- --------------------------------------------------------- mes tirages
+-- Les trente derniers boosters, et des statistiques sur tout le journal :
+-- combien de cartes de chaque rarete, combien de godpacks et de Brillantes.
+-- Le journal commence a la version 1.5 : les boosters ouverts avant n'y
+-- sont pas (`depuis` le dit).
+create or replace function public.mes_tirages() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+
+  return jsonb_build_object(
+    'total',  (select count(*) from tirages where user_id = p),
+    'god',    (select count(*) from tirages where user_id = p and god),
+    'depuis', (select min(created_at) from tirages where user_id = p),
+    'raretes', coalesce((
+      select jsonb_object_agg(r.rar, r.n)
+        from (select k.rar, count(*) as n
+                from tirages t, unnest(t.cartes) as u(cid)
+                join cards k on k.id = u.cid
+               where t.user_id = p
+               group by k.rar) r), '{}'::jsonb),
+    'liste', coalesce((
+      select jsonb_agg(jsonb_build_object('quand', t.created_at, 'cartes', to_jsonb(t.cartes), 'god', t.god)
+                       order by t.id desc)
+        from (select * from tirages where user_id = p order by id desc limit 30) t), '[]'::jsonb));
+end $$;
+
+-- Rouages internes (appeles par me(), player_profile, open_pack) : pas
+-- depuis le navigateur. mes_tirages, elle, est une action du joueur.
+revoke all on function public.minutes_recharge, public.evenement_actif, public.chasse_etat,
+  public.succes_de from public, anon, authenticated;
+revoke all on function public.mes_tirages from public, anon;
+grant execute on function public.mes_tirages to authenticated;
+
+-- =====================================================================
+--  Lancer un evenement, a la main dans le SQL Editor :
+-- =====================================================================
+-- insert into public.evenements (titre, texte, debut, fin, ticket_minutes) values
+--   ('Boosters doublés', 'Un booster toutes les 2 h au lieu de 4.', now(), now() + interval '3 days', 120);
+--
+--  L'arreter avant l'heure :
+-- update public.evenements set fin = now() where fin > now();
+--
+--  Ouvrir la chasse a la carte unique (une seule fois : une carte trouvee
+--  le reste) :
+-- update public.chasse set active = true where id = 1;
 
 
 -- =====================================================================

@@ -22,6 +22,29 @@ on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
   rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
 
+-- ------------------------------------------- les Essences Brillantes
+-- La version brillante de chacune des Essences : meme carte, autre finition.
+-- `b` + le numero de l'Essence (c001 -> b001). Hors extension (promo = true) :
+-- jamais dans le total de 122, jamais echangeables, jamais recyclees ni
+-- fabriquees. Elles ne sortent que de la case Essence d'un booster, une fois
+-- sur cfg('foil_odds') (voir open_pack, 03_rpc.sql).
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo)
+select 'b' || substr(k.id, 2), k.num, k.nom || ' Brillante', k.cat, k.col, 'BR', false, true
+  from public.cards k
+ where k.cat = 'essence' and not k.promo and k.id like 'c%'
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
+
+-- ------------------------------------------------- la carte unique
+-- Un seul exemplaire dans tout le jeu : celui ou celle qui la tire la garde.
+-- C'est la chasse (15_evenements.sql) qui la distribue, une seule fois.
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo) values
+  ('u01', 1, 'L''Unique Chevalière', 'objet', 'neutre', 'UN', false, true)
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
+
 -- =====================================================================
 --  Les paliers de collection
 --

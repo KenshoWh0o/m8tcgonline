@@ -179,3 +179,27 @@
 .shock.rR{border-color:var(--r-r)}.shock.rE{border-color:#b67dff}.shock.rL{border-color:var(--r-l)}
 .shock.go{animation:shock .55s cubic-bezier(.1,.7,.3,1)}
 @keyframes shock{0%{transform:scale(.35);opacity:1;border-width:16px}100%{transform:scale(2.4);opacity:0;border-width:1px}}
+
+/* ============ Essence Brillante et carte unique ============ */
+/* La Brillante tombe au milieu du paquet : un halo qui change de couleur. */
+.scard.hitcard.hBR .cwrap{box-shadow:none;animation:halobr 2.4s linear infinite}
+@keyframes halobr{
+  0%,100%{filter:drop-shadow(0 0 10px #ff5bb0) drop-shadow(0 0 24px #ff5bb0)}
+  33%{filter:drop-shadow(0 0 10px #55e6a6) drop-shadow(0 0 24px #39b8ff)}
+  66%{filter:drop-shadow(0 0 10px #ffc73b) drop-shadow(0 0 24px #a95cf2)}}
+.op-rar.rBR{background:linear-gradient(90deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+/* L'Unique : tout ce que la Légendaire a, en plus fort et en toutes couleurs. */
+.charge-UN .scard.charging{animation-duration:.24s}
+.th-stage.charge-UN.charging .charge-ring{animation-duration:.28s;opacity:.8;width:720px;height:720px;margin:-360px 0 0 -360px}
+.th-stage.charge-UN.charging{background:radial-gradient(circle at 50% 45%,rgba(236,143,255,.34),rgba(255,199,59,.16) 40%,transparent 66%)}
+.th-stage.flash-UN::after{background:radial-gradient(circle,#fff 0%,rgba(255,230,140,.95) 28%,rgba(236,143,255,.7) 52%,rgba(57,184,255,.4) 70%,transparent 88%);animation:flash 1s ease-out}
+.shock.rUN{border-color:#ec8fff}
+.scard.hitcard.hUN .cwrap{box-shadow:none;filter:drop-shadow(0 0 14px #ffc73b) drop-shadow(0 0 36px #ec8fff)}
+.op-rar.rUN{color:#ffc73b}
+.op-rar.big.rUN .slam{background:linear-gradient(180deg,#fff6d0,#ffc73b 40%,#ec8fff 80%);-webkit-background-clip:text;background-clip:text;
+  color:transparent;filter:drop-shadow(0 3px 0 rgba(90,30,110,.6))}
+/* Deux boutons côte à côte sous « Ouvrir un autre » : partager, terminer. */
+.rc-duo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rc-duo .btn{display:flex;align-items:center;justify-content:center;gap:7px}
+.rc-duo .btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}

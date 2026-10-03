@@ -107,9 +107,61 @@ function montrerDiscord() {
   });
 }
 
+/* ---------- Les nouveautés d'une version ---------- */
+/* Une fois par version et par appareil, à ceux qui jouaient déjà. Elle annonce
+   aussi l'événement en cours, et se rouvre depuis son bandeau (js/booster.js).
+   Changer NOUVEAUTES_VERSION la remontre à tout le monde. */
+const NOUVEAUTES_VERSION = '1.5';
+
+function nouveautesAVoir() {
+  if (Backend.mode !== 'cloud' || !save) return false;
+  return accueilMemoire().nouveautes !== NOUVEAUTES_VERSION;
+}
+
+function montrerNouveautes() {
+  accueilNoter({ nouveautes: NOUVEAUTES_VERSION });
+  const ev = save.evenement;
+  const ch = save.chasse || {};
+  const u = uniques[0];
+  const fin = ev ? new Date(srvTime(ev.fin)).toLocaleString('fr-FR',
+    { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+
+  const chasse = ch.trouvee
+    ? `<b>${h(ch.gagnant || 'Un joueur')}</b> l'a déjà trouvée. Il n'en existera jamais d'autre.`
+    : ch.active
+      ? 'Une seule carte dans tout le jeu, cachée dans un booster. La première personne qui la tire la garde pour toujours.'
+      : 'Une seule carte dans tout le jeu. La chasse ouvre bientôt.';
+
+  const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span>
+    <span><b>${titre}</b> ${texte}</span></li>`;
+
+  openSheet({
+    title: 'Version 1.5',
+    body: `<div class="nvhero${ch.trouvee ? ' trouvee' : ''}">
+        <div class="nvrayons" aria-hidden="true"></div>
+        ${u ? `<div class="nvcarte">${renderCard(u)}</div>` : ''}
+        <div class="nvtexte">
+          <span class="nvkicker">${ch.trouvee ? 'Chasse terminée' : 'Chasse ouverte'}</span>
+          <b>${u ? h(u.nom) : 'La carte unique'}</b>
+          <small>${chasse}</small>
+        </div>
+      </div>
+      ${ev ? `<div class="nvevent">${NAVICO.star}<span><b>${h(ev.titre)}</b> — ${h(ev.texte || '')}
+          <small>Jusqu'au ${h(fin)}.</small></span></div>` : ''}
+      <ol class="bvpoints nvpoints">
+        ${point('fragment', 'Les Fragments.', `Le recyclage donne désormais des ${FRAGMENTS.nom}, sans plafond. Avec eux, fabrique les cartes qui te manquent : touche une case vide dans ta Collection.`)}
+        ${point('promo', 'Les Essences Brillantes.', `Une Essence sur ${FOIL_ODDS} sort dans sa version Brillante. Neuf à réunir.`)}
+        ${point('trophy', 'Les succès.', `${SUCCES.length} succès à débloquer, sur ton profil et sur ta fiche.`)}
+        ${point('clock', 'Mes tirages.', 'Ton historique de boosters, ta chance comparée à la moyenne, et un bouton pour partager un tirage.')}
+      </ol>`,
+    actions: [{ label: 'C\'est parti', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); } }]
+  });
+}
+
 /* Appelé après chaque rendu : c'est le moment où l'écran est posé. */
 function proposerAccueil() {
   if (accueilDejaPropose) return;
   if (bienvenueAVoir()) return quandCalme(montrerBienvenue);
+  if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
   if (discordAVoir()) return quandCalme(montrerDiscord);
 }

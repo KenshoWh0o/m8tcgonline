@@ -125,6 +125,9 @@ Backend.apply = function (etat) {
     col: etat.col || {},
     inv: etat.inv || {},
     shards: p.shards,
+    /* Ce que rapporte le recyclage, et ce que coûte une carte fabriquée
+       (supabase/12_recyclage.sql). */
+    fragments: p.fragments || 0,
     quetes: etat.quetes || [],
     pseudo: p.pseudo,
     avatar: p.avatar,
@@ -148,9 +151,14 @@ Backend.apply = function (etat) {
     /* Les nouveautés de la boite de réception, pour la cloche de l'en-tête
        tant que la boite elle-même n'est pas chargée (js/boite.js). */
     boiteNonLues: etat.boite || 0,
-    /* Le recyclage : valeurs par rareté et plafond de la semaine, tels que le
-       serveur les applique (supabase/12_recyclage.sql). */
-    recyclage: etat.recyclage || null
+    /* Le recyclage et la fabrication : ce que rapporte chaque rareté en
+       Fragments, et ce que coûte une carte (supabase/12_recyclage.sql). */
+    recyclage: etat.recyclage || null,
+    /* Les succès obtenus, l'événement en cours et la chasse à la carte unique
+       (supabase/15_evenements.sql). */
+    succes: etat.succes || [],
+    evenement: etat.evenement || null,
+    chasse: etat.chasse || null
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -330,6 +338,10 @@ Backend.ecouterBoite = function (surNouveau) {
     Backend.canalBoite = null;
   }
 };
+
+/* ---- Fabrication et historique (supabase/12_recyclage.sql, 15_evenements.sql) ---- */
+Backend.fabriquer = async carte => Backend.apply(await Backend.rpc('fabriquer', { p_carte: carte }));
+Backend.mesTirages = () => Backend.rpc('mes_tirages');
 
 /* ---- Classement (supabase/14_classement.sql) ---- */
 Backend.classement = critere => Backend.rpc('classement', { p_critere: critere });

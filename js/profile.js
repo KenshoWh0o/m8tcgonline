@@ -40,6 +40,12 @@ function vProfil() {
   </div>
 
   <section class="panel">
+    <h2>Succès <span class="muted small">— ${(save.succes || []).length} / ${SUCCES.length}</span></h2>
+    ${vSucces(save.succes, true)}
+    <p class="muted small">Ceux que tu as débloqués apparaissent aussi sur ta fiche.</p>
+  </section>
+
+  <section class="panel">
     <h2>Pseudo</h2>
     <p class="muted small">C'est lui que les autres tapent pour te proposer un échange.
       3 à 16 caractères : lettres, chiffres, point, tiret, souligné.</p>
@@ -79,6 +85,20 @@ function vProfil() {
         title="${h(FRAMES[k].nom)}">${avatarHTML(save.avatar, k, 'md', maPhoto())}</button>`).join('')}
     </div>
   </section>`;
+}
+
+/* ---------- Les succès ---------- */
+/* `tous` : le profil montre aussi ceux qui restent à obtenir, grisés, avec ce
+   qu'il faut faire. La fiche d'un autre joueur ne montre que les siens. */
+function vSucces(obtenus, tous) {
+  const ok = new Set(obtenus || []);
+  const liste = tous ? SUCCES : SUCCES.filter(s => ok.has(s.id));
+  if (!liste.length) return '<p class="muted small">Aucun succès pour l\'instant.</p>';
+  return `<div class="succes${tous ? '' : ' compact'}">${liste.map(s =>
+    `<div class="badge t${s.ton}${ok.has(s.id) ? ' on' : ''}" title="${h(s.dit)}">
+      <span class="sucico">${NAVICO[s.ico] || NAVICO.promo}</span>
+      <span class="suctxt"><b>${h(s.nom)}</b><small>${h(s.dit)}</small></span>
+    </div>`).join('')}</div>`;
 }
 
 /* Choisir une carte possédée comme avatar. */

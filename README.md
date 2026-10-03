@@ -65,9 +65,11 @@ mate-tcg-online/
 │   ├── 06_social.sql   Amis et fiches de joueur
 │   ├── 07_vitrine.sql  La vitrine du profil
 │   ├── 11_boite.sql    Boîte de réception : notifications, annonces, temps réel
-│   ├── 12_recyclage.sql  Recyclage des doublons et son plafond hebdomadaire
+│   ├── 12_recyclage.sql  Recyclage des doublons en Fragments, et fabrication
 │   ├── 13_maj-recyclage-quetes.sql  Mise à jour d'une base déjà installée (28 sept.)
 │   ├── 14_classement.sql  Le classement global
+│   ├── 15_evenements.sql  Tirages, succès, événements et chasse à la carte unique
+│   ├── 16_maj-v1.5.sql   Mise à jour 1.5 d'une base déjà installée
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -106,6 +108,8 @@ mate-tcg-online/
 │   ├── social.js       Onglet Social : amis, fiches de joueur
 │   ├── quests.js       Onglet Quêtes
 │   ├── classement.js   Onglet Classement (menu du compte)
+│   ├── tirages.js      Onglet Mes tirages : historique et statistiques
+│   ├── partage.js      Image de partage d'un booster
 │   ├── promos.js       Détection et mise en scène des cartes Promo
 │   ├── boite.js        Boîte de réception, pings, relève et temps réel
 │   ├── shop.js         Onglet Boutique
@@ -145,7 +149,6 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
 | Changer le nombre de boosters gratuits ou le délai | **en ligne :** `cfg()` dans `supabase/01_schema.sql` · **hors ligne :** `TICKET_CAP`, `INTERVAL` dans `js/config.js` |
 | Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
-| Changer ce que rapporte le recyclage, ou son plafond | `cfg()` dans `supabase/01_schema.sql` (clés `recyclage_*`) |
 | Publier une annonce à tous les joueurs | Labo › *Annonce à tous les joueurs*, ou à la main en bas de `supabase/11_boite.sql` |
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
 | Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
@@ -158,6 +161,10 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
 | Regénérer l'image de partage et les icônes | `python3 tools/gen-icons.py` |
 | Donner les droits d'administrateur | `supabase/05_admin.sql` |
+| Changer ce que rapporte le recyclage, ou le coût d'une carte fabriquée | `cfg()` dans `supabase/01_schema.sql` (clés `recyclage_*` et `fabrication_*`) |
+| Changer la fréquence des Essences Brillantes ou de la carte unique | `cfg('foil_odds')`, `cfg('chasse_odds')` dans `supabase/01_schema.sql` (+ `FOIL_ODDS` dans `js/config.js` pour le Labo) |
+| Lancer un événement, ouvrir la chasse | requêtes en bas de `supabase/15_evenements.sql` |
+| Ajouter ou modifier un succès | `succes_de()` dans `supabase/15_evenements.sql` **et** `SUCCES` dans `js/config.js` |
 | Changer les critères du classement | `classement()` dans `supabase/14_classement.sql` + `CRITERES` dans `js/classement.js` |
 | Fabriquer la démo autonome à envoyer | `python3 tools/demo.py` — voir « La démo autonome » |
 | Régler la démo (pseudo, Éclats de départ, recharge) | `_demo/reglages.js` |
@@ -378,22 +385,44 @@ Un classement **global** : tous les joueurs, pas seulement les amis. On l'ouvre 
 
 Le serveur fait tout le calcul (`classement()`, `supabase/14_classement.sql`) et renvoie les cinquante premiers, plus la ligne du joueur qui regarde s'il est plus bas. Les ex æquo partagent leur rang ; un joueur à zéro n'est pas classé. Tant que le jeu est fermé au public, seuls les comptes invités apparaissent. D'un joueur, on ne voit que ce que le jeu montrait déjà à tout le monde : pseudo, avatar, cadre, et le chiffre du critère. Une ligne se touche pour ouvrir sa fiche.
 
-## Le recyclage
+## Le recyclage et la fabrication
 
-Les doublons deviennent des Éclats. Toutes les raretés se recyclent sauf les Promos, et **on garde toujours un exemplaire** de chaque carte : recycler ne fait jamais reculer la collection. Les exemplaires proposés dans une demande d'échange encore en attente sont mis de côté — sinon l'échange, une fois accepté, prendrait le dernier.
+Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une carte qui manque**. Toutes les raretés de l'extension se recyclent et se fabriquent ; jamais ce qui est hors extension (Promos, Essences Brillantes, carte unique). **On garde toujours un exemplaire** de chaque carte : recycler ne fait jamais reculer la collection. Les exemplaires proposés dans une demande d'échange encore en attente sont mis de côté — sinon l'échange, une fois accepté, prendrait le dernier.
 
-| Rareté | Éclats |
-|---|---|
-| Essence | 5 |
-| Commune | 10 |
-| Peu commune | 20 |
-| Rare | 50 |
-| Épique | 200 |
-| Légendaire | 500 |
+| Rareté | Recycler rapporte | Fabriquer coûte |
+|---|---|---|
+| Essence | 1 | 20 |
+| Commune | 2 | 40 |
+| Peu commune | 5 | 100 |
+| Rare | 20 | 400 |
+| Épique | 80 | 2 000 |
+| Légendaire | 250 | 8 000 |
 
-**Le plafond : 2 500 Éclats par semaine**, remis à zéro le lundi (heure de Paris, comme les quêtes hebdomadaires). Il n'est pas décoratif. Une fois la collection bien avancée, un booster recyclé rend ~150 Éclats — la dernière carte est une Rare quatre fois sur cinq, et une Rare vaut 50. Sans plafond, un joueur régulier toucherait ~2 600 Éclats la première semaine et ~6 000 à partir de la huitième, près de trois fois ce que paient les quêtes. Le plafond est donc atteint dès la première ou la deuxième semaine, et le recyclage devient la première source d'Éclats d'un joueur régulier (~2 500 contre ~2 100 pour les quêtes). Racheter des boosters avec ne s'emballe pas : un booster acheté 350 n'en rend que ~150, et 2 500 par semaine font ~7 boosters de plus (+17 %). Avant la baisse des valeurs (Rare 100, Épique 500, Légendaire 1 000, plafond 1 500), un booster en rendait ~260. Le calcul est en tête de `supabase/12_recyclage.sql`.
+**Pourquoi des Fragments, et plus d'Éclats.** Recycler contre des Éclats n'avait pas de bon réglage : un joueur régulier produit ~6 300 Éclats de doublons par semaine une fois sa collection avancée. Plafonné, le recyclage ne permettait pas de se débarrasser de ses cartes ; déplafonné, il triplait les Éclats, qui rachètent des boosters. Les Fragments n'achètent qu'une carte manquante : aucune boucle possible, donc **plus de plafond**.
 
-**Pas de bêtise.** On choisit carte par carte, exemplaire par exemplaire ; « Tout sélectionner » laisse les Épiques et les Légendaires de côté. Un récapitulatif liste chaque carte et ce qu'elle rapporte — avec une case à cocher s'il y a une Épique ou une Légendaire dedans —, puis une dernière confirmation dont le bouton ne répond qu'au bout de trois secondes. Le serveur revérifie tout (doublons, réservations, plafond) et refuse l'envoi entier si un seul point ne tient pas. Chaque recyclage est journalisé dans la table `recyclages`.
+**Ils règlent aussi la fin de collection.** Quand il ne manque qu'une Légendaire, elle met ~42 jours à sortir en moyenne, sans progrès visible. Avec la fabrication, chaque booster plein de doublons la rapproche : ~2 200 Fragments par semaine pour un joueur régulier, soit une Épique tous les six jours ou une Légendaire en un peu moins de quatre semaines. Simulation, médiane du temps pour finir l'extension : 92 → 62 jours pour un joueur à 120 boosters, et 124 → 73 jours pour le quart le plus malchanceux. Le calcul est en tête de `supabase/12_recyclage.sql`.
+
+**On fabrique depuis la Collection** : une case vide se touche, une fiche montre la carte, son prix et le solde qui restera. Seulement une carte qu'on ne possède pas (`fabriquer()`).
+
+**Pas de bêtise.** On choisit carte par carte, exemplaire par exemplaire ; « Tout sélectionner » laisse les Épiques et les Légendaires de côté. Un récapitulatif liste chaque carte et ce qu'elle rapporte — avec une case à cocher s'il y a une Épique ou une Légendaire dedans —, puis une dernière confirmation dont le bouton ne répond qu'au bout de trois secondes. Le serveur revérifie tout (doublons, réservations) et refuse l'envoi entier si un seul point ne tient pas. Chaque recyclage est journalisé dans la table `recyclages`.
+
+## Essences Brillantes, carte unique et événements
+
+**Les Essences Brillantes** sont la version brillante des 9 Essences : même illustration, avec un reflet arc-en-ciel et des paillettes posés par le CSS (`.card.r-BR`, `css/cards.css`). La case Essence d'un booster en donne une **une fois sur 50** (`cfg('foil_odds')`) — une tous les huit jours environ pour un joueur régulier. Identifiants `b001` à `b009`, hors extension comme les Promos : ni dans les 122, ni échangeables, ni recyclables, ni fabricables. Elles ont leur section dans la Collection.
+
+**La carte unique**, *L'Unique Chevalière* (`u01`), n'existe qu'en **un exemplaire dans tout le jeu**. Tant que la chasse est ouverte (`chasse.active`) et que personne ne l'a, chaque booster a une chance sur 250 (`cfg('chasse_odds')`) de la contenir, en septième carte, avec la plus longue révélation du jeu. Avec ~70 boosters ouverts par jour dans la communauté, elle sort en trois à quatre jours. C'est la base qui garantit l'unicité : la mise à jour `where gagnant is null` dans `open_pack()` laisse passer un seul gagnant, même si deux joueurs la tirent à la même seconde. Une annonce part alors dans toutes les boîtes de réception, et la Collection de chacun dit qui l'a trouvée. Son visuel est dans `cards/uniques/`.
+
+**Les événements** sont des lignes de la table `evenements` : un titre, un début, une fin, et le rythme de recharge pendant ce temps (`ticket_minutes`, 120 = boosters doublés). `minutes_recharge()` donne le rythme en cours, `regen_tickets()` et le compte à rebours du navigateur le suivent. Un bandeau s'affiche au-dessus du paquet tant qu'un événement ou une chasse est en cours. Les requêtes pour lancer un événement, l'arrêter ou ouvrir la chasse sont en bas de `supabase/15_evenements.sql`.
+
+**La fenêtre des nouveautés** (`montrerNouveautes()`, `js/bienvenue.js`) s'ouvre une fois par version et par appareil, et se rouvre depuis le bandeau. Changer `NOUVEAUTES_VERSION` la remontre à tout le monde.
+
+## Succès, historique et partage
+
+**Les succès** sont calculés à la volée par le serveur (`succes_de()`, `supabase/15_evenements.sql`) à partir de ce qu'il sait déjà : boosters, collection, échanges, plus longue série (`profiles.serie_max`), godpacks du journal, Brillantes, fabrications, carte unique. Rien à stocker ni à synchroniser. Les noms et descriptions sont dans `SUCCES` (`js/config.js`) ; les identifiants doivent rester les mêmes des deux côtés. Le profil les montre tous (obtenus en couleur, les autres grisés), la fiche d'un joueur seulement les siens.
+
+**L'historique** : chaque booster ouvert est journalisé dans `tirages`. L'onglet *Mes tirages* (menu du compte) montre les trente derniers et compare chaque rareté à la moyenne attendue (Rare, Épique, Légendaire, Brillante). Le journal commence à la version 1.5 : les boosters ouverts avant n'y sont pas.
+
+**Le partage** dessine une image 1080 × 1350 du booster dans un canvas (`js/partage.js`) : le logo, le pseudo, les cartes avec la lueur de leur rareté, l'adresse du jeu. Sur téléphone, le menu de partage du système s'ouvre ; ailleurs, l'image se télécharge. Le bouton est dans le récap d'ouverture et sur chaque booster de l'historique. Ouvert comme fichier (la démo), le navigateur refuse d'exporter l'image : il faut une adresse web.
 
 ## L'équilibrage
 

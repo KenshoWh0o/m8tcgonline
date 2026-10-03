@@ -174,6 +174,7 @@ const VUES = {
   combats: () => vCombats(),
   recyclage: () => vRecyclage(),
   classement: () => vClassement(),
+  tirages: () => vTirages(),
   boite: () => vBoite(),
   profil: () => vProfil(),
   reglages: () => vReglages(),
@@ -254,6 +255,7 @@ function aller(id) {
     if (tab === 'recyclage') Backend.loadTrades().then(render).catch(() => {});
     if (tab === 'boite') ouvrirBoite();
     if (tab === 'classement') chargerClassement();
+    if (tab === 'tirages') chargerTirages();
   }
 }
 
@@ -267,7 +269,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart]');
   if (!el) return;
   const d = el.dataset;
 
@@ -283,6 +285,11 @@ async function clicPage(e) {
   if (d.soc) { socVue = d.soc; return render(); }
   if (d.qv) { qVue = d.qv; return render(); }
   if (d.clv) { clVue = d.clv; render(); return chargerClassement(); }
+  if (d.craft) return ouvrirFabrication(d.craft);
+  if (d.tirpart) {
+    const t = tirData && tirData.liste && tirData.liste[+d.tirpart];
+    return t && partagerTirage({ ids: t.cartes, god: t.god, quand: t.quand });
+  }
   if (d.shv) { shopVue = d.shv; return render(); }
   if (d.shop) return ouvrirArticle(d.shop);
   if (d.theme) { poserTheme(d.theme); return render(); }
@@ -327,6 +334,7 @@ async function clicPage(e) {
 
   switch (d.act) {
     case 'open': return openBooster();
+    case 'nouveautes': return montrerNouveautes();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
     case 'col-toggle': colOuvert = !colOuvert; return render();
@@ -518,6 +526,8 @@ function visiteDuJourFaite() {
 (async () => {
   cards = buildCards();
   promos = buildPromos();
+  brillantes = buildBrillantes(cards);
+  uniques = buildUniques();
   rebuild();
   brand();
   rollPack();

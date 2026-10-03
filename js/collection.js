@@ -64,6 +64,10 @@ function vCollection() {
         <div class="bar"><i style="width:${pct}%"></i></div>
         <span class="tnum"><b>${owned}</b> / ${all.length}</span>
       </div>
+      ${Backend.mode === 'cloud' && owned < all.length
+        ? `<p class="colfab">${NAVICO.fragment}<span><b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom}
+             · touche une case vide pour fabriquer la carte</span></p>`
+        : ''}
     </div>
 
     ${vFiltres(all)}
@@ -73,7 +77,8 @@ function vCollection() {
       : `<p class="empty">Aucune carte avec ces filtres.
           <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}
 
-    ${noFilter || rarFilter === 'PR' ? vPromosSection() : ''}`;
+    ${noFilter || rarFilter === 'PR' ? vPromosSection() : ''}
+    ${noFilter ? vBrillantesSection() + vUniqueSection() : ''}`;
 }
 
 /* ---------- Le tiroir de filtres ---------- */
@@ -147,9 +152,12 @@ const caseVide = (etiquette, cls, sous) => {
 function vCase(c) {
   const n = save.col[c.id] || 0;
   const no = '#' + String(c.num || 0).padStart(3, '0');
-  return n
-    ? `<button class="gcell" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(c)}<span class="num">${no}</span></button>`
-    : caseVide(no);
+  if (n) return `<button class="gcell" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(c)}<span class="num">${no}</span></button>`;
+  /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
+     un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
+  if (Backend.mode !== 'cloud') return caseVide(no);
+  return caseVide(no).replace('<div class="gcell"', `<button class="gcell fab" data-craft="${c.id}" aria-label="Fabriquer la carte ${no}"`)
+    .replace(/<\/div>\s*$/, '</button>');
 }
 
 /* Les Secrets prolongent la grille sans en changer le total : des emplacements vides
@@ -200,5 +208,52 @@ function vPromosSection() {
       <span class="qpreste"><b class="tnum">${eus}</b><small>/ ${serie}</small></span>
     </div>
     <div class="grid">${cellulesPromo()}</div>
+  </section>`;
+}
+
+/* ---------- Les Essences Brillantes ---------- */
+/* Neuf cases, une par Essence. Elles ne se fabriquent pas : une case vide dit
+   seulement d'où elles viennent. */
+function vBrillantesSection() {
+  if (!brillantes.length) return '';
+  const eus = brillantes.filter(b => save.col[b.id] > 0).length;
+  const cases = brillantes.map(b => {
+    const n = save.col[b.id] || 0;
+    return n
+      ? `<button class="gcell" data-show="${b.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(b)}<span class="num">${h(b.code)}</span></button>`
+      : caseVide(b.code, 'promovide', '1 sur ' + FOIL_ODDS);
+  }).join('');
+  return `<section class="promosec brsec">
+    <div class="promohead">
+      <span class="qpico">${NAVICO.promo}</span>
+      <div><h2>Essences Brillantes</h2></div>
+      <span class="qpreste"><b class="tnum">${eus}</b><small>/ ${brillantes.length}</small></span>
+    </div>
+    <div class="grid">${cases}</div>
+  </section>`;
+}
+
+/* ---------- La carte unique ---------- */
+/* Une seule case, pour tout le monde : on y voit qui l'a trouvée. */
+function vUniqueSection() {
+  const u = uniques[0];
+  if (!u) return '';
+  const ch = save.chasse || {};
+  const mienne = save.col[u.id] > 0;
+  const statut = mienne ? 'Elle est à toi.'
+    : ch.trouvee ? `Trouvée par ${ch.gagnant || 'un joueur'}`
+    : ch.active ? 'Chasse en cours : elle se cache dans un booster.'
+    : 'Pas encore en jeu.';
+  return `<section class="promosec unsec">
+    <div class="promohead">
+      <span class="qpico">${NAVICO.trophy}</span>
+      <div><h2>Carte unique</h2><p class="muted small">${h(statut)}</p></div>
+      <span class="qpreste"><b class="tnum">1</b><small>/ 1</small></span>
+    </div>
+    <div class="grid">${mienne
+      ? `<button class="gcell" data-show="${u.id}">${renderCard(u)}<span class="num">${h(u.code)}</span></button>`
+      : `<button class="gcell unvoile" data-show="${u.id}" aria-label="Voir la carte unique">
+           <div class="cwrap"><div class="card ghost-card unghost"><img src="${u.img}" alt="" loading="lazy">
+             <span>1 / 1</span></div></div><span class="num">${h(u.code)}</span></button>`}</div>
   </section>`;
 }

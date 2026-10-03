@@ -85,7 +85,12 @@ const RAR = {
   R: { nom: 'Rare', sym: '◆◆◆', rank: 3 },
   E: { nom: 'Épique', sym: '★', rank: 4 },
   L: { nom: 'Légendaire', sym: '★★', rank: 5 },
-  PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true }
+  PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true },
+  /* Hors extension, comme les Promos : jamais dans les 122, jamais échangées
+     ni recyclées. La Brillante sort de la case Essence d'un booster, une fois
+     sur cinquante ; l'Unique n'existe qu'en un exemplaire dans tout le jeu. */
+  BR: { nom: 'Brillante', sym: '✧', rank: 7, promo: true },
+  UN: { nom: 'Unique', sym: '◈', rank: 8, promo: true }
 };
 
 /* Les raretés proposées comme filtre dans la Collection, dans l'ordre de l'échelle. */
@@ -113,7 +118,9 @@ const SECRETS = 5;
 const REVEAL = {
   R: { charge: 450, colors: ['#39b8ff', '#ffffff', '#b8ecff'], n: 50, speed: 9, label: 'Rare', rc: '#39b8ff' },
   E: { charge: 800, colors: ['#8936ff', '#ec8fff', '#ffffff', '#d9b8ff'], n: 100, speed: 11, label: 'Épique', rc: '#8936ff' },
-  L: { charge: 1150, colors: ['#ffc73b', '#fff3b0', '#ec8fff', '#ffffff'], n: 160, speed: 14, label: 'Légendaire', rc: '#ffc73b' }
+  L: { charge: 1150, colors: ['#ffc73b', '#fff3b0', '#ec8fff', '#ffffff'], n: 160, speed: 14, label: 'Légendaire', rc: '#ffc73b' },
+  /* La carte unique : la plus longue charge du jeu, et toutes les couleurs. */
+  UN: { charge: 1900, colors: ['#ffc73b', '#ec8fff', '#39b8ff', '#55e6a6', '#ffffff'], n: 240, speed: 16, label: 'Unique', rc: '#ec8fff' }
 };
 
 /* ---------- La communauté ---------- */
@@ -144,6 +151,34 @@ const CONTACT = 'matetcgonline@gmail.com';
 
 /* ---------- Économie ---------- */
 const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
+/* La seconde monnaie : ce que rapporte le recyclage, et ce que coûte une
+   carte fabriquée (supabase/12_recyclage.sql). Elle n'achète rien d'autre. */
+const FRAGMENTS = { nom: 'Fragments', un: 'Fragment' };
+/* Une Essence Brillante une fois sur… Copie de cfg('foil_odds') : ne sert qu'aux
+   ouvertures de test du Labo, c'est le serveur qui tire pour de vrai. */
+const FOIL_ODDS = 50;
+
+/* ---------- Les succès ---------- */
+/* Les identifiants viennent du serveur (succes_de, supabase/15_evenements.sql),
+   qui décide ; ici, ce qu'on en montre. L'ordre est celui de l'affichage. */
+const SUCCES = [
+  { id: 'premier_booster',    nom: 'Premier paquet',     dit: 'Ouvrir un premier booster.',            ico: 'star',    ton: 'C' },
+  { id: 'boosters_100',       nom: 'Centurion',          dit: 'Ouvrir 100 boosters.',                  ico: 'star',    ton: 'R' },
+  { id: 'boosters_500',       nom: 'Insatiable',         dit: 'Ouvrir 500 boosters.',                  ico: 'star',    ton: 'E' },
+  { id: 'collection_50',      nom: 'À mi-chemin',        dit: 'Posséder la moitié de l\'extension.',   ico: 'cards',   ton: 'C' },
+  { id: 'master_set',         nom: 'Master Set',         dit: 'Posséder les 122 cartes.',              ico: 'cards',   ton: 'L' },
+  { id: 'toutes_legendaires', nom: 'Panthéon',           dit: 'Posséder toutes les Légendaires.',      ico: 'coin',    ton: 'L' },
+  { id: 'premier_echange',    nom: 'Poignée de main',    dit: 'Conclure un premier échange.',          ico: 'swap',    ton: 'C' },
+  { id: 'negociant',          nom: 'Négociant',          dit: 'Conclure 25 échanges.',                 ico: 'swap',    ton: 'E' },
+  { id: 'serie_7',            nom: 'Fidèle',             dit: 'Revenir 7 jours d\'affilée.',           ico: 'clock',   ton: 'R' },
+  { id: 'serie_30',           nom: 'Inébranlable',       dit: 'Revenir 30 jours d\'affilée.',          ico: 'clock',   ton: 'E' },
+  { id: 'godpack',            nom: 'Béni des dieux',     dit: 'Ouvrir un godpack.',                    ico: 'promo',   ton: 'L' },
+  { id: 'brillante',          nom: 'Ça brille',          dit: 'Obtenir une Essence Brillante.',        ico: 'promo',   ton: 'R' },
+  { id: 'toutes_brillantes',  nom: 'Éclat absolu',       dit: 'Réunir les 9 Essences Brillantes.',     ico: 'promo',   ton: 'L' },
+  { id: 'artisan',            nom: 'Artisan',            dit: 'Fabriquer une carte.',                  ico: 'recycle', ton: 'C' },
+  { id: 'unique',             nom: 'L\'Élu',             dit: 'Posséder la carte unique.',             ico: 'trophy',  ton: 'UN' },
+  { id: 'pionnier',           nom: 'Pionnier',           dit: 'Avoir rejoint le jeu avant la version 1.5.', ico: 'flask', ton: 'R' }
+];
 
 /* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
@@ -193,6 +228,8 @@ const TABS = [
 
   { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user', online: true,
     desc: 'Pseudo, avatar, cadre et statistiques' },
+  { id: 'tirages', nom: 'Mes tirages', tiroir: true, ico: 'clock', online: true,
+    desc: 'Historique, statistiques et partage' },
   { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy', online: true,
     desc: 'Les meilleurs joueurs, tous confondus' },
   { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,
@@ -252,6 +289,8 @@ const NAVICO = {
   check: '<svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></svg>',
   lock:  '<svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
+  partage:'<svg viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></svg>',
+  fragment:'<svg viewBox="0 0 24 24"><path d="M12 2.8 18.6 9 12 21.2 5.4 9Z"/><path d="M5.4 9h13.2M12 2.8 9.4 9 12 21.2 14.6 9Z"/></svg>',
   rotate:'<svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"/><path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"/><path d="M18 2.5V6h-3.5M6 21.5V18h3.5"/></svg>',
   filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>'
 };
