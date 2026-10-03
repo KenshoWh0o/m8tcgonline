@@ -243,6 +243,7 @@ function vUniqueSection() {
   const statut = mienne ? 'Elle est à toi.'
     : ch.trouvee ? `Trouvée par ${ch.gagnant || 'un joueur'}`
     : ch.active ? 'Chasse en cours : elle se cache dans un booster.'
+    : ch.ouvre_le ? `La chasse ouvre le ${dateCourte(srvTime(ch.ouvre_le))}.`
     : 'Pas encore en jeu.';
   return `<section class="promosec unsec">
     <div class="promohead">

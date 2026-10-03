@@ -129,24 +129,48 @@ function makeBooster(pool, god) {
 }
 
 /* ---------- L'événement en cours ---------- */
-/* Un bandeau au-dessus du paquet : ce qui se passe, et jusqu'à quand. Il mène
-   à la fenêtre des nouveautés (js/bienvenue.js). Rien s'il n'y a ni événement
-   ni chasse ouverte. */
+/* Un bandeau au-dessus du paquet : ce qui se passe, et jusqu'à quand — ou,
+   avant le départ, dans combien de temps. Il mène à la fenêtre des nouveautés
+   (js/bienvenue.js). Rien s'il n'y a ni événement ni chasse, ouverte ou
+   annoncée. Les comptes à rebours (`data-rebours`) battent à la seconde
+   (js/app.js). */
+const chasseAnnoncee = ch => !!(ch && !ch.active && !ch.trouvee && ch.ouvre_le);
+
 function vBandeauEvenement() {
   if (Backend.mode !== 'cloud' || !save) return '';
   const ev = save.evenement;
   const ch = save.chasse;
   const chasse = ch && ch.active && !ch.trouvee;
-  if (!ev && !chasse) return '';
-  const reste = ev ? srvTime(ev.fin) - Date.now() : 0;
+  const annoncee = chasseAnnoncee(ch);
+  if (!ev && !chasse && !annoncee) return '';
+  const rebours = (t, avant) => `<small>${avant} <span data-rebours="${t}">${h(dureeCourte(t - Date.now()))}</span></small>`;
+  const ouvre = annoncee ? srvTime(ch.ouvre_le) : 0;
+  /* La chasse ouvre avec l'événement : une seule ligne pour les deux. */
+  const ensemble = ev && ev.a_venir && annoncee && Math.abs(srvTime(ev.debut) - ouvre) < 60000;
   return `<button class="evbandeau" data-act="nouveautes">
     <span class="evico">${NAVICO.promo}</span>
     <span class="evtxt">
-      ${ev ? `<b>${h(ev.titre)}</b><small>encore ${h(dureeCourte(reste))}</small>` : ''}
+      ${ev ? `<b>${h(ev.titre)}</b>${ev.a_venir
+        ? rebours(srvTime(ev.debut), 'commence dans')
+        : rebours(srvTime(ev.fin), 'encore')}` : ''}
       ${chasse ? `<b class="evchasse">La chasse à l'Unique est ouverte</b>` : ''}
+      ${ensemble ? `<b class="evchasse">Et la chasse à l'Unique ouvre en même temps</b>`
+        : annoncee ? `<b class="evchasse">La chasse à l'Unique</b>${rebours(ouvre, 'ouvre dans')}` : ''}
     </span>
     <span class="evplus">${NAVICO.caret}</span>
   </button>`;
+}
+
+/* Le prochain moment où l'état change de lui-même : un événement qui
+   commence ou finit, une chasse qui ouvre. La page redemande alors l'état au
+   serveur (js/app.js) — le rythme des boosters en dépend. */
+function prochaineBascule() {
+  if (Backend.mode !== 'cloud' || !save) return 0;
+  const t = [];
+  const ev = save.evenement;
+  if (ev) t.push(srvTime(ev.a_venir ? ev.debut : ev.fin));
+  if (chasseAnnoncee(save.chasse)) t.push(srvTime(save.chasse.ouvre_le));
+  return t.length ? Math.min(...t) : 0;
 }
 
 /* ---------- Écran booster ---------- */

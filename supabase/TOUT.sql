@@ -926,7 +926,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles;
   god boolean; ids text[] := '{}'; cid text; x double precision;
-  nouvelles int := 0; i int; ch_active boolean; ch_gagnant uuid; unique_id text;
+  nouvelles int := 0; i int; ch_active boolean; ch_gagnant uuid; ch_ouvre timestamptz; unique_id text;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -989,8 +989,9 @@ begin
   -- `where gagnant is null` tranche entre deux tirages simultanes : le second
   -- relit la ligne apres le premier, n'y trouve plus de place, et repart
   -- avec un booster ordinaire.
-  select active, gagnant into ch_active, ch_gagnant from chasse where id = 1;
-  if coalesce(ch_active, false) and ch_gagnant is null and random() < 1.0 / cfg('chasse_odds') then
+  select active, gagnant, ouvre_le into ch_active, ch_gagnant, ch_ouvre from chasse where id = 1;
+  if coalesce(ch_active, false) and ch_gagnant is null and (ch_ouvre is null or now() >= ch_ouvre)
+     and random() < 1.0 / cfg('chasse_odds') then
     update chasse set gagnant = p, trouvee_le = now()
      where id = 1 and gagnant is null
      returning carte into unique_id;
@@ -2565,6 +2566,9 @@ create table if not exists public.chasse (
 );
 insert into public.chasse (id, carte, active) values (1, 'u01', false)
 on conflict (id) do nothing;
+-- L'heure d'ouverture : une chasse active ne commence qu'a cette heure-la.
+-- Vide : des qu'elle est active. Elle permet de tout installer la veille.
+alter table public.chasse add column if not exists ouvre_le timestamptz;
 
 alter table public.chasse enable row level security;
 revoke all on public.chasse from anon, authenticated;
@@ -2581,16 +2585,25 @@ begin
   return coalesce(m, cfg('ticket_minutes'));
 end $$;
 
--- L'evenement en cours, pour le bandeau et la fenetre des nouveautes.
+-- L'evenement en cours, pour le bandeau et la fenetre des nouveautes. Sans
+-- evenement en cours, le prochain s'il commence dans les quinze jours, marque
+-- `a_venir` : le bandeau affiche le compte a rebours avant le depart.
 create or replace function public.evenement_actif() returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 begin
-  return (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
-                                    'debut', e.debut, 'fin', e.fin,
-                                    'ticket_minutes', e.ticket_minutes)
-            from evenements e
-           where now() >= e.debut and now() < e.fin
-           order by e.debut desc limit 1);
+  return coalesce(
+    (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
+                               'debut', e.debut, 'fin', e.fin,
+                               'ticket_minutes', e.ticket_minutes, 'a_venir', false)
+       from evenements e
+      where now() >= e.debut and now() < e.fin
+      order by e.debut desc limit 1),
+    (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
+                               'debut', e.debut, 'fin', e.fin,
+                               'ticket_minutes', e.ticket_minutes, 'a_venir', true)
+       from evenements e
+      where e.debut > now() and e.debut < now() + interval '15 days'
+      order by e.debut limit 1));
 end $$;
 
 -- Ou en est la chasse : ouverte ou non, trouvee ou non, et par qui. Le
@@ -2598,7 +2611,11 @@ end $$;
 create or replace function public.chasse_etat() returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 begin
-  return (select jsonb_build_object('carte', c.carte, 'active', c.active,
+  -- `active` : ouverte ET l'heure d'ouverture passee. `ouvre_le` permet au
+  -- navigateur d'annoncer l'ouverture a venir.
+  return (select jsonb_build_object('carte', c.carte,
+                                    'active', c.active and (c.ouvre_le is null or now() >= c.ouvre_le),
+                                    'ouvre_le', case when c.active then c.ouvre_le end,
                                     'trouvee', c.gagnant is not null,
                                     'gagnant', (select pseudo from profiles where id = c.gagnant),
                                     'trouvee_le', c.trouvee_le)
@@ -2700,8 +2717,9 @@ grant execute on function public.mes_tirages to authenticated;
 -- update public.evenements set fin = now() where fin > now();
 --
 --  Ouvrir la chasse a la carte unique (une seule fois : une carte trouvee
---  le reste) :
--- update public.chasse set active = true where id = 1;
+--  le reste), tout de suite ou a une heure donnee :
+-- update public.chasse set active = true, ouvre_le = null where id = 1;
+-- update public.chasse set active = true, ouvre_le = timestamptz '2026-10-04 12:00:00+02' where id = 1;
 
 
 -- =====================================================================

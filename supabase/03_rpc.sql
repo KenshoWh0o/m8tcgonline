@@ -133,7 +133,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles;
   god boolean; ids text[] := '{}'; cid text; x double precision;
-  nouvelles int := 0; i int; ch_active boolean; ch_gagnant uuid; unique_id text;
+  nouvelles int := 0; i int; ch_active boolean; ch_gagnant uuid; ch_ouvre timestamptz; unique_id text;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -196,8 +196,9 @@ begin
   -- `where gagnant is null` tranche entre deux tirages simultanes : le second
   -- relit la ligne apres le premier, n'y trouve plus de place, et repart
   -- avec un booster ordinaire.
-  select active, gagnant into ch_active, ch_gagnant from chasse where id = 1;
-  if coalesce(ch_active, false) and ch_gagnant is null and random() < 1.0 / cfg('chasse_odds') then
+  select active, gagnant, ouvre_le into ch_active, ch_gagnant, ch_ouvre from chasse where id = 1;
+  if coalesce(ch_active, false) and ch_gagnant is null and (ch_ouvre is null or now() >= ch_ouvre)
+     and random() < 1.0 / cfg('chasse_odds') then
     update chasse set gagnant = p, trouvee_le = now()
      where id = 1 and gagnant is null
      returning carte into unique_id;

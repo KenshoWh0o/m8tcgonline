@@ -441,6 +441,10 @@ document.addEventListener('keydown', e => {
    accorde : on ne fait qu'anticiper l'affichage, et on redemande la vérité
    au serveur dès que le compte à rebours devrait avoir abouti. */
 let attenteServeur = false;
+/* Un événement qui commence ou finit, une chasse qui ouvre (prochaineBascule,
+   js/booster.js) : on redemande l'état, au plus toutes les trente secondes si
+   le serveur n'a pas encore basculé. */
+let derniereBascule = 0;
 setInterval(() => {
   if (!save || !porteOuverte() || porteVisible()) return;
 
@@ -450,6 +454,16 @@ setInterval(() => {
       Backend.pull().then(() => { attenteServeur = false; header(); if (tab === 'boosters' && !rv) render(); })
                     .catch(() => { attenteServeur = false; });
     }
+    const bascule = prochaineBascule();
+    if (bascule && Date.now() >= bascule + 1000 && Date.now() - derniereBascule > 30000 && !attenteServeur) {
+      attenteServeur = true;
+      derniereBascule = Date.now();
+      Backend.pull().then(() => { attenteServeur = false; majDiscrete(true); })
+                    .catch(() => { attenteServeur = false; });
+    }
+    document.querySelectorAll('[data-rebours]').forEach(el => {
+      el.textContent = dureeCourte(+el.dataset.rebours - Date.now());
+    });
   } else {
     const avant = save.tickets;
     regen();

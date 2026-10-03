@@ -113,24 +113,32 @@ function montrerDiscord() {
    Changer NOUVEAUTES_VERSION la remontre à tout le monde. */
 const NOUVEAUTES_VERSION = '1.5';
 
+/* Un événement se signale aussi : une fois annoncé, une fois commencé — même
+   à qui a déjà vu les nouveautés de la version. */
+const cleEvenement = ev => (ev ? `${ev.titre}|${ev.debut}|${ev.a_venir ? 'avant' : 'pendant'}` : '');
+
 function nouveautesAVoir() {
   if (Backend.mode !== 'cloud' || !save) return false;
-  return accueilMemoire().nouveautes !== NOUVEAUTES_VERSION;
+  const m = accueilMemoire();
+  return m.nouveautes !== NOUVEAUTES_VERSION
+    || (!!save.evenement && m.evenement !== cleEvenement(save.evenement));
 }
 
 function montrerNouveautes() {
-  accueilNoter({ nouveautes: NOUVEAUTES_VERSION });
   const ev = save.evenement;
+  accueilNoter({ nouveautes: NOUVEAUTES_VERSION, evenement: cleEvenement(ev) });
   const ch = save.chasse || {};
   const u = uniques[0];
-  const fin = ev ? new Date(srvTime(ev.fin)).toLocaleString('fr-FR',
-    { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  const quand = iso => new Date(srvTime(iso)).toLocaleString('fr-FR',
+    { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
   const chasse = ch.trouvee
     ? `<b>${h(ch.gagnant || 'Un joueur')}</b> l'a déjà trouvée. Il n'en existera jamais d'autre.`
     : ch.active
       ? 'Une seule carte dans tout le jeu, cachée dans un booster. La première personne qui la tire la garde pour toujours.'
-      : 'Une seule carte dans tout le jeu. La chasse ouvre bientôt.';
+      : ch.ouvre_le
+        ? `Une seule carte dans tout le jeu, cachée dans un booster à partir du ${h(quand(ch.ouvre_le))}. La première personne qui la tire la garde pour toujours.`
+        : 'Une seule carte dans tout le jeu. La chasse ouvre bientôt.';
 
   const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span>
     <span><b>${titre}</b> ${texte}</span></li>`;
@@ -141,13 +149,13 @@ function montrerNouveautes() {
         <div class="nvrayons" aria-hidden="true"></div>
         ${u ? `<div class="nvcarte">${renderCard(u)}</div>` : ''}
         <div class="nvtexte">
-          <span class="nvkicker">${ch.trouvee ? 'Chasse terminée' : 'Chasse ouverte'}</span>
+          <span class="nvkicker">${ch.trouvee ? 'Chasse terminée' : ch.active ? 'Chasse ouverte' : 'Bientôt'}</span>
           <b>${u ? h(u.nom) : 'La carte unique'}</b>
           <small>${chasse}</small>
         </div>
       </div>
       ${ev ? `<div class="nvevent">${NAVICO.star}<span><b>${h(ev.titre)}</b> — ${h(ev.texte || '')}
-          <small>Jusqu'au ${h(fin)}.</small></span></div>` : ''}
+          <small>${ev.a_venir ? `Du ${h(quand(ev.debut))} au ${h(quand(ev.fin))}.` : `Jusqu'au ${h(quand(ev.fin))}.`}</small></span></div>` : ''}
       <ol class="bvpoints nvpoints">
         ${point('fragment', 'Les Fragments.', `Le recyclage donne désormais des ${FRAGMENTS.nom}, sans plafond. Avec eux, fabrique les cartes qui te manquent : touche une case vide dans ta Collection.`)}
         ${point('promo', 'Les Essences Brillantes.', `Une Essence sur ${FOIL_ODDS} sort dans sa version Brillante. Neuf à réunir.`)}

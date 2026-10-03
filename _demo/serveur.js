@@ -279,7 +279,7 @@
   /* chasse_etat, 15_evenements.sql */
   const chasseEtat = () => ({ carte: S.chasse.carte, active: S.chasse.active,
     trouvee: !!S.chasse.gagnant, gagnant: S.chasse.gagnant ? profil(S.chasse.gagnant).pseudo : null,
-    trouvee_le: S.chasse.trouvee_le ? iso(S.chasse.trouvee_le) : null });
+    trouvee_le: S.chasse.trouvee_le ? iso(S.chasse.trouvee_le) : null, ouvre_le: null });
 
   /* boite_non_lues, 11_boite.sql */
   function boiteNonLues(p) {
