@@ -410,7 +410,7 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 
 **Les Essences Brillantes** sont la version brillante des 9 Essences : même illustration, avec un reflet arc-en-ciel et des paillettes posés par le CSS (`.card.r-BR`, `css/cards.css`). La case Essence d'un booster en donne une **une fois sur 50** (`cfg('foil_odds')`) — une tous les huit jours environ pour un joueur régulier. Identifiants `b001` à `b009`, hors extension comme les Promos : ni dans les 122, ni échangeables, ni recyclables, ni fabricables. Elles ont leur section dans la Collection.
 
-**La carte unique**, *L'Unique Chevalière* (`u01`), n'existe qu'en **un exemplaire dans tout le jeu**. Tant que la chasse est ouverte (`chasse.active`) et que personne ne l'a, chaque booster a une chance sur 250 (`cfg('chasse_odds')`) de la contenir, en septième carte, avec la plus longue révélation du jeu. Avec ~70 boosters ouverts par jour dans la communauté, elle sort en trois à quatre jours. C'est la base qui garantit l'unicité : la mise à jour `where gagnant is null` dans `open_pack()` laisse passer un seul gagnant, même si deux joueurs la tirent à la même seconde. Une annonce part alors dans toutes les boîtes de réception, et la Collection de chacun dit qui l'a trouvée. Son visuel est dans `cards/uniques/`.
+**La carte unique**, *L'Unique Chevalière* (`u01`), n'existe qu'en **un exemplaire dans tout le jeu**. Tant que la chasse est ouverte (`chasse.active`) et que personne ne l'a, chaque booster a une chance sur 250 (`cfg('chasse_odds')`) de la contenir, en septième carte, avec la plus longue révélation du jeu. Avec ~70 boosters ouverts par jour dans la communauté, elle sort en trois à quatre jours. C'est la base qui garantit l'unicité : la mise à jour `where gagnant is null` dans `open_pack()` laisse passer un seul gagnant, même si deux joueurs la tirent à la même seconde. Une annonce part alors dans toutes les boîtes de réception ; chaque autre joueur voit aussi, une fois, la fenêtre « La chasse est terminée ». La carte a sa vitrine dans la Collection : en tête, dorée, chez celui qui l'a ; en bas, avec le nom du gagnant, chez les autres. Elle ne s'échange pas et ne se recycle pas. Son visuel est dans `cards/uniques/`.
 
 **Les événements** sont des lignes de la table `evenements` : un titre, un début, une fin, et le rythme de recharge pendant ce temps (`ticket_minutes`, 120 = boosters doublés). `minutes_recharge()` donne le rythme en cours, `regen_tickets()` et le compte à rebours du navigateur le suivent. Un bandeau s'affiche au-dessus du paquet tant qu'un événement ou une chasse est en cours. Les requêtes pour lancer un événement, l'arrêter ou ouvrir la chasse sont en bas de `supabase/15_evenements.sql`.
 
@@ -420,7 +420,7 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 
 **Les succès** sont calculés à la volée par le serveur (`succes_de()`, `supabase/15_evenements.sql`) à partir de ce qu'il sait déjà : boosters, collection, échanges, plus longue série (`profiles.serie_max`), godpacks du journal, Brillantes, fabrications, carte unique. Rien à stocker ni à synchroniser. Les noms et descriptions sont dans `SUCCES` (`js/config.js`) ; les identifiants doivent rester les mêmes des deux côtés. Le profil les montre tous (obtenus en couleur, les autres grisés), la fiche d'un joueur seulement les siens.
 
-**L'historique** : chaque booster ouvert est journalisé dans `tirages`. L'onglet *Mes tirages* (menu du compte) montre les trente derniers et compare chaque rareté à la moyenne attendue (Rare, Épique, Légendaire, Brillante). Le journal commence à la version 1.5 : les boosters ouverts avant n'y sont pas.
+**L'historique** : chaque booster ouvert est journalisé dans `tirages`. L'onglet *Mes tirages* (menu du compte) montre les trente derniers, avec quelques compteurs (Légendaires, Brillantes, godpacks), et chaque booster se partage en image. Le journal commence à la version 1.5 : les boosters ouverts avant n'y sont pas.
 
 **Le partage** dessine une image 1080 × 1350 du booster dans un canvas (`js/partage.js`) : le logo, le pseudo, les cartes avec la lueur de leur rareté, l'adresse du jeu. Sur téléphone, le menu de partage du système s'ouvre ; ailleurs, l'image se télécharge. Le bouton est dans le récap d'ouverture et sur chaque booster de l'historique. Ouvert comme fichier (la démo), le navigateur refuse d'exporter l'image : il faut une adresse web.
 
@@ -689,12 +689,13 @@ Cacher un bouton ne protège rien — ce qui protège, c'est que le serveur refu
 
 Le Labo sert à **voir ce qu'on ne peut pas provoquer** :
 
-- les cinq ouvertures de test (normale, rare, épique, légendaire, godpack) ;
+- les sept ouvertures de test (normale, rare, épique, légendaire, Essence Brillante, carte unique, godpack), et l'image de partage d'un booster ;
+- **l'événement et la chasse** : ce que le serveur dit en ce moment (événement, rythme de recharge, état de la chasse), quatre aperçus de l'interface (avant le départ, pendant, chasse terminée, carte unique en main), les fenêtres des nouveautés et de fin de chasse, et les requêtes SQL pour lancer ou arrêter un événement et ouvrir la chasse ;
 - **l'animation d'obtention de chaque carte Promo**, une par une ou toutes à la suite — c'est exactement ce que verra un joueur, seule l'écriture dans la collection est sautée ;
 - les notifications qui passent en haut de l'écran, dont le ping de la boîte de réception ;
 - **publier une annonce** dans la boîte de réception de tous les joueurs ;
-- la collection remplie à 90 %, pour regarder la grille et la jauge dans un état intermédiaire ;
-- un tableau des valeurs d'équilibrage en cours, telles que le serveur les impose.
+- la collection remplie à 90 %, des Fragments et tous les succès en affichage, pour regarder la grille, la fabrication et le profil dans des états qu'on ne croise pas tous les jours ;
+- un tableau des valeurs d'équilibrage en cours, telles que le serveur les impose, avec ce que rapporte et coûte chaque rareté en Fragments.
 
 Pour obtenir une Promo **pour de vrai** sur son compte — et vérifier la détection, la boutique et les paliers de bout en bout — les requêtes sont commentées en bas de `supabase/03b_promos.sql`.
 

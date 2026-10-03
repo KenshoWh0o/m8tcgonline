@@ -224,6 +224,14 @@ Backend.openPack = async function (opts) {
     const c = pickFrom(pool, opts.force);
     if (c) drawn[drawn.length - 1] = c;
   }
+  /* Labo : l'Essence sort Brillante, ou la carte unique s'ajoute en septième
+     carte — comme open_pack() les place. */
+  if (opts.brillante) {
+    const i = drawn.findIndex(c => c.cat === 'essence');
+    const b = i >= 0 && byId['b' + drawn[i].id.slice(1)];
+    if (b) drawn[i] = b;
+  }
+  if (opts.unique && uniques[0]) drawn.push(uniques[0]);
   if (!opts.test) {
     drawn.forEach(c => save.col[c.id] = (save.col[c.id] || 0) + 1);
     await persist();

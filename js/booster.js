@@ -129,35 +129,72 @@ function makeBooster(pool, god) {
 }
 
 /* ---------- L'événement en cours ---------- */
-/* Un bandeau au-dessus du paquet : ce qui se passe, et jusqu'à quand — ou,
-   avant le départ, dans combien de temps. Il mène à la fenêtre des nouveautés
-   (js/bienvenue.js). Rien s'il n'y a ni événement ni chasse, ouverte ou
-   annoncée. Les comptes à rebours (`data-rebours`) battent à la seconde
-   (js/app.js). */
+/* Un bandeau au-dessus du paquet : l'événement (avant son départ, puis
+   pendant), et la chasse à la carte unique. Il ouvre la fenêtre des
+   nouveautés (js/bienvenue.js). Rien s'il n'y a ni événement, ni chasse
+   annoncée ou ouverte. Les comptes à rebours (`data-rebours`) battent à la
+   seconde (js/app.js). */
 const chasseAnnoncee = ch => !!(ch && !ch.active && !ch.trouvee && ch.ouvre_le);
+
+/* « pendant 3 jours », « pendant 24 h », « pendant 6 h ». */
+function pendant(ms) {
+  const hh = Math.round(ms / 3600000);
+  return hh >= 48 ? `pendant ${Math.round(hh / 24)} jours` : `pendant ${hh} h`;
+}
 
 function vBandeauEvenement() {
   if (Backend.mode !== 'cloud' || !save) return '';
   const ev = save.evenement;
-  const ch = save.chasse;
-  const chasse = ch && ch.active && !ch.trouvee;
+  const ch = save.chasse || {};
+  const u = uniques[0];
+  const nomU = u ? u.nom : 'la carte unique';
+  /* En milieu de phrase : « la chasse à l'Unique Chevalière ». */
+  const nomMilieu = nomU.replace(/^L'/, 'l\'').replace(/^La /, 'la ');
   const annoncee = chasseAnnoncee(ch);
-  if (!ev && !chasse && !annoncee) return '';
-  const rebours = (t, avant) => `<small>${avant} <span data-rebours="${t}">${h(dureeCourte(t - Date.now()))}</span></small>`;
+  const ouverte = !!(ch.active && !ch.trouvee);
+  if (!ev && !annoncee && !ouverte) return '';
+
+  const rebours = t => `<b data-rebours="${t}">${h(dureeCourte(t - Date.now()))}</b>`;
   const ouvre = annoncee ? srvTime(ch.ouvre_le) : 0;
-  /* La chasse ouvre avec l'événement : une seule ligne pour les deux. */
-  const ensemble = ev && ev.a_venir && annoncee && Math.abs(srvTime(ev.debut) - ouvre) < 60000;
-  return `<button class="evbandeau" data-act="nouveautes">
-    <span class="evico">${NAVICO.promo}</span>
-    <span class="evtxt">
-      ${ev ? `<b>${h(ev.titre)}</b>${ev.a_venir
-        ? rebours(srvTime(ev.debut), 'commence dans')
-        : rebours(srvTime(ev.fin), 'encore')}` : ''}
-      ${chasse ? `<b class="evchasse">La chasse à l'Unique est ouverte</b>` : ''}
-      ${ensemble ? `<b class="evchasse">Et la chasse à l'Unique ouvre en même temps</b>`
-        : annoncee ? `<b class="evchasse">La chasse à l'Unique</b>${rebours(ouvre, 'ouvre dans')}` : ''}
+  let classe, tag, temps, titre, sous, chasse = '';
+
+  if (ev) {
+    const debut = srvTime(ev.debut), fin = srvTime(ev.fin);
+    const rythme = ev.ticket_minutes
+      ? `Un booster toutes les ${String(Math.round(ev.ticket_minutes / 6) / 10).replace('.', ',')} h` : '';
+    classe = ev.a_venir ? 'avenir' : 'encours';
+    tag = ev.a_venir ? 'Bientôt' : 'En cours';
+    temps = ev.a_venir ? `dans ${rebours(debut)}` : `encore ${rebours(fin)}`;
+    titre = ev.titre;
+    sous = rythme
+      ? (ev.a_venir ? `${rythme} ${pendant(fin - debut)}, ${jourHeure(debut, 'à partir')}.`
+                    : `${rythme}, ${jourHeure(fin, 'jusqu\'à')}.`)
+      : ev.texte || '';
+    /* La chasse, en une ligne sous l'événement. */
+    chasse = annoncee
+      ? (ev.a_venir && Math.abs(srvTime(ev.debut) - ouvre) < 60000
+          ? `Et la chasse à ${h(nomMilieu)} ouvre au même moment.`
+          : `La chasse à ${h(nomMilieu)} ouvre ${h(jourHeure(ouvre))}.`)
+      : ouverte ? `Chasse ouverte : ${h(nomMilieu)} se cache dans un booster.`
+      : ch.trouvee && u && save.col[u.id] > 0 ? `Tu détiens ${h(nomMilieu)}.`
+      : ch.trouvee ? `${h(nomU)} a été tirée par ${h(ch.gagnant || 'un joueur')}.`
+      : '';
+  } else {
+    classe = 'chasse';
+    tag = 'Chasse';
+    temps = annoncee ? `ouvre dans ${rebours(ouvre)}` : 'ouverte';
+    titre = nomU;
+    sous = 'Un seul exemplaire dans tout le jeu, caché dans un booster.';
+  }
+
+  return `<button class="evban ${classe}" data-act="nouveautes" aria-label="${h(titre)} : en savoir plus">
+    <span class="evbtxt">
+      <span class="evbhaut"><i class="evbtag">${tag}</i><span class="evbtemps">${temps}</span></span>
+      <b class="evbtitre">${h(titre)}</b>
+      ${sous ? `<span class="evbsous">${h(sous)}</span>` : ''}
+      ${chasse ? `<span class="evbchasse">${ICON.star}<span>${chasse}</span></span>` : ''}
     </span>
-    <span class="evplus">${NAVICO.caret}</span>
+    ${u && (annoncee || ouverte) ? `<span class="evbcarte"><img src="${u.img}" alt=""></span>` : ''}
   </button>`;
 }
 

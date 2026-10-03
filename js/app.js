@@ -269,11 +269,12 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu]');
   if (!el) return;
   const d = el.dataset;
 
   if (d.tab) return aller(d.tab);
+  if (d.apercu) return labMontrerApercu(d.apercu);
   if (d.auth) return authFaire(d.auth);
   /* `data-qui` accompagne les cartes ouvertes depuis un écran d'échange : la
      visionneuse montre alors aussi combien l'autre en possède. */
@@ -370,13 +371,34 @@ async function clicPage(e) {
         ]
       });
 
+    case 'unique-partager': {
+      const u = uniques[0];
+      if (!u) return;
+      return partagerTirage({ ids: [u.id], quand: save.chasse && save.chasse.trouvee_le,
+        titre: 'Exemplaire unique', texte: `${u.nom}, la seule du jeu, sur ${GAME_NAME}` });
+    }
+
     /* --- Labo (administrateurs) --- */
     case 't-open': return openBooster({ test: true });
     case 't-R': case 't-E': case 't-L':
       return openBooster({ test: true, force: d.act.slice(2), god: false });
     case 't-god': return openBooster({ test: true, god: true });
+    case 't-BR': return openBooster({ test: true, god: false, brillante: true });
+    case 't-UN': return openBooster({ test: true, god: false, unique: true });
+    case 't-partage':
+      return partagerTirage({ ids: makeBooster(poolFor(), false).map(c => c.id), quand: new Date().toISOString() });
+    case 't-fragments':
+      save.fragments = (save.fragments || 0) + 5000; render();
+      return toast(`+5 000 ${FRAGMENTS.nom} (affichage seulement).`);
+    case 't-succes':
+      save.succes = SUCCES.map(x => x.id); render();
+      return toast('Tous les succès (affichage seulement).');
+    case 't-ev-reel': return labEtatReel();
+    case 't-chasse-fin':
+      if (!(save.chasse && save.chasse.trouvee)) labMontrerApercu('trouvee');
+      return montrerChasseFin();
     case 't-all':
-      cards.forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
+      cards.concat(brillantes).forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
       persist(); toast('Toutes les cartes sont débloquées (affichage seulement).');
       return render();
     case 't-clear':

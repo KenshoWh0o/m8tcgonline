@@ -66,15 +66,16 @@ async function imageTirage(t) {
   x.textAlign = 'center';
   x.fillStyle = '#ffffff';
   x.font = police(54, 900, true);
-  x.fillText(t.god ? 'Godpack !' : 'Mon booster', PART_L / 2, 232);
+  x.fillText(t.titre || (t.god ? 'Godpack !' : 'Mon booster'), PART_L / 2, 232);
   x.fillStyle = 'rgba(255,255,255,.62)';
   x.font = police(30, 700);
   const quand = t.quand ? new Date(t.quand).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '';
   x.fillText(`${save.pseudo}${quand ? ' · ' + quand : ''}`, PART_L / 2, 280);
 
-  /* Les cartes : trois par rangée (quatre s'il y en a sept), centrées. */
+  /* Les cartes : trois par rangée (quatre s'il y en a sept), centrées. Une
+     carte seule — la carte unique — prend toute la place. */
   const n = cartes.length;
-  const cols = n > 6 ? 4 : 3;
+  const cols = n === 1 ? 1 : n > 6 ? 4 : 3;
   const rangs = Math.ceil(n / cols);
   const ecart = 26;
   const zoneH = PART_H - 330 - 140;
@@ -127,7 +128,8 @@ async function imageTirage(t) {
 }
 
 /* `t` : { ids, god, quand } — un booster du journal, ou celui qu'on vient
-   d'ouvrir. */
+   d'ouvrir. `titre` et `texte` remplacent ceux d'un booster (la carte
+   unique, js/collection.js). */
 async function partagerTirage(t) {
   if (!t || !(t.ids || []).length) return;
   occupe(true);
@@ -135,7 +137,7 @@ async function partagerTirage(t) {
     const blob = await imageTirage(t);
     const fichier = new File([blob], 'mon-booster.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
-      await navigator.share({ files: [fichier], title: 'Mon booster', text: `Mon booster sur ${GAME_NAME}` });
+      await navigator.share({ files: [fichier], title: t.titre || 'Mon booster', text: t.texte || `Mon booster sur ${GAME_NAME}` });
     } else {
       const lien = document.createElement('a');
       lien.href = URL.createObjectURL(blob);

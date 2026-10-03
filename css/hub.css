@@ -1270,13 +1270,6 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .nvpoints{margin-top:12px}
 
 /* ============ Mes tirages ============ */
-.tirchance{display:flex;flex-direction:column;gap:6px;margin:4px 0 10px}
-.tirligne{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:12px;font-size:13px;
-  padding:7px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
-.tirrar{display:inline-flex;align-items:center;gap:7px;font-weight:800}
-.tirligne b{font-family:var(--display);font-weight:900;font-size:16px}
-.tirratio{font-weight:800;min-width:46px;text-align:right}
-.tirratio.haut{color:var(--ok)}.tirratio.bas{color:var(--danger)}
 .rardot.rBR{background:linear-gradient(135deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff)}
 .tirliste h2{margin-top:18px}
 .tirage{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:9px}
@@ -1287,3 +1280,42 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .tirtete .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tircartes{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .tirmini{background:none;border:0;padding:0}
+
+/* ============ La carte unique, en vitrine (Collection) ============ */
+/* Un écrin, pas une case : la carte en grand, des rayons qui tournent
+   derrière, et l'état de la chasse. Doré chez celui qui l'a. */
+.unvitrine{position:relative;display:flex;align-items:center;gap:18px;margin:var(--gap-5) 0 var(--gap-4);padding:18px;
+  border-radius:var(--radius);overflow:hidden;color:#fff;isolation:isolate;
+  background:radial-gradient(120% 150% at 22% 40%,#6a23c4 0%,#2c0f4d 52%,#140a20 100%)}
+.unvitrine.mienne{margin-top:var(--gap-3);
+  background:radial-gradient(120% 150% at 22% 40%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
+  box-shadow:0 0 0 1.5px #ffc73b,0 10px 34px rgba(255,140,200,.3)}
+.unrayons{position:absolute;left:24%;top:50%;width:520px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.4;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(236,143,255,.55) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:nvtourne 30s linear infinite}
+.unvitrine.mienne .unrayons{opacity:.55;background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.7) 0 6deg,transparent 6deg 18deg)}
+.uncarte{position:relative;flex:0 0 40%;max-width:190px;padding:0;border:0;background:none;cursor:pointer;rotate:-5deg;
+  transition:rotate .3s,scale .3s;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
+.uncarte:hover{rotate:-2deg;scale:1.03}
+.unvitrine.trouvee .uncarte{filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) saturate(.55) brightness(.75)}
+.unvitrine.bientot .uncarte{filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) brightness(.6) blur(1.5px)}
+.untexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.unkicker{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;background:#ec8fff;color:#3a0640}
+.unvitrine.mienne .unkicker{background:#ffc73b;color:#3a2600}
+.unvitrine.trouvee .unkicker{background:rgba(255,255,255,.2);color:#fff}
+.unvitrine.bientot .unkicker{background:#ffc73b;color:#3a2600}
+.unnom{font-family:var(--display);font-style:italic;font-weight:900;font-size:23px;line-height:1.08}
+.unserie{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.6)}
+.untexte p{margin:3px 0 0;font-size:13px;line-height:1.45;color:rgba(255,255,255,.88)}
+.untexte p b{color:#fff}
+.unpart{margin-top:6px;background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+.unpart svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+@media (max-width:420px){
+  .unvitrine{gap:14px;padding:16px 14px}
+  .unnom{font-size:20px}
+  .untexte p{font-size:12.5px}
+}
+@media (prefers-reduced-motion:reduce){.unrayons{animation:none}}
+

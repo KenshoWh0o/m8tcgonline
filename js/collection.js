@@ -70,6 +70,8 @@ function vCollection() {
         : ''}
     </div>
 
+    ${noFilter && uniques[0] && save.col[uniques[0].id] > 0 ? vUniqueVitrine() : ''}
+
     ${vFiltres(all)}
 
     ${list.length
@@ -78,7 +80,8 @@ function vCollection() {
           <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}
 
     ${noFilter || rarFilter === 'PR' ? vPromosSection() : ''}
-    ${noFilter ? vBrillantesSection() + vUniqueSection() : ''}`;
+    ${noFilter ? vBrillantesSection() : ''}
+    ${noFilter && uniques[0] && !(save.col[uniques[0].id] > 0) ? vUniqueVitrine() : ''}`;
 }
 
 /* ---------- Le tiroir de filtres ---------- */
@@ -221,7 +224,7 @@ function vBrillantesSection() {
     const n = save.col[b.id] || 0;
     return n
       ? `<button class="gcell" data-show="${b.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(b)}<span class="num">${h(b.code)}</span></button>`
-      : caseVide(b.code, 'promovide', '1 sur ' + FOIL_ODDS);
+      : caseVide(b.code, 'promovide');
   }).join('');
   return `<section class="promosec brsec">
     <div class="promohead">
@@ -234,27 +237,49 @@ function vBrillantesSection() {
 }
 
 /* ---------- La carte unique ---------- */
-/* Une seule case, pour tout le monde : on y voit qui l'a trouvée. */
-function vUniqueSection() {
+/* Pas une case parmi d'autres : une vitrine. Chez celui qui l'a tirée, elle
+   ouvre la Collection — c'est la pièce que personne d'autre n'aura. Chez les
+   autres, elle la referme, avec l'état de la chasse : à venir, ouverte, ou
+   terminée et par qui. */
+function vUniqueVitrine() {
   const u = uniques[0];
   if (!u) return '';
   const ch = save.chasse || {};
   const mienne = save.col[u.id] > 0;
-  const statut = mienne ? 'Elle est à toi.'
-    : ch.trouvee ? `Trouvée par ${ch.gagnant || 'un joueur'}`
-    : ch.active ? 'Chasse en cours : elle se cache dans un booster.'
-    : ch.ouvre_le ? `La chasse ouvre le ${dateCourte(srvTime(ch.ouvre_le))}.`
-    : 'Pas encore en jeu.';
-  return `<section class="promosec unsec">
-    <div class="promohead">
-      <span class="qpico">${NAVICO.trophy}</span>
-      <div><h2>Carte unique</h2><p class="muted small">${h(statut)}</p></div>
-      <span class="qpreste"><b class="tnum">1</b><small>/ 1</small></span>
+  const le = iso => new Date(srvTime(iso)).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+  let etat, kicker, texte;
+  if (mienne) {
+    etat = 'mienne';
+    kicker = 'À toi, pour toujours';
+    texte = `Il n'en existe qu'une dans tout le jeu, et c'est la tienne${ch.trouvee_le ? ` — tirée le ${h(le(ch.trouvee_le))}` : ''}.
+      Elle ne s'échange pas et ne se recycle pas.`;
+  } else if (ch.trouvee) {
+    etat = 'trouvee';
+    kicker = 'Chasse terminée';
+    texte = `Tirée par <b>${h(ch.gagnant || 'un joueur')}</b>${ch.trouvee_le ? ` le ${h(le(ch.trouvee_le))}` : ''}.
+      Il n'en existera jamais d'autre.`;
+  } else if (ch.active) {
+    etat = 'ouverte';
+    kicker = 'Chasse ouverte';
+    texte = 'Un seul exemplaire, caché dans un booster. La première personne qui le tire le garde pour toujours.';
+  } else {
+    etat = 'bientot';
+    kicker = 'Bientôt';
+    texte = ch.ouvre_le
+      ? `Un seul exemplaire, caché dans un booster ${h(jourHeure(srvTime(ch.ouvre_le), 'à partir'))}. La première personne qui le tire le garde pour toujours.`
+      : 'Un seul exemplaire dans tout le jeu. La chasse n\'est pas encore ouverte.';
+  }
+
+  return `<section class="unvitrine ${etat}">
+    <div class="unrayons" aria-hidden="true"></div>
+    <button class="uncarte" data-show="${u.id}" aria-label="Voir ${h(u.nom)}">${renderCard(u)}</button>
+    <div class="untexte">
+      <span class="unkicker">${kicker}</span>
+      <b class="unnom">${h(u.nom)}</b>
+      <span class="unserie">Carte unique · ${h(u.code)}</span>
+      <p>${texte}</p>
+      ${mienne ? `<button class="btn tiny unpart" data-act="unique-partager">${NAVICO.partage}Partager</button>` : ''}
     </div>
-    <div class="grid">${mienne
-      ? `<button class="gcell" data-show="${u.id}">${renderCard(u)}<span class="num">${h(u.code)}</span></button>`
-      : `<button class="gcell unvoile" data-show="${u.id}" aria-label="Voir la carte unique">
-           <div class="cwrap"><div class="card ghost-card unghost"><img src="${u.img}" alt="" loading="lazy">
-             <span>1 / 1</span></div></div><span class="num">${h(u.code)}</span></button>`}</div>
   </section>`;
 }

@@ -199,6 +199,32 @@ function dans(ms) {
   return hh + ' h' + (m % 60 ? ' ' + (m % 60) : '');
 }
 
+/* Un moment proche, comme on le dit : « aujourd'hui à 12 h », « demain à
+   18 h 30 », « mercredi à 12 h », « le 14 octobre à 12 h ». `lien` le fait
+   suivre d'une préposition : « jusqu'à » → « jusqu'à mercredi 12 h »,
+   « à partir » → « à partir de demain 12 h ». `t` : un instant de
+   l'appareil, en millisecondes. */
+function jourHeure(t, lien) {
+  const d = new Date(t);
+  if (isNaN(d)) return '';
+  const minuit = x => new Date(x).setHours(0, 0, 0, 0);
+  const j = Math.round((minuit(d) - minuit(Date.now())) / 86400000);
+  /* Espaces insécables : « 23 h 49 » ne se coupe pas en fin de ligne. */
+  const heure = d.getHours() + '\u00a0h' + (d.getMinutes() ? '\u00a0' + String(d.getMinutes()).padStart(2, '0') : '');
+  const jour = j === 0 ? 'aujourd\'hui'
+    : j === 1 ? 'demain'
+    : j > 1 && j < 7 ? d.toLocaleDateString('fr-FR', { weekday: 'long' })
+    : 'le ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  /* Le jour même, l'heure suffit : « jusqu'à 18 h », « à partir de 12 h ». */
+  if (lien === 'jusqu\'à') {
+    return j === 0 ? `jusqu'à ${heure}` : `jusqu'${jour.startsWith('le ') ? 'au ' + jour.slice(3) : 'à ' + jour} ${heure}`;
+  }
+  if (lien === 'à partir') {
+    return j === 0 ? `à partir de ${heure}` : `à partir ${jour.startsWith('le ') ? 'du ' + jour.slice(3) : 'de ' + jour} ${heure}`;
+  }
+  return `${jour} à ${heure}`;
+}
+
 /* Une date lisible : « 12 sept. à 18:40 ». */
 const dateCourte = iso => {
   const d = new Date(iso);

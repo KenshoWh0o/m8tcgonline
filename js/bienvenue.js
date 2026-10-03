@@ -129,16 +129,18 @@ function montrerNouveautes() {
   accueilNoter({ nouveautes: NOUVEAUTES_VERSION, evenement: cleEvenement(ev) });
   const ch = save.chasse || {};
   const u = uniques[0];
-  const quand = iso => new Date(srvTime(iso)).toLocaleString('fr-FR',
-    { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  const maj = t => t.charAt(0).toUpperCase() + t.slice(1);
+  const mienne = u && save.col[u.id] > 0;
 
-  const chasse = ch.trouvee
-    ? `<b>${h(ch.gagnant || 'Un joueur')}</b> l'a déjà trouvée. Il n'en existera jamais d'autre.`
-    : ch.active
-      ? 'Une seule carte dans tout le jeu, cachée dans un booster. La première personne qui la tire la garde pour toujours.'
-      : ch.ouvre_le
-        ? `Une seule carte dans tout le jeu, cachée dans un booster à partir du ${h(quand(ch.ouvre_le))}. La première personne qui la tire la garde pour toujours.`
-        : 'Une seule carte dans tout le jeu. La chasse ouvre bientôt.';
+  const chasse = mienne
+    ? 'Tu l\'as tirée : elle est à toi, et il n\'en existera jamais d\'autre.'
+    : ch.trouvee
+      ? `<b>${h(ch.gagnant || 'Un joueur')}</b> l'a tirée. Il n'en existera jamais d'autre.`
+      : ch.active
+        ? 'Un seul exemplaire dans tout le jeu, caché dans un booster. La première personne qui le tire le garde pour toujours.'
+        : ch.ouvre_le
+          ? `Un seul exemplaire dans tout le jeu, caché dans un booster ${h(jourHeure(srvTime(ch.ouvre_le), 'à partir'))}. La première personne qui le tire le garde pour toujours.`
+          : 'Un seul exemplaire dans tout le jeu. La chasse ouvre bientôt.';
 
   const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span>
     <span><b>${titre}</b> ${texte}</span></li>`;
@@ -149,20 +151,60 @@ function montrerNouveautes() {
         <div class="nvrayons" aria-hidden="true"></div>
         ${u ? `<div class="nvcarte">${renderCard(u)}</div>` : ''}
         <div class="nvtexte">
-          <span class="nvkicker">${ch.trouvee ? 'Chasse terminée' : ch.active ? 'Chasse ouverte' : 'Bientôt'}</span>
+          <span class="nvkicker">${mienne ? 'À toi' : ch.trouvee ? 'Chasse terminée' : ch.active ? 'Chasse ouverte' : 'Bientôt'}</span>
           <b>${u ? h(u.nom) : 'La carte unique'}</b>
           <small>${chasse}</small>
         </div>
       </div>
       ${ev ? `<div class="nvevent">${NAVICO.star}<span><b>${h(ev.titre)}</b> — ${h(ev.texte || '')}
-          <small>${ev.a_venir ? `Du ${h(quand(ev.debut))} au ${h(quand(ev.fin))}.` : `Jusqu'au ${h(quand(ev.fin))}.`}</small></span></div>` : ''}
+          <small>${h(ev.a_venir
+            ? `${maj(jourHeure(srvTime(ev.debut), 'à partir'))}, ${jourHeure(srvTime(ev.fin), 'jusqu\'à')}.`
+            : `${maj(jourHeure(srvTime(ev.fin), 'jusqu\'à'))}.`)}</small></span></div>` : ''}
       <ol class="bvpoints nvpoints">
         ${point('fragment', 'Les Fragments.', `Le recyclage donne désormais des ${FRAGMENTS.nom}, sans plafond. Avec eux, fabrique les cartes qui te manquent : touche une case vide dans ta Collection.`)}
         ${point('promo', 'Les Essences Brillantes.', `Une Essence sur ${FOIL_ODDS} sort dans sa version Brillante. Neuf à réunir.`)}
         ${point('trophy', 'Les succès.', `${SUCCES.length} succès à débloquer, sur ton profil et sur ta fiche.`)}
-        ${point('clock', 'Mes tirages.', 'Ton historique de boosters, ta chance comparée à la moyenne, et un bouton pour partager un tirage.')}
+        ${point('clock', 'Mes tirages.', 'Tes trente derniers boosters, et un bouton pour partager un tirage en image.')}
       </ol>`,
     actions: [{ label: 'C\'est parti', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); } }]
+  });
+}
+
+/* ---------- La fin de la chasse ---------- */
+/* Le jour où quelqu'un tire la carte unique, tous les autres l'apprennent par
+   une annonce dans leur boîte (open_pack, supabase/03_rpc.sql) — et par cette
+   fenêtre, une fois, à leur prochaine visite. Celui qui l'a tirée a eu sa
+   révélation : il ne la voit pas. */
+function chasseFinAVoir() {
+  if (Backend.mode !== 'cloud' || !save || !save.chasse || !save.chasse.trouvee) return false;
+  if (accueilMemoire().chasseFin === save.chasse.trouvee_le) return false;
+  const u = uniques[0];
+  if (u && save.col[u.id] > 0) {
+    accueilNoter({ chasseFin: save.chasse.trouvee_le });
+    return false;
+  }
+  return true;
+}
+
+function montrerChasseFin() {
+  const ch = save.chasse;
+  accueilNoter({ chasseFin: ch.trouvee_le });
+  const u = uniques[0];
+  const quand = ch.trouvee_le ? jourHeure(srvTime(ch.trouvee_le)) : '';
+  openSheet({
+    title: 'La chasse est terminée',
+    body: `<div class="nvhero trouvee">
+        <div class="nvrayons" aria-hidden="true"></div>
+        ${u ? `<div class="nvcarte">${renderCard(u)}</div>` : ''}
+        <div class="nvtexte">
+          <span class="nvkicker">Exemplaire unique</span>
+          <b>${h(ch.gagnant || 'Un joueur')}</b>
+          <small>a tiré ${u ? h(u.nom.replace(/^L'/, 'l\'')) : 'la carte unique'}${quand ? ` ${h(quand)}` : ''}.</small>
+        </div>
+      </div>
+      <p class="muted">Il n'en existera jamais d'autre : elle ne ressortira d'aucun booster, et ne
+        s'échange pas. Tu la retrouves en bas de ta Collection.</p>`,
+    actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
   });
 }
 
@@ -170,6 +212,7 @@ function montrerNouveautes() {
 function proposerAccueil() {
   if (accueilDejaPropose) return;
   if (bienvenueAVoir()) return quandCalme(montrerBienvenue);
+  if (chasseFinAVoir()) return quandCalme(montrerChasseFin);
   if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
   if (discordAVoir()) return quandCalme(montrerDiscord);
 }

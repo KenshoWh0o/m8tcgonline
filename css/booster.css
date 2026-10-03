@@ -205,13 +205,27 @@
 /* ============ Bandeau d'événement ============ */
 /* Au-dessus du logo de l'extension, dans la colonne du paquet : il prend sa
    hauteur au paquet, qui se redimensionne tout seul (voir .packzone). */
-.evbandeau{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;flex:0 0 auto;margin:0 0 6px;
-  padding:8px 12px 8px 9px;border:0;border-radius:var(--radius);text-align:left;color:#fff;
-  background:linear-gradient(100deg,#8936ff,#ec4fb0 55%,#ffb13b);box-shadow:0 6px 20px rgba(137,54,255,.35)}
-.evico{flex:0 0 30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.2)}
-.evico svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
-.evtxt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
-.evtxt b{font-size:13.5px;font-weight:800}
-.evtxt small{font-size:11.5px;opacity:.9}
-.evtxt .evchasse{font-size:12px;font-weight:700;opacity:.95}
-.evplus svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.2;rotate:-90deg}
+.evban{position:relative;display:flex;align-items:center;gap:12px;width:100%;max-width:520px;flex:0 0 auto;margin:0 0 8px;
+  padding:11px 12px 11px 14px;border:0;border-radius:var(--radius);text-align:left;color:#fff;overflow:hidden;cursor:pointer;
+  background:radial-gradient(120% 170% at 100% 40%,#6a23c4 0%,#2c0f4d 55%,#160a24 100%);
+  box-shadow:0 8px 24px rgba(60,14,110,.32),inset 0 0 0 1px rgba(255,255,255,.08)}
+.evban::before{content:"";position:absolute;inset:0;pointer-events:none;translate:-100% 0;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.1) 45%,transparent 60%);
+  animation:evbreflet 6s ease-in-out infinite}
+@keyframes evbreflet{0%,55%{translate:-100% 0}100%{translate:100% 0}}
+.evbtxt{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.evbhaut{display:flex;align-items:center;gap:8px;margin-bottom:3px;font-size:11.5px;color:rgba(255,255,255,.72)}
+.evbtag{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:#ffc73b;color:#3a2600}
+.evban.encours .evbtag{background:#55e6a6;color:#06381f}
+.evban.chasse .evbtag{background:#ec8fff;color:#3a0640}
+.evbtemps b{color:#fff;font-weight:800;font-variant-numeric:tabular-nums}
+.evbtitre{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
+.evbsous{font-size:12.5px;line-height:1.35;color:rgba(255,255,255,.82)}
+.evbchasse{display:flex;align-items:flex-start;gap:7px;margin-top:6px;padding-top:7px;
+  border-top:1px solid rgba(255,255,255,.12);font-size:12px;font-weight:700;line-height:1.35;color:#ffd9f6}
+.evbchasse svg{flex:0 0 auto;width:15px;height:11px;margin-top:2px;color:#ec8fff}
+.evbcarte{position:relative;flex:0 0 56px;rotate:6deg;border-radius:4px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 22px rgba(236,143,255,.55)}
+.evbcarte img{display:block;width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.evban::before{animation:none;display:none}}
