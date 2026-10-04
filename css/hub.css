@@ -1351,6 +1351,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .cdliste li:nth-child(2){animation-delay:.08s}.cdliste li:nth-child(3){animation-delay:.16s}.cdliste li:nth-child(4){animation-delay:.24s}
 .cdliste b{font-family:var(--display);font-weight:900;font-size:19px;color:#ffc73b}
 .cdliste span:last-child{font-size:13.5px;color:rgba(255,255,255,.88)}
+.cdnote{margin:4px 0 0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.65)}
 .cdico{flex:0 0 26px;height:26px;display:grid;place-items:center}
 .cdico svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
 .cdico .shard,.cdico .ico-star{fill:#ff7cc8;stroke:none}

@@ -134,6 +134,7 @@ declare
   p uuid := auth.uid(); pr profiles;
   god boolean; ids text[] := '{}'; cid text; x double precision;
   nouvelles int := 0; i int; ch_active boolean; ch_gagnant uuid; ch_ouvre timestamptz; unique_id text;
+  offert boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -142,6 +143,9 @@ begin
   if pr.tickets < 1 then
     raise exception 'RESERVE_VIDE';
   end if;
+  -- Les boosters recus en cadeau (18_cadeaux.sql) partent en premier, et ne
+  -- peuvent pas contenir la carte unique : elle se trouve, elle ne s'offre pas.
+  offert := coalesce(pr.tickets_offerts, 0) > 0;
 
   god := random() < 1.0 / cfg('god_odds');
 
@@ -199,7 +203,7 @@ begin
   -- avec un booster ordinaire.
   select active, gagnant, ouvre_le into ch_active, ch_gagnant, ch_ouvre from chasse where id = 1;
   if coalesce(ch_active, false) and ch_gagnant is null and (ch_ouvre is null or now() >= ch_ouvre)
-     and random() < 1.0 / cfg('chasse_odds') then
+     and not offert and random() < 1.0 / cfg('chasse_odds') then
     update chasse set gagnant = p, trouvee_le = now()
      where id = 1 and gagnant is null
      returning carte into unique_id;
@@ -223,6 +227,7 @@ begin
   -- Un booster consomme depuis la reserve pleine relance le compte a rebours.
   update profiles set
     tickets      = tickets - 1,
+    tickets_offerts = greatest(tickets_offerts - case when offert then 1 else 0 end, 0),
     last_tick    = case when pr.tickets >= cfg('ticket_cap') then now() else last_tick end,
     packs_opened = packs_opened + 1
   where id = p;

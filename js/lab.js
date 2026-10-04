@@ -333,9 +333,12 @@ function vLabCadeau() {
   const tete = `<h2>Offrir un cadeau</h2>
     <p class="muted small">Le joueur le trouve à sa prochaine visite, dans un paquet à ouvrir.
       Rien n'est versé avant qu'il l'ouvre.</p>`;
+  const apercu = `<button class="btn ghost" data-act="t-cadeau">Voir un cadeau reçu</button>`;
   if (!labJoueurs) {
     return `<section class="panel">${tete}
-      <button class="btn ghost" data-act="t-joueurs">Choisir les joueurs</button></section>`;
+      <div class="row"><button class="btn ghost" data-act="t-joueurs">Choisir les joueurs</button>${apercu}</div>
+      <p class="muted small" style="margin-top:8px">L'aperçu montre le paquet et son ouverture tels que les
+        verra le joueur, sans rien ajouter à ton compte.</p></section>`;
   }
 
   const js = labJoueurs.slice().sort((a, b) => Date.parse(b.inscrit) - Date.parse(a.inscrit));
@@ -372,8 +375,27 @@ function vLabCadeau() {
       </select></label>
     <label class="field"><span>Un mot <small class="muted">(facultatif)</small></span>
       <textarea id="cd-mot" maxlength="300" rows="2" placeholder="Bienvenue, et merci d'être venu !"></textarea></label>
-    <button class="btn" data-act="cadeau-offrir">Offrir</button>
+    <div class="row"><button class="btn" data-act="cadeau-offrir">Offrir</button>${apercu}</div>
+    <p class="muted small" style="margin-top:8px">L'aperçu reprend ce que tu as saisi (ou un exemple si
+      rien ne l'est), sans rien envoyer ni ajouter à ton compte.</p>
   </section>`;
+}
+
+/* Le cadeau tel que le joueur le recevra : ce qui est saisi dans le
+   formulaire, ou un exemple. */
+function labApercuCadeau() {
+  const nombre = id => Math.max(0, Math.floor(+(($('#' + id) || {}).value || 0)) || 0);
+  let c = {
+    eclats: nombre('cd-eclats'), boosters: nombre('cd-boosters'), fragments: nombre('cd-fragments'),
+    carte: ($('#cd-carte') || {}).value || null, message: (($('#cd-mot') || {}).value || '').trim()
+  };
+  if (!c.eclats && !c.boosters && !c.fragments && !c.carte) {
+    const leg = cards.filter(k => k.rar === 'L');
+    c = { eclats: 2000, boosters: 10, fragments: 2000, carte: leg.length ? rnd(leg).id : null,
+          message: c.message || 'Bienvenue, et merci d\'être venu !' };
+  }
+  const essai = Object.assign({ id: 'essai', test: true, de: save.pseudo }, c);
+  montrerCadeau(essai, [essai]);
 }
 
 function labOffrirCadeau() {

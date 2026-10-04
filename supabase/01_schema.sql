@@ -34,6 +34,9 @@ create unique index if not exists profiles_pseudo_key on public.profiles (lower(
 alter table public.profiles add column if not exists fragments    integer not null default 0;
 alter table public.profiles add column if not exists fabrications integer not null default 0;
 alter table public.profiles add column if not exists serie_max    integer not null default 0;
+-- Combien des boosters de la reserve viennent d'un cadeau (18_cadeaux.sql) :
+-- ceux-la ne peuvent pas contenir la carte unique (open_pack, 03_rpc.sql).
+alter table public.profiles add column if not exists tickets_offerts integer not null default 0;
 do $$ begin
   alter table public.profiles add constraint fragments_positifs check (fragments >= 0);
 exception when duplicate_object then null; end $$;

@@ -72,6 +72,7 @@ mate-tcg-online/
 │   ├── 16_maj-v1.5.sql   Mise à jour 1.5 d'une base déjà installée
 │   ├── 17_maj-quetes.sql Mise à jour 1.5.3 : quêtes rééquilibrées, carte unique en dernière carte
 │   ├── 18_cadeaux.sql    Les cadeaux offerts par un administrateur (aussi dans TOUT.sql)
+│   ├── 19_maj-boosters-offerts.sql  Mise à jour 1.5.5 : boosters offerts sans carte unique
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -709,7 +710,7 @@ Le Labo sert à **voir ce qu'on ne peut pas provoquer** :
 - **l'animation d'obtention de chaque carte Promo**, une par une ou toutes à la suite — c'est exactement ce que verra un joueur, seule l'écriture dans la collection est sautée ;
 - les notifications qui passent en haut de l'écran, dont le ping de la boîte de réception ;
 - **publier une annonce** dans la boîte de réception de tous les joueurs ;
-- **offrir un cadeau** à un ou plusieurs joueurs : des Éclats, des boosters, des Fragments, une carte (sauf la carte unique) et un mot. La liste montre, pour chacun, sa date d'inscription, ses boosters ouverts, ses cartes et son retard sur la médiane, de quoi doser un rattrapage. Le joueur le découvre à sa visite suivante, dans un paquet qu'il ouvre lui-même : c'est l'ouverture, côté serveur, qui crédite le compte, une seule fois (`supabase/18_cadeaux.sql`, `js/cadeaux.js`). Une Promo offerte compte comme achetée : la boutique ne la revend pas ;
+- **offrir un cadeau** à un ou plusieurs joueurs : des Éclats, des boosters, des Fragments, une carte (sauf la carte unique) et un mot. La liste montre, pour chacun, sa date d'inscription, ses boosters ouverts, ses cartes et son retard sur la médiane, de quoi doser un rattrapage. Le joueur le découvre à sa visite suivante, dans un paquet qu'il ouvre lui-même : c'est l'ouverture, côté serveur, qui crédite le compte, une seule fois (`supabase/18_cadeaux.sql`, `js/cadeaux.js`). Une Promo offerte compte comme achetée : la boutique ne la revend pas. Les boosters offerts sont comptés à part (`tickets_offerts`) : ils partent en premier à l'ouverture et **ne peuvent pas contenir la carte unique**. Le bouton *Voir un cadeau reçu* montre le paquet et son ouverture tels que les verra le joueur, avec ce qui est saisi (ou un exemple), sans rien envoyer ni créditer ;
 - la collection remplie à 90 %, des Fragments et tous les succès en affichage, pour regarder la grille, la fabrication et le profil dans des états qu'on ne croise pas tous les jours ;
 - un tableau des valeurs d'équilibrage en cours, telles que le serveur les impose, avec ce que rapporte et coûte chaque rareté en Fragments.
 

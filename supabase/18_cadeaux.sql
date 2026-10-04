@@ -12,6 +12,10 @@
 --  Depuis le jeu : Labo > Offrir un cadeau. A la main : en bas du fichier.
 -- =====================================================================
 
+-- Les boosters offerts sont comptes a part : open_pack (03_rpc.sql) les ouvre
+-- en premier, et ils ne peuvent pas contenir la carte unique.
+alter table public.profiles add column if not exists tickets_offerts integer not null default 0;
+
 create table if not exists public.cadeaux (
   id         bigint generated always as identity primary key,
   user_id    uuid not null references public.profiles on delete cascade,
@@ -64,9 +68,10 @@ begin
   if not found then raise exception 'Ce cadeau a déjà été ouvert.'; end if;
 
   -- Les boosters offerts s'ajoutent par-dessus le plafond, comme ceux de la
-  -- boutique.
+  -- boutique, et sont comptes a part (tickets_offerts) : sans carte unique.
   update profiles set shards    = shards + c.eclats,
                       tickets   = tickets + c.boosters,
+                      tickets_offerts = tickets_offerts + c.boosters,
                       fragments = fragments + c.fragments
    where id = p;
 

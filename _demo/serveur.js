@@ -425,8 +425,10 @@
     if (!ids.length) refuser('BOOSTER_VIDE');
 
     /* La chasse : la carte unique prend la place de la dernière carte, une
-       seule fois. */
-    if (S.chasse.active && !S.chasse.gagnant && Math.random() < 1 / cfg('chasse_odds')) {
+       seule fois — jamais dans un booster offert, ouvert en premier. */
+    const offert = (pr.tickets_offerts || 0) > 0;
+    if (offert) pr.tickets_offerts--;
+    if (S.chasse.active && !S.chasse.gagnant && !offert && Math.random() < 1 / cfg('chasse_odds')) {
       S.chasse.gagnant = p;
       S.chasse.trouvee_le = now();
       ids[ids.length - 1] = S.chasse.carte;
@@ -815,6 +817,7 @@
     c.ouvert_le = now();
     const pr = profil(p);
     pr.shards += c.eclats; pr.tickets += c.boosters; pr.fragments = (pr.fragments || 0) + c.fragments;
+    pr.tickets_offerts = (pr.tickets_offerts || 0) + c.boosters;
     if (c.carte) { ajouter(p, c.carte, 1); syncCollection(p); checkPromos(p); }
     return me(p);
   };

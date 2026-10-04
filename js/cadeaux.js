@@ -29,7 +29,7 @@ const CADEAU_SVG = `<svg class="cdsvg" viewBox="0 0 120 120" aria-hidden="true">
 </svg>`;
 
 async function relireCadeaux() {
-  if (Backend.mode !== 'cloud' || !save) return;
+  if (Backend.mode !== 'cloud' || !save || cadeauAffiche) return;
   try { cadeaux = await Backend.mesCadeaux(); } catch (e) { return; }
   proposerCadeau();
 }
@@ -45,9 +45,11 @@ function proposerCadeau() {
   setTimeout(essayer, 900);
 }
 
-function montrerCadeau(c) {
+/* `file` : les cadeaux qui restent à ouvrir, celui-ci compris. Le Labo passe
+   la sienne, avec des cadeaux d'essai (`test`) que le serveur ne voit jamais. */
+function montrerCadeau(c, file = cadeaux) {
   if (!c) { cadeauAffiche = false; return; }
-  const reste = cadeaux.length - 1;
+  const reste = file.length - 1;
   openSheet({
     title: reste ? `Un cadeau pour toi (et ${reste} autre${reste > 1 ? 's' : ''})` : 'Un cadeau pour toi',
     body: `<div class="cadeau">
@@ -57,14 +59,14 @@ function montrerCadeau(c) {
         ${c.message ? `<blockquote class="cdmot">${h(c.message)}</blockquote>` : ''}
         <p class="muted small cdaide">Touche le paquet pour l'ouvrir.</p>
       </div>`,
-    actions: [{ label: 'Ouvrir', primary: true, fn: () => ouvrirCadeau(c) }]
+    actions: [{ label: 'Ouvrir', primary: true, fn: () => ouvrirCadeau(c, file) }]
   });
   const paquet = $('#cdpaquet');
-  if (paquet) paquet.onclick = () => ouvrirCadeau(c);
+  if (paquet) paquet.onclick = () => ouvrirCadeau(c, file);
   SFX.jouer('notif');
 }
 
-async function ouvrirCadeau(c) {
+async function ouvrirCadeau(c, file) {
   const paquet = $('#cdpaquet');
   if (!paquet || paquet.classList.contains('ouvre')) return;
   paquet.classList.add('ouvre');
@@ -73,7 +75,7 @@ async function ouvrirCadeau(c) {
 
   const attente = new Promise(r => setTimeout(r, RM() ? 0 : 750));
   try {
-    await Promise.all([Backend.ouvrirCadeau(c.id), attente]);
+    await Promise.all([c.test ? null : Backend.ouvrirCadeau(c.id), attente]);
   } catch (e) {
     paquet.classList.remove('ouvre');
     document.querySelectorAll('#sheet [data-si]').forEach(b => b.disabled = false);
@@ -81,15 +83,20 @@ async function ouvrirCadeau(c) {
     SFX.jouer('erreur');
     return;
   }
-  cadeaux = cadeaux.filter(x => x.id !== c.id);
+  const i = file.indexOf(c);
+  if (i >= 0) file.splice(i, 1);
   header();
-  montrerContenu(c);
+  montrerContenu(c, file);
 }
 
-function montrerContenu(c) {
+function montrerContenu(c, file) {
   const k = c.carte ? byId[c.carte] : null;
   const ligne = (ico, n, quoi) => `<li><span class="cdico">${ico}</span><b class="tnum">+${fmtN(n)}</b><span>${quoi}</span></li>`;
-  const suivant = cadeaux.length > 0;
+  const suivant = file.length > 0;
+  /* Les boosters offerts ne peuvent pas contenir la carte unique (open_pack,
+     supabase/03_rpc.sql) : on le dit tant qu'elle reste à trouver. */
+  const u = uniques[0];
+  const sansUnique = c.boosters && u && save.chasse && !save.chasse.trouvee;
   openSheet({
     title: 'Dans le paquet',
     body: `<div class="cadeau ouvert">
@@ -101,11 +108,14 @@ function montrerContenu(c) {
           ${c.fragments ? ligne(NAVICO.fragment, c.fragments, FRAGMENTS.nom) : ''}
           ${k ? `<li><span class="cdico">${NAVICO.cards}</span><b>${h(k.nom)}</b><span>${h((RAR[k.rar] || RAR.C).nom)}, dans ta collection</span></li>` : ''}
         </ul>
+        ${sansUnique ? `<p class="cdnote">Les boosters offerts ne peuvent pas contenir ${h(u.nom.replace(/^L'/, 'l\''))} :
+          elle se trouve, elle ne s'offre pas.</p>` : ''}
+        ${c.test ? '<p class="cdnote">Aperçu du Labo : rien n\'a été ajouté à ton compte.</p>' : ''}
       </div>`,
     actions: [{ label: suivant ? 'Cadeau suivant' : 'Merci !', primary: true, fn: () => {
       closeSheet();
-      if (suivant) setTimeout(() => montrerCadeau(cadeaux[0]), 250);
-      else { cadeauAffiche = false; render(); }
+      if (suivant) setTimeout(() => montrerCadeau(file[0], file), 250);
+      else { if (!c.test) cadeauAffiche = false; render(); }
     }}]
   });
   SFX.jouer('gagne');

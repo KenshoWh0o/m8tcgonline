@@ -396,6 +396,7 @@ async function clicPage(e) {
     case 't-ev-reel': return labEtatReel();
     case 't-joueurs': return labChargerJoueurs();
     case 'cadeau-offrir': return labOffrirCadeau();
+    case 't-cadeau': return labApercuCadeau();
     case 't-chasse-fin':
       if (!(save.chasse && save.chasse.trouvee)) labMontrerApercu('trouvee');
       return montrerChasseFin();
