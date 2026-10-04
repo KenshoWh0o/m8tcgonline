@@ -70,6 +70,7 @@ mate-tcg-online/
 │   ├── 14_classement.sql  Le classement global
 │   ├── 15_evenements.sql  Tirages, succès, événements et chasse à la carte unique
 │   ├── 16_maj-v1.5.sql   Mise à jour 1.5 d'une base déjà installée
+│   ├── 17_maj-quetes.sql Mise à jour 1.5.3 : quêtes rééquilibrées, carte unique en dernière carte
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -410,7 +411,7 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 
 **Les Essences Brillantes** sont la version brillante des 9 Essences : même illustration, avec un reflet arc-en-ciel et des paillettes posés par le CSS (`.card.r-BR`, `css/cards.css`). La case Essence d'un booster en donne une **une fois sur 50** (`cfg('foil_odds')`) — une tous les huit jours environ pour un joueur régulier. Identifiants `b001` à `b009`, hors extension comme les Promos : ni dans les 122, ni échangeables, ni recyclables, ni fabricables. Elles ont leur section dans la Collection.
 
-**La carte unique**, *L'Unique Chevalière* (`u01`), n'existe qu'en **un exemplaire dans tout le jeu**. Tant que la chasse est ouverte (`chasse.active`) et que personne ne l'a, chaque booster a une chance sur 250 (`cfg('chasse_odds')`) de la contenir, en septième carte, avec la plus longue révélation du jeu. Avec ~70 boosters ouverts par jour dans la communauté, elle sort en trois à quatre jours. C'est la base qui garantit l'unicité : la mise à jour `where gagnant is null` dans `open_pack()` laisse passer un seul gagnant, même si deux joueurs la tirent à la même seconde. Une annonce part alors dans toutes les boîtes de réception ; chaque autre joueur voit aussi, une fois, la fenêtre « La chasse est terminée ». La carte a sa vitrine dans la Collection : en tête, dorée, chez celui qui l'a ; en bas, avec le nom du gagnant, chez les autres. Elle ne s'échange pas et ne se recycle pas. Son visuel est dans `cards/uniques/`.
+**La carte unique**, *L'Unique Chevalière* (`u01`), n'existe qu'en **un exemplaire dans tout le jeu**. Tant que la chasse est ouverte (`chasse.active`) et que personne ne l'a, chaque booster a une chance sur 250 (`cfg('chasse_odds')`) de la contenir : elle prend la place de la dernière carte (le hit), avec la plus longue révélation du jeu. Avec ~70 boosters ouverts par jour dans la communauté, elle sort en trois à quatre jours. C'est la base qui garantit l'unicité : la mise à jour `where gagnant is null` dans `open_pack()` laisse passer un seul gagnant, même si deux joueurs la tirent à la même seconde. Une annonce part alors dans toutes les boîtes de réception ; chaque autre joueur voit aussi, une fois, la fenêtre « La chasse est terminée ». La carte a sa vitrine dans la Collection : en tête, dorée, chez celui qui l'a ; en bas, avec le nom du gagnant, chez les autres. Elle ne s'échange pas et ne se recycle pas. Son visuel est dans `cards/uniques/`.
 
 **Les événements** sont des lignes de la table `evenements` : un titre, un début, une fin, et le rythme de recharge pendant ce temps (`ticket_minutes`, 120 = boosters doublés). `minutes_recharge()` donne le rythme en cours, `regen_tickets()` et le compte à rebours du navigateur le suivent. Un bandeau s'affiche au-dessus du paquet tant qu'un événement ou une chasse est en cours. Les requêtes pour lancer un événement, l'arrêter ou ouvrir la chasse sont en bas de `supabase/15_evenements.sql`.
 
@@ -444,17 +445,29 @@ La courbe est volontairement brutale à la fin : le goulot, ce sont les **dix l�
 
 ### Les Éclats
 
-Un joueur régulier gagne environ **300 Éclats par jour** (quotidiennes + hebdomadaires, sans compter les échanges qui demandent un partenaire).
+Depuis la version 1.5, **les quêtes sont la seule source d'Éclats** : le recyclage donne des Fragments. Les quêtes quotidiennes et hebdomadaires ont été relevées pour compenser, et les premiers paliers baissés : ce sont eux qui offraient à un nouveau venu dix boosters en cinq jours et une Promo en sept.
 
-| Article | Prix | À 300/jour |
+Simulation, médiane, sans échange (les échanges ajoutent des quêtes à part) :
+
+| Joueur | Éclats par jour | 3 000 (x10 boosters) | 5 000 (une Promo) |
+|---|---|---|---|
+| Régulier (6 boosters/jour), nouveau venu | ~340 | 7ᵉ jour | 10ᵉ jour |
+| Régulier, avancé | ~340 | 10ᵉ jour | 14ᵉ jour |
+| Occasionnel (4/jour, 5 jours sur 7), nouveau venu | ~160 | 11ᵉ jour | 21ᵉ jour |
+| Occasionnel, avancé | ~155 | 21ᵉ jour | 31ᵉ jour |
+
+Avant, un régulier avancé touchait ~275 Éclats par jour, et un nouveau venu atteignait 3 000 le 5ᵉ jour, 5 000 le 7ᵉ.
+
+| Article | Prix | Pour un régulier avancé |
 |---|---|---|
-| Un booster | 350 | un peu plus d'une journée |
-| Dix boosters | 3 000 | dix jours |
-| Jeton d'échange | 250 | moins d'une journée |
-| Un cadre | 1 200 à 6 000 | de quatre à vingt jours |
-| **Une carte Promo** | 10 000 | **un mois d'épargne** |
+| Un booster | 350 | un jour |
+| Dix boosters | 3 000 | neuf à dix jours |
+| Un cadre | 1 200 à 5 000 | de quatre à quinze jours |
+| **Une carte Promo** | 5 000 | quinze jours |
 
-Tout dépenser en boosters n'accélère la collection que d'environ **17 %** — 94 jours au lieu de 110. C'est le réglage qu'on cherchait : les Éclats aident, ils ne remplacent pas le temps. Et à 10 000, une carte Promo coûte assez cher pour que « j'ouvre, ou j'économise » soit une vraie décision plutôt qu'un réflexe.
+Tout dépenser en boosters ajoute ~1,1 booster par jour aux six de la réserve (**+18 %**) : les Éclats aident, ils ne remplacent pas le temps.
+
+La quête quotidienne **Petit ménage** (recycler 5 doublons) sert la fin de collection : *Du sang neuf* devient impossible quand il ne manque plus rien, celle-ci reste faisable tant qu'on tire des doublons.
 
 Le détail du calcul est en tête de `supabase/04_seed.sql`, à côté des valeurs elles-mêmes.
 
@@ -462,16 +475,16 @@ Le détail du calcul est en tête de `supabase/04_seed.sql`, à côté des valeu
 
 Les quêtes paient en **Éclats**, la seule monnaie du jeu. La boutique les dépense. Aucun achat avec de l'argent réel, nulle part.
 
-La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est le serveur qui l'incrémente au moment où l'événement arrive vraiment, dans `open_pack()` et `trade_respond()`. C'est pour ça que toutes les quêtes portent sur des choses qu'il peut constater lui-même — boosters ouverts, cartes inédites, raretés sorties, échanges conclus, jours de connexion, pourcentage de collection, raretés complètes.
+La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est le serveur qui l'incrémente au moment où l'événement arrive vraiment, dans `open_pack()`, `trade_respond()` et `recycler()`. C'est pour ça que toutes les quêtes portent sur des choses qu'il peut constater lui-même — boosters ouverts, cartes inédites, raretés sorties, échanges conclus, doublons recyclés, jours de connexion, pourcentage de collection, raretés complètes.
 
 **Les raretés complètes** sont six quêtes saisonnières : posséder toutes les Essences, toutes les Communes, et ainsi de suite jusqu'aux Légendaires. L'objectif est le nombre de cartes de la rareté, calculé sur le catalogue ; l'avancement est recompté par `sync_collection_quests()`, comme le pourcentage de collection, et ne recule pas si l'on cède une carte ensuite. Les récompenses suivent le temps médian qu'il faut (simulation, six boosters par jour) :
 
 | Rareté | Cartes | Environ | Récompense |
 |---|---|---|---|
-| Essences | 9 | 4 jours | 250 Éclats |
-| Communes | 33 | 8 jours | 500 Éclats |
-| Peu communes | 24 | 10 jours | 600 Éclats |
-| Rares | 28 | 3 semaines | 1 500 Éclats |
+| Essences | 9 | 4 jours | 100 Éclats |
+| Communes | 33 | 8 jours | 250 Éclats |
+| Peu communes | 24 | 10 jours | 350 Éclats |
+| Rares | 28 | 3 semaines | 1 200 Éclats |
 | Épiques | 18 | 2 mois | 3 000 Éclats |
 | Légendaires | 10 | ~110 jours | 6 000 Éclats |
 

@@ -94,34 +94,35 @@
 
   /* ------------------------------------------ quêtes, 04_seed.sql */
   const QUETES = [
-    ['d_check',   'daily',     'checkin',        1,   25, null, 'Premier passage',      'Ouvre le jeu aujourd\'hui.', 1],
-    ['d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2],
-    ['d_epic',    'daily',     'rarity_E',       1,   75, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3],
-    ['d_new',     'daily',     'new_cards',      3,   40, null, 'Du sang neuf',         'Trouve 3 cartes que tu n\'avais pas.', 4],
-    ['d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un échange avec un autre joueur.', 5],
+    ['d_check',   'daily',     'checkin',        1,   40, null, 'Premier passage',      'Ouvre le jeu aujourd\'hui.', 1],
+    ['d_packs',   'daily',     'packs',          5,   60, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2],
+    ['d_epic',    'daily',     'rarity_E',       1,   80, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3],
+    ['d_new',     'daily',     'new_cards',      3,   30, null, 'Du sang neuf',         'Trouve 3 cartes que tu n\'avais pas.', 4],
+    ['d_recycle', 'daily',     'recycle',        5,   30, null, 'Petit ménage',         'Recycle 5 doublons.', 5],
+    ['d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un échange avec un autre joueur.', 6],
     ['w_check',   'weekly',    'checkin',        5,  200, null, 'Habitué de la maison', 'Connecte-toi 5 jours dans la semaine.', 1],
-    ['w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en série',     'Ouvre 30 boosters cette semaine.', 2],
-    ['w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inédites.', 3],
-    ['w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Épiques',         'Décroche 8 Épiques ou mieux.', 4],
-    ['w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Légendaire',       'Sors une Légendaire cette semaine.', 5],
-    ['w_trade',   'weekly',    'trades',         5,  380, null, 'Le marché',            'Conclus 5 échanges.', 6],
-    ['m_legend',  'milestone', 'rarity_L',       1,  500, null, 'Première Légendaire',  'Sors ta toute première Légendaire d\'un booster.', 1],
-    ['m_col25',   'milestone', 'collection_pct', 25,  400, null,  'Un quart du chemin', 'Possède 25 % de la collection.', 2],
-    ['m_col50',   'milestone', 'collection_pct', 50,  800, null,  'La moitié',          'Possède 50 % de la collection.', 3],
+    ['w_packs',   'weekly',    'packs',         30,  250, null, 'Ouvreur en série',     'Ouvre 30 boosters cette semaine.', 2],
+    ['w_new',     'weekly',    'new_cards',     15,  150, null, 'Chasseur de vides',    'Trouve 15 cartes inédites.', 3],
+    ['w_epic',    'weekly',    'rarity_E',       8,  350, null, 'Huit Épiques',         'Décroche 8 Épiques ou mieux.', 4],
+    ['w_legend',  'weekly',    'rarity_L',       1,  450, null, 'Une Légendaire',       'Sors une Légendaire cette semaine.', 5],
+    ['w_trade',   'weekly',    'trades',         5,  350, null, 'Le marché',            'Conclus 5 échanges.', 6],
+    ['m_legend',  'milestone', 'rarity_L',       1,  200, null, 'Première Légendaire',  'Sors ta toute première Légendaire d\'un booster.', 1],
+    ['m_col25',   'milestone', 'collection_pct', 25,  100, null,  'Un quart du chemin', 'Possède 25 % de la collection.', 2],
+    ['m_col50',   'milestone', 'collection_pct', 50,  250, null,  'La moitié',          'Possède 50 % de la collection.', 3],
     ['m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possède 75 % de la collection.', 4],
     ['m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Tout Commence Ici',  'Possède les 122 cartes de l\'extension.', 5],
     /* L'objectif `null` des raretés complètes est le total de la rareté,
        calculé sur le catalogue plus bas — comme le `count(*)` du SQL. */
-    ['m_setES',   'milestone', 'set_ES',      null,  250, null,      'Toutes les Essences',     'Possède toutes les Essences de l\'extension.', 6],
-    ['m_setC',    'milestone', 'set_C',       null,  500, null,      'Toutes les Communes',     'Possède toutes les Communes de l\'extension.', 7],
-    ['m_setPC',   'milestone', 'set_PC',      null,  600, null,      'Toutes les Peu communes', 'Possède toutes les Peu communes de l\'extension.', 8],
-    ['m_setR',    'milestone', 'set_R',       null, 1500, null,      'Toutes les Rares',        'Possède toutes les Rares de l\'extension.', 9],
+    ['m_setES',   'milestone', 'set_ES',      null,  100, null,      'Toutes les Essences',     'Possède toutes les Essences de l\'extension.', 6],
+    ['m_setC',    'milestone', 'set_C',       null,  250, null,      'Toutes les Communes',     'Possède toutes les Communes de l\'extension.', 7],
+    ['m_setPC',   'milestone', 'set_PC',      null,  350, null,      'Toutes les Peu communes', 'Possède toutes les Peu communes de l\'extension.', 8],
+    ['m_setR',    'milestone', 'set_R',       null, 1200, null,      'Toutes les Rares',        'Possède toutes les Rares de l\'extension.', 9],
     ['m_setE',    'milestone', 'set_E',       null, 3000, null,      'Toutes les Épiques',      'Possède toutes les Épiques de l\'extension.', 10],
     ['m_setL',    'milestone', 'set_L',       null, 6000, null,      'Toutes les Légendaires',  'Possède toutes les Légendaires de l\'extension.', 11],
-    ['m_packs25', 'milestone', 'packs',          25,  400, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 12],
-    ['m_packs50', 'milestone', 'packs',          50,  800, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13],
-    ['m_packs100','milestone', 'packs',         100, 1500, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14],
-    ['m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15],
+    ['m_packs25', 'milestone', 'packs',          25,  150, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 12],
+    ['m_packs50', 'milestone', 'packs',          50,  300, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13],
+    ['m_packs100','milestone', 'packs',         100,  800, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14],
+    ['m_packs200','milestone', 'packs',         200, 2000, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15],
     ['m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16]
   ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre]) =>
     ({ id, scope, metric, goal, reward, item_id, titre, detail, ordre }));
@@ -423,11 +424,12 @@
     const { ids, god } = tirerPaquet();
     if (!ids.length) refuser('BOOSTER_VIDE');
 
-    /* La chasse : la carte unique en septième position, une seule fois. */
+    /* La chasse : la carte unique prend la place de la dernière carte, une
+       seule fois. */
     if (S.chasse.active && !S.chasse.gagnant && Math.random() < 1 / cfg('chasse_odds')) {
       S.chasse.gagnant = p;
       S.chasse.trouvee_le = now();
-      ids.push(S.chasse.carte);
+      ids[ids.length - 1] = S.chasse.carte;
       S.annonces.push({ id: ++S.seq, actif: true, created_at: now(),
         titre: (carte(S.chasse.carte) || {}).nom + ' a été trouvée !',
         texte: pr.pseudo + ' l\'a tirée d\'un booster. Il n\'en existe qu\'une seule dans tout le jeu.' });
@@ -780,6 +782,7 @@
     S.col[p] = col;
     S.recyclages.push(...journal);
     profil(p).fragments = (profil(p).fragments || 0) + total;
+    bump(p, 'recycle', journal.reduce((n, l) => n + l.qty, 0));
     return me(p);
   };
 

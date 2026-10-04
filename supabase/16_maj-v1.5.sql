@@ -384,7 +384,8 @@ begin
 
   -- La chasse (15_evenements.sql) : tant qu'elle est ouverte et que personne
   -- n'a la carte unique, chaque booster a une chance sur cfg('chasse_odds')
-  -- de la contenir, en septieme carte — la derniere revelee. La mise a jour
+  -- de la contenir. Elle prend la place de la derniere carte, le hit — celle
+  -- qui porte la revelation ; le booster garde ses six cartes. La mise a jour
   -- `where gagnant is null` tranche entre deux tirages simultanes : le second
   -- relit la ligne apres le premier, n'y trouve plus de place, et repart
   -- avec un booster ordinaire.
@@ -395,7 +396,7 @@ begin
      where id = 1 and gagnant is null
      returning carte into unique_id;
     if unique_id is not null then
-      ids := ids || unique_id;
+      ids[array_length(ids, 1)] := unique_id;
       insert into annonces (titre, texte) values (
         (select nom from cards where id = unique_id) || ' a été trouvée !',
         pr.pseudo || ' l''a tirée d''un booster. Il n''en existe qu''une seule dans tout le jeu.');
@@ -605,7 +606,7 @@ create or replace function public.recycler(p_lots jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); lot jsonb; cid text; n int; k cards;
-  possede int; reserve int; prix int; total int := 0; vus text[] := '{}';
+  possede int; reserve int; prix int; total int := 0; nb int := 0; vus text[] := '{}';
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -643,9 +644,12 @@ begin
     update collection set qty = qty - n where user_id = p and card_id = cid;
     insert into recyclages (user_id, card_id, qty, eclats, fragments) values (p, cid, n, 0, n * prix);
     total := total + n * prix;
+    nb := nb + n;
   end loop;
 
   update profiles set fragments = fragments + total where id = p;
+  -- La quete quotidienne « Petit menage » (04_seed.sql) compte les cartes.
+  perform bump_quests(p, 'recycle', nb);
   return me();
 end $$;
 

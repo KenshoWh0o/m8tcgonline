@@ -69,7 +69,7 @@ create table if not exists public.collection (
 create table if not exists public.quests (
   id       text primary key,
   scope    text not null check (scope in ('daily','weekly','milestone')),
-  metric   text not null,   -- packs | new_cards | rarity_R | rarity_E | rarity_L | trades | checkin | collection_pct
+  metric   text not null,   -- packs | new_cards | rarity_R | rarity_E | rarity_L | trades | checkin | recycle | collection_pct
   goal     integer not null,
   reward   integer not null,
   titre    text not null,

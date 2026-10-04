@@ -87,7 +87,7 @@ create or replace function public.recycler(p_lots jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); lot jsonb; cid text; n int; k cards;
-  possede int; reserve int; prix int; total int := 0; vus text[] := '{}';
+  possede int; reserve int; prix int; total int := 0; nb int := 0; vus text[] := '{}';
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -125,9 +125,12 @@ begin
     update collection set qty = qty - n where user_id = p and card_id = cid;
     insert into recyclages (user_id, card_id, qty, eclats, fragments) values (p, cid, n, 0, n * prix);
     total := total + n * prix;
+    nb := nb + n;
   end loop;
 
   update profiles set fragments = fragments + total where id = p;
+  -- La quete quotidienne « Petit menage » (04_seed.sql) compte les cartes.
+  perform bump_quests(p, 'recycle', nb);
   return me();
 end $$;
 

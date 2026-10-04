@@ -22,7 +22,7 @@ let qVue = 'daily';
 const QICO = {
   checkin: 'clock', packs: 'star', new_cards: 'cards',
   rarity_R: 'quest', rarity_E: 'quest', rarity_L: 'coin',
-  trades: 'swap', collection_pct: 'cards',
+  trades: 'swap', recycle: 'recycle', collection_pct: 'cards',
   /* Toutes les cartes d'une rareté (supabase/04_seed.sql). */
   set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin'
 };

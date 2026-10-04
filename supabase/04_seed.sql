@@ -40,30 +40,55 @@
 --
 --  Une quete par rarete : posseder toutes ses cartes. En mediane de
 --  simulation (six boosters par jour, sans echange) :
---      Essences (9) ............   23 boosters  (~4 jours) ......   250
---      Communes (33) ...........   50 boosters  (~8 jours) ......   500
---      Peu communes (24) .......   61 boosters  (~10 jours) .....   600
---      Rares (28) ..............  128 boosters  (~3 semaines) ...  1 500
+--      Essences (9) ............   23 boosters  (~4 jours) ......   100
+--      Communes (33) ...........   50 boosters  (~8 jours) ......   250
+--      Peu communes (24) .......   61 boosters  (~10 jours) .....   350
+--      Rares (28) ..............  128 boosters  (~3 semaines) ...  1 200
 --      Epiques (18) ............  366 boosters  (~2 mois) .......  3 000
 --      Legendaires (10) ........  670 boosters  (~110 jours) ....  6 000
---  Les montants suivent la courbe des paliers deja en place (400 a trois
---  jours, 1 500 a deux semaines et demie, 2 500 a un mois). Les Legendaires
+--  Les montants montent avec la duree : peu pour ce qui tombe la premiere
+--  semaine (voir « Les Eclats » plus bas), beaucoup pour les deux
+--  dernieres raretes, qui demandent des mois. Les Legendaires
 --  se completent a peu pres en meme temps que le Master Set, qui donne la
 --  carte Promo P05 : les deux recompenses tombent donc presque ensemble.
 --
 --  L'objectif de chaque quete est calcule sur le catalogue (`count(*)` plus
 --  bas) : ajouter une carte a l'extension deplace l'objectif tout seul.
 --
---  Les Eclats viennent donc du quotidien, de l'hebdomadaire et des paliers
---  chiffres — environ 300 par jour pour un joueur regulier :
---      x1 booster (350) ...............  un peu plus d'une journee
---      x10 boosters (3 000) ...........  dix jours
---      un cadre (1 200 a 5 000) .......  de quatre a dix-sept jours
---      une carte Promo (5 000) ........  dix-sept jours
+--  ------------------------------------------------------------------
+--  Les Eclats.
 --
---  Tout depenser en boosters n'accelere la collection que d'environ 17 %
---  (94 jours au lieu de 110) : les Eclats aident, ils ne remplacent pas
---  le temps.
+--  Depuis la version 1.5, les quetes sont la SEULE source d'Eclats : le
+--  recyclage donne des Fragments (12_recyclage.sql). Avant, il rapportait
+--  jusqu'a 2 500 Eclats par semaine a un joueur avance ; sans lui, un
+--  joueur regulier tombait a ~275 par jour. Les quetes recurrentes
+--  (quotidiennes, hebdomadaires) ont donc ete relevees, et les premiers
+--  paliers baisses : c'etaient eux qui offraient a un nouveau venu un x10
+--  en cinq jours et une Promo en sept.
+--
+--  Simulation (mediane, sans echange, tous les doublons recycles), Eclats
+--  par jour une fois les paliers passes, et jour ou l'on atteint un total :
+--                                    par jour    3 000 (x10)   5 000 (Promo)
+--      regulier, 6 boosters/jour
+--        nouveau venu ..............    ~340      7e jour       10e jour
+--        joueur avance .............    ~340     10e jour       14e jour
+--      occasionnel, 4/jour 5 j sur 7
+--        nouveau venu ..............    ~160     11e jour       21e jour
+--        joueur avance .............    ~155     21e jour       31e jour
+--  (avant : ~275 par jour pour un regulier avance, et un nouveau venu a
+--  3 000 le 5e jour, 5 000 le 7e.)
+--
+--  Ce que ca achete, pour un regulier avance :
+--      x1 booster (350) ...............  un jour
+--      x10 boosters (3 000) ...........  neuf a dix jours
+--      un cadre (1 200 a 5 000) .......  de quatre a quinze jours
+--      une carte Promo (5 000) ........  quinze jours
+--  Tout depenser en boosters ajoute ~1,1 booster par jour aux six de la
+--  reserve (+18 %) : les Eclats aident, ils ne remplacent pas le temps.
+--
+--  « Petit menage » (recycler 5 doublons) est la quete quotidienne de fin de
+--  collection : « Du sang neuf » devient impossible quand il ne manque plus
+--  rien, celle-ci reste faisable tant qu'on tire des doublons.
 -- =====================================================================
 
 -- Une quete peut accorder un objet en plus — ou a la place — des Eclats :
@@ -73,51 +98,53 @@ alter table public.quests add column if not exists item_id text;
 
 -- ---------------------------------------------------------------- quetes
 -- metric : packs | new_cards | rarity_R | rarity_E | rarity_L | trades
---          | checkin | collection_pct | set_ES … set_L   (tous mesures cote serveur)
+--          | checkin | recycle | collection_pct | set_ES … set_L
+--          (tous mesures cote serveur)
 --
 -- Les objectifs quotidiens sont calibres sur six boosters par jour. A ce
 -- rythme, « une Epique » tombe environ trois jours sur quatre (20 % de
 -- chances par paquet, six paquets) — assez souvent pour ne pas decourager,
 -- assez rarement pour valoir quelque chose.
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
-  ('d_check',   'daily',     'checkin',        1,   25, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
-  ('d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
-  ('d_epic',    'daily',     'rarity_E',       1,   75, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3),
-  ('d_new',     'daily',     'new_cards',      3,   40, null, 'Du sang neuf',         'Trouve 3 cartes que tu n''avais pas.', 4),
-  ('d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un échange avec un autre joueur.', 5),
+  ('d_check',   'daily',     'checkin',        1,   40, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
+  ('d_packs',   'daily',     'packs',          5,   60, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
+  ('d_epic',    'daily',     'rarity_E',       1,   80, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3),
+  ('d_new',     'daily',     'new_cards',      3,   30, null, 'Du sang neuf',         'Trouve 3 cartes que tu n''avais pas.', 4),
+  ('d_recycle', 'daily',     'recycle',        5,   30, null, 'Petit ménage',         'Recycle 5 doublons.', 5),
+  ('d_trade',   'daily',     'trades',         1,   60, null, 'Donnant-donnant',      'Conclus un échange avec un autre joueur.', 6),
 
   -- Trente boosters sur les quarante-deux qu'une semaine complete rapporte :
   -- on peut sauter deux jours et finir quand meme.
   ('w_check',   'weekly',    'checkin',        5,  200, null, 'Habitué de la maison', 'Connecte-toi 5 jours dans la semaine.', 1),
-  ('w_packs',   'weekly',    'packs',         30,  260, null, 'Ouvreur en série',     'Ouvre 30 boosters cette semaine.', 2),
-  ('w_new',     'weekly',    'new_cards',     15,  320, null, 'Chasseur de vides',    'Trouve 15 cartes inédites.', 3),
+  ('w_packs',   'weekly',    'packs',         30,  250, null, 'Ouvreur en série',     'Ouvre 30 boosters cette semaine.', 2),
+  ('w_new',     'weekly',    'new_cards',     15,  150, null, 'Chasseur de vides',    'Trouve 15 cartes inédites.', 3),
   -- Huit et non dix : la derniere carte du paquet donne desormais une Epique
   -- ou mieux une fois sur cinq, contre pres d'une sur trois avant. A dix, la
   -- quete passait de huit semaines sur dix a une sur trois — un objectif qu'on
   -- rate sans avoir rien fait de mal n'apprend rien a personne.
-  ('w_epic',    'weekly',    'rarity_E',       8,  340, null, 'Huit Épiques',         'Décroche 8 Épiques ou mieux.', 4),
-  ('w_legend',  'weekly',    'rarity_L',       1,  420, null, 'Une Légendaire',       'Sors une Légendaire cette semaine.', 5),
-  ('w_trade',   'weekly',    'trades',         5,  380, null, 'Le marché',            'Conclus 5 échanges.', 6),
+  ('w_epic',    'weekly',    'rarity_E',       8,  350, null, 'Huit Épiques',         'Décroche 8 Épiques ou mieux.', 4),
+  ('w_legend',  'weekly',    'rarity_L',       1,  450, null, 'Une Légendaire',       'Sors une Légendaire cette semaine.', 5),
+  ('w_trade',   'weekly',    'trades',         5,  350, null, 'Le marché',            'Conclus 5 échanges.', 6),
 
   -- Saisonnieres : une seule fois, pour toujours.
-  ('m_legend',  'milestone', 'rarity_L',       1,  500, null, 'Première Légendaire',  'Sors ta toute première Légendaire d''un booster.', 1),
+  ('m_legend',  'milestone', 'rarity_L',       1,  200, null, 'Première Légendaire',  'Sors ta toute première Légendaire d''un booster.', 1),
 
   -- Les paliers de collection. Ceux qui donnent une Promo ne donnent rien d'autre.
-  ('m_col25',   'milestone', 'collection_pct', 25,  400, null,  'Un quart du chemin', 'Possède 25 % de la collection.', 2),
-  ('m_col50',   'milestone', 'collection_pct', 50,  800, null,  'La moitié',          'Possède 50 % de la collection.', 3),
+  ('m_col25',   'milestone', 'collection_pct', 25,  100, null,  'Un quart du chemin', 'Possède 25 % de la collection.', 2),
+  ('m_col50',   'milestone', 'collection_pct', 50,  250, null,  'La moitié',          'Possède 50 % de la collection.', 3),
   ('m_col75',   'milestone', 'collection_pct', 75,    0, 'p06', 'Le Marionnettiste',  'Possède 75 % de la collection.', 4),
   ('m_col100',  'milestone', 'collection_pct',100,    0, 'p05', 'Tout Commence Ici',  'Possède les 122 cartes de l''extension.', 5),
 
   -- Les raretes completes : toutes les cartes d'une rarete. L'objectif est le
   -- nombre de cartes de cette rarete dans le catalogue.
   ('m_setES',   'milestone', 'set_ES', (select count(*)::int from public.cards where rar = 'ES' and not promo),
-                                               250, null,      'Toutes les Essences',     'Possède toutes les Essences de l''extension.', 6),
+                                               100, null,      'Toutes les Essences',     'Possède toutes les Essences de l''extension.', 6),
   ('m_setC',    'milestone', 'set_C',  (select count(*)::int from public.cards where rar = 'C'  and not promo),
-                                               500, null,      'Toutes les Communes',     'Possède toutes les Communes de l''extension.', 7),
+                                               250, null,      'Toutes les Communes',     'Possède toutes les Communes de l''extension.', 7),
   ('m_setPC',   'milestone', 'set_PC', (select count(*)::int from public.cards where rar = 'PC' and not promo),
-                                               600, null,      'Toutes les Peu communes', 'Possède toutes les Peu communes de l''extension.', 8),
+                                               350, null,      'Toutes les Peu communes', 'Possède toutes les Peu communes de l''extension.', 8),
   ('m_setR',    'milestone', 'set_R',  (select count(*)::int from public.cards where rar = 'R'  and not promo),
-                                              1500, null,      'Toutes les Rares',        'Possède toutes les Rares de l''extension.', 9),
+                                              1200, null,      'Toutes les Rares',        'Possède toutes les Rares de l''extension.', 9),
   ('m_setE',    'milestone', 'set_E',  (select count(*)::int from public.cards where rar = 'E'  and not promo),
                                               3000, null,      'Toutes les Épiques',      'Possède toutes les Épiques de l''extension.', 10),
   ('m_setL',    'milestone', 'set_L',  (select count(*)::int from public.cards where rar = 'L'  and not promo),
@@ -125,10 +152,10 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
 
   -- Les paliers de boosters ouverts : la seule progression qui ne depende que
   -- du temps passe, et pas de la chance.
-  ('m_packs25', 'milestone', 'packs',          25,  400, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 12),
-  ('m_packs50', 'milestone', 'packs',          50,  800, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13),
-  ('m_packs100','milestone', 'packs',         100, 1500, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14),
-  ('m_packs200','milestone', 'packs',         200, 2500, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15),
+  ('m_packs25', 'milestone', 'packs',          25,  150, null,      'Vingt-cinq paquets', 'Ouvre 25 boosters en tout.', 12),
+  ('m_packs50', 'milestone', 'packs',          50,  300, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13),
+  ('m_packs100','milestone', 'packs',         100,  800, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14),
+  ('m_packs200','milestone', 'packs',         200, 2000, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15),
 
   ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16)
 on conflict (id) do update set
@@ -137,7 +164,7 @@ on conflict (id) do update set
   titre = excluded.titre, detail = excluded.detail, ordre = excluded.ordre;
 
 delete from public.quests where id not in (
-  'd_check','d_packs','d_epic','d_new','d_trade',
+  'd_check','d_packs','d_epic','d_new','d_recycle','d_trade',
   'w_check','w_packs','w_new','w_epic','w_legend','w_trade',
   'm_legend','m_col25','m_col50','m_col75','m_col100',
   'm_setES','m_setC','m_setPC','m_setR','m_setE','m_setL',
