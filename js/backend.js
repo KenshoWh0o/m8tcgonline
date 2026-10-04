@@ -351,6 +351,15 @@ Backend.ecouterBoite = function (surNouveau) {
 Backend.fabriquer = async carte => Backend.apply(await Backend.rpc('fabriquer', { p_carte: carte }));
 Backend.mesTirages = () => Backend.rpc('mes_tirages');
 
+/* ---- Cadeaux (supabase/18_cadeaux.sql) ---- */
+Backend.mesCadeaux = () => Backend.rpc('mes_cadeaux');
+Backend.ouvrirCadeau = async id => Backend.apply(await Backend.rpc('ouvrir_cadeau', { p_id: id }));
+Backend.adminJoueurs = () => Backend.rpc('admin_joueurs');
+Backend.offrirCadeau = c => Backend.rpc('offrir_cadeau', {
+  p_joueurs: c.joueurs, p_eclats: c.eclats || 0, p_boosters: c.boosters || 0,
+  p_fragments: c.fragments || 0, p_carte: c.carte || null, p_message: c.message || ''
+});
+
 /* ---- Classement (supabase/14_classement.sql) ---- */
 Backend.classement = critere => Backend.rpc('classement', { p_critere: critere });
 

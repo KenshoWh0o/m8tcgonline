@@ -804,6 +804,42 @@
     return me(p);
   };
 
+  /* ------------------------------------------ cadeaux, 18_cadeaux.sql */
+  const estAdmin = p => { if (!profil(p).is_admin) refuser('Réservé aux administrateurs.'); };
+  RPC.mes_cadeaux = p => (S.cadeaux || []).filter(c => c.user_id === p && !c.ouvert_le).map(c => ({
+    id: c.id, eclats: c.eclats, boosters: c.boosters, fragments: c.fragments, carte: c.carte,
+    message: c.message, de: c.auteur ? profil(c.auteur).pseudo : null, quand: iso(c.created_at) }));
+  RPC.ouvrir_cadeau = (p, { p_id }) => {
+    const c = (S.cadeaux || []).find(x => x.id === p_id && x.user_id === p && !x.ouvert_le);
+    if (!c) refuser('Ce cadeau a déjà été ouvert.');
+    c.ouvert_le = now();
+    const pr = profil(p);
+    pr.shards += c.eclats; pr.tickets += c.boosters; pr.fragments = (pr.fragments || 0) + c.fragments;
+    if (c.carte) { ajouter(p, c.carte, 1); syncCollection(p); checkPromos(p); }
+    return me(p);
+  };
+  RPC.offrir_cadeau = (p, a) => {
+    estAdmin(p);
+    if (!(a.p_joueurs || []).length) refuser('Choisis au moins un joueur.');
+    if (!a.p_eclats && !a.p_boosters && !a.p_fragments && !a.p_carte) refuser('Le cadeau est vide.');
+    if (a.p_carte && (carte(a.p_carte) || {}).rar === 'UN') refuser('La carte unique ne s\'offre pas.');
+    S.cadeaux = S.cadeaux || [];
+    a.p_joueurs.filter(id => S.profils[id]).forEach(id => S.cadeaux.push({
+      id: ++S.seq, user_id: id, eclats: a.p_eclats || 0, boosters: a.p_boosters || 0,
+      fragments: a.p_fragments || 0, carte: a.p_carte || null, message: (a.p_message || '').slice(0, 300),
+      auteur: p, created_at: now(), ouvert_le: null }));
+    return a.p_joueurs.filter(id => S.profils[id]).length;
+  };
+  RPC.admin_joueurs = p => {
+    estAdmin(p);
+    return Object.values(S.profils).map(o => ({
+      id: o.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, inscrit: iso(o.created_at || now()),
+      boosters: o.packs_opened || 0, eclats: o.shards,
+      cartes: Object.entries(colDe(o.id)).filter(([id, n]) => n > 0 && carte(id) && !carte(id).promo).length,
+      cadeaux: (S.cadeaux || []).filter(c => c.user_id === o.id).length,
+      en_attente: (S.cadeaux || []).filter(c => c.user_id === o.id && !c.ouvert_le).length }));
+  };
+
   /* mes_tirages, 15_evenements.sql */
   RPC.mes_tirages = p => {
     const miens = S.tirages.filter(t => t.user_id === p);
@@ -842,7 +878,8 @@
     const t0 = now();
     S = { v: 1, seq: 0, debut: t0, profils: {}, col: {}, inv: {}, qp: {}, amities: [], trades: [],
       notifs: [], annonces: [], recyclages: [], prochaineOffre: t0 + 75000, kairo: t0 + 25000,
-      tirages: [], chasse: { carte: 'u01', active: true, gagnant: null, trouvee_le: null } };
+      tirages: [], chasse: { carte: 'u01', active: true, gagnant: null, trouvee_le: null },
+      cadeaux: [] };
 
     S.profils[MOI] = nouveauProfil(MOI, D.pseudo, { shards: D.eclats });
 

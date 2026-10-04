@@ -28,6 +28,7 @@ MORCEAUX = [
     ('12_recyclage.sql', 'Le recyclage des doublons contre des Fragments, et la fabrication'),
     ('14_classement.sql', 'Le classement global des joueurs'),
     ('15_evenements.sql', 'Tirages, succes, evenements et chasse a la carte unique'),
+    ('18_cadeaux.sql', 'Les cadeaux offerts par un administrateur'),
 ]
 
 entete = """-- =====================================================================

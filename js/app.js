@@ -394,6 +394,8 @@ async function clicPage(e) {
       save.succes = SUCCES.map(x => x.id); render();
       return toast('Tous les succès (affichage seulement).');
     case 't-ev-reel': return labEtatReel();
+    case 't-joueurs': return labChargerJoueurs();
+    case 'cadeau-offrir': return labOffrirCadeau();
     case 't-chasse-fin':
       if (!(save.chasse && save.chasse.trouvee)) labMontrerApercu('trouvee');
       return montrerChasseFin();
@@ -535,6 +537,7 @@ addEventListener('visibilitychange', () => {
   if (Backend.mode !== 'cloud') return;
   Backend.pull().then(() => majDiscrete(true)).catch(() => {});
   releverBoite();
+  relireCadeaux();
 });
 
 /* Ce qui arrive des autres joueurs — demandes d'ami, d'échange, réponses — et
@@ -596,6 +599,8 @@ function visiteDuJourFaite() {
       Promise.all([Backend.loadTrades(), Backend.loadAmis()])
         .then(() => { if (tab === 'social' || tab === 'recyclage') render(); }).catch(() => {});
       demarrerBoite();
+      /* Un cadeau qui attend (js/cadeaux.js) : il s'ouvre quand l'écran est calme. */
+      relireCadeaux();
     } catch (e) {
       toast(e.message || 'Le serveur a répondu de travers.');
     }

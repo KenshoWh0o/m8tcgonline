@@ -69,6 +69,8 @@ function vTest() {
       en bas de <code>supabase/03b_promos.sql</code>.</p>
   </section>
 
+  ${vLabCadeau()}
+
   <section class="panel">
     <h2>Annonce à tous les joueurs</h2>
     <p class="muted small">Elle arrive dans la boîte de réception de chacun, avec un ping
@@ -308,3 +310,112 @@ function testRemplir(pct) {
   toast(`Collection à ${pct} % (affichage seulement).`);
   render();
 }
+
+/* ---------- Offrir un cadeau ---------- */
+/* Des Éclats, des boosters, des Fragments, une carte, un mot : le joueur le
+   trouve à sa visite suivante, dans un paquet à ouvrir (js/cadeaux.js). Le
+   serveur vérifie que c'est bien un administrateur qui offre
+   (supabase/18_cadeaux.sql). La liste aide à doser : depuis quand chacun
+   joue, et combien de boosters le sépare de la médiane. */
+let labJoueurs = null;
+
+async function labChargerJoueurs() {
+  try {
+    labJoueurs = await Backend.adminJoueurs();
+  } catch (e) {
+    return toast(e.message || 'La liste des joueurs n\'a pas pu être chargée.');
+  }
+  render();
+}
+
+function vLabCadeau() {
+  if (Backend.mode !== 'cloud') return '';
+  const tete = `<h2>Offrir un cadeau</h2>
+    <p class="muted small">Le joueur le trouve à sa prochaine visite, dans un paquet à ouvrir.
+      Rien n'est versé avant qu'il l'ouvre.</p>`;
+  if (!labJoueurs) {
+    return `<section class="panel">${tete}
+      <button class="btn ghost" data-act="t-joueurs">Choisir les joueurs</button></section>`;
+  }
+
+  const js = labJoueurs.slice().sort((a, b) => Date.parse(b.inscrit) - Date.parse(a.inscrit));
+  const tri = js.map(j => j.boosters).sort((a, b) => a - b);
+  const mediane = tri.length ? tri[Math.floor(tri.length / 2)] : 0;
+  const le = iso => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const total = cards.length;
+  const options = rar => toutesCartes().filter(c => c.rar === rar)
+    .map(c => `<option value="${h(c.id)}">${h(c.code || c.id)} · ${h(c.nom)}</option>`).join('');
+
+  return `<section class="panel">${tete}
+    <p class="small labmed">Médiane : <b>${fmtN(mediane)} boosters</b> ouverts. Les derniers arrivés en premier.</p>
+    <div class="labjoueurs">${js.map(j => {
+      const retard = mediane - j.boosters;
+      return `<label class="labjoueur">
+        <input type="checkbox" data-cdj="${h(j.id)}">
+        <span><b>${h(j.pseudo)}</b>
+          <small>inscrit le ${h(le(j.inscrit))} · ${fmtN(j.boosters)} boosters · ${j.cartes}/${total} cartes${retard > 0
+            ? ` · <em>${fmtN(retard)} de retard</em>` : ''}${j.en_attente ? ` · ${j.en_attente} cadeau${j.en_attente > 1 ? 'x' : ''} en attente` : ''}</small></span>
+      </label>`;
+    }).join('')}</div>
+
+    <div class="labcadeau">
+      <label class="field"><span>Éclats</span><input id="cd-eclats" type="number" min="0" max="100000" step="50" placeholder="0"></label>
+      <label class="field"><span>Boosters</span><input id="cd-boosters" type="number" min="0" max="100" step="1" placeholder="0"></label>
+      <label class="field"><span>${h(FRAGMENTS.nom)}</span><input id="cd-fragments" type="number" min="0" max="100000" step="50" placeholder="0"></label>
+    </div>
+    <label class="field"><span>Carte <small class="muted">(facultatif)</small></span>
+      <select id="cd-carte"><option value="">Aucune</option>
+        ${['PR', 'L', 'E', 'R', 'BR', 'PC', 'C', 'ES'].map(r => {
+          const o = options(r);
+          return o ? `<optgroup label="${h((RAR[r] || RAR.C).nom)}">${o}</optgroup>` : '';
+        }).join('')}
+      </select></label>
+    <label class="field"><span>Un mot <small class="muted">(facultatif)</small></span>
+      <textarea id="cd-mot" maxlength="300" rows="2" placeholder="Bienvenue, et merci d'être venu !"></textarea></label>
+    <button class="btn" data-act="cadeau-offrir">Offrir</button>
+  </section>`;
+}
+
+function labOffrirCadeau() {
+  const joueurs = Array.from(document.querySelectorAll('[data-cdj]:checked')).map(i => i.dataset.cdj);
+  const nombre = id => Math.max(0, Math.floor(+(($('#' + id) || {}).value || 0)) || 0);
+  const c = {
+    joueurs,
+    eclats: nombre('cd-eclats'), boosters: nombre('cd-boosters'), fragments: nombre('cd-fragments'),
+    carte: ($('#cd-carte') || {}).value || null,
+    message: (($('#cd-mot') || {}).value || '').trim()
+  };
+  if (!joueurs.length) return toast('Choisis au moins un joueur.');
+  if (!c.eclats && !c.boosters && !c.fragments && !c.carte) return toast('Le cadeau est vide.');
+  const noms = joueurs.map(id => (labJoueurs.find(j => j.id === id) || {}).pseudo).filter(Boolean);
+  const k = c.carte ? byId[c.carte] : null;
+  const contenu = [
+    c.eclats && `${fmtN(c.eclats)} Éclats`, c.boosters && `${fmtN(c.boosters)} booster${c.boosters > 1 ? 's' : ''}`,
+    c.fragments && `${fmtN(c.fragments)} ${FRAGMENTS.nom}`, k && `la carte ${k.nom}`
+  ].filter(Boolean).join(', ');
+
+  openSheet({
+    title: `Offrir à ${noms.length} joueur${noms.length > 1 ? 's' : ''} ?`,
+    body: `<p><b>${h(contenu)}</b>, chacun.</p>
+      <p class="muted small">À ${h(noms.join(', '))}.</p>
+      ${c.message ? `<blockquote class="cdmot">${h(c.message)}</blockquote>` : ''}
+      <p class="muted small">Il ne se reprend plus une fois ouvert. Avant, il se retire à la main
+        (en bas de <code>supabase/18_cadeaux.sql</code>).</p>`,
+    actions: [
+      { label: 'Offrir', primary: true, fn: async () => {
+        closeSheet();
+        try {
+          const n = await Backend.offrirCadeau(c);
+          toast(`Cadeau envoyé à ${n} joueur${n > 1 ? 's' : ''}.`);
+          SFX.jouer('gagne');
+          labJoueurs = await Backend.adminJoueurs();
+          render();
+        } catch (e) {
+          toast(e.message || 'Le cadeau n\'est pas parti.');
+        }
+      }},
+      { label: 'Annuler', fn: closeSheet }
+    ]
+  });
+}
+

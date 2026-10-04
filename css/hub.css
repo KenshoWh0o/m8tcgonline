@@ -1319,3 +1319,39 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 }
 @media (prefers-reduced-motion:reduce){.unrayons{animation:none}}
 
+
+/* ============ Les cadeaux (js/cadeaux.js) ============ */
+.cadeau{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 6px;padding:18px 16px 16px;
+  border-radius:var(--radius);overflow:hidden;color:#fff;isolation:isolate;text-align:center;
+  background:radial-gradient(110% 120% at 50% 30%,#6a23c4 0%,#2c0f4d 58%,#160a24 100%)}
+.cdrayons{position:absolute;left:50%;top:38%;width:460px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.35;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.6) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:nvtourne 26s linear infinite}
+.cdpaquet{padding:0;border:0;background:none;cursor:pointer;width:150px;animation:cdfremit 2.4s ease-in-out infinite}
+.cdsvg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 12px 20px rgba(0,0,0,.45))}
+.cdcouvercle{transform-box:fill-box;transform-origin:50% 100%;transition:transform .55s cubic-bezier(.3,1.6,.5,1),opacity .5s .2s}
+@keyframes cdfremit{0%,62%,100%{rotate:0deg;scale:1}68%{rotate:-5deg;scale:1.03}74%{rotate:5deg}80%{rotate:-3deg}86%{rotate:2deg}}
+.cdpaquet.ouvre{animation:cdouvre .75s ease-out forwards}
+.cdpaquet.ouvre .cdcouvercle{transform:translateY(-34px) rotate(-16deg);opacity:0}
+@keyframes cdouvre{0%{scale:1}35%{scale:1.12}100%{scale:.9;opacity:.7}}
+.cdde{margin:2px 0 0;font-size:14px;color:rgba(255,255,255,.82)}
+.cdde b{color:#fff}
+.cadeau .cdmot,.sheet .cdmot{margin:4px 0 0;padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;line-height:1.45;font-style:italic;
+  background:rgba(255,255,255,.1);color:inherit;max-width:100%}
+.sheet > .cdmot{background:var(--accent-wash);color:var(--text)}
+.cadeau .cdaide{margin:2px 0 0;color:rgba(255,255,255,.6)}
+.cadeau.ouvert{padding-top:20px}
+.cdcarte{width:42%;max-width:170px;padding:0;border:0;background:none;cursor:pointer;rotate:-3deg;margin-bottom:6px;
+  filter:drop-shadow(0 10px 22px rgba(0,0,0,.5));animation:cdsort .6s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes cdsort{from{translate:0 30px;scale:.6;opacity:0}}
+.cdliste{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:7px}
+.cdliste li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);text-align:left;
+  background:rgba(255,255,255,.1);animation:cdsort .5s cubic-bezier(.3,1.4,.5,1) both}
+.cdliste li:nth-child(2){animation-delay:.08s}.cdliste li:nth-child(3){animation-delay:.16s}.cdliste li:nth-child(4){animation-delay:.24s}
+.cdliste b{font-family:var(--display);font-weight:900;font-size:19px;color:#ffc73b}
+.cdliste span:last-child{font-size:13.5px;color:rgba(255,255,255,.88)}
+.cdico{flex:0 0 26px;height:26px;display:grid;place-items:center}
+.cdico svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
+.cdico .shard,.cdico .ico-star{fill:#ff7cc8;stroke:none}
+@media (prefers-reduced-motion:reduce){.cdpaquet,.cdrayons,.cdcarte,.cdliste li{animation:none}.cdcouvercle{transition:none}}
