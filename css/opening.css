@@ -192,8 +192,13 @@
   0%,100%{filter:drop-shadow(0 0 10px #ff5bb0) drop-shadow(0 0 24px #ff5bb0)}
   33%{filter:drop-shadow(0 0 10px #55e6a6) drop-shadow(0 0 24px #39b8ff)}
   66%{filter:drop-shadow(0 0 10px #ffc73b) drop-shadow(0 0 24px #a95cf2)}}
-.op-rar.rBR{background:linear-gradient(90deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2);
-  -webkit-background-clip:text;background-clip:text;color:transparent}
+/* Le dégradé est posé sur le mot lui-même (.slam), pas sur la ligne :
+   un texte animé dans un enfant échappe au `background-clip:text` du
+   parent (Safari comme Chrome) — « Brillante » devenait invisible, et le NEW restait décalé à
+   côté d'un mot qu'on ne voyait pas. */
+.op-rar.rBR{color:#ff8fd0}
+.op-rar.big.rBR .slam{background:linear-gradient(90deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2);
+  -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 rgba(60,20,90,.55))}
 /* L'Unique : tout ce que la Légendaire a, en plus fort et en toutes couleurs. */
 .charge-UN .scard.charging{animation-duration:.24s}
 .th-stage.charge-UN.charging .charge-ring{animation-duration:.28s;opacity:.8;width:720px;height:720px;margin:-360px 0 0 -360px}

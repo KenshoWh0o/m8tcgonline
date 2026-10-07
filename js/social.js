@@ -137,13 +137,17 @@ async function ouvrirFiche(pseudo) {
       </div>`;
   }
 
+  /* L'en-tête porte le pseudo lui-même (la feuille n'a plus de titre) : à
+     côté de l'avatar, le nom, depuis quand, et où en est sa collection. Les
+     titres de joueur (version 2.0) viendront se poser sous le nom. */
   openSheet({
-    title: f.pseudo,
     body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}">
       ${avatarHTML(f.avatar, f.frame, 'xl', f.photo)}
       <div class="fichemeta">
-        ${f.is_admin ? '<span class="qtag ok">Administrateur</span>' : ''}
-        <p class="muted small">Membre depuis ${dateCourte(f.membre_depuis).split(' à ')[0]}</p>
+        <b class="fichenom">${h(f.pseudo)}</b>
+        <p class="fichesous">${f.is_admin ? '<span class="qtag ok">Admin</span>' : ''}Membre depuis ${h(dateCourte(f.membre_depuis).split(' à ')[0])}</p>
+        <div class="prog fiche-prog"><div class="bar"><i style="width:${pct}%"></i></div>
+          <span class="tnum"><b>${f.possede}</b> / ${f.total}</span></div>
       </div>
     </div>
     ${vElu(f.succes, f.moi)}
