@@ -183,6 +183,11 @@
 /* ============ Essence Brillante et carte unique ============ */
 /* La Brillante tombe au milieu du paquet : un halo qui change de couleur. */
 .scard.hitcard.hBR .cwrap{box-shadow:none;animation:halobr 2.4s linear infinite}
+/* Pas de trait de lumière qui traverse la carte : un éclat qui s'ouvre depuis
+   son centre, puis s'éteint — la Brillante a déjà son propre reflet. */
+.scard.hitcard.hBR .sheen{background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.85),rgba(255,236,250,.35) 28%,transparent 60%);
+  background-size:100% 100%;animation:eclatbr 1.3s ease-out both}
+@keyframes eclatbr{from{opacity:0;transform:scale(.4)}30%{opacity:1}to{opacity:0;transform:scale(1.25)}}
 @keyframes halobr{
   0%,100%{filter:drop-shadow(0 0 10px #ff5bb0) drop-shadow(0 0 24px #ff5bb0)}
   33%{filter:drop-shadow(0 0 10px #55e6a6) drop-shadow(0 0 24px #39b8ff)}

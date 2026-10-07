@@ -65,6 +65,8 @@ begin
       'streak', pr.streak, 'last_checkin', pr.last_checkin,
       'vitrine', to_jsonb(pr.vitrine),
       'fragments', pr.fragments,
+      -- Les boosters en plus (boutique, cadeaux), hors reserve.
+      'boosters_bonus', pr.boosters_bonus, 'bonus_offerts', pr.tickets_offerts,
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).

@@ -12,9 +12,21 @@
 --  Depuis le jeu : Labo > Offrir un cadeau. A la main : en bas du fichier.
 -- =====================================================================
 
--- Les boosters offerts sont comptes a part : open_pack (03_rpc.sql) les ouvre
--- en premier, et ils ne peuvent pas contenir la carte unique.
+-- Les boosters offerts ne vont pas dans la reserve : ils rejoignent les
+-- boosters en plus (open_pack(true), 03_rpc.sql), partent en premier, et ne
+-- peuvent pas contenir la carte unique.
+alter table public.profiles add column if not exists boosters_bonus  integer not null default 0;
 alter table public.profiles add column if not exists tickets_offerts integer not null default 0;
+
+-- Version 1.5.6 : ce qui depassait le plafond de la reserve (boosters achetes
+-- ou offerts avant) passe dans les boosters en plus, et la reserve repart de
+-- son plafond — son compte a rebours reprend. Rejouable : une reserve qui ne
+-- depasse pas n'est pas touchee.
+update public.profiles
+   set boosters_bonus = boosters_bonus + (tickets - public.cfg('ticket_cap')),
+       tickets        = public.cfg('ticket_cap')
+ where tickets > public.cfg('ticket_cap');
+update public.profiles set tickets_offerts = boosters_bonus where tickets_offerts > boosters_bonus;
 
 create table if not exists public.cadeaux (
   id         bigint generated always as identity primary key,
@@ -67,10 +79,10 @@ begin
    returning * into c;
   if not found then raise exception 'Ce cadeau a déjà été ouvert.'; end if;
 
-  -- Les boosters offerts s'ajoutent par-dessus le plafond, comme ceux de la
-  -- boutique, et sont comptes a part (tickets_offerts) : sans carte unique.
+  -- Les boosters offerts s'ouvrent a part, hors reserve, comme ceux de la
+  -- boutique, et sans carte unique (tickets_offerts).
   update profiles set shards    = shards + c.eclats,
-                      tickets   = tickets + c.boosters,
+                      boosters_bonus  = boosters_bonus + c.boosters,
                       tickets_offerts = tickets_offerts + c.boosters,
                       fragments = fragments + c.fragments
    where id = p;

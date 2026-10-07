@@ -1356,3 +1356,46 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .cdico svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
 .cdico .shard,.cdico .ico-star{fill:#ff7cc8;stroke:none}
 @media (prefers-reduced-motion:reduce){.cdpaquet,.cdrayons,.cdcarte,.cdliste li{animation:none}.cdcouvercle{transition:none}}
+
+/* ============ L'Élu : qui a tiré la carte unique ============ */
+/* Le cadre « Unique » : un anneau qui tourne sur toutes les couleurs de la
+   carte, et un halo qui respire. Le seul cadre dessiné hors du cercle : il
+   déborde, comme celui qui le porte. */
+.ava.unique{overflow:visible;box-shadow:0 0 14px rgba(236,143,255,.55);animation:elu-halo 3s ease-in-out infinite}
+.ava.unique::before{content:"";position:absolute;inset:-3.5px;border-radius:50%;z-index:1;pointer-events:none;
+  background:conic-gradient(from 0deg,#ffc73b,#ff7cc8,#ec8fff,#7fd8ff,#fff6d6,#ffc73b);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
+  animation:elu-tourne 4s linear infinite}
+.ava.unique::after{content:"";position:absolute;top:-6%;right:-4%;width:28%;height:28%;z-index:2;pointer-events:none;
+  background:radial-gradient(circle,#fff 0 18%,rgba(255,236,170,.9) 26%,transparent 60%);
+  clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);
+  animation:elu-etoile 2.4s ease-in-out infinite}
+.ava.xl.unique{box-shadow:0 0 22px rgba(236,143,255,.6),0 0 40px rgba(255,199,59,.25)}
+.ava.xl.unique::before{inset:-5px;-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px))}
+@keyframes elu-tourne{to{rotate:360deg}}
+@keyframes elu-halo{50%{box-shadow:0 0 20px rgba(255,199,59,.6)}}
+@keyframes elu-etoile{0%,100%{scale:.7;opacity:.6;rotate:0deg}50%{scale:1.1;opacity:1;rotate:45deg}}
+
+/* Sa carte d'identité et sa fiche prennent un liseré doré. */
+.idcard.elu{box-shadow:0 0 0 1.5px #ffc73b,0 8px 26px rgba(236,143,255,.25)}
+
+/* L'écrin : la carte, des rayons dorés, et ce qu'elle a d'unique. */
+.elu-ecrin{position:relative;display:flex;align-items:center;gap:14px;width:100%;margin:0 0 var(--gap-4);padding:14px 16px;
+  border:0;border-radius:var(--radius);overflow:hidden;isolation:isolate;text-align:left;color:#fff;cursor:pointer;
+  background:radial-gradient(120% 160% at 15% 50%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
+  box-shadow:0 0 0 1.5px #ffc73b,0 10px 30px rgba(255,140,200,.28)}
+.elu-rayons{position:absolute;left:14%;top:50%;width:360px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.5;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.7) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:nvtourne 30s linear infinite}
+.elu-carte{flex:0 0 74px;rotate:-5deg;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))}
+.elu-texte{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.elu-kick{display:inline-flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 9px 3px 7px;border-radius:999px;background:#ffc73b;color:#3a2600}
+.elu-kick svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round}
+.elu-texte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
+.elu-texte small{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.85)}
+@media (prefers-reduced-motion:reduce){.ava.unique,.ava.unique::before,.ava.unique::after,.elu-rayons{animation:none}}
+html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.rm .elu-rayons{animation:none}

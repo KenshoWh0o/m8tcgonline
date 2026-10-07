@@ -15,7 +15,7 @@ function vProfil() {
 
   return `<div class="pagehead"><div><h1>Profil</h1></div></div>
 
-  <section class="idcard">
+  <section class="idcard${(save.succes || []).includes('unique') ? ' elu' : ''}">
     ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
     <div class="idnom">
       <span class="idnomligne"><b>${h(save.pseudo)}</b>
@@ -25,6 +25,7 @@ function vProfil() {
     <span class="wallet">${shardIco}<b>${fmtN(save.shards)}</b></span>
     <button class="btn tiny ghost" data-fiche="${h(save.pseudo)}">Ma fiche</button>
   </section>
+  ${vElu(save.succes, true)}
 
   <section class="panel vitpanel">
     <h2>Ma vitrine <span class="muted small">— ce que les autres voient en premier</span></h2>
@@ -90,6 +91,26 @@ function vProfil() {
 /* ---------- Les succès ---------- */
 /* `tous` : le profil montre aussi ceux qui restent à obtenir, grisés, avec ce
    qu'il faut faire. La fiche d'un autre joueur ne montre que les siens. */
+/* ---------- L'Élu ---------- */
+/* Celui qui a tiré la carte unique : un écrin sur son profil et sur sa fiche,
+   en plus du cadre « Unique » sur son avatar, partout où il apparaît. Le
+   succès « unique » (supabase/15_evenements.sql) dit qui c'est. */
+function vElu(succes, moi) {
+  const u = uniques[0];
+  if (!u || !(succes || []).includes('unique')) return '';
+  const ch = save.chasse || {};
+  const quand = ch.trouvee_le ? new Date(srvTime(ch.trouvee_le)).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '';
+  return `<button class="elu-ecrin" data-show="${u.id}" aria-label="Voir ${h(u.nom)}">
+    <span class="elu-rayons" aria-hidden="true"></span>
+    <span class="elu-carte">${renderCard(u)}</span>
+    <span class="elu-texte">
+      <i class="elu-kick">${NAVICO.trophy}L'Élu</i>
+      <b>${moi ? 'Tu détiens' : 'Détient'} ${h(u.nom.replace(/^L'/, 'l\''))}</b>
+      <small>Le seul exemplaire du jeu${quand ? `, tiré le ${h(quand)}` : ''}. Personne d'autre ne l'aura jamais.</small>
+    </span>
+  </button>`;
+}
+
 function vSucces(obtenus, tous) {
   const ok = new Set(obtenus || []);
   const liste = tous ? SUCCES : SUCCES.filter(s => ok.has(s.id));

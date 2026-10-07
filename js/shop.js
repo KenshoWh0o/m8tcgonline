@@ -309,6 +309,14 @@ async function acheter(it) {
   /* Une carte s'annonce toute seule, par son animation d'obtention (js/promos.js) :
      un message en bas de l'écran par-dessus serait redondant. */
   if (it.effet === 'carte') return;
+  /* Des boosters : ils s'ouvrent tout de suite, à part de la réserve — sa
+     recharge continue (open_pack, supabase/03_rpc.sql). Quitter la série en
+     route les garde : « Ouvrir un booster en plus », écran Boosters. */
+  if (it.effet === 'tickets') {
+    SFX.jouer('gagne');
+    aller('boosters');
+    return setTimeout(() => openBooster({ bonus: true }), 350);
+  }
   toast(it.unique_buy ? `${it.titre} débloqué.` : `${it.titre} : c'est dans ta réserve.`);
   SFX.jouer('gagne');
 }

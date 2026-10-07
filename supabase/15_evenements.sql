@@ -61,6 +61,15 @@ on conflict (id) do nothing;
 -- Vide : des qu'elle est active. Elle permet de tout installer la veille.
 alter table public.chasse add column if not exists ouvre_le timestamptz;
 
+-- Celui qui a tire la carte unique a son cadre d'avatar, « Unique » : pose
+-- par open_pack au moment du tirage, et rattrape ici pour une carte tiree
+-- avant que le cadre existe (version 1.5.6).
+insert into public.inventory (user_id, item_id, qty)
+select gagnant, 'f_unique', 1 from public.chasse where gagnant is not null
+on conflict (user_id, item_id) do nothing;
+update public.profiles p set frame = 'f_unique'
+  from public.chasse c where c.gagnant = p.id and p.frame = 'default';
+
 alter table public.chasse enable row level security;
 revoke all on public.chasse from anon, authenticated;
 

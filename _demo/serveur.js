@@ -129,7 +129,7 @@
 
   /* ---------------------------------------- boutique, 04_seed.sql */
   const BOUTIQUE = [
-    ['s_pack1',  'boosters',   'x1 Booster',   'Ajoute 1 booster à ta réserve, par-dessus le plafond.',      350, 'tickets',  1, null, false, 1],
+    ['s_pack1',  'boosters',   'x1 Booster',   'Un booster à ouvrir tout de suite, sans toucher à ta réserve.', 350, 'tickets',  1, null, false, 1],
     ['s_pack5',  'boosters',   'x5 Boosters',  'Cinq boosters d\'un coup, un peu moins cher à l\'unité.',   1600, 'tickets',  5, null, false, 2],
     ['s_pack10', 'boosters',   'x10 Boosters', 'Le meilleur prix à l\'unité du rayon.',                     3000, 'tickets', 10, null, false, 3],
     ['s_token1', 'echange',    'x1 Jeton d\'échange',   'Lance une demande d\'échange sans attendre la fin du délai.',  600, 'trade_token', 1, null, false, 1],
@@ -305,6 +305,7 @@
         streak: pr.streak, last_checkin: pr.last_checkin,
         vitrine: pr.vitrine.slice(),
         fragments: pr.fragments || 0,
+        boosters_bonus: pr.boosters_bonus || 0, bonus_offerts: pr.tickets_offerts || 0,
         invite: true,
         ticket_cap: cfg('ticket_cap'), ticket_minutes: cfg('ticket_minutes'),
         serveur: iso(now())
@@ -418,20 +419,26 @@
     return { ids: ids.filter(Boolean), god };
   }
 
-  RPC.open_pack = p => {
+  RPC.open_pack = (p, a) => {
     const pr = regenTickets(p);
-    if (pr.tickets < 1) refuser('RESERVE_VIDE');
+    /* Un booster en plus (boutique, cadeau) : hors réserve, sans toucher à sa
+       recharge. */
+    const bonus = !!(a && a.p_bonus);
+    if (bonus ? !((pr.boosters_bonus || 0) > 0) : pr.tickets < 1) refuser(bonus ? 'BONUS_VIDE' : 'RESERVE_VIDE');
     const { ids, god } = tirerPaquet();
     if (!ids.length) refuser('BOOSTER_VIDE');
 
     /* La chasse : la carte unique prend la place de la dernière carte, une
        seule fois — jamais dans un booster offert, ouvert en premier. */
-    const offert = (pr.tickets_offerts || 0) > 0;
+    const offert = bonus && (pr.tickets_offerts || 0) > 0;
     if (offert) pr.tickets_offerts--;
     if (S.chasse.active && !S.chasse.gagnant && !offert && Math.random() < 1 / cfg('chasse_odds')) {
       S.chasse.gagnant = p;
       S.chasse.trouvee_le = now();
       ids[ids.length - 1] = S.chasse.carte;
+      S.inv[p] = S.inv[p] || {};
+      S.inv[p].f_unique = 1;
+      pr.frame = 'f_unique';
       S.annonces.push({ id: ++S.seq, actif: true, created_at: now(),
         titre: (carte(S.chasse.carte) || {}).nom + ' a été trouvée !',
         texte: pr.pseudo + ' l\'a tirée d\'un booster. Il n\'en existe qu\'une seule dans tout le jeu.' });
@@ -442,8 +449,11 @@
     const nouvelles = ids.filter(id => !possede(p, id)).length;
     ids.forEach(id => ajouter(p, id, 1));
 
-    pr.last_tick = pr.tickets >= cfg('ticket_cap') ? now() : pr.last_tick;
-    pr.tickets -= 1;
+    if (bonus) pr.boosters_bonus -= 1;
+    else {
+      pr.last_tick = pr.tickets >= cfg('ticket_cap') ? now() : pr.last_tick;
+      pr.tickets -= 1;
+    }
     pr.packs_opened += 1;
     S.tirages.push({ user_id: p, cartes: ids.slice(), god, created_at: now() });
 
@@ -482,7 +492,7 @@
     if (it.unique_buy && it.id in invDe(p)) refuser('Tu possèdes déjà cet article.');
     pr.shards -= it.prix;
     const inv = invDe(p);
-    if (it.effet === 'tickets') pr.tickets += it.montant;
+    if (it.effet === 'tickets') pr.boosters_bonus = (pr.boosters_bonus || 0) + it.montant;
     else if (it.effet === 'refill') { pr.tickets = Math.max(pr.tickets, cfg('ticket_cap')); pr.last_tick = now(); }
     else if (it.effet === 'trade_token') inv.trade_token = (inv.trade_token || 0) + it.montant;
     else if (it.effet === 'carte') {
@@ -816,7 +826,8 @@
     if (!c) refuser('Ce cadeau a déjà été ouvert.');
     c.ouvert_le = now();
     const pr = profil(p);
-    pr.shards += c.eclats; pr.tickets += c.boosters; pr.fragments = (pr.fragments || 0) + c.fragments;
+    pr.shards += c.eclats; pr.boosters_bonus = (pr.boosters_bonus || 0) + c.boosters;
+    pr.fragments = (pr.fragments || 0) + c.fragments;
     pr.tickets_offerts = (pr.tickets_offerts || 0) + c.boosters;
     if (c.carte) { ajouter(p, c.carte, 1); syncCollection(p); checkPromos(p); }
     return me(p);

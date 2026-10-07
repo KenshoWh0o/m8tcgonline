@@ -151,17 +151,47 @@ button.gcell:hover{transform:translateY(-3px)}
 .stack .card.r-PR::after,.pr-face .card.r-PR::after{animation:holo 3.4s linear infinite}
 
 /* Une Essence Brillante : la même carte que l'Essence, mais toute la surface
-   prend la lumière — un arc-en-ciel qui glisse en permanence, et un semis de
-   paillettes par-dessus. Le reflet ne s'arrête jamais, même en vignette : c'est
-   ce qui la distingue de son Essence d'un coup d'œil dans la collection. */
-.card.r-BR::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:color-dodge;opacity:.55;
-  background:linear-gradient(125deg,#ff5bb0,#ffc73b 18%,#55e6a6 34%,#39b8ff 50%,#a95cf2 66%,#ff5bb0 82%,#ffc73b);
-  background-size:300% 300%;animation:brille 6s linear infinite}
-.card.r-BR::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.7;
-  background-image:radial-gradient(circle,#fff 0 .5px,transparent 1.4px),radial-gradient(circle,#fff 0 .4px,transparent 1.2px);
-  background-size:9% 6.4%,13% 9%;background-position:0 0,4% 3%;animation:paillettes 2.6s ease-in-out infinite alternate}
-@keyframes brille{from{background-position:0% 50%}to{background-position:300% 50%}}
-@keyframes paillettes{from{opacity:.25}to{opacity:.8}}
+   prend la lumière, comme une vraie carte holographique.
+     · ::before — le prisme. Deux trames d'arc-en-ciel fines, croisées à
+       angles différents, qui dérivent lentement sur une boucle (et non en
+       ligne droite) : la couleur se déplace dans la carte comme quand on
+       l'incline, sans jamais faire passer de « barre » d'un bord à l'autre.
+       Un masque radial la concentre au centre et la laisse mourir sur les
+       bords, là où une vraie feuille holo accroche moins.
+     · ::after — la lumière et le grain. Un halo doux qui tourne autour de la
+       carte, et trois semis de paillettes qui scintillent à contretemps.
+   Le reflet ne s'arrête jamais, même en vignette : c'est ce qui la distingue
+   de son Essence d'un coup d'œil dans la collection. */
+.card.r-BR::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:color-dodge;opacity:.5;
+  background:
+    repeating-linear-gradient(118deg,#ff5bb0 0%,#ffc73b 3.5%,#55e6a6 7%,#39b8ff 10.5%,#a95cf2 14%,#ff5bb0 17.5%),
+    repeating-linear-gradient(32deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 2.2%,rgba(255,255,255,0) 4.4%);
+  background-size:260% 260%,190% 190%;
+  background-blend-mode:soft-light;
+  -webkit-mask:radial-gradient(120% 95% at 50% 45%,#000 30%,rgba(0,0,0,.35) 85%);
+  mask:radial-gradient(120% 95% at 50% 45%,#000 30%,rgba(0,0,0,.35) 85%);
+  animation:prismebr 11s ease-in-out infinite}
+.card.r-BR::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  background-image:
+    radial-gradient(closest-side,rgba(255,255,255,.5),rgba(255,240,250,.18) 55%,transparent),
+    radial-gradient(circle,#fff 0 .45px,transparent 1.3px),
+    radial-gradient(circle,#fff6d6 0 .4px,transparent 1.2px),
+    radial-gradient(circle,#e8f6ff 0 .5px,transparent 1.5px);
+  background-size:75% 55%,9% 6.4%,13% 9%,17% 12.5%;
+  background-repeat:no-repeat,repeat,repeat,repeat;
+  animation:refletbr 8s ease-in-out infinite,scintille 2.2s ease-in-out infinite alternate}
+@keyframes prismebr{
+  0%,100%{background-position:0% 30%,100% 0%}
+  25%{background-position:35% 85%,70% 55%}
+  50%{background-position:100% 60%,20% 100%}
+  75%{background-position:60% 0%,0% 35%}}
+/* Le halo fait le tour de la carte ; les paillettes, elles, ne bougent pas. */
+@keyframes refletbr{
+  0%,100%{background-position:-30% -20%,0 0,4% 3%,8% 1%}
+  25%{background-position:130% 5%,0 0,4% 3%,8% 1%}
+  50%{background-position:120% 125%,0 0,4% 3%,8% 1%}
+  75%{background-position:-25% 110%,0 0,4% 3%,8% 1%}}
+@keyframes scintille{from{opacity:.55}to{opacity:.95}}
 
 /* La carte unique : un liseré qui fait le tour de toutes les couleurs, et un
    reflet doré. Il n'en existe qu'une : elle doit se voir de loin. */
@@ -173,6 +203,7 @@ button.gcell:hover{transform:translateY(-3px)}
 @keyframes aura{50%{box-shadow:0 0 18px rgba(255,199,59,.75),0 0 34px rgba(236,143,255,.55)}}
 .rBR{color:#1fb3d6}.rUN{color:#d64fe8}
 html.rm .card.r-BR::before,html.rm .card.r-BR::after,html.rm .card.r-UN::after{animation:none}
+@media (prefers-reduced-motion:reduce){.card.r-BR::before,.card.r-BR::after{animation:none}}
 
 /* =====================================================================
    Téléphone : quatre cartes par rangée

@@ -191,7 +191,10 @@ const FRAMES = {
   f_rose:  { nom: 'Rose',  c1: '#ee0073', c2: '#ffd7f0' },
   f_or:    { nom: 'Or',    c1: '#ffc73b', c2: '#fff3b0' },
   f_prisme:{ nom: 'Prisme', prisme: true, c1: '#ee0073', c2: '#39b8ff' },
-  f_sceau: { nom: 'Sceau', sceau: true, vente: false, c1: '#ffc73b', c2: '#8936ff' }
+  f_sceau: { nom: 'Sceau', sceau: true, vente: false, c1: '#ffc73b', c2: '#8936ff' },
+  /* Celui de la personne qui a tiré la carte unique, et de personne d'autre :
+     posé par le serveur au moment du tirage (open_pack, supabase/03_rpc.sql). */
+  f_unique:{ nom: 'Unique', unique: true, vente: false, c1: '#ffc73b', c2: '#ec8fff' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du

@@ -128,7 +128,12 @@ begin
   return null;
 end $$;
 
-create or replace function public.open_pack() returns jsonb
+-- `p_bonus` : ouvrir un booster « en plus » (boutique, cadeau) plutot qu'un
+-- booster de la reserve. Il ne touche ni a la reserve ni a son compte a
+-- rebours. L'ancienne signature, sans parametre, est retiree : avec les deux,
+-- un appel sans argument serait ambigu.
+drop function if exists public.open_pack();
+create or replace function public.open_pack(p_bonus boolean default false) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles;
@@ -140,12 +145,16 @@ begin
   perform garde_beta();
 
   pr := regen_tickets(p);
-  if pr.tickets < 1 then
-    raise exception 'RESERVE_VIDE';
+  if coalesce(p_bonus, false) then
+    if pr.boosters_bonus < 1 then raise exception 'BONUS_VIDE'; end if;
+    -- Parmi les boosters en plus, ceux d'un cadeau (18_cadeaux.sql) partent en
+    -- premier, et ne peuvent pas contenir la carte unique : elle se trouve,
+    -- elle ne s'offre pas.
+    offert := pr.tickets_offerts > 0;
+  else
+    if pr.tickets < 1 then raise exception 'RESERVE_VIDE'; end if;
+    offert := false;
   end if;
-  -- Les boosters recus en cadeau (18_cadeaux.sql) partent en premier, et ne
-  -- peuvent pas contenir la carte unique : elle se trouve, elle ne s'offre pas.
-  offert := coalesce(pr.tickets_offerts, 0) > 0;
 
   god := random() < 1.0 / cfg('god_odds');
 
@@ -209,6 +218,10 @@ begin
      returning carte into unique_id;
     if unique_id is not null then
       ids[array_length(ids, 1)] := unique_id;
+      -- Son cadre, que personne d'autre n'aura : pose d'office sur son avatar.
+      insert into inventory (user_id, item_id, qty) values (p, 'f_unique', 1)
+        on conflict (user_id, item_id) do nothing;
+      update profiles set frame = 'f_unique' where id = p;
       insert into annonces (titre, texte) values (
         (select nom from cards where id = unique_id) || ' a été trouvée !',
         pr.pseudo || ' l''a tirée d''un booster. Il n''en existe qu''une seule dans tout le jeu.');
@@ -224,13 +237,21 @@ begin
   select p, u.cid2, count(*) from unnest(ids) u(cid2) group by u.cid2
   on conflict (user_id, card_id) do update set qty = collection.qty + excluded.qty;
 
-  -- Un booster consomme depuis la reserve pleine relance le compte a rebours.
-  update profiles set
-    tickets      = tickets - 1,
-    tickets_offerts = greatest(tickets_offerts - case when offert then 1 else 0 end, 0),
-    last_tick    = case when pr.tickets >= cfg('ticket_cap') then now() else last_tick end,
-    packs_opened = packs_opened + 1
-  where id = p;
+  -- Un booster pris dans la reserve pleine relance le compte a rebours. Un
+  -- booster en plus ne touche ni a l'un ni a l'autre.
+  if coalesce(p_bonus, false) then
+    update profiles set
+      boosters_bonus  = boosters_bonus - 1,
+      tickets_offerts = greatest(tickets_offerts - case when offert then 1 else 0 end, 0),
+      packs_opened    = packs_opened + 1
+    where id = p;
+  else
+    update profiles set
+      tickets      = tickets - 1,
+      last_tick    = case when pr.tickets >= cfg('ticket_cap') then now() else last_tick end,
+      packs_opened = packs_opened + 1
+    where id = p;
+  end if;
 
   -- Le journal des tirages : l'historique et les statistiques du joueur
   -- (mes_tirages, 15_evenements.sql), et le succes « godpack ».
@@ -319,8 +340,9 @@ begin
   update profiles set shards = shards - it.prix where id = p;
 
   if it.effet = 'tickets' then
-    -- Les boosters achetes s'ajoutent par-dessus le plafond de la reserve.
-    update profiles set tickets = tickets + it.montant where id = p;
+    -- Les boosters achetes ne vont pas dans la reserve : ils s'ouvrent a part
+    -- (open_pack(true)), sans toucher a son compte a rebours.
+    update profiles set boosters_bonus = boosters_bonus + it.montant where id = p;
   elsif it.effet = 'refill' then
     update profiles set tickets = greatest(tickets, cfg('ticket_cap')), last_tick = now() where id = p;
   elsif it.effet = 'trade_token' then

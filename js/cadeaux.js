@@ -104,7 +104,7 @@ function montrerContenu(c, file) {
         ${k ? `<button class="cdcarte" data-show="${k.id}" aria-label="Voir ${h(k.nom)}">${renderCard(k)}</button>` : ''}
         <ul class="cdliste">
           ${c.eclats ? ligne(shardIco, c.eclats, 'Éclats') : ''}
-          ${c.boosters ? ligne(NAVICO.star, c.boosters, c.boosters > 1 ? 'boosters, ajoutés à ta réserve' : 'booster, ajouté à ta réserve') : ''}
+          ${c.boosters ? ligne(NAVICO.star, c.boosters, c.boosters > 1 ? 'boosters à ouvrir, hors réserve' : 'booster à ouvrir, hors réserve') : ''}
           ${c.fragments ? ligne(NAVICO.fragment, c.fragments, FRAGMENTS.nom) : ''}
           ${k ? `<li><span class="cdico">${NAVICO.cards}</span><b>${h(k.nom)}</b><span>${h((RAR[k.rar] || RAR.C).nom)}, dans ta collection</span></li>` : ''}
         </ul>
@@ -112,13 +112,25 @@ function montrerContenu(c, file) {
           elle se trouve, elle ne s'offre pas.</p>` : ''}
         ${c.test ? '<p class="cdnote">Aperçu du Labo : rien n\'a été ajouté à ton compte.</p>' : ''}
       </div>`,
-    actions: [{ label: suivant ? 'Cadeau suivant' : 'Merci !', primary: true, fn: () => {
-      closeSheet();
-      if (suivant) setTimeout(() => montrerCadeau(file[0], file), 250);
-      else { if (!c.test) cadeauAffiche = false; render(); }
-    }}]
+    actions: suivant
+      ? [{ label: 'Cadeau suivant', primary: true, fn: () => { closeSheet(); setTimeout(() => montrerCadeau(file[0], file), 250); } }]
+      /* Des boosters dans le dernier paquet : ils s'ouvrent tout de suite, à
+         part de la réserve (open_pack, supabase/03_rpc.sql). « Plus tard » les
+         laisse sous « Ouvrir un booster en plus », écran Boosters. */
+      : (c.test ? c.boosters : save.bonus > 0)
+        ? [{ label: 'Ouvrir mes boosters', primary: true, fn: () => {
+              closeSheet(); finCadeaux(c);
+              aller('boosters');
+              setTimeout(() => openBooster(c.test ? { test: true } : { bonus: true }), 350);
+            } },
+           { label: 'Plus tard', fn: () => { closeSheet(); finCadeaux(c); render(); } }]
+        : [{ label: 'Merci !', primary: true, fn: () => { closeSheet(); finCadeaux(c); render(); } }]
   });
   SFX.jouer('gagne');
   vibrer([30, 50, 30]);
   if (!RM()) FX.sparkle({ n: 110, colors: ['#ffc73b', '#ff7cc8', '#b57aff', '#fff'], size: 3.6 });
+}
+
+function finCadeaux(c) {
+  if (!c.test) cadeauAffiche = false;
 }

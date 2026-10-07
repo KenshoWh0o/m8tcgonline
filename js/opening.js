@@ -209,17 +209,35 @@ function announce() {
 
   /* Une Essence Brillante tombe au milieu du paquet : elle n'a pas la
      révélation de la dernière carte, mais elle ne passe pas inaperçue. */
+  const indice = rv.idx === rv.cards.length - 1 ? 'Glisse d\'un coup sec ou touche pour voir ton récap' : 'Glisse d\'un coup sec ou touche pour passer';
   if (c.foil && !rv.vuBrillante) {
     rv.vuBrillante = true;
     SFX.jouer('epique');
     vibrer([20, 40, 20]);
+    el.className = 'op-rar big rBR';
+    el.innerHTML = `<span class="slam">Brillante</span>${nw ? '<em>NEW</em>' : ''}`;
+    top.classList.add('foilhit', 'hitcard', 'hBR');
     if (!RM()) {
       const r = top.getBoundingClientRect();
-      FX.burst(r.left + r.width / 2, r.top + r.height / 2,
-        { n: 90, colors: ['#ff5bb0', '#ffc73b', '#55e6a6', '#39b8ff', '#ffffff'], speed: 10, shape: 'star', g: .05, size: 3.6, life: 44 });
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const couleurs = ['#ff5bb0', '#ffc73b', '#55e6a6', '#39b8ff', '#ffffff'];
+      FX.burst(x, y, { n: 90, colors: couleurs, speed: 10, shape: 'star', g: .05, size: 3.6, life: 44 });
+      setTimeout(() => FX.sparkle({ n: 60, colors: couleurs, size: 3 }), 500);
     }
+    /* La carte se tient une seconde et demie : un doigt qui tapote pour
+       feuilleter le paquet ne la fait plus défiler sans qu'on l'ait vue. */
+    rv.lock = true;
+    const cur = rv;
+    $('#ophint').textContent = '';
+    setTimeout(() => {
+      if (rv !== cur) return;
+      cur.lock = false;
+      const hint = $('#ophint');
+      if (hint) hint.textContent = indice;
+    }, RM() ? 700 : 1600);
+    return;
   }
-  $('#ophint').textContent = rv.idx === rv.cards.length - 1 ? 'Glisse d\'un coup sec ou touche pour voir ton récap' : 'Glisse d\'un coup sec ou touche pour passer';
+  $('#ophint').textContent = indice;
 
   if (rk(c) >= 3 && !rv.god) top.classList.add('hitcard', 'h' + c.rar);
 }
@@ -470,6 +488,14 @@ function vRecapActions() {
       + '<button class="btn ghost dark" data-t="done">Terminer</button>';
   }
 
+  /* Une série de boosters en plus (boutique, cadeau) : on enchaîne sur le
+     suivant tant qu'il en reste. */
+  if (rv.opts && rv.opts.bonus && save.bonus > 0) {
+    return `<button class="btn" data-t="again">${NAVICO.promo}Booster suivant<span class="rc-reste">${save.bonus}</span></button>
+      <div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
+      <button class="btn ghost dark" data-t="done">Terminer</button></div>`;
+  }
+
   const reste = save.unlimited ? Infinity : save.tickets;
   if (!reste) {
     return `<div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
@@ -503,7 +529,9 @@ $('#theater').addEventListener('click', e => {
       break;
     }
     case 'again': {
-      const o = rv.opts;
+      /* Les boosters en plus épuisés, « Ouvrir un autre » repart sur la réserve. */
+      const o = Object.assign({}, rv.opts);
+      if (o.bonus && !(save.bonus > 0)) delete o.bonus;
       FX.clear();
       openBooster(o);
       break;

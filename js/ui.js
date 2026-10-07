@@ -175,7 +175,7 @@ function avatarHTML(a, frame, cls, photo) {
   const f = FRAMES[frame] || FRAMES.default;
   const v = avatarInfo(a, photo);
   const mode = v.ico ? ' ico' : v.objet ? ' objet' : '';
-  const anim = f.prisme ? ' prisme' : f.sceau ? ' sceau' : '';
+  const anim = f.prisme ? ' prisme' : f.sceau ? ' sceau' : f.unique ? ' unique' : '';
   const vars = [`--f1:${f.c1}`, `--f2:${f.c2}`];
   if (v.bg) vars.push('--ab:' + v.bg);
   if (v.pos) vars.push('--apos:' + v.pos);

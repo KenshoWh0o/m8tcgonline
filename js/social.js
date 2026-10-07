@@ -139,13 +139,14 @@ async function ouvrirFiche(pseudo) {
 
   openSheet({
     title: f.pseudo,
-    body: `<div class="fiche">
+    body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}">
       ${avatarHTML(f.avatar, f.frame, 'xl', f.photo)}
       <div class="fichemeta">
         ${f.is_admin ? '<span class="qtag ok">Administrateur</span>' : ''}
         <p class="muted small">Membre depuis ${dateCourte(f.membre_depuis).split(' à ')[0]}</p>
       </div>
     </div>
+    ${vElu(f.succes, f.moi)}
     ${(f.vitrine || []).length ? vVitrine(f.vitrine, false) : ''}
     <div class="stats">
       <div class="stat"><b>${f.possede} / ${f.total}</b><span>collection (${pct} %)</span></div>

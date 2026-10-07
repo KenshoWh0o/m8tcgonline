@@ -217,6 +217,7 @@ function vBoosters() {
   }
   const can = save.unlimited || save.tickets > 0;
   const full = save.unlimited || save.tickets >= TICKET_CAP;
+  const bonus = save.bonus || 0;
 
   return `<section class="packzone">
   ${vBandeauEvenement()}
@@ -239,7 +240,10 @@ function vBoosters() {
 
   <footer class="packfoot">
     ${vReserve(full)}
-    <button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>
+    ${bonus && !can ? '' : `<button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>`}
+    ${bonus ? `<button class="btn packbtn bonusbtn${can ? ' ghost' : ''}" data-act="open-bonus">
+        ${NAVICO.promo}Ouvrir un booster en plus<span class="rc-reste">${bonus}</span></button>
+      <p class="bonuslab">Achetés ou offerts : hors réserve, ils ne touchent pas à sa recharge.</p>` : ''}
   </footer>
 </section>`;
 }
@@ -259,10 +263,9 @@ function vReserve(full) {
     </div>`;
   }
 
-  /* On n'ecrete pas : un achat peut faire monter la réserve au-dessus du
-     plafond, et ces boosters-là existent pour de bon. Le plafond ne borne que
-     la recharge automatique — voir regen_tickets() dans supabase/01_schema.sql
-     et shop_buy(), qui ajoute sans rien plafonner. */
+  /* Depuis la version 1.5.6, rien ne fait plus déborder la réserve : les
+     boosters achetés ou offerts sont à part (save.bonus). Le surplus reste
+     affiché au cas où une vieille réserve dépasserait encore. */
   const total = save.tickets;
   const n = Math.min(total, TICKET_CAP);
   const surplus = Math.max(0, total - TICKET_CAP);
@@ -290,6 +293,13 @@ function vReserve(full) {
       ${full ? '' : `<b class="tnum" id="tmclock">${timerClock()}</b>`}
     </p>
   </div>`;
+}
+
+/* Toucher le paquet ouvre un booster de la réserve ; quand elle est vide, un
+   booster en plus s'il en reste. */
+function ouvrirDepuisPaquet() {
+  if (!save.unlimited && save.tickets < 1 && save.bonus > 0) return openBooster({ bonus: true });
+  openBooster();
 }
 
 /* Le paquet suit le doigt en 3D ; une simple pression l'ouvre. */
@@ -328,7 +338,7 @@ function bindPack() {
     if (e.pointerId !== pid) return;
     pid = null;
     T.manual = false;
-    if (moved < 9 && performance.now() - t0 < 600) openBooster();
+    if (moved < 9 && performance.now() - t0 < 600) ouvrirDepuisPaquet();
   };
   pk.addEventListener('pointerup', up);
   pk.addEventListener('pointercancel', () => { pid = null; T.manual = false; });
@@ -336,7 +346,7 @@ function bindPack() {
   pk.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      openBooster();
+      ouvrirDepuisPaquet();
     }
   });
 

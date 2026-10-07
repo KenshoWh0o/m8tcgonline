@@ -335,6 +335,7 @@ async function clicPage(e) {
 
   switch (d.act) {
     case 'open': return openBooster();
+    case 'open-bonus': return openBooster({ bonus: true });
     case 'nouveautes': return montrerNouveautes();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();

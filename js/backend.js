@@ -120,6 +120,9 @@ Backend.apply = function (etat) {
        cette personne sur cet appareil (js/bienvenue.js). */
     id: p.id,
     tickets: p.tickets,
+    /* Les boosters en plus (boutique, cadeaux) : hors réserve, ils s'ouvrent à
+       part sans toucher au compte à rebours (open_pack, supabase/03_rpc.sql). */
+    bonus: p.boosters_bonus || 0,
     lastTick: srvTime(p.last_tick),
     unlimited: false,
     col: etat.col || {},
@@ -184,6 +187,7 @@ const MSG_SERVEUR = {
   BETA_FERMEE: "Le jeu n'est pas encore ouvert.",
   PLAFOND_RECYCLAGE: 'Ça dépasse ton plafond de recyclage de la semaine.',
   RESERVE_VIDE: 'Plus de booster pour le moment.',
+  BONUS_VIDE: 'Plus de booster en plus à ouvrir.',
   BOOSTER_VIDE: 'Ce booster est vide : aucune carte à tirer.',
   ECHANGE_EN_RECHARGE: 'Ton échange gratuit est encore en recharge. Il te faut un jeton.',
   'non connecte': 'Tu dois être connecté pour faire ça.'
@@ -204,16 +208,19 @@ Backend.openPack = async function (opts) {
   opts = opts || {};
 
   if (Backend.mode === 'cloud' && !opts.test) {
-    const r = await Backend.rpc('open_pack');
+    const r = await Backend.rpc('open_pack', opts.bonus ? { p_bonus: true } : {});
     Backend.apply(r.etat);
     return { cards: r.cards.map(id => byId[id]).filter(Boolean), god: r.god };
   }
 
   const pool = poolFor();
   if (!pool.some(c => c.cat !== 'essence')) throw new Error('Ce booster est vide : aucune carte à tirer.');
-  if (!opts.test && !save.unlimited && save.tickets < 1) throw new Error('Plus de booster pour le moment.');
+  if (opts.bonus && !opts.test) {
+    if (!(save.bonus > 0)) throw new Error('Plus de booster en plus à ouvrir.');
+  } else if (!opts.test && !save.unlimited && save.tickets < 1) throw new Error('Plus de booster pour le moment.');
 
-  if (!opts.test && !save.unlimited) {
+  if (opts.bonus && !opts.test) save.bonus--;
+  else if (!opts.test && !save.unlimited) {
     if (save.tickets >= TICKET_CAP) save.lastTick = Date.now();
     save.tickets--;
   }

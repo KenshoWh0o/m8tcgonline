@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-10-04
+--   Assemble le 2026-10-07
 --
 -- =====================================================================
 
@@ -58,8 +58,14 @@ create unique index if not exists profiles_pseudo_key on public.profiles (lower(
 alter table public.profiles add column if not exists fragments    integer not null default 0;
 alter table public.profiles add column if not exists fabrications integer not null default 0;
 alter table public.profiles add column if not exists serie_max    integer not null default 0;
--- Combien des boosters de la reserve viennent d'un cadeau (18_cadeaux.sql) :
--- ceux-la ne peuvent pas contenir la carte unique (open_pack, 03_rpc.sql).
+-- Les boosters « en plus » — achetes en boutique ou recus en cadeau — ne
+-- passent pas par la reserve : ils s'ouvrent a part (open_pack(true),
+-- 03_rpc.sql). Melanges a la reserve, ils la faisaient deborder du plafond,
+-- et une reserve pleine remet le compte a rebours a zero : on perdait des
+-- boosters gratuits en en achetant. `tickets_offerts` : combien d'entre eux
+-- viennent d'un cadeau (18_cadeaux.sql) — ceux-la ne peuvent pas contenir la
+-- carte unique.
+alter table public.profiles add column if not exists boosters_bonus  integer not null default 0;
 alter table public.profiles add column if not exists tickets_offerts integer not null default 0;
 do $$ begin
   alter table public.profiles add constraint fragments_positifs check (fragments >= 0);
@@ -924,7 +930,12 @@ begin
   return null;
 end $$;
 
-create or replace function public.open_pack() returns jsonb
+-- `p_bonus` : ouvrir un booster « en plus » (boutique, cadeau) plutot qu'un
+-- booster de la reserve. Il ne touche ni a la reserve ni a son compte a
+-- rebours. L'ancienne signature, sans parametre, est retiree : avec les deux,
+-- un appel sans argument serait ambigu.
+drop function if exists public.open_pack();
+create or replace function public.open_pack(p_bonus boolean default false) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); pr profiles;
@@ -936,12 +947,16 @@ begin
   perform garde_beta();
 
   pr := regen_tickets(p);
-  if pr.tickets < 1 then
-    raise exception 'RESERVE_VIDE';
+  if coalesce(p_bonus, false) then
+    if pr.boosters_bonus < 1 then raise exception 'BONUS_VIDE'; end if;
+    -- Parmi les boosters en plus, ceux d'un cadeau (18_cadeaux.sql) partent en
+    -- premier, et ne peuvent pas contenir la carte unique : elle se trouve,
+    -- elle ne s'offre pas.
+    offert := pr.tickets_offerts > 0;
+  else
+    if pr.tickets < 1 then raise exception 'RESERVE_VIDE'; end if;
+    offert := false;
   end if;
-  -- Les boosters recus en cadeau (18_cadeaux.sql) partent en premier, et ne
-  -- peuvent pas contenir la carte unique : elle se trouve, elle ne s'offre pas.
-  offert := coalesce(pr.tickets_offerts, 0) > 0;
 
   god := random() < 1.0 / cfg('god_odds');
 
@@ -1005,6 +1020,10 @@ begin
      returning carte into unique_id;
     if unique_id is not null then
       ids[array_length(ids, 1)] := unique_id;
+      -- Son cadre, que personne d'autre n'aura : pose d'office sur son avatar.
+      insert into inventory (user_id, item_id, qty) values (p, 'f_unique', 1)
+        on conflict (user_id, item_id) do nothing;
+      update profiles set frame = 'f_unique' where id = p;
       insert into annonces (titre, texte) values (
         (select nom from cards where id = unique_id) || ' a été trouvée !',
         pr.pseudo || ' l''a tirée d''un booster. Il n''en existe qu''une seule dans tout le jeu.');
@@ -1020,13 +1039,21 @@ begin
   select p, u.cid2, count(*) from unnest(ids) u(cid2) group by u.cid2
   on conflict (user_id, card_id) do update set qty = collection.qty + excluded.qty;
 
-  -- Un booster consomme depuis la reserve pleine relance le compte a rebours.
-  update profiles set
-    tickets      = tickets - 1,
-    tickets_offerts = greatest(tickets_offerts - case when offert then 1 else 0 end, 0),
-    last_tick    = case when pr.tickets >= cfg('ticket_cap') then now() else last_tick end,
-    packs_opened = packs_opened + 1
-  where id = p;
+  -- Un booster pris dans la reserve pleine relance le compte a rebours. Un
+  -- booster en plus ne touche ni a l'un ni a l'autre.
+  if coalesce(p_bonus, false) then
+    update profiles set
+      boosters_bonus  = boosters_bonus - 1,
+      tickets_offerts = greatest(tickets_offerts - case when offert then 1 else 0 end, 0),
+      packs_opened    = packs_opened + 1
+    where id = p;
+  else
+    update profiles set
+      tickets      = tickets - 1,
+      last_tick    = case when pr.tickets >= cfg('ticket_cap') then now() else last_tick end,
+      packs_opened = packs_opened + 1
+    where id = p;
+  end if;
 
   -- Le journal des tirages : l'historique et les statistiques du joueur
   -- (mes_tirages, 15_evenements.sql), et le succes « godpack ».
@@ -1115,8 +1142,9 @@ begin
   update profiles set shards = shards - it.prix where id = p;
 
   if it.effet = 'tickets' then
-    -- Les boosters achetes s'ajoutent par-dessus le plafond de la reserve.
-    update profiles set tickets = tickets + it.montant where id = p;
+    -- Les boosters achetes ne vont pas dans la reserve : ils s'ouvrent a part
+    -- (open_pack(true)), sans toucher a son compte a rebours.
+    update profiles set boosters_bonus = boosters_bonus + it.montant where id = p;
   elsif it.effet = 'refill' then
     update profiles set tickets = greatest(tickets, cfg('ticket_cap')), last_tick = now() where id = p;
   elsif it.effet = 'trade_token' then
@@ -1667,7 +1695,7 @@ delete from public.quests where id not in (
 -- coup d'oeil la ou « Cinq boosters » demande une lecture. C'est une liste
 -- qu'on parcourt, pas un catalogue qu'on epluche.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre) values
-  ('s_pack1',  'boosters',   'x1 Booster',   'Ajoute 1 booster à ta réserve, par-dessus le plafond.',      350, 'tickets',  1, null, false, 1),
+  ('s_pack1',  'boosters',   'x1 Booster',   'Un booster à ouvrir tout de suite, sans toucher à ta réserve.', 350, 'tickets',  1, null, false, 1),
   ('s_pack5',  'boosters',   'x5 Boosters',  'Cinq boosters d''un coup, un peu moins cher à l''unité.',   1600, 'tickets',  5, null, false, 2),
   ('s_pack10', 'boosters',   'x10 Boosters', 'Le meilleur prix à l''unité du rayon.',                     3000, 'tickets', 10, null, false, 3),
 
@@ -1962,6 +1990,8 @@ begin
       'streak', pr.streak, 'last_checkin', pr.last_checkin,
       'vitrine', to_jsonb(pr.vitrine),
       'fragments', pr.fragments,
+      -- Les boosters en plus (boutique, cadeaux), hors reserve.
+      'boosters_bonus', pr.boosters_bonus, 'bonus_offerts', pr.tickets_offerts,
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
@@ -2609,6 +2639,15 @@ on conflict (id) do nothing;
 -- Vide : des qu'elle est active. Elle permet de tout installer la veille.
 alter table public.chasse add column if not exists ouvre_le timestamptz;
 
+-- Celui qui a tire la carte unique a son cadre d'avatar, « Unique » : pose
+-- par open_pack au moment du tirage, et rattrape ici pour une carte tiree
+-- avant que le cadre existe (version 1.5.6).
+insert into public.inventory (user_id, item_id, qty)
+select gagnant, 'f_unique', 1 from public.chasse where gagnant is not null
+on conflict (user_id, item_id) do nothing;
+update public.profiles p set frame = 'f_unique'
+  from public.chasse c where c.gagnant = p.id and p.frame = 'default';
+
 alter table public.chasse enable row level security;
 revoke all on public.chasse from anon, authenticated;
 
@@ -2780,9 +2819,21 @@ grant execute on function public.mes_tirages to authenticated;
 --  Depuis le jeu : Labo > Offrir un cadeau. A la main : en bas du fichier.
 -- =====================================================================
 
--- Les boosters offerts sont comptes a part : open_pack (03_rpc.sql) les ouvre
--- en premier, et ils ne peuvent pas contenir la carte unique.
+-- Les boosters offerts ne vont pas dans la reserve : ils rejoignent les
+-- boosters en plus (open_pack(true), 03_rpc.sql), partent en premier, et ne
+-- peuvent pas contenir la carte unique.
+alter table public.profiles add column if not exists boosters_bonus  integer not null default 0;
 alter table public.profiles add column if not exists tickets_offerts integer not null default 0;
+
+-- Version 1.5.6 : ce qui depassait le plafond de la reserve (boosters achetes
+-- ou offerts avant) passe dans les boosters en plus, et la reserve repart de
+-- son plafond — son compte a rebours reprend. Rejouable : une reserve qui ne
+-- depasse pas n'est pas touchee.
+update public.profiles
+   set boosters_bonus = boosters_bonus + (tickets - public.cfg('ticket_cap')),
+       tickets        = public.cfg('ticket_cap')
+ where tickets > public.cfg('ticket_cap');
+update public.profiles set tickets_offerts = boosters_bonus where tickets_offerts > boosters_bonus;
 
 create table if not exists public.cadeaux (
   id         bigint generated always as identity primary key,
@@ -2835,10 +2886,10 @@ begin
    returning * into c;
   if not found then raise exception 'Ce cadeau a déjà été ouvert.'; end if;
 
-  -- Les boosters offerts s'ajoutent par-dessus le plafond, comme ceux de la
-  -- boutique, et sont comptes a part (tickets_offerts) : sans carte unique.
+  -- Les boosters offerts s'ouvrent a part, hors reserve, comme ceux de la
+  -- boutique, et sans carte unique (tickets_offerts).
   update profiles set shards    = shards + c.eclats,
-                      tickets   = tickets + c.boosters,
+                      boosters_bonus  = boosters_bonus + c.boosters,
                       tickets_offerts = tickets_offerts + c.boosters,
                       fragments = fragments + c.fragments
    where id = p;
