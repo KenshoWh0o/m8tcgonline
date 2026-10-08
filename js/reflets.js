@@ -70,6 +70,7 @@ function allerRf(vue) {
 /* ---------- L'onglet ---------- */
 function vReflets() {
   const ev = save.evenement;
+  if (recapReflets()) return vRfRecap();
   if (!ev || evenementEnCours() !== 'reflets') return vide('Pas d\'événement en ce moment', 'Reviens bientôt.');
   if (rfErreur) return vide('Événement indisponible', rfErreur);
   if (!rfData) return '<p class="muted boitecharge">Chargement de l\'événement…</p>';
@@ -422,7 +423,7 @@ function vIllu() {
     const etat = d.fini ? (d.trouve && i === essais.length - 1 ? 'ok' : i < essais.length ? 'rate' : 'vide')
       : i < essais.length ? 'rate' : i === essais.length ? 'cours' : 'vide';
     return `<li class="${etat}"><span>${i + 1}<sup>${i ? 'e' : 'er'}</sup> essai</span>
-      <b>${prismeIco}${g.prismes}</b><small>${shardIco}${g.eclats}</small></li>`;
+      ${d.prismes ? `<b>${prismeIco}${g.prismes}</b><small>${shardIco}${g.eclats}</small>` : `<b>${shardIco}${g.eclats}</b>`}</li>`;
   }).join('');
 
   let haut, bas;
@@ -434,7 +435,7 @@ function vIllu() {
       <div>
         <b>${d.trouve ? `Trouvée au ${essais.length}${essais.length > 1 ? 'e' : 'er'} essai !` : 'Pas cette fois.'}</b>
         <p>${k ? `C'était <b>${h(k.nom)}</b>.` : ''}</p>
-        ${d.trouve && d.gain ? `<p class="il-gain">${prismeIco}<b>+${d.gain.prismes}</b> ${PRISMES.nom} · ${shardIco}<b>+${d.gain.eclats}</b> Éclats</p>` : ''}
+        ${d.trouve && d.gain ? `<p class="il-gain">${d.prismes ? `${prismeIco}<b>+${d.gain.prismes}</b> ${PRISMES.nom} · ` : ''}${shardIco}<b>+${d.gain.eclats}</b> Éclats</p>` : ''}
         <p class="muted small">Nouvelle illustration dans ${h(dureeCourte(resteAvantRemise('daily')))}.</p>
         <button class="btn tiny ghost" data-act="illu-partager">${NAVICO.partage}Partager</button>
       </div>
@@ -448,13 +449,12 @@ function vIllu() {
     </div>`;
   }
 
-  const rates = essais.filter(id => id !== d.cible || !d.trouve);
+  /* Les cartes déjà proposées ne s'affichent pas : la page ne dit rien de
+     plus que l'image. */
   return `<div class="illu">
     ${haut}
     <ol class="il-marches">${marches}</ol>
     ${bas}
-    ${rates.length ? `<div class="il-rates"><small>Pas celles-ci</small>
-      ${rates.map(id => byId[id] ? `<span>${h(byId[id].nom)}</span>` : '').join('')}</div>` : ''}
   </div>`;
 }
 
@@ -507,4 +507,144 @@ function illuPartager() {
   if (navigator.share) navigator.share({ text: texte }).catch(() => {});
   else if (navigator.clipboard) navigator.clipboard.writeText(texte).then(() => toast('Résultat copié.')).catch(() => toast(texte));
   else toast(texte);
+}
+
+/* =====================================================================
+   Devine l'illu, après l'événement : son propre onglet
+   ===================================================================== */
+async function chargerIllu() {
+  try { illuData = await Backend.illuEtat(); } catch (e) { /* l'écran le dira */ }
+  if (tab === 'illu' || tab === 'reflets') render();
+}
+
+function vIlluPage() {
+  return `<div class="pagehead"><div><h1>Devine l'illu</h1>
+      <p>Une illustration de l'extension par jour, la même pour tout le monde. Quatre essais : à chaque erreur, elle se précise.</p></div></div>
+    ${vIllu()}`;
+}
+
+/* =====================================================================
+   Après l'événement : le récap (trois jours)
+   ===================================================================== */
+/* L'événement fini depuis moins de trois jours (me(), supabase/21_reflets.sql),
+   ou l'aperçu du Labo. */
+let rfRecap = null;
+let rfRecapApercu = null;
+const recapReflets = () => rfRecapApercu
+  || (save && save.recap && save.recap.code === 'reflets' && !evenementEnCours() ? save.recap : null);
+
+async function chargerRecap() {
+  if (rfRecapApercu) { rfRecap = rfRecapApercu; return rfRecap; }
+  try { rfRecap = await Backend.rpc('evenement_recap'); } catch (e) { rfRecap = null; }
+  if (tab === 'reflets') render();
+  return rfRecap;
+}
+
+/* L'aperçu du Labo : des chiffres plausibles, et rien d'enregistré. */
+function apercuRecap() {
+  const t = Date.now();
+  const bots = [['Nova.92', 't_elu', 1130], ['Lumen', 't_centurion', 1064], ['Mira', null, 980]];
+  rfRecapApercu = {
+    code: 'reflets', titre: 'Reflets', debut: new Date(t - 14 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
+    jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), apercu: true,
+    total: 870, paliers: 16, paliers_max: 20, pris: 16, illus: 9, reverses: 52, reverses_max: reverses.length || 85,
+    quetes: 41, rang: 5, joueurs: 37,
+    top: bots.map(([pseudo, titre, total]) => ({ pseudo, titre, total, avatar: 'star', frame: 'f_prisme', photo: null, moi: false }))
+  };
+  rfRecap = rfRecapApercu;
+}
+function quitterApercuRecap() { rfRecapApercu = null; rfRecap = null; aller('labo'); }
+
+function vRfRecap() {
+  const r = rfRecap;
+  const a = recapReflets();
+  const reste = a && a.jusqua ? srvTime(a.jusqua) : 0;
+  const tete = `<header class="rf-tete recap">
+    ${rfArt()}
+    <div class="rf-tetehaut">
+      <div class="rf-tetenom"><small>Événement terminé · le récap</small><h1>Reflets</h1></div>
+      <div class="rf-tetechiffres">
+        ${reste ? `<span class="rf-fin">${NAVICO.clock}<span>encore <b data-rebours="${reste}">${h(dureeCourte(reste - Date.now()))}</b></span></span>` : ''}
+      </div>
+    </div>
+    ${r && r.apercu ? '<button class="btn tiny ghost rf-quitter" data-act="recap-quitter">Quitter l\'aperçu</button>' : ''}
+  </header>`;
+  if (!r) { chargerRecap(); return `<div class="rf">${tete}<p class="muted boitecharge">Chargement du récap…</p></div>`; }
+
+  const stat = (ico, val, lib, sous) => `<div class="rc-stat"><span class="rc-ico">${ico}</span>
+    <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
+  const pct = r.reverses_max ? Math.round(r.reverses / r.reverses_max * 100) : 0;
+  const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
+      <span class="rc-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
+      <b>${h(j.pseudo)}</b><small>${prismeIco}${fmtN(j.total)}</small></li>`).join('');
+
+  return `<div class="rf">${tete}<div class="rf-page">
+    <section class="rc-bilan">
+      <h2>Ton bilan</h2>
+      <div class="rc-stats">
+        ${stat(prismeIco, fmtN(r.total), PRISMES.nom + ' gagnés', r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup> sur ${r.joueurs}` : '')}
+        ${stat(NAVICO.trophy, `${r.paliers}<small>/${r.paliers_max}</small>`, 'paliers du Pass', r.paliers >= r.paliers_max ? 'Pass terminé' : '')}
+        ${stat(NAVICO.reflets, `${r.reverses}<small>/${r.reverses_max}</small>`, 'Reverses', `${pct} % de la série`)}
+        ${stat(NAVICO.illu, r.illus, 'illus trouvées', '')}
+        ${stat(NAVICO.quest, r.quetes, 'quêtes accomplies', '')}
+      </div>
+    </section>
+    ${podium ? `<section class="rc-podium"><h2>Le podium</h2><ol>${podium}</ol></section>` : ''}
+    <section class="rc-continue">
+      <h2>Ce qui reste</h2>
+      <div class="rc-cartes">
+        <button class="rc-lien" data-tab="illu"><span class="rc-ico">${NAVICO.illu}</span><b>Devine l'illu continue</b><small>Une illustration par jour, dans son propre onglet.</small></button>
+        <button class="rc-lien" data-colvue="reverses" data-tab="collection"><span class="rc-ico">${NAVICO.reflets}</span><b>Les Reverses restent</b><small>Toujours une par booster.</small></button>
+      </div>
+    </section>
+    <section class="rc-suite">
+      <h2>À suivre</h2>
+      <article class="rc-teaser combats">
+        <span class="rc-tico">${NAVICO.sword}</span>
+        <div><small>Version 3.0</small><b>Les Combats</b><p>Tes cartes vont bientôt quitter le classeur. Prépare ton deck.</p></div>
+      </article>
+      <article class="rc-teaser secrets">
+        <span class="rc-secrets" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div><small>Bientôt</small><b>Les Secrets</b><p>Des cartes que personne n'a encore vues. Elles se cachent déjà au bout de ta Collection.</p></div>
+      </article>
+    </section>
+  </div></div>`;
+}
+
+/* Le bandeau de l'écran Boosters, en version récap. */
+function vBandeauRecap() {
+  const a = recapReflets();
+  return `<button class="rfban recap" data-tab="reflets" aria-label="Voir le récap de l'événement Reflets">
+    ${rfArt()}
+    <span class="rfban-txt"><small>Événement terminé · le récap</small><b>Reflets</b></span>
+    <span class="rfban-solde">Ton bilan</span>
+    <span class="rfban-fl" aria-hidden="true">›</span>
+  </button>`;
+}
+
+/* La fenêtre de fin d'événement : une fois, au premier passage après la fin. */
+function recapAVoir() {
+  const a = save && save.recap;
+  return !!(a && a.code === 'reflets' && !evenementEnCours() && accueilMemoire().recap !== a.fin);
+}
+async function montrerRecap() {
+  const a = recapReflets();
+  if (a && !a.apercu) accueilNoter({ recap: a.fin });
+  const r = rfRecapApercu || await chargerRecap();
+  if (!r) return;
+  openSheet({
+    title: 'Reflets, c\'est fini',
+    body: `<div class="rc-pop">
+        <div class="rc-poptete">${rfArt()}<b>Merci d'avoir joué</b><small>Deux semaines de reflets — voici les tiens.</small></div>
+        <div class="rc-popstats">
+          <div><b class="tnum">${fmtN(r.total)}</b><small>${PRISMES.nom}</small></div>
+          <div><b class="tnum">${r.paliers}/${r.paliers_max}</b><small>Pass</small></div>
+          <div><b class="tnum">${r.reverses}</b><small>Reverses</small></div>
+          ${r.rang ? `<div><b class="tnum">${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup></b><small>sur ${r.joueurs}</small></div>` : ''}
+        </div>
+        <p class="muted small">Le récap complet reste trois jours dans l'onglet de l'événement. Devine l'illu, lui, continue.</p>
+      </div>`,
+    actions: [{ label: 'Voir le récap', primary: true, fn: () => { closeSheet(); aller('reflets'); } },
+              { label: 'Plus tard', fn: closeSheet }]
+  });
 }

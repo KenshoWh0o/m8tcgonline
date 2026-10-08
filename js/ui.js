@@ -139,11 +139,11 @@ function avatarInfo(a, photo) {
       ? { src: photo, plein: true }
       : { src: AVATARS.star.art, ico: true, bg: AVATARS.star.bg };
   }
-  /* `pos` : où viser en recadrant. L'illustration d'une carte occupe le haut ;
-     viser le centre aurait cadré sur la ligne d'attaque. */
+  /* Une carte : cadrée sur son illustration, comme Devine l'illu
+     (`.ava.carte`, css/reflets.css), pas sur la carte entière. */
   if (a.startsWith('card:')) {
     const c = byId[a.slice(5)];
-    return c && c.img ? { src: c.img, objet: true, pos: '30%' } : { src: ART.star, ico: true, bg: '#8936ff' };
+    return c && c.img ? { src: c.img, carte: true } : { src: ART.star, ico: true, bg: '#8936ff' };
   }
   if (a.startsWith('ess:')) {
     const k = a.slice(4);
@@ -174,7 +174,7 @@ function avatarInfo(a, photo) {
 function avatarHTML(a, frame, cls, photo) {
   const f = FRAMES[frame] || FRAMES.default;
   const v = avatarInfo(a, photo);
-  const mode = v.ico ? ' ico' : v.objet ? ' objet' : '';
+  const mode = v.ico ? ' ico' : v.carte ? ' objet carte' : v.objet ? ' objet' : '';
   /* `fx` : un cadre décoré, une illustration autour de l'avatar (css/reflets.css). */
   const anim = f.unique ? ' unique' : f.fx ? ' fx fx-' + f.fx : '';
   const vars = [`--f1:${f.c1}`, `--f2:${f.c2}`];

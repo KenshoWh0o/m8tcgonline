@@ -379,6 +379,7 @@
       },
       succes: succesDe(p),
       evenement: evenementActif(),
+      recap: evenementRecent(),
       chasse: chasseEtat(),
       parametres: { fabrication_reverse: !!S.parametres.fabrication_reverse },
       prismes: compte(p).solde,
@@ -403,6 +404,12 @@
   function evenementEnCours() {
     const e = S.evenement;
     return e && now() >= e.debut && now() < e.fin ? e.code : null;
+  }
+  /* evenement_recent, 21_reflets.sql : fini depuis moins de trois jours. */
+  function evenementRecent() {
+    const e = S.evenement;
+    if (!e || !e.code || now() < e.fin || now() >= e.fin + 3 * 86400000) return null;
+    return { code: e.code, titre: e.titre, debut: iso(e.debut), fin: iso(e.fin), jusqua: iso(e.fin + 3 * 86400000) };
   }
   function evenementActif() {
     const e = S.evenement;
@@ -476,7 +483,7 @@
     const n = Math.round((Date.parse(j + 'T12:00:00Z') - Date.parse('2026-01-01T12:00:00Z')) / 86400000);
     return l[((n % l.length) + l.length) % l.length];
   }
-  const ILLU_GAINS = [{ prismes: 25, eclats: 40 }, { prismes: 18, eclats: 30 }, { prismes: 12, eclats: 20 }, { prismes: 6, eclats: 10 }];
+  const ILLU_GAINS = [{ prismes: 25, eclats: 120 }, { prismes: 18, eclats: 90 }, { prismes: 12, eclats: 60 }, { prismes: 6, eclats: 30 }];
   /* illu_grille : la grille fine moyennée par blocs de 4, 3, 2 ou 1 pixels. */
   function illuGrille(cid, niveau) {
     const src = Uint8Array.from(atob(window.DEMO_ILLU[cid]), c => c.charCodeAt(0));
@@ -493,7 +500,6 @@
     return { w, h, data: btoa(String.fromCharCode(...o)) };
   }
   function illuEtat(p) {
-    if (evenementEnCours() !== 'reflets') return null;
     const j = jourParis(now());
     const cible = illuCible(j);
     if (!cible) return null;
@@ -502,7 +508,8 @@
     const fini = d.trouve || n >= 4;
     return { jour: j, max: 4, essais: d.essais.slice(), trouve: d.trouve, fini,
       niveau: fini ? 4 : n + 1, grille: fini ? null : illuGrille(cible, n + 1),
-      cible: fini ? cible : null, gain: d.trouve ? ILLU_GAINS[n - 1] : null, gains: ILLU_GAINS };
+      cible: fini ? cible : null, gain: d.trouve ? ILLU_GAINS[n - 1] : null, gains: ILLU_GAINS,
+      prismes: evenementEnCours() === 'reflets' };
   }
 
   /* =================================================== les actions (03_rpc) */
@@ -585,8 +592,8 @@
       ids = [
         pickCard('C'), pickCard('C'),
         pickCard('PC'),
-        reverseCard(tirage([[50, 'C'], [85, 'PC'], [100, 'R']])),
         essence(ess),
+        reverseCard(tirage([[50, 'C'], [85, 'PC'], [100, 'R']])),
         pickCard(tirage([[80, 'R'], [96, 'E'], [100, 'L']]))
       ];
     }
@@ -876,6 +883,23 @@
 
   RPC.friend_list = p => listeAmis(p);
 
+  /* amis_doublons, 21_reflets.sql */
+  RPC.amis_doublons = moi => {
+    const mien = colDe(moi);
+    const parCarte = {};
+    S.amities.filter(f => f.accepte && (f.a === moi || f.b === moi)).forEach(f => {
+      const o = profil(f.a === moi ? f.b : f.a);
+      Object.entries(colDe(o.id)).forEach(([id, n]) => {
+        const k = carte(id);
+        if (!k || n < 2 || (mien[id] || 0) > 0 || k.cat === 'essence' || (k.promo && !k.rev)) return;
+        (parCarte[id] = parCarte[id] || []).push({ pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null, n });
+      });
+    });
+    return Object.entries(parCarte)
+      .map(([carte, amis]) => ({ carte, amis: amis.sort((a, b) => b.n - a.n) }))
+      .sort((a, b) => b.amis.length - a.amis.length || a.carte.localeCompare(b.carte));
+  };
+
   /* player_profile, 07_vitrine.sql */
   RPC.player_profile = (moi, { p_pseudo }) => {
     const o = parPseudo(p_pseudo);
@@ -1084,9 +1108,27 @@
     const cartes = accorder(p, pa.type, pa.montant, pa.objet);
     return { cartes, etat: me(p) };
   };
+  /* evenement_recap, 21_reflets.sql */
+  RPC.evenement_recap = p => {
+    const e = evenementRecent();
+    if (!e) return null;
+    const c = (S.evt.comptes[p + '|' + e.code] || { total: 0 });
+    const tous = Object.entries(S.evt.comptes).filter(([k, v]) => k.endsWith('|' + e.code) && v.total > 0)
+      .map(([k, v]) => ({ id: k.split('|')[0], total: v.total })).sort((a, b) => b.total - a.total);
+    const col = colDe(p);
+    return Object.assign(e, {
+      total: c.total, paliers: PISTE.filter(x => x.seuil <= c.total).length, paliers_max: PISTE.length,
+      pris: (S.evt.prises[p] || []).length,
+      illus: Object.entries(S.illu || {}).filter(([k, v]) => k.startsWith(p + '|') && v.trouve).length,
+      reverses: reverses.filter(k => (col[k.id] || 0) > 0).length, reverses_max: reverses.length,
+      quetes: QUETES.filter(q => q.evenement === e.code && (S.qp[cleQp(p, q)] || {}).claimed).length,
+      rang: c.total > 0 ? tous.filter(x => x.total > c.total).length + 1 : null, joueurs: tous.length,
+      top: tous.slice(0, 3).map(x => { const o = profil(x.id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame,
+        titre: o.titre || null, photo: null, total: x.total, moi: x.id === p }; })
+    });
+  };
   RPC.illu_etat = p => illuEtat(p);
   RPC.illu_essai = (p, { p_carte }) => {
-    if (evenementEnCours() !== 'reflets') refuser('Devine l\'illu revient au prochain événement.');
     const k = carte(p_carte);
     if (!k || k.promo || k.rev || k.cat === 'essence') refuser('Cette carte ne fait pas partie du jeu.');
     const j = jourParis(now());
@@ -1098,7 +1140,7 @@
       d.trouve = true;
       const g = ILLU_GAINS[d.essais.length - 1];
       profil(p).shards += g.eclats;
-      crediterPrismes(p, g.prismes);
+      if (evenementEnCours() === 'reflets') crediterPrismes(p, g.prismes);
       bump(p, 'illu', 1);
     }
     return { illu: illuEtat(p), etat: me(p) };

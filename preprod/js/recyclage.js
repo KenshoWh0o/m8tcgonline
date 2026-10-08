@@ -291,7 +291,7 @@ function ouvrirFabrication(id) {
           <button class="fabcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
           <div class="fabmeta"><b>${nomH(c)}</b>
             <p class="muted small">La fabrication des Reverses ouvrira plus tard : pour l'instant, elles se trouvent
-              en booster — une par booster, en 4ᵉ carte — et s'échangent entre joueurs.</p></div>
+              en booster — une par booster, en 5ᵉ carte — et s'échangent entre joueurs.</p></div>
         </div>`,
       actions: [{ label: 'Fermer', fn: closeSheet }]
     });

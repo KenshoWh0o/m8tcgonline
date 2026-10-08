@@ -1004,9 +1004,9 @@ begin
   --   1 · Commune
   --   2 · Commune
   --   3 · Peu commune
-  --   4 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
+  --   4 · Essence
+  --   5 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
   --       Rare 15 %
-  --   5 · Essence
   --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
   -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
   -- derniere carte porte la mise en scene de la revelation.
@@ -1026,11 +1026,6 @@ begin
     ids := ids || pick_card('C');
     ids := ids || pick_card('C');
     ids := ids || pick_card('PC');
-    x := random() * 100.0;
-    select id into cid from cards
-     where reverse and rar = case when x < 50.0 then 'C' when x < 85.0 then 'PC' else 'R' end
-     order by random() limit 1;
-    ids := ids || cid;
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
@@ -1040,6 +1035,12 @@ begin
       cid := coalesce((select k.id from cards k where k.id = 'b' || substr(cid, 2)), cid);
     end if;
     ids := ids || coalesce(cid, pick_card('C'));
+
+    x := random() * 100.0;
+    select id into cid from cards
+     where reverse and rar = case when x < 50.0 then 'C' when x < 85.0 then 'PC' else 'R' end
+     order by random() limit 1;
+    ids := ids || cid;
 
     x := random() * 100.0;
     ids := ids || pick_card(case when x < 80.0 then 'R'
@@ -2198,6 +2199,9 @@ begin
     -- Les succes, l'evenement en cours et la chasse (15_evenements.sql).
     'succes', succes_de(p),
     'evenement', evenement_actif(),
+    -- Version 2.0 : un evenement fini depuis moins de trois jours (son recap,
+    -- 21_reflets.sql). Fonction resolue a l'execution : elle est creee plus loin.
+    'recap', evenement_recent(),
     'chasse', chasse_etat(),
     -- Version 2.0 : les reglages ouverts a la main, le solde de Prismes de
     -- l'evenement en cours, et les invitations achetees.
@@ -3456,15 +3460,71 @@ begin
         join profiles pr on pr.id = c.user_id), '[]'::jsonb));
 end $$;
 
+-- --------------------------------------------- apres l'evenement : le recap
+-- Pendant trois jours apres la fin d'un evenement, son onglet devient un
+-- recap : ce que le joueur y a fait, le podium, et la suite. me() en porte
+-- l'annonce (le code, les dates) ; evenement_recap() donne le detail.
+create or replace function public.evenement_recent() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
+                            'jusqua', e.fin + interval '3 days')
+    from evenements e
+   where e.code is not null and now() >= e.fin and now() < e.fin + interval '3 days'
+     and evenement_en_cours() is null
+   order by e.fin desc limit 1;
+$$;
+
+create or replace function public.evenement_recap() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); e evenements; cpt evt_comptes; rang int; nb int;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into e from evenements
+   where code is not null and now() >= fin and now() < fin + interval '3 days'
+   order by fin desc limit 1;
+  if not found then return 'null'::jsonb; end if;
+  select * into cpt from evt_comptes where user_id = p and evenement = e.code;
+  select count(*) + 1 into rang from evt_comptes
+   where evenement = e.code and total > coalesce(cpt.total, 0);
+  select count(*) into nb from evt_comptes where evenement = e.code and total > 0;
+  return jsonb_build_object(
+    'code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
+    'jusqua', e.fin + interval '3 days',
+    'total', coalesce(cpt.total, 0),
+    'paliers', (select count(*) from evt_piste pa where pa.evenement = e.code and pa.seuil <= coalesce(cpt.total, 0)),
+    'paliers_max', (select count(*) from evt_piste pa where pa.evenement = e.code),
+    'pris', (select count(*) from evt_piste_prises x where x.user_id = p and x.evenement = e.code),
+    'illus', (select count(*) from devine_illu d where d.user_id = p and d.trouve
+               and d.jour between (e.debut at time zone 'Europe/Paris')::date and (e.fin at time zone 'Europe/Paris')::date),
+    'reverses', (select count(*) from collection c join cards k on k.id = c.card_id
+                  where c.user_id = p and c.qty > 0 and k.reverse),
+    'reverses_max', (select count(*) from cards where reverse),
+    'quetes', (select count(*) from quest_progress qp join quests q on q.id = qp.quest_id
+                where qp.user_id = p and qp.claimed and q.evenement = e.code),
+    'rang', case when coalesce(cpt.total, 0) > 0 then rang end,
+    'joueurs', nb,
+    'top', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
+             order by c.total desc, lower(pr.pseudo))
+        from (select * from evt_comptes where evenement = e.code and total > 0
+               order by total desc limit 3) c
+        join profiles pr on pr.id = c.user_id), '[]'::jsonb));
+end $$;
+
 -- ========================================================= 3. Devine l'illu
 -- Une illustration a deviner par jour, la meme pour tout le monde : celle
 -- d'une carte de l'extension, Essences exceptees. Elle arrive pixelisee, et
 -- chaque essai rate la rend plus nette : 9 x 6 pixels, puis 12 x 8, 18 x 12
--- et 36 x 24. Quatre essais. Plus on trouve tot, plus ca rapporte.
+-- et 36 x 24. Quatre essais. Plus on trouve tot, plus ca rapporte : des
+-- Eclats toujours, et des Prismes pendant l'evenement Reflets.
 --
 -- Le serveur garde les grilles (illu_pixels, remplie par 21b_illu.sql) et
 -- n'envoie que celle du moment : le navigateur ne connait la carte qu'une
--- fois la partie finie. Le jeu n'existe que pendant l'evenement Reflets.
+-- fois la partie finie. Le jeu est ne avec l'evenement Reflets et lui
+-- survit : il a ensuite son propre onglet.
 create table if not exists public.illu_pixels (
   card_id text primary key references public.cards on delete cascade,
   data    bytea not null          -- 36 x 24 pixels, 12 bits chacun
@@ -3500,10 +3560,10 @@ $$;
 -- Ce que rapporte l'illu trouvee au n-ieme essai.
 create or replace function public.illu_gain(n int) returns jsonb
 language sql immutable as $$
-  select case n when 1 then '{"prismes":25,"eclats":40}'::jsonb
-                when 2 then '{"prismes":18,"eclats":30}'::jsonb
-                when 3 then '{"prismes":12,"eclats":20}'::jsonb
-                else        '{"prismes":6,"eclats":10}'::jsonb end;
+  select case n when 1 then '{"prismes":25,"eclats":120}'::jsonb
+                when 2 then '{"prismes":18,"eclats":90}'::jsonb
+                when 3 then '{"prismes":12,"eclats":60}'::jsonb
+                else        '{"prismes":6,"eclats":30}'::jsonb end;
 $$;
 
 -- La grille du niveau 1 a 4 : la grille fine, moyennee par blocs de 4, 3, 2
@@ -3545,7 +3605,6 @@ declare p uuid := auth.uid(); j date := illu_jour(); d devine_illu; cible text; 
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if evenement_en_cours() is distinct from 'reflets' then return 'null'::jsonb; end if;
   cible := illu_cible(j);
   if cible is null then return 'null'::jsonb; end if;
   select * into d from devine_illu where user_id = p and jour = j;
@@ -3560,7 +3619,9 @@ begin
     'grille', case when fini then null else illu_grille(cible, n + 1) end,
     'cible', case when fini then cible end,
     'gain', case when d.trouve then illu_gain(n) end,
-    'gains', jsonb_build_array(illu_gain(1), illu_gain(2), illu_gain(3), illu_gain(4)));
+    'gains', jsonb_build_array(illu_gain(1), illu_gain(2), illu_gain(3), illu_gain(4)),
+    -- Les Prismes ne se gagnent que pendant l'evenement.
+    'prismes', evenement_en_cours() is not distinct from 'reflets');
 end $$;
 
 -- Trouver rapporte des Prismes et des Eclats selon l'essai (illu_gain), et
@@ -3571,7 +3632,6 @@ declare p uuid := auth.uid(); j date := illu_jour(); d devine_illu; cible text; 
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if evenement_en_cours() is distinct from 'reflets' then raise exception 'Devine l''illu revient au prochain événement.'; end if;
   cible := illu_cible(j);
   if not exists (select 1 from cards where id = p_carte and not promo and cat <> 'essence') then
     raise exception 'Cette carte ne fait pas partie du jeu.';
@@ -3588,10 +3648,39 @@ begin
   if ok then
     g := illu_gain(n + 1);
     update profiles set shards = shards + (g->>'eclats')::int where id = p;
-    perform crediter_prismes(p, 'reflets', (g->>'prismes')::int);
+    if evenement_en_cours() = 'reflets' then
+      perform crediter_prismes(p, 'reflets', (g->>'prismes')::int);
+    end if;
     perform bump_quests(p, 'illu', 1);
   end if;
   return jsonb_build_object('illu', illu_etat(), 'etat', me());
+end $$;
+
+-- ------------------------------------------------ les doublons de mes amis
+-- Pour l'onglet Echanges : chaque carte qui me manque et qu'un ami a en
+-- double (donc qu'il peut ceder), avec ces amis-la, le plus fourni en tete.
+-- Seulement des cartes echangeables : ni Essences ni Promos (les Reverses
+-- le sont).
+create or replace function public.amis_doublons() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare moi uuid := auth.uid();
+begin
+  if moi is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('carte', x.id, 'amis', x.amis) order by x.n desc, x.id)
+      from (select k.id, count(*) as n,
+                   jsonb_agg(jsonb_build_object('pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+                                                'photo', photo_discord(o.id), 'n', c.qty)
+                             order by c.qty desc, lower(o.pseudo)) as amis
+              from friendships f
+              join profiles o on o.id = case when f.a = moi then f.b else f.a end
+              join collection c on c.user_id = o.id and c.qty > 1
+              join cards k on k.id = c.card_id
+             where (f.a = moi or f.b = moi) and f.accepte
+               and k.cat <> 'essence' and (not k.promo or k.reverse)
+               and not exists (select 1 from collection m where m.user_id = moi and m.card_id = k.id and m.qty > 0)
+             group by k.id) x), '[]'::jsonb);
 end $$;
 
 -- =========================================================== 4. invitations
@@ -3724,9 +3813,11 @@ revoke all on function public.evenement_en_cours, public.crediter_prismes, publi
   public.illu_cible, public.illu_grille, public.creer_invitation, public.titres_de
   from public, anon, authenticated;
 revoke all on function public.piste_reclamer, public.evenement_etat, public.illu_etat,
-  public.illu_essai, public.utiliser_invitation, public.personnaliser from public, anon;
+  public.illu_essai, public.utiliser_invitation, public.personnaliser, public.evenement_recap,
+  public.evenement_recent, public.amis_doublons from public, anon;
 grant execute on function public.piste_reclamer, public.evenement_etat, public.illu_etat,
-  public.illu_essai, public.utiliser_invitation, public.personnaliser to authenticated;
+  public.illu_essai, public.utiliser_invitation, public.personnaliser, public.evenement_recap,
+  public.amis_doublons to authenticated;
 
 
 -- #####################################################################

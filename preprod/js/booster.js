@@ -98,8 +98,8 @@ function weighted(w) {
      1 · Commune
      2 · Commune
      3 · Peu commune
-     4 · une Reverse : Commune 50 %, Peu commune 35 %, Rare 15 %
-     5 · Essence
+     4 · Essence
+     5 · une Reverse : Commune 50 %, Peu commune 35 %, Rare 15 %
      6 · le hit : Rare 80 %, Épique 16 %, Légendaire 4 %
    L'ordre compte : la pile se feuillette de la première à la dernière, et
    c'est la dernière qui porte la mise en scène de la révélation.
@@ -115,15 +115,16 @@ function makeBooster(pool, god) {
   out.push(pickFrom(pool, 'C'));
   out.push(pickFrom(pool, 'C'));
   out.push(pickFrom(pool, 'PC'));
-  const rr = weighted(RATES.REVERSE);
-  const revs = reverses.filter(c => c.rar === rr);
-  out.push(revs.length ? rnd(revs) : pickFrom(pool, rr));
 
   const ess = pool.filter(c => c.cat === 'essence');
   let e = ess.length ? rnd(ess) : pickFrom(pool, 'C');
   /* Une fois sur FOIL_ODDS, l'Essence sort Brillante — comme open_pack(). */
   if (e && e.cat === 'essence' && Math.random() < 1 / FOIL_ODDS) e = byId['b' + e.id.slice(1)] || e;
   out.push(e);
+
+  const rr = weighted(RATES.REVERSE);
+  const revs = reverses.filter(c => c.rar === rr);
+  out.push(revs.length ? rnd(revs) : pickFrom(pool, rr));
 
   out.push(pickFrom(pool, weighted(RATES.HIT)));
 
@@ -149,6 +150,9 @@ function vBandeauEvenement() {
   const ev = save.evenement;
   /* Version 2.0 : l'événement « Reflets » a son propre bandeau, qui mène à
      son onglet. */
+  /* Fini depuis moins de trois jours (ou l'aperçu du Labo) : le bandeau
+     mène au récap. */
+  if (recapReflets()) return vBandeauRecap();
   if (ev && ev.code === 'reflets' && !ev.a_venir) return vBandeauReflets(ev);
   const ch = save.chasse || {};
   const u = uniques[0];

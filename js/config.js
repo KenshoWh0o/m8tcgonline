@@ -276,6 +276,10 @@ const TABS = [
     desc: 'Pseudo, avatar, cadre et statistiques' },
   { id: 'tirages', nom: 'Mes tirages', tiroir: true, ico: 'clock', online: true,
     desc: 'Historique, statistiques et partage' },
+  /* Devine l'illu vit dans l'onglet de l'événement tant qu'il dure, puis
+     dans le sien (ongletDispo, js/app.js). */
+  { id: 'illu',     nom: 'Devine l\'illu', tiroir: true, ico: 'illu', online: true, horsEvenement: 'reflets',
+    desc: 'Une illustration à deviner chaque jour' },
   { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy', online: true,
     desc: 'Les meilleurs joueurs, tous confondus' },
   { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,

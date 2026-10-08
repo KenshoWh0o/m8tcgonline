@@ -7,8 +7,11 @@
 /* ---------- Quel onglet montrer ---------- */
 function ongletDispo(t) {
   if (t.admin) return !!save && !!save.isAdmin;
-  /* L'onglet d'un événement n'existe que pendant qu'il dure. */
-  if (t.evenement) return evenementEnCours() === t.evenement;
+  /* L'onglet d'un événement n'existe que pendant qu'il dure — et trois
+     jours après, le temps de son récap. */
+  if (t.evenement) return evenementEnCours() === t.evenement || !!(typeof recapReflets === 'function' && recapReflets());
+  /* Ce qui vit dans l'onglet de l'événement pendant qu'il dure. */
+  if (t.horsEvenement) return evenementEnCours() !== t.horsEvenement;
   return true;
 }
 
@@ -91,6 +94,7 @@ function pastilleOnglet(id) {
   if (id === 'quetes') return questesPretes();
   /* L'événement : ses quêtes à encaisser et les paliers de piste atteints. */
   if (id === 'reflets') return evQuetesPretes();
+  if (id === 'illu') return illuData && !illuData.fini ? 1 : 0;
   if (id === 'social') return socNotifs();
   return 0;
 }
@@ -206,6 +210,7 @@ const VUES = {
   boutique: () => vBoutique(),
   quetes: () => vQuetes(),
   combats: () => vCombats(),
+  illu: () => vIlluPage(),
   reflets: () => vReflets(),
   recyclage: () => vRecyclage(),
   classement: () => vClassement(),
@@ -287,7 +292,9 @@ function aller(id) {
     }
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     /* Version 2.0 : l'événement se charge en arrivant. */
-    if (tab === 'reflets') {
+    if (tab === 'illu') chargerIllu();
+    if (tab === 'reflets' && recapReflets()) chargerRecap();
+    else if (tab === 'reflets') {
       passPlace = false;
       chargerReflets();
       if (!Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
@@ -311,7 +318,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere]');
   if (!el) return;
   const d = el.dataset;
 
@@ -332,7 +339,7 @@ async function clicPage(e) {
   if (d.filter) { colFilter = d.filter; return render(); }
   if (d.ess) { essFilter = d.ess; return render(); }
   if (d.rar) { rarFilter = d.rar; return render(); }
-  if (d.tr) { trRetenirMot(); trVue = d.tr; return render(); }
+  if (d.tr) { trRetenirMot(); trVue = d.tr; if (d.tr === 'amis') trDoublons = null; return render(); }
   if (d.soc) { socVue = d.soc; return render(); }
   if (d.qv) { qVue = d.qv; return render(); }
   if (d.clv) { clVue = d.clv; render(); return chargerClassement(); }
@@ -358,6 +365,7 @@ async function clicPage(e) {
   if (d.voirtroc) { socVue = 'echanges'; trVue = 'recues'; return aller('social'); }
   if (d.annonceOff) return agir(() => Backend.annonceRetirer(+d.annonceOff), 'Annonce retirée.');
   if (d.troc) return versEchange(d.troc);
+  if (d.trdemande) return versEchange(d.trdemande, d.carte);
   if (d.colde) return ouvrirCollectionDe(d.colde, () => ouvrirFiche(d.colde));
   if (d.trcol) { trColVue = d.trcol; return montrerCollectionDe(d.qui); }
   if (d.vitOn) { closeSheet(); return vitrineAjouter(d.vitOn); }
@@ -455,8 +463,11 @@ async function clicPage(e) {
       if (evenementEnCours() !== 'reflets') return toast('L\'événement Reflets n\'est pas en cours.');
       return aller('reflets');
     case 't-v2-illu':
-      if (evenementEnCours() !== 'reflets') return toast('L\'événement Reflets n\'est pas en cours.');
-      return allerRf('illu');
+      return evenementEnCours() === 'reflets' ? allerRf('illu') : aller('illu');
+    case 't-v2-recap': apercuRecap(); return aller('reflets');
+    case 't-v2-recap-pop': apercuRecap(); return montrerRecap();
+    case 't-v2-recap-ban': apercuRecap(); return aller('boosters');
+    case 'recap-quitter': return quitterApercuRecap();
     case 't-partage':
       return partagerTirage({ ids: makeBooster(poolFor(), false).map(c => c.id), quand: new Date().toISOString() });
     case 't-fragments':

@@ -201,8 +201,8 @@ Six cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
 |---|---|
 | 1 et 2 | Commune |
 | 3 | **Peu commune garantie** |
-| 4 | **Une Reverse** (version 2.0) : Commune 50 %, Peu commune 35 %, Rare 15 % (`RATES.REVERSE`) |
-| 5 | Essence — Brillante une fois sur 50 |
+| 4 | Essence — Brillante une fois sur 50 |
+| 5 | **Une Reverse** (version 2.0) : Commune 50 %, Peu commune 35 %, Rare 15 % (`RATES.REVERSE`) |
 | 6 | Le hit : rare, épique ou légendaire (`RATES.HIT` = 80 / 16 / 4 %) |
 
 Environ un booster sur 2 000 (`GOD`) est un **godpack** : 5 rares, 4 épiques et une légendaire en dernier. Rien ne l'annonce, ni écran, ni mot : voir plus bas.
@@ -421,7 +421,7 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 
 ## Version 2.0 · Reflets
 
-**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 4ᵉ carte. Elles se recyclent ; elles ne s'échangent que contre une autre Reverse ; leur fabrication coûte le double d'une classique et reste **fermée** tant que `parametres.fabrication_reverse` ne vaut pas `true` :
+**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 5ᵉ carte. Elles se recyclent ; elles ne s'échangent que contre une autre Reverse ; leur fabrication coûte le double d'une classique et reste **fermée** tant que `parametres.fabrication_reverse` ne vaut pas `true` :
 
     update public.parametres set fabrication_reverse = true where id = 1;
 
@@ -431,9 +431,13 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 
 **L'événement Reflets** (`code = 'reflets'` dans `evenements`) remplace Combats dans la barre du bas tant qu'il dure. Sa monnaie, les **Prismes**, ne se gagne que par ses quêtes (quotidiennes `ev_jour` et de l'événement `ev`, colonne `evenement` de `quests`). Tout Prisme gagné fait avancer un **Pass** de 20 paliers (table `evt_piste`, le calcul de l'équilibrage est en tête de son tableau) ; en dépenser à la **boutique de l'événement** (`shop_items.devise = 'prismes'`) n'y change rien. L'onglet a six sous-onglets — Accueil (aujourd'hui, et les nouveautés de la 2.0), Quêtes, Pass, Devine l'illu, Boutique, Classement — et un bandeau d'une ligne l'annonce sur l'écran Boosters. La boutique principale n'a plus qu'un lien vers celle de l'événement.
 
-**Devine l'illu** : une illustration de l'extension par jour, la même pour tous, pendant l'événement seulement. Elle arrive en 9 × 6 pixels ; chaque essai raté la précise (12 × 8, 18 × 12, 36 × 24). Quatre essais. Trouvée au premier : 25 Prismes et 40 Éclats, puis 18/30, 12/20, 6/10 (`illu_gain()`). Tout est automatique : les 113 illustrations sont rangées une fois pour toutes dans un ordre secret (tiré du sel `parametres.illu_sel`, créé au hasard à l'installation et jamais montré), et chaque jour prend la suivante — aucune ne revient avant 113 jours, et l'ordre ne se devine pas depuis le code, qui est public. Le serveur garde les pixels (`illu_pixels`, rempli par `supabase/21b_illu.sql`) et n'envoie que la grille du moment : le navigateur ne connaît la carte qu'une fois la partie finie. Quand une illustration change : `node tools/illu-pixels.js`, puis `python3 tools/build-sql.py`.
+**Devine l'illu** : une illustration de l'extension par jour, la même pour tous. Elle arrive en 9 × 6 pixels ; chaque essai raté la précise (12 × 8, 18 × 12, 36 × 24). Quatre essais. Trouvée au premier : 25 Prismes et 120 Éclats, puis 18/90, 12/60, 6/30 (`illu_gain()`) — les Prismes seulement pendant l'événement. Tout est automatique : les 113 illustrations sont rangées une fois pour toutes dans un ordre secret (tiré du sel `parametres.illu_sel`, créé au hasard à l'installation et jamais montré), et chaque jour prend la suivante — aucune ne revient avant 113 jours, et l'ordre ne se devine pas depuis le code, qui est public. Le serveur garde les pixels (`illu_pixels`, rempli par `supabase/21b_illu.sql`) et n'envoie que la grille du moment : le navigateur ne connaît la carte qu'une fois la partie finie. Quand une illustration change : `node tools/illu-pixels.js`, puis `python3 tools/build-sql.py`.
 
 **Les invitations** s'achètent en boutique : 2 000 Éclats, trois par joueur (`shop_items.limite`). Chaque achat crée un code `M8-XXXX-XXXX`, valable une fois. L'ami se connecte avec Discord, arrive sur l'écran d'attente, et saisit le code — ou le reçoit tout rempli par le lien `/?invitation=CODE`. Il entre avec un cadeau de bienvenue : 10 boosters hors réserve (en plus des 5 de départ) et 1 000 Éclats. Pour que ce soit possible, **un compte non invité est désormais créé** à la connexion (`handle_new_user`) : il reste bloqué par `garde_beta()` sur toutes les actions du jeu et n'apparaît ni dans la recherche ni dans le classement, mais il peut utiliser un code.
+
+**Après l'événement.** Pendant trois jours, son onglet devient un **récap** (`evenement_recap()`) : le bilan du joueur, le podium, ce qui reste, et un « À suivre » sur les Combats et les Secrets ; le bandeau de l'écran Boosters y mène, et une fenêtre l'annonce une fois. Puis l'onglet disparaît. **Devine l'illu continue** dans son propre onglet (tiroir) : il rapporte toujours ses Éclats (120, 90, 60, 30 selon l'essai), plus de Prismes. Le Labo montre l'onglet récap, la fenêtre et le bandeau avec des chiffres inventés.
+
+**Échanges · Chez tes amis** : les cartes qui te manquent et qu'un ami a en double (`amis_doublons()`), une pression sur l'ami prépare la demande.
 
 **Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
 

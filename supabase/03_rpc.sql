@@ -162,9 +162,9 @@ begin
   --   1 · Commune
   --   2 · Commune
   --   3 · Peu commune
-  --   4 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
+  --   4 · Essence
+  --   5 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
   --       Rare 15 %
-  --   5 · Essence
   --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
   -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
   -- derniere carte porte la mise en scene de la revelation.
@@ -184,11 +184,6 @@ begin
     ids := ids || pick_card('C');
     ids := ids || pick_card('C');
     ids := ids || pick_card('PC');
-    x := random() * 100.0;
-    select id into cid from cards
-     where reverse and rar = case when x < 50.0 then 'C' when x < 85.0 then 'PC' else 'R' end
-     order by random() limit 1;
-    ids := ids || cid;
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
@@ -198,6 +193,12 @@ begin
       cid := coalesce((select k.id from cards k where k.id = 'b' || substr(cid, 2)), cid);
     end if;
     ids := ids || coalesce(cid, pick_card('C'));
+
+    x := random() * 100.0;
+    select id into cid from cards
+     where reverse and rar = case when x < 50.0 then 'C' when x < 85.0 then 'PC' else 'R' end
+     order by random() limit 1;
+    ids := ids || cid;
 
     x := random() * 100.0;
     ids := ids || pick_card(case when x < 80.0 then 'R'

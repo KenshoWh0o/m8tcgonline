@@ -95,6 +95,9 @@ begin
     -- Les succes, l'evenement en cours et la chasse (15_evenements.sql).
     'succes', succes_de(p),
     'evenement', evenement_actif(),
+    -- Version 2.0 : un evenement fini depuis moins de trois jours (son recap,
+    -- 21_reflets.sql). Fonction resolue a l'execution : elle est creee plus loin.
+    'recap', evenement_recent(),
     'chasse', chasse_etat(),
     -- Version 2.0 : les reglages ouverts a la main, le solde de Prismes de
     -- l'evenement en cours, et les invitations achetees.

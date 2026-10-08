@@ -161,6 +161,8 @@ Backend.apply = function (etat) {
        (supabase/15_evenements.sql). */
     succes: etat.succes || [],
     evenement: etat.evenement || null,
+    /* Version 2.0 : un événement fini depuis moins de trois jours, et son récap. */
+    recap: etat.recap || null,
     chasse: etat.chasse || null,
     /* Version 2.0 (supabase/21_reflets.sql) : le titre, la bannière et la
        devise du profil, les titres débloqués, les réglages ouverts à la main
@@ -250,10 +252,10 @@ Backend.openPack = async function (opts) {
     if (b) drawn[i] = b;
   }
   if (opts.unique && uniques[0]) drawn[drawn.length - 1] = uniques[0];
-  /* Labo : la Reverse de la 4ᵉ carte sort Rare. */
+  /* Labo : la Reverse de la 5ᵉ carte sort Rare. */
   if (opts.reverseR && !god) {
     const r = reverses.filter(c => c.rar === 'R');
-    if (r.length) drawn[3] = rnd(r);
+    if (r.length) drawn[4] = rnd(r);
   }
   if (!opts.test) {
     drawn.forEach(c => save.col[c.id] = (save.col[c.id] || 0) + 1);

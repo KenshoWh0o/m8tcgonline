@@ -193,10 +193,10 @@ function confirmerRetrait(pseudo) {
 /* Ouvre la composition d'un échange, destinataire déjà rempli. On va chercher
    sa collection dans la foulée : sans elle, l'étape « quoi contre quoi »
    travaille à l'aveugle, et c'était tout le problème de l'ancien écran. */
-function versEchange(pseudo) {
+function versEchange(pseudo, veut) {
   socVue = 'echanges';
   trVue = 'nouvelle';
-  trBrouillon = { pseudo, offre: null, veut: null, note: '' };
+  trBrouillon = { pseudo, offre: null, veut: veut || null, note: '' };
   const a = (Backend.amis || []).find(x => x.pseudo === pseudo);
   trCible = a
     ? { pseudo: a.pseudo, avatar: a.avatar, frame: a.frame, photo: a.photo }
