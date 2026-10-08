@@ -36,6 +36,10 @@ async function chargerReflets() {
     rfData = ev;
     illuData = il;
     rfErreur = '';
+    /* Ouvrir l'onglet accomplit « Passe voir l'événement » côté serveur : on
+       relit les quêtes pour l'afficher tout de suite. */
+    const visite = (save.quetes || []).find(q => q.metric === 'ev_visite');
+    if (visite && !visite.progress) await Backend.pull().catch(() => {});
   } catch (e) {
     rfErreur = e.message || 'L\'événement n\'a pas pu être chargé.';
   }
@@ -77,6 +81,15 @@ function vReflets() {
   return `<div class="rf">${vRfTete(srvTime(ev.fin))}<div class="rf-page">${corps()}</div></div>`;
 }
 
+/* L'illustration d'une Reverse Rare, différente chaque jour : le fond de
+   l'en-tête et du bandeau de l'écran Boosters. Cadrée sur l'illustration
+   (.rf-art, css/reflets.css), pas sur la carte. */
+function rfArt() {
+  const l = reverses.filter(c => c.rar === 'R' && c.img);
+  const c = l.length ? l[Math.floor((Date.now() + 7200000) / 86400000) % l.length] : null;
+  return c ? `<span class="rf-art" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
+}
+
 /* L'en-tête : le nom, le compte à rebours, le solde, et les sous-onglets. */
 function vRfTete(fin) {
   const pastille = id => {
@@ -85,6 +98,7 @@ function vRfTete(fin) {
     return id === 'illu' && rfIlluAJouer() ? '<i class="rf-point" aria-label="À jouer"></i>' : '';
   };
   return `<header class="rf-tete">
+    ${rfArt()}
     <div class="rf-tetehaut">
       <div class="rf-tetenom">
         <small>Événement · Version 2.0</small>
@@ -183,9 +197,9 @@ function vRfQuetes() {
   const ev = qs.filter(q => q.scope === 'ev');
   return `${rfTitre('Quêtes', `Elles paient en ${PRISMES.nom}, et chaque ${PRISMES.un} gagné fait avancer le Pass.`)}
     <h3 class="rf-sous">Du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
-    <div class="questlist">${jour.map(vQuete).join('')}</div>
+    ${vListeQuetes(jour)}
     <h3 class="rf-sous">De l'événement</h3>
-    <div class="questlist">${ev.map(vQuete).join('')}</div>`;
+    ${vListeQuetes(ev)}`;
 }
 
 /* =====================================================================

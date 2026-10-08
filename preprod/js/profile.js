@@ -100,7 +100,7 @@ function vProfil() {
 const CADRE_SOURCE = {
   f_azur: 'Boutique', f_rose: 'Boutique', f_or: 'Boutique', f_prisme: 'Boutique',
   f_sceau: '300 boosters ouverts', f_master: 'Les 122 cartes', f_reflet: 'Les 85 Reverses',
-  f_aurore: 'Les 9 Brillantes', f_miroir: 'Pass Reflets, palier 10', f_kaleido: 'Pass Reflets, palier 20',
+  f_aurore: 'Les 9 Brillantes', f_miroir: 'Pass Reflets, palier 10', f_nebuleuse: 'Pass Reflets, palier 20',
   f_unique: 'La carte unique'
 };
 
@@ -113,7 +113,7 @@ function vTitreLigne(id) {
 /* La bannière : l'illustration d'une carte, floutée derrière l'en-tête. */
 function vBanniere(id) {
   const c = id && byId[id];
-  return c && c.img ? `<span class="idbanniere" aria-hidden="true" style="background-image:url('${c.img}')"></span>` : '';
+  return c && c.img ? `<span class="idbanniere" aria-hidden="true"><i style="background-image:url('${c.img}')"></i></span>` : '';
 }
 
 function vPerso() {
@@ -126,7 +126,7 @@ function vPerso() {
     <div class="titregrille">
       <button class="titrechoix${!save.titre ? ' on' : ''}" data-titre="">Aucun</button>
       ${Object.keys(TITRES).filter(k => miens.includes(k)).map(k =>
-        `<button class="titrechoix t${TITRES[k].ton}${save.titre === k ? ' on' : ''}" data-titre="${k}">${h(TITRES[k].nom)}</button>`).join('')}
+        `<button class="titrechoix${save.titre === k ? ' on' : ''}" data-titre="${k}"><span class="titreligne t${TITRES[k].ton}">${h(TITRES[k].nom)}</span></button>`).join('')}
     </div>
     ${Object.keys(TITRES).some(k => !miens.includes(k) && k !== 't_admin') ? `<details class="titresverrou">
       <summary>${Object.keys(TITRES).filter(k => !miens.includes(k) && k !== 't_admin').length} titres à débloquer</summary>

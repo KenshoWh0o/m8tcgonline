@@ -233,7 +233,7 @@ const FRAMES = {
   f_reflet: { nom: 'Reflet', fx: 'reflet', vente: false, c1: '#ffd3ec', c2: '#cfeeff' },
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
-  f_kaleido:{ nom: 'Kaléidoscope', fx: 'kaleido', vente: false, c1: '#ff3d8b', c2: '#3a8dff' }
+  f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
