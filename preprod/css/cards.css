@@ -235,49 +235,44 @@ button.gcell.fab{cursor:pointer}
 button.gcell.fab:hover .ghost-card{box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
 
 /* ============ Les Reverses (version 2.0) ============ */
-/* Comme une vraie reverse : tout ce qui n'est pas l'illustration prend la
-   lumière, et le logo Tout Commence Ici est frappé dans le coin de
-   l'illustration, comme un tampon.
+/* Comme une vraie reverse : toute la carte prend la lumière, et le logo
+   Tout Commence Ici est frappé dans le coin de l'illustration, comme un
+   tampon.
      · ::after — la nacre. Des taches de couleur saturées (pas de bandes)
-       qui dérivent lentement, en `overlay` : elles teintent le cadre sans le
-       délaver. Le masque épouse la fenêtre de l'illustration, avec des bords
-       fondus : pas de ligne droite qui trahisse un calque posé dessus.
-     · .revlueur — la lumière : une bande irisée qui balaie le cadre.
-     · ::before — le grain : des paillettes fines qui scintillent.
+       qui dérivent lentement, en `overlay` : elles teintent la carte sans la
+       délaver.
+     · .revlueur — la lumière : une bande irisée qui balaie la carte.
+     · ::before — les paillettes, les mêmes que sur les Essences Brillantes :
+       trois semis de tailles sans commune mesure, qui scintillent.
    Toutes les animations font l'aller-retour (`alternate`) : aucune ne
    recommence d'un coup. Le logo vient de --logo (renderCard). */
-.card.rev::before,.card.rev::after,.card.rev .revlueur{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-  -webkit-mask:linear-gradient(180deg,#000 0 9.5%,transparent 14% 50.5%,#000 56%),linear-gradient(90deg,#000 0 5.5%,transparent 10% 90%,#000 94.5%);
-  mask:linear-gradient(180deg,#000 0 9.5%,transparent 14% 50.5%,#000 56%),linear-gradient(90deg,#000 0 5.5%,transparent 10% 90%,#000 94.5%)}
-/* La nacre : des taches de couleur saturées, en `overlay`, qui teintent le
-   cadre sans le délaver. */
-.card.rev::after{mix-blend-mode:overlay;opacity:.95;
+.card.rev::before,.card.rev::after,.card.rev .revlueur{content:'';position:absolute;inset:0;z-index:1;pointer-events:none}
+.card.rev::after{mix-blend-mode:overlay;opacity:.85;
   background:
     radial-gradient(38% 26% at 18% 14%,#ff4fb4,transparent 70%),
     radial-gradient(42% 30% at 86% 26%,#3fc3ff,transparent 70%),
     radial-gradient(48% 34% at 26% 78%,#9a6bff,transparent 70%),
     radial-gradient(44% 30% at 82% 86%,#3dffb0,transparent 70%),
-    radial-gradient(40% 26% at 56% 64%,#ffd25a,transparent 70%);
+    radial-gradient(40% 26% at 56% 64%,#ffd25a,transparent 70%),
+    radial-gradient(36% 24% at 70% 42%,#ff8ad0,transparent 70%);
   background-size:170% 170%;background-repeat:no-repeat;
   animation:revreflet 12s ease-in-out infinite alternate}
-/* La lueur : une large bande de lumière irisée qui balaie le cadre en
-   diagonale, puis revient — c'est elle qui fait « briller » la carte. */
-.card.rev .revlueur{z-index:2;mix-blend-mode:color-dodge;opacity:.55;
+.card.rev .revlueur{z-index:2;mix-blend-mode:color-dodge;opacity:.5;
   background:linear-gradient(118deg,transparent 30%,rgba(255,170,220,.55) 40%,rgba(255,255,255,.9) 47%,rgba(160,220,255,.6) 54%,transparent 64%) no-repeat;
   background-size:250% 250%;animation:revlueur 4.5s ease-in-out infinite alternate}
 @keyframes revlueur{from{background-position:100% 100%}to{background-position:0% 0%}}
-/* Trois semis de tailles sans commune mesure : leurs points ne s'alignent
-   jamais en grille, comme un vrai grain de paillettes. */
-.card.rev::before{z-index:2;mix-blend-mode:screen;opacity:.7;
-  background-image:radial-gradient(circle,#fff 0 .35px,transparent 1px),radial-gradient(circle,#ffe6f6 0 .35px,transparent .9px),
-    radial-gradient(circle,#e6f6ff 0 .4px,transparent 1.1px);
-  background-size:7.3% 5.3%,11.9% 8.7%,17.3% 12.1%;background-position:0 0,3.1% 1.7%,5.3% 4.1%;
-  animation:scintille 2.6s ease-in-out infinite alternate}
+.card.rev::before{z-index:2;mix-blend-mode:screen;
+  background-image:
+    radial-gradient(circle,#fff 0 .45px,transparent 1.3px),
+    radial-gradient(circle,#ffe6f6 0 .4px,transparent 1.2px),
+    radial-gradient(circle,#e8f6ff 0 .5px,transparent 1.5px);
+  background-size:9% 6.4%,13% 9%,17% 12.5%;background-position:0 0,4% 3%,8% 1%;
+  animation:scintille 2.2s ease-in-out infinite alternate}
 @keyframes revreflet{from{background-position:0% 10%}to{background-position:100% 90%}}
 /* Pile dans le coin bas gauche de la fenêtre d'illustration des Communes et
    Peu communes (bord gauche à 8 %, bas à 54,5 % de la carte), un peu en
    retrait ; même place sur les Rares, pour que la série reste alignée. */
-.card.rev .revtampon{position:absolute;left:9.5%;top:43.6%;width:36%;height:9%;z-index:3;pointer-events:none;isolation:isolate;
+.card.rev .revtampon{position:absolute;left:8.9%;top:45.3%;width:36%;height:9%;z-index:3;pointer-events:none;isolation:isolate;
   background:var(--logo) left bottom/contain no-repeat;
   filter:drop-shadow(0 1px 2px rgba(20,8,40,.6))}
 /* Le reflet ne prend que sur le logo : même masque, fondu par-dessus. */
