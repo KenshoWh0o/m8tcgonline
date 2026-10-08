@@ -129,7 +129,7 @@ async function ouvrirFiche(pseudo) {
            <div class="pickgrid court">${forts.map(c =>
              `<button class="pick${save.col[c.id] ? '' : ' manque'}" data-show="${c.id}" data-qui="${h(f.pseudo)}" data-snd="carte">
                <span class="pickimg">${renderCard(c)}<i class="tpill">×${f.col[c.id]}</i></span>
-               <span class="picknom">${h(c.nom)}</span>
+               <span class="picknom">${nomH(c)}</span>
              </button>`).join('')}</div>`
         : '<p class="muted small">Aucun doublon rare pour le moment.</p>'}
       <div class="row ficheacts">

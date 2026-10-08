@@ -205,20 +205,19 @@ function vBandeauEvenement() {
 
 /* Le bandeau de l'événement Reflets : holographique, avec une Reverse qui
    tourne doucement, le solde de Prismes et ce qui attend dans l'onglet. */
+/* Une seule ligne : le nom, le temps qui reste, et ce qui attend dans
+   l'onglet. Le booster reste la vedette de l'écran. */
 function vBandeauReflets(ev) {
   const fin = srvTime(ev.fin);
   const n = evQuetesPretes();
-  const rv = reverses.filter(c => c.rar === 'R');
-  const c = rv.length ? rv[Math.floor(Date.now() / 3600000) % rv.length] : null;
-  return `<button class="evban reflets" data-tab="reflets" aria-label="Ouvrir l'événement Reflets">
-    <span class="rfb-holo" aria-hidden="true"></span>
-    <span class="evbtxt">
-      <span class="evbhaut"><i class="evbtag">Événement 2.0</i><span class="evbtemps">encore <b data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</b></span></span>
-      <b class="evbtitre rfb-nom">Reflets</b>
-      <span class="evbsous">Les Reverses sont arrivées. Gagne des ${PRISMES.nom}, remonte la piste, joue au Cartle.</span>
-      <span class="rfb-chips"><i>${prismeIco}<b>${fmtN(save.prismes || 0)}</b> ${PRISMES.nom}</i>${n ? `<i class="pret">${n} à récupérer</i>` : '<i>Voir l\'événement</i>'}</span>
+  return `<button class="rfban" data-tab="reflets" aria-label="Ouvrir l'événement Reflets">
+    <span class="rfban-ico">${NAVICO.reflets}</span>
+    <span class="rfban-txt">
+      <b>Reflets</b>
+      <small>Événement · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span></small>
     </span>
-    ${c ? `<span class="rfb-carte" aria-hidden="true">${renderCard(c)}</span>` : ''}
+    ${n ? `<span class="rfban-n">${n}</span>` : `<span class="rfban-solde">${prismeIco}${fmtN(save.prismes || 0)}</span>`}
+    <span class="rfban-fl" aria-hidden="true">›</span>
   </button>`;
 }
 

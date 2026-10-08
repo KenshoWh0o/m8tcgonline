@@ -83,7 +83,7 @@ function vTest() {
     <div class="row" style="margin-top:8px">
       <button class="btn ghost" data-act="t-v2-invitation">Invitation achetée</button>
       <button class="btn ghost" data-act="t-v2-reflets">Onglet de l'événement</button>
-      <button class="btn ghost" data-act="t-v2-cartle">Cartle</button>
+      <button class="btn ghost" data-act="t-v2-illu">Devine l'illu</button>
     </div>
     <p class="muted small" style="margin-top:8px">La fabrication des Reverses s'ouvre côté serveur :
       <code>update public.parametres set fabrication_reverse = true where id = 1;</code></p>

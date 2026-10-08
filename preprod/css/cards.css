@@ -14,9 +14,13 @@
 .card.sans-image small{font-size:.75em}
 .card.r-L::after,.card.r-E::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(115deg,transparent 22%,rgba(255,255,255,.34) 36%,rgba(223,109,232,.2) 44%,rgba(57,184,255,.2) 52%,transparent 66%);
-  background-size:260% 100%;background-position:40% 0}
-.stack .card.r-L::after,.stack .card.r-E::after,.rc-best .card.r-L::after,.rc-best .card.r-E::after{animation:holo 3.4s linear infinite}
-@keyframes holo{from{background-position:130% 0}to{background-position:-130% 0}}
+  background-size:260% 100%;background-repeat:no-repeat;background-position:40% 0}
+.stack .card.r-L::after,.stack .card.r-E::after,.rc-best .card.r-L::after,.rc-best .card.r-E::after{animation:holo 4.2s ease-in-out infinite}
+/* Le reflet traverse la carte, sort, et attend un instant avant de repasser.
+   `no-repeat` sur chaque balayage : avec un fond répété, la bande de la
+   tuile voisine était encore à l'écran en fin de course, et disparaissait
+   d'un coup quand l'animation recommençait. */
+@keyframes holo{0%{background-position:130% 0}78%,100%{background-position:-130% 0}}
 /* Un emplacement vide : un creux, pas un objet. Un cadre en retrait, un fond
    légèrement plus sombre que la page, le numéro au centre, et derrière lui une
    marque très en retrait qui lui donne une silhouette.
@@ -137,7 +141,7 @@ button.gcell:hover{transform:translateY(-3px)}
   box-shadow:inset 0 0 0 1px var(--line-2)}
 .card.ghost-card.secret-card::before{content:'';position:absolute;inset:0;opacity:.4;
   background:linear-gradient(115deg,transparent 26%,rgba(169,92,242,.36) 44%,rgba(223,109,232,.26) 55%,transparent 72%);
-  background-size:260% 100%;animation:holo 5.5s linear infinite}
+  background-size:260% 100%;background-repeat:no-repeat;animation:holo 6s ease-in-out infinite}
 /* La couleur d'une rareté, utilisable partout où on la nomme. */
 .rES{color:var(--r-es)}.rC{color:var(--r-c)}.rPC{color:var(--r-pc)}
 .rR{color:var(--r-r)}.rE{color:var(--r-e)}.rL{color:var(--r-l)}.rPR{color:var(--r-pr)}
@@ -147,8 +151,8 @@ button.gcell:hover{transform:translateY(-3px)}
    le reflet holographique, comme aux épiques et aux légendaires. */
 .card.r-PR::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.3) 34%,rgba(255,91,176,.24) 46%,rgba(169,92,242,.2) 56%,transparent 70%);
-  background-size:260% 100%;background-position:40% 0}
-.stack .card.r-PR::after,.pr-face .card.r-PR::after{animation:holo 3.4s linear infinite}
+  background-size:260% 100%;background-repeat:no-repeat;background-position:40% 0}
+.stack .card.r-PR::after,.pr-face .card.r-PR::after{animation:holo 4.2s ease-in-out infinite}
 
 /* Une Essence Brillante : la même carte que l'Essence, mais toute la surface
    prend la lumière, comme une vraie carte holographique.
@@ -198,7 +202,7 @@ button.gcell:hover{transform:translateY(-3px)}
 .card.r-UN{box-shadow:0 0 0 1.4cqi #ffc73b,0 0 6cqi rgba(236,143,255,.7)}
 .card.r-UN::after{content:'';position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
   background:linear-gradient(115deg,transparent 22%,rgba(255,236,170,.55) 38%,rgba(236,143,255,.35) 48%,rgba(57,184,255,.3) 56%,transparent 70%);
-  background-size:260% 100%;animation:holo 3s linear infinite}
+  background-size:260% 100%;background-repeat:no-repeat;animation:holo 3.8s ease-in-out infinite}
 .cwrap:has(.card.r-UN){animation:aura 3.2s ease-in-out infinite}
 @keyframes aura{50%{box-shadow:0 0 18px rgba(255,199,59,.75),0 0 34px rgba(236,143,255,.55)}}
 .rBR{color:#1fb3d6}.rUN{color:#d64fe8}
@@ -232,26 +236,51 @@ button.gcell.fab:hover .ghost-card{box-shadow:inset 0 0 0 1.5px var(--accent-sof
 
 /* ============ Les Reverses (version 2.0) ============ */
 /* Comme une vraie reverse : tout ce qui n'est pas l'illustration prend la
-   lumiere — un prisme pastel qui derive lentement, masque sur la zone de
-   l'image —, et le logo Tout Commence Ici est frappe en holographique dans le
-   coin de l'illustration, comme un tampon. Le logo vient de --logo (renderCard). */
-.card.rev::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:color-dodge;opacity:.4;
-  background:repeating-linear-gradient(115deg,#ff9ad5 0%,#b38cff 4%,#7fd8ff 8%,#9dffcf 12%,#ffe39a 16%,#ff9ad5 20%);
-  background-size:240% 240%;
-  -webkit-mask:linear-gradient(180deg,#000 0 10.5%,transparent 12.5% 52%,#000 55%);
-  mask:linear-gradient(180deg,#000 0 10.5%,transparent 12.5% 52%,#000 55%);
-  animation:revreflet 10s ease-in-out infinite}
+   lumière, et le logo Tout Commence Ici est frappé dans le coin de
+   l'illustration, comme un tampon.
+     · ::after — la nacre. Des taches de couleur douces (pas de bandes) qui
+       dérivent lentement, en `overlay` : elles teintent le cadre sans le
+       blanchir — le `color-dodge` d'avant délavait la carte et la rendait
+       floue. Le masque épouse la fenêtre de l'illustration, avec des bords
+       fondus : pas de ligne droite qui trahisse un calque posé dessus.
+     · ::before — le grain : des paillettes fines qui scintillent.
+   Toutes les animations font l'aller-retour (`alternate`) : aucune ne
+   recommence d'un coup. Le logo vient de --logo (renderCard). */
+.card.rev::before,.card.rev::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  -webkit-mask:linear-gradient(180deg,#000 0 9.5%,transparent 14% 50.5%,#000 56%),linear-gradient(90deg,#000 0 5.5%,transparent 10% 90%,#000 94.5%);
+  mask:linear-gradient(180deg,#000 0 9.5%,transparent 14% 50.5%,#000 56%),linear-gradient(90deg,#000 0 5.5%,transparent 10% 90%,#000 94.5%)}
+.card.rev::after{mix-blend-mode:overlay;opacity:.7;
+  background:
+    radial-gradient(38% 26% at 18% 14%,rgba(255,120,200,.95),transparent 70%),
+    radial-gradient(42% 30% at 86% 26%,rgba(110,210,255,.95),transparent 70%),
+    radial-gradient(48% 34% at 26% 78%,rgba(170,130,255,.95),transparent 70%),
+    radial-gradient(44% 30% at 82% 86%,rgba(120,255,200,.85),transparent 70%),
+    radial-gradient(40% 26% at 56% 64%,rgba(255,220,140,.85),transparent 70%);
+  background-size:170% 170%;background-repeat:no-repeat;
+  animation:revreflet 12s ease-in-out infinite alternate}
+/* Trois semis de tailles sans commune mesure : leurs points ne s'alignent
+   jamais en grille, comme un vrai grain de paillettes. */
+.card.rev::before{mix-blend-mode:screen;opacity:.4;
+  background-image:radial-gradient(circle,#fff 0 .3px,transparent .9px),radial-gradient(circle,#ffe6f6 0 .3px,transparent .8px),
+    radial-gradient(circle,#e6f6ff 0 .35px,transparent 1px);
+  background-size:7.3% 5.3%,11.9% 8.7%,17.3% 12.1%;background-position:0 0,3.1% 1.7%,5.3% 4.1%;
+  animation:scintille 2.6s ease-in-out infinite alternate}
+@keyframes revreflet{from{background-position:0% 10%}to{background-position:100% 90%}}
 .card.rev .revtampon{position:absolute;left:5%;top:42%;width:38%;height:9.5%;z-index:2;pointer-events:none;isolation:isolate;
   background:var(--logo) center/contain no-repeat;transform:rotate(-4deg);
   filter:drop-shadow(0 1px 2px rgba(20,8,40,.6))}
 /* Le reflet ne prend que sur le logo : même masque, fondu par-dessus. */
-.card.rev .revtampon>i{position:absolute;inset:0;mix-blend-mode:color-dodge;opacity:.75;
-  background:linear-gradient(110deg,#ff5bb0,#ffd2ef 22%,#b38cff 40%,#8fe3ff 58%,#c8ffe6 70%,#ff5bb0 86%,#ffd2ef);
-  background-size:260% 100%;
+.card.rev .revtampon>i{position:absolute;inset:0;mix-blend-mode:color-dodge;opacity:.7;
+  background:linear-gradient(110deg,#ff5bb0,#ffd2ef 22%,#b38cff 40%,#8fe3ff 58%,#c8ffe6 70%,#ff5bb0 86%);
+  background-size:300% 100%;
   -webkit-mask:var(--logo) center/contain no-repeat;mask:var(--logo) center/contain no-repeat;
-  animation:revtampon 6s linear infinite}
-@keyframes revreflet{0%,100%{background-position:0% 20%}33%{background-position:60% 90%}66%{background-position:100% 40%}}
-@keyframes revtampon{from{background-position:0% 0}to{background-position:260% 0}}
-html.rm .card.rev::after,html.rm .card.rev .revtampon>i{animation:none}
-@media (prefers-reduced-motion:reduce){.card.rev::after,.card.rev .revtampon>i{animation:none}}
+  animation:revtampon 6s ease-in-out infinite alternate}
+@keyframes revtampon{from{background-position:0% 0}to{background-position:100% 0}}
+html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revtampon>i{animation:none}
+@media (prefers-reduced-motion:reduce){.card.rev::before,.card.rev::after,.card.rev .revtampon>i{animation:none}}
+/* L'icône qui signale une Reverse dans une liste sans image (nomH). */
+.revico{display:inline-block;width:.95em;height:.95em;margin-left:.3em;vertical-align:-.12em;
+  background:linear-gradient(135deg,#ff5bb0,#b38cff 50%,#7fd8ff);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5 14.6 9.4 22.5 12 14.6 14.6 12 22.5 9.4 14.6 1.5 12 9.4 9.4Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5 14.6 9.4 22.5 12 14.6 14.6 12 22.5 9.4 14.6 1.5 12 9.4 9.4Z'/%3E%3C/svg%3E") center/contain no-repeat}
 .rc-tag.rev{background:linear-gradient(110deg,#ff5bb0,#b38cff,#7fd8ff);color:#fff}

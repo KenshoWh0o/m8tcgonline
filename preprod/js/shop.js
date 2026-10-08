@@ -18,9 +18,6 @@
 const RAYONS = [
   { id: 'cartes', titre: 'Cartes', sous: 'De quoi ouvrir, échanger, et compléter.',
     sections: [
-      /* Version 2.0 : la boutique de l'événement (payée en Prismes), tant
-         qu'il dure — elle vit aussi dans son onglet. */
-      { categ: 'evenement', titre: 'Événement Reflets', evenement: 'reflets' },
       { categ: 'boosters', titre: 'Boosters' },
       { categ: 'echange', titre: 'Jetons d\'échange' },
       { categ: 'invitation', titre: 'Invitations', invitations: true },
@@ -107,7 +104,15 @@ function vBoutique() {
   const onglets = RAYONS.map(r =>
     `<button data-shv="${r.id}" class="${shopVue === r.id ? 'on' : ''}">${h(r.titre)}</button>`).join('');
 
-  return tete + `<div class="segbar">${onglets}</div>${vRayon(shopVue, items)}`;
+  /* La boutique de l'événement vit dans son onglet : ici, juste un lien. */
+  const ev = evenementEnCours() === 'reflets'
+    ? `<button class="rfban shopev" data-rfvue="boutique" aria-label="Ouvrir la boutique de l'événement Reflets">
+        <span class="rfban-ico">${NAVICO.shop}</span>
+        <span class="rfban-txt"><b>Boutique Reflets</b><small>Boosters, Fragments, une Reverse Rare, un titre — en ${PRISMES.nom}</small></span>
+        <span class="rfban-solde">${prismeIco}${fmtN(save.prismes || 0)}</span>
+        <span class="rfban-fl" aria-hidden="true">›</span>
+      </button>` : '';
+  return tete + ev + `<div class="segbar">${onglets}</div>${vRayon(shopVue, items)}`;
 }
 
 /* Une section vide ne s'annonce pas : si le serveur ne vend aucun jeton, il n'y
@@ -116,13 +121,12 @@ function vRayon(id, items) {
   const r = RAYONS.find(x => x.id === id) || RAYONS[0];
 
   const blocs = r.sections.map(sec => {
-    if (sec.evenement && evenementEnCours() !== sec.evenement) return '';
     const cases = sec.avenir
       ? vCosmetiquesAVenir()
       : items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
     if (!cases) return '';
-    return `<section class="rayon${sec.avenir ? ' avenir' : ''}${sec.evenement ? ' rayonev' : ''}">
-      <h2>${h(sec.titre)}${sec.evenement ? ` <small class="muted">· ${prismeIco}${fmtN(save.prismes || 0)} ${PRISMES.nom}</small>` : ''}</h2>
+    return `<section class="rayon${sec.avenir ? ' avenir' : ''}">
+      <h2>${h(sec.titre)}</h2>
       <div class="offres">${cases}</div>
       ${sec.invitations ? vMesInvitations() : ''}
     </section>`;

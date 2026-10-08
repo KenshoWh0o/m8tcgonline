@@ -107,17 +107,10 @@ function vColClassiques() {
 function vColReverses() {
   const all = reverses.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
   const list = filtrer(all);
-  const owned = possedees(all);
   const ouverte = (save.parametres || {}).fabrication_reverse;
-  return `<div class="revtete">
-      <div class="revtexte">
-        <b>Les Reverses</b>
-        <p>Chaque Commune, Peu commune et Rare, frappée du logo <i>Tout Commence Ici</i>.
-          Une dans chaque booster, en 4ᵉ carte : Commune (50&nbsp;%), Peu commune (35&nbsp;%) ou Rare (15&nbsp;%).</p>
-        <small>${ouverte ? `Fabrication ouverte : le double du prix d'une classique.` : 'Fabrication : bientôt. Pour l\'instant, elles se trouvent et s\'échangent.'}</small>
-      </div>
-      <span class="revcompte tnum"><b>${owned}</b><small>/ ${all.length}</small></span>
-    </div>
+  return `<p class="colsous revfab">${NAVICO.fragment}${ouverte
+      ? 'Fabrication ouverte : le double du prix d\'une classique.'
+      : 'La fabrication des Reverses ouvrira plus tard.'}</p>
     ${vFiltres(all)}
     ${list.length
       ? `<div class="grid">${list.map(vCase).join('')}</div>`
@@ -209,9 +202,10 @@ const caseVide = (etiquette, cls, sous) => {
 function vCase(c) {
   const n = save.col[c.id] || 0;
   const no = '#' + String(c.num || 0).padStart(3, '0');
-  /* Une classique dont on a aussi la Reverse porte un petit reflet en coin. */
+  /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
+     de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${rev ? '<span class="revmarque" title="Tu as aussi sa Reverse">R</span>' : ''}${renderCard(c)}<span class="num">${no}</span></button>`;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(c)}<span class="num">${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}</span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);

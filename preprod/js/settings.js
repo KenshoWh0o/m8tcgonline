@@ -4,40 +4,15 @@
 
    Tous les réglages de cette page vivent dans le navigateur, pas sur le compte :
    ils décrivent cet appareil-ci — son écran, son haut-parleur, la patience de
-   celui qui le tient. On peut vouloir le thème clair sur le téléphone et le
-   sombre sur l'ordinateur. */
+   celui qui le tient. */
 "use strict";
 
 /* ---------- Apparence ---------- */
-const THEME_CLE = 'mtcg.theme';
-const THEMES = [
-  ['auto', 'Automatique', 'auto'],
-  ['light', 'Clair', 'sun'],
-  ['dark', 'Sombre', 'moon']
-];
-
-const reglageTheme = () => {
-  try { return localStorage.getItem(THEME_CLE) || 'auto'; }
-  catch (e) { return 'auto'; }
-};
-
-/* En « auto », on retire l'attribut : c'est la requête média de css/tokens.css
-   qui décide, et elle suit le système en direct, sans qu'on ait à l'écouter. */
-function poserTheme(v) {
-  try { localStorage.setItem(THEME_CLE, v); } catch (e) { /* mode privé */ }
-  const html = document.documentElement;
-  if (v === 'auto') html.removeAttribute('data-theme');
-  else html.setAttribute('data-theme', v);
-  majCouleurBarre();
-}
-
-/* La barre d'état du téléphone prend la couleur du fond : sans ça, une bande
-   noire reste collée en haut de l'écran en thème clair. */
-function majCouleurBarre() {
-  const m = document.querySelector('meta[name="theme-color"]');
-  if (!m) return;
-  const fond = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-  if (fond) m.setAttribute('content', fond);
+/* Un seul thème, sombre, depuis la version 2.0. On efface le choix qu'un
+   ancien réglage aurait laissé dans ce navigateur. */
+function oublierTheme() {
+  try { localStorage.removeItem('mtcg.theme'); } catch (e) { /* mode privé */ }
+  document.documentElement.removeAttribute('data-theme');
 }
 
 /* ---------- Animations réduites ---------- */
@@ -87,7 +62,6 @@ function vibrer(motif) {
 function vReglages() {
   const r = SFX.reglages;
   const enLigne = Backend.mode === 'cloud';
-  const theme = reglageTheme();
 
   const curseur = (id, label, val, on) =>
     `<div class="slider${on ? '' : ' off'}" style="--pct:${Math.round(val * 100)}%">
@@ -103,13 +77,6 @@ function vReglages() {
 
   <section class="panel">
     <h2>Apparence</h2>
-    <p class="reglabel">Thème</p>
-    <div class="pickrow">
-      ${THEMES.map(([k, nom, ico]) =>
-        `<button class="pickopt${theme === k ? ' on' : ''}" data-theme="${k}">
-          ${NAVICO[ico]}<span>${nom}</span></button>`).join('')}
-    </div>
-    <p class="muted small">« Automatique » suit le réglage clair/sombre de ton appareil.</p>
     ${bascule('set-rm', 'Animations réduites', 'Moins de mouvement à l\'écran', reglageRM())}
     <p class="muted small">Si ton appareil est déjà réglé sur « réduire les animations »,
       le jeu le respecte sans rien toucher ici.</p>

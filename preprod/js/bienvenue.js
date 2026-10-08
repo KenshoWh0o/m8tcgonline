@@ -142,15 +142,15 @@ function montrerNouveautes() {
         <div class="nvtexte">
           <span class="nvkicker">${reflets ? 'Événement en cours' : 'Nouveau'}</span>
           <b>Les Reverses</b>
-          <small>${reverses.length} cartes frappées du logo Tout Commence Ici. Une dans chaque booster, en 4ᵉ carte.</small>
+          <small>Frappées du logo Tout Commence Ici. Une dans chaque booster.</small>
         </div>
       </div>
       <ol class="bvpoints nvpoints">
-        ${point('cards', 'La Collection repensée.', 'Classiques, Reverses, Spéciales : trois vues, une jauge pour tout. Un reflet signale les cartes dont tu as aussi la Reverse.')}
+        ${point('cards', 'La Collection repensée.', 'Classiques, Reverses et Spéciales, chacune sa page, et une jauge pour tout.')}
         ${point('user', 'Cadres, titres, profil.', `De nouveaux cadres à gagner, ${Object.keys(TITRES).length} titres à porter, une bannière et une devise sur ta fiche.`)}
-        ${point('cartle', 'Le Cartle.', 'La carte du jour à deviner en sept essais, la même pour tout le monde.')}
+        ${point('illu', 'Devine l\'illu.', 'Une illustration pixelisée par jour, la même pour tout le monde. Quatre essais.')}
         ${point('amis', 'Les invitations.', `Fais entrer un ami depuis la boutique : 2 000 ${FRAGMENTS.nom}, trois au maximum.`)}
-        ${reflets ? point('reflets', 'L\'événement Reflets.', `Des quêtes en ${PRISMES.nom}, une piste de quinze paliers et une boutique, pendant deux semaines.`) : ''}
+        ${reflets ? point('reflets', 'L\'événement Reflets.', `Des quêtes en ${PRISMES.nom}, un Pass de vingt paliers et une boutique, pendant deux semaines.`) : ''}
       </ol>`,
     actions: reflets
       ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('reflets'); } },

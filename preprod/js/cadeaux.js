@@ -106,7 +106,7 @@ function montrerContenu(c, file) {
           ${c.eclats ? ligne(shardIco, c.eclats, 'Éclats') : ''}
           ${c.boosters ? ligne(NAVICO.star, c.boosters, c.boosters > 1 ? 'boosters à ouvrir, hors réserve' : 'booster à ouvrir, hors réserve') : ''}
           ${c.fragments ? ligne(NAVICO.fragment, c.fragments, FRAGMENTS.nom) : ''}
-          ${k ? `<li><span class="cdico">${NAVICO.cards}</span><b>${h(k.nom)}</b><span>${h((RAR[k.rar] || RAR.C).nom)}, dans ta collection</span></li>` : ''}
+          ${k ? `<li><span class="cdico">${NAVICO.cards}</span><b>${nomH(k)}</b><span>${h((RAR[k.rar] || RAR.C).nom)}, dans ta collection</span></li>` : ''}
         </ul>
         ${sansUnique ? `<p class="cdnote">Les boosters offerts ne peuvent pas contenir ${h(u.nom.replace(/^L'/, 'l\''))} :
           elle se trouve, elle ne s'offre pas.</p>` : ''}

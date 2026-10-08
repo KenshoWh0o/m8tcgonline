@@ -100,7 +100,7 @@ function vProfil() {
 const CADRE_SOURCE = {
   f_azur: 'Boutique', f_rose: 'Boutique', f_or: 'Boutique', f_prisme: 'Boutique',
   f_sceau: '300 boosters ouverts', f_master: 'Les 122 cartes', f_reflet: 'Les 85 Reverses',
-  f_aurore: 'Les 9 Brillantes', f_miroir: 'Piste Reflets, palier 9', f_kaleido: 'Boutique Reflets',
+  f_aurore: 'Les 9 Brillantes', f_miroir: 'Pass Reflets, palier 10', f_kaleido: 'Pass Reflets, palier 20',
   f_unique: 'La carte unique'
 };
 
@@ -168,7 +168,7 @@ function ouvrirChoixBanniere() {
     body: liste.length
       ? `<p class="muted small">Son illustration passe en tête de ton profil et de ta fiche.</p>
          <div class="pickgrid">${liste.map(c => `<button class="pick" data-banniere="${c.id}" data-snd="carte">${renderCard(c)}
-           <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`
+           <span class="picknom">${nomH(c)}</span></button>`).join('')}</div>`
       : '<p class="muted">Ouvre quelques boosters d\'abord.</p>',
     actions: [{ label: 'Fermer', fn: closeSheet }]
   });
@@ -220,7 +220,7 @@ function ouvrirChoixAvatar() {
       ? `<p class="muted small">Parmi les ${liste.length} cartes que tu possèdes.</p>
          <div class="pickgrid">${liste.map(c =>
            `<button class="pick" data-avacard="${c.id}" data-snd="carte">${renderCard(c)}
-             <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`
+             <span class="picknom">${nomH(c)}</span></button>`).join('')}</div>`
       : '<p class="muted">Ouvre quelques boosters d\'abord.</p>',
     actions: [{ label: 'Fermer', fn: closeSheet }]
   });
@@ -245,7 +245,7 @@ function vVitrine(liste, modifiable) {
       cases.push(`<div class="vit rempli">
         <button class="vitcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
         ${modifiable ? `<button class="vitx" data-vit-off="${c.id}" aria-label="Retirer">✕</button>` : ''}
-        <span class="vitnom">${h(c.nom)}</span></div>`);
+        <span class="vitnom">${nomH(c)}</span></div>`);
     } else if (modifiable) {
       cases.push(`<button class="vit vide" data-act="vit-add">
         <span class="vitplus">+</span><span class="muted small">Ajouter</span></button>`);
@@ -271,7 +271,7 @@ function ouvrirChoixVitrine() {
            profil, et tous ceux qui le consultent les voient.</p>
          <div class="pickgrid">${liste.map(c =>
            `<button class="pick" data-vit-on="${c.id}" data-snd="carte">${renderCard(c)}
-             <span class="picknom">${h(c.nom)}</span>
+             <span class="picknom">${nomH(c)}</span>
              <span class="pickmeta r${c.rar}">${(RAR[c.rar] || RAR.C).nom}</span></button>`).join('')}</div>`
       : `<p class="muted">${deja.length >= VITRINE_MAX
           ? 'Ta vitrine est pleine : retire une carte pour en mettre une autre.'
