@@ -112,6 +112,11 @@ begin
     select * into k from cards where id = cid;
     if not found then raise exception 'Carte inconnue.'; end if;
     if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
+    -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, le
+    -- jour ou un administrateur ouvre parametres.fabrication_reverse.
+    if k.reverse and not coalesce((select fabrication_reverse from parametres where id = 1), false) then
+      raise exception 'Les Reverses ne se recyclent pas encore.';
+    end if;
     prix := cfg('recyclage_' || k.rar);
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 

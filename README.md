@@ -421,7 +421,7 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 
 ## Version 2.0 · Reflets
 
-**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 5ᵉ carte. Elles se recyclent ; elles ne s'échangent que contre une autre Reverse ; leur fabrication coûte le double d'une classique et reste **fermée** tant que `parametres.fabrication_reverse` ne vaut pas `true` :
+**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 5ᵉ carte. Elles ne s'échangent que contre une autre Reverse. Leur recyclage et leur fabrication (au double du prix d'une classique) restent **fermés** tant que `parametres.fabrication_reverse` ne vaut pas `true` :
 
     update public.parametres set fabrication_reverse = true where id = 1;
 

@@ -181,7 +181,7 @@ function avatarHTML(a, frame, cls, photo) {
   if (v.bg) vars.push('--ab:' + v.bg);
   if (v.pos) vars.push('--apos:' + v.pos);
   return `<span class="ava ${cls || ''}${anim}${mode}"
-    style="${vars.join(';')}"><img src="${v.src}" alt="">${f.fx ? '<i class="fx-deco" aria-hidden="true"></i>' : ''}</span>`;
+    style="${vars.join(';')}">${v.carte ? `<span class="ava-illu"><img src="${v.src}" alt=""></span>` : `<img src="${v.src}" alt="">`}${f.fx ? '<i class="fx-deco" aria-hidden="true"></i>' : ''}</span>`;
 }
 
 /* ---------- Petits blocs répétés ---------- */
