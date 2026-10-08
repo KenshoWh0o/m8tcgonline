@@ -1,0 +1,61 @@
+/* Onglet Labo. */
+/* ============ Labo ============ */
+.labgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.labbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:13px 14px;text-align:left;color:var(--text);background:var(--surface-2);transition:border-color .15s,transform .12s}
+.labbtn:hover:not(:disabled){border-color:var(--line-2);transform:translateY(-1px)}
+.labbtn b{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;font-size:16px}
+.labbtn span{font-size:11.5px;color:var(--muted);font-weight:600}
+.labbtn.tR{border-left:3px solid var(--r-r)}
+.labbtn.tE{border-left:3px solid var(--r-e)}
+.labbtn.tL{border-left:3px solid var(--r-l)}
+.labbtn.tG{grid-column:1/-1;border-left:3px solid var(--r-l)}
+.labbtn:disabled{opacity:.3;cursor:not-allowed}
+.labbtn.tPR{border-left:3px solid var(--r-pr)}
+
+/* Les valeurs d'équilibrage en cours, telles que le serveur les impose. Elles
+   ne se modifient pas d'ici : c'est un tableau de bord, pas un panneau de
+   commande — d'où la mise en page en fiche, sans rien de cliquable. */
+.labfacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.labfait{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  background:var(--bg-2);border-radius:var(--radius-sm);padding:10px 13px;
+  box-shadow:inset 0 0 0 1px var(--line)}
+.labfait span{font-size:12px;font-weight:600;color:var(--muted)}
+.labfait b{font-family:var(--display);font-weight:900;font-size:15px;white-space:nowrap}
+.labbtn.tBR{border-left:3px solid #ff5bb0}
+.labbtn.tUN{border-left:3px solid #ec8fff}
+
+.labsous{margin:16px 0 8px;font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.labtable{display:grid;grid-template-columns:1fr auto auto;gap:6px 18px;align-items:center;font-size:13px;
+  background:var(--bg-2);border-radius:var(--radius-sm);padding:10px 13px;box-shadow:inset 0 0 0 1px var(--line)}
+.labtable b{font-size:11.5px;color:var(--muted);text-align:right}
+.labtable span{display:inline-flex;align-items:center;gap:7px;font-weight:700}
+.labtable span.tnum{justify-content:flex-end;font-family:var(--display);font-weight:900}
+
+/* L'état du serveur : événement, rythme, chasse. */
+.labetat{display:flex;flex-direction:column;gap:6px}
+.labetat div{display:flex;flex-direction:column;gap:1px;padding:9px 12px;border-radius:var(--radius-sm);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labetat span{font-size:11.5px;font-weight:700;color:var(--muted)}
+.labetat b{font-size:13.5px;font-weight:700;line-height:1.35}
+.labalerte{margin:0 0 10px;padding:9px 12px;border-radius:var(--radius-sm);font-size:12.5px;font-weight:600;
+  background:color-mix(in srgb,#ffc73b 22%,transparent);color:var(--text)}
+.labsql{margin:6px 0 0;padding:11px 13px;border-radius:var(--radius-sm);overflow-x:auto;font-size:11.5px;line-height:1.5;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);white-space:pre}
+
+/* Offrir un cadeau : la liste des joueurs, puis le contenu. */
+.labmed{margin:0 0 8px;color:var(--muted)}
+.labmed b{color:var(--text)}
+.labjoueurs{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;margin-bottom:14px}
+.labjoueur{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labjoueur:has(input:checked){box-shadow:inset 0 0 0 1.5px var(--accent-soft);background:var(--accent-wash)}
+.labjoueur input{flex:0 0 auto;width:18px;height:18px;accent-color:var(--accent)}
+.labjoueur span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.labjoueur b{font-size:14px}
+.labjoueur small{font-size:11.5px;color:var(--muted);line-height:1.35}
+.labjoueur em{font-style:normal;font-weight:800;color:var(--accent-soft)}
+.labcadeau{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.labcadeau .field input{padding:11px 10px}
+.field select{width:100%;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius-sm);
+  color:var(--text);font:inherit;font-size:15px;padding:12px 12px}

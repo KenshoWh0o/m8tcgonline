@@ -1,0 +1,317 @@
+/* Jetons de design : couleurs, typos, rythme, profondeur. Tout part d'ici.
+
+   Deux thèmes, une seule liste de noms. Le sombre est la référence — c'est là
+   que les cartes brillent — et le clair reprend chaque jeton un par un. Aucune
+   couleur n'est écrite en dur ailleurs dans le site : une feuille qui pose un
+   `#181320` serait juste dans un thème et fausse dans l'autre.
+
+   Le thème vit sur `<html>` : `data-theme="dark"` ou `"light"`. Sans attribut,
+   on suit le réglage du système (voir `poserTheme()` dans js/settings.js). */
+
+/* ============ Le thème sombre : la référence ============ */
+:root{
+  box-sizing:border-box;
+  color-scheme:dark;
+
+  /* --- Fonds : noir teinté prune, pour s'accorder au rose sans virer au gris froid --- */
+  --bg:#0b0810;
+  --bg-2:#120e19;
+  --surface:#181320;
+  --surface-2:#211a2c;
+  --surface-3:#2a2137;
+  /* Le voile posé sur les barres fixes : la page défile dessous sans la traverser. */
+  --veil:rgba(11,8,16,.86);
+  --veil-2:rgba(18,14,25,.94);
+  --scrim:rgba(5,3,8,.72);
+
+  --line:#2e2539;
+  --line-2:#3f3450;
+  --line-3:#554566;
+
+  /* --- Texte --- */
+  --text:#f4eef7;
+  --subtle:#bcb0c6;
+  --muted:#8a7f96;
+  /* Ce qui se pose sur un aplat de la couleur d'action. */
+  --on-accent:#fff;
+
+  /* --- Marque : l'orchidée et le rose du logo ne servent qu'aux halos et au
+     lettrage. Toute l'interface est en violet, pour ne garder qu'une couleur
+     active. --- */
+  --brand:#df6de8;
+  --brand-light:#ffd7f0;
+  --brand-deep:#7b0c84;
+  --brand-ink:#1a0a1e;
+  --accent:#8936ff;
+  --accent-soft:#a95cf2;
+  --accent-deep:#57189e;
+  /* Le violet dilué : fonds de pastilles, halos, lignes sélectionnées. */
+  --accent-wash:rgba(137,54,255,.18);
+  --accent-wash-2:rgba(137,54,255,.30);
+  --accent-glow:rgba(169,92,242,.42);
+
+  /* --- Signaux --- */
+  --ok:#55e6a6;
+  --ok-deep:#3fbf8c;
+  --ok-wash:rgba(85,230,166,.15);
+  --ok-line:rgba(85,230,166,.42);
+  --warn:#ffc73b;
+  --danger:#ff4d8d;
+  --danger-wash:rgba(238,0,115,.13);
+  --danger-line:rgba(238,0,115,.42);
+
+  /* --- Raretés --- */
+  --r-es:#90b2a5;
+  --r-c:#9d93a8;
+  --r-pc:#7bd6b4;
+  --r-r:#39b8ff;
+  --r-e:#a05cff;
+  --r-l:#ffc73b;
+  --r-pr:#ff5bb0;
+
+  /* --- Profondeur : cinq niveaux, jamais une ombre inventée sur place --- */
+  --sh-1:0 1px 2px rgba(0,0,0,.34);
+  --sh-2:0 3px 10px rgba(0,0,0,.4);
+  --sh-3:0 10px 26px rgba(0,0,0,.46);
+  --sh-4:0 20px 48px rgba(0,0,0,.55);
+  /* Le rebord plein sous les boutons pressables. */
+  --sh-press:#100c15;
+  /* Le reflet haut qui donne du relief aux surfaces bombées. */
+  --gloss:rgba(255,255,255,.4);
+  --gloss-soft:rgba(255,255,255,.16);
+  /* Le survol : un voile clair sur fond sombre. */
+  --hover:rgba(255,255,255,.055);
+  --hover-2:rgba(255,255,255,.1);
+
+  /* --- Typo --- */
+  --display:'Archivo','Arial Black',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+
+  /* --- Rayons : une seule échelle, du jeton au panneau --- */
+  --radius-xs:8px;
+  --radius-sm:12px;
+  --radius:16px;
+  --radius-lg:22px;
+
+  /* --- Rythme vertical : les marges entre blocs sortent d'ici --- */
+  --gap-1:6px;
+  --gap-2:10px;
+  --gap-3:14px;
+  --gap-4:20px;
+  --gap-5:28px;
+}
+
+/* ============ Le thème clair ============ */
+/* Ce n'est pas le sombre inversé : sur fond clair, une ombre remplace un filet,
+   les aplats de couleur perdent en saturation et les halos disparaissent — ils
+   ne se voient que sur du noir. */
+:root[data-theme="light"]{
+  color-scheme:light;
+
+  --bg:#f6f2fa;
+  --bg-2:#efe9f5;
+  --surface:#fff;
+  --surface-2:#f4eefa;
+  --surface-3:#e9e0f2;
+  --veil:rgba(255,255,255,.88);
+  --veil-2:rgba(250,247,253,.95);
+  --scrim:rgba(40,28,54,.44);
+
+  --line:#e2d8ec;
+  --line-2:#cec0dd;
+  --line-3:#b3a1c6;
+
+  --text:#1c1326;
+  --subtle:#584a68;
+  --muted:#7d6f8d;
+  --on-accent:#fff;
+
+  --brand:#a32bb0;
+  --brand-light:#8c1b96;
+  --brand-deep:#5e0866;
+  --brand-ink:#fff;
+  --accent:#7a22f0;
+  --accent-soft:#8f43f5;
+  --accent-deep:#5312a8;
+  --accent-wash:rgba(122,34,240,.1);
+  --accent-wash-2:rgba(122,34,240,.18);
+  --accent-glow:rgba(122,34,240,.2);
+
+  --ok:#0f9a68;
+  --ok-deep:#0c7d54;
+  --ok-wash:rgba(15,154,104,.12);
+  --ok-line:rgba(15,154,104,.36);
+  --warn:#b47700;
+  --danger:#cf0d63;
+  --danger-wash:rgba(207,13,99,.09);
+  --danger-line:rgba(207,13,99,.32);
+
+  --r-es:#5f7a70;
+  --r-c:#6e6479;
+  --r-pc:#12876a;
+  --r-r:#0d74c4;
+  --r-e:#7429d6;
+  --r-l:#a06b00;
+  --r-pr:#cf0d63;
+
+  --sh-1:0 1px 2px rgba(48,30,66,.08);
+  --sh-2:0 3px 10px rgba(48,30,66,.09);
+  --sh-3:0 10px 26px rgba(48,30,66,.11);
+  --sh-4:0 20px 48px rgba(48,30,66,.16);
+  --sh-press:#c9b8dc;
+  --gloss:rgba(255,255,255,.46);
+  --gloss-soft:rgba(255,255,255,.2);
+  --hover:rgba(28,19,38,.045);
+  --hover-2:rgba(28,19,38,.08);
+}
+
+/* Sans attribut, on suit le système. La règle reprend le bloc ci-dessus : une
+   variable ne s'hérite pas d'un sélecteur à l'autre, il faut la redéclarer. */
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    color-scheme:light;
+
+    --bg:#f6f2fa;
+    --bg-2:#efe9f5;
+    --surface:#fff;
+    --surface-2:#f4eefa;
+    --surface-3:#e9e0f2;
+    --veil:rgba(255,255,255,.88);
+    --veil-2:rgba(250,247,253,.95);
+    --scrim:rgba(40,28,54,.44);
+
+    --line:#e2d8ec;
+    --line-2:#cec0dd;
+    --line-3:#b3a1c6;
+
+    --text:#1c1326;
+    --subtle:#584a68;
+    --muted:#7d6f8d;
+
+    --brand:#a32bb0;
+    --brand-light:#8c1b96;
+    --brand-deep:#5e0866;
+    --brand-ink:#fff;
+    --accent:#7a22f0;
+    --accent-soft:#8f43f5;
+    --accent-deep:#5312a8;
+    --accent-wash:rgba(122,34,240,.1);
+    --accent-wash-2:rgba(122,34,240,.18);
+    --accent-glow:rgba(122,34,240,.2);
+
+    --ok:#0f9a68;
+    --ok-deep:#0c7d54;
+    --ok-wash:rgba(15,154,104,.12);
+    --ok-line:rgba(15,154,104,.36);
+    --warn:#b47700;
+    --danger:#cf0d63;
+    --danger-wash:rgba(207,13,99,.09);
+    --danger-line:rgba(207,13,99,.32);
+
+    --r-es:#5f7a70;
+    --r-c:#6e6479;
+    --r-pc:#12876a;
+    --r-r:#0d74c4;
+    --r-e:#7429d6;
+    --r-l:#a06b00;
+    --r-pr:#cf0d63;
+
+    --sh-1:0 1px 2px rgba(48,30,66,.08);
+    --sh-2:0 3px 10px rgba(48,30,66,.09);
+    --sh-3:0 10px 26px rgba(48,30,66,.11);
+    --sh-4:0 20px 48px rgba(48,30,66,.16);
+    --sh-press:#c9b8dc;
+    --gloss:rgba(255,255,255,.46);
+    --gloss-soft:rgba(255,255,255,.2);
+    --hover:rgba(28,19,38,.045);
+    --hover-2:rgba(28,19,38,.08);
+  }
+}
+
+/* ============ Réinitialisation ============ */
+*,*::before,*::after{box-sizing:inherit}
+
+/* La page elle-meme ne defile jamais : seule la zone de contenu le fait. Sans
+   ces trois lignes, un doigt qui glisse sur l'en-tete ou sur la barre du bas
+   fait rebondir tout l'ecran et decouvre le fond nu derriere — le genre de
+   detail qui trahit une page web deguisee en application.
+
+   `overscroll-behavior:none` coupe aussi le « tirer pour recharger » d'Android
+   et l'elastique d'iOS jusque dans la zone de contenu, qui a par ailleurs son
+   propre `overscroll-behavior:contain`. */
+html{height:100%;overflow:hidden;overscroll-behavior:none;
+  scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+
+/* `dvh` mesure l'écran entier, encoches comprises. `height:100%` ne le fait pas
+   toujours quand l'app tourne depuis l'écran d'accueil : la page s'arrêtait avant
+   le bas, d'où la bande vide sous la barre. La règle en pourcentage reste en
+   premier comme repli pour les navigateurs qui ignorent `dvh`. */
+body{position:relative;height:100%;height:100dvh;margin:0;display:flex;flex-direction:column;
+  overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+  color:var(--text);font-family:var(--body);font-size:15px;line-height:1.45;
+  -webkit-tap-highlight-color:transparent;background:var(--bg);isolation:isolate;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent-soft);outline-offset:3px;border-radius:6px}
+img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
+
+/* Les chiffres qui changent en place — compteurs, comptes à rebours, scores —
+   ne doivent pas faire sautiller la ligne autour d'eux. */
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ============ Les scènes qui restent noires ============ */
+/* Trois surfaces ne suivent pas le thème : le théâtre d'ouverture, la
+   visionneuse, la scène des Promos. Ce sont des salles obscures — on y regarde
+   une carte, et une carte se regarde sur du noir, comme au cinéma.
+
+   Elles doivent donc rétablir la palette sombre pour tout ce qu'elles
+   contiennent. Sans ça, une couleur de rareté calculée pour du papier blanc —
+   l'or à `#a06b00`, le bleu à `#0d74c4` — se retrouverait posée sur du noir,
+   où elle disparaît. Redéclarer les jetons ici suffit : ils redescendent à tous
+   les descendants, sans qu'aucune règle ait à connaître le thème en cours. */
+#theater,#viewer,.promoscene{
+  color-scheme:dark;
+
+  --bg:#0b0810;
+  --bg-2:#120e19;
+  --surface:#181320;
+  --surface-2:#211a2c;
+  --surface-3:#2a2137;
+  --line:#2e2539;
+  --line-2:#3f3450;
+  --line-3:#554566;
+
+  --text:#f4eef7;
+  --subtle:#bcb0c6;
+  --muted:#8a7f96;
+  --on-accent:#fff;
+
+  --brand:#df6de8;
+  --brand-light:#ffd7f0;
+  --accent:#8936ff;
+  --accent-soft:#a95cf2;
+  --accent-deep:#57189e;
+  --accent-wash:rgba(137,54,255,.18);
+  --accent-wash-2:rgba(137,54,255,.30);
+  --accent-glow:rgba(169,92,242,.42);
+
+  --ok:#55e6a6;
+  --ok-wash:rgba(85,230,166,.15);
+  --ok-line:rgba(85,230,166,.42);
+  --danger:#ff4d8d;
+
+  --r-es:#90b2a5;
+  --r-c:#9d93a8;
+  --r-pc:#7bd6b4;
+  --r-r:#39b8ff;
+  --r-e:#a05cff;
+  --r-l:#ffc73b;
+  --r-pr:#ff5bb0;
+
+  --sh-press:#100c15;
+  --gloss:rgba(255,255,255,.4);
+  --gloss-soft:rgba(255,255,255,.16);
+  --hover:rgba(255,255,255,.055);
+  --hover-2:rgba(255,255,255,.1);
+}

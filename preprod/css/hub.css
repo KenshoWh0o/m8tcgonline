@@ -1,0 +1,1405 @@
+/* Les écrans qui vivent autour du jeu : en-tête, navigation, tiroir du compte,
+   quêtes, boutique, social et échanges, profil, réglages, combats.
+
+   L'écran Boosters (css/booster.css), les cartes et la collection
+   (css/cards.css), l'ouverture (css/opening.css), la visionneuse
+   (css/viewer.css) et la scène des Promos (css/promo.css) ont chacun leur
+   fichier — règles d'adaptation comprises.
+
+   Pensé pour le pouce d'abord. L'adaptation ordinateur est tout en bas, suivie
+   des écrans étroits. Aucune couleur en dur : tout passe par les jetons de
+   css/tokens.css, sinon le thème clair s'effondre. */
+
+/* ============ Titres de page ============ */
+/* L'en-tête d'un onglet : le titre, une ligne d'explication, et si besoin une
+   action posée à droite. Il tient lieu de première phrase — inutile d'en
+   ajouter une autre. */
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  margin:0 0 var(--gap-4);flex-wrap:wrap}
+.pagehead>div{min-width:0;flex:1}
+/* Un titre posé sans son enveloppe prend quand même toute la ligne : la mise en
+   page ne doit pas dépendre d'un div qu'on aurait oublié. */
+.pagehead>h1{flex:1 1 100%}
+.pagehead h1{margin:0 0 3px}
+.pagehead p{margin:0;max-width:52ch;color:var(--muted);font-size:13.5px}
+.pageact{flex:0 0 auto}
+
+.empty .ec{font-family:var(--display);font-stretch:110%;font-style:italic;font-size:20px;
+  text-transform:none;letter-spacing:-.02em;color:var(--text);margin:0 0 6px;padding-left:0}
+/* Le titre d'un écran vide est centré : le trait d'accent des <h2> se
+   retrouverait posé tout seul dans la marge, à côté de rien. */
+.empty .ec::before{display:none}
+.empty .btn{max-width:280px;margin:18px auto 0}
+
+/* Le second groupe du rail et son pied n'apparaissent que sur grand écran :
+   sur mobile, ces destinations sont dans le tiroir du compte. */
+#nav .second,#nav .navsep,#nav .navpied{display:none}
+
+/* La mention légale en pied de menu : présente, jamais encombrante. */
+.mentions.courtes{margin:12px 0 0;font-size:10.5px;line-height:1.45;text-align:left;
+  color:var(--muted);max-width:none;padding:0;border:0}
+
+/* ============ Tiroir du compte ============ */
+/* Il part du bord droit, celui de l'avatar : le panneau vient de là où le doigt
+   a appuyé. Sur mobile il couvre presque tout, sur ordinateur il n'existe pas. */
+#tiroir{position:fixed;inset:0;z-index:45}
+#tiroir[hidden]{display:none}
+.tiroir-bg{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);
+  opacity:0;transition:opacity .24s ease}
+#tiroir.on .tiroir-bg{opacity:1}
+
+.tiroir-panneau{position:absolute;top:0;right:0;bottom:0;width:min(336px,88vw);
+  display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
+  background:linear-gradient(180deg,var(--surface-2),var(--bg-2) 46%);
+  border-left:1px solid var(--line-2);box-shadow:var(--sh-4);
+  padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));
+  transform:translateX(100%);transition:transform .28s cubic-bezier(.2,1,.35,1)}
+#tiroir.on .tiroir-panneau{transform:translateX(0)}
+
+.tiroir-id{display:flex;align-items:center;gap:12px;padding:4px 0 16px}
+.tiroir-id>div{flex:1;min-width:0}
+.tiroir-id b{display:block;font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
+  font-size:19px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tiroir-id p{margin:1px 0 0}
+.tiroir-x{align-self:flex-start;background:none;border:0;color:var(--muted);font-size:17px;
+  line-height:1;padding:6px;border-radius:var(--radius-xs)}
+.tiroir-x:hover{color:var(--text);background:var(--hover)}
+
+/* Les ressources, à portée de regard dès l'ouverture. */
+.tiroir-sacs{display:flex;flex-wrap:wrap;gap:7px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.sac{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:6px 13px 6px 9px;font-size:12px;color:var(--muted);font-weight:600}
+.sac b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
+.sac img{width:16px;height:auto}
+.sac svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.sac .shard{stroke:none;fill:currentColor;color:var(--brand-light)}
+
+.tiroir-liste{list-style:none;margin:12px 0 0;padding:0;flex:1}
+.tiroir-liste button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;
+  background:none;border-radius:var(--radius-sm);padding:11px 10px;color:var(--subtle);
+  transition:background .14s,color .14s}
+.tiroir-liste button:hover{background:var(--hover);color:var(--text)}
+.tiroir-liste button.on{background:linear-gradient(90deg,var(--accent-wash-2),transparent);color:var(--text)}
+.tiroir-ico{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--accent-soft)}
+.tiroir-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.tiroir-ico svg.ico-star{width:22px;height:20px;stroke:none;fill:currentColor}
+.tiroir-txt{min-width:0}
+.tiroir-txt b{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:800;color:var(--text)}
+.tiroir-txt small{display:block;font-size:12px;line-height:1.3;margin-top:1px}
+
+/* Une colonne à écart fixe. Le bouton « Se déconnecter » porte un rebord de
+   4 px sous lui (la signature des boutons pressables) : collé au lien Discord
+   qui le suivait sans marge, ce rebord et son ombre mordaient sur le lien, et
+   sur téléphone les deux se chevauchaient. */
+.tiroir-pied{display:flex;flex-direction:column;gap:12px;padding-top:16px;margin-top:10px;
+  border-top:1px solid var(--line)}
+.tiroir-pied p{margin:0}
+.tiroir-pied .btn{margin-bottom:2px}
+.tiroir-pied .mentions.courtes{margin:0}
+.tiroir-ver{margin:2px 0 0;text-align:center;font-size:11.5px;opacity:.6}
+
+/* ============ Pastille de compte ============ */
+.pastille{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  background:var(--brand);color:#fff;font-size:11px;font-weight:900;font-style:normal;line-height:1}
+.pastille.nav{position:absolute;top:1px;right:calc(50% - 24px);box-shadow:0 0 0 2px var(--bg-2);z-index:2}
+
+/* ============ En-tête ============ */
+.hdr{display:flex;align-items:center;gap:7px}
+.pill{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--surface);
+  border:1px solid var(--line);border-radius:999px;padding:6px 15px 6px 11px;
+  font-family:var(--display);font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;
+  transition:border-color .15s,background .15s}
+.pill:hover{border-color:var(--line-2);background:var(--surface-2)}
+.pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px var(--accent-glow))}
+.pill.ec{padding:6px 13px 6px 10px;gap:5px}
+.pill.ec .shard{width:15px;height:15px}
+
+.hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:50%;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--subtle)}
+.hdrbtn:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.hdrbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+/* L'avatar n'a ni fond ni cadre : c'est l'image qui fait le bouton. */
+.hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;width:auto;height:auto;overflow:visible}
+
+/* Le chevron qui dit « ça se déplie ». Il tourne quand le tiroir est ouvert. */
+.moicaret{position:absolute;right:-3px;bottom:-3px;display:grid;place-items:center;width:17px;height:17px;
+  border-radius:50%;background:var(--surface-2);color:var(--subtle);
+  box-shadow:0 0 0 2px var(--bg),var(--sh-1);transition:transform .24s,color .15s}
+.moicaret svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.ava-btn:hover .moicaret{color:var(--text)}
+.ava-btn[aria-expanded="true"] .moicaret{transform:rotate(180deg);color:var(--accent-soft)}
+
+/* Un point sur l'avatar quand quelque chose attend derrière le tiroir. */
+.hdrbtn.alerte::after{content:'';position:absolute;top:-1px;right:-1px;width:10px;height:10px;
+  border-radius:50%;background:var(--brand);box-shadow:0 0 0 2px var(--bg);z-index:2}
+
+/* ============ Sous-onglets ============ */
+/* Un second niveau de navigation, à l'intérieur d'une page : un rail segmenté
+   où le curseur glisse. Ce n'est pas un changement d'onglet, donc ce ne sont pas
+   les mêmes puces que les filtres. */
+.segbar{display:flex;gap:3px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;
+  padding:3px;margin:0 0 var(--gap-4);overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
+.segbar::-webkit-scrollbar{display:none}
+.segbar button{flex:1 1 0;min-width:max-content;display:inline-flex;align-items:center;justify-content:center;
+  gap:7px;border:0;background:none;color:var(--muted);padding:9px 14px;border-radius:999px;
+  font-size:13px;font-weight:800;white-space:nowrap;transition:color .15s,background .15s}
+.segbar button:hover{color:var(--subtle)}
+.segbar button.on{background:var(--surface);color:var(--text);box-shadow:var(--sh-1),inset 0 0 0 1px var(--line-2)}
+.segbar .pastille{min-width:17px;height:17px;font-size:10px}
+.segbar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* La même barre, en version discrète (Social). */
+.souschips{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;touch-action:pan-x;padding:2px 0 10px;scrollbar-width:none}
+.souschips::-webkit-scrollbar{display:none}
+.souschips button{flex:0 0 auto;border:0;background:var(--bg-2);color:var(--muted);padding:7px 14px;
+  font-size:12px;font-weight:800;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);
+  display:inline-flex;align-items:center;gap:6px;transition:color .14s,background .14s}
+.souschips button:hover{color:var(--subtle)}
+.souschips button.on{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+
+/* ============ Quêtes ============ */
+/* Un bandeau par période : ce qu'il reste à faire, et dans combien de temps tout
+   repart à zéro. Le compte à rebours remplace la phrase d'explication — « remis
+   à zéro chaque nuit » ne dit pas quand, « dans 4 h 20 » si. */
+.qperiode{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--accent-wash),var(--surface) 64%);
+  border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;margin:0 0 var(--gap-3)}
+.qpico{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line-2)}
+.qpico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qptxt{flex:1;min-width:0}
+.qptxt b{display:block;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;
+  font-size:17px;letter-spacing:-.02em;line-height:1.15}
+.qptxt small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.qpreste{flex:0 0 auto;text-align:right}
+.qpreste b{display:block;font-family:var(--display);font-weight:900;font-size:19px;line-height:1;
+  font-variant-numeric:tabular-nums}
+.qpreste small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-top:3px}
+
+/* Une quête : l'icône dit l'état, la barre dit où on en est, le bouton conclut.
+   Trois lignes, jamais plus — c'est une liste qu'on parcourt, pas un formulaire. */
+.quest{position:relative;display:flex;gap:13px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:13px 14px;margin-bottom:9px;box-shadow:var(--sh-1);
+  transition:border-color .16s,box-shadow .16s}
+.quest.ready{border-color:var(--ok-line);box-shadow:0 0 0 1px var(--ok-wash),var(--sh-2)}
+.quest.done{opacity:.5}
+.qico{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--accent-wash);color:var(--accent-soft);align-self:flex-start}
+.qico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.quest.ready .qico{background:var(--ok-wash);color:var(--ok)}
+.quest.done .qico{background:var(--surface-2);color:var(--muted)}
+.qcorps{flex:1;min-width:0}
+
+.qhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.qhead b{font-size:14.5px;font-weight:800;line-height:1.25}
+.qhead p{margin:2px 0 0;line-height:1.35;font-size:12.5px;color:var(--muted)}
+.qreward{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-family:var(--display);
+  font-weight:900;font-size:14px;color:var(--brand-light)}
+
+.qbar{height:7px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin:10px 0 7px;
+  box-shadow:inset 0 0 0 1px var(--line)}
+.qbar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+  transition:width .5s cubic-bezier(.2,1,.4,1)}
+.quest.ready .qbar i{background:linear-gradient(90deg,var(--ok-deep),var(--ok))}
+.qfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:32px}
+.qcompte{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.qcompte b{color:var(--subtle);font-weight:800}
+.qtag{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.qtag.ok{color:var(--ok)}
+
+/* Période bouclée : le bandeau lui-même le dit. Une coche à la place du
+   compteur, et le compte à rebours reste — c'est lui qui dit quand revenir. */
+.qperiode.fini{background:linear-gradient(135deg,var(--ok-wash),var(--surface) 64%);border-color:var(--ok-line)}
+.qperiode.fini .qpico{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.qperiode.fini .qpreste small{color:var(--ok)}
+.qpok{display:grid;place-items:center;width:26px;height:26px;margin:0 0 3px auto;border-radius:50%;
+  background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.qpok svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.shard{width:15px;height:15px;color:var(--brand-light);flex:0 0 auto}
+
+/* ============ Boutique ============ */
+.walletrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 var(--gap-3)}
+.wallet{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--subtle)}
+.wallet b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
+.wallet svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.wallet .shard{stroke:none;fill:currentColor}
+
+/* La ligne d'intro d'un rayon. En classe et non en style en ligne : une
+   propriété raccourcie `margin` posée sur un enfant direct de #main efface le
+   `margin-inline:auto` qui centre la page, et le texte repart à gauche pendant
+   que le reste reste au milieu. */
+.rayondit{margin:0 0 var(--gap-3)}
+
+/* Une section de rayon : un titre, sa grille. Une seule grille pour tout le
+   rayon mélangeait les paquets, les jetons et les cartes — douze vignettes de
+   même taille où seule l'image disait de quoi il s'agissait. On vient en
+   boutique chercher quelque chose de précis, pas parcourir un étal. */
+.rayon{margin:0 0 var(--gap-4)}
+.rayon>h2{margin:0 0 var(--gap-2)}
+.rayon:last-child{margin-bottom:0}
+
+/* Un rayon : une grille de vignettes qu'on parcourt du regard, comme un étal.
+   On clique pour voir l'article en grand, on reclique pour confirmer — jamais
+   d'achat au premier doigt posé. */
+.offres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.offre{position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;
+  background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);
+  border-radius:var(--radius);padding:14px 12px 12px;box-shadow:var(--sh-1);
+  transition:transform .14s,border-color .14s,box-shadow .14s}
+.offre:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:var(--sh-3)}
+.offre:active{transform:translateY(0)}
+.offre.owned{opacity:.58}
+.offre.owned:hover{transform:none}
+/* Un article hors de portée reste lisible : on doit pouvoir le convoiter. */
+.offre.cher .ofprix{color:var(--muted)}
+
+/* La vignette : l'objet, en grand, sur un fond qui en dit la nature. */
+.ofart{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1;max-height:112px;
+  border-radius:var(--radius-sm);background:radial-gradient(circle at 50% 38%,var(--accent-wash-2),var(--bg-2) 72%);
+  overflow:hidden}
+.ofart img{width:62%;height:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+.ofart .cwrap{width:64%}
+.ofart svg{width:40%;height:40%;stroke:currentColor;fill:none;stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+.ofart svg.ico-star{stroke:none;fill:currentColor;width:46%;height:auto}
+.ofart .ava{width:60%;height:60%}
+.ofart .ofjeton{width:72%;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.wallet .wjeton{width:17px;height:17px;flex:0 0 auto}
+/* La quantité vendue, en pastille sur la vignette. */
+.ofqte{position:absolute;right:6px;bottom:6px;background:var(--surface);color:var(--text);
+  border-radius:999px;padding:2px 9px;font-family:var(--display);font-weight:900;font-size:12.5px;
+  box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1)}
+
+.ofnom{font-size:13.5px;font-weight:800;line-height:1.25}
+.ofprix{display:inline-flex;align-items:center;gap:5px;font-family:var(--display);font-weight:900;
+  font-size:15px;color:var(--brand-light);font-variant-numeric:tabular-nums}
+.ofprix .shard{width:15px;height:15px;color:currentColor}
+/* Les rubans passent au-dessus de la vignette : sans `z-index`, l'illustration
+   de l'article les recouvrait dès qu'elle atteignait le coin. */
+.ofbadge{position:absolute;z-index:2;top:8px;left:8px;background:var(--accent);color:var(--on-accent);
+  border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;letter-spacing:.07em;
+  text-transform:uppercase;box-shadow:var(--sh-1)}
+/* Une remise est une bonne nouvelle chiffrée : elle prend le vert des
+   signaux positifs, le même que les quêtes accomplies. « Unique » n'est pas
+   une bonne nouvelle, c'est une nature : il prend la couleur d'action. */
+.ofbadge.eco{background:var(--ok);color:#06251a;letter-spacing:.02em}
+.ofbadge.unique{background:linear-gradient(90deg,var(--accent),var(--accent-soft))}
+.ofcoche{position:absolute;z-index:2;top:8px;right:8px;display:grid;place-items:center;width:22px;height:22px;
+  border-radius:50%;background:var(--ok);color:#06251a}
+.ofcoche svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+
+/* Un rayon vide ou à venir : la case reste, barrée d'un cadenas. */
+.oflock{align-items:center;justify-content:center;min-height:150px;border-style:dashed;opacity:.72;
+  cursor:default;background:var(--bg-2)}
+.oflock:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}
+.oflockico{display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius-sm);
+  background:var(--surface-2);color:var(--muted)}
+.oflockico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.oflock small{font-size:11.5px;color:var(--muted);line-height:1.3;max-width:18ch}
+
+/* =====================================================================
+   La fiche d'achat : on manipule ce qu'on achète
+   =====================================================================
+   Un article à cinq mille Éclats mérite mieux qu'une vignette. La scène met
+   l'objet en volume et le laisse tourner sous le doigt — un paquet s'incline,
+   un lot s'ouvre en éventail, une carte se retourne. C'est le dernier écran
+   avant de payer : il doit donner envie autant qu'informer. */
+.achat{text-align:center}
+
+.a3d{position:relative;width:100%;max-width:260px;margin:0 auto 16px;aspect-ratio:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:var(--radius);perspective:1100px;touch-action:none;cursor:grab;
+  background:radial-gradient(circle at 50% 40%,var(--accent-wash-2),var(--bg-2) 74%);
+  box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;user-select:none;-webkit-user-select:none}
+.a3d:active{cursor:grabbing}
+/* Un balayage de lumière qui suit l'inclinaison : c'est ce qui donne l'idée
+   d'une surface, et pas d'un dessin posé à plat. */
+.a3d::after{content:'';position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.32;
+  background:linear-gradient(108deg,transparent 36%,rgba(255,255,255,.5) 50%,transparent 64%);
+  background-size:280% 100%;background-position:var(--fx,50%) 0}
+
+/* L'objet 3D occupe toute la scène. Il le faut : ses pièces sont posées en
+   absolu, et un conteneur qui n'a que des enfants absolus se réduit à rien —
+   les paquets héritaient alors d'une largeur de 52 % de zéro. */
+.a3d-obj{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  will-change:transform}
+
+/* ---- Les paquets ---- */
+/* `--i` est la position de chaque paquet depuis le centre : −2, −1, 0, +1, +2.
+   Un seul nombre pilote l'écart, l'angle et la profondeur, donc l'éventail
+   reste cohérent qu'il y ait un paquet ou cinq.
+   `translate` est une propriété à part : le centrage se compose avec la mise
+   en éventail posée dans `transform`, sans que l'un écrase l'autre. */
+.a3d.paquets{padding:10px}
+.a3d-pack{position:absolute;left:50%;top:50%;width:var(--larg,50%);height:auto;
+  translate:-50% -50%;
+  transform:translateX(calc(var(--i) * var(--eca,16%))) rotate(calc(var(--i) * var(--ang,7deg)))
+            translateZ(calc(var(--i) * var(--i) * -16px));
+  filter:drop-shadow(0 14px 22px rgba(0,0,0,.6))}
+.a3d.n1{--larg:58%}
+.a3d.n5{--larg:42%;--eca:26%;--ang:9deg}
+
+/* ---- Les jetons ---- */
+.a3d-piece{position:absolute;left:50%;top:50%;width:var(--larg,54%);translate:-50% -50%;
+  filter:drop-shadow(0 12px 20px rgba(0,0,0,.55))}
+.a3d.jeton{--larg:54%}
+.a3d.jeton .a3d-obj{--larg:54%}
+.a3d-piece.p0{transform:translateZ(16px)}
+.a3d-piece.p1{transform:translate(-15%,8%) translateZ(0) scale(.92)}
+.a3d-piece.p2{transform:translate(15%,14%) translateZ(-16px) scale(.85)}
+
+/* ---- La carte ---- */
+.a3d.carte .a3d-obj{width:56%;height:auto;aspect-ratio:5/7}
+.a3d-face,.a3d-dos{position:absolute;inset:0;border-radius:9px;overflow:hidden;
+  box-shadow:0 14px 26px rgba(0,0,0,.6)}
+.a3d-dos{transform:rotateY(180deg);background:var(--bg-2)}
+.a3d-dos img{width:100%;height:100%;object-fit:cover;display:block}
+.a3d-face .cwrap,.a3d-face .card{width:100%;height:100%;margin:0}
+.a3d-face img{width:100%;height:100%;object-fit:cover;display:block}
+/* Même raison que la scène des Promos : on ne se fie pas à
+   `backface-visibility`, on échange les faces au quart de tour. */
+.a3d-dos{visibility:hidden}
+.a3d.dos .a3d-dos{visibility:visible}
+.a3d.dos .a3d-face{visibility:hidden}
+
+/* ---- Un cadre ---- */
+.a3d.cadre{perspective:none;cursor:default}
+.a3d.cadre .a3d-obj,.a3d-cadre{display:grid;place-items:center}
+.a3d-cadre .ava{width:118px;height:118px}
+
+/* Sur un écran court, la scène cède la place au prix et au bouton : c'est là
+   qu'on décide, pas dans l'illustration. */
+@media (max-height:700px){
+  .a3d{max-width:190px}
+}
+
+/* ---- Les libellés posés sur la scène ---- */
+.a3d-qte{position:absolute;right:10px;bottom:10px;background:var(--surface);color:var(--text);
+  border-radius:999px;padding:3px 11px;font-family:var(--display);font-weight:900;font-size:14px;
+  box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1);pointer-events:none}
+.a3d-dit{position:absolute;left:0;right:0;bottom:10px;display:flex;align-items:center;
+  justify-content:center;gap:6px;margin:0;font-size:11px;font-weight:700;color:var(--muted);
+  pointer-events:none}
+.a3d-qte ~ .a3d-dit{justify-content:flex-start;padding-left:12px}
+.a3d-dit svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.achatdit{color:var(--muted);font-size:13.5px;margin:0 auto 14px;max-width:38ch}
+.achatprix{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg-2);
+  border-radius:var(--radius-sm);padding:12px 15px;margin:0 0 4px;box-shadow:inset 0 0 0 1px var(--line)}
+.achatprix span{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.achateco{background:var(--ok-wash);color:var(--ok);border-radius:999px;padding:2px 8px;
+  font-size:11px;font-weight:900;font-style:normal;letter-spacing:.03em}
+.achatprix b{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;
+  font-size:19px;color:var(--brand-light);font-variant-numeric:tabular-nums}
+.achatprix b .shard{width:17px;height:17px;color:currentColor}
+.achatreste{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.achatreste.court{color:var(--danger)}
+
+/* ============ Avatars et cadres ============ */
+/* Deux cadrages : les photos remplissent le cercle, les symboles restent entiers
+   au centre. Une carte, un dos de carte ou un booster sont des rectangles hauts :
+   les étirer en rond les déformait. Ils sont désormais posés entiers, sur un fond
+   qui prolonge leur couleur. */
+.ava{position:relative;display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:50%;
+  overflow:hidden;background:var(--surface-2);box-shadow:0 0 0 2px var(--f1,var(--line-2))}
+
+/* L'image qui remplit le cercle est posée en absolu, pas en enfant de grille.
+   Dans une grille centrée, la hauteur en pourcentage retombe sur `auto` : une
+   carte de ratio 5/7 ressortait 76 × 106 dans un cercle de 76 × 76, et
+   débordait par le haut et le bas. En absolu, elle épouse exactement le
+   cercle, et `object-fit:cover` fait le recadrage sans jamais déformer. */
+.ava img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;
+  object-fit:cover;object-position:center}
+/* Un voile sombre par-dessus la couleur : les symboles d'essence sont peints de
+   leur propre couleur et disparaîtraient sur un fond identique. */
+.ava.ico{background:linear-gradient(rgba(10,7,14,.62),rgba(10,7,14,.62)),var(--ab,var(--surface-2))}
+/* Un symbole, lui, reste entier au centre : il revient dans le flux de la
+   grille, où `place-items:center` le pose au milieu. */
+.ava.ico img{position:static;width:58%;height:58%;object-fit:contain;border-radius:0;
+  filter:drop-shadow(0 0 5px rgba(0,0,0,.6)) drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+/* Objets hauts — carte, dos, booster : ils **remplissent** le cercle.
+   `object-fit:cover` recadre sans jamais déformer ; ce qui compte, c'est *où*
+   il recadre. Une carte a son illustration dans le haut, un paquet au milieu :
+   `--apos` donne le point de visée, posé par avatarHTML() selon l'objet.
+   Posés entiers, ils laissaient un croissant de vide sur les côtés. */
+.ava.objet{background:var(--bg-2)}
+.ava.objet img{object-position:50% var(--apos,32%)}
+
+.ava.sm{width:34px;height:34px}
+.ava.md{width:56px;height:56px}
+.ava.lg{width:48px;height:48px}
+.ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--accent-glow)}
+.ava.prisme{animation:prisme 4s linear infinite}
+@keyframes prisme{
+  0%{box-shadow:0 0 0 3px #ee0073}
+  25%{box-shadow:0 0 0 3px #ffc73b}
+  50%{box-shadow:0 0 0 3px #55e6a6}
+  75%{box-shadow:0 0 0 3px #39b8ff}
+  100%{box-shadow:0 0 0 3px #ee0073}}
+
+/* Le Sceau : l'or du sceau de booster qui respire sur du violet. Plus lent et
+   plus court que le Prisme — il ne balaie pas tout le spectre, il pulse.
+   C'est le seul cadre qu'on ne peut pas acheter : il se gagne aux 500 boosters. */
+.ava.sceau{animation:sceau 3.2s ease-in-out infinite}
+@keyframes sceau{
+  0%,100%{box-shadow:0 0 0 3px #8936ff,0 0 14px rgba(137,54,255,.5)}
+  50%{box-shadow:0 0 0 3px #ffc73b,0 0 20px rgba(255,199,59,.6)}}
+.avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
+
+.avagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;padding:4px 0 2px}
+.avapick{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
+  padding:8px 4px;border-radius:var(--radius);transition:background .14s}
+.avapick:hover{background:var(--hover)}
+.avapick>span{font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.2;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
+.avapick.on{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.avapick.on>span{color:var(--text)}
+
+/* ============ Vitrine ============ */
+/* Quatre cartes mises en avant, les premières choses qu'on voit sur un profil.
+   Elles sont montrées telles qu'elles sont : un cadre d'avatar autour d'une
+   carte, c'était deux objets qui se disputaient le même bord. */
+.vitpanel h2{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+.vitrine{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 10px}
+.vit{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.vit.vide{justify-content:center;aspect-ratio:5/7;border:0;border-radius:var(--radius-sm);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);gap:2px}
+.vit.vide.muette{opacity:.4}
+.vitplus{font-size:22px;font-weight:300;line-height:1;color:var(--accent-soft)}
+.vit.vide.muette .vitplus{color:var(--muted)}
+.vitcarte{display:block;width:100%;background:none;border:0;padding:0;border-radius:var(--radius-xs);
+  box-shadow:var(--sh-2);transition:transform .16s}
+.vitcarte:hover{transform:translateY(-3px)}
+.vitnom{font-size:10px;font-weight:700;line-height:1.2;text-align:center;color:var(--subtle);
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.vitx{position:absolute;top:-5px;right:-5px;width:22px;height:22px;border:0;border-radius:50%;
+  background:var(--surface-2);color:var(--muted);font-size:11px;line-height:1;
+  box-shadow:0 0 0 1px var(--line-2),var(--sh-2)}
+.vitx:hover{color:var(--text);background:var(--line-2)}
+.sheet .vitrine{margin-bottom:16px}
+
+/* ============ Profil ============ */
+.idcard{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  background:linear-gradient(135deg,var(--accent-wash-2),var(--surface) 62%);
+  border:1px solid var(--line);border-radius:var(--radius);padding:16px 15px;margin-bottom:10px;
+  box-shadow:var(--sh-1)}
+/* `flex:1 1 150px` et non `flex:1` : avec une base de zéro, la colonne du nom
+   se laissait comprimer jusqu'à une lettre de large — le pseudo s'écrivait
+   alors à la verticale au lieu de faire passer le portefeuille à la ligne. */
+.idnom{flex:1 1 150px;min-width:0}
+.idnomligne{display:flex;align-items:center;gap:7px;min-width:0}
+/* La taille suit la largeur : sur un petit écran, un pseudo de seize
+   caractères tient encore plutôt que de finir en points de suspension. */
+.idnomligne b{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
+  font-size:clamp(17px,5.4vw,21px);
+  line-height:1.15;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.idnomligne .qtag{flex:0 0 auto}
+.idnom p{margin:2px 0 0}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px}
+.stat b{display:block;font-family:var(--display);font-stretch:106%;font-weight:900;font-size:20px;
+  line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);font-weight:600}
+
+.found{display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:var(--radius-sm);
+  padding:10px 12px;margin:10px 0 0;font-size:14px}
+.found b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.findrow{display:flex;gap:8px;align-items:center;margin-top:8px}
+.findrow input{flex:1;min-width:0}
+
+/* ============ Réglages ============ */
+/* Un interrupteur qui glisse, pas une case à cocher du navigateur : le réglage
+   par défaut du système jurait avec tout le reste et changeait de forme d'un
+   appareil à l'autre. */
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface-2);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;font-weight:700;font-size:14px;
+  cursor:pointer;transition:background .14s}
+.toggle:hover{background:var(--surface-3)}
+.toggle>span{min-width:0}
+.toggle small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:2px;line-height:1.35}
+
+.toggle input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;flex:0 0 auto;
+  width:46px;height:27px;margin:0;border-radius:999px;background:var(--surface-3);cursor:pointer;
+  box-shadow:inset 0 0 0 1px var(--line-2);transition:background .2s,box-shadow .2s}
+.toggle input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;
+  border-radius:50%;background:var(--muted);box-shadow:var(--sh-1);
+  transition:transform .22s cubic-bezier(.3,1.4,.5,1),background .2s}
+.toggle input[type=checkbox]:checked{background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+  box-shadow:inset 0 0 0 1px var(--accent-deep)}
+.toggle input[type=checkbox]:checked::after{transform:translateX(19px);background:#fff}
+
+/* Un curseur dessiné de bout en bout : la piste, la partie remplie, la poignée.
+   `accent-color` laissait le navigateur décider du reste, et ça se voyait. */
+.slider{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 10px;
+  background:var(--surface-2);border-radius:var(--radius-sm);padding:11px 14px 14px;margin-bottom:8px}
+.slider.off{opacity:.45;pointer-events:none}
+.slider label{font-size:13.5px;font-weight:700;color:var(--subtle)}
+/* Le curseur vient avant sa valeur dans le HTML (bindReglages() lit nextElementSibling) :
+   on remet la valeur sur la première ligne, à droite du libellé. */
+.slider output{grid-row:1;grid-column:2;font-family:var(--display);font-weight:900;font-size:14px;
+  color:var(--text);min-width:2.6em;text-align:right;font-variant-numeric:tabular-nums}
+.slider input[type=range]{grid-row:2;grid-column:1/-1;width:100%;height:22px;margin:0;
+  appearance:none;-webkit-appearance:none;background:none;cursor:pointer}
+.slider input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent) var(--pct,50%),var(--surface-3) var(--pct,50%));
+  box-shadow:inset 0 0 0 1px var(--line-2)}
+.slider input[type=range]::-moz-range-track{height:7px;border-radius:99px;background:var(--surface-3);
+  box-shadow:inset 0 0 0 1px var(--line-2)}
+.slider input[type=range]::-moz-range-progress{height:7px;border-radius:99px;background:var(--accent)}
+.slider input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:20px;height:20px;
+  margin-top:-6.5px;border-radius:50%;background:#fff;box-shadow:var(--sh-2),0 0 0 1px var(--accent-deep);
+  transition:transform .12s}
+.slider input[type=range]::-moz-range-thumb{width:20px;height:20px;border:0;border-radius:50%;background:#fff;
+  box-shadow:var(--sh-2),0 0 0 1px var(--accent-deep)}
+.slider input[type=range]:active::-webkit-slider-thumb{transform:scale(1.16)}
+
+/* Un choix entre trois : les trois options côte à côte, celle qui est retenue
+   en plein. Plus direct qu'une liste déroulante pour trois mots. */
+.pickrow{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-bottom:8px}
+.pickopt{display:flex;flex-direction:column;align-items:center;gap:7px;border:0;
+  background:var(--surface-2);color:var(--subtle);border-radius:var(--radius-sm);padding:14px 8px 11px;
+  font-size:12.5px;font-weight:800;box-shadow:inset 0 0 0 1px var(--line);
+  transition:background .15s,color .15s,box-shadow .15s}
+.pickopt:hover{background:var(--surface-3);color:var(--text)}
+.pickopt svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.pickopt.on{background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--text);
+  box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.pickopt.on svg{color:var(--accent-soft)}
+
+.reglabel{font-size:12.5px;font-weight:700;color:var(--muted);margin:14px 0 7px}
+.about code{background:var(--bg-2);border-radius:5px;padding:1px 5px;font-size:12px}
+.mentions{max-width:46ch;margin:26px auto 0;color:var(--muted);font-size:11px;line-height:1.5;
+  text-align:center;text-wrap:pretty}
+.panel .mentions{margin:14px 0 0;text-align:left;max-width:none;padding-top:12px;border-top:1px solid var(--line)}
+
+/* ============ Classement ============ */
+/* Une ligne par joueur : rang, visage, pseudo, chiffre. Le podium reprend les
+   couleurs des raretés (or, violet, bleu) plutôt que trois nouvelles teintes ;
+   sa propre ligne est cerclée d'accent pour se retrouver d'un coup d'œil. */
+.cldit{margin:2px 0 12px}
+.cllist{display:flex;flex-direction:column;gap:7px}
+.clligne{display:flex;align-items:center;gap:11px;width:100%;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--radius);padding:8px 13px 8px 9px;text-align:left}
+.clligne:hover{background:var(--hover)}
+.clligne.moi{border-color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.clrang{flex:0 0 30px;text-align:center;font-family:var(--display);font-weight:900;font-size:15px;color:var(--muted)}
+.podium .clrang{height:28px;line-height:28px;border-radius:99px;color:#1a1205}
+/* Teintes fixes et claires, chiffre sombre : lisibles dans les deux thèmes
+   (les jetons --r-l et --r-r foncent en thème clair). */
+.p1 .clrang{background:#ffc73b}
+.p2 .clrang{background:#c79bff}
+.p3 .clrang{background:#39b8ff}
+.clnom{flex:1;min-width:0;font-weight:800;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clnom .qtag{font-size:9.5px;padding:1px 5px;border-radius:4px;vertical-align:2px}
+.clval{flex:0 0 auto;font-family:var(--display);font-weight:900;font-size:16px}
+.clval small{font-family:var(--body);font-weight:700;font-size:11px;color:var(--muted)}
+.clsep{margin:0;text-align:center;color:var(--muted);line-height:1}
+.clpas{margin:12px 0 0;text-align:center}
+
+/* ============ Social ============ */
+.amiligne{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:9px 11px;margin-bottom:8px}
+.amiid{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;
+  padding:0;text-align:left}
+.aminom{min-width:0}
+.aminom b{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:800}
+.aminom .qtag{font-size:9.5px;padding:1px 5px;border-radius:4px;background:var(--ok-wash)}
+.aminom small{display:block;line-height:1.3}
+.amiacts{display:flex;gap:6px;flex:0 0 auto}
+.amiacts .btn.tiny{padding:8px 13px;font-size:11.5px}
+
+.fiche{display:flex;align-items:center;gap:16px;margin:6px 0 16px}
+.fichemeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.fichenom{font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;line-height:1.05;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fichesous{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0;font-size:12.5px;color:var(--muted)}
+.fichesous .qtag{margin:0}
+.fiche-prog{margin-top:6px}
+.sheet .stats{grid-template-columns:repeat(2,1fr);margin-bottom:16px}
+
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:12px 9px;margin-top:8px;
+  max-height:52vh;overflow-y:auto;padding:8px 6px 6px 2px;scrollbar-width:thin}
+.pick{background:none;border:0;padding:0;text-align:center}
+.picknom{display:block;font-size:11px;font-weight:700;margin-top:5px;line-height:1.2;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pickmeta{display:block;font-size:10px;font-weight:700;color:var(--muted)}
+
+/* ============ Combats ============ */
+.soon{text-align:center;padding:14px 8px 40px}
+.soonart{position:relative;height:210px;margin:6px auto 22px;max-width:320px;pointer-events:none}
+.soondeck{position:absolute;top:0;left:50%;width:132px;margin-left:-66px;opacity:.9;
+  filter:drop-shadow(0 16px 26px rgba(0,0,0,.5))}
+.soondeck.d0{transform:translateX(-74px) rotate(-14deg)}
+.soondeck.d1{transform:translateY(-10px) scale(1.06);z-index:2}
+.soondeck.d2{transform:translateX(74px) rotate(14deg)}
+/* Du texte d'accent posé sur un lavis d'accent : 1,3:1 de contraste, une
+   étiquette qu'on devinait plus qu'on ne la lisait. La couleur du texte courant
+   sur le même lavis tient dans les deux thèmes. */
+.soontag{display:inline-block;background:var(--accent-wash-2);color:var(--text);border-radius:999px;
+  padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+  box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.soontitle{font-family:var(--display);font-stretch:114%;font-weight:900;font-style:italic;font-size:34px;
+  letter-spacing:-.03em;text-transform:none;color:var(--text);margin:12px 0 8px;padding:0}
+.soontitle::before{display:none}
+.soon p{max-width:38ch;margin-inline:auto}
+
+/* ============ Bulle d'installation (iPhone) ============ */
+.iossteps{list-style:none;margin:16px 0 4px;padding:0;display:flex;flex-direction:column;gap:12px;text-align:left}
+.iossteps li{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--subtle)}
+.iossteps b{color:var(--text)}
+.iosico,.iosnum{flex:0 0 auto;width:34px;height:34px;border-radius:var(--radius-sm);display:grid;place-items:center;
+  background:var(--surface-2);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line)}
+.iosico{padding:6px}
+.iosnum{font-weight:900;color:var(--ok)}
+.iosarrow{text-align:center;font-size:26px;color:var(--accent-soft);margin:14px 0 -6px;animation:bob 1.5s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(7px);opacity:.55}}
+body.installsheet .sheet{border-bottom:2px solid var(--accent)}
+
+/* ============ Attente serveur ============ */
+body.busy{cursor:progress}
+body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
+
+/* =====================================================================
+   Ordinateur : la barre du bas devient un rail à droite, et le contenu
+   respire au lieu de s'étirer.
+   ===================================================================== */
+@media (min-width:900px){
+  /* Une seule mesure pour la largeur du rail : la mise en page, le décalage de
+     l'en-tête et celui des notifications en découlent tous. */
+  :root{--rail:236px}
+
+  /* Une grille, pas un flex qui passe à la ligne : avec `flex-wrap`, le
+     navigateur répartit la hauteur restante entre les lignes, et l'en-tête
+     s'allongeait dès que le contenu de la page était court. */
+  body{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:"top top" "main nav";height:100%}
+  .top{grid-area:top;padding:12px 26px}
+  #nav{grid-area:nav}
+  main{grid-area:main}
+
+  /* Écrans pleine page — attente et connexion : ni en-tête ni rail, donc une
+     seule zone. Sans ça, la colonne du rail reste réservée et le contenu se
+     retrouve décentré. */
+  body.inauth,body.inlock{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
+    grid-template-areas:"main"}
+  body.inauth #main>*,body.inlock #main>*{max-width:none;margin-inline:auto}
+  #brand img{height:44px}
+
+  /* Le rail passe à droite : sous la main qui tient la souris, et à l'opposé
+     du logo, pour que l'en-tête ne soit pas déséquilibré d'un seul côté.
+     Il se lit comme un panneau posé sur la page — un fond franc, un filet, des
+     lignes qui respirent — et non comme une colonne de liens flottants. */
+  /* Une colonne, et non une grille : c'est ce qui permet au pied de menu
+     d'être poussé tout en bas par `margin-top:auto`, quelle que soit la
+     hauteur de la liste au-dessus. */
+  #nav{display:flex;flex-direction:column;gap:2px;
+    padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));
+    border-top:0;border-left:1px solid var(--line);background:var(--bg-2);backdrop-filter:none;
+    overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  #nav>*{flex:0 0 auto}
+  #nav button{flex-direction:row;justify-content:flex-start;gap:13px;padding:11px 13px;font-size:13.5px;
+    font-weight:700;letter-spacing:.005em;border-radius:var(--radius-sm);color:var(--subtle)}
+  #nav button svg{width:20px;height:20px;flex:0 0 auto}
+  #nav button svg.ico-star{width:22px;height:20px}
+  #nav button span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis}
+  #nav button:hover{color:var(--text);background:var(--hover)}
+
+  /* Sélection : une pastille pleine sur toute la ligne. La pastille ronde de la
+     version mobile est dessinée pour une icône seule ; ici elle laisserait le
+     libellé dehors. */
+  #nav button .navbg{position:absolute;inset:0;width:auto;height:auto;translate:none;scale:1;opacity:0;
+    border-radius:var(--radius-sm);background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+    box-shadow:0 2px 10px var(--accent-glow),inset 0 1px 0 var(--gloss-soft);transition:opacity .18s}
+  #nav button.on .navbg{opacity:1}
+  #nav button.on{color:var(--on-accent);font-weight:800}
+  #nav button.on svg{stroke:var(--on-accent)}
+  #nav button.on svg.ico-star{fill:var(--on-accent);filter:none}
+
+  /* Le compteur se range au bout de la ligne, à la place où l'œil le cherche. */
+  .pastille.nav{position:static;margin-left:auto;box-shadow:none}
+  #nav button.on .pastille.nav{background:rgba(0,0,0,.3);color:#fff}
+
+  /* Le contenu se centre dans la colonne qui lui reste, et non contre le rail :
+     collé à gauche, la page paraissait décalée d'un côté sur un grand écran. */
+  main{min-width:0;min-height:0;padding:24px 36px 44px}
+  #main>*{max-width:860px;margin-inline:auto}
+  #main.tab-boosters>*,#main.tab-collection>*{max-width:1180px}
+
+  /* Plus de barre en bas : les notifications se recentrent sur la zone de
+     contenu plutôt que sur la fenêtre entière. */
+  #toast{bottom:26px;left:calc(50% - var(--rail) / 2)}
+  #qnotif{top:88px;left:calc(50% - var(--rail) / 2)}
+
+  .stats{grid-template-columns:repeat(4,1fr)}
+  .offres{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
+  .pickrow{gap:10px}
+
+  /* Sur ordinateur, l'avatar mène droit au profil : il n'y a pas de tiroir à
+     déplier, donc pas de chevron à montrer. */
+  .moicaret{display:none}
+
+  /* Le rail a la place d'afficher les deux groupes : plus besoin de tiroir. */
+  #nav .second{display:flex}
+  #nav .navsep{display:block;height:1px;margin:14px 10px 12px;background:var(--line);border:0}
+  #nav .second span{font-weight:inherit;color:inherit}
+  #nav button.second{padding:9px 13px;font-size:12.5px}
+  #nav button.second svg{width:18px;height:18px}
+  #nav .navpied{display:block;margin-top:auto;padding:16px 13px 0;
+    border-top:1px solid var(--line)}
+
+  .soonart{height:250px;max-width:380px}
+  .soondeck{width:156px;margin-left:-78px}
+  .soondeck.d0{transform:translateX(-92px) rotate(-14deg)}
+  .soondeck.d2{transform:translateX(92px) rotate(14deg)}
+
+  /* Les feuilles modales se centrent plutôt que de monter du bas. */
+  .sheet-wrap{align-items:center}
+  .sheet{border-radius:var(--radius-lg);border-bottom:1px solid var(--line);max-height:82vh;padding-bottom:20px}
+  .sheet::before{display:none}
+  .pickgrid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));max-height:46vh}
+}
+
+/* Écrans étroits : les trois sous-onglets des Quêtes doivent tenir d'un bloc.
+   Une barre segmentée qui déborde perd sa raison d'être — on ne voit plus le
+   choix qu'on n'a pas fait. */
+@media (max-width:420px){
+  .segbar button{padding:9px 8px;font-size:12px;gap:5px}
+  .segbar .pastille{min-width:15px;height:15px;font-size:9.5px;padding:0 4px}
+}
+
+/* Très petits écrans : cinq onglets tiennent encore, en serrant le texte. */
+@media (max-width:359px){
+  #nav button{font-size:9.5px;gap:3px}
+  #nav svg{width:20px;height:20px}
+  #nav button .navbg{width:46px}
+  .offres{grid-template-columns:repeat(2,1fr)}
+  .segbar button{padding:9px 5px;font-size:11px}
+}
+
+/* Animations réduites, forcées depuis les Réglages. */
+html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition:none!important}
+
+/* Une récompense qui n'est pas de la monnaie : la carte ou le cadre, en petit,
+   à la place du montant. Le joueur doit voir ce qu'il va toucher. */
+.qreward.objet{flex-direction:column;gap:3px;align-items:center;font-family:var(--body)}
+.qrcarte{display:block;width:34px;border-radius:3px;overflow:hidden;box-shadow:var(--sh-2)}
+.qrcadre{display:block}
+.qreward.objet small{font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted)}
+/* La carte se touche pour s'ouvrir dans la visionneuse (js/quests.js). */
+.qreward.voir{background:none;border:0;padding:2px 4px;margin:-2px -4px;min-width:44px;border-radius:6px;
+  transition:transform .15s}
+.qreward.voir:hover .qrcarte{box-shadow:var(--sh-2),0 0 0 2px var(--accent-soft)}
+.qreward.voir:active{transform:scale(.94)}
+
+/* =====================================================================
+   Échanges
+   =====================================================================
+   Une carte parle d'elle-même : son illustration porte son nom et sa rareté.
+   Autour d'elle il ne reste que ce que l'image ne dit pas — une étiquette
+   posée dessus (combien j'en ai) et une légende dessous (je reçois, je
+   donne). Les trois lignes de texte empilées sous chaque vignette sont
+   parties : c'étaient elles qui faisaient de l'écran une notice. */
+
+/* Une section de liste : un titre, et ce qui suit. */
+.qsec{margin-top:var(--gap-4)}
+.qsechead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  margin:0 0 var(--gap-2)}
+.qsechead h2{margin:0}
+
+/* ---------- La barre du haut ---------- */
+/* La recharge à gauche, l'action à droite, sur une seule ligne. La recharge
+   se lit dans le fond de la pastille, qui se remplit à mesure. */
+.tbar{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.tbar .btn.tiny{flex:0 0 auto}
+.tbar .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round}
+.trecharge{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px 8px 12px;
+  font-size:12.5px;font-weight:700;color:var(--subtle)}
+.trecharge::before{content:'';position:absolute;inset:0 auto 0 0;width:var(--p,0%);
+  background:var(--accent-wash);pointer-events:none;transition:width 1s linear}
+.trecharge>*{position:relative}
+.trecharge>span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trecharge>span b{color:var(--text)}
+.trecharge>svg{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+.trecharge.pret{border-color:var(--ok-line)}
+.trecharge.pret>svg{color:var(--ok);stroke-width:2.6}
+/* ---------- Une demande ---------- */
+.troc{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 12px 13px;margin-bottom:10px;box-shadow:var(--sh-1)}
+/* Une demande qui apporte une carte jamais obtenue ne ressemble pas aux
+   autres : c'est la seule information qui décide vraiment. */
+.troc.inedite{border-color:var(--ok-line);box-shadow:0 0 0 1px var(--ok-wash),var(--sh-1)}
+.troc-tete{display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.troc-tete b{flex:1;min-width:0;font-size:14.5px;font-weight:800;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.troc-tete time{flex:0 0 auto;font-size:11.5px;font-weight:600;color:var(--muted)}
+
+/* Les deux cartes, toujours dans le même ordre : ce qui entre, ce qui sort. */
+.troc-cartes{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;
+  gap:12px;max-width:330px;margin:0 auto}
+.troc-fleche{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;
+  background:var(--surface-2);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line)}
+.troc-fleche svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.tcarte{margin:0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.tcarte-img{position:relative;display:block;width:100%;max-width:122px;border:0;background:none;
+  padding:0;border-radius:var(--radius-xs);transition:transform .14s}
+.tcarte-img:hover{transform:translateY(-2px)}
+.tcarte figcaption{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted)}
+.tcarte.entre figcaption{color:var(--ok)}
+.tcarte-vide{display:grid;place-items:center;width:100%;max-width:122px;aspect-ratio:63/88;
+  border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);
+  color:var(--muted);font-size:26px}
+
+/* L'étiquette posée sur une carte : combien j'en ai. Elle déborde du coin,
+   comme une pastille collée sur une pochette. */
+.tpill{position:absolute;top:-6px;right:-6px;z-index:2;display:inline-grid;place-items:center;
+  min-width:24px;height:21px;padding:0 7px;border-radius:999px;background:var(--surface-2);
+  color:var(--text);font-family:var(--display);font-style:normal;font-weight:900;font-size:11.5px;
+  line-height:1;white-space:nowrap;box-shadow:0 0 0 2px var(--surface),var(--sh-2)}
+.tpill.neuf,.tpill.perte{font-family:var(--body);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase}
+.tpill.neuf{background:var(--ok);color:#06251a}
+.tpill.perte{background:var(--warn);color:#2a1d00}
+
+.troc-mot{margin:12px auto 0;max-width:330px;background:var(--bg-2);border-radius:var(--radius-sm);
+  padding:9px 12px;font-size:13px;font-style:italic;line-height:1.4;color:var(--subtle)}
+/* Les boutons tiennent dans la même colonne que les cartes : sur un grand
+   écran, un « Accepter » de 800 px ne se lisait plus comme une réponse à
+   cette demande-là. */
+.tacts{display:flex;gap:8px;max-width:330px;margin:13px auto 0}
+.tacts .btn{flex:1}
+.tacts.seul{align-items:center;justify-content:space-between;gap:12px}
+.tacts.seul .btn{flex:0 0 auto}
+.tattente{font-size:12px;font-weight:700;color:var(--muted)}
+.traison{margin:8px 0 0;text-align:center;font-size:12px;font-weight:600;color:var(--muted)}
+
+/* ---------- L'historique ---------- */
+/* Une ligne par échange : ce qui est tranché ne se relit pas, il se retrouve. */
+.thisto{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;box-shadow:var(--sh-1)}
+.thligne{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line)}
+.thligne:first-child{border-top:0}
+.thqui{flex:1;min-width:0;display:flex;flex-direction:column}
+.thqui b{font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.thqui small{font-size:11px;font-weight:600;color:var(--muted)}
+.thcartes{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.thcartes i{display:grid}
+.thcartes i svg{width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.thmini{display:block;width:30px;border:0;padding:0;background:none}
+.thmini .cwrap{box-shadow:var(--sh-1)}
+.thetat{flex:0 0 auto;min-width:54px;text-align:right;font-size:10.5px;font-weight:800;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.thetat.ok{color:var(--ok)}
+
+/* ---------- Composer ---------- */
+.compo{display:flex;flex-direction:column;gap:12px}
+.compo-tete{display:flex;align-items:center;gap:10px}
+.compo-tete h2{margin:0;padding:0;font-size:18px}
+.compo-tete h2::before{display:none}
+.compo-retour{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border:0;
+  border-radius:50%;background:var(--surface);color:var(--subtle);box-shadow:inset 0 0 0 1px var(--line)}
+.compo-retour:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.compo-retour svg{width:18px;height:18px;transform:rotate(90deg);stroke:currentColor;fill:none;
+  stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+.compo-bloc{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:13px 14px;box-shadow:var(--sh-1)}
+.compo-lab{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 9px}
+.compo-qui{display:flex;align-items:center;gap:10px}
+.compo-qui b{flex:1;min-width:0;font-size:14.5px;font-weight:800;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.compo-qui .linkbtn{flex:0 0 auto;color:var(--accent-soft);padding:6px 4px}
+.compo-note{margin:9px 0 0;font-size:12.5px;line-height:1.4;color:var(--muted)}
+.compo-bloc .findrow{margin-top:10px}
+.compo-bloc .troc-cartes{padding-top:6px}
+.compo-aide{margin:14px 0 0;text-align:center;font-size:13px;line-height:1.4;color:var(--muted)}
+.compo-aide b{color:var(--text)}
+.compo-aide .warn{color:var(--danger);font-weight:700}
+
+/* Une case vide : le creux d'une carte, et un +. */
+.tslot{display:grid;place-items:center;width:100%;max-width:122px;aspect-ratio:63/88;border:0;
+  border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1.5px var(--line-2);
+  color:var(--accent-soft);transition:box-shadow .15s,background .15s}
+.tslot span{font-size:34px;font-weight:300;line-height:1}
+.tslot:hover:not(:disabled){background:var(--accent-wash);box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.tslot:disabled{opacity:.4;cursor:not-allowed}
+
+.compo-pied{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.compo-pied .btn{flex:1 1 200px;width:auto}
+.compo-cout{flex:0 1 auto;display:inline-flex;align-items:center;gap:6px;margin:0;
+  font-size:12.5px;font-weight:700;color:var(--muted)}
+.compo-cout.ok{color:var(--ok)}
+.compo-cout img{width:18px;height:18px;object-fit:contain}
+.compo-cout svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.compo-cout .linkbtn{padding:0;font-size:12.5px;color:var(--accent-soft)}
+.compo-regle{margin:0;text-align:center;font-size:11.5px;line-height:1.5;color:var(--muted)}
+
+/* Les amis, d'un geste : c'est le chemin normal vers un échange. */
+.amirow{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  touch-action:pan-x;padding:2px 0 4px;scrollbar-width:none}
+.amirow::-webkit-scrollbar{display:none}
+.amichip{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;border:0;
+  background:var(--surface-2);color:var(--subtle);border-radius:999px;padding:5px 15px 5px 5px;
+  font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px var(--line);
+  transition:background .14s,color .14s,box-shadow .14s}
+.amichip:hover{background:var(--surface-3);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.amichip span{max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Une alerte qui explique plutôt qu'elle ne bloque. */
+.autherr.doux{background:var(--surface-2);border-color:var(--line-2);color:var(--muted)}
+
+/* ---------- Choisir une carte ---------- */
+/* L'étiquette déborde du coin : la grille lui laisse de la place en haut. */
+.pickimg{position:relative;display:block}
+.pick .tpill{top:-5px;right:-5px;height:19px;min-width:22px;padding:0 6px;font-size:10.5px}
+.pick .tpill.neuf,.pick .tpill.perte{font-size:8.5px}
+/* Une carte qui me manque, dans la collection d'un autre : un liseré. */
+.pick.manque .cwrap{box-shadow:0 0 0 2px var(--accent-soft),var(--sh-2)}
+.souschips .rarchip .rardot{color:var(--rc,var(--muted))}
+.sheet .souschips{margin-top:4px}
+.pickn{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;
+  margin-left:5px;border-radius:9px;background:var(--surface-3);color:var(--subtle);
+  font-size:10px;font-weight:900;font-style:normal;line-height:1}
+.souschips button.on .pickn{background:var(--accent-wash-2);color:var(--accent-soft)}
+.trcolvues{padding-top:4px}
+/* Dans une fiche, la grille est déjà courte : elle n'a pas à défiler dans son
+   coin à l'intérieur d'une feuille qui défile déjà. */
+.pickgrid.court{max-height:none;overflow:visible}
+
+/* Les comptes d'une collection amie, en tête de fiche. */
+.colchips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 10px}
+.colchip{display:inline-flex;align-items:baseline;gap:5px;background:var(--surface-2);
+  border-radius:999px;padding:5px 13px;font-size:12px;font-weight:600;color:var(--muted);
+  box-shadow:inset 0 0 0 1px var(--line)}
+.colchip b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
+.colchip.fort b{color:var(--accent-soft)}
+.ficheacts{margin-top:12px}
+
+/* =====================================================================
+   Boîte de réception
+   ===================================================================== */
+/* La cloche de l'en-tête, et son compteur. */
+#cloche{position:relative}
+#cloche.on{color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.pastille.cloche{position:absolute;top:-4px;right:-5px;min-width:17px;height:17px;padding:0 4px;
+  font-size:10px;box-shadow:0 0 0 2px var(--bg)}
+
+.boitesec{margin-top:var(--gap-3)}
+.boitesec>h2{margin:0 0 var(--gap-2)}
+.boitecharge{text-align:center;padding:40px 0}
+
+.bmsg{position:relative;display:flex;gap:11px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:12px 13px;margin-bottom:8px;box-shadow:var(--sh-1)}
+/* Du neuf : un lavis, et un point dans le coin. */
+.bmsg.neuf{border-color:var(--accent-wash-2);
+  background:linear-gradient(135deg,var(--accent-wash),var(--surface) 62%)}
+.bmsg.neuf::after{content:'';position:absolute;top:15px;right:14px;width:8px;height:8px;
+  border-radius:50%;background:var(--brand)}
+.bava{flex:0 0 auto;align-self:flex-start;border:0;background:none;padding:0}
+.bico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;align-self:flex-start;
+  border-radius:50%;background:var(--accent-wash);color:var(--accent-soft)}
+.bico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.bcorps{flex:1;min-width:0;padding-right:16px}
+.btxt{margin:0;font-size:14px;line-height:1.35;color:var(--subtle)}
+.btxt strong,.btxt b{color:var(--text);font-weight:800}
+.bannonce{margin:5px 0 0;font-size:13.5px;line-height:1.5;color:var(--subtle);white-space:pre-line}
+.bcorps time{display:block;margin-top:3px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.bcartes{display:flex;align-items:center;gap:7px;margin-top:10px}
+.bcarte{display:block;width:44px;border:0;background:none;padding:0}
+.bcartes i{display:grid}
+.bcartes i svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.bacts{display:flex;gap:8px;margin-top:11px}
+.bstatut{display:inline-block;margin-top:9px;font-size:10.5px;font-weight:800;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted)}
+.bretirer{display:block;padding:6px 0 0;font-size:12px}
+.sheet .bmsg{box-shadow:none;margin-bottom:12px}
+
+/* Le ping : même forme que celle des quêtes, le visage d'en face en tête —
+   on reconnaît qui avant de lire quoi. */
+.qn.boiteqn{border-color:var(--line-2)}
+.qn.boiteqn .qntxt b{font-weight:600}
+.qn.boiteqn .qntxt strong{font-weight:800}
+.qn.boiteqn .qntxt small{color:var(--accent-soft)}
+.qn.boiteqn .qnico{background:var(--accent-wash);color:var(--accent-soft)}
+.qn.froid .qnico{background:var(--surface-3);color:var(--muted)}
+.qn.froid .qntxt small{color:var(--muted)}
+.qnav{flex:0 0 auto;display:grid;place-items:center}
+
+/* =====================================================================
+   Recyclage
+   ===================================================================== */
+/* Le plafond de la semaine : ce qu'on a touché, en violet ; ce qu'on
+   s'apprête à toucher, rayé de vert à la suite. */
+.recplafond{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;margin:0 0 10px;box-shadow:var(--sh-1)}
+.recplafond.plein{border-color:var(--ok-line)}
+.recplafond-tete{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:13.5px}
+.recplafond-tete>b{font-weight:800}
+.recplafond-tete span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;
+  color:var(--muted)}
+.recplafond-tete span b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
+.recbarre{display:flex;height:8px;margin:9px 0 7px;border-radius:99px;background:var(--bg-2);
+  overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+.recbarre i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+  transition:width .35s cubic-bezier(.2,1,.4,1)}
+.recbarre i.sel{background:repeating-linear-gradient(135deg,var(--ok) 0 5px,var(--ok-deep) 5px 10px)}
+.recplafond small{font-size:12px;color:var(--muted)}
+
+/* Les Fragments : le même losange que les Éclats, en creux. */
+.fragico{display:inline-flex;vertical-align:-2px}
+.fragico svg{width:1.05em;height:1.05em;fill:none;stroke:var(--accent-soft);stroke-width:2;stroke-linejoin:round}
+.wallet .fragico svg{width:17px;height:17px}
+.fabinfo small{display:block;margin-top:5px;line-height:1.45}
+.fabinfo .linkbtn{margin-top:6px;font-size:12.5px}
+/* La fiche de fabrication : la carte, son nom, son prix. */
+.fabfiche{display:flex;gap:16px;align-items:center}
+.fabcarte{flex:0 0 38%;max-width:170px;background:none;border:0;padding:0}
+.fabmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.fabmeta>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
+.fabmeta>span{font-size:12.5px;font-weight:800}
+.fabmeta .achatreste{margin:0;text-align:left}
+
+/* Le barème, une ligne de pastilles. */
+.recbareme{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.recbareme span{display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+  border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 9px;font-size:11.5px;
+  font-weight:700;color:var(--muted)}
+.recbareme b{font-family:var(--display);font-weight:900;color:var(--text)}
+.recbareme .rardot{width:8px;height:8px}
+
+.recfiltres{display:flex;align-items:center;gap:8px}
+.recfiltres .chips{flex:1;min-width:0}
+.recfiltres .linkbtn{flex:0 0 auto;margin-bottom:10px;color:var(--accent-soft)}
+
+.recgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:16px 10px;
+  padding-top:8px}
+.reccase{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.recimg{position:relative;display:block;width:100%;border:0;background:none;padding:0;
+  border-radius:var(--radius-xs);transition:transform .12s}
+.recimg:active{transform:scale(.96)}
+.reccase.on .cwrap{box-shadow:0 0 0 2.5px var(--ok),0 0 18px var(--ok-wash)}
+/* Le nombre choisi, en grand au milieu de la carte. */
+.recn{position:absolute;top:50%;left:50%;translate:-50% -50%;z-index:2;display:grid;place-items:center;
+  width:40px;height:40px;border-radius:50%;background:var(--ok);color:#06251a;font-family:var(--display);
+  font-style:normal;font-weight:900;font-size:18px;box-shadow:0 0 0 3px rgba(6,37,26,.35),var(--sh-3)}
+.recval{font-family:var(--display);font-weight:900;font-size:12.5px;color:var(--muted)}
+.recstep{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:118px;
+  padding:2px;border-radius:999px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.recstep button{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:50%;
+  background:var(--surface);color:var(--text);font-size:17px;font-weight:700;line-height:1;
+  box-shadow:var(--sh-1)}
+.recstep button:disabled{opacity:.35}
+.recstep b{font-family:var(--display);font-weight:900;font-size:12.5px;color:var(--ok)}
+
+/* La barre d'action reste sous le pouce pendant qu'on parcourt la grille. */
+.recpied{position:sticky;bottom:8px;z-index:4;display:flex;align-items:center;gap:12px;
+  margin:18px 0 0;padding:8px 8px 8px 16px;border:1px solid var(--line-2);border-radius:999px;
+  background:var(--veil-2);backdrop-filter:blur(12px);box-shadow:var(--sh-3)}
+.recpied.actif{border-color:var(--ok-line)}
+.recpied-txt{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:5px;
+  font-size:13px;color:var(--muted)}
+.recpied-txt b{color:var(--text)}
+.recpied .recgain{color:var(--ok);font-family:var(--display);font-weight:900}
+.recpied-txt .shard{width:14px;height:14px}
+.recpied .linkbtn{padding:0 0 0 6px;font-size:12px}
+
+/* Les deux confirmations. */
+.reclist{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:6px;
+  max-height:38vh;overflow-y:auto}
+.reclist li{display:flex;align-items:center;gap:10px;background:var(--bg-2);border-radius:var(--radius-sm);
+  padding:6px 12px 6px 6px}
+.reclmini{display:block;width:32px;flex:0 0 auto}
+.recln{flex:1;min-width:0;display:flex;flex-direction:column}
+.recln b{font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recln small{font-size:11px;font-weight:700}
+.reclq{font-family:var(--display);font-weight:900;font-size:13px;color:var(--subtle)}
+.reclv{min-width:50px;text-align:right;font-family:var(--display);font-weight:900;font-size:13px;color:var(--ok)}
+.rectotal{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px;
+  padding:11px 14px;border-radius:var(--radius-sm);background:var(--ok-wash);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.rectotal span{font-size:13px;font-weight:700;color:var(--subtle)}
+.rectotal b{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;
+  font-size:19px;color:var(--ok)}
+.rectotal .shard{color:currentColor}
+.recgarde{margin:12px 0 0;background:var(--danger-wash);box-shadow:inset 0 0 0 1px var(--danger-line)}
+.recgarde:hover{background:var(--danger-wash)}
+.recfinal{text-align:center;padding:4px 0 0}
+.recfinal-ico{display:inline-grid;place-items:center;width:54px;height:54px;margin-bottom:10px;
+  border-radius:50%;background:var(--ok-wash);color:var(--ok)}
+.recfinal-ico svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.recfinal b{display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--display);
+  font-weight:900;font-size:30px;color:var(--ok)}
+.recfinal b .shard{width:22px;height:22px;color:currentColor}
+.recfinal p{max-width:32ch;margin:8px auto 0;color:var(--muted)}
+
+/* =====================================================================
+   Téléphone : plus de contenu par rangée, moins de décor autour
+   =====================================================================
+   Trois cartes larges sur un écran de 375 px, c'est une carte qu'on regarde
+   et deux qu'on devine. Une collection de 122 cases se parcourt, elle ne se
+   contemple pas : à quatre par rangée on lit une planche d'un coup, et la
+   vignette reste assez grande pour reconnaître l'illustration.
+
+   Même raisonnement en boutique, où deux articles par rangée faisaient deux
+   affiches. Et partout, quelques pixels de cadre rendus au contenu : sur un
+   petit écran, la marge est ce qui coûte le plus cher.
+   ===================================================================== */
+@media (max-width:560px){
+  main{padding:12px 12px 24px}
+
+  /* ---- Boutique ---- */
+  .offres{grid-template-columns:repeat(3,1fr);gap:8px}
+  .offre{gap:7px;padding:10px 7px;border-radius:var(--radius-sm)}
+  .ofart{max-height:none}
+  .ofnom{font-size:11.5px;line-height:1.2}
+  .ofprix{font-size:13px;gap:4px}
+  .ofprix .shard{width:13px;height:13px}
+  .ofqte{right:4px;bottom:4px;padding:1px 7px;font-size:11px}
+  .ofbadge{top:5px;left:5px;padding:2px 7px;font-size:9px;letter-spacing:.04em}
+  .ofcoche{top:5px;right:5px;width:19px;height:19px}
+  .oflock{min-height:0;padding:14px 8px}
+  .oflockico{width:32px;height:32px}
+
+  /* ---- Sélecteurs de cartes ---- */
+  /* Trois par rangée, pas quatre : chaque carte porte une étiquette dans son
+     coin (« Nouvelle », « ×2 »), et à quatre colonnes elles se chevauchaient
+     d'une carte à l'autre. */
+  .pickgrid{grid-template-columns:repeat(3,1fr);gap:12px 10px}
+  .picknom{font-size:10.5px}
+
+  /* ---- Respiration générale ---- */
+  .panel{padding:2px 13px 15px}
+  .pagehead{margin-bottom:var(--gap-3)}
+  .pagehead p{font-size:12.5px}
+  .segbar{margin-bottom:var(--gap-3)}
+  .stats{gap:7px}
+  .stat{padding:10px 11px}
+}
+
+/* =====================================================================
+   La communauté
+   ===================================================================== */
+/* Le lien vers le Discord, en pied de menu. Un lien, pas un bouton : c'est une
+   destination extérieure, et elle doit pouvoir s'ouvrir dans un onglet. Au
+   survol il prend le bleu de la marque — c'est le seul endroit du jeu où une
+   autre couleur que le violet a le droit d'exister. */
+.discordlien{display:flex;align-items:center;gap:10px;padding:10px 11px;
+  border-radius:var(--radius-sm);text-decoration:none;font-size:13.5px;font-weight:700;
+  color:var(--subtle);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);
+  transition:color .15s,background .15s,box-shadow .15s}
+.discordlien:hover{color:#fff;background:#5865f2;box-shadow:inset 0 0 0 1px #5865f2}
+.discordlien svg{width:20px;height:15px;flex:0 0 auto;color:#8f9bf7}
+.discordlien:hover svg{color:#fff}
+#nav .navpied .discordlien{margin-bottom:10px}
+
+/* Les trois points de la fenêtre de bienvenue : ce qu'on fait ici, à quel
+   rythme, avec qui. */
+.bvpoints{list-style:none;margin:15px 0 16px;padding:0;display:flex;flex-direction:column;gap:12px}
+.bvpoints li{display:flex;align-items:flex-start;gap:11px;font-size:13.5px;line-height:1.4;
+  color:var(--muted)}
+.bvpoints b{color:var(--text)}
+.bvico{display:grid;place-items:center;width:32px;height:32px;flex:0 0 auto;
+  border-radius:var(--radius-sm);background:var(--accent-wash);color:var(--accent-soft)}
+.bvico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.bvico svg.ico-star{width:20px;height:14px;stroke:none;fill:currentColor}
+.sheet .btn.discord{margin-top:12px}
+
+/* ============ Succès ============ */
+/* Un médaillon par succès. Obtenu, il prend la couleur de sa rareté ;
+   pas encore, il reste en creux et dit ce qu'il faut faire. */
+.succes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:4px 0 10px}
+.succes.compact{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.badge{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--radius);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);opacity:.5;filter:grayscale(1)}
+.badge.on{opacity:1;filter:none;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--sh-1)}
+.sucico{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--muted)}
+.sucico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.sucico svg.ico-star{fill:currentColor;stroke:none}
+.badge.on.tC .sucico{background:var(--surface-3);color:var(--text)}
+.badge.on.tR .sucico{background:#39b8ff;color:#06263a}
+.badge.on.tE .sucico{background:#a95cf2;color:#fff}
+.badge.on.tL .sucico{background:#ffc73b;color:#3a2600}
+.badge.on.tUN .sucico{background:conic-gradient(#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
+.suctxt{min-width:0;display:flex;flex-direction:column}
+.suctxt b{font-size:13px;font-weight:800;line-height:1.2}
+.suctxt small{font-size:11px;color:var(--muted);line-height:1.3}
+.succes.compact .suctxt small{display:none}
+
+/* ============ Fenêtre des nouveautés ============ */
+/* La carte unique en vedette, inclinée, dans un halo qui tourne. */
+.nvhero{position:relative;display:flex;align-items:center;gap:16px;margin:2px 0 12px;padding:16px;
+  border-radius:var(--radius);overflow:hidden;color:#fff;
+  background:radial-gradient(120% 140% at 20% 30%,#5a1fa8 0%,#2a0f45 55%,#140a20 100%)}
+.nvrayons{position:absolute;left:22%;top:50%;width:420px;aspect-ratio:1;translate:-50% -50%;opacity:.35;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.6) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 10%,transparent 62%);mask:radial-gradient(circle,#000 10%,transparent 62%);
+  animation:nvtourne 26s linear infinite}
+@keyframes nvtourne{to{rotate:360deg}}
+.nvcarte{position:relative;flex:0 0 34%;max-width:150px;rotate:-6deg}
+.nvtexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.nvkicker{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  background:#ffc73b;color:#3a2600;padding:3px 9px;border-radius:999px}
+.nvhero.trouvee .nvkicker{background:rgba(255,255,255,.2);color:#fff}
+.nvtexte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
+.nvtexte small{font-size:12.5px;line-height:1.4;opacity:.88}
+.nvevent{display:flex;align-items:flex-start;gap:10px;margin:0 0 4px;padding:10px 12px;border-radius:var(--radius);
+  background:var(--accent-wash);color:var(--muted);font-size:13px;line-height:1.4}
+.nvevent b{color:var(--text)}
+.nvevent small{display:block;margin-top:2px}
+.nvevent svg{flex:0 0 auto;width:20px;height:14px;margin-top:3px;fill:var(--accent-soft)}
+.nvpoints{margin-top:12px}
+
+/* ============ Mes tirages ============ */
+.rardot.rBR{background:linear-gradient(135deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff)}
+.tirliste h2{margin-top:18px}
+.tirage{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:9px}
+.tirage.god{border-color:#ffc73b}
+.tirtete{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.tirtete>span{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.tirtete .btn{display:inline-flex;align-items:center;gap:6px}
+.tirtete .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tircartes{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.tirmini{background:none;border:0;padding:0}
+
+/* ============ La carte unique, en vitrine (Collection) ============ */
+/* Un écrin, pas une case : la carte en grand, des rayons qui tournent
+   derrière, et l'état de la chasse. Doré chez celui qui l'a. */
+.unvitrine{position:relative;display:flex;align-items:center;gap:18px;margin:var(--gap-5) 0 var(--gap-4);padding:18px;
+  border-radius:var(--radius);overflow:hidden;color:#fff;isolation:isolate;
+  background:radial-gradient(120% 150% at 22% 40%,#6a23c4 0%,#2c0f4d 52%,#140a20 100%)}
+.unvitrine.mienne{margin-top:var(--gap-3);
+  background:radial-gradient(120% 150% at 22% 40%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
+  box-shadow:0 0 0 1.5px #ffc73b,0 10px 34px rgba(255,140,200,.3)}
+.unrayons{position:absolute;left:24%;top:50%;width:520px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.4;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(236,143,255,.55) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:nvtourne 30s linear infinite}
+.unvitrine.mienne .unrayons{opacity:.55;background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.7) 0 6deg,transparent 6deg 18deg)}
+.uncarte{position:relative;flex:0 0 40%;max-width:190px;padding:0;border:0;background:none;cursor:pointer;rotate:-5deg;
+  transition:rotate .3s,scale .3s;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
+.uncarte:hover{rotate:-2deg;scale:1.03}
+.unvitrine.trouvee .uncarte{filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) saturate(.55) brightness(.75)}
+.unvitrine.bientot .uncarte{filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) brightness(.6) blur(1.5px)}
+.untexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.unkicker{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;background:#ec8fff;color:#3a0640}
+.unvitrine.mienne .unkicker{background:#ffc73b;color:#3a2600}
+.unvitrine.trouvee .unkicker{background:rgba(255,255,255,.2);color:#fff}
+.unvitrine.bientot .unkicker{background:#ffc73b;color:#3a2600}
+.unnom{font-family:var(--display);font-style:italic;font-weight:900;font-size:23px;line-height:1.08}
+.unserie{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.6)}
+.untexte p{margin:3px 0 0;font-size:13px;line-height:1.45;color:rgba(255,255,255,.88)}
+.untexte p b{color:#fff}
+.unpart{margin-top:6px;background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+.unpart svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+@media (max-width:420px){
+  .unvitrine{gap:14px;padding:16px 14px}
+  .unnom{font-size:20px}
+  .untexte p{font-size:12.5px}
+}
+@media (prefers-reduced-motion:reduce){.unrayons{animation:none}}
+
+
+/* ============ Les cadeaux (js/cadeaux.js) ============ */
+.cadeau{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 6px;padding:18px 16px 16px;
+  border-radius:var(--radius);overflow:hidden;color:#fff;isolation:isolate;text-align:center;
+  background:radial-gradient(110% 120% at 50% 30%,#6a23c4 0%,#2c0f4d 58%,#160a24 100%)}
+.cdrayons{position:absolute;left:50%;top:38%;width:460px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.35;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.6) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:nvtourne 26s linear infinite}
+.cdpaquet{padding:0;border:0;background:none;cursor:pointer;width:150px;animation:cdfremit 2.4s ease-in-out infinite}
+.cdsvg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 12px 20px rgba(0,0,0,.45))}
+.cdcouvercle{transform-box:fill-box;transform-origin:50% 100%;transition:transform .55s cubic-bezier(.3,1.6,.5,1),opacity .5s .2s}
+@keyframes cdfremit{0%,62%,100%{rotate:0deg;scale:1}68%{rotate:-5deg;scale:1.03}74%{rotate:5deg}80%{rotate:-3deg}86%{rotate:2deg}}
+.cdpaquet.ouvre{animation:cdouvre .75s ease-out forwards}
+.cdpaquet.ouvre .cdcouvercle{transform:translateY(-34px) rotate(-16deg);opacity:0}
+@keyframes cdouvre{0%{scale:1}35%{scale:1.12}100%{scale:.9;opacity:.7}}
+.cdde{margin:2px 0 0;font-size:14px;color:rgba(255,255,255,.82)}
+.cdde b{color:#fff}
+.cadeau .cdmot,.sheet .cdmot{margin:4px 0 0;padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;line-height:1.45;font-style:italic;
+  background:rgba(255,255,255,.1);color:inherit;max-width:100%}
+.sheet > .cdmot{background:var(--accent-wash);color:var(--text)}
+.cadeau .cdaide{margin:2px 0 0;color:rgba(255,255,255,.6)}
+.cadeau.ouvert{padding-top:20px}
+.cdcarte{width:42%;max-width:170px;padding:0;border:0;background:none;cursor:pointer;rotate:-3deg;margin-bottom:6px;
+  filter:drop-shadow(0 10px 22px rgba(0,0,0,.5));animation:cdsort .6s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes cdsort{from{translate:0 30px;scale:.6;opacity:0}}
+.cdliste{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:7px}
+.cdliste li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);text-align:left;
+  background:rgba(255,255,255,.1);animation:cdsort .5s cubic-bezier(.3,1.4,.5,1) both}
+.cdliste li:nth-child(2){animation-delay:.08s}.cdliste li:nth-child(3){animation-delay:.16s}.cdliste li:nth-child(4){animation-delay:.24s}
+.cdliste b{font-family:var(--display);font-weight:900;font-size:19px;color:#ffc73b}
+.cdliste span:last-child{font-size:13.5px;color:rgba(255,255,255,.88)}
+.cdnote{margin:4px 0 0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.65)}
+.cdico{flex:0 0 26px;height:26px;display:grid;place-items:center}
+.cdico svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
+.cdico .shard,.cdico .ico-star{fill:#ff7cc8;stroke:none}
+@media (prefers-reduced-motion:reduce){.cdpaquet,.cdrayons,.cdcarte,.cdliste li{animation:none}.cdcouvercle{transition:none}}
+
+/* ============ L'Élu : qui a tiré la carte unique ============ */
+/* Le cadre « Unique » : un anneau qui tourne sur toutes les couleurs de la
+   carte, et un halo qui respire. Le seul cadre dessiné hors du cercle : il
+   déborde, comme celui qui le porte. */
+.ava.unique{overflow:visible;box-shadow:0 0 14px rgba(236,143,255,.55);animation:elu-halo 3s ease-in-out infinite}
+.ava.unique::before{content:"";position:absolute;inset:-3.5px;border-radius:50%;z-index:1;pointer-events:none;
+  background:conic-gradient(from 0deg,#ffc73b,#ff7cc8,#ec8fff,#7fd8ff,#fff6d6,#ffc73b);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
+  animation:elu-tourne 4s linear infinite}
+.ava.unique::after{content:"";position:absolute;top:-6%;right:-4%;width:28%;height:28%;z-index:2;pointer-events:none;
+  background:radial-gradient(circle,#fff 0 18%,rgba(255,236,170,.9) 26%,transparent 60%);
+  clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);
+  animation:elu-etoile 2.4s ease-in-out infinite}
+.ava.xl.unique{box-shadow:0 0 22px rgba(236,143,255,.6),0 0 40px rgba(255,199,59,.25)}
+.ava.xl.unique::before{inset:-5px;-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px))}
+@keyframes elu-tourne{to{rotate:360deg}}
+@keyframes elu-halo{50%{box-shadow:0 0 20px rgba(255,199,59,.6)}}
+@keyframes elu-etoile{0%,100%{scale:.7;opacity:.6;rotate:0deg}50%{scale:1.1;opacity:1;rotate:45deg}}
+
+/* Sa carte d'identité et sa fiche prennent un liseré doré. */
+.idcard.elu{box-shadow:0 0 0 1.5px #ffc73b,0 8px 26px rgba(236,143,255,.25)}
+
+/* L'écrin : la carte, des rayons dorés, et ce qu'elle a d'unique. */
+.elu-ecrin{position:relative;display:flex;align-items:center;gap:14px;width:100%;margin:0 0 var(--gap-4);padding:14px 16px;
+  border:0;border-radius:var(--radius);overflow:hidden;isolation:isolate;text-align:left;color:#fff;cursor:pointer;
+  background:radial-gradient(120% 160% at 15% 50%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
+  box-shadow:0 0 0 1.5px #ffc73b,0 10px 30px rgba(255,140,200,.28)}
+.elu-rayons{position:absolute;left:14%;top:50%;width:360px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.5;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.7) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:nvtourne 30s linear infinite}
+.elu-carte{flex:0 0 74px;rotate:-5deg;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))}
+.elu-texte{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.elu-kick{display:inline-flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 9px 3px 7px;border-radius:999px;background:#ffc73b;color:#3a2600}
+.elu-kick svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round}
+.elu-texte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
+.elu-texte small{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.85)}
+@media (prefers-reduced-motion:reduce){.ava.unique,.ava.unique::before,.ava.unique::after,.elu-rayons{animation:none}}
+html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.rm .elu-rayons{animation:none}

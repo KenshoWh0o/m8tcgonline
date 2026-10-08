@@ -14,13 +14,26 @@ memes regles, dans le navigateur. Le code du jeu est copie tel quel : rien
 de ce qui est publie sur le site ne change, et le site ne contient pas la
 demo (les dossiers commencant par _ ne sont pas publies par GitHub Pages).
 
-A relancer apres chaque modification du jeu, pour que la demo suive."""
-import os, re, shutil, zipfile
+A relancer apres chaque modification du jeu, pour que la demo suive.
+
+    python3 tools/demo.py --preprod
+
+Produit la meme demo dans preprod/, publiee par GitHub Pages a cote du vrai
+site (matetcg.com/preprod/) : c'est la que se teste la version suivante,
+sans compte et sans toucher au vrai serveur. Par rapport a la demo :
+  - tout ce que la page range dans le navigateur (localStorage, IndexedDB)
+    porte un prefixe a part : la pre-prod ne lit ni n'ecrase les reglages,
+    les fenetres deja vues ou la session du vrai site, qui partage l'adresse ;
+  - pas de service worker : celui du vrai site couvre deja l'adresse, et deux
+    service workers sur la meme origine se videraient leurs caches ;
+  - un bandeau « PRE-PROD », pas d'indexation, et le Labo ouvert."""
+import os, re, shutil, sys, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, '_demo')
 BUILD = os.path.join(ROOT, '_build')
-OUT = os.path.join(BUILD, 'm8tcg-demo')
+PREPROD = '--preprod' in sys.argv
+OUT = os.path.join(ROOT, 'preprod') if PREPROD else os.path.join(BUILD, 'm8tcg-demo')
 
 # Ce qui part dans la demo. Tout le reste (serveur SQL, outils, kit presse,
 # page de diagnostic, adresse du site) n'a rien a y faire.
@@ -84,6 +97,60 @@ sw = remplacer(sw, r"'js/app\.js',",
     "'js/app.js', 'js/demo-reglages.js', 'js/demo-serveur.js',",
     "la liste ESSENTIEL de sw.js")
 ecrire('sw.js', sw)
+
+# --- la pre-prod : isolee du vrai site qui partage son adresse
+TETE_PREPROD = """<head>
+<meta name="robots" content="noindex, nofollow">
+<script>
+/* Pre-prod : tout ce que la page range porte le prefixe « preprod: ». Le
+   vrai site partage cette adresse (matetcg.com) : sans ce prefixe, les deux
+   se liraient et s'ecraseraient leurs reglages. */
+(function () {
+  var P = 'preprod:', S = Storage.prototype, g = S.getItem, s = S.setItem, r = S.removeItem, k = S.key;
+  S.getItem = function (x) { return g.call(this, P + x); };
+  S.setItem = function (x, v) { return s.call(this, P + x, v); };
+  S.removeItem = function (x) { return r.call(this, P + x); };
+  S.clear = function () {
+    for (var i = this.length - 1; i >= 0; i--) { var n = k.call(this, i); if (n && n.indexOf(P) === 0) r.call(this, n); }
+  };
+})();
+</script>
+<style>
+.preprod-bandeau{position:fixed;top:env(safe-area-inset-top,0px);left:50%;transform:translateX(-50%);z-index:99999;
+  pointer-events:none;font:800 10px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
+  padding:4px 10px 5px;border-radius:0 0 8px 8px;background:#ffc73b;color:#3a2600;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+</style>
+"""
+
+if PREPROD:
+    page = lire('index.html')
+    # En tout premier : le stockage du navigateur passe sous un prefixe.
+    page = remplacer(page, r'<head>\n', lambda m: TETE_PREPROD, "la balise <head> d'index.html")
+    page = remplacer(page, r'<title>[^<]*</title>', lambda m: f'<title>PRÉ-PROD {v} · Mate TCG Online</title>',
+                     'le titre de la page')
+    page = remplacer(page, r'<body([^>]*)>',
+                     lambda m: m.group(0) + "\n<div class=\"preprod-bandeau\">Pré-prod · démo, rien n'est réel</div>",
+                     "la balise <body> d'index.html")
+    ecrire('index.html', page)
+    # Une base IndexedDB a part.
+    ecrire('js/storage.js', remplacer(lire('js/storage.js'), r"indexedDB\.open\('premier-lobby'",
+                                      lambda m: "indexedDB.open('premier-lobby-preprod'", 'la base IndexedDB de js/storage.js'))
+    # Pas de service worker.
+    ecrire('js/pwa.js', remplacer(lire('js/pwa.js'), r'function brancherSW\(\) \{',
+                                  lambda m: m.group(0) + '\n  return; /* pre-prod : pas de service worker (tools/demo.py) */',
+                                  'brancherSW dans js/pwa.js'))
+    # Installee sur l'ecran d'accueil, elle ne se confond pas avec le vrai jeu.
+    ecrire('manifest.webmanifest', remplacer(lire('manifest.webmanifest'), r'"name": "[^"]*",\s*"short_name": "[^"]*"',
+        lambda m: '"name": "Mate TCG Pré-prod",\n  "short_name": "TCG Pré-prod"', 'les noms du manifeste'))
+    os.remove(os.path.join(OUT, 'sw.js'))
+    os.remove(os.path.join(OUT, 'LISEZMOI.txt'))
+    # Le joueur de la pre-prod est administrateur : le Labo sert a tout tester.
+    ecrire('js/demo-serveur.js', remplacer(lire('js/demo-serveur.js'),
+        r"S\.profils\[MOI\] = nouveauProfil\(MOI, D\.pseudo, \{ shards: D\.eclats \}\);",
+        lambda m: m.group(0) + '\n    S.profils[MOI].is_admin = true; /* pre-prod : le Labo est ouvert */',
+        'la creation du joueur dans demo-serveur.js'))
+    print(f'Pre-prod prete : preprod/ (version {v}), publiee a matetcg.com/preprod/ une fois poussee sur main')
+    sys.exit(0)
 
 # --- l'archive a envoyer
 archive = os.path.join(BUILD, 'm8tcg-demo.zip')

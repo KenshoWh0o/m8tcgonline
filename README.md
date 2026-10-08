@@ -717,6 +717,16 @@ Le Labo sert à **voir ce qu'on ne peut pas provoquer** :
 
 Pour obtenir une Promo **pour de vrai** sur son compte — et vérifier la détection, la boutique et les paliers de bout en bout — les requêtes sont commentées en bas de `supabase/03b_promos.sql`.
 
+## La pré-prod
+
+La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site, sans le toucher :
+
+    python3 tools/demo.py --preprod
+
+C'est la démo autonome (faux serveur, `_demo/serveur.js`) publiée dans `preprod/` : pas de compte, pas de vrai serveur, des joueurs simulés, et le Labo ouvert. Un bandeau « Pré-prod » le rappelle, et la page n'est pas indexée. Tout ce qu'elle range dans le navigateur porte un préfixe à part (`preprod:` pour le stockage local, une base IndexedDB à son nom) : elle ne lit ni n'écrase les réglages ou la session du vrai site, qui partage l'adresse. Elle n'a pas de service worker, pour ne pas vider les caches de celui du vrai site.
+
+Le développement se fait sur une branche à part ; `main` reste le site public. Pour publier une pré-prod : construire `preprod/` sur la branche, puis le reporter seul sur `main`. Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
+
 ## Mettre à jour le site
 
 GitHub Pages sert les fichiers avec un cache de dix minutes. Sans précaution, une
