@@ -107,8 +107,8 @@ function vBoutique() {
   /* La boutique de l'événement vit dans son onglet : ici, juste un lien. */
   const ev = evenementEnCours() === 'reflets'
     ? `<button class="rfban shopev" data-rfvue="boutique" aria-label="Ouvrir la boutique de l'événement Reflets">
-        <span class="rfban-ico">${NAVICO.shop}</span>
-        <span class="rfban-txt"><b>Boutique Reflets</b><small>Boosters, Fragments, une Reverse Rare, un titre — en ${PRISMES.nom}</small></span>
+        ${rfArt()}<span class="rfban-ico">${NAVICO.shop}</span>
+        <span class="rfban-txt"><b>Boutique Reflets</b><small>En ${PRISMES.nom}, pendant l'événement</small></span>
         <span class="rfban-solde">${prismeIco}${fmtN(save.prismes || 0)}</span>
         <span class="rfban-fl" aria-hidden="true">›</span>
       </button>` : '';

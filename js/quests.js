@@ -27,7 +27,7 @@ const QICO = {
   set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin',
   /* Version 2.0 : Reverses, Brillantes, Devine l'illu, invitations, personnalisation. */
   rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
-  brill_ALL: 'promo', illu: 'illu', invite: 'amis', titre: 'user', perso: 'user'
+  brill_ALL: 'promo', illu: 'illu', ev_visite: 'reflets', invite: 'amis', titre: 'user', perso: 'user'
 };
 
 /* ---------- Comptages ---------- */
@@ -204,7 +204,68 @@ function vQuetesSection(scope) {
       : `<b class="tnum">${restantes}</b><small>${restantes > 1 ? 'restantes' : 'restante'}</small>`}</span>
   </div>`;
 
-  return bandeau + liste.map(vQuete).join('');
+  return bandeau + (scope === 'milestone' ? vJalons(liste) : vListeQuetes(liste));
+}
+
+/* L'ordre d'une liste : ce qui est à récupérer d'abord, puis ce qui avance
+   (le plus avancé en tête), et les quêtes déjà récupérées repliées en bas. */
+const rangQuete = q => q.claimed ? 2 : q.progress >= q.goal ? 0 : 1;
+function trierQuetes(l) {
+  return l.slice().sort((a, b) => rangQuete(a) - rangQuete(b)
+    || b.progress / b.goal - a.progress / a.goal || (a.ordre || 0) - (b.ordre || 0));
+}
+function vListeQuetes(liste) {
+  const l = trierQuetes(liste);
+  const faites = l.filter(q => q.claimed);
+  return `<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
+    ${faites.length ? `<details class="qfaites"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
+      <div class="questlist">${faites.map(q => vQuete(q)).join('')}</div></details>` : ''}`;
+}
+
+/* Les quêtes de saison, par thème. Les paliers d'une même mesure (25, 50,
+   100 boosters…) forment une chaîne : on n'en montre que le prochain, avec
+   le nombre de paliers qui suivent — plus ceux qui sont déjà à récupérer. */
+const qThemes = {};
+document.addEventListener('toggle', e => {
+  const t = e.target.dataset && e.target.dataset.qtheme;
+  if (t) qThemes[t] = e.target.open;
+}, true);
+const JALON_THEMES = [
+  ['Collection', m => m === 'collection_pct' || m.startsWith('set_') || m.startsWith('rarity_')],
+  ['Reverses', m => m.startsWith('rset_')],
+  ['Boosters', m => m === 'packs'],
+  ['Et aussi', () => true]
+];
+function vJalons(liste) {
+  const chaines = {};
+  liste.forEach(q => (chaines[q.metric] = chaines[q.metric] || []).push(q));
+  const montrees = [];
+  Object.values(chaines).forEach(ch => {
+    ch.sort((a, b) => a.goal - b.goal || (a.ordre || 0) - (b.ordre || 0));
+    const ouvertes = ch.filter(q => !q.claimed);
+    const pretes = ouvertes.filter(q => q.progress >= q.goal);
+    const prochaine = ouvertes.find(q => q.progress < q.goal);
+    pretes.forEach(q => montrees.push({ q, apres: 0 }));
+    if (prochaine) montrees.push({ q: prochaine, apres: ouvertes.length - pretes.length - 1 });
+  });
+  const faites = liste.filter(q => q.claimed);
+  const vues = new Set();
+  const blocs = JALON_THEMES.map(([nom, test]) => {
+    const l = trierQuetes(montrees.filter(x => !vues.has(x.q.id) && test(x.q.metric)).map(x => x.q));
+    l.forEach(q => vues.add(q.id));
+    if (!l.length) return '';
+    const apres = id => (montrees.find(x => x.q.id === id) || {}).apres || 0;
+    const pretes = l.filter(q => q.progress >= q.goal).length;
+    /* Un thème se replie. Ouvert d'office s'il y a quelque chose à récupérer,
+       ou si c'est le premier ; sinon, le choix du joueur tient jusqu'au
+       rechargement. */
+    const ouvert = qThemes[nom] != null ? qThemes[nom] : pretes > 0 || nom === JALON_THEMES[0][0];
+    return `<details class="qgroupe" data-qtheme="${nom}"${ouvert ? ' open' : ''}>
+      <summary><b>${nom}</b><small>${l.length}</small>${pretes ? `<i class="pastille">${pretes}</i>` : ''}<span class="qchev">${NAVICO.caret}</span></summary>
+      <div class="questlist">${l.map(q => vQuete(q, apres(q.id))).join('')}</div></details>`;
+  }).join('');
+  return blocs + (faites.length ? `<details class="qfaites"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
+    <div class="questlist">${trierQuetes(faites).map(q => vQuete(q)).join('')}</div></details>` : '');
 }
 
 /* Ce que la quête rapporte. Un palier qui donne une carte ne donne pas
@@ -237,27 +298,22 @@ function vRecompense(q) {
   return `<span class="qreward">${shardIco}${fmtN(q.reward)}</span>`;
 }
 
-function vQuete(q) {
+/* Une quête, compacte : le titre et ce qu'elle rapporte, une ligne
+   d'explication, puis la barre et le compte — ou le bouton, quand c'est fait.
+   `apres` : les paliers qui suivent dans la même chaîne (quêtes de saison). */
+function vQuete(q, apres) {
   const fini = q.progress >= q.goal;
   const pct = Math.min(100, Math.round(q.progress / q.goal * 100));
   const unite = q.metric === 'collection_pct' ? ' %' : '';
 
   return `<article class="quest${q.claimed ? ' done' : fini ? ' ready' : ''}">
-    <span class="qico">${NAVICO[fini && !q.claimed ? 'check' : QICO[q.metric] || 'quest']}</span>
+    <span class="qico">${NAVICO[fini ? 'check' : QICO[q.metric] || 'quest']}</span>
     <div class="qcorps">
-      <div class="qhead">
-        <div><b>${h(q.titre)}</b><p>${h(q.detail)}</p></div>
-        ${vRecompense(q)}
-      </div>
-      <div class="qbar"><i style="width:${pct}%"></i></div>
-      <div class="qfoot">
-        <span class="qcompte"><b>${fmtN(q.progress)}${unite}</b> / ${fmtN(q.goal)}${unite}</span>
-        ${q.claimed
-          ? '<span class="qtag">Récupérée</span>'
-          : fini
-            ? `<button class="btn tiny" data-quete="${h(q.id)}" data-snd="piece">Récupérer</button>`
-            : '<span class="qtag">En cours</span>'}
-      </div>
+      <div class="qhead"><b>${h(q.titre)}</b>${vRecompense(q)}</div>
+      <p class="qdetail">${h(q.detail)}${apres ? ` <span class="qsuite">+${apres} palier${apres > 1 ? 's' : ''}</span>` : ''}</p>
+      ${q.claimed ? '' : `<div class="qfoot"><div class="qbar"><i style="width:${pct}%"></i></div>
+        ${fini ? `<button class="btn tiny qbtn" data-quete="${h(q.id)}" data-snd="piece">Récupérer</button>`
+          : `<span class="qcompte"><b>${fmtN(q.progress)}${unite}</b> / ${fmtN(q.goal)}${unite}</span>`}</div>`}
     </div>
   </article>`;
 }

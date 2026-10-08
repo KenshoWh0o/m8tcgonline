@@ -137,7 +137,7 @@
     ['m_illu10',  'milestone', 'illu',           10,    0, 't_devin',  'Le Devin',           'Trouve 10 illustrations à Devine l\'illu.', 24],
     ['m_invite',  'milestone', 'invite',          1,    0, 't_hote',   'L\'Hôte',            'Un ami entre dans le jeu avec ton invitation.', 25],
     /* L'événement « Reflets » : ses quêtes paient en Prismes. */
-    ['e_check',   'ev_jour', 'checkin',   1, 10, null, 'Un reflet par jour',  'Passe voir l\'événement aujourd\'hui.', 1, 'reflets', 'prismes'],
+    ['e_check',   'ev_jour', 'ev_visite',   1, 10, null, 'Un reflet par jour',  'Passe voir l\'événement aujourd\'hui.', 1, 'reflets', 'prismes'],
     ['e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',     'Ouvre 4 boosters aujourd\'hui.', 2, 'reflets', 'prismes'],
     ['e_illu',    'ev_jour', 'illu',      1, 10, null, 'L\'illu du jour',     'Trouve l\'illustration du jour.', 3, 'reflets', 'prismes'],
     ['e_revR',    'ev_jour', 'rev_R',     1, 15, null, 'Reflet rare',         'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'],
@@ -187,7 +187,7 @@
     [13, 630, 'boosters', 3, null, '3 boosters'], [14, 700, 'fragments', 600, null, '600 Fragments'],
     [15, 770, 'brillante', 1, null, 'Une Essence Brillante'], [16, 840, 'eclats', 500, null, '500 Éclats'],
     [17, 910, 'boosters', 4, null, '4 boosters'], [18, 980, 'reverse_R', 2, null, 'Deux Reverses Rares'],
-    [19, 1040, 'titre', 0, 't_ame', 'Titre « Âme des Reflets »'], [20, 1100, 'cadre', 0, 'f_kaleido', 'Cadre « Kaléidoscope »']
+    [19, 1040, 'titre', 0, 't_ame', 'Titre « Âme des Reflets »'], [20, 1100, 'cadre', 0, 'f_nebuleuse', 'Cadre « Nébuleuse »']
   ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
 
   /* Le catalogue : celui du jeu (js/cards-data.js, js/promos-data.js). */
@@ -1053,6 +1053,11 @@
   RPC.evenement_etat = p => {
     const ev = evenementEnCours();
     if (!ev) return null;
+    /* La quête « Passe voir l'événement » (ev_visite, 21_reflets.sql). */
+    QUETES.filter(q => q.metric === 'ev_visite').forEach(q => {
+      const k = cleQp(p, q);
+      if (!S.qp[k]) S.qp[k] = { progress: 1, claimed: false };
+    });
     const c = compte(p);
     const prises = S.evt.prises[p] || [];
     const top = Object.entries(S.evt.comptes)

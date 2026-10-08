@@ -25,7 +25,7 @@ function renderCard(c) {
        pas l'illustration, et le logo Tout Commence Ici frappé en holographique. */
     return `<div class="cwrap"><div class="card img-card r-${c.rar}${c.rev ? ' rev' : ''}" style="--tc:${tcol(c)}">
       <img src="${c.img}" alt="${h(c.nom)}" loading="lazy" decoding="async">${c.rev
-        ? `<i class="revtampon" aria-hidden="true" style="--logo:url('${logoAbsolu()}')"><i></i></i>` : ''}</div></div>`;
+        ? `<i class="revtampon" aria-hidden="true" style="--logo:url('${logoAbsolu()}')"><i></i></i><i class="revlueur" aria-hidden="true"></i>` : ''}</div></div>`;
   }
 
   /* Pas d'illustration : la carte existe dans la donnée mais pas sur le

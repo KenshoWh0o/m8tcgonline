@@ -1825,7 +1825,7 @@ delete from public.quests where id not in (
 -- Objectifs tenables en deux semaines : 6 boosters par jour donnent ~42
 -- Reverses Communes en 14 jours, ~25 differentes — d'ou 20, pas « toutes ».
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
-  ('e_check',   'ev_jour', 'checkin',   1, 10, null, 'Un reflet par jour',     'Passe voir l''événement aujourd''hui.', 1, 'reflets', 'prismes'),
+  ('e_check',   'ev_jour', 'ev_visite',   1, 10, null, 'Un reflet par jour',     'Passe voir l''événement aujourd''hui.', 1, 'reflets', 'prismes'),
   ('e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',        'Ouvre 4 boosters aujourd''hui.', 2, 'reflets', 'prismes'),
   ('e_illu',    'ev_jour', 'illu',      1, 10, null, 'L''illu du jour',        'Trouve l''illustration du jour.', 3, 'reflets', 'prismes'),
   ('e_revR',    'ev_jour', 'rev_R',     1, 15, null, 'Reflet rare',            'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'),
@@ -3329,7 +3329,7 @@ insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, ti
   ('reflets', 17,  910, 'boosters',   4, null,          '4 boosters'),
   ('reflets', 18,  980, 'reverse_R',  2, null,          'Deux Reverses Rares'),
   ('reflets', 19, 1040, 'titre',      0, 't_ame',       'Titre « Âme des Reflets »'),
-  ('reflets', 20, 1100, 'cadre',      0, 'f_kaleido',   'Cadre « Kaléidoscope »')
+  ('reflets', 20, 1100, 'cadre',      0, 'f_nebuleuse', 'Cadre « Nébuleuse »')
 on conflict (evenement, palier) do update set
   seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
   objet = excluded.objet, titre = excluded.titre;
@@ -3420,6 +3420,12 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   if ev is null then return 'null'::jsonb; end if;
+  -- Ouvrir l'onglet de l'evenement accomplit sa quete du jour « Passe voir
+  -- l'evenement ». Pas la connexion du jour (`checkin`) : elle a souvent eu
+  -- lieu avant l'ouverture de l'evenement, et la quete serait restee vide.
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite'
+  on conflict (user_id, quest_id, period_key) do nothing;
   select * into cpt from evt_comptes where user_id = p and evenement = ev;
 
   return jsonb_build_object(

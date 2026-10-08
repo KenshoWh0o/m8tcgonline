@@ -211,10 +211,10 @@ function vBandeauReflets(ev) {
   const fin = srvTime(ev.fin);
   const n = evQuetesPretes();
   return `<button class="rfban" data-tab="reflets" aria-label="Ouvrir l'événement Reflets">
-    <span class="rfban-ico">${NAVICO.reflets}</span>
+    ${rfArt()}
     <span class="rfban-txt">
+      <small>Événement 2.0 · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span></small>
       <b>Reflets</b>
-      <small>Événement · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span></small>
     </span>
     ${n ? `<span class="rfban-n">${n}</span>` : `<span class="rfban-solde">${prismeIco}${fmtN(save.prismes || 0)}</span>`}
     <span class="rfban-fl" aria-hidden="true">›</span>
