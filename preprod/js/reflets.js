@@ -559,7 +559,7 @@ function vRfRecap() {
   const r = rfRecap;
   const a = recapReflets();
   const reste = a && a.jusqua ? srvTime(a.jusqua) : 0;
-  const tete = `<header class="rf-tete recap">
+  const tete = `<header class="rf-tete rf-recap">
     ${rfArt()}
     <div class="rf-tetehaut">
       <div class="rf-tetenom"><small>Événement terminé · le récap</small><h1>Reflets</h1></div>
@@ -571,17 +571,17 @@ function vRfRecap() {
   </header>`;
   if (!r) { chargerRecap(); return `<div class="rf">${tete}<p class="muted boitecharge">Chargement du récap…</p></div>`; }
 
-  const stat = (ico, val, lib, sous) => `<div class="rc-stat"><span class="rc-ico">${ico}</span>
+  const stat = (ico, val, lib, sous) => `<div class="rr-stat"><span class="rr-ico">${ico}</span>
     <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
   const pct = r.reverses_max ? Math.round(r.reverses / r.reverses_max * 100) : 0;
   const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
-      <span class="rc-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
+      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
       <b>${h(j.pseudo)}</b><small>${prismeIco}${fmtN(j.total)}</small></li>`).join('');
 
   return `<div class="rf">${tete}<div class="rf-page">
-    <section class="rc-bilan">
+    <section class="rr-bilan">
       <h2>Ton bilan</h2>
-      <div class="rc-stats">
+      <div class="rr-stats">
         ${stat(prismeIco, fmtN(r.total), PRISMES.nom + ' gagnés', r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup> sur ${r.joueurs}` : '')}
         ${stat(NAVICO.trophy, `${r.paliers}<small>/${r.paliers_max}</small>`, 'paliers du Pass', r.paliers >= r.paliers_max ? 'Pass terminé' : '')}
         ${stat(NAVICO.reflets, `${r.reverses}<small>/${r.reverses_max}</small>`, 'Reverses', `${pct} % de la série`)}
@@ -589,22 +589,22 @@ function vRfRecap() {
         ${stat(NAVICO.quest, r.quetes, 'quêtes accomplies', '')}
       </div>
     </section>
-    ${podium ? `<section class="rc-podium"><h2>Le podium</h2><ol>${podium}</ol></section>` : ''}
-    <section class="rc-continue">
+    ${podium ? `<section class="rr-podium"><h2>Le podium</h2><ol>${podium}</ol></section>` : ''}
+    <section class="rr-continue">
       <h2>Ce qui reste</h2>
-      <div class="rc-cartes">
-        <button class="rc-lien" data-tab="illu"><span class="rc-ico">${NAVICO.illu}</span><b>Devine l'illu continue</b><small>Une illustration par jour, dans son propre onglet.</small></button>
-        <button class="rc-lien" data-colvue="reverses" data-tab="collection"><span class="rc-ico">${NAVICO.reflets}</span><b>Les Reverses restent</b><small>Toujours une par booster.</small></button>
+      <div class="rr-cartes">
+        <button class="rr-lien" data-tab="illu"><span class="rr-ico">${NAVICO.illu}</span><b>Devine l'illu continue</b><small>Une illustration par jour, dans son propre onglet.</small></button>
+        <button class="rr-lien" data-colvue="reverses" data-tab="collection"><span class="rr-ico">${NAVICO.reflets}</span><b>Les Reverses restent</b><small>Toujours une par booster.</small></button>
       </div>
     </section>
-    <section class="rc-suite">
+    <section class="rr-suite">
       <h2>À suivre</h2>
-      <article class="rc-teaser combats">
-        <span class="rc-tico">${NAVICO.sword}</span>
+      <article class="rr-teaser combats">
+        <span class="rr-tico">${NAVICO.sword}</span>
         <div><small>Version 3.0</small><b>Les Combats</b><p>Tes cartes vont bientôt quitter le classeur. Prépare ton deck.</p></div>
       </article>
-      <article class="rc-teaser secrets">
-        <span class="rc-secrets" aria-hidden="true"><i></i><i></i><i></i></span>
+      <article class="rr-teaser secrets">
+        <span class="rr-secrets" aria-hidden="true"><i></i><i></i><i></i></span>
         <div><small>Bientôt</small><b>Les Secrets</b><p>Des cartes que personne n'a encore vues. Elles se cachent déjà au bout de ta Collection.</p></div>
       </article>
     </section>
@@ -614,9 +614,9 @@ function vRfRecap() {
 /* Le bandeau de l'écran Boosters, en version récap. */
 function vBandeauRecap() {
   const a = recapReflets();
-  return `<button class="rfban recap" data-tab="reflets" aria-label="Voir le récap de l'événement Reflets">
+  return `<button class="rfban rf-recap" data-tab="reflets" aria-label="Voir le récap de l'événement Reflets">
     ${rfArt()}
-    <span class="rfban-txt"><small>Événement terminé · le récap</small><b>Reflets</b></span>
+    <span class="rfban-txt"><small>Terminé · le récap</small><b>Reflets</b></span>
     <span class="rfban-solde">Ton bilan</span>
     <span class="rfban-fl" aria-hidden="true">›</span>
   </button>`;
@@ -634,9 +634,9 @@ async function montrerRecap() {
   if (!r) return;
   openSheet({
     title: 'Reflets, c\'est fini',
-    body: `<div class="rc-pop">
-        <div class="rc-poptete">${rfArt()}<b>Merci d'avoir joué</b><small>Deux semaines de reflets — voici les tiens.</small></div>
-        <div class="rc-popstats">
+    body: `<div class="rr-pop">
+        <div class="rr-poptete">${rfArt()}<b>Merci d'avoir joué</b><small>Deux semaines de reflets — voici les tiens.</small></div>
+        <div class="rr-popstats">
           <div><b class="tnum">${fmtN(r.total)}</b><small>${PRISMES.nom}</small></div>
           <div><b class="tnum">${r.paliers}/${r.paliers_max}</b><small>Pass</small></div>
           <div><b class="tnum">${r.reverses}</b><small>Reverses</small></div>

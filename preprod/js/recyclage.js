@@ -36,6 +36,9 @@ const FAB_DEFAUT = { ES: 20, C: 40, PC: 100, R: 400, E: 2000, L: 8000 };
 const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAUT;
 const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
 const recPrix = c => recValeurs()[c.rar] || 0;
+/* Les Reverses se recyclent seulement une fois leur fabrication ouverte
+   (parametres.fabrication_reverse, supabase/12_recyclage.sql). */
+const recReverses = () => (save.parametres || {}).fabrication_reverse ? reverses : [];
 /* Une Reverse coûte le double (fabriquer, supabase/12_recyclage.sql). */
 const fabCout = c => (fabCouts()[c.rar] || 0) * (c.rev ? 2 : 1);
 const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
@@ -66,8 +69,8 @@ function vRecyclage() {
   if (Backend.mode !== 'cloud') return horsLigne('Recyclage');
   recNettoyer();
 
-  /* Les Reverses (version 2.0) se recyclent aussi, au même prix. */
-  const doublons = cards.concat(reverses).filter(c => !c.promo && recDispo(c) > 0)
+  /* Les Reverses (version 2.0) aussi, au même prix, une fois ouvertes (recReverses). */
+  const doublons = cards.concat(recReverses()).filter(c => !c.promo && recDispo(c) > 0)
     .sort((a, b) => rk(a) - rk(b) || a.num - b.num || !!a.rev - !!b.rev);
   const rars = RAR_FILTRES.filter(r => doublons.some(c => c.rar === r));
   if (recRar !== 'all' && !rars.includes(recRar)) recRar = 'all';
@@ -178,7 +181,7 @@ function recAjuster(id, d) {
    vaut 200 ou 500 se choisit, elle ne s'emporte pas dans un lot. */
 function recToutPrendre() {
   const garder = recRar === 'E' || recRar === 'L' ? [] : ['E', 'L'];
-  const liste = cards.concat(reverses).filter(c => !c.promo && recDispo(c) > 0
+  const liste = cards.concat(recReverses()).filter(c => !c.promo && recDispo(c) > 0
       && (recRar === 'all' || c.rar === recRar) && !garder.includes(c.rar))
     .sort((a, b) => rk(a) - rk(b) || a.num - b.num);
 

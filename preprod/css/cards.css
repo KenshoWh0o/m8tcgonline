@@ -274,14 +274,17 @@ button.gcell.fab:hover .ghost-card{box-shadow:inset 0 0 0 1.5px var(--accent-sof
   background-size:7.3% 5.3%,11.9% 8.7%,17.3% 12.1%;background-position:0 0,3.1% 1.7%,5.3% 4.1%;
   animation:scintille 2.6s ease-in-out infinite alternate}
 @keyframes revreflet{from{background-position:0% 10%}to{background-position:100% 90%}}
-.card.rev .revtampon{position:absolute;left:5%;top:42%;width:38%;height:9.5%;z-index:3;pointer-events:none;isolation:isolate;
-  background:var(--logo) center/contain no-repeat;transform:rotate(-4deg);
+/* Pile dans le coin bas gauche de la fenêtre d'illustration des Communes et
+   Peu communes (bord gauche à 8 %, bas à 54,5 % de la carte), un peu en
+   retrait ; même place sur les Rares, pour que la série reste alignée. */
+.card.rev .revtampon{position:absolute;left:9.5%;top:43.6%;width:36%;height:9%;z-index:3;pointer-events:none;isolation:isolate;
+  background:var(--logo) left bottom/contain no-repeat;
   filter:drop-shadow(0 1px 2px rgba(20,8,40,.6))}
 /* Le reflet ne prend que sur le logo : même masque, fondu par-dessus. */
 .card.rev .revtampon>i{position:absolute;inset:0;mix-blend-mode:color-dodge;opacity:.7;
   background:linear-gradient(110deg,#ff5bb0,#ffd2ef 22%,#b38cff 40%,#8fe3ff 58%,#c8ffe6 70%,#ff5bb0 86%);
   background-size:300% 100%;
-  -webkit-mask:var(--logo) center/contain no-repeat;mask:var(--logo) center/contain no-repeat;
+  -webkit-mask:var(--logo) left bottom/contain no-repeat;mask:var(--logo) left bottom/contain no-repeat;
   animation:revtampon 6s ease-in-out infinite alternate}
 @keyframes revtampon{from{background-position:0% 0}to{background-position:100% 0}}
 html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,html.rm .card.rev .revtampon>i{animation:none}
