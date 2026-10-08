@@ -36,6 +36,21 @@ on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
   rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
 
+-- ------------------------------------------------------- les Reverses
+-- Version 2.0. Chaque Commune, Peu commune et Rare de l'extension a sa Reverse :
+-- `r` + son numero (c010 -> r010), meme rarete, frappee du logo Tout Commence
+-- Ici. 33 + 24 + 28 = 85. Hors des 122 (promo), mais echangeables,
+-- recyclables et fabricables (reverse) — voir 01_schema.sql. Elles sortent
+-- de la 4e case d'un booster (open_pack, 03_rpc.sql).
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo, reverse)
+select 'r' || substr(k.id, 2), k.num, k.nom, k.cat, k.col, k.rar, false, true, true
+  from public.cards k
+ where k.rar in ('C', 'PC', 'R') and not k.promo and k.id like 'c%'
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo,
+  reverse = excluded.reverse;
+
 -- ------------------------------------------------- la carte unique
 -- Un seul exemplaire dans tout le jeu : celui ou celle qui la tire la garde.
 -- C'est la chasse (15_evenements.sql) qui la distribue, une seule fois.

@@ -195,17 +195,15 @@ Pour repartir de zéro dans la démo : ajouter `?reinitialiser` à la fin de l'a
 
 ## Composition d'un booster
 
-Huit cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
+Six cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
 
 | Carte | Contenu |
 |---|---|
-| 1 à 4 | Commune |
-| 5 à 7 | Peu commune |
-| 8 | Essence |
-| 9 | **Rare garantie** |
-| 10 | Le hit : rare, épique ou légendaire (`RATES.HIT` = 70 / 26 / 4 %) |
-
-La rare garantie en neuvième position est le pivot de l'équilibrage : elle assure qu'**aucun paquet ne soit vide de sens**. Il y a toujours au moins deux cartes de rang R ou mieux, donc toujours quelque chose qui fait avancer la collection quelque part.
+| 1 et 2 | Commune |
+| 3 | **Peu commune garantie** |
+| 4 | **Une Reverse** (version 2.0) : Commune 50 %, Peu commune 35 %, Rare 15 % (`RATES.REVERSE`) |
+| 5 | Essence — Brillante une fois sur 50 |
+| 6 | Le hit : rare, épique ou légendaire (`RATES.HIT` = 80 / 16 / 4 %) |
 
 Environ un booster sur 2 000 (`GOD`) est un **godpack** : 5 rares, 4 épiques et une légendaire en dernier. Rien ne l'annonce, ni écran, ni mot : voir plus bas.
 
@@ -421,6 +419,24 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 
 **La fenêtre des nouveautés** (`montrerNouveautes()`, `js/bienvenue.js`) s'ouvre une fois par version et par appareil, et se rouvre depuis le bandeau. Changer `NOUVEAUTES_VERSION` la remontre à tout le monde.
 
+## Version 2.0 · Reflets
+
+**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 4ᵉ carte. Elles se recyclent ; elles ne s'échangent que contre une autre Reverse ; leur fabrication coûte le double d'une classique et reste **fermée** tant que `parametres.fabrication_reverse` ne vaut pas `true` :
+
+    update public.parametres set fabrication_reverse = true where id = 1;
+
+**La Collection** a trois vues : Classiques (les 122), Reverses (les 85) et Spéciales (Promos, Brillantes, carte unique), sous une jauge commune. Une case dont on a aussi la Reverse porte un petit « R ».
+
+**Titres, bannière, devise.** Un titre s'affiche sous le pseudo (profil, fiche, classement). Il se gagne par les succès, les quêtes jalons, la piste de l'événement ou la boutique (`TITRES`, `js/config.js` ; `titres_de()`, `supabase/21_reflets.sql`). La bannière est une carte qu'on possède, en fond de fiche ; la devise, une phrase de 80 signes. Tout passe par `personnaliser()`. De nouveaux cadres arrivent avec : Maître, Reflet, Aurore, Miroir, Kaléidoscope.
+
+**L'événement Reflets** (`code = 'reflets'` dans `evenements`) remplace Combats dans la barre du bas tant qu'il dure. Sa monnaie, les **Prismes**, ne se gagne que par ses quêtes (quotidiennes `ev_jour` et de l'événement `ev`, colonne `evenement` de `quests`). Tout Prisme gagné fait avancer une **piste** de 15 paliers (`evt_piste`) ; en dépenser à la **boutique de l'événement** (`shop_items.devise = 'prismes'`) n'y change rien. L'onglet présente aussi les nouveautés de la 2.0 et le classement des Prismes.
+
+**Le Cartle** : une carte de l'extension à deviner par jour, en sept essais. Chaque essai dit si le type et l'essence sont les bons, et pour la rareté et le numéro si la réponse est au-dessus ou en dessous. La carte du jour est tirée par le serveur (`cartle_cible()`) et n'arrive au navigateur qu'une fois la partie finie. Trouvée : 30 Éclats, et la quête du jour.
+
+**Les invitations** s'achètent en boutique : 2 000 Fragments, trois par joueur (`shop_items.limite`). Chaque achat crée un code `M8-XXXX-XXXX`, valable une fois. L'ami se connecte avec Discord, arrive sur l'écran d'attente, et saisit le code — ou le reçoit tout rempli par le lien `/?invitation=CODE`. Il entre avec un cadeau de bienvenue (5 boosters, 500 Éclats). Pour que ce soit possible, **un compte non invité est désormais créé** à la connexion (`handle_new_user`) : il reste bloqué par `garde_beta()` sur toutes les actions du jeu et n'apparaît ni dans la recherche ni dans le classement, mais il peut utiliser un code.
+
+**Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
+
 ## Succès, historique et partage
 
 **Les succès** sont calculés à la volée par le serveur (`succes_de()`, `supabase/15_evenements.sql`) à partir de ce qu'il sait déjà : boosters, collection, échanges, plus longue série (`profiles.serie_max`), godpacks du journal, Brillantes, fabrications, carte unique. Rien à stocker ni à synchroniser. Les noms et descriptions sont dans `SUCCES` (`js/config.js`) ; les identifiants doivent rester les mêmes des deux côtés. Le profil les montre tous (obtenus en couleur, les autres grisés), la fiche d'un joueur seulement les siens.
@@ -583,10 +599,11 @@ invités. Les autres voient un paquet qui flotte, « Bientôt disponible », le 
 Discord — pour suivre l'actualité du jeu et discuter avec la communauté — et, en discret,
 « J'ai déjà un accès » pour les comptes invités.
 
-**L'accès est nominatif.** Il n'y a plus de code à saisir : on se connecte avec son compte
-Discord, et c'est le serveur qui vérifie que ce compte figure dans la table
-`beta_invites`. On invite, on retire, on regarde qui est entré depuis
-`supabase/09_beta.sql`.
+**L'accès est nominatif.** On se connecte avec son compte Discord, et c'est le serveur qui
+vérifie que ce compte figure dans la table `beta_invites`. On invite, on retire, on
+regarde qui est entré depuis `supabase/09_beta.sql`. Depuis la 2.0, un joueur peut aussi
+inviter un ami avec un code acheté en boutique (voir « Version 2.0 · Reflets ») : le code
+inscrit le compte Discord de l'ami dans `beta_invites`, une seule fois.
 
 Deux raisons d'avoir abandonné le code d'accès, et les deux ont servi contre nous :
 

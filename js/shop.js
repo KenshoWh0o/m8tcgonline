@@ -18,8 +18,12 @@
 const RAYONS = [
   { id: 'cartes', titre: 'Cartes', sous: 'De quoi ouvrir, échanger, et compléter.',
     sections: [
+      /* Version 2.0 : la boutique de l'événement (payée en Prismes), tant
+         qu'il dure — elle vit aussi dans son onglet. */
+      { categ: 'evenement', titre: 'Événement Reflets', evenement: 'reflets' },
       { categ: 'boosters', titre: 'Boosters' },
       { categ: 'echange', titre: 'Jetons d\'échange' },
+      { categ: 'invitation', titre: 'Invitations', invitations: true },
       { categ: 'promo', titre: 'Cartes Promo' }
     ] },
   { id: 'cosmetique', titre: 'Cosmétiques', sous: 'Purement décoratif : aucun effet sur le jeu.',
@@ -30,6 +34,16 @@ const RAYONS = [
 ];
 
 let shopVue = 'cartes';
+
+/* Version 2.0 : un article se paie en Éclats, en Fragments ou en Prismes. */
+const DEVISES = {
+  eclats:    { ico: () => shardIco, nom: () => MONNAIE.nom, solde: () => save.shards || 0 },
+  fragments: { ico: () => `<span class="fragico">${NAVICO.fragment}</span>`, nom: () => FRAGMENTS.nom, solde: () => save.fragments || 0 },
+  prismes:   { ico: () => prismeIco, nom: () => PRISMES.nom, solde: () => save.prismes || 0 }
+};
+const deviseDe = it => DEVISES[it.devise] || DEVISES.eclats;
+/* Ce qui reste à acheter d'un article limité (`limite`, par joueur). */
+const restantDe = it => it.limite == null ? null : Math.max(0, it.limite - ((save.inv || {})[it.id] || 0));
 
 /* La carte vendue par un article, quand il en vend une. */
 const carteDe = it => byId[it.carte_id] || byId[it.montant_id] || null;
@@ -42,6 +56,10 @@ function vArticleArt(it) {
   const c = carteDe(it);
   if (c) return renderCard(c);
   if (FRAMES[it.id]) return avatarHTML(save.avatar, it.id, 'lg', maPhoto());
+  if (TITRES[it.id]) return `<span class="qrtitre t${TITRES[it.id].ton}">${h(TITRES[it.id].nom)}</span>`;
+  if (it.effet === 'invitation') return `<span class="ofinvit">M8-<b>••••</b></span>`;
+  if (it.effet === 'reverse_R') return reverses.length ? renderCard(reverses.find(c => c.rar === 'R') || reverses[0]) : ICON.star;
+  if (it.effet === 'fragments') return `<span class="offrag">${NAVICO.fragment}</span>`;
   if (it.effet === 'trade_token') return `<img class="ofjeton" src="${ART.jeton}" alt="">`;
   if (it.effet === 'tickets' || it.effet === 'refill') return `<img src="${PACK_ARTS[0]}" alt="">`;
   return ICON.star;
@@ -72,12 +90,14 @@ function vBoutique() {
   const tete = `<div class="pagehead">
       <div>
         <h1>Boutique</h1>
-        <p>Tout se paie en ${MONNAIE.nom}, gagnés en accomplissant des quêtes.</p>
+        <p>En ${MONNAIE.nom}, gagnés en quêtes — les invitations en ${FRAGMENTS.nom}, l'événement en ${PRISMES.nom}.</p>
       </div>
     </div>
     <div class="walletrow">
       <span class="wallet">${shardIco}<b>${fmtN(save.shards)}</b> ${MONNAIE.nom}</span>
       ${jetons ? `<span class="wallet"><img class="wjeton" src="${ART.jeton}" alt=""><b>${jetons}</b> jeton${jetons > 1 ? 's' : ''}</span>` : ''}
+      <span class="wallet"><span class="fragico">${NAVICO.fragment}</span><b>${fmtN(save.fragments || 0)}</b></span>
+      ${evenementEnCours() ? `<span class="wallet">${prismeIco}<b>${fmtN(save.prismes || 0)}</b></span>` : ''}
     </div>`;
 
   if (!items.length) {
@@ -96,13 +116,15 @@ function vRayon(id, items) {
   const r = RAYONS.find(x => x.id === id) || RAYONS[0];
 
   const blocs = r.sections.map(sec => {
+    if (sec.evenement && evenementEnCours() !== sec.evenement) return '';
     const cases = sec.avenir
       ? vCosmetiquesAVenir()
       : items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
     if (!cases) return '';
-    return `<section class="rayon${sec.avenir ? ' avenir' : ''}">
-      <h2>${h(sec.titre)}</h2>
+    return `<section class="rayon${sec.avenir ? ' avenir' : ''}${sec.evenement ? ' rayonev' : ''}">
+      <h2>${h(sec.titre)}${sec.evenement ? ` <small class="muted">· ${prismeIco}${fmtN(save.prismes || 0)} ${PRISMES.nom}</small>` : ''}</h2>
       <div class="offres">${cases}</div>
+      ${sec.invitations ? vMesInvitations() : ''}
     </section>`;
   }).join('');
 
@@ -110,8 +132,10 @@ function vRayon(id, items) {
 }
 
 function vArticle(it, items) {
-  const possede = it.unique_buy && (save.inv || {})[it.id] > 0;
-  const cher = save.shards < it.prix;
+  const reste = restantDe(it);
+  const possede = (it.unique_buy && (save.inv || {})[it.id] > 0) || reste === 0;
+  const dv = deviseDe(it);
+  const cher = dv.solde() < it.prix;
   const remise = remiseDe(it, items);
 
   return `<article class="offre${possede ? ' owned' : ''}${cher ? ' cher' : ''}"
@@ -119,11 +143,12 @@ function vArticle(it, items) {
     ${possede ? `<span class="ofcoche">${NAVICO.check}</span>` : ''}
     ${!possede && it.unique_buy ? '<span class="ofbadge unique">Unique</span>' : ''}
     ${!possede && !it.unique_buy && remise ? `<span class="ofbadge eco">−${remise} %</span>` : ''}
+    ${!possede && reste != null ? `<span class="ofbadge limite">${reste} restant${reste > 1 ? 's' : ''}</span>` : ''}
     <span class="ofart">${vArticleArt(it)}${vArticleQte(it)}</span>
     <span class="ofnom">${h(it.titre)}</span>
     ${possede
-      ? '<span class="qtag ok">Débloqué</span>'
-      : `<span class="ofprix">${shardIco}${fmtN(it.prix)}</span>`}
+      ? `<span class="qtag ok">${reste === 0 ? 'Épuisé' : 'Débloqué'}</span>`
+      : `<span class="ofprix">${dv.ico()}${fmtN(it.prix)}</span>`}
   </article>`;
 }
 
@@ -155,8 +180,9 @@ function ouvrirArticle(id) {
   const it = (Backend.shop || []).find(x => x.id === id);
   if (!it) return;
 
-  const cher = save.shards < it.prix;
-  const reste = save.shards - it.prix;
+  const dv = deviseDe(it);
+  const cher = dv.solde() < it.prix;
+  const reste = dv.solde() - it.prix;
   const remise = remiseDe(it, Backend.shop || []);
 
   openSheet({
@@ -166,14 +192,14 @@ function ouvrirArticle(id) {
       <p class="achatdit">${h(it.detail)}</p>
       <div class="achatprix">
         <span>Prix${remise ? ` <i class="achateco">−${remise} %</i>` : ''}</span>
-        <b>${shardIco}${fmtN(it.prix)}</b>
+        <b>${dv.ico()}${fmtN(it.prix)}</b>
       </div>
       <p class="achatreste${cher ? ' court' : ''}">${cher
-        ? `Il te manque ${fmtN(it.prix - save.shards)} ${MONNAIE.nom}.`
-        : `Il te restera ${fmtN(reste)} ${MONNAIE.nom}.`}</p>
+        ? `Il te manque ${fmtN(it.prix - dv.solde())} ${dv.nom()}.`
+        : `Il te restera ${fmtN(reste)} ${dv.nom()}.`}${restantDe(it) != null ? ` Encore ${restantDe(it)} sur ${it.limite}.` : ''}</p>
     </div>`,
     actions: [
-      { label: cher ? 'Pas assez d\'Éclats' : 'Acheter', primary: true, disabled: cher,
+      { label: cher ? `Pas assez de ${dv.nom()}` : 'Acheter', primary: true, disabled: cher,
         fn: () => { closeSheet(); acheter(it); } },
       { label: 'Retour', fn: closeSheet }
     ]
@@ -204,6 +230,18 @@ function vAchatScene(it) {
 
   if (FRAMES[it.id]) {
     return `<div class="a3d cadre"><div class="a3d-cadre">${avatarHTML(save.avatar, it.id, 'xl', maPhoto())}</div></div>`;
+  }
+  /* Version 2.0 : un titre se montre sous le pseudo, une invitation comme un billet. */
+  if (TITRES[it.id]) {
+    return `<div class="a3d cadre"><div class="a3d-titre"><b>${h(save.pseudo)}</b>
+      <span class="qrtitre t${TITRES[it.id].ton}">${h(TITRES[it.id].nom)}</span></div></div>`;
+  }
+  if (it.effet === 'invitation') {
+    return `<div class="a3d cadre"><div class="a3d-invit"><small>Invitation</small><b>M8-••••-••••</b>
+      <span>${h(GAME_NAME)}</span></div></div>`;
+  }
+  if (it.effet === 'fragments' || it.effet === 'reverse_R') {
+    return `<div class="a3d cadre"><div class="a3d-cadre">${vArticleArt(it)}</div></div>`;
   }
 
   if (it.effet === 'trade_token') {
@@ -317,6 +355,57 @@ async function acheter(it) {
     aller('boosters');
     return setTimeout(() => openBooster({ bonus: true }), 350);
   }
+  /* Une invitation : son code, tout de suite, prêt à envoyer. */
+  if (it.effet === 'invitation') {
+    const inv = (save.invitations || []).slice(-1)[0];
+    SFX.jouer('gagne');
+    if (inv) montrerInvitation(inv.code);
+    return;
+  }
+  if (it.evenement && typeof chargerReflets === 'function') chargerReflets();
   toast(it.unique_buy ? `${it.titre} débloqué.` : `${it.titre} : c'est dans ta réserve.`);
   SFX.jouer('gagne');
+}
+
+/* ---------- Les invitations (version 2.0) ---------- */
+/* Un code par invitation, valable une fois. L'ami se connecte avec Discord,
+   saisit le code sur l'écran d'attente (js/gate.js), et entre — avec un cadeau
+   de bienvenue (supabase/21_reflets.sql). Le lien remplit le code tout seul. */
+const lienInvitation = code => `${String(SITE_URL || location.origin).replace(/\/$/, '')}/?invitation=${encodeURIComponent(code)}`;
+
+function vMesInvitations() {
+  const l = save.invitations || [];
+  if (!l.length) return '';
+  return `<div class="mesinvit">
+    <h3>Mes invitations</h3>
+    ${l.map(i => `<div class="invligne${i.utilise_par ? ' utilisee' : ''}">
+      <code>${h(i.code)}</code>
+      ${i.utilise_par ? `<span class="muted small">Utilisée par <b>${h(i.utilise_par)}</b></span>`
+        : `<button class="btn tiny ghost" data-invit="${h(i.code)}">${NAVICO.partage}Envoyer</button>`}
+    </div>`).join('')}
+  </div>`;
+}
+
+function montrerInvitation(code) {
+  openSheet({
+    title: 'Ton invitation',
+    body: `<div class="invfiche">
+        <small>Le code</small><code class="invcode">${h(code)}</code>
+        <p class="muted small">Envoie-le à un ami : il se connecte avec Discord, et le saisit sur l'écran d'accueil.
+          Le lien ci-dessous le remplit pour lui. Un code ne sert qu'une fois.</p>
+        <p class="invlien">${h(lienInvitation(code))}</p>
+      </div>`,
+    actions: [
+      { label: 'Envoyer', primary: true, fn: () => partagerInvitation(code) },
+      { label: 'Fermer', fn: () => { closeSheet(); render(); } }
+    ]
+  });
+}
+
+function partagerInvitation(code) {
+  const texte = `Je t'invite sur ${GAME_NAME} ! Connecte-toi avec Discord, et utilise le code ${code} :`;
+  const url = lienInvitation(code);
+  if (navigator.share) navigator.share({ text: texte, url }).catch(() => {});
+  else if (navigator.clipboard) navigator.clipboard.writeText(`${texte} ${url}`).then(() => toast('Invitation copiée.')).catch(() => toast(url));
+  else toast(url);
 }

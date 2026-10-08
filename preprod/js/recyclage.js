@@ -36,7 +36,8 @@ const FAB_DEFAUT = { ES: 20, C: 40, PC: 100, R: 400, E: 2000, L: 8000 };
 const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAUT;
 const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
 const recPrix = c => recValeurs()[c.rar] || 0;
-const fabCout = c => fabCouts()[c.rar] || 0;
+/* Une Reverse coûte le double (fabriquer, supabase/12_recyclage.sql). */
+const fabCout = c => (fabCouts()[c.rar] || 0) * (c.rev ? 2 : 1);
 const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
 
 /* Les exemplaires proposés dans une de mes demandes d'échange en attente. */
@@ -65,8 +66,9 @@ function vRecyclage() {
   if (Backend.mode !== 'cloud') return horsLigne('Recyclage');
   recNettoyer();
 
-  const doublons = cards.filter(c => !c.promo && recDispo(c) > 0)
-    .sort((a, b) => rk(a) - rk(b) || a.num - b.num);
+  /* Les Reverses (version 2.0) se recyclent aussi, au même prix. */
+  const doublons = cards.concat(reverses).filter(c => !c.promo && recDispo(c) > 0)
+    .sort((a, b) => rk(a) - rk(b) || a.num - b.num || !!a.rev - !!b.rev);
   const rars = RAR_FILTRES.filter(r => doublons.some(c => c.rar === r));
   if (recRar !== 'all' && !rars.includes(recRar)) recRar = 'all';
   const liste = recRar === 'all' ? doublons : doublons.filter(c => c.rar === recRar);
@@ -176,7 +178,7 @@ function recAjuster(id, d) {
    vaut 200 ou 500 se choisit, elle ne s'emporte pas dans un lot. */
 function recToutPrendre() {
   const garder = recRar === 'E' || recRar === 'L' ? [] : ['E', 'L'];
-  const liste = cards.filter(c => !c.promo && recDispo(c) > 0
+  const liste = cards.concat(reverses).filter(c => !c.promo && recDispo(c) > 0
       && (recRar === 'all' || c.rar === recRar) && !garder.includes(c.rar))
     .sort((a, b) => rk(a) - rk(b) || a.num - b.num);
 
@@ -280,6 +282,20 @@ async function recEnvoyer() {
 function ouvrirFabrication(id) {
   const c = byId[id];
   if (!c || c.promo || save.col[id] > 0) return;
+  /* Les Reverses (version 2.0) : fermées au lancement, ouvertes plus tard par
+     un administrateur (parametres, supabase/21_reflets.sql). */
+  if (c.rev && !(save.parametres || {}).fabrication_reverse) {
+    return openSheet({
+      title: 'Pas encore',
+      body: `<div class="fabfiche">
+          <button class="fabcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
+          <div class="fabmeta"><b>${h(c.nom)}</b>
+            <p class="muted small">La fabrication des Reverses ouvrira plus tard : pour l'instant, elles se trouvent
+              en booster — une par booster, en 4ᵉ carte — et s'échangent entre joueurs.</p></div>
+        </div>`,
+      actions: [{ label: 'Fermer', fn: closeSheet }]
+    });
+  }
   const cout = fabCout(c);
   const solde = save.fragments || 0;
   const manque = Math.max(0, cout - solde);
@@ -291,7 +307,7 @@ function ouvrirFabrication(id) {
         <button class="fabcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
         <div class="fabmeta">
           <b>${h(c.nom)}</b>
-          <span class="r${c.rar}">${R.nom} · #${String(c.num || 0).padStart(3, '0')}</span>
+          <span class="r${c.rar}">${R.nom}${c.rev ? ' Reverse' : ''} · #${String(c.num || 0).padStart(3, '0')}</span>
           <div class="achatprix"><span>Coût</span><b>${fragIco}${fmtN(cout)}</b></div>
           <p class="achatreste${manque ? ' court' : ''}">${manque
             ? `Il te manque ${fmtN(manque)} ${FRAGMENTS.nom}. Recycle des doublons pour en gagner.`

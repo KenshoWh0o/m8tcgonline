@@ -24,6 +24,7 @@
 .labfait b{font-family:var(--display);font-weight:900;font-size:15px;white-space:nowrap}
 .labbtn.tBR{border-left:3px solid #ff5bb0}
 .labbtn.tUN{border-left:3px solid #ec8fff}
+.labbtn.tREV{border-left:3px solid #7fd8ff}
 
 .labsous{margin:16px 0 8px;font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .labtable{display:grid;grid-template-columns:1fr auto auto;gap:6px 18px;align-items:center;font-size:13px;

@@ -36,39 +36,62 @@ function resumeFiltres() {
   return bouts.length ? bouts.join(' · ') : 'Tout afficher';
 }
 
+/* Version 2.0 : trois vues. Classiques (les 122 de l'extension), Reverses
+   (les 85, une par booster) et Spéciales (Promos, Brillantes, carte unique).
+   Une jauge pour tout en tête, et chaque vue a la sienne. */
+let colVue = 'classiques';
+
+const possedees = l => l.filter(c => (save.col[c.id] || 0) > 0).length;
+const speciales = () => promos.concat(brillantes, uniques);
+
 function vCollection() {
   if (!cards.length) {
     return `<div class="empty"><h1>Collection vide</h1><p class="muted">Le fichier js/cards-data.js ne contient aucune carte.</p></div>`;
   }
 
+  const sp = speciales();
+  const vues = [
+    { id: 'classiques', nom: 'Classiques', n: possedees(cards), total: cards.length },
+    { id: 'reverses', nom: 'Reverses', n: possedees(reverses), total: reverses.length },
+    { id: 'speciales', nom: 'Spéciales', n: possedees(sp), total: sp.length }
+  ].filter(v => v.total > 0);
+  if (!vues.some(v => v.id === colVue)) colVue = 'classiques';
+  const toutes = vues.reduce((n, v) => n + v.total, 0);
+  const miennes = vues.reduce((n, v) => n + v.n, 0);
+  const pctTout = Math.floor(miennes / toutes * 100);
+
+  const tete = `<div class="colhead">
+      <div class="colheadtop">
+        <h1>Collection</h1>
+        <span class="colpct tnum">${pctTout}<small>%</small></span>
+      </div>
+      <div class="prog">
+        <div class="bar"><i style="width:${pctTout}%"></i></div>
+        <span class="tnum"><b>${miennes}</b> / ${toutes} cartes</span>
+      </div>
+    </div>
+    <div class="colvues" role="tablist">${vues.map(v => `<button class="colvue ${v.id}${colVue === v.id ? ' on' : ''}" data-colvue="${v.id}"
+        role="tab" aria-selected="${colVue === v.id}">
+        <b>${v.nom}</b><span class="tnum">${v.n}<small> / ${v.total}</small></span>
+        <i class="colvuebar"><i style="width:${Math.round(v.n / v.total * 100)}%"></i></i></button>`).join('')}</div>`;
+
+  return tete + (colVue === 'reverses' ? vColReverses() : colVue === 'speciales' ? vColSpeciales() : vColClassiques());
+}
+
+/* ---------- Les 122 de l'extension ---------- */
+function vColClassiques() {
   const all = cards.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
-  const list = all
-    .filter(c => colFilter === 'all' || c.cat === colFilter)
-    .filter(c => essFilter === 'all' || c.col === essFilter)
-    .filter(c => rarFilter === 'all' || c.rar === rarFilter)
-    .filter(c => !colPossedees || save.col[c.id] > 0);
-  const owned = all.filter(c => save.col[c.id] > 0).length;
-  const pct = Math.round(owned / all.length * 100);
+  const list = filtrer(all);
+  const owned = possedees(all);
 
   /* Les Secrets prennent la suite de la numérotation sans entrer dans le total.
      On ne les montre que sans filtre : ils n'ont encore ni catégorie ni essence. */
   const noFilter = !filtresActifs();
   const secretFrom = all.reduce((m, c) => Math.max(m, c.num || 0), 0) + 1;
 
-  return `<div class="colhead">
-      <div class="colheadtop">
-        <h1>Collection</h1>
-        <span class="colpct tnum">${pct}<small>%</small></span>
-      </div>
-      <div class="prog">
-        <div class="bar"><i style="width:${pct}%"></i></div>
-        <span class="tnum"><b>${owned}</b> / ${all.length}</span>
-      </div>
-      ${Backend.mode === 'cloud' && owned < all.length
-        ? `<p class="colfab">${NAVICO.fragment}<span><b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom}
-             · touche une case vide pour fabriquer la carte</span></p>`
-        : ''}
-    </div>
+  return `${Backend.mode === 'cloud' && owned < all.length
+      ? `<div class="colsous"><span class="colfab">${NAVICO.fragment}<b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom} · touche une case vide pour la fabriquer</span></div>`
+      : ''}
 
     ${noFilter && uniques[0] && save.col[uniques[0].id] > 0 ? vUniqueVitrine() : ''}
 
@@ -77,12 +100,45 @@ function vCollection() {
     ${list.length
       ? `<div class="grid">${list.map(vCase).join('')}${noFilter ? secretCells(secretFrom) : ''}</div>`
       : `<p class="empty">Aucune carte avec ces filtres.
-          <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}
-
-    ${noFilter || rarFilter === 'PR' ? vPromosSection() : ''}
-    ${noFilter ? vBrillantesSection() : ''}
-    ${noFilter && uniques[0] && !(save.col[uniques[0].id] > 0) ? vUniqueVitrine() : ''}`;
+          <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}`;
 }
+
+/* ---------- Les 85 Reverses ---------- */
+function vColReverses() {
+  const all = reverses.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
+  const list = filtrer(all);
+  const owned = possedees(all);
+  const ouverte = (save.parametres || {}).fabrication_reverse;
+  return `<div class="revtete">
+      <div class="revtexte">
+        <b>Les Reverses</b>
+        <p>Chaque Commune, Peu commune et Rare, frappée du logo <i>Tout Commence Ici</i>.
+          Une dans chaque booster, en 4ᵉ carte : Commune (50&nbsp;%), Peu commune (35&nbsp;%) ou Rare (15&nbsp;%).</p>
+        <small>${ouverte ? `Fabrication ouverte : le double du prix d'une classique.` : 'Fabrication : bientôt. Pour l\'instant, elles se trouvent et s\'échangent.'}</small>
+      </div>
+      <span class="revcompte tnum"><b>${owned}</b><small>/ ${all.length}</small></span>
+    </div>
+    ${vFiltres(all)}
+    ${list.length
+      ? `<div class="grid">${list.map(vCase).join('')}</div>`
+      : `<p class="empty">Aucune Reverse avec ces filtres.
+          <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}`;
+}
+
+/* ---------- Promos, Brillantes, carte unique ---------- */
+function vColSpeciales() {
+  return `${uniques[0] && save.col[uniques[0].id] > 0 ? vUniqueVitrine() : ''}
+    ${vPromosSection()}
+    ${vBrillantesSection()}
+    ${uniques[0] && !(save.col[uniques[0].id] > 0) ? vUniqueVitrine() : ''}`;
+}
+
+/* Les filtres du tiroir, appliqués à une liste. */
+const filtrer = all => all
+  .filter(c => colFilter === 'all' || c.cat === colFilter)
+  .filter(c => essFilter === 'all' || c.col === essFilter)
+  .filter(c => rarFilter === 'all' || c.rar === rarFilter)
+  .filter(c => !colPossedees || save.col[c.id] > 0);
 
 /* ---------- Le tiroir de filtres ---------- */
 function vFiltres(all) {
@@ -110,8 +166,6 @@ function vFiltres(all) {
         <button data-rar="all" class="${rarFilter === 'all' ? 'on' : ''}">Toutes</button>
         ${rars.map(k => `<button data-rar="${k}" class="rarchip r${k} ${rarFilter === k ? 'on' : ''}">
           <i class="rardot"></i>${(RAR[k] || RAR.C).nom}</button>`).join('')}
-        ${promos.length ? `<button data-rar="PR" class="rarchip rPR ${rarFilter === 'PR' ? 'on' : ''}">
-          <i class="rardot"></i>Promo</button>` : ''}
       </div>`)}
 
       ${ligne('Essence', `<div class="essrow">
@@ -155,7 +209,9 @@ const caseVide = (etiquette, cls, sous) => {
 function vCase(c) {
   const n = save.col[c.id] || 0;
   const no = '#' + String(c.num || 0).padStart(3, '0');
-  if (n) return `<button class="gcell" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(c)}<span class="num">${no}</span></button>`;
+  /* Une classique dont on a aussi la Reverse porte un petit reflet en coin. */
+  const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${rev ? '<span class="revmarque" title="Tu as aussi sa Reverse">R</span>' : ''}${renderCard(c)}<span class="num">${no}</span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);

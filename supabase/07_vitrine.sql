@@ -67,6 +67,10 @@ begin
       'fragments', pr.fragments,
       -- Les boosters en plus (boutique, cadeaux), hors reserve.
       'boosters_bonus', pr.boosters_bonus, 'bonus_offerts', pr.tickets_offerts,
+      -- Version 2.0 (21_reflets.sql) : le titre, la banniere, la devise, et
+      -- les titres debloques.
+      'titre', pr.titre, 'banniere', pr.banniere, 'devise', pr.devise,
+      'titres', to_jsonb(titres_de(p)),
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
@@ -92,6 +96,17 @@ begin
     'succes', succes_de(p),
     'evenement', evenement_actif(),
     'chasse', chasse_etat(),
+    -- Version 2.0 : les reglages ouverts a la main, le solde de Prismes de
+    -- l'evenement en cours, et les invitations achetees.
+    'parametres', (select jsonb_build_object('fabrication_reverse', fabrication_reverse)
+                     from parametres where id = 1),
+    'prismes', coalesce((select solde from evt_comptes
+                          where user_id = p and evenement = evenement_en_cours()), 0),
+    'invitations', coalesce((
+      select jsonb_agg(jsonb_build_object('code', i.code, 'cree_le', i.cree_le,
+                                          'utilise_par', (select pseudo from profiles where id = i.utilise_par),
+                                          'utilise_le', i.utilise_le) order by i.cree_le)
+        from invitations i where i.auteur = p), '[]'::jsonb),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
@@ -101,10 +116,13 @@ begin
         'id', q.id, 'scope', q.scope, 'titre', q.titre, 'detail', q.detail,
         'goal', q.goal, 'reward', q.reward, 'item', q.item_id, 'metric', q.metric,
         'progress', least(coalesce(qp.progress, 0), q.goal),
-        'claimed', coalesce(qp.claimed, false)) order by q.scope, q.ordre)
+        'claimed', coalesce(qp.claimed, false),
+        'monnaie', q.monnaie, 'evenement', q.evenement) order by q.scope, q.ordre)
       from quests q
       left join quest_progress qp
         on qp.quest_id = q.id and qp.user_id = p and qp.period_key = period_key(q.scope)
+      -- Les quetes d'un evenement n'existent que pendant qu'il dure.
+      where q.evenement is null or q.evenement = evenement_en_cours()
     ), '[]'::jsonb)
   );
 end $$;
@@ -113,7 +131,7 @@ end $$;
 -- La vitrine est visible de tous : c'est fait pour etre montre.
 create or replace function public.player_profile(p_pseudo text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int;
+declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -136,6 +154,11 @@ begin
   select count(*) into possede
     from collection c join cards k on k.id = c.card_id
    where c.user_id = o.id and c.qty > 0 and not k.promo;
+  -- Version 2.0 : les Reverses, comptees a part.
+  select count(*) into rev_total from cards where reverse;
+  select count(*) into rev
+    from collection c join cards k on k.id = c.card_id
+   where c.user_id = o.id and c.qty > 0 and k.reverse;
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -144,6 +167,8 @@ begin
     'packs_opened', o.packs_opened, 'trades_done', o.trades_done,
     'membre_depuis', o.created_at,
     'possede', possede, 'total', total,
+    'reverses', rev, 'reverses_total', rev_total,
+    'titre', o.titre, 'banniere', o.banniere, 'devise', o.devise,
     'vitrine', to_jsonb(o.vitrine),
     'succes', succes_de(o.id),
     'ami', ami,

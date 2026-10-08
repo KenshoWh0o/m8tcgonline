@@ -145,6 +145,25 @@ function buildBrillantes(liste) {
   }));
 }
 
+/* ---------- Les Reverses (version 2.0) ---------- */
+/* Chaque Commune, Peu commune et Rare de l'extension a sa Reverse : la même
+   carte, frappée du logo Tout Commence Ici (posé par renderCard). `r` + le
+   numéro, comme côté serveur (supabase/03b_promos.sql). Hors des 122, mais
+   échangeables, recyclables et fabricables — d'où `promo: false` ici : côté
+   navigateur, c'est `rev` qui les met à part. */
+function buildReverses(liste) {
+  return liste.filter(c => ['C', 'PC', 'R'].includes(c.rar) && c.cat !== 'essence').map(c => Object.assign({}, c, {
+    id: 'r' + c.id.slice(1),
+    nom: c.nom + ' Reverse',
+    nomBase: c.nom,
+    inBoost: false,
+    promo: false,
+    rev: true,
+    base: c.id,
+    code: '#' + String(c.num || 0).padStart(3, '0') + ' R'
+  }));
+}
+
 /* ---------- La carte unique ---------- */
 function buildUniques() {
   if (typeof UNIQUE_DATA === 'undefined') return [];

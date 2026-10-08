@@ -158,11 +158,12 @@ begin
 
   god := random() < 1.0 / cfg('god_odds');
 
-  -- Six cartes, chacune a sa place :
+  -- Six cartes, chacune a sa place (version 2.0) :
   --   1 · Commune
   --   2 · Commune
-  --   3 · Commune (60 %) ou Peu commune (40 %)
-  --   4 · Peu commune
+  --   3 · Peu commune
+  --   4 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
+  --       Rare 15 %
   --   5 · Essence
   --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
   -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
@@ -182,8 +183,12 @@ begin
   else
     ids := ids || pick_card('C');
     ids := ids || pick_card('C');
-    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'C' else 'PC' end);
     ids := ids || pick_card('PC');
+    x := random() * 100.0;
+    select id into cid from cards
+     where reverse and rar = case when x < 50.0 then 'C' when x < 85.0 then 'PC' else 'R' end
+     order by random() limit 1;
+    ids := ids || cid;
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
@@ -265,6 +270,9 @@ begin
                                       where id = any(ids) and rar in ('E','L')));
   perform bump_quests(p, 'rarity_L', (select count(*)::int from cards
                                       where id = any(ids) and rar = 'L'));
+  -- Version 2.0 : les Reverses Rares sorties.
+  perform bump_quests(p, 'rev_R', (select count(*)::int from cards
+                                   where id = any(ids) and reverse and rar = 'R'));
   perform sync_collection_quests(p);
   perform check_promos(p);
 
@@ -282,6 +290,10 @@ begin
   perform garde_beta();
   select * into q from quests where id = p_quest;
   if not found then raise exception 'Quête inconnue.'; end if;
+  -- Une quete d'evenement (21_reflets.sql) ne s'encaisse que pendant qu'il dure.
+  if q.evenement is not null and q.evenement is distinct from evenement_en_cours() then
+    raise exception 'Cet événement est terminé.';
+  end if;
 
   pk := period_key(q.scope);
   select progress, claimed into prog, deja
@@ -293,7 +305,9 @@ begin
   update quest_progress set claimed = true
     where user_id = p and quest_id = q.id and period_key = pk;
 
-  if q.reward > 0 then
+  if q.reward > 0 and q.monnaie = 'prismes' then
+    perform crediter_prismes(p, q.evenement, q.reward);
+  elsif q.reward > 0 then
     update profiles set shards = shards + q.reward where id = p;
   end if;
 
@@ -329,15 +343,39 @@ begin
   perform garde_beta();
   select * into it from shop_items where id = p_item and actif;
   if not found then raise exception 'Article indisponible.'; end if;
+  -- Un article d'evenement (21_reflets.sql) ne se vend que pendant qu'il dure.
+  if it.evenement is not null and it.evenement is distinct from evenement_en_cours() then
+    raise exception 'Cet événement est terminé.';
+  end if;
 
   select * into pr from profiles where id = p for update;
-  if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
 
   if it.unique_buy and exists (select 1 from inventory where user_id = p and item_id = it.id) then
     raise exception 'Tu possèdes déjà cet article.';
   end if;
+  -- `limite` : combien de fois un joueur peut l'acheter. Le compte est tenu
+  -- dans l'inventaire, sous l'identifiant de l'article.
+  if it.limite is not null and coalesce((select qty from inventory
+                                          where user_id = p and item_id = it.id), 0) >= it.limite then
+    raise exception 'Tu as atteint la limite pour cet article.';
+  end if;
 
-  update profiles set shards = shards - it.prix where id = p;
+  -- La devise (version 2.0) : Eclats, Fragments, ou Prismes de l'evenement.
+  if it.devise = 'fragments' then
+    if pr.fragments < it.prix then raise exception 'Pas assez de Fragments.'; end if;
+    update profiles set fragments = fragments - it.prix where id = p;
+  elsif it.devise = 'prismes' then
+    update evt_comptes set solde = solde - it.prix
+     where user_id = p and evenement = it.evenement and solde >= it.prix;
+    if not found then raise exception 'Pas assez de Prismes.'; end if;
+  else
+    if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
+    update profiles set shards = shards - it.prix where id = p;
+  end if;
+  if it.limite is not null and not it.unique_buy then
+    insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
+      on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
+  end if;
 
   if it.effet = 'tickets' then
     -- Les boosters achetes ne vont pas dans la reserve : ils s'ouvrent a part
@@ -348,6 +386,10 @@ begin
   elsif it.effet = 'trade_token' then
     insert into inventory (user_id, item_id, qty) values (p, 'trade_token', it.montant)
       on conflict (user_id, item_id) do update set qty = inventory.qty + excluded.qty;
+  elsif it.effet = 'invitation' then
+    perform creer_invitation(p);
+  elsif it.effet in ('fragments', 'reverse_R') then
+    perform accorder(p, it.effet, it.montant, null);
   elsif it.effet = 'carte' then
     -- Une carte achetee entre dans la collection comme n'importe quelle autre.
     -- Elle est marquee `unique_buy` en boutique : on ne l'achete qu'une fois.
@@ -356,7 +398,7 @@ begin
       on conflict (user_id, card_id) do update set qty = collection.qty + 1;
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
       on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
-  else -- cosmetique
+  else -- cosmetique : un cadre (f_…) ou un titre (t_…), sous son identifiant
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
       on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
   end if;
@@ -417,9 +459,13 @@ begin
   if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
   -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
-  -- unique — reste a qui l'a obtenu.
-  if exists (select 1 from cards where id in (p_offer, p_want) and promo) then
+  -- unique — reste a qui l'a obtenu. Les Reverses, elles, s'echangent : contre
+  -- une Reverse de meme rarete.
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse) then
     raise exception 'Cette carte ne s''échange pas.';
+  end if;
+  if (select count(distinct reverse) from cards where id in (p_offer, p_want)) > 1 then
+    raise exception 'Une Reverse s''échange contre une Reverse.';
   end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
@@ -567,7 +613,8 @@ begin
   if auth.uid() is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   select * into r from profiles where lower(pseudo) = lower(trim(p_pseudo));
-  if not found then return 'null'::jsonb; end if;
+  -- Un compte qui n'a pas acces au jeu (01_schema.sql) n'est pas trouvable.
+  if not found or not (beta_ouverte() or est_invite(r.id)) then return 'null'::jsonb; end if;
   return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
     'frame', r.frame, 'photo', photo_discord(r.id));
 end $$;

@@ -15,17 +15,21 @@ function vProfil() {
 
   return `<div class="pagehead"><div><h1>Profil</h1></div></div>
 
-  <section class="idcard${(save.succes || []).includes('unique') ? ' elu' : ''}">
+  <section class="idcard${(save.succes || []).includes('unique') ? ' elu' : ''}${save.banniere ? ' banniere' : ''}">
+    ${vBanniere(save.banniere)}
     ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
     <div class="idnom">
-      <span class="idnomligne"><b>${h(save.pseudo)}</b>
-        ${save.isAdmin ? '<span class="qtag ok">Admin</span>' : ''}</span>
+      <span class="idnomligne"><b>${h(save.pseudo)}</b></span>
+      ${vTitreLigne(save.titre)}
+      ${save.devise ? `<p class="iddevise">« ${h(save.devise)} »</p>` : ''}
       <p class="muted small">${save.streak > 1 ? save.streak + ' jours d\'affilée' : 'Membre'}</p>
     </div>
     <span class="wallet">${shardIco}<b>${fmtN(save.shards)}</b></span>
     <button class="btn tiny ghost" data-fiche="${h(save.pseudo)}">Ma fiche</button>
   </section>
   ${vElu(save.succes, true)}
+
+  ${vPerso()}
 
   <section class="panel vitpanel">
     <h2>Ma vitrine <span class="muted small">— ce que les autres voient en premier</span></h2>
@@ -80,12 +84,94 @@ function vProfil() {
 
   <section class="panel">
     <h2>Cadre de l'avatar</h2>
-    ${cadres.length > 1 ? '' : '<p class="muted small">Les autres cadres s\'achètent en boutique.</p>'}
     <div class="avagrid">
       ${cadres.map(k => `<button class="avapick${save.frame === k ? ' on' : ''}" data-frame="${k}"
-        title="${h(FRAMES[k].nom)}">${avatarHTML(save.avatar, k, 'md', maPhoto())}</button>`).join('')}
+        title="${h(FRAMES[k].nom)}">${avatarHTML(save.avatar, k, 'md', maPhoto())}<span>${h(FRAMES[k].nom)}</span></button>`).join('')}
+      ${Object.keys(FRAMES).filter(k => !cadres.includes(k) && CADRE_SOURCE[k]).map(k =>
+        `<span class="avapick verrou" title="${h(CADRE_SOURCE[k])}">${avatarHTML(save.avatar, k, 'md', maPhoto())}
+          <span>${h(FRAMES[k].nom)}</span><small>${h(CADRE_SOURCE[k])}</small></span>`).join('')}
     </div>
   </section>`;
+}
+
+/* ---------- Version 2.0 : titre, bannière, devise ---------- */
+/* Où se gagne chaque cadre qu'on n'a pas encore : le dire vaut mieux qu'une
+   case grise muette. */
+const CADRE_SOURCE = {
+  f_azur: 'Boutique', f_rose: 'Boutique', f_or: 'Boutique', f_prisme: 'Boutique',
+  f_sceau: '300 boosters ouverts', f_master: 'Les 122 cartes', f_reflet: 'Les 85 Reverses',
+  f_aurore: 'Les 9 Brillantes', f_miroir: 'Piste Reflets, palier 9', f_kaleido: 'Boutique Reflets',
+  f_unique: 'La carte unique'
+};
+
+/* Le titre sous un pseudo. */
+function vTitreLigne(id) {
+  const t = id && TITRES[id];
+  return t ? `<span class="titreligne t${t.ton}">${h(t.nom)}</span>` : '';
+}
+
+/* La bannière : l'illustration d'une carte, floutée derrière l'en-tête. */
+function vBanniere(id) {
+  const c = id && byId[id];
+  return c && c.img ? `<span class="idbanniere" aria-hidden="true" style="background-image:url('${c.img}')"></span>` : '';
+}
+
+function vPerso() {
+  const miens = save.titres || [];
+  const c = save.banniere && byId[save.banniere];
+  return `<section class="panel perso">
+    <h2>Personnalisation <span class="muted small">— ce que les autres voient sur ta fiche</span></h2>
+
+    <h3 class="persotitre">Titre</h3>
+    <div class="titregrille">
+      <button class="titrechoix${!save.titre ? ' on' : ''}" data-titre="">Aucun</button>
+      ${Object.keys(TITRES).filter(k => miens.includes(k)).map(k =>
+        `<button class="titrechoix t${TITRES[k].ton}${save.titre === k ? ' on' : ''}" data-titre="${k}">${h(TITRES[k].nom)}</button>`).join('')}
+    </div>
+    ${Object.keys(TITRES).some(k => !miens.includes(k) && k !== 't_admin') ? `<details class="titresverrou">
+      <summary>${Object.keys(TITRES).filter(k => !miens.includes(k) && k !== 't_admin').length} titres à débloquer</summary>
+      <ul>${Object.keys(TITRES).filter(k => !miens.includes(k) && k !== 't_admin').map(k =>
+        `<li><span class="titreligne t${TITRES[k].ton}">${h(TITRES[k].nom)}</span><small>${h(TITRES[k].comment)}</small></li>`).join('')}</ul>
+    </details>` : ''}
+
+    <h3 class="persotitre">Bannière</h3>
+    <div class="banchoix">
+      <span class="banapercu">${c ? renderCard(c) : '<span class="banvide">Aucune</span>'}</span>
+      <div class="row">
+        <button class="btn tiny ghost" data-act="pf-banniere">${c ? 'Changer' : 'Choisir une carte'}</button>
+        ${c ? '<button class="btn tiny ghost" data-banniere="">Retirer</button>' : ''}
+      </div>
+    </div>
+
+    <h3 class="persotitre">Devise</h3>
+    <div class="findrow">
+      <input id="pf-devise" type="text" maxlength="80" value="${h(save.devise || '')}" placeholder="Une phrase, 80 signes au plus">
+      <button class="btn tiny ghost" data-act="pf-devise">Enregistrer</button>
+    </div>
+  </section>`;
+}
+
+const choisirTitre = id => agir(() => Backend.personnaliser(id || '', null, null),
+  id ? `Titre « ${TITRES[id] ? TITRES[id].nom : id} » équipé.` : 'Titre retiré.');
+
+const choisirBanniere = id => { closeSheet(); return agir(() => Backend.personnaliser(null, id || '', null), id ? 'Bannière posée.' : 'Bannière retirée.'); };
+
+function enregistrerDevise() {
+  const v = ($('#pf-devise') || {}).value || '';
+  return agir(() => Backend.personnaliser(null, null, v), v.trim() ? 'Devise enregistrée.' : 'Devise retirée.');
+}
+
+function ouvrirChoixBanniere() {
+  const liste = toutesCartes().filter(c => (save.col[c.id] || 0) > 0 && c.img).sort(parRarete);
+  openSheet({
+    title: 'Une bannière',
+    body: liste.length
+      ? `<p class="muted small">Son illustration passe en tête de ton profil et de ta fiche.</p>
+         <div class="pickgrid">${liste.map(c => `<button class="pick" data-banniere="${c.id}" data-snd="carte">${renderCard(c)}
+           <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`
+      : '<p class="muted">Ouvre quelques boosters d\'abord.</p>',
+    actions: [{ label: 'Fermer', fn: closeSheet }]
+  });
 }
 
 /* ---------- Les succès ---------- */

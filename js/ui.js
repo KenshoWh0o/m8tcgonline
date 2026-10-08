@@ -175,7 +175,7 @@ function avatarHTML(a, frame, cls, photo) {
   const f = FRAMES[frame] || FRAMES.default;
   const v = avatarInfo(a, photo);
   const mode = v.ico ? ' ico' : v.objet ? ' objet' : '';
-  const anim = f.prisme ? ' prisme' : f.sceau ? ' sceau' : f.unique ? ' unique' : '';
+  const anim = f.prisme ? ' prisme' : f.sceau ? ' sceau' : f.unique ? ' unique' : f.anim ? ' fr-' + f.anim : '';
   const vars = [`--f1:${f.c1}`, `--f2:${f.c2}`];
   if (v.bg) vars.push('--ab:' + v.bg);
   if (v.pos) vars.push('--apos:' + v.pos);
@@ -185,6 +185,9 @@ function avatarHTML(a, frame, cls, photo) {
 
 /* ---------- Petits blocs répétés ---------- */
 const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 9.5 12 22 4 9.5Z" fill="currentColor" opacity=".9"/><path d="M12 2 4 9.5h16Z" fill="#fff" opacity=".35"/></svg>';
+
+/* Le Prisme, monnaie de l'événement (version 2.0). */
+const prismeIco = '<svg class="prismeico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="prg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7cc8"/><stop offset=".5" stop-color="#b38cff"/><stop offset="1" stop-color="#7fd8ff"/></linearGradient></defs><path d="M12 2.5 21 18.5H3Z" fill="url(#prg)"/><path d="M12 2.5 9.4 18.5h5.2Z" fill="#fff" opacity=".35"/></svg>';
 
 const fmtN = n => String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 

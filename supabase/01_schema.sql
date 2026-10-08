@@ -63,6 +63,12 @@ create table if not exists public.cards (
   promo      boolean not null default false
 );
 alter table public.cards add column if not exists promo boolean not null default false;
+-- Version 2.0 : les Reverses. La meme carte que la Commune, Peu commune ou Rare
+-- de l'extension, frappee du logo Tout Commence Ici. Elles sont marquees
+-- `promo` — hors des 122, donc hors du pourcentage, des raretes completes et
+-- du tirage classique — et `reverse` : c'est ce drapeau qui les rend
+-- echangeables, recyclables et fabricables, contrairement aux Promos.
+alter table public.cards add column if not exists reverse boolean not null default false;
 create index if not exists cards_rar_idx on public.cards (rar) where in_booster;
 
 -- ------------------------------------------------------------ collection
@@ -112,11 +118,40 @@ create table if not exists public.shop_items (
 );
 
 alter table public.shop_items add column if not exists carte_id text references public.cards;
+-- Version 2.0 : un article peut se payer autrement qu'en Eclats (`devise` :
+-- eclats | fragments | prismes — la monnaie d'un evenement), n'etre vendu que
+-- pendant un evenement (`evenement`, son code) et s'acheter un nombre limite
+-- de fois (`limite`, par joueur).
+alter table public.shop_items add column if not exists devise    text not null default 'eclats';
+alter table public.shop_items add column if not exists evenement text;
+alter table public.shop_items add column if not exists limite    integer;
 do $$ begin
   alter table public.shop_items drop constraint if exists shop_items_categ_check;
   alter table public.shop_items add constraint shop_items_categ_check
-    check (categ in ('boosters','echange','cosmetique','promo'));
+    check (categ in ('boosters','echange','cosmetique','promo','evenement','invitation'));
+  alter table public.shop_items drop constraint if exists shop_items_devise_check;
+  alter table public.shop_items add constraint shop_items_devise_check
+    check (devise in ('eclats','fragments','prismes'));
 end $$;
+
+-- Version 2.0 : les quetes d'un evenement. `evenement` : son code — la quete
+-- n'existe que pendant qu'il dure. `monnaie` : ce qu'elle paie (eclats, ou
+-- prismes, la monnaie de l'evenement). Deux portees de plus : `ev_jour` (une
+-- quete du jour pendant l'evenement) et `ev` (une fois pour tout l'evenement).
+alter table public.quests add column if not exists evenement text;
+alter table public.quests add column if not exists monnaie   text not null default 'eclats';
+do $$ begin
+  alter table public.quests drop constraint if exists quests_scope_check;
+  alter table public.quests add constraint quests_scope_check
+    check (scope in ('daily','weekly','milestone','ev_jour','ev'));
+end $$;
+
+-- Version 2.0 : la personnalisation du profil. Un titre (parmi ceux qu'on a
+-- gagnes, 21_reflets.sql), une banniere (l'illustration d'une carte qu'on
+-- possede, en tete de sa fiche) et une devise (une phrase, 80 signes).
+alter table public.profiles add column if not exists titre    text;
+alter table public.profiles add column if not exists banniere text;
+alter table public.profiles add column if not exists devise   text;
 
 create table if not exists public.inventory (
   user_id uuid not null references public.profiles on delete cascade,
@@ -366,28 +401,18 @@ begin
   return left(s, 16);
 end $$;
 
--- Le declencheur tourne DANS la transaction qui cree le compte : lever une
--- exception ici annule l'inscription entiere, et aucune ligne ne subsiste dans
--- auth.users. C'est ce qu'on veut — un refus, pas un compte a moitie cree.
+-- Version 2.0 : l'inscription n'est plus refusee a qui n'est pas sur la liste.
+-- Il fallait un compte pour saisir un code d'invitation (21_reflets.sql) : un
+-- compte non invite se cree donc, mais il ne voit que l'ecran d'attente — toutes
+-- les actions du jeu passent par garde_beta(), qui le refuse tant qu'il n'est
+-- pas sur la liste. find_player et le classement l'ignorent.
 --
 -- Les comptes existants ne sont pas concernes : ce declencheur ne se lance
 -- qu'a l'insertion.
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare base text; try text; n int := 0; cle_discord text;
+declare base text; try text; n int := 0;
 begin
-  if not beta_ouverte() then
-    cle_discord := coalesce(new.raw_user_meta_data->>'provider_id',
-                            new.raw_user_meta_data->>'sub', '');
-    if not exists (
-      select 1 from beta_invites b
-       where (nullif(new.email, '') is not null and lower(b.cle) = lower(new.email))
-          or (nullif(cle_discord, '') is not null and b.cle = cle_discord)
-    ) then
-      raise exception 'BETA_FERMEE'
-        using hint = 'Le jeu est en beta fermee : ce compte n''est pas sur la liste.';
-    end if;
-  end if;
 
   base := slugify_pseudo(coalesce(
     new.raw_user_meta_data->>'pseudo',
@@ -487,6 +512,7 @@ create or replace function public.period_key(sc text) returns text
 language sql stable as $$
   select case sc
     when 'daily'  then to_char(now() at time zone 'Europe/Paris', 'YYYY-MM-DD')
+    when 'ev_jour' then to_char(now() at time zone 'Europe/Paris', 'YYYY-MM-DD')
     when 'weekly' then to_char(now() at time zone 'Europe/Paris', 'IYYY"-W"IW')
     else 'all' end;
 $$;
@@ -531,6 +557,20 @@ begin
            where c.user_id = p and c.qty > 0 and not k.promo
              and k.rar = substr(q.metric, 5))
     from quests q where q.metric like 'set\_%'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress);
+
+  -- Version 2.0 : les Reverses d'une rarete (« rset_C », « rset_PC »,
+  -- « rset_R »), toutes les Reverses (« rset_ALL »), toutes les Brillantes
+  -- (« brill_ALL »).
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, 'all',
+         (select count(*) from collection c join cards k on k.id = c.card_id
+           where c.user_id = p and c.qty > 0
+             and case q.metric when 'rset_ALL' then k.reverse
+                               when 'brill_ALL' then k.rar = 'BR'
+                               else k.reverse and k.rar = substr(q.metric, 6) end)
+    from quests q where q.metric like 'rset\_%' or q.metric = 'brill_ALL'
   on conflict (user_id, quest_id, period_key)
     do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;

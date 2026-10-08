@@ -111,7 +111,7 @@ begin
 
     select * into k from cards where id = cid;
     if not found then raise exception 'Carte inconnue.'; end if;
-    if k.promo then raise exception 'Cette carte ne se recycle pas.'; end if;
+    if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
     prix := cfg('recyclage_' || k.rar);
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 
@@ -148,8 +148,17 @@ begin
 
   select * into k from cards where id = p_carte;
   if not found then raise exception 'Carte inconnue.'; end if;
-  if k.promo then raise exception 'Cette carte ne se fabrique pas.'; end if;
+  if k.promo and not k.reverse then raise exception 'Cette carte ne se fabrique pas.'; end if;
   cout := cfg('fabrication_' || k.rar);
+  -- Les Reverses (version 2.0) : le double, et seulement une fois la
+  -- fabrication ouverte (parametres, 21_reflets.sql) — fermee au lancement,
+  -- sinon les Fragments accumules rempliraient la collection Reverse d'un coup.
+  if k.reverse then
+    if not coalesce((select fabrication_reverse from parametres where id = 1), false) then
+      raise exception 'La fabrication des Reverses n''est pas encore ouverte.';
+    end if;
+    cout := cout * 2;
+  end if;
   if cout is null then raise exception 'Cette carte ne se fabrique pas.'; end if;
 
   select fragments into reste from profiles where id = p for update;

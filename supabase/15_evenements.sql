@@ -41,6 +41,11 @@ create table if not exists public.evenements (
   constraint evenement_dans_l_ordre check (fin > debut)
 );
 
+-- Version 2.0 : le code d'un evenement relie ses quetes, sa boutique et sa
+-- piste de recompenses (21_reflets.sql). Un evenement sans code ne change que
+-- le rythme des boosters.
+alter table public.evenements add column if not exists code text;
+
 alter table public.evenements enable row level security;
 revoke all on public.evenements from anon, authenticated;
 
@@ -92,13 +97,13 @@ create or replace function public.evenement_actif() returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 begin
   return coalesce(
-    (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
+    (select jsonb_build_object('titre', e.titre, 'texte', e.texte, 'code', e.code,
                                'debut', e.debut, 'fin', e.fin,
                                'ticket_minutes', e.ticket_minutes, 'a_venir', false)
        from evenements e
       where now() >= e.debut and now() < e.fin
       order by e.debut desc limit 1),
-    (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
+    (select jsonb_build_object('titre', e.titre, 'texte', e.texte, 'code', e.code,
                                'debut', e.debut, 'fin', e.fin,
                                'ticket_minutes', e.ticket_minutes, 'a_venir', true)
        from evenements e
@@ -133,6 +138,7 @@ language plpgsql stable security definer set search_path = public as $$
 declare
   pr profiles; s text[] := '{}';
   ext int; ext_total int; leg int; leg_total int; br int; br_total int; uni boolean;
+  rev int; rev_total int;
 begin
   select * into pr from profiles where id = p;
   if not found then return '[]'::jsonb; end if;
@@ -167,6 +173,12 @@ begin
   if uni                    then s := array_append(s, 'unique'); end if;
   -- Ceux qui etaient la avant la version 1.5.
   if pr.created_at < timestamptz '2026-10-04 00:00:00+02' then s := array_append(s, 'pionnier'); end if;
+  -- Version 2.0 : les Reverses.
+  select count(*) filter (where k.reverse) into rev
+    from collection c join cards k on k.id = c.card_id where c.user_id = p and c.qty > 0;
+  select count(*) into rev_total from cards where reverse;
+  if rev >= 1 then s := array_append(s, 'premiere_reverse'); end if;
+  if rev_total > 0 and rev >= rev_total then s := array_append(s, 'reverses_toutes'); end if;
 
   return to_jsonb(s);
 end $$;

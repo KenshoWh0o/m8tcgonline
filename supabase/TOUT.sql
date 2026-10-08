@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-10-07
+--   Assemble le 2026-10-08
 --
 -- =====================================================================
 
@@ -87,6 +87,12 @@ create table if not exists public.cards (
   promo      boolean not null default false
 );
 alter table public.cards add column if not exists promo boolean not null default false;
+-- Version 2.0 : les Reverses. La meme carte que la Commune, Peu commune ou Rare
+-- de l'extension, frappee du logo Tout Commence Ici. Elles sont marquees
+-- `promo` — hors des 122, donc hors du pourcentage, des raretes completes et
+-- du tirage classique — et `reverse` : c'est ce drapeau qui les rend
+-- echangeables, recyclables et fabricables, contrairement aux Promos.
+alter table public.cards add column if not exists reverse boolean not null default false;
 create index if not exists cards_rar_idx on public.cards (rar) where in_booster;
 
 -- ------------------------------------------------------------ collection
@@ -136,11 +142,40 @@ create table if not exists public.shop_items (
 );
 
 alter table public.shop_items add column if not exists carte_id text references public.cards;
+-- Version 2.0 : un article peut se payer autrement qu'en Eclats (`devise` :
+-- eclats | fragments | prismes — la monnaie d'un evenement), n'etre vendu que
+-- pendant un evenement (`evenement`, son code) et s'acheter un nombre limite
+-- de fois (`limite`, par joueur).
+alter table public.shop_items add column if not exists devise    text not null default 'eclats';
+alter table public.shop_items add column if not exists evenement text;
+alter table public.shop_items add column if not exists limite    integer;
 do $$ begin
   alter table public.shop_items drop constraint if exists shop_items_categ_check;
   alter table public.shop_items add constraint shop_items_categ_check
-    check (categ in ('boosters','echange','cosmetique','promo'));
+    check (categ in ('boosters','echange','cosmetique','promo','evenement','invitation'));
+  alter table public.shop_items drop constraint if exists shop_items_devise_check;
+  alter table public.shop_items add constraint shop_items_devise_check
+    check (devise in ('eclats','fragments','prismes'));
 end $$;
+
+-- Version 2.0 : les quetes d'un evenement. `evenement` : son code — la quete
+-- n'existe que pendant qu'il dure. `monnaie` : ce qu'elle paie (eclats, ou
+-- prismes, la monnaie de l'evenement). Deux portees de plus : `ev_jour` (une
+-- quete du jour pendant l'evenement) et `ev` (une fois pour tout l'evenement).
+alter table public.quests add column if not exists evenement text;
+alter table public.quests add column if not exists monnaie   text not null default 'eclats';
+do $$ begin
+  alter table public.quests drop constraint if exists quests_scope_check;
+  alter table public.quests add constraint quests_scope_check
+    check (scope in ('daily','weekly','milestone','ev_jour','ev'));
+end $$;
+
+-- Version 2.0 : la personnalisation du profil. Un titre (parmi ceux qu'on a
+-- gagnes, 21_reflets.sql), une banniere (l'illustration d'une carte qu'on
+-- possede, en tete de sa fiche) et une devise (une phrase, 80 signes).
+alter table public.profiles add column if not exists titre    text;
+alter table public.profiles add column if not exists banniere text;
+alter table public.profiles add column if not exists devise   text;
 
 create table if not exists public.inventory (
   user_id uuid not null references public.profiles on delete cascade,
@@ -390,28 +425,18 @@ begin
   return left(s, 16);
 end $$;
 
--- Le declencheur tourne DANS la transaction qui cree le compte : lever une
--- exception ici annule l'inscription entiere, et aucune ligne ne subsiste dans
--- auth.users. C'est ce qu'on veut — un refus, pas un compte a moitie cree.
+-- Version 2.0 : l'inscription n'est plus refusee a qui n'est pas sur la liste.
+-- Il fallait un compte pour saisir un code d'invitation (21_reflets.sql) : un
+-- compte non invite se cree donc, mais il ne voit que l'ecran d'attente — toutes
+-- les actions du jeu passent par garde_beta(), qui le refuse tant qu'il n'est
+-- pas sur la liste. find_player et le classement l'ignorent.
 --
 -- Les comptes existants ne sont pas concernes : ce declencheur ne se lance
 -- qu'a l'insertion.
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare base text; try text; n int := 0; cle_discord text;
+declare base text; try text; n int := 0;
 begin
-  if not beta_ouverte() then
-    cle_discord := coalesce(new.raw_user_meta_data->>'provider_id',
-                            new.raw_user_meta_data->>'sub', '');
-    if not exists (
-      select 1 from beta_invites b
-       where (nullif(new.email, '') is not null and lower(b.cle) = lower(new.email))
-          or (nullif(cle_discord, '') is not null and b.cle = cle_discord)
-    ) then
-      raise exception 'BETA_FERMEE'
-        using hint = 'Le jeu est en beta fermee : ce compte n''est pas sur la liste.';
-    end if;
-  end if;
 
   base := slugify_pseudo(coalesce(
     new.raw_user_meta_data->>'pseudo',
@@ -511,6 +536,7 @@ create or replace function public.period_key(sc text) returns text
 language sql stable as $$
   select case sc
     when 'daily'  then to_char(now() at time zone 'Europe/Paris', 'YYYY-MM-DD')
+    when 'ev_jour' then to_char(now() at time zone 'Europe/Paris', 'YYYY-MM-DD')
     when 'weekly' then to_char(now() at time zone 'Europe/Paris', 'IYYY"-W"IW')
     else 'all' end;
 $$;
@@ -555,6 +581,20 @@ begin
            where c.user_id = p and c.qty > 0 and not k.promo
              and k.rar = substr(q.metric, 5))
     from quests q where q.metric like 'set\_%'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress);
+
+  -- Version 2.0 : les Reverses d'une rarete (« rset_C », « rset_PC »,
+  -- « rset_R »), toutes les Reverses (« rset_ALL »), toutes les Brillantes
+  -- (« brill_ALL »).
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, 'all',
+         (select count(*) from collection c join cards k on k.id = c.card_id
+           where c.user_id = p and c.qty > 0
+             and case q.metric when 'rset_ALL' then k.reverse
+                               when 'brill_ALL' then k.rar = 'BR'
+                               else k.reverse and k.rar = substr(q.metric, 6) end)
+    from quests q where q.metric like 'rset\_%' or q.metric = 'brill_ALL'
   on conflict (user_id, quest_id, period_key)
     do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;
@@ -960,11 +1000,12 @@ begin
 
   god := random() < 1.0 / cfg('god_odds');
 
-  -- Six cartes, chacune a sa place :
+  -- Six cartes, chacune a sa place (version 2.0) :
   --   1 · Commune
   --   2 · Commune
-  --   3 · Commune (60 %) ou Peu commune (40 %)
-  --   4 · Peu commune
+  --   3 · Peu commune
+  --   4 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
+  --       Rare 15 %
   --   5 · Essence
   --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
   -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
@@ -984,8 +1025,12 @@ begin
   else
     ids := ids || pick_card('C');
     ids := ids || pick_card('C');
-    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'C' else 'PC' end);
     ids := ids || pick_card('PC');
+    x := random() * 100.0;
+    select id into cid from cards
+     where reverse and rar = case when x < 50.0 then 'C' when x < 85.0 then 'PC' else 'R' end
+     order by random() limit 1;
+    ids := ids || cid;
 
     select id into cid from cards
       where in_booster and not promo and cat = 'essence' order by random() limit 1;
@@ -1067,6 +1112,9 @@ begin
                                       where id = any(ids) and rar in ('E','L')));
   perform bump_quests(p, 'rarity_L', (select count(*)::int from cards
                                       where id = any(ids) and rar = 'L'));
+  -- Version 2.0 : les Reverses Rares sorties.
+  perform bump_quests(p, 'rev_R', (select count(*)::int from cards
+                                   where id = any(ids) and reverse and rar = 'R'));
   perform sync_collection_quests(p);
   perform check_promos(p);
 
@@ -1084,6 +1132,10 @@ begin
   perform garde_beta();
   select * into q from quests where id = p_quest;
   if not found then raise exception 'Quête inconnue.'; end if;
+  -- Une quete d'evenement (21_reflets.sql) ne s'encaisse que pendant qu'il dure.
+  if q.evenement is not null and q.evenement is distinct from evenement_en_cours() then
+    raise exception 'Cet événement est terminé.';
+  end if;
 
   pk := period_key(q.scope);
   select progress, claimed into prog, deja
@@ -1095,7 +1147,9 @@ begin
   update quest_progress set claimed = true
     where user_id = p and quest_id = q.id and period_key = pk;
 
-  if q.reward > 0 then
+  if q.reward > 0 and q.monnaie = 'prismes' then
+    perform crediter_prismes(p, q.evenement, q.reward);
+  elsif q.reward > 0 then
     update profiles set shards = shards + q.reward where id = p;
   end if;
 
@@ -1131,15 +1185,39 @@ begin
   perform garde_beta();
   select * into it from shop_items where id = p_item and actif;
   if not found then raise exception 'Article indisponible.'; end if;
+  -- Un article d'evenement (21_reflets.sql) ne se vend que pendant qu'il dure.
+  if it.evenement is not null and it.evenement is distinct from evenement_en_cours() then
+    raise exception 'Cet événement est terminé.';
+  end if;
 
   select * into pr from profiles where id = p for update;
-  if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
 
   if it.unique_buy and exists (select 1 from inventory where user_id = p and item_id = it.id) then
     raise exception 'Tu possèdes déjà cet article.';
   end if;
+  -- `limite` : combien de fois un joueur peut l'acheter. Le compte est tenu
+  -- dans l'inventaire, sous l'identifiant de l'article.
+  if it.limite is not null and coalesce((select qty from inventory
+                                          where user_id = p and item_id = it.id), 0) >= it.limite then
+    raise exception 'Tu as atteint la limite pour cet article.';
+  end if;
 
-  update profiles set shards = shards - it.prix where id = p;
+  -- La devise (version 2.0) : Eclats, Fragments, ou Prismes de l'evenement.
+  if it.devise = 'fragments' then
+    if pr.fragments < it.prix then raise exception 'Pas assez de Fragments.'; end if;
+    update profiles set fragments = fragments - it.prix where id = p;
+  elsif it.devise = 'prismes' then
+    update evt_comptes set solde = solde - it.prix
+     where user_id = p and evenement = it.evenement and solde >= it.prix;
+    if not found then raise exception 'Pas assez de Prismes.'; end if;
+  else
+    if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
+    update profiles set shards = shards - it.prix where id = p;
+  end if;
+  if it.limite is not null and not it.unique_buy then
+    insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
+      on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
+  end if;
 
   if it.effet = 'tickets' then
     -- Les boosters achetes ne vont pas dans la reserve : ils s'ouvrent a part
@@ -1150,6 +1228,10 @@ begin
   elsif it.effet = 'trade_token' then
     insert into inventory (user_id, item_id, qty) values (p, 'trade_token', it.montant)
       on conflict (user_id, item_id) do update set qty = inventory.qty + excluded.qty;
+  elsif it.effet = 'invitation' then
+    perform creer_invitation(p);
+  elsif it.effet in ('fragments', 'reverse_R') then
+    perform accorder(p, it.effet, it.montant, null);
   elsif it.effet = 'carte' then
     -- Une carte achetee entre dans la collection comme n'importe quelle autre.
     -- Elle est marquee `unique_buy` en boutique : on ne l'achete qu'une fois.
@@ -1158,7 +1240,7 @@ begin
       on conflict (user_id, card_id) do update set qty = collection.qty + 1;
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
       on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
-  else -- cosmetique
+  else -- cosmetique : un cadre (f_…) ou un titre (t_…), sous son identifiant
     insert into inventory (user_id, item_id, qty) values (p, it.id, 1)
       on conflict (user_id, item_id) do update set qty = inventory.qty + 1;
   end if;
@@ -1219,9 +1301,13 @@ begin
   if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
   -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
-  -- unique — reste a qui l'a obtenu.
-  if exists (select 1 from cards where id in (p_offer, p_want) and promo) then
+  -- unique — reste a qui l'a obtenu. Les Reverses, elles, s'echangent : contre
+  -- une Reverse de meme rarete.
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse) then
     raise exception 'Cette carte ne s''échange pas.';
+  end if;
+  if (select count(distinct reverse) from cards where id in (p_offer, p_want)) > 1 then
+    raise exception 'Une Reverse s''échange contre une Reverse.';
   end if;
 
   if not exists (select 1 from collection where user_id = p and card_id = p_offer and qty > 0) then
@@ -1369,7 +1455,8 @@ begin
   if auth.uid() is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   select * into r from profiles where lower(pseudo) = lower(trim(p_pseudo));
-  if not found then return 'null'::jsonb; end if;
+  -- Un compte qui n'a pas acces au jeu (01_schema.sql) n'est pas trouvable.
+  if not found or not (beta_ouverte() or est_invite(r.id)) then return 'null'::jsonb; end if;
   return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
     'frame', r.frame, 'photo', photo_discord(r.id));
 end $$;
@@ -1433,6 +1520,21 @@ select 'b' || substr(k.id, 2), k.num, k.nom || ' Brillante', k.cat, k.col, 'BR',
 on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
   rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo;
+
+-- ------------------------------------------------------- les Reverses
+-- Version 2.0. Chaque Commune, Peu commune et Rare de l'extension a sa Reverse :
+-- `r` + son numero (c010 -> r010), meme rarete, frappee du logo Tout Commence
+-- Ici. 33 + 24 + 28 = 85. Hors des 122 (promo), mais echangeables,
+-- recyclables et fabricables (reverse) — voir 01_schema.sql. Elles sortent
+-- de la 4e case d'un booster (open_pack, 03_rpc.sql).
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo, reverse)
+select 'r' || substr(k.id, 2), k.num, k.nom, k.cat, k.col, k.rar, false, true, true
+  from public.cards k
+ where k.rar in ('C', 'PC', 'R') and not k.promo and k.id like 'c%'
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo,
+  reverse = excluded.reverse;
 
 -- ------------------------------------------------- la carte unique
 -- Un seul exemplaire dans tout le jeu : celui ou celle qui la tire la garde.
@@ -1623,8 +1725,8 @@ alter table public.quests add column if not exists item_id text;
 -- chances par paquet, six paquets) — assez souvent pour ne pas decourager,
 -- assez rarement pour valoir quelque chose.
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
-  ('d_check',   'daily',     'checkin',        1,   40, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
-  ('d_packs',   'daily',     'packs',          5,   60, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
+  ('d_check',   'daily',     'checkin',        1,   30, null, 'Premier passage',      'Ouvre le jeu aujourd''hui.', 1),
+  ('d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2),
   ('d_epic',    'daily',     'rarity_E',       1,   80, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3),
   ('d_new',     'daily',     'new_cards',      3,   30, null, 'Du sang neuf',         'Trouve 3 cartes que tu n''avais pas.', 4),
   ('d_recycle', 'daily',     'recycle',        5,   30, null, 'Petit ménage',         'Recycle 5 doublons.', 5),
@@ -1674,7 +1776,30 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_packs100','milestone', 'packs',         100,  800, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14),
   ('m_packs200','milestone', 'packs',         200, 2000, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15),
 
-  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16)
+  ('m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16),
+
+  -- ---------------------------------------------------------- version 2.0
+  -- Les Reverses (03b_promos.sql) : une Rare reverse par jour et cinq par
+  -- semaine (15 % par booster : ~62 % des jours, ~65 % des semaines), et les
+  -- Reverses completes par rarete. Pour ne pas gonfler les Eclats, le passage
+  -- du jour et les cinq paquets baissent de 10 chacun : +~28 Eclats par jour
+  -- pour un regulier, ~370 au lieu de ~340.
+  ('d_revR',    'daily',     'rev_R',          1,   40, null, 'Reflet rare',          'Décroche une Reverse Rare.', 7),
+  ('w_revR',    'weekly',    'rev_R',          5,  250, null, 'Cinq reflets',         'Décroche 5 Reverses Rares cette semaine.', 7),
+  ('m_revC',    'milestone', 'rset_C',  (select count(*)::int from public.cards where reverse and rar = 'C'),
+                                               400, null,      'Reverses Communes',       'Possède toutes les Reverses Communes.', 17),
+  ('m_revPC',   'milestone', 'rset_PC', (select count(*)::int from public.cards where reverse and rar = 'PC'),
+                                               700, null,      'Reverses Peu communes',   'Possède toutes les Reverses Peu communes.', 18),
+  ('m_revR',    'milestone', 'rset_R',  (select count(*)::int from public.cards where reverse and rar = 'R'),
+                                              2500, null,      'Reverses Rares',          'Possède toutes les Reverses Rares.', 19),
+  -- Les cadres et titres gagnes en jouant (js/config.js : FRAMES, TITRES).
+  ('m_revALL',  'milestone', 'rset_ALL',(select count(*)::int from public.cards where reverse),
+                                                 0, 'f_reflet', 'Le Reflet complet',     'Possède les 85 Reverses.', 20),
+  ('m_master',  'milestone', 'collection_pct',100,  0, 'f_master', 'Maître de l''extension', 'Possède les 122 cartes de l''extension.', 21),
+  ('m_brill',   'milestone', 'brill_ALL', 9,           0, 'f_aurore', 'Aurore',               'Possède les 9 Essences Brillantes.', 22),
+  ('m_packs300','milestone', 'packs',     300,         0, 'f_sceau',  'Trois cents paquets',  'Ouvre 300 boosters en tout.', 23),
+  ('m_cartle10','milestone', 'cartle',     10,         0, 't_devin',  'Le Devin',             'Résous 10 Cartle.', 24),
+  ('m_invite',  'milestone', 'invite',      1,         0, 't_hote',   'L''Hôte',              'Un ami entre dans le jeu avec ton invitation.', 25)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -1686,7 +1811,35 @@ delete from public.quests where id not in (
   'm_legend','m_col25','m_col50','m_col75','m_col100',
   'm_setES','m_setC','m_setPC','m_setR','m_setE','m_setL',
   'm_packs25','m_packs50','m_packs100','m_packs200',
-  'm_trade25');
+  'm_trade25',
+  'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_cartle10','m_invite',
+  'e_check','e_packs','e_cartle','e_revR','e_titre','e_perso','e_revC','e_rev30','e_trade','e_cartle7','e_packs50',
+  'e_recycle','e_invite');
+
+-- ------------------------------------------------- l'evenement « Reflets »
+-- Ses quetes paient en Prismes (21_reflets.sql). Du jour : ~70 Prismes pour
+-- qui les fait toutes. De l'evenement, une fois : 440. Elles portent sur les
+-- nouveautes de la 2.0 — c'est le role de l'evenement de les faire essayer.
+insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
+  ('e_check',   'ev_jour', 'checkin',   1, 10, null, 'Un reflet par jour',     'Passe voir l''événement aujourd''hui.', 1, 'reflets', 'prismes'),
+  ('e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',        'Ouvre 4 boosters aujourd''hui.', 2, 'reflets', 'prismes'),
+  ('e_cartle',  'ev_jour', 'cartle',    1, 25, null, 'Le Cartle du jour',      'Devine la carte du jour.', 3, 'reflets', 'prismes'),
+  ('e_revR',    'ev_jour', 'rev_R',     1, 20, null, 'Reflet rare',            'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'),
+  ('e_titre',   'ev',      'titre',     1, 20, null, 'Un titre à ton nom',     'Équipe un titre sur ton profil.', 1, 'reflets', 'prismes'),
+  ('e_perso',   'ev',      'perso',     1, 20, null, 'À ton image',            'Choisis une bannière ou une devise.', 2, 'reflets', 'prismes'),
+  ('e_rev30',   'ev',      'rset_ALL', 30, 60, null, 'Trente reflets',         'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'),
+  ('e_revC',    'ev',      'rset_C',   (select count(*)::int from public.cards where reverse and rar = 'C'),
+                                              80, null, 'Toutes les Communes reverses', 'Possède toutes les Reverses Communes.', 4, 'reflets', 'prismes'),
+  ('e_cartle7', 'ev',      'cartle',    7, 80, null, 'Devin de la semaine',    'Résous 7 Cartle pendant l''événement.', 5, 'reflets', 'prismes'),
+  ('e_packs50', 'ev',      'packs',    50, 60, null, 'Cinquante boosters',     'Ouvre 50 boosters pendant l''événement.', 6, 'reflets', 'prismes'),
+  ('e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets',    'Conclus 3 échanges.', 7, 'reflets', 'prismes'),
+  ('e_recycle', 'ev',      'recycle',  30, 30, null, 'Grand ménage',           'Recycle 30 doublons.', 8, 'reflets', 'prismes'),
+  ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes')
+on conflict (id) do update set
+  scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
+  reward = excluded.reward, item_id = excluded.item_id, titre = excluded.titre,
+  detail = excluded.detail, ordre = excluded.ordre, evenement = excluded.evenement,
+  monnaie = excluded.monnaie;
 
 -- -------------------------------------------------------------- boutique
 -- effet : tickets | refill | trade_token | cosmetique | carte
@@ -1723,10 +1876,29 @@ on conflict (id) do update set
 -- Le Cadre Sceau ne se vend pas, et aucune quete ne le donne pour l'instant
 -- (voir FRAMES dans js/config.js). On le retire de la boutique s'il y
 -- trainait.
+-- Version 2.0 : l'invitation, payee en Fragments (21_reflets.sql), et la
+-- boutique de l'evenement « Reflets », payee en Prismes.
+insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
+  ('s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 5 boosters et 500 Éclats de bienvenue.',
+                                                                                               2000, 'invitation', 1, null, false, 1, 'fragments', null, 3),
+  ('ev_boosters',  'evenement', 'x2 Boosters',       'Deux boosters à ouvrir tout de suite.',     60, 'tickets',    2, null, false, 1, 'prismes', 'reflets', 5),
+  ('ev_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 50, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5),
+  ('ev_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n''as pas encore.', 120, 'reverse_R',  1, null, false, 3, 'prismes', 'reflets', 3),
+  ('t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l''événement.',
+                                                                                                150, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null),
+  ('f_kaleido',    'evenement', 'Cadre « Kaléidoscope »', 'Un cadre animé, en vente pendant l''événement seulement.',
+                                                                                                250, 'cosmetique', 1, null, true, 5, 'prismes', 'reflets', null)
+on conflict (id) do update set
+  categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
+  prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
+  carte_id = excluded.carte_id, unique_buy = excluded.unique_buy, ordre = excluded.ordre,
+  devise = excluded.devise, evenement = excluded.evenement, limite = excluded.limite, actif = true;
+
 delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',
-  'f_azur','f_rose','f_or','f_prisme');
+  'f_azur','f_rose','f_or','f_prisme',
+  's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect','f_kaleido');
 
 
 -- #####################################################################
@@ -1992,6 +2164,10 @@ begin
       'fragments', pr.fragments,
       -- Les boosters en plus (boutique, cadeaux), hors reserve.
       'boosters_bonus', pr.boosters_bonus, 'bonus_offerts', pr.tickets_offerts,
+      -- Version 2.0 (21_reflets.sql) : le titre, la banniere, la devise, et
+      -- les titres debloques.
+      'titre', pr.titre, 'banniere', pr.banniere, 'devise', pr.devise,
+      'titres', to_jsonb(titres_de(p)),
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
@@ -2017,6 +2193,17 @@ begin
     'succes', succes_de(p),
     'evenement', evenement_actif(),
     'chasse', chasse_etat(),
+    -- Version 2.0 : les reglages ouverts a la main, le solde de Prismes de
+    -- l'evenement en cours, et les invitations achetees.
+    'parametres', (select jsonb_build_object('fabrication_reverse', fabrication_reverse)
+                     from parametres where id = 1),
+    'prismes', coalesce((select solde from evt_comptes
+                          where user_id = p and evenement = evenement_en_cours()), 0),
+    'invitations', coalesce((
+      select jsonb_agg(jsonb_build_object('code', i.code, 'cree_le', i.cree_le,
+                                          'utilise_par', (select pseudo from profiles where id = i.utilise_par),
+                                          'utilise_le', i.utilise_le) order by i.cree_le)
+        from invitations i where i.auteur = p), '[]'::jsonb),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
@@ -2026,10 +2213,13 @@ begin
         'id', q.id, 'scope', q.scope, 'titre', q.titre, 'detail', q.detail,
         'goal', q.goal, 'reward', q.reward, 'item', q.item_id, 'metric', q.metric,
         'progress', least(coalesce(qp.progress, 0), q.goal),
-        'claimed', coalesce(qp.claimed, false)) order by q.scope, q.ordre)
+        'claimed', coalesce(qp.claimed, false),
+        'monnaie', q.monnaie, 'evenement', q.evenement) order by q.scope, q.ordre)
       from quests q
       left join quest_progress qp
         on qp.quest_id = q.id and qp.user_id = p and qp.period_key = period_key(q.scope)
+      -- Les quetes d'un evenement n'existent que pendant qu'il dure.
+      where q.evenement is null or q.evenement = evenement_en_cours()
     ), '[]'::jsonb)
   );
 end $$;
@@ -2038,7 +2228,7 @@ end $$;
 -- La vitrine est visible de tous : c'est fait pour etre montre.
 create or replace function public.player_profile(p_pseudo text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int;
+declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -2061,6 +2251,11 @@ begin
   select count(*) into possede
     from collection c join cards k on k.id = c.card_id
    where c.user_id = o.id and c.qty > 0 and not k.promo;
+  -- Version 2.0 : les Reverses, comptees a part.
+  select count(*) into rev_total from cards where reverse;
+  select count(*) into rev
+    from collection c join cards k on k.id = c.card_id
+   where c.user_id = o.id and c.qty > 0 and k.reverse;
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -2069,6 +2264,8 @@ begin
     'packs_opened', o.packs_opened, 'trades_done', o.trades_done,
     'membre_depuis', o.created_at,
     'possede', possede, 'total', total,
+    'reverses', rev, 'reverses_total', rev_total,
+    'titre', o.titre, 'banniere', o.banniere, 'devise', o.devise,
     'vitrine', to_jsonb(o.vitrine),
     'succes', succes_de(o.id),
     'ami', ami,
@@ -2426,7 +2623,7 @@ begin
 
     select * into k from cards where id = cid;
     if not found then raise exception 'Carte inconnue.'; end if;
-    if k.promo then raise exception 'Cette carte ne se recycle pas.'; end if;
+    if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
     prix := cfg('recyclage_' || k.rar);
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 
@@ -2463,8 +2660,17 @@ begin
 
   select * into k from cards where id = p_carte;
   if not found then raise exception 'Carte inconnue.'; end if;
-  if k.promo then raise exception 'Cette carte ne se fabrique pas.'; end if;
+  if k.promo and not k.reverse then raise exception 'Cette carte ne se fabrique pas.'; end if;
   cout := cfg('fabrication_' || k.rar);
+  -- Les Reverses (version 2.0) : le double, et seulement une fois la
+  -- fabrication ouverte (parametres, 21_reflets.sql) — fermee au lancement,
+  -- sinon les Fragments accumules rempliraient la collection Reverse d'un coup.
+  if k.reverse then
+    if not coalesce((select fabrication_reverse from parametres where id = 1), false) then
+      raise exception 'La fabrication des Reverses n''est pas encore ouverte.';
+    end if;
+    cout := cout * 2;
+  end if;
   if cout is null then raise exception 'Cette carte ne se fabrique pas.'; end if;
 
   select fragments into reste from profiles where id = p for update;
@@ -2525,16 +2731,19 @@ declare
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if p_critere is null or p_critere not in ('collection', 'boosters', 'echanges', 'serie') then
+  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie') then
     raise exception 'Classement inconnu.';
   end if;
 
   return (
     with valeurs as (
-      select pr.id, pr.pseudo, pr.avatar, pr.frame,
+      select pr.id, pr.pseudo, pr.avatar, pr.frame, pr.titre,
              (case p_critere
                 when 'collection' then (select count(*) from collection c join cards k on k.id = c.card_id
                                          where c.user_id = pr.id and c.qty > 0 and not k.promo)
+                -- Version 2.0 : les Reverses differentes.
+                when 'reverses'   then (select count(*) from collection c join cards k on k.id = c.card_id
+                                         where c.user_id = pr.id and c.qty > 0 and k.reverse)
                 when 'boosters'   then pr.packs_opened
                 when 'echanges'   then pr.trades_done
                 else case when pr.last_checkin >= auj - 1 then pr.streak else 0 end
@@ -2554,14 +2763,14 @@ begin
       'classes', (select count(*) from classes),
       'top', coalesce((
         select jsonb_agg(jsonb_build_object(
-                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame,
+                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
                  'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', c.id = moi)
                order by c.n)
           from classes c where c.n <= 50), '[]'::jsonb),
       -- Sa propre ligne, meme hors des cinquante premiers : on veut savoir ou
       -- l'on en est, pas seulement qui est devant.
       'moi', (select jsonb_build_object(
-                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame,
+                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
                 'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', true)
                 from classes c where c.id = moi))
   );
@@ -2619,6 +2828,11 @@ create table if not exists public.evenements (
   constraint evenement_dans_l_ordre check (fin > debut)
 );
 
+-- Version 2.0 : le code d'un evenement relie ses quetes, sa boutique et sa
+-- piste de recompenses (21_reflets.sql). Un evenement sans code ne change que
+-- le rythme des boosters.
+alter table public.evenements add column if not exists code text;
+
 alter table public.evenements enable row level security;
 revoke all on public.evenements from anon, authenticated;
 
@@ -2670,13 +2884,13 @@ create or replace function public.evenement_actif() returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 begin
   return coalesce(
-    (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
+    (select jsonb_build_object('titre', e.titre, 'texte', e.texte, 'code', e.code,
                                'debut', e.debut, 'fin', e.fin,
                                'ticket_minutes', e.ticket_minutes, 'a_venir', false)
        from evenements e
       where now() >= e.debut and now() < e.fin
       order by e.debut desc limit 1),
-    (select jsonb_build_object('titre', e.titre, 'texte', e.texte,
+    (select jsonb_build_object('titre', e.titre, 'texte', e.texte, 'code', e.code,
                                'debut', e.debut, 'fin', e.fin,
                                'ticket_minutes', e.ticket_minutes, 'a_venir', true)
        from evenements e
@@ -2711,6 +2925,7 @@ language plpgsql stable security definer set search_path = public as $$
 declare
   pr profiles; s text[] := '{}';
   ext int; ext_total int; leg int; leg_total int; br int; br_total int; uni boolean;
+  rev int; rev_total int;
 begin
   select * into pr from profiles where id = p;
   if not found then return '[]'::jsonb; end if;
@@ -2745,6 +2960,12 @@ begin
   if uni                    then s := array_append(s, 'unique'); end if;
   -- Ceux qui etaient la avant la version 1.5.
   if pr.created_at < timestamptz '2026-10-04 00:00:00+02' then s := array_append(s, 'pionnier'); end if;
+  -- Version 2.0 : les Reverses.
+  select count(*) filter (where k.reverse) into rev
+    from collection c join cards k on k.id = c.card_id where c.user_id = p and c.qty > 0;
+  select count(*) into rev_total from cards where reverse;
+  if rev >= 1 then s := array_append(s, 'premiere_reverse'); end if;
+  if rev_total > 0 and rev >= rev_total then s := array_append(s, 'reverses_toutes'); end if;
 
   return to_jsonb(s);
 end $$;
@@ -2982,6 +3203,450 @@ grant execute on function public.mes_cadeaux, public.ouvrir_cadeau, public.offri
 --
 --  En reprendre un avant qu'il soit ouvert :
 -- delete from public.cadeaux where id = 42 and ouvert_le is null;
+
+
+-- #####################################################################
+-- ###  21_reflets.sql
+-- ###  Version 2.0 : evenement Reflets, Cartle, invitations, titres
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 2.0 « Reflets »
+--  A executer apres 18_cadeaux.sql. Rejouable sans danger.
+--
+--  Ce que la 2.0 ajoute cote serveur, hors des fichiers qu'elle retouche
+--  (les Reverses sont dans 03b_promos.sql, leur case de booster dans
+--  03_rpc.sql) :
+--    1. les parametres du jeu qu'un administrateur ouvre a la main ;
+--    2. l'evenement « Reflets » : sa monnaie (les Prismes), sa piste de
+--       recompenses, sa boutique et ses quetes (04_seed.sql) ;
+--    3. le Cartle, la carte a deviner chaque jour ;
+--    4. les invitations, achetees en boutique ;
+--    5. les titres et la personnalisation du profil.
+-- =====================================================================
+
+-- ============================================================ 1. reglages
+-- Une seule ligne. `fabrication_reverse` : fermee au lancement de la 2.0 —
+-- les Fragments deja accumules rempliraient la collection Reverse d'un coup.
+-- L'ouvrir, plus tard, dans le SQL Editor :
+--   update public.parametres set fabrication_reverse = true where id = 1;
+create table if not exists public.parametres (
+  id                  int primary key check (id = 1),
+  fabrication_reverse boolean not null default false
+);
+insert into public.parametres (id) values (1) on conflict (id) do nothing;
+alter table public.parametres enable row level security;
+revoke all on public.parametres from anon, authenticated;
+
+-- ===================================================== 2. l'evenement en cours
+-- Le code de l'evenement en cours (15_evenements.sql), s'il en a un.
+create or replace function public.evenement_en_cours() returns text
+language sql stable security definer set search_path = public as $$
+  select e.code from evenements e
+   where e.code is not null and now() >= e.debut and now() < e.fin
+   order by e.debut desc limit 1;
+$$;
+
+-- ------------------------------------------------------------- les Prismes
+-- La monnaie d'un evenement : `solde` se depense dans sa boutique, `total`
+-- (tout ce qu'on a gagne) fait avancer sa piste de recompenses — acheter ne
+-- fait jamais reculer la piste.
+create table if not exists public.evt_comptes (
+  user_id   uuid not null references public.profiles on delete cascade,
+  evenement text not null,
+  solde     integer not null default 0 check (solde >= 0),
+  total     integer not null default 0,
+  primary key (user_id, evenement)
+);
+alter table public.evt_comptes enable row level security;
+revoke all on public.evt_comptes from anon, authenticated;
+
+create or replace function public.crediter_prismes(p uuid, ev text, n int) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if ev is null or coalesce(n, 0) <= 0 then return; end if;
+  insert into evt_comptes (user_id, evenement, solde, total) values (p, ev, n, n)
+  on conflict (user_id, evenement)
+    do update set solde = evt_comptes.solde + n, total = evt_comptes.total + n;
+end $$;
+
+-- ------------------------------------------------- la piste de recompenses
+create table if not exists public.evt_piste (
+  evenement text not null,
+  palier    integer not null,
+  seuil     integer not null,
+  -- boosters | eclats | fragments | titre | cadre | reverse_R | brillante
+  type      text not null,
+  montant   integer not null default 0,
+  objet     text,
+  titre     text not null,
+  primary key (evenement, palier)
+);
+create table if not exists public.evt_piste_prises (
+  user_id   uuid not null references public.profiles on delete cascade,
+  evenement text not null,
+  palier    integer not null,
+  pris_le   timestamptz not null default now(),
+  primary key (user_id, evenement, palier)
+);
+alter table public.evt_piste enable row level security;
+alter table public.evt_piste_prises enable row level security;
+revoke all on public.evt_piste, public.evt_piste_prises from anon, authenticated;
+
+-- Quinze paliers. Un joueur assidu gagne ~70 Prismes par jour en quetes du
+-- jour, et ~460 en quetes de l'evenement : le dernier palier (1 350) demande
+-- de jouer presque chaque jour des deux semaines.
+insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values
+  ('reflets',  1,   20, 'boosters',   2, null,         '2 boosters'),
+  ('reflets',  2,   50, 'fragments', 300, null,        '300 Fragments'),
+  ('reflets',  3,   90, 'titre',      0, 't_eclaireur', 'Titre « Éclaireur des Reflets »'),
+  ('reflets',  4,  140, 'boosters',   3, null,         '3 boosters'),
+  ('reflets',  5,  200, 'eclats',   500, null,         '500 Éclats'),
+  ('reflets',  6,  270, 'fragments', 600, null,        '600 Fragments'),
+  ('reflets',  7,  350, 'reverse_R',  1, null,         'Une Reverse Rare'),
+  ('reflets',  8,  440, 'boosters',   5, null,         '5 boosters'),
+  ('reflets',  9,  540, 'cadre',      0, 'f_miroir',   'Cadre « Miroir »'),
+  ('reflets', 10,  650, 'eclats',  1000, null,         '1 000 Éclats'),
+  ('reflets', 11,  770, 'fragments', 1000, null,       '1 000 Fragments'),
+  ('reflets', 12,  900, 'reverse_R',  2, null,         'Deux Reverses Rares'),
+  ('reflets', 13, 1040, 'boosters',   8, null,         '8 boosters'),
+  ('reflets', 14, 1190, 'brillante',  1, null,         'Une Essence Brillante'),
+  ('reflets', 15, 1350, 'titre',      0, 't_ame',      'Titre « Âme des Reflets »')
+on conflict (evenement, palier) do update set
+  seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
+  objet = excluded.objet, titre = excluded.titre;
+
+-- ----------------------------------------------------------- accorder
+-- Ce qu'une recompense donne, quelle qu'en soit la source (piste, boutique
+-- d'evenement). Renvoie les cartes accordees, pour que le navigateur les
+-- montre.
+--   reverse_R : une Reverse Rare qu'on n'a pas (une au hasard si on les a
+--               toutes) ; brillante : une Essence Brillante qu'on n'a pas
+--               (2 000 Fragments si on les a toutes).
+create or replace function public.accorder(p uuid, t text, n int, objet text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare cartes text[] := '{}'; cid text; i int;
+begin
+  if t = 'boosters' then
+    update profiles set boosters_bonus = boosters_bonus + n where id = p;
+  elsif t = 'eclats' then
+    update profiles set shards = shards + n where id = p;
+  elsif t = 'fragments' then
+    update profiles set fragments = fragments + n where id = p;
+  elsif t in ('titre', 'cadre') then
+    insert into inventory (user_id, item_id, qty) values (p, objet, 1)
+      on conflict (user_id, item_id) do nothing;
+  elsif t = 'reverse_R' then
+    for i in 1..greatest(n, 1) loop
+      select k.id into cid from cards k
+       where k.reverse and k.rar = 'R' and k.id <> all (cartes)
+         and not exists (select 1 from collection c where c.user_id = p and c.card_id = k.id and c.qty > 0)
+       order by random() limit 1;
+      if cid is null then
+        select k.id into cid from cards k where k.reverse and k.rar = 'R' order by random() limit 1;
+      end if;
+      insert into collection (user_id, card_id, qty) values (p, cid, 1)
+        on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+      cartes := cartes || cid;
+    end loop;
+  elsif t = 'brillante' then
+    select k.id into cid from cards k
+     where k.rar = 'BR'
+       and not exists (select 1 from collection c where c.user_id = p and c.card_id = k.id and c.qty > 0)
+     order by random() limit 1;
+    if cid is null then
+      update profiles set fragments = fragments + 2000 where id = p;
+    else
+      insert into collection (user_id, card_id, qty) values (p, cid, 1)
+        on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+      cartes := cartes || cid;
+    end if;
+  else
+    raise exception 'Récompense inconnue.';
+  end if;
+  if array_length(cartes, 1) is not null then
+    perform sync_collection_quests(p);
+    perform check_promos(p);
+  end if;
+  return to_jsonb(cartes);
+end $$;
+
+-- ----------------------------------------------- reclamer un palier
+create or replace function public.piste_reclamer(p_palier int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); ev text := evenement_en_cours(); pa evt_piste; tot int; cartes jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if ev is null then raise exception 'Aucun événement en cours.'; end if;
+  select * into pa from evt_piste where evenement = ev and palier = p_palier;
+  if not found then raise exception 'Palier inconnu.'; end if;
+  select total into tot from evt_comptes where user_id = p and evenement = ev for update;
+  if coalesce(tot, 0) < pa.seuil then raise exception 'Palier pas encore atteint.'; end if;
+
+  insert into evt_piste_prises (user_id, evenement, palier) values (p, ev, p_palier)
+    on conflict do nothing;
+  if not found then raise exception 'Récompense déjà récupérée.'; end if;
+
+  cartes := accorder(p, pa.type, pa.montant, pa.objet);
+  return jsonb_build_object('cartes', cartes, 'etat', me());
+end $$;
+
+-- ----------------------------------------------- l'etat de l'evenement
+-- Pour l'onglet de l'evenement : son solde, sa piste, et les dix joueurs qui
+-- ont gagne le plus de Prismes.
+create or replace function public.evenement_etat() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); ev text := evenement_en_cours(); cpt evt_comptes;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if ev is null then return 'null'::jsonb; end if;
+  select * into cpt from evt_comptes where user_id = p and evenement = ev;
+
+  return jsonb_build_object(
+    'code', ev,
+    'solde', coalesce(cpt.solde, 0),
+    'total', coalesce(cpt.total, 0),
+    'piste', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'palier', pa.palier, 'seuil', pa.seuil, 'type', pa.type, 'montant', pa.montant,
+               'objet', pa.objet, 'titre', pa.titre,
+               'pris', exists (select 1 from evt_piste_prises x
+                                where x.user_id = p and x.evenement = ev and x.palier = pa.palier))
+             order by pa.palier)
+        from evt_piste pa where pa.evenement = ev), '[]'::jsonb),
+    'top', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
+             order by c.total desc, lower(pr.pseudo))
+        from (select * from evt_comptes where evenement = ev and total > 0
+               order by total desc limit 10) c
+        join profiles pr on pr.id = c.user_id), '[]'::jsonb));
+end $$;
+
+-- ================================================================ 3. Cartle
+-- Une carte a deviner par jour, la meme pour tout le monde : une carte de
+-- l'extension, Essences exceptees. Chaque essai dit, pour chaque indice, si
+-- c'est juste — et pour la rarete et le numero, si la bonne reponse est plus
+-- haut ou plus bas. Sept essais. C'est le serveur qui connait la reponse et
+-- qui juge : le navigateur ne la voit qu'une fois la partie finie.
+create table if not exists public.cartle (
+  user_id uuid not null references public.profiles on delete cascade,
+  jour    date not null,
+  essais  text[] not null default '{}',
+  trouve  boolean not null default false,
+  primary key (user_id, jour)
+);
+alter table public.cartle enable row level security;
+revoke all on public.cartle from anon, authenticated;
+
+create or replace function public.cartle_jour() returns date
+language sql stable as $$ select (now() at time zone 'Europe/Paris')::date; $$;
+
+-- La carte du jour : un tirage fixe par la date (md5), le meme pour tous.
+create or replace function public.cartle_cible(j date) returns text
+language sql stable security definer set search_path = public as $$
+  select id from cards where not promo and cat <> 'essence'
+   order by md5(j::text || ':reflets:' || id) limit 1;
+$$;
+
+create or replace function public.cartle_rang(r text) returns int
+language sql immutable as $$
+  select case r when 'C' then 1 when 'PC' then 2 when 'R' then 3 when 'E' then 4 when 'L' then 5 else 0 end;
+$$;
+
+-- `+` : la bonne reponse est plus haut ; `-` : plus bas.
+create or replace function public.cartle_retour(cid text, cible text) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'carte', a.id,
+    'cat', case when a.cat = b.cat then '=' else 'x' end,
+    'col', case when a.col = b.col then '=' else 'x' end,
+    'rar', case when a.rar = b.rar then '='
+                when cartle_rang(b.rar) > cartle_rang(a.rar) then '+' else '-' end,
+    'num', case when a.num = b.num then '=' when b.num > a.num then '+' else '-' end)
+    from cards a, cards b where a.id = cid and b.id = cible;
+$$;
+
+create or replace function public.cartle_etat() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); j date := cartle_jour(); c cartle; cible text := cartle_cible(cartle_jour()); fini boolean;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into c from cartle where user_id = p and jour = j;
+  fini := coalesce(c.trouve, false) or coalesce(array_length(c.essais, 1), 0) >= 7;
+  return jsonb_build_object(
+    'jour', j, 'max', 7,
+    'essais', coalesce((select jsonb_agg(cartle_retour(e, cible) order by o)
+                          from unnest(c.essais) with ordinality u(e, o)), '[]'::jsonb),
+    'trouve', coalesce(c.trouve, false),
+    'fini', fini,
+    'cible', case when fini then cible end);
+end $$;
+
+-- Trouver rapporte 30 Eclats, et fait avancer les quetes « cartle » (celles
+-- de l'evenement en tete).
+create or replace function public.cartle_essai(p_carte text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); j date := cartle_jour(); c cartle; cible text := cartle_cible(cartle_jour());
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if not exists (select 1 from cards where id = p_carte and not promo and cat <> 'essence') then
+    raise exception 'Cette carte ne fait pas partie du Cartle.';
+  end if;
+
+  insert into cartle (user_id, jour) values (p, j) on conflict do nothing;
+  select * into c from cartle where user_id = p and jour = j for update;
+  if c.trouve or coalesce(array_length(c.essais, 1), 0) >= 7 then
+    raise exception 'La partie du jour est finie : rendez-vous demain.';
+  end if;
+  if p_carte = any (c.essais) then raise exception 'Tu as déjà proposé cette carte.'; end if;
+
+  update cartle set essais = essais || p_carte, trouve = (p_carte = cible)
+   where user_id = p and jour = j;
+  if p_carte = cible then
+    update profiles set shards = shards + 30 where id = p;
+    perform bump_quests(p, 'cartle', 1);
+  end if;
+  return jsonb_build_object('cartle', cartle_etat(), 'etat', me());
+end $$;
+
+-- =========================================================== 4. invitations
+-- Achetees en boutique (2 000 Fragments, trois par joueur, shop_buy dans
+-- 03_rpc.sql). Un code sert une fois : la personne invitee se connecte avec
+-- Discord, le saisit sur l'ecran d'attente, et entre sur la liste des
+-- invites. Elle trouve un cadeau de bienvenue de la part de son parrain.
+create table if not exists public.invitations (
+  code        text primary key,
+  auteur      uuid not null references public.profiles on delete cascade,
+  cree_le     timestamptz not null default now(),
+  utilise_par uuid references public.profiles on delete set null,
+  utilise_le  timestamptz
+);
+alter table public.invitations enable row level security;
+revoke all on public.invitations from anon, authenticated;
+
+create or replace function public.creer_invitation(p uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare c text;
+begin
+  loop
+    c := 'M8-' || upper(substr(md5(random()::text), 1, 4)) || '-' || upper(substr(md5(random()::text), 1, 4));
+    exit when not exists (select 1 from invitations where code = c);
+  end loop;
+  insert into invitations (code, auteur) values (c, p);
+  return c;
+end $$;
+
+-- La seule fonction du jeu qu'un compte pas encore invite peut appeler, avec
+-- me() : c'est elle qui le fait entrer.
+create or replace function public.utiliser_invitation(p_code text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); inv invitations; u auth.users; parrain text;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  if beta_ouverte() or est_invite(p) then raise exception 'Tu as déjà accès au jeu.'; end if;
+
+  select * into inv from invitations
+   where upper(code) = upper(trim(coalesce(p_code, ''))) and utilise_par is null for update;
+  if not found then raise exception 'Code inconnu ou déjà utilisé.'; end if;
+  if inv.auteur = p then raise exception 'Ce code est le tien : donne-le à un ami.'; end if;
+
+  select * into u from auth.users where id = p;
+  select pseudo into parrain from profiles where id = inv.auteur;
+  insert into beta_invites (cle, note)
+  values (coalesce(nullif(u.raw_user_meta_data->>'provider_id', ''), lower(u.email)),
+          'Invité par ' || coalesce(parrain, '?') || ' (' || inv.code || ')')
+  on conflict (cle) do nothing;
+
+  update invitations set utilise_par = p, utilise_le = now() where code = inv.code;
+  perform bump_quests(inv.auteur, 'invite', 1);
+  insert into cadeaux (user_id, boosters, eclats, message, auteur)
+  values (p, 5, 500, 'Bienvenue ! ' || coalesce(parrain, 'Un joueur') || ' t''a invité : voici de quoi bien commencer.', inv.auteur);
+  return me();
+end $$;
+
+-- ===================================================== 5. titres et profil
+-- Les titres qu'un joueur a debloques. La plupart viennent de ses succes
+-- (15_evenements.sql), calcules a la volee comme eux ; les autres sont des
+-- objets gagnes (inventaire, `t_…`) : piste d'evenement, boutique, quetes.
+-- Les noms vivent dans TITRES (js/config.js).
+create or replace function public.titres_de(p uuid) returns text[]
+language plpgsql stable security definer set search_path = public as $$
+declare s jsonb := succes_de(p); t text[] := '{}';
+begin
+  if s ? 'pionnier'          then t := array_append(t, 't_pionnier'); end if;
+  if s ? 'unique'            then t := array_append(t, 't_elu'); end if;
+  if s ? 'master_set'        then t := array_append(t, 't_maitre'); end if;
+  if s ? 'negociant'         then t := array_append(t, 't_negociant'); end if;
+  if s ? 'godpack'           then t := array_append(t, 't_chanceux'); end if;
+  if s ? 'boosters_100'      then t := array_append(t, 't_centurion'); end if;
+  if s ? 'serie_30'          then t := array_append(t, 't_fidele'); end if;
+  if s ? 'artisan'           then t := array_append(t, 't_artisan'); end if;
+  if s ? 'toutes_brillantes' then t := array_append(t, 't_prisme'); end if;
+  if s ? 'reverses_toutes'   then t := array_append(t, 't_reflet'); end if;
+  if exists (select 1 from profiles where id = p and is_admin) then t := array_append(t, 't_admin'); end if;
+  select t || coalesce(array_agg(item_id order by item_id), '{}') into t
+    from inventory where user_id = p and qty > 0 and item_id like 't\_%';
+  return t;
+end $$;
+
+-- Changer son titre, sa banniere ou sa devise. Un parametre vide ('') retire,
+-- un parametre absent (null) ne touche a rien.
+create or replace function public.personnaliser(p_titre text, p_banniere text, p_devise text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); d text;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+
+  if p_titre is not null then
+    if p_titre <> '' and not (p_titre = any (titres_de(p))) then
+      raise exception 'Ce titre n''est pas encore débloqué.';
+    end if;
+    update profiles set titre = nullif(p_titre, '') where id = p;
+    if p_titre <> '' then perform bump_quests(p, 'titre', 1); end if;
+  end if;
+
+  if p_banniere is not null then
+    if p_banniere <> '' and not exists (select 1 from collection
+                                         where user_id = p and card_id = p_banniere and qty > 0) then
+      raise exception 'Tu ne possèdes pas cette carte.';
+    end if;
+    update profiles set banniere = nullif(p_banniere, '') where id = p;
+    if p_banniere <> '' then perform bump_quests(p, 'perso', 1); end if;
+  end if;
+
+  if p_devise is not null then
+    d := left(regexp_replace(trim(p_devise), '\s+', ' ', 'g'), 80);
+    update profiles set devise = nullif(d, '') where id = p;
+    if d <> '' then perform bump_quests(p, 'perso', 1); end if;
+  end if;
+
+  return me();
+end $$;
+
+-- ================================================ l'evenement « Reflets »
+-- Deux semaines a partir de la mise a jour, sans rien changer au rythme des
+-- boosters. Le redater, dans le SQL Editor :
+--   update public.evenements set debut = …, fin = … where code = 'reflets';
+insert into public.evenements (titre, texte, debut, fin, ticket_minutes, code)
+select 'Reflets', 'La version 2.0 : les Reverses, des cadres, des titres, le Cartle. Gagne des Prismes et remonte la piste.',
+       now(), now() + interval '14 days', null, 'reflets'
+ where not exists (select 1 from public.evenements where code = 'reflets');
+
+-- ================================================================= droits
+revoke all on function public.evenement_en_cours, public.crediter_prismes, public.accorder,
+  public.cartle_cible, public.cartle_retour, public.creer_invitation, public.titres_de
+  from public, anon, authenticated;
+revoke all on function public.piste_reclamer, public.evenement_etat, public.cartle_etat,
+  public.cartle_essai, public.utiliser_invitation, public.personnaliser from public, anon;
+grant execute on function public.piste_reclamer, public.evenement_etat, public.cartle_etat,
+  public.cartle_essai, public.utiliser_invitation, public.personnaliser to authenticated;
 
 
 -- =====================================================================

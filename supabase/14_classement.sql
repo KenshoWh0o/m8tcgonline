@@ -32,16 +32,19 @@ declare
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if p_critere is null or p_critere not in ('collection', 'boosters', 'echanges', 'serie') then
+  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie') then
     raise exception 'Classement inconnu.';
   end if;
 
   return (
     with valeurs as (
-      select pr.id, pr.pseudo, pr.avatar, pr.frame,
+      select pr.id, pr.pseudo, pr.avatar, pr.frame, pr.titre,
              (case p_critere
                 when 'collection' then (select count(*) from collection c join cards k on k.id = c.card_id
                                          where c.user_id = pr.id and c.qty > 0 and not k.promo)
+                -- Version 2.0 : les Reverses differentes.
+                when 'reverses'   then (select count(*) from collection c join cards k on k.id = c.card_id
+                                         where c.user_id = pr.id and c.qty > 0 and k.reverse)
                 when 'boosters'   then pr.packs_opened
                 when 'echanges'   then pr.trades_done
                 else case when pr.last_checkin >= auj - 1 then pr.streak else 0 end
@@ -61,14 +64,14 @@ begin
       'classes', (select count(*) from classes),
       'top', coalesce((
         select jsonb_agg(jsonb_build_object(
-                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame,
+                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
                  'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', c.id = moi)
                order by c.n)
           from classes c where c.n <= 50), '[]'::jsonb),
       -- Sa propre ligne, meme hors des cinquante premiers : on veut savoir ou
       -- l'on en est, pas seulement qui est devant.
       'moi', (select jsonb_build_object(
-                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame,
+                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
                 'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', true)
                 from classes c where c.id = moi))
   );

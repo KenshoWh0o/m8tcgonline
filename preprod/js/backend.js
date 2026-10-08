@@ -161,7 +161,18 @@ Backend.apply = function (etat) {
        (supabase/15_evenements.sql). */
     succes: etat.succes || [],
     evenement: etat.evenement || null,
-    chasse: etat.chasse || null
+    chasse: etat.chasse || null,
+    /* Version 2.0 (supabase/21_reflets.sql) : le titre, la bannière et la
+       devise du profil, les titres débloqués, les réglages ouverts à la main
+       (fabrication des Reverses), les Prismes de l'événement en cours et les
+       invitations achetées. */
+    titre: p.titre || null,
+    banniere: p.banniere || null,
+    devise: p.devise || '',
+    titres: p.titres || [],
+    parametres: etat.parametres || {},
+    prismes: etat.prismes || 0,
+    invitations: etat.invitations || []
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -239,6 +250,11 @@ Backend.openPack = async function (opts) {
     if (b) drawn[i] = b;
   }
   if (opts.unique && uniques[0]) drawn[drawn.length - 1] = uniques[0];
+  /* Labo : la Reverse de la 4ᵉ carte sort Rare. */
+  if (opts.reverseR && !god) {
+    const r = reverses.filter(c => c.rar === 'R');
+    if (r.length) drawn[3] = rnd(r);
+  }
   if (!opts.test) {
     drawn.forEach(c => save.col[c.id] = (save.col[c.id] || 0) + 1);
     await persist();
@@ -357,6 +373,23 @@ Backend.ecouterBoite = function (surNouveau) {
 /* ---- Fabrication et historique (supabase/12_recyclage.sql, 15_evenements.sql) ---- */
 Backend.fabriquer = async carte => Backend.apply(await Backend.rpc('fabriquer', { p_carte: carte }));
 Backend.mesTirages = () => Backend.rpc('mes_tirages');
+
+/* ---- Version 2.0 (supabase/21_reflets.sql) ---- */
+Backend.evenementEtat = () => Backend.rpc('evenement_etat');
+Backend.pisteReclamer = async palier => {
+  const r = await Backend.rpc('piste_reclamer', { p_palier: palier });
+  Backend.apply(r.etat);
+  return r.cartes || [];
+};
+Backend.cartleEtat = () => Backend.rpc('cartle_etat');
+Backend.cartleEssai = async id => {
+  const r = await Backend.rpc('cartle_essai', { p_carte: id });
+  Backend.apply(r.etat);
+  return r.cartle;
+};
+Backend.personnaliser = async (titre, banniere, devise) =>
+  Backend.apply(await Backend.rpc('personnaliser', { p_titre: titre ?? null, p_banniere: banniere ?? null, p_devise: devise ?? null }));
+Backend.utiliserInvitation = async code => Backend.apply(await Backend.rpc('utiliser_invitation', { p_code: code }));
 
 /* ---- Cadeaux (supabase/18_cadeaux.sql) ---- */
 Backend.mesCadeaux = () => Backend.rpc('mes_cadeaux');

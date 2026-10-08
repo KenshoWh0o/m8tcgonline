@@ -44,6 +44,7 @@ function vTest() {
       <button class="labbtn tBR" data-act="t-BR" ${brillantes.length ? '' : 'disabled'}><b>Essence Brillante</b><span>1 Essence sur ${FOIL_ODDS} en vrai</span></button>
       <button class="labbtn tUN" data-act="t-UN" ${uniques.length ? '' : 'disabled'}><b>Carte unique</b><span>à la place de la dernière carte</span></button>
       <button class="labbtn tG" data-act="t-god"><b>Godpack</b><span>1 sur 2 000 en vrai</span></button>
+      <button class="labbtn tREV" data-act="t-REV" ${reverses.length ? '' : 'disabled'}><b>Reverse Rare</b><span>en 4ᵉ carte, 15 % en vrai</span></button>
     </div>
     <div class="row" style="margin-top:9px">
       <button class="btn ghost" data-act="t-partage">Image de partage d'un booster</button>
@@ -70,6 +71,23 @@ function vTest() {
   </section>
 
   ${vLabCadeau()}
+
+  <section class="panel">
+    <h2>Version 2.0 · Reflets</h2>
+    <p class="muted small">Les fenêtres de la 2.0, sans rien réclamer ni dépenser.</p>
+    <div class="row">
+      <button class="btn ghost" data-act="t-v2-nouveautes">Nouveautés 2.0</button>
+      <button class="btn ghost" data-act="t-v2-palier">Palier : une carte</button>
+      <button class="btn ghost" data-act="t-v2-palier-titre">Palier : un titre</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" data-act="t-v2-invitation">Invitation achetée</button>
+      <button class="btn ghost" data-act="t-v2-reflets">Onglet de l'événement</button>
+      <button class="btn ghost" data-act="t-v2-cartle">Cartle</button>
+    </div>
+    <p class="muted small" style="margin-top:8px">La fabrication des Reverses s'ouvre côté serveur :
+      <code>update public.parametres set fabrication_reverse = true where id = 1;</code></p>
+  </section>
 
   <section class="panel">
     <h2>Annonce à tous les joueurs</h2>

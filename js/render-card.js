@@ -12,12 +12,20 @@
    service inverse, pour cinquante lignes de moins. */
 "use strict";
 
+/* Une url() posée dans une variable CSS se résout par rapport à la feuille de
+   style qui l'utilise (css/), pas à la page : on la donne donc en absolu. */
+let logoAbs = '';
+const logoAbsolu = () => logoAbs || (logoAbs = new URL(ART.set, document.baseURI).href);
+
 function renderCard(c) {
   if (!c) return '';
 
   if (c.img) {
-    return `<div class="cwrap"><div class="card img-card r-${c.rar}" style="--tc:${tcol(c)}">
-      <img src="${c.img}" alt="${h(c.nom)}" loading="lazy" decoding="async"></div></div>`;
+    /* Une Reverse (version 2.0) : la carte, un reflet sur tout ce qui n'est
+       pas l'illustration, et le logo Tout Commence Ici frappé en holographique. */
+    return `<div class="cwrap"><div class="card img-card r-${c.rar}${c.rev ? ' rev' : ''}" style="--tc:${tcol(c)}">
+      <img src="${c.img}" alt="${h(c.nom)}" loading="lazy" decoding="async">${c.rev
+        ? `<i class="revtampon" aria-hidden="true" style="--logo:url('${logoAbsolu()}')"><i></i></i>` : ''}</div></div>`;
   }
 
   /* Pas d'illustration : la carte existe dans la donnée mais pas sur le

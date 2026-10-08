@@ -177,8 +177,40 @@ const SUCCES = [
   { id: 'toutes_brillantes',  nom: 'Éclat absolu',       dit: 'Réunir les 9 Essences Brillantes.',     ico: 'promo',   ton: 'L' },
   { id: 'artisan',            nom: 'Artisan',            dit: 'Fabriquer une carte.',                  ico: 'recycle', ton: 'C' },
   { id: 'unique',             nom: 'L\'Élu',             dit: 'Posséder la carte unique.',             ico: 'trophy',  ton: 'UN' },
-  { id: 'pionnier',           nom: 'Pionnier',           dit: 'Avoir rejoint le jeu avant la version 1.5.', ico: 'flask', ton: 'R' }
+  { id: 'pionnier',           nom: 'Pionnier',           dit: 'Avoir rejoint le jeu avant la version 1.5.', ico: 'flask', ton: 'R' },
+  /* Version 2.0 : les Reverses. */
+  { id: 'premiere_reverse',   nom: 'Premier reflet',     dit: 'Obtenir une première Reverse.',         ico: 'reflets', ton: 'R' },
+  { id: 'reverses_toutes',    nom: 'Miroir parfait',     dit: 'Réunir les 85 Reverses.',               ico: 'reflets', ton: 'L' }
 ];
+
+/* ---------- Les titres (version 2.0) ---------- */
+/* Un titre s'affiche sous le pseudo : profil, fiche, classement. La plupart
+   viennent d'un succès (titres_de, supabase/21_reflets.sql) ; les autres sont
+   gagnés — piste et boutique de l'événement, quêtes. `ton` : sa couleur, comme
+   une rareté. `comment` : ce qu'il faut faire pour l'avoir. */
+const TITRES = {
+  t_pionnier:  { nom: 'Pionnier',                  ton: 'R',  comment: 'Avoir rejoint le jeu avant la version 1.5' },
+  t_centurion: { nom: 'Centurion',                 ton: 'R',  comment: 'Ouvrir 100 boosters' },
+  t_artisan:   { nom: 'Artisan',                   ton: 'C',  comment: 'Fabriquer une carte' },
+  t_hote:      { nom: 'L\'Hôte',                   ton: 'R',  comment: 'Faire entrer un ami avec une invitation' },
+  t_negociant: { nom: 'Négociant',                 ton: 'E',  comment: 'Conclure 25 échanges' },
+  t_fidele:    { nom: 'Inébranlable',              ton: 'E',  comment: 'Revenir 30 jours d\'affilée' },
+  t_devin:     { nom: 'Le Devin',                  ton: 'E',  comment: 'Résoudre 10 Cartle' },
+  t_chanceux:  { nom: 'Béni des dieux',            ton: 'L',  comment: 'Ouvrir un godpack' },
+  t_prisme:    { nom: 'Éclat absolu',              ton: 'L',  comment: 'Réunir les 9 Essences Brillantes' },
+  t_maitre:    { nom: 'Maître de l\'extension',    ton: 'L',  comment: 'Posséder les 122 cartes' },
+  t_reflet:    { nom: 'Miroir parfait',            ton: 'L',  comment: 'Réunir les 85 Reverses' },
+  t_eclaireur: { nom: 'Éclaireur des Reflets',     ton: 'EV', comment: 'Palier 3 de la piste « Reflets »' },
+  t_collect:   { nom: 'Collectionneur de Reflets', ton: 'EV', comment: 'Boutique de l\'événement « Reflets »' },
+  t_ame:       { nom: 'Âme des Reflets',           ton: 'EV', comment: 'Dernier palier de la piste « Reflets »' },
+  t_elu:       { nom: 'L\'Élu',                    ton: 'UN', comment: 'Posséder la carte unique' },
+  t_admin:     { nom: 'Administrateur',            ton: 'ADM', comment: 'Réservé à l\'équipe du jeu' }
+};
+
+/* La monnaie d'un événement (supabase/21_reflets.sql) : elle se gagne en
+   quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
+   avancer sa piste de récompenses. */
+const PRISMES = { nom: 'Prismes', un: 'Prisme' };
 
 /* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
@@ -194,7 +226,14 @@ const FRAMES = {
   f_sceau: { nom: 'Sceau', sceau: true, vente: false, c1: '#ffc73b', c2: '#8936ff' },
   /* Celui de la personne qui a tiré la carte unique, et de personne d'autre :
      posé par le serveur au moment du tirage (open_pack, supabase/03_rpc.sql). */
-  f_unique:{ nom: 'Unique', unique: true, vente: false, c1: '#ffc73b', c2: '#ec8fff' }
+  f_unique:{ nom: 'Unique', unique: true, vente: false, c1: '#ffc73b', c2: '#ec8fff' },
+  /* Version 2.0 : gagnés en jouant (quêtes, piste et boutique de l'événement).
+     `anim` : la classe qui les anime (css/hub.css). */
+  f_master: { nom: 'Maître', anim: 'master', vente: false, c1: '#ff5bb0', c2: '#ffc73b' },
+  f_reflet: { nom: 'Reflet', anim: 'reflet', vente: false, c1: '#b38cff', c2: '#7fd8ff' },
+  f_aurore: { nom: 'Aurore', anim: 'aurore', vente: false, c1: '#55e6a6', c2: '#ff5bb0' },
+  f_miroir: { nom: 'Miroir', anim: 'miroir', vente: false, c1: '#e8ecff', c2: '#b38cff' },
+  f_kaleido:{ nom: 'Kaléidoscope', anim: 'kaleido', vente: false, c1: '#ff5bb0', c2: '#39b8ff' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
@@ -225,7 +264,10 @@ const TRADE_COOLDOWN_H = 6;
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
-  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword' },
+  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Bientôt : la version 3.0' },
+  /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, il prend la
+     place de Combats dans la barre (navHTML, js/app.js). */
+  { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets', online: true },
   { id: 'social',     nom: 'Social',     bas: true, ico: 'amis',  online: true },
   { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest', online: true },
 
@@ -233,6 +275,8 @@ const TABS = [
     desc: 'Pseudo, avatar, cadre et statistiques' },
   { id: 'tirages', nom: 'Mes tirages', tiroir: true, ico: 'clock', online: true,
     desc: 'Historique, statistiques et partage' },
+  { id: 'cartle',   nom: 'Cartle',     tiroir: true, ico: 'cartle', online: true,
+    desc: 'La carte du jour, à deviner en sept essais' },
   { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy', online: true,
     desc: 'Les meilleurs joueurs, tous confondus' },
   { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,
@@ -293,6 +337,11 @@ const NAVICO = {
   lock:  '<svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
   partage:'<svg viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></svg>',
+  /* Version 2.0 : le Prisme (monnaie de l'événement), Reflets (l'événement,
+     les Reverses), le Cartle (une grille d'indices). */
+  prisme: '<svg viewBox="0 0 24 24"><path d="M12 2.5 21 18.5H3Z"/><path d="M12 2.5 9.2 18.5M12 2.5l2.8 16M5.6 13.9h12.8"/></svg>',
+  reflets: '<svg viewBox="0 0 24 24"><path d="M12 2.5 14 9l6.5 2-6.5 2-2 6.5-2-6.5L3.5 11 10 9Z"/><path d="M19 3.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7Z"/></svg>',
+  cartle: '<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M15.4 15.6a1.8 1.8 0 1 1 2.6 1.6c-.6.3-1 .8-1 1.4M17 20.6v.1"/></svg>',
   fragment:'<svg viewBox="0 0 24 24"><path d="M12 2.8 18.6 9 12 21.2 5.4 9Z"/><path d="M5.4 9h13.2M12 2.8 9.4 9 12 21.2 14.6 9Z"/></svg>',
   rotate:'<svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"/><path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"/><path d="M18 2.5V6h-3.5M6 21.5V18h3.5"/></svg>',
   filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>'

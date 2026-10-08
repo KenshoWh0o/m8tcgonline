@@ -146,10 +146,59 @@ function vMatepedia() {
       <br>Un projet communautaire dédié au TCG Gentle Mates.</p>`;
 }
 
+/* ---------- Les invitations (version 2.0) ---------- */
+/* Un lien d'invitation (?invitation=CODE, js/shop.js) garde son code de côté :
+   la personne se connecte avec Discord, et le code s'applique tout seul au
+   retour (supabase/21_reflets.sql). */
+const INVIT_CLE = 'mtcg.invitation';
+(() => {
+  const m = /[?&]invitation=([^&#]+)/.exec(location.search);
+  if (!m) return;
+  try { localStorage.setItem(INVIT_CLE, decodeURIComponent(m[1]).trim().toUpperCase()); } catch (e) { /* mode privé */ }
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* sans gravité */ }
+})();
+const codeInvitation = () => { try { return localStorage.getItem(INVIT_CLE) || ''; } catch (e) { return ''; } };
+let invitEssayee = false;
+
+async function porteCode(code) {
+  const c = String(code || ($('#porte-code') || {}).value || '').trim();
+  if (!c) return toast('Entre le code reçu.');
+  occupe(true);
+  try {
+    await Backend.utiliserInvitation(c);
+    try { localStorage.removeItem(INVIT_CLE); } catch (e) { /* mode privé */ }
+    toast('Bienvenue dans le jeu !');
+    SFX.jouer('gagne');
+    if (porteOuverte()) location.reload();
+    else render();
+  } catch (e) {
+    toast(e.message || 'Ce code n\'a pas fonctionné.');
+  } finally {
+    occupe(false);
+  }
+}
+
+/* Connecté sans accès, avec un code gardé de côté : on l'essaie une fois. */
+function essayerInvitationGardee() {
+  if (invitEssayee || etatPorte() !== 'refus' || !codeInvitation()) return;
+  invitEssayee = true;
+  porteCode(codeInvitation());
+}
+
 function vPorteAttente() {
+  const code = codeInvitation();
   const connexion = Backend.dispo
-    ? `<button class="linkbtn lockacces" data-act="porte-discord">J'ai déjà un accès</button>`
+    ? `<button class="linkbtn lockacces" data-act="porte-discord">${code ? 'Me connecter avec Discord' : 'J\'ai déjà un accès'}</button>`
     : '';
+  if (code) {
+    return `<span class="locktag">Invitation</span>
+      <h1 class="locktitle">Tu es invité</h1>
+      <div class="muted lockdit"><p>Un ami t'a invité sur <b>${h(GAME_NAME)}</b>. Connecte-toi avec Discord :
+        ton code <b>${h(code)}</b> s'appliquera tout seul.</p></div>
+      <div class="lockentree">
+        <button class="btn" data-act="porte-discord">Me connecter avec Discord</button>
+      </div>`;
+  }
 
   return `${vAnnonceArret()}
     <div class="lockentree">
@@ -165,6 +214,12 @@ function vPorteRefus() {
   const qui = save && save.pseudo ? save.pseudo : 'Ce compte';
   return `${vAnnonceArret()}
     <p class="muted small lockaide"><b>${h(qui)}</b> n'a pas d'accès au jeu.</p>
+    <div class="lockinvit">
+      <p class="muted small">Un ami t'a invité ? Entre son code :</p>
+      <div class="findrow"><input id="porte-code" type="text" maxlength="20" placeholder="M8-XXXX-XXXX"
+        value="${h(codeInvitation())}" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <button class="btn tiny" data-act="porte-code">Entrer</button></div>
+    </div>
     <div class="lockentree">
       ${lienDiscord('btn discord', 'Rejoindre le Discord')}
       <button class="btn ghost" data-act="porte-sortir">Changer de compte</button>
@@ -241,6 +296,7 @@ function ouvrirLaPorte() {
    serveur, on lui redemande de temps en temps plutôt que de rester bloqué. */
 function bindPorte() {
   clearInterval(porteMinuteur);
+  setTimeout(essayerInvitationGardee, 300);
   let tic = 0;
   porteMinuteur = setInterval(() => {
     const c = $('#lockcompte');

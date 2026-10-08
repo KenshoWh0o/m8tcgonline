@@ -56,8 +56,8 @@ function tickPct() {
    supabase/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux ouvertures de
    test du Labo, mais deux tables divergentes rendraient le Labo menteur. */
 const RATES = {
-  /* Troisième carte : encore une commune, ou déjà une peu commune. */
-  MIXTE: { C: 60, PC: 40 },
+  /* Quatrième carte, la Reverse (version 2.0). */
+  REVERSE: { C: 50, PC: 35, R: 15 },
   /* La dernière, celle qu'on attend. */
   HIT: { R: 80, E: 16, L: 4 },
   /* Le godpack, case par case : ça monte jusqu'à la légendaire garantie. */
@@ -94,11 +94,11 @@ function weighted(w) {
   return Object.keys(w)[0];
 }
 
-/* Six cartes, chacune à sa place :
+/* Six cartes, chacune à sa place (version 2.0) :
      1 · Commune
      2 · Commune
-     3 · Commune (60 %) ou Peu commune (40 %)
-     4 · Peu commune
+     3 · Peu commune
+     4 · une Reverse : Commune 50 %, Peu commune 35 %, Rare 15 %
      5 · Essence
      6 · le hit : Rare 80 %, Épique 16 %, Légendaire 4 %
    L'ordre compte : la pile se feuillette de la première à la dernière, et
@@ -114,8 +114,10 @@ function makeBooster(pool, god) {
 
   out.push(pickFrom(pool, 'C'));
   out.push(pickFrom(pool, 'C'));
-  out.push(pickFrom(pool, weighted(RATES.MIXTE)));
   out.push(pickFrom(pool, 'PC'));
+  const rr = weighted(RATES.REVERSE);
+  const revs = reverses.filter(c => c.rar === rr);
+  out.push(revs.length ? rnd(revs) : pickFrom(pool, rr));
 
   const ess = pool.filter(c => c.cat === 'essence');
   let e = ess.length ? rnd(ess) : pickFrom(pool, 'C');
@@ -145,6 +147,9 @@ function pendant(ms) {
 function vBandeauEvenement() {
   if (Backend.mode !== 'cloud' || !save) return '';
   const ev = save.evenement;
+  /* Version 2.0 : l'événement « Reflets » a son propre bandeau, qui mène à
+     son onglet. */
+  if (ev && ev.code === 'reflets' && !ev.a_venir) return vBandeauReflets(ev);
   const ch = save.chasse || {};
   const u = uniques[0];
   const nomU = u ? u.nom : 'la carte unique';
@@ -195,6 +200,25 @@ function vBandeauEvenement() {
       ${chasse ? `<span class="evbchasse">${ICON.star}<span>${chasse}</span></span>` : ''}
     </span>
     ${u && (annoncee || ouverte) ? `<span class="evbcarte"><img src="${u.img}" alt=""></span>` : ''}
+  </button>`;
+}
+
+/* Le bandeau de l'événement Reflets : holographique, avec une Reverse qui
+   tourne doucement, le solde de Prismes et ce qui attend dans l'onglet. */
+function vBandeauReflets(ev) {
+  const fin = srvTime(ev.fin);
+  const n = evQuetesPretes();
+  const rv = reverses.filter(c => c.rar === 'R');
+  const c = rv.length ? rv[Math.floor(Date.now() / 3600000) % rv.length] : null;
+  return `<button class="evban reflets" data-tab="reflets" aria-label="Ouvrir l'événement Reflets">
+    <span class="rfb-holo" aria-hidden="true"></span>
+    <span class="evbtxt">
+      <span class="evbhaut"><i class="evbtag">Événement 2.0</i><span class="evbtemps">encore <b data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</b></span></span>
+      <b class="evbtitre rfb-nom">Reflets</b>
+      <span class="evbsous">Les Reverses sont arrivées. Gagne des ${PRISMES.nom}, remonte la piste, joue au Cartle.</span>
+      <span class="rfb-chips"><i>${prismeIco}<b>${fmtN(save.prismes || 0)}</b> ${PRISMES.nom}</i>${n ? `<i class="pret">${n} à récupérer</i>` : '<i>Voir l\'événement</i>'}</span>
+    </span>
+    ${c ? `<span class="rfb-carte" aria-hidden="true">${renderCard(c)}</span>` : ''}
   </button>`;
 }
 
