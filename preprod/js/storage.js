@@ -51,6 +51,8 @@ let promos = [];
 /* Hors extension eux aussi : les Essences Brillantes et la carte unique. */
 let brillantes = [];
 let uniques = [];
+/* Version 2.0 : les Reverses, à côté des 122 elles aussi (js/cards.js). */
+let reverses = [];
 let packArt = PACK_ARTS[0];
 let byId = {};
 let tab = 'boosters';
@@ -81,6 +83,7 @@ function rebuild() {
   cards.forEach(c => byId[c.id] = c);
   promos.forEach(c => byId[c.id] = c);
   brillantes.forEach(c => byId[c.id] = c);
+  reverses.forEach(c => byId[c.id] = c);
   uniques.forEach(c => byId[c.id] = c);
 }
 

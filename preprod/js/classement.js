@@ -11,6 +11,9 @@
 const CRITERES = [
   { id: 'collection', titre: 'Collection', dit: 'Cartes différentes de l\'extension',
     val: n => `${fmtN(n)}<small> / ${cards.length}</small>` },
+  /* Version 2.0 */
+  { id: 'reverses', titre: 'Reverses', dit: 'Reverses différentes',
+    val: n => `${fmtN(n)}<small> / ${reverses.length}</small>` },
   { id: 'boosters', titre: 'Boosters', dit: 'Boosters ouverts depuis le début',
     val: n => fmtN(n) },
   { id: 'echanges', titre: 'Échanges', dit: 'Échanges conclus',
@@ -60,7 +63,7 @@ function vClassement() {
       data-fiche="${h(j.pseudo)}" aria-label="${h(j.pseudo)}, ${j.rang}e">
     <span class="clrang tnum">${j.rang}</span>
     ${avatarHTML(j.avatar, j.frame, 'sm', j.moi ? maPhoto() : j.photo)}
-    <span class="clnom">${h(j.pseudo)}${j.moi ? ' <i class="qtag">toi</i>' : ''}</span>
+    <span class="clnom">${h(j.pseudo)}${j.moi ? ' <i class="qtag">toi</i>' : ''}${vTitreLigne(j.titre)}</span>
     <span class="clval tnum">${def.val(j.valeur)}</span>
   </button>`;
 

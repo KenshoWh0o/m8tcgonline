@@ -6,7 +6,10 @@
 const $ = s => document.querySelector(s);
 
 const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-const h = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ESCAPE_MAP[c]);
+/* Au passage, les guillemets français gardent leur contenu : jamais un « » »
+   seul en début de ligne. */
+const h = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ESCAPE_MAP[c])
+  .replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»');
 
 const noacc = s => String(s == null ? '' : s)
   .normalize('NFD')
@@ -44,7 +47,7 @@ const rk = c => (RAR[c.rar] || RAR.C).rank;
    deux ont leur place — un choix d'avatar, une vitrine. Partout où l'on compte
    la collection, c'est `cards` seul : les Promos sont hors extension, et le
    total de 122 ne doit jamais bouger. */
-const toutesCartes = () => cards.concat(promos, brillantes, uniques);
+const toutesCartes = () => cards.concat(reverses, promos, brillantes, uniques);
 
 /* Les plus rares d'abord, puis par numéro. */
 const parRarete = (a, b) => rk(b) - rk(a) || (a.num || 0) - (b.num || 0);

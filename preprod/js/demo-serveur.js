@@ -94,8 +94,8 @@
 
   /* ------------------------------------------ quêtes, 04_seed.sql */
   const QUETES = [
-    ['d_check',   'daily',     'checkin',        1,   40, null, 'Premier passage',      'Ouvre le jeu aujourd\'hui.', 1],
-    ['d_packs',   'daily',     'packs',          5,   60, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2],
+    ['d_check',   'daily',     'checkin',        1,   30, null, 'Premier passage',      'Ouvre le jeu aujourd\'hui.', 1],
+    ['d_packs',   'daily',     'packs',          5,   50, null, 'Cinq paquets',         'Ouvre 5 boosters.', 2],
     ['d_epic',    'daily',     'rarity_E',       1,   80, null, 'Au moins une Épique',  'Décroche une Épique ou une Légendaire.', 3],
     ['d_new',     'daily',     'new_cards',      3,   30, null, 'Du sang neuf',         'Trouve 3 cartes que tu n\'avais pas.', 4],
     ['d_recycle', 'daily',     'recycle',        5,   30, null, 'Petit ménage',         'Recycle 5 doublons.', 5],
@@ -123,9 +123,35 @@
     ['m_packs50', 'milestone', 'packs',          50,  300, null,      'Cinquante paquets',  'Ouvre 50 boosters en tout.', 13],
     ['m_packs100','milestone', 'packs',         100,  800, null,      'Cent paquets',       'Ouvre 100 boosters en tout.', 14],
     ['m_packs200','milestone', 'packs',         200, 2000, null,      'Deux cents paquets', 'Ouvre 200 boosters en tout.', 15],
-    ['m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16]
-  ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre]) =>
-    ({ id, scope, metric, goal, reward, item_id, titre, detail, ordre }));
+    ['m_trade25', 'milestone', 'trades',         25,  900, null, 'Négociant',           'Conclus 25 échanges en tout.', 16],
+    /* Version 2.0 (04_seed.sql) */
+    ['d_revR',    'daily',     'rev_R',           1,   40, null, 'Reflet rare',          'Décroche une Reverse Rare.', 7],
+    ['w_revR',    'weekly',    'rev_R',           5,  250, null, 'Cinq reflets',         'Décroche 5 Reverses Rares cette semaine.', 7],
+    ['m_revC',    'milestone', 'rset_C',       null,  400, null, 'Reverses Communes',    'Possède toutes les Reverses Communes.', 17],
+    ['m_revPC',   'milestone', 'rset_PC',      null,  700, null, 'Reverses Peu communes','Possède toutes les Reverses Peu communes.', 18],
+    ['m_revR',    'milestone', 'rset_R',       null, 2500, null, 'Reverses Rares',       'Possède toutes les Reverses Rares.', 19],
+    ['m_revALL',  'milestone', 'rset_ALL',     null,    0, 'f_reflet', 'Le Reflet complet', 'Possède les 85 Reverses.', 20],
+    ['m_master',  'milestone', 'collection_pct',100,    0, 'f_master', 'Maître de l\'extension', 'Possède les 122 cartes de l\'extension.', 21],
+    ['m_brill',   'milestone', 'brill_ALL',       9,    0, 'f_aurore', 'Aurore',             'Possède les 9 Essences Brillantes.', 22],
+    ['m_packs300','milestone', 'packs',         300,    0, 'f_sceau',  'Trois cents paquets', 'Ouvre 300 boosters en tout.', 23],
+    ['m_cartle10','milestone', 'cartle',         10,    0, 't_devin',  'Le Devin',           'Résous 10 Cartle.', 24],
+    ['m_invite',  'milestone', 'invite',          1,    0, 't_hote',   'L\'Hôte',            'Un ami entre dans le jeu avec ton invitation.', 25],
+    /* L'événement « Reflets » : ses quêtes paient en Prismes. */
+    ['e_check',   'ev_jour', 'checkin',   1, 10, null, 'Un reflet par jour',  'Passe voir l\'événement aujourd\'hui.', 1, 'reflets', 'prismes'],
+    ['e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',     'Ouvre 4 boosters aujourd\'hui.', 2, 'reflets', 'prismes'],
+    ['e_cartle',  'ev_jour', 'cartle',    1, 25, null, 'Le Cartle du jour',   'Devine la carte du jour.', 3, 'reflets', 'prismes'],
+    ['e_revR',    'ev_jour', 'rev_R',     1, 20, null, 'Reflet rare',         'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'],
+    ['e_titre',   'ev',      'titre',     1, 20, null, 'Un titre à ton nom',  'Équipe un titre sur ton profil.', 1, 'reflets', 'prismes'],
+    ['e_perso',   'ev',      'perso',     1, 20, null, 'À ton image',         'Choisis une bannière ou une devise.', 2, 'reflets', 'prismes'],
+    ['e_rev30',   'ev',      'rset_ALL', 30, 60, null, 'Trente reflets',      'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'],
+    ['e_revC',    'ev',      'rset_C', null, 80, null, 'Toutes les Communes reverses', 'Possède toutes les Reverses Communes.', 4, 'reflets', 'prismes'],
+    ['e_cartle7', 'ev',      'cartle',    7, 80, null, 'Devin de la semaine', 'Résous 7 Cartle pendant l\'événement.', 5, 'reflets', 'prismes'],
+    ['e_packs50', 'ev',      'packs',    50, 60, null, 'Cinquante boosters',  'Ouvre 50 boosters pendant l\'événement.', 6, 'reflets', 'prismes'],
+    ['e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets', 'Conclus 3 échanges.', 7, 'reflets', 'prismes'],
+    ['e_recycle', 'ev',      'recycle',  30, 30, null, 'Grand ménage',        'Recycle 30 doublons.', 8, 'reflets', 'prismes'],
+    ['e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes']
+  ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie]) =>
+    ({ id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement: evenement || null, monnaie: monnaie || 'eclats' }));
 
   /* ---------------------------------------- boutique, 04_seed.sql */
   const BOUTIQUE = [
@@ -139,15 +165,37 @@
     ['f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1],
     ['f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2],
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
-    ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre animé qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4]
-  ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre]) =>
-    ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true }));
+    ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre animé qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4],
+    /* Version 2.0 : l'invitation (Fragments) et la boutique de l'événement (Prismes). */
+    ['s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 5 boosters et 500 Éclats de bienvenue.', 2000, 'invitation', 1, null, false, 1, 'fragments', null, 3],
+    ['ev_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      60, 'tickets',   2,   null, false, 1, 'prismes', 'reflets', 5],
+    ['ev_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 50, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5],
+    ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 120, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
+    ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 150, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
+    ['f_kaleido',    'evenement', 'Cadre « Kaléidoscope »', 'Un cadre animé, en vente pendant l\'événement seulement.', 250, 'cosmetique', 1, null, true, 5, 'prismes', 'reflets', null]
+  ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
+    ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
+       devise: devise || 'eclats', evenement: evenement || null, limite: limite == null ? null : limite }));
+
+  /* La piste de récompenses de l'événement (21_reflets.sql). */
+  const PISTE = [
+    [1, 20, 'boosters', 2, null, '2 boosters'], [2, 50, 'fragments', 300, null, '300 Fragments'],
+    [3, 90, 'titre', 0, 't_eclaireur', 'Titre « Éclaireur des Reflets »'], [4, 140, 'boosters', 3, null, '3 boosters'],
+    [5, 200, 'eclats', 500, null, '500 Éclats'], [6, 270, 'fragments', 600, null, '600 Fragments'],
+    [7, 350, 'reverse_R', 1, null, 'Une Reverse Rare'], [8, 440, 'boosters', 5, null, '5 boosters'],
+    [9, 540, 'cadre', 0, 'f_miroir', 'Cadre « Miroir »'], [10, 650, 'eclats', 1000, null, '1 000 Éclats'],
+    [11, 770, 'fragments', 1000, null, '1 000 Fragments'], [12, 900, 'reverse_R', 2, null, 'Deux Reverses Rares'],
+    [13, 1040, 'boosters', 8, null, '8 boosters'], [14, 1190, 'brillante', 1, null, 'Une Essence Brillante'],
+    [15, 1350, 'titre', 0, 't_ame', 'Titre « Âme des Reflets »']
+  ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
 
   /* Le catalogue : celui du jeu (js/cards-data.js, js/promos-data.js). */
   /* L'objectif d'une rareté complète : le total de la rareté dans le catalogue,
      lu au premier besoin (le catalogue n'existe pas encore quand ce fichier
      se charge). */
   const objectif = q => q.goal != null ? q.goal
+    : q.metric === 'rset_ALL' ? reverses.length
+    : q.metric.startsWith('rset_') ? reverses.filter(k => k.rar === q.metric.slice(5)).length
     : cards.filter(k => k.rar === q.metric.slice(4)).length;
 
   const carte = id => byId[id];
@@ -196,7 +244,7 @@
   }
 
   /* period_key, 01_schema.sql */
-  const periode = sc => sc === 'daily' ? jourParis(now()) : sc === 'weekly' ? semaineParis(now()) : 'all';
+  const periode = sc => (sc === 'daily' || sc === 'ev_jour') ? jourParis(now()) : sc === 'weekly' ? semaineParis(now()) : 'all';
   const cleQp = (p, q) => `${p}|${q.id}|${periode(q.scope)}`;
 
   /* bump_quests, 01_schema.sql */
@@ -226,10 +274,16 @@
     const c = colDe(p);
     const valeur = q => q.metric === 'collection_pct' ? pct
       : extension().filter(k => k.rar === q.metric.slice(4) && (c[k.id] || 0) > 0).length;
-    QUETES.filter(q => q.metric === 'collection_pct' || q.metric.startsWith('set_')).forEach(q => {
+    const etat = q => q.metric === 'collection_pct' || q.metric.startsWith('set_')
+      || q.metric.startsWith('rset_') || q.metric === 'brill_ALL';
+    const valeur2 = q => q.metric === 'rset_ALL' ? reverses.filter(k => (c[k.id] || 0) > 0).length
+      : q.metric.startsWith('rset_') ? reverses.filter(k => k.rar === q.metric.slice(5) && (c[k.id] || 0) > 0).length
+      : q.metric === 'brill_ALL' ? brillantes.filter(k => (c[k.id] || 0) > 0).length
+      : valeur(q);
+    QUETES.filter(etat).forEach(q => {
       const k = `${p}|${q.id}|all`;
       const qp = S.qp[k];
-      const v = valeur(q);
+      const v = valeur2(q);
       if (!qp) S.qp[k] = { progress: v, claimed: false };
       else qp.progress = Math.max(qp.progress, v);
     });
@@ -274,6 +328,9 @@
     if (brillantes.length && br >= brillantes.length) s.push('toutes_brillantes');
     if ((pr.fabrications || 0) >= 1) s.push('artisan');
     if (uniques.some(u => a(u.id))) s.push('unique');
+    const rev = reverses.filter(k => a(k.id)).length;
+    if (rev >= 1) s.push('premiere_reverse');
+    if (reverses.length && rev >= reverses.length) s.push('reverses_toutes');
     return s;
   }
 
@@ -295,7 +352,7 @@
     syncCollection(p);
     checkPromos(p);
     const garde = o => Object.fromEntries(Object.entries(o).filter(([, n]) => n > 0));
-    const ordre = { daily: 0, milestone: 1, weekly: 2 };     /* `order by q.scope` : ordre alphabétique */
+    const ordre = { daily: 0, ev: 1, ev_jour: 2, milestone: 3, weekly: 4 };     /* `order by q.scope` : ordre alphabétique */
     return {
       profil: {
         id: pr.id, pseudo: pr.pseudo, avatar: pr.avatar, frame: pr.frame,
@@ -306,6 +363,8 @@
         vitrine: pr.vitrine.slice(),
         fragments: pr.fragments || 0,
         boosters_bonus: pr.boosters_bonus || 0, bonus_offerts: pr.tickets_offerts || 0,
+        titre: pr.titre || null, banniere: pr.banniere || null, devise: pr.devise || null,
+        titres: titresDe(p),
         invite: true,
         ticket_cap: cfg('ticket_cap'), ticket_minutes: cfg('ticket_minutes'),
         serveur: iso(now())
@@ -318,20 +377,111 @@
           R: cfg('fabrication_R'), E: cfg('fabrication_E'), L: cfg('fabrication_L') }
       },
       succes: succesDe(p),
-      evenement: null,
+      evenement: evenementActif(),
       chasse: chasseEtat(),
+      parametres: { fabrication_reverse: !!S.parametres.fabrication_reverse },
+      prismes: compte(p).solde,
+      invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
+        utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
       col: garde(colDe(p)),
       inv: garde(invDe(p)),
-      quetes: QUETES.slice()
+      quetes: QUETES.filter(q => !q.evenement || q.evenement === evenementEnCours())
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
         .map(q => {
           const qp = S.qp[cleQp(p, q)];
           return { id: q.id, scope: q.scope, titre: q.titre, detail: q.detail,
             goal: objectif(q), reward: q.reward, item: q.item_id, metric: q.metric,
             progress: Math.min(qp ? qp.progress : 0, objectif(q)),
-            claimed: qp ? qp.claimed : false };
+            claimed: qp ? qp.claimed : false, monnaie: q.monnaie, evenement: q.evenement };
         })
     };
+  }
+
+  /* ======================================== version 2.0, 21_reflets.sql */
+  /* L'événement « Reflets » : deux semaines à partir de la création du monde. */
+  function evenementEnCours() {
+    const e = S.evenement;
+    return e && now() >= e.debut && now() < e.fin ? e.code : null;
+  }
+  function evenementActif() {
+    const e = S.evenement;
+    if (!e || now() >= e.fin) return null;
+    return { titre: e.titre, texte: e.texte, code: e.code, debut: iso(e.debut), fin: iso(e.fin),
+      ticket_minutes: null, a_venir: now() < e.debut };
+  }
+  function compte(p) {
+    const ev = evenementEnCours() || 'reflets';
+    const k = p + '|' + ev;
+    return (S.evt.comptes[k] = S.evt.comptes[k] || { solde: 0, total: 0 });
+  }
+  function crediterPrismes(p, n) {
+    if (!evenementEnCours() || !(n > 0)) return;
+    const c = compte(p); c.solde += n; c.total += n;
+  }
+
+  /* accorder, 21_reflets.sql */
+  function accorder(p, t, n, objet) {
+    const pr = profil(p);
+    const cartes = [];
+    if (t === 'boosters') pr.boosters_bonus = (pr.boosters_bonus || 0) + n;
+    else if (t === 'eclats') pr.shards += n;
+    else if (t === 'fragments') pr.fragments = (pr.fragments || 0) + n;
+    else if (t === 'titre' || t === 'cadre') { const inv = invDe(p); if (!(objet in inv)) inv[objet] = 1; }
+    else if (t === 'reverse_R') {
+      for (let i = 0; i < Math.max(n, 1); i++) {
+        const l = reverses.filter(k => k.rar === 'R' && !possede(p, k.id) && !cartes.includes(k.id));
+        const k = l.length ? choix(l) : choix(reverses.filter(x => x.rar === 'R'));
+        ajouter(p, k.id, 1); cartes.push(k.id);
+      }
+    } else if (t === 'brillante') {
+      const l = brillantes.filter(k => !possede(p, k.id));
+      if (!l.length) pr.fragments = (pr.fragments || 0) + 2000;
+      else { const k = choix(l); ajouter(p, k.id, 1); cartes.push(k.id); }
+    } else refuser('Récompense inconnue.');
+    if (cartes.length) { syncCollection(p); checkPromos(p); }
+    return cartes;
+  }
+
+  /* titres_de, 21_reflets.sql */
+  function titresDe(p) {
+    const s = succesDe(p);
+    const map = { pionnier: 't_pionnier', unique: 't_elu', master_set: 't_maitre', negociant: 't_negociant',
+      godpack: 't_chanceux', boosters_100: 't_centurion', serie_30: 't_fidele', artisan: 't_artisan',
+      toutes_brillantes: 't_prisme', reverses_toutes: 't_reflet' };
+    const t = Object.keys(map).filter(k => s.includes(k)).map(k => map[k]);
+    if (profil(p).is_admin) t.push('t_admin');
+    Object.keys(invDe(p)).filter(k => k.startsWith('t_') && invDe(p)[k] > 0).sort().forEach(k => t.push(k));
+    return t;
+  }
+
+  function creerInvitation(p) {
+    let code;
+    do code = 'M8-' + Math.random().toString(16).slice(2, 6).toUpperCase() + '-' + Math.random().toString(16).slice(2, 6).toUpperCase();
+    while (S.invitations.some(i => i.code === code));
+    S.invitations.push({ code, auteur: p, cree_le: now(), utilise_par: null, utilise_le: null });
+    return code;
+  }
+
+  /* Le Cartle : la carte du jour, tirée par un hachage de la date. */
+  function hacher(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  const cartleCartes = () => cards.filter(k => k.cat !== 'essence');
+  function cartleCible(j) {
+    return cartleCartes().map(k => [hacher(j + ':reflets:' + k.id), k.id]).sort((a, b) => a[0] - b[0])[0][1];
+  }
+  const RANG = { C: 1, PC: 2, R: 3, E: 4, L: 5 };
+  function cartleRetour(cid, cible) {
+    const a = carte(cid), b = carte(cible);
+    return { carte: a.id, cat: a.cat === b.cat ? '=' : 'x', col: a.col === b.col ? '=' : 'x',
+      rar: a.rar === b.rar ? '=' : RANG[b.rar] > RANG[a.rar] ? '+' : '-',
+      num: a.num === b.num ? '=' : b.num > a.num ? '+' : '-' };
+  }
+  function cartleEtat(p) {
+    const j = jourParis(now());
+    const c = S.cartle[p + '|' + j] || { essais: [], trouve: false };
+    const cible = cartleCible(j);
+    const fini = c.trouve || c.essais.length >= 7;
+    return { jour: j, max: 7, essais: c.essais.map(e => cartleRetour(e, cible)), trouve: c.trouve, fini,
+      cible: fini ? cible : null };
   }
 
   /* =================================================== les actions (03_rpc) */
@@ -392,6 +542,9 @@
     return Math.random() < 1 / cfg('foil_odds') && carte('b' + e.slice(1)) ? 'b' + e.slice(1) : e;
   };
 
+  /* La case Reverse (version 2.0). */
+  const reverseCard = r => { const l = reverses.filter(c => c.rar === r); return l.length ? choix(l).id : pickCard(r); };
+
   /* Les six cartes d'open_pack, sans rien écrire : sert aussi à garnir la
      collection des joueurs simulés. */
   function tirerPaquet() {
@@ -410,8 +563,8 @@
       const ess = dansBooster().filter(c => c.cat === 'essence');
       ids = [
         pickCard('C'), pickCard('C'),
-        pickCard(tirage([[60, 'C'], [100, 'PC']])),
         pickCard('PC'),
+        reverseCard(tirage([[50, 'C'], [85, 'PC'], [100, 'R']])),
         essence(ess),
         pickCard(tirage([[80, 'R'], [96, 'E'], [100, 'L']]))
       ];
@@ -464,6 +617,7 @@
     bump(p, 'rarity_R', distinctes.filter(c => ['R', 'E', 'L'].includes(c.rar)).length);
     bump(p, 'rarity_E', distinctes.filter(c => ['E', 'L'].includes(c.rar)).length);
     bump(p, 'rarity_L', distinctes.filter(c => c.rar === 'L').length);
+    bump(p, 'rev_R', distinctes.filter(c => c.rev && c.rar === 'R').length);
     syncCollection(p);
     checkPromos(p);
     return { cards: ids, god, etat: me(p) };
@@ -472,11 +626,13 @@
   RPC.claim_quest = (p, { p_quest }) => {
     const q = QUETES.find(x => x.id === p_quest);
     if (!q) refuser('Quête inconnue.');
+    if (q.evenement && q.evenement !== evenementEnCours()) refuser('Cet événement est terminé.');
     const qp = S.qp[cleQp(p, q)];
     if (qp && qp.claimed) refuser('Récompense déjà récupérée.');
     if ((qp ? qp.progress : 0) < objectif(q)) refuser('Quête non terminée.');
     qp.claimed = true;
-    if (q.reward > 0) profil(p).shards += q.reward;
+    if (q.reward > 0 && q.monnaie === 'prismes') crediterPrismes(p, q.reward);
+    else if (q.reward > 0) profil(p).shards += q.reward;
     if (q.item_id) {
       if (carte(q.item_id)) { if (!(q.item_id in colDe(p))) colDe(p)[q.item_id] = 1; }
       else if (!(q.item_id in invDe(p))) invDe(p)[q.item_id] = 1;
@@ -487,14 +643,28 @@
   RPC.shop_buy = (p, { p_item }) => {
     const it = BOUTIQUE.find(x => x.id === p_item && x.actif);
     if (!it) refuser('Article indisponible.');
+    if (it.evenement && it.evenement !== evenementEnCours()) refuser('Cet événement est terminé.');
     const pr = profil(p);
-    if (pr.shards < it.prix) refuser('Pas assez d\'Éclats.');
-    if (it.unique_buy && it.id in invDe(p)) refuser('Tu possèdes déjà cet article.');
-    pr.shards -= it.prix;
     const inv = invDe(p);
+    if (it.unique_buy && it.id in inv) refuser('Tu possèdes déjà cet article.');
+    if (it.limite != null && (inv[it.id] || 0) >= it.limite) refuser('Tu as atteint la limite pour cet article.');
+    if (it.devise === 'fragments') {
+      if ((pr.fragments || 0) < it.prix) refuser('Pas assez de Fragments.');
+      pr.fragments -= it.prix;
+    } else if (it.devise === 'prismes') {
+      const c = compte(p);
+      if (c.solde < it.prix) refuser('Pas assez de Prismes.');
+      c.solde -= it.prix;
+    } else {
+      if (pr.shards < it.prix) refuser('Pas assez d\'Éclats.');
+      pr.shards -= it.prix;
+    }
+    if (it.limite != null && !it.unique_buy) inv[it.id] = (inv[it.id] || 0) + 1;
     if (it.effet === 'tickets') pr.boosters_bonus = (pr.boosters_bonus || 0) + it.montant;
     else if (it.effet === 'refill') { pr.tickets = Math.max(pr.tickets, cfg('ticket_cap')); pr.last_tick = now(); }
     else if (it.effet === 'trade_token') inv.trade_token = (inv.trade_token || 0) + it.montant;
+    else if (it.effet === 'invitation') creerInvitation(p);
+    else if (it.effet === 'fragments' || it.effet === 'reverse_R') accorder(p, it.effet, it.montant, null);
     else if (it.effet === 'carte') {
       if (!it.carte_id) refuser('Article mal configuré.');
       ajouter(p, it.carte_id, 1);
@@ -524,6 +694,7 @@
     if (co.rar === 'ES') refuser('Les Essences ne s\'échangent pas.');
     if (co.rar === 'PR') refuser('Les cartes Promo ne s\'échangent pas.');
     if (co.promo || cw.promo) refuser('Cette carte ne s\'échange pas.');
+    if (!!co.rev !== !!cw.rev) refuser('Une Reverse s\'échange contre une Reverse.');
     if (!possede(p, offer)) refuser('Tu ne possèdes pas la carte que tu proposes.');
     if (S.trades.some(t => t.from_user === p && t.to_user === dest.id && t.offer_card === offer
       && t.want_card === want && t.status === 'pending')) refuser('Cette demande est déjà en attente.');
@@ -697,6 +868,8 @@
       membre_depuis: iso(o.created_at),
       possede: extension().filter(k => (c[k.id] || 0) > 0).length,
       total: extension().length,
+      reverses: reverses.filter(k => (c[k.id] || 0) > 0).length, reverses_total: reverses.length,
+      titre: o.titre || null, banniere: o.banniere || null, devise: o.devise || null,
       vitrine: o.vitrine.slice(),
       succes: succesDe(o.id),
       ami, moi: o.id === moi,
@@ -747,10 +920,11 @@
 
   /* ------------------------------------ classement, 14_classement.sql */
   RPC.classement = (moi, { p_critere }) => {
-    if (!['collection', 'boosters', 'echanges', 'serie'].includes(p_critere)) refuser('Classement inconnu.');
+    if (!['collection', 'reverses', 'boosters', 'echanges', 'serie'].includes(p_critere)) refuser('Classement inconnu.');
     const auj = jourParis(now());
     const valeur = pr => p_critere === 'collection'
       ? extension().filter(k => (colDe(pr.id)[k.id] || 0) > 0).length
+      : p_critere === 'reverses' ? reverses.filter(k => (colDe(pr.id)[k.id] || 0) > 0).length
       : p_critere === 'boosters' ? pr.packs_opened
       : p_critere === 'echanges' ? pr.trades_done
       : (pr.last_checkin === auj || pr.last_checkin === hier(auj)) ? pr.streak : 0;
@@ -758,7 +932,7 @@
       .filter(x => x.valeur > 0)
       .sort((a, b) => b.valeur - a.valeur || a.pr.pseudo.toLowerCase().localeCompare(b.pr.pseudo.toLowerCase()));
     const ligne = x => ({ rang: 1 + l.filter(y => y.valeur > x.valeur).length, pseudo: x.pr.pseudo,
-      avatar: x.pr.avatar, frame: x.pr.frame, photo: null, valeur: x.valeur, moi: x.pr.id === moi });
+      avatar: x.pr.avatar, frame: x.pr.frame, titre: x.pr.titre || null, photo: null, valeur: x.valeur, moi: x.pr.id === moi });
     const m = l.find(x => x.pr.id === moi);
     return { critere: p_critere, classes: l.length, top: l.slice(0, 50).map(ligne), moi: m ? ligne(m) : null };
   };
@@ -803,8 +977,12 @@
     const k = carte(p_carte);
     if (!k) refuser('Carte inconnue.');
     if (k.promo) refuser('Cette carte ne se fabrique pas.');
-    const cout = cfg('fabrication_' + k.rar);
+    let cout = cfg('fabrication_' + k.rar);
     if (cout == null) refuser('Cette carte ne se fabrique pas.');
+    if (k.rev) {
+      if (!S.parametres.fabrication_reverse) refuser('La fabrication des Reverses n\'est pas encore ouverte.');
+      cout *= 2;
+    }
     if (possede(p, p_carte)) refuser('Tu possèdes déjà cette carte.');
     const pr = profil(p);
     if ((pr.fragments || 0) < cout) refuser('Pas assez de Fragments.');
@@ -854,6 +1032,69 @@
       en_attente: (S.cadeaux || []).filter(c => c.user_id === o.id && !c.ouvert_le).length }));
   };
 
+  /* ------------------------------------------- version 2.0, 21_reflets.sql */
+  RPC.evenement_etat = p => {
+    const ev = evenementEnCours();
+    if (!ev) return null;
+    const c = compte(p);
+    const prises = S.evt.prises[p] || [];
+    const top = Object.entries(S.evt.comptes)
+      .filter(([k, v]) => k.endsWith('|' + ev) && v.total > 0)
+      .map(([k, v]) => ({ id: k.split('|')[0], total: v.total }))
+      .sort((a, b) => b.total - a.total).slice(0, 10)
+      .map(x => { const o = profil(x.id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame,
+        titre: o.titre || null, photo: null, total: x.total, moi: x.id === p }; });
+    return { code: ev, solde: c.solde, total: c.total,
+      piste: PISTE.map(pa => Object.assign({}, pa, { pris: prises.includes(pa.palier) })), top };
+  };
+  RPC.piste_reclamer = (p, { p_palier }) => {
+    if (!evenementEnCours()) refuser('Aucun événement en cours.');
+    const pa = PISTE.find(x => x.palier === p_palier);
+    if (!pa) refuser('Palier inconnu.');
+    if (compte(p).total < pa.seuil) refuser('Palier pas encore atteint.');
+    const prises = (S.evt.prises[p] = S.evt.prises[p] || []);
+    if (prises.includes(pa.palier)) refuser('Récompense déjà récupérée.');
+    prises.push(pa.palier);
+    const cartes = accorder(p, pa.type, pa.montant, pa.objet);
+    return { cartes, etat: me(p) };
+  };
+  RPC.cartle_etat = p => cartleEtat(p);
+  RPC.cartle_essai = (p, { p_carte }) => {
+    const k = carte(p_carte);
+    if (!k || k.promo || k.rev || k.cat === 'essence') refuser('Cette carte ne fait pas partie du Cartle.');
+    const j = jourParis(now());
+    const c = (S.cartle[p + '|' + j] = S.cartle[p + '|' + j] || { essais: [], trouve: false });
+    if (c.trouve || c.essais.length >= 7) refuser('La partie du jour est finie : rendez-vous demain.');
+    if (c.essais.includes(p_carte)) refuser('Tu as déjà proposé cette carte.');
+    c.essais.push(p_carte);
+    if (p_carte === cartleCible(j)) {
+      c.trouve = true;
+      profil(p).shards += 30;
+      bump(p, 'cartle', 1);
+    }
+    return { cartle: cartleEtat(p), etat: me(p) };
+  };
+  RPC.personnaliser = (p, { p_titre, p_banniere, p_devise }) => {
+    const pr = profil(p);
+    if (p_titre != null) {
+      if (p_titre !== '' && !titresDe(p).includes(p_titre)) refuser('Ce titre n\'est pas encore débloqué.');
+      pr.titre = p_titre || null;
+      if (p_titre) bump(p, 'titre', 1);
+    }
+    if (p_banniere != null) {
+      if (p_banniere !== '' && !possede(p, p_banniere)) refuser('Tu ne possèdes pas cette carte.');
+      pr.banniere = p_banniere || null;
+      if (p_banniere) bump(p, 'perso', 1);
+    }
+    if (p_devise != null) {
+      const d = String(p_devise).trim().replace(/\s+/g, ' ').slice(0, 80);
+      pr.devise = d || null;
+      if (d) bump(p, 'perso', 1);
+    }
+    return me(p);
+  };
+  RPC.utiliser_invitation = () => refuser('Tu as déjà accès au jeu.');
+
   /* mes_tirages, 15_evenements.sql */
   RPC.mes_tirages = p => {
     const miens = S.tirages.filter(t => t.user_id === p);
@@ -887,6 +1128,42 @@
     { id: 'b_kairo', pseudo: 'Kairo',   frame: 'f_azur',   paquets: 24,  jours: 9,  serie: 3,  ami: false },
     { id: 'b_nova',  pseudo: 'Nova.92', frame: 'f_prisme', paquets: 150, jours: 40, serie: 40, ami: false }
   ];
+
+  /* La chasse est finie, comme sur le vrai site : la carte unique a été
+     tirée — ici par Nova.92, qui porte son cadre. */
+  function chasseTerminee() {
+    if (S.chasse.gagnant) return;
+    const g = 'b_nova';
+    if (!S.profils[g]) return;
+    S.chasse.active = false;
+    S.chasse.gagnant = g;
+    S.chasse.trouvee_le = now() - 86400000;
+    colDe(g)[S.chasse.carte] = 1;
+    invDe(g).f_unique = 1;
+    S.profils[g].frame = 'f_unique';
+  }
+
+  /* La version 2.0 dans un monde de démo, neuf ou ancien : l'événement
+     « Reflets » ouvert pour deux semaines, et des joueurs simulés qui ont
+     déjà gagné des Prismes et porté un titre. */
+  function monde20() {
+    S.parametres = S.parametres || { fabrication_reverse: false };
+    S.cartle = S.cartle || {};
+    S.invitations = S.invitations || [];
+    if (!S.evt) {
+      S.evt = { comptes: {}, prises: {} };
+      const t = now();
+      S.evenement = { titre: 'Reflets', code: 'reflets', debut: t - 3600000, fin: t + 14 * 86400000,
+        texte: 'La version 2.0 : les Reverses, des cadres, des titres, le Cartle. Gagne des Prismes et remonte la piste.' };
+      [['b_nova', 430, 't_elu'], ['b_lumen', 260, 't_centurion'], ['b_mira', 120, null], ['b_kairo', 65, null]]
+        .forEach(([id, tot, titre]) => {
+          if (!S.profils[id]) return;
+          S.evt.comptes[id + '|reflets'] = { solde: Math.round(tot / 3), total: tot };
+          if (titre) S.profils[id].titre = titre;
+        });
+      if (S.profils.b_nova) S.profils.b_nova.devise = 'La Chevalière ne se prête pas.';
+    }
+  }
 
   function creerMonde() {
     const t0 = now();
@@ -1025,6 +1302,8 @@
         /* Une démo commencée avant la version 1.5 : ce qui lui manque. */
         S.tirages = S.tirages || [];
         S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
+        chasseTerminee();
+        monde20();
       })();
     }
     return pret;

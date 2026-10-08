@@ -7,8 +7,26 @@
 /* ---------- Quel onglet montrer ---------- */
 function ongletDispo(t) {
   if (t.admin) return !!save && !!save.isAdmin;
+  /* L'onglet d'un événement n'existe que pendant qu'il dure. */
+  if (t.evenement) return evenementEnCours() === t.evenement;
   return true;
 }
+
+/* Le code de l'événement en cours (supabase/15_evenements.sql), s'il en a un
+   et qu'il a commencé. */
+const evenementEnCours = () => {
+  const ev = save && save.evenement;
+  return ev && !ev.a_venir && ev.code ? ev.code : null;
+};
+
+/* La barre du bas : pendant l'événement Reflets, son onglet prend la place de
+   Combats — qui n'est encore qu'un aperçu de la version 3.0 et passe dans le
+   tiroir. */
+function ongletsBas() {
+  const ev = TABS.find(t => t.evenement && ongletDispo(t));
+  return TABS.filter(t => t.bas).map(t => (t.id === 'combats' && ev ? ev : t));
+}
+const combatsAuTiroir = () => !ongletsBas().some(t => t.id === 'combats');
 
 function ongletValide(id) {
   const t = TABS.find(x => x.id === id);
@@ -60,9 +78,9 @@ function navHTML() {
   };
   /* Le pied n'existe que sur le rail d'ordinateur : sur mobile, ces destinations
      et cette mention vivent dans le tiroir du compte. */
-  return TABS.filter(t => t.bas).map(t => bouton(t, '')).join('')
+  return ongletsBas().map(t => bouton(t, t.evenement ? 'evnav' : '')).join('')
     + '<i class="navsep" aria-hidden="true"></i>'
-    + TABS.filter(t => t.tiroir && ongletDispo(t)).map(t => bouton(t, 'second')).join('')
+    + ongletsTiroir().map(t => bouton(t, 'second')).join('')
     + `<div class="navpied">${lienDiscord('discordlien', 'Rejoindre le Discord')}
          <p class="mentions courtes">${MENTIONS_COURT}</p></div>`;
 }
@@ -71,6 +89,8 @@ function navHTML() {
 function pastilleOnglet(id) {
   if (Backend.mode !== 'cloud') return 0;
   if (id === 'quetes') return questesPretes();
+  /* L'événement : ses quêtes à encaisser et les paliers de piste atteints. */
+  if (id === 'reflets') return evQuetesPretes();
   if (id === 'social') return socNotifs();
   return 0;
 }
@@ -85,13 +105,17 @@ function pastilleTiroir() {
    mouvement dit d'où vient le panneau, et où il retournera. */
 let tiroirOuvert = false;
 
+/* Les entrées du tiroir, Combats compris quand l'événement lui a pris sa place. */
+const ongletsTiroir = () => TABS.filter(t => (t.tiroir || (t.id === 'combats' && combatsAuTiroir())) && ongletDispo(t));
+
 function vTiroir() {
-  const items = TABS.filter(t => t.tiroir && ongletDispo(t));
+  const items = ongletsTiroir();
   const enLigne = Backend.mode === 'cloud';
   const jetons = (save.inv || {}).trade_token || 0;
 
   const sousTitre = enLigne
-    ? (save.isAdmin ? 'Administrateur'
+    ? (save.titre && TITRES[save.titre] ? TITRES[save.titre].nom
+       : save.isAdmin ? 'Administrateur'
        : save.streak > 1 ? save.streak + " jours d'affilée" : 'Compte en ligne')
     : 'Hors ligne, sur cet appareil';
 
@@ -108,6 +132,7 @@ function vTiroir() {
         <small>booster${save.tickets > 1 ? 's' : ''}</small></span>
       <span class="sac">${shardIco}<b>${fmtN(save.shards)}</b><small>${MONNAIE.nom}</small></span>
       ${jetons ? `<span class="sac"><img src="${ART.jeton}" alt=""><b>${jetons}</b><small>jeton${jetons > 1 ? 's' : ''}</small></span>` : ''}
+      ${evenementEnCours() ? `<span class="sac prismes">${prismeIco}<b>${fmtN(save.prismes || 0)}</b><small>${PRISMES.nom}</small></span>` : ''}
     </div>
 
     <ul class="tiroir-liste">
@@ -172,6 +197,8 @@ const VUES = {
   boutique: () => vBoutique(),
   quetes: () => vQuetes(),
   combats: () => vCombats(),
+  reflets: () => vReflets(),
+  cartle: () => vCartlePage(),
   recyclage: () => vRecyclage(),
   classement: () => vClassement(),
   tirages: () => vTirages(),
@@ -250,6 +277,12 @@ function aller(id) {
       Promise.all([Backend.loadTrades(), Backend.loadAmis()]).then(render).catch(() => {});
     }
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
+    /* Version 2.0 : l'événement et le Cartle se chargent en arrivant. */
+    if (tab === 'reflets') {
+      chargerReflets();
+      if (!Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
+    }
+    if (tab === 'cartle') chargerCartle();
     /* Le recyclage met de côté les cartes promises dans un échange : il lui
        faut la liste à jour. */
     if (tab === 'recyclage') Backend.loadTrades().then(render).catch(() => {});
@@ -269,12 +302,24 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-cartle],[data-ancre],[data-colvue],[data-invit],[data-titre],[data-banniere]');
   if (!el) return;
   const d = el.dataset;
 
   if (d.tab) return aller(d.tab);
   if (d.apercu) return labMontrerApercu(d.apercu);
+  /* Version 2.0 */
+  if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
+  if (d.palier) return reclamerPalier(+d.palier);
+  if (d.cartle) return cartleProposer(d.cartle);
+  if (d.invit) return montrerInvitation(d.invit);
+  if (el.matches('[data-titre]')) return choisirTitre(d.titre);
+  if (el.matches('[data-banniere]')) return choisirBanniere(d.banniere);
+  if (d.ancre) {
+    const aller2 = () => { const x = document.getElementById(d.ancre); if (x) x.scrollIntoView({ behavior: RM() ? 'auto' : 'smooth', block: 'start' }); };
+    if (tab !== 'reflets') { aller('reflets'); return setTimeout(aller2, 400); }
+    return aller2();
+  }
   if (d.auth) return authFaire(d.auth);
   /* `data-qui` accompagne les cartes ouvertes depuis un écran d'échange : la
      visionneuse montre alors aussi combien l'autre en possède. */
@@ -315,7 +360,8 @@ async function clicPage(e) {
   if (d.vitOff) return vitrineRetirer(d.vitOff);
 
   /* Quêtes, boutique, échanges */
-  if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.');
+  if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.')
+    .then(ok => { if (ok && tab === 'reflets') chargerReflets(); });
   if (d.trep) return agir(() => Backend.tradeRespond(d.trep, d.ok === '1'),
     d.ok === '1' ? 'Échange conclu.' : 'Demande refusée.');
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
@@ -339,6 +385,9 @@ async function clicPage(e) {
     case 'nouveautes': return montrerNouveautes();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
+    case 'cartle-partager': return cartlePartager();
+    case 'pf-devise': return enregistrerDevise();
+    case 'pf-banniere': return ouvrirChoixBanniere();
     case 'col-toggle': colOuvert = !colOuvert; return render();
     case 'col-reset':
       colFilter = essFilter = rarFilter = 'all';
@@ -346,6 +395,7 @@ async function clicPage(e) {
       return render();
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();
+    case 'porte-code': return porteCode();
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
     case 'pf-carte': return ouvrirChoixAvatar();
@@ -386,6 +436,19 @@ async function clicPage(e) {
     case 't-god': return openBooster({ test: true, god: true });
     case 't-BR': return openBooster({ test: true, god: false, brillante: true });
     case 't-UN': return openBooster({ test: true, god: false, unique: true });
+    case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
+    case 't-v2-nouveautes': return montrerNouveautes();
+    case 't-v2-palier': {
+      const x = { palier: 7, type: 'reverse_R', titre: 'Une Reverse Rare' };
+      return montrerPalier(7, x, reverses.filter(c => c.rar === 'R').slice(0, 1));
+    }
+    case 't-v2-palier-titre':
+      return montrerPalier(3, { palier: 3, type: 'titre', titre: 'Titre « Éclaireur des Reflets »' }, []);
+    case 't-v2-invitation': return montrerInvitation('M8-TEST-0000');
+    case 't-v2-reflets':
+      if (evenementEnCours() !== 'reflets') return toast('L\'événement Reflets n\'est pas en cours.');
+      return aller('reflets');
+    case 't-v2-cartle': return aller('cartle');
     case 't-partage':
       return partagerTirage({ ids: makeBooster(poolFor(), false).map(c => c.id), quand: new Date().toISOString() });
     case 't-fragments':
@@ -519,7 +582,9 @@ setInterval(() => {
    Les deux tests vivent ici, et nulle part ailleurs. */
 const ecranOccupe = () => !!rv || opening || promoEnCours;
 const enTrainDEcrire = () => (tab === 'social' && socVue === 'echanges' && trVue === 'nouvelle')
-  || tab === 'labo';
+  || tab === 'labo'
+  /* Le Cartle, la devise du profil : un champ en cours de saisie. */
+  || (document.activeElement && ['ct-saisie', 'pf-devise'].includes(document.activeElement.id));
 
 /* Les compteurs, la barre et le tiroir se remettent à jour sans toucher à la
    page. Le contenu, lui, n'est redessiné que si ça ne dérange personne. */
@@ -568,6 +633,7 @@ function visiteDuJourFaite() {
   cards = buildCards();
   promos = buildPromos();
   brillantes = buildBrillantes(cards);
+  reverses = buildReverses(cards);
   uniques = buildUniques();
   rebuild();
   brand();

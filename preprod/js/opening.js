@@ -204,8 +204,8 @@ function announce() {
     return;
   }
 
-  el.className = 'op-rar r' + c.rar;
-  el.innerHTML = `${rk(c) >= 3 ? R.nom : ''}${nw ? ' <em>NEW</em>' : ''}`;
+  el.className = 'op-rar r' + c.rar + (c.rev ? ' rev' : '');
+  el.innerHTML = `${c.rev ? '<span class="oprev">Reverse</span>' : ''}${rk(c) >= 3 ? R.nom : ''}${nw ? ' <em>NEW</em>' : ''}`;
 
   /* Une Essence Brillante tombe au milieu du paquet : elle n'a pas la
      révélation de la dernière carte, mais elle ne passe pas inaperçue. */

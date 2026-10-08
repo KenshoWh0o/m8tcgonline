@@ -24,7 +24,10 @@ const QICO = {
   rarity_R: 'quest', rarity_E: 'quest', rarity_L: 'coin',
   trades: 'swap', recycle: 'recycle', collection_pct: 'cards',
   /* Toutes les cartes d'une rareté (supabase/04_seed.sql). */
-  set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin'
+  set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin',
+  /* Version 2.0 : Reverses, Brillantes, Cartle, invitations, personnalisation. */
+  rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
+  brill_ALL: 'promo', cartle: 'cartle', invite: 'amis', titre: 'user', perso: 'user'
 };
 
 /* ---------- Comptages ---------- */
@@ -123,7 +126,7 @@ function notifQuete(q) {
   /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
      bannière de réussite donnerait l'impression d'un bug. */
   const gain = q.reward > 0
-    ? `${shardIco}${fmtN(q.reward)}`
+    ? `${q.monnaie === 'prismes' ? prismeIco : shardIco}${fmtN(q.reward)}`
     : q.item ? 'Récompense' : '';
   el.innerHTML = `<span class="qnico">${NAVICO.check}</span>
     <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
@@ -219,6 +222,12 @@ function vRecompense(q) {
       <span class="qrcarte">${renderCard(c)}</span>
       <small>${h(c.code || c.nom)}</small></button>`;
   }
+  const t = q.item ? TITRES[q.item] : null;
+  if (t) {
+    return `<span class="qreward objet titre" title="Titre ${h(t.nom)}">
+      <span class="qrtitre t${t.ton}">${h(t.nom)}</span><small>Titre</small></span>`;
+  }
+  if (q.monnaie === 'prismes') return `<span class="qreward prismes">${prismeIco}${fmtN(q.reward)}</span>`;
   const f = q.item ? FRAMES[q.item] : null;
   if (f) {
     return `<span class="qreward objet" title="Cadre ${h(f.nom)}">

@@ -216,7 +216,8 @@ function ligneHisto(t) {
 function vNouvelleDemande() {
   const off = trBrouillon.offre ? byId[trBrouillon.offre] : null;
   const veut = trBrouillon.veut ? byId[trBrouillon.veut] : null;
-  const pret = trCible && off && veut && off.rar === veut.rar;
+  /* Même rareté, et une Reverse contre une Reverse (version 2.0). */
+  const pret = trCible && off && veut && off.rar === veut.rar && !!off.rev === !!veut.rev;
   const pseudo = trCible ? trCible.pseudo : null;
   const ilManque = veut && pseudo && sesEx(pseudo, veut.id) === 0;
 
@@ -319,7 +320,10 @@ function ouvrirChoixCarte(role, rar) {
   if (rar) trPickRar = rar;
   const impose = autre ? autre.rar : null;
 
-  let liste = cards.filter(echangeable);
+  /* Les Reverses s'échangent aussi (version 2.0), mais entre elles : la
+     première carte choisie dit de quel côté on est. */
+  let liste = cards.concat(reverses).filter(echangeable);
+  if (autre) liste = liste.filter(c => !!c.rev === !!autre.rev);
   if (role === 'offre') liste = liste.filter(c => mesEx(c.id) > 0);
   else if (connue) liste = liste.filter(c => sesEx(pseudo, c.id) > 0);
   if (impose) liste = liste.filter(c => c.rar === impose);
@@ -347,7 +351,7 @@ function ouvrirChoixCarte(role, rar) {
 
   openSheet({
     title: role === 'offre' ? 'Ce que tu donnes' : 'Ce que tu veux',
-    body: `<p class="muted small">${dit}${impose ? ` Rareté imposée : ${(RAR[impose] || RAR.C).nom}.` : ''}</p>
+    body: `<p class="muted small">${dit}${impose ? ` Rareté imposée : ${(RAR[impose] || RAR.C).nom}${autre && autre.rev ? ', Reverse' : ''}.` : ''}</p>
       ${chips}
       ${vue.length
         ? `<div class="pickgrid">${vue.map(c => `<button class="pick" data-cardpick="${c.id}" data-role="${role}" data-snd="carte">
@@ -366,7 +370,7 @@ function trChoisir(role, id) {
   trBrouillon[role] = id;
   const autre = role === 'offre' ? 'veut' : 'offre';
   const a = byId[trBrouillon[autre]];
-  if (a && a.rar !== byId[id].rar) trBrouillon[autre] = null;
+  if (a && (a.rar !== byId[id].rar || !!a.rev !== !!byId[id].rev)) trBrouillon[autre] = null;
   closeSheet();
   render();
 }

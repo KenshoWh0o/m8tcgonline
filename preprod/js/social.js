@@ -141,10 +141,13 @@ async function ouvrirFiche(pseudo) {
      côté de l'avatar, le nom, depuis quand, et où en est sa collection. Les
      titres de joueur (version 2.0) viendront se poser sous le nom. */
   openSheet({
-    body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}">
+    body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}${f.banniere ? ' banniere' : ''}">
+      ${vBanniere(f.banniere)}
       ${avatarHTML(f.avatar, f.frame, 'xl', f.photo)}
       <div class="fichemeta">
         <b class="fichenom">${h(f.pseudo)}</b>
+        ${vTitreLigne(f.titre)}
+        ${f.devise ? `<p class="iddevise">« ${h(f.devise)} »</p>` : ''}
         <p class="fichesous">${f.is_admin ? '<span class="qtag ok">Admin</span>' : ''}Membre depuis ${h(dateCourte(f.membre_depuis).split(' à ')[0])}</p>
         <div class="prog fiche-prog"><div class="bar"><i style="width:${pct}%"></i></div>
           <span class="tnum"><b>${f.possede}</b> / ${f.total}</span></div>
@@ -154,6 +157,7 @@ async function ouvrirFiche(pseudo) {
     ${(f.vitrine || []).length ? vVitrine(f.vitrine, false) : ''}
     <div class="stats">
       <div class="stat"><b>${f.possede} / ${f.total}</b><span>collection (${pct} %)</span></div>
+      ${f.reverses_total ? `<div class="stat"><b>${f.reverses} / ${f.reverses_total}</b><span>Reverses</span></div>` : ''}
       <div class="stat"><b>${fmtN(f.packs_opened)}</b><span>boosters ouverts</span></div>
       <div class="stat"><b>${fmtN(f.trades_done)}</b><span>échanges conclus</span></div>
       <div class="stat"><b>${fmtN(f.streak)}</b><span>jours d'affilée</span></div>

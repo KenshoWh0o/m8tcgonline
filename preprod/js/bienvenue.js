@@ -111,7 +111,7 @@ function montrerDiscord() {
 /* Une fois par version et par appareil, à ceux qui jouaient déjà. Elle annonce
    aussi l'événement en cours, et se rouvre depuis son bandeau (js/booster.js).
    Changer NOUVEAUTES_VERSION la remontre à tout le monde. */
-const NOUVEAUTES_VERSION = '1.5';
+const NOUVEAUTES_VERSION = '2.0';
 
 /* Un événement se signale aussi : une fois annoncé, une fois commencé — même
    à qui a déjà vu les nouveautés de la version. */
@@ -127,46 +127,35 @@ function nouveautesAVoir() {
 function montrerNouveautes() {
   const ev = save.evenement;
   accueilNoter({ nouveautes: NOUVEAUTES_VERSION, evenement: cleEvenement(ev) });
-  const ch = save.chasse || {};
-  const u = uniques[0];
-  const maj = t => t.charAt(0).toUpperCase() + t.slice(1);
-  const mienne = u && save.col[u.id] > 0;
-
-  const chasse = mienne
-    ? 'Tu l\'as tirée : elle est à toi, et il n\'en existera jamais d\'autre.'
-    : ch.trouvee
-      ? `<b>${h(ch.gagnant || 'Un joueur')}</b> l'a tirée. Il n'en existera jamais d'autre.`
-      : ch.active
-        ? 'Un seul exemplaire dans tout le jeu, caché dans un booster. La première personne qui le tire le garde pour toujours.'
-        : ch.ouvre_le
-          ? `Un seul exemplaire dans tout le jeu, caché dans un booster ${h(jourHeure(srvTime(ch.ouvre_le), 'à partir'))}. La première personne qui le tire le garde pour toujours.`
-          : 'Un seul exemplaire dans tout le jeu. La chasse ouvre bientôt.';
+  const reflets = evenementEnCours() === 'reflets';
+  const rv = reverses.filter(c => c.rar === 'R');
+  const trio = rv.length ? [0, 1, 2].map(i => rv[(i * 7 + new Date().getDate()) % rv.length]) : [];
 
   const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span>
     <span><b>${titre}</b> ${texte}</span></li>`;
 
   openSheet({
-    title: 'Version 1.5',
-    body: `<div class="nvhero${ch.trouvee ? ' trouvee' : ''}">
-        <div class="nvrayons" aria-hidden="true"></div>
-        ${u ? `<div class="nvcarte">${renderCard(u)}</div>` : ''}
+    title: 'Version 2.0 · Reflets',
+    body: `<div class="nvhero v2">
+        <div class="rf-holo" aria-hidden="true"></div>
+        <div class="nvtrio">${trio.map(c => `<div class="nvcarte">${renderCard(c)}</div>`).join('')}</div>
         <div class="nvtexte">
-          <span class="nvkicker">${mienne ? 'À toi' : ch.trouvee ? 'Chasse terminée' : ch.active ? 'Chasse ouverte' : 'Bientôt'}</span>
-          <b>${u ? h(u.nom) : 'La carte unique'}</b>
-          <small>${chasse}</small>
+          <span class="nvkicker">${reflets ? 'Événement en cours' : 'Nouveau'}</span>
+          <b>Les Reverses</b>
+          <small>${reverses.length} cartes frappées du logo Tout Commence Ici. Une dans chaque booster, en 4ᵉ carte.</small>
         </div>
       </div>
-      ${ev ? `<div class="nvevent">${NAVICO.star}<span><b>${h(ev.titre)}</b> — ${h(ev.texte || '')}
-          <small>${h(ev.a_venir
-            ? `${maj(jourHeure(srvTime(ev.debut), 'à partir'))}, ${jourHeure(srvTime(ev.fin), 'jusqu\'à')}.`
-            : `${maj(jourHeure(srvTime(ev.fin), 'jusqu\'à'))}.`)}</small></span></div>` : ''}
       <ol class="bvpoints nvpoints">
-        ${point('fragment', 'Les Fragments.', `Le recyclage donne désormais des ${FRAGMENTS.nom}, sans plafond. Avec eux, fabrique les cartes qui te manquent : touche une case vide dans ta Collection.`)}
-        ${point('promo', 'Les Essences Brillantes.', `Une Essence sur ${FOIL_ODDS} sort dans sa version Brillante. Neuf à réunir.`)}
-        ${point('trophy', 'Les succès.', `${SUCCES.length} succès à débloquer, sur ton profil et sur ta fiche.`)}
-        ${point('clock', 'Mes tirages.', 'Tes trente derniers boosters, et un bouton pour partager un tirage en image.')}
+        ${point('cards', 'La Collection repensée.', 'Classiques, Reverses, Spéciales : trois vues, une jauge pour tout. Un reflet signale les cartes dont tu as aussi la Reverse.')}
+        ${point('user', 'Cadres, titres, profil.', `De nouveaux cadres à gagner, ${Object.keys(TITRES).length} titres à porter, une bannière et une devise sur ta fiche.`)}
+        ${point('cartle', 'Le Cartle.', 'La carte du jour à deviner en sept essais, la même pour tout le monde.')}
+        ${point('amis', 'Les invitations.', `Fais entrer un ami depuis la boutique : 2 000 ${FRAGMENTS.nom}, trois au maximum.`)}
+        ${reflets ? point('reflets', 'L\'événement Reflets.', `Des quêtes en ${PRISMES.nom}, une piste de quinze paliers et une boutique, pendant deux semaines.`) : ''}
       </ol>`,
-    actions: [{ label: 'C\'est parti', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); } }]
+    actions: reflets
+      ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('reflets'); } },
+         { label: 'Plus tard', fn: closeSheet }]
+      : [{ label: 'C\'est parti', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); } }]
   });
 }
 
@@ -203,7 +192,7 @@ function montrerChasseFin() {
         </div>
       </div>
       <p class="muted">Il n'en existera jamais d'autre : elle ne ressortira d'aucun booster, et ne
-        s'échange pas. Tu la retrouves en bas de ta Collection.</p>`,
+        s'échange pas. Tu la retrouves dans les Spéciales de ta Collection.</p>`,
     actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
   });
 }
