@@ -72,7 +72,9 @@ const vArticleQte = it =>
    vérifie, « éco » se croit sur parole. */
 function remiseDe(it, items) {
   if (!it.montant || it.montant < 2) return 0;
-  const unite = items.find(x => x.effet === it.effet && x.montant === 1);
+  /* Comparé au même article à l'unité, dans la même monnaie : deux boosters
+     en Prismes n'ont rien à voir avec un booster en Éclats. */
+  const unite = items.find(x => x.effet === it.effet && x.montant === 1 && (x.devise || 'eclats') === (it.devise || 'eclats'));
   if (!unite) return 0;
   const pct = Math.round((1 - (it.prix / it.montant) / unite.prix) * 100);
   return pct > 0 ? pct : 0;
@@ -87,7 +89,7 @@ function vBoutique() {
   const tete = `<div class="pagehead">
       <div>
         <h1>Boutique</h1>
-        <p>En ${MONNAIE.nom}, gagnés en quêtes — les invitations en ${FRAGMENTS.nom}, l'événement en ${PRISMES.nom}.</p>
+        <p>En ${MONNAIE.nom}, gagnés en quêtes — la boutique de l'événement en ${PRISMES.nom}.</p>
       </div>
     </div>
     <div class="walletrow">

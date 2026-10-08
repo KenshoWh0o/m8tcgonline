@@ -81,13 +81,12 @@ function vReflets() {
   return `<div class="rf">${vRfTete(srvTime(ev.fin))}<div class="rf-page">${corps()}</div></div>`;
 }
 
-/* L'illustration d'une Reverse Rare, différente chaque jour : le fond de
-   l'en-tête et du bandeau de l'écran Boosters. Cadrée sur l'illustration
-   (.rf-art, css/reflets.css), pas sur la carte. */
+/* L'illustration de La Relève (#117) : le fond de l'en-tête et du bandeau
+   de l'écran Boosters. Cadrée sur l'illustration (.rf-fond,
+   css/reflets.css), pas sur la carte. */
 function rfArt() {
-  const l = reverses.filter(c => c.rar === 'R' && c.img);
-  const c = l.length ? l[Math.floor((Date.now() + 7200000) / 86400000) % l.length] : null;
-  return c ? `<span class="rf-art" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
+  const c = byId.c117 || cards.find(k => k.img);
+  return c && c.img ? `<span class="rf-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
 }
 
 /* L'en-tête : le nom, le compte à rebours, le solde, et les sous-onglets. */

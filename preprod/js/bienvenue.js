@@ -149,7 +149,7 @@ function montrerNouveautes() {
         ${point('cards', 'La Collection repensée.', 'Classiques, Reverses et Spéciales, chacune sa page, et une jauge pour tout.')}
         ${point('user', 'Cadres, titres, profil.', `De nouveaux cadres à gagner, ${Object.keys(TITRES).length} titres à porter, une bannière et une devise sur ta fiche.`)}
         ${point('illu', 'Devine l\'illu.', 'Une illustration pixelisée par jour, la même pour tout le monde. Quatre essais.')}
-        ${point('amis', 'Les invitations.', `Fais entrer un ami depuis la boutique : 2 000 ${FRAGMENTS.nom}, trois au maximum.`)}
+        ${point('amis', 'Les invitations.', `Fais entrer un ami depuis la boutique : 2 000 ${MONNAIE.nom}, trois au maximum.`)}
         ${reflets ? point('reflets', 'L\'événement Reflets.', `Des quêtes en ${PRISMES.nom}, un Pass de vingt paliers et une boutique, pendant deux semaines.`) : ''}
       </ol>`,
     actions: reflets

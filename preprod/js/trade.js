@@ -312,8 +312,12 @@ function vCout() {
    je cède sans me démunir.
    La première carte choisie, quel que soit le côté, fixe la rareté de l'autre. */
 let trPickRar = 'all';
+/* Classiques ou Reverses : tant que l'autre carte n'est pas choisie, on
+   choisit de quel côté on échange. */
+let trPickRev = false;
 
-function ouvrirChoixCarte(role, rar) {
+function ouvrirChoixCarte(role, rar, rev) {
+  if (rev != null) { trPickRev = rev; trPickRar = 'all'; }
   const autre = byId[trBrouillon[role === 'veut' ? 'offre' : 'veut']];
   const pseudo = trCible ? trCible.pseudo : null;
   const connue = !!(pseudo && trCols[noacc(pseudo)]);
@@ -323,7 +327,7 @@ function ouvrirChoixCarte(role, rar) {
   /* Les Reverses s'échangent aussi (version 2.0), mais entre elles : la
      première carte choisie dit de quel côté on est. */
   let liste = cards.concat(reverses).filter(echangeable);
-  if (autre) liste = liste.filter(c => !!c.rev === !!autre.rev);
+  liste = liste.filter(c => !!c.rev === (autre ? !!autre.rev : trPickRev));
   if (role === 'offre') liste = liste.filter(c => mesEx(c.id) > 0);
   else if (connue) liste = liste.filter(c => sesEx(pseudo, c.id) > 0);
   if (impose) liste = liste.filter(c => c.rar === impose);
@@ -340,6 +344,9 @@ function ouvrirChoixCarte(role, rar) {
   });
 
   const sens = role === 'veut' ? 'entre' : 'sort';
+  const cote = autre ? '' : `<div class="segbar trrev">
+      <button data-pickrev="0" data-role="${role}" class="${trPickRev ? '' : 'on'}">Classiques</button>
+      <button data-pickrev="1" data-role="${role}" class="${trPickRev ? 'on' : ''}">Reverses<i class="revico"></i></button></div>`;
   const chips = impose ? '' : `<div class="souschips">
     <button data-pickrar="all" data-role="${role}" class="${trPickRar === 'all' ? 'on' : ''}">Toutes</button>
     ${rars.map(r => `<button data-pickrar="${r}" data-role="${role}" class="rarchip r${r} ${trPickRar === r ? 'on' : ''}">
@@ -352,13 +359,13 @@ function ouvrirChoixCarte(role, rar) {
   openSheet({
     title: role === 'offre' ? 'Ce que tu donnes' : 'Ce que tu veux',
     body: `<p class="muted small">${dit}${impose ? ` Rareté imposée : ${(RAR[impose] || RAR.C).nom}${autre && autre.rev ? ', Reverse' : ''}.` : ''}</p>
-      ${chips}
+      ${cote}${chips}
       ${vue.length
         ? `<div class="pickgrid">${vue.map(c => `<button class="pick" data-cardpick="${c.id}" data-role="${role}" data-snd="carte">
             <span class="pickimg">${renderCard(c)}${etiquette(c, sens)}</span>
             <span class="picknom">${nomH(c)}</span></button>`).join('')}</div>`
         : `<p class="muted">${role === 'offre'
-            ? 'Tu n\'as aucune carte échangeable de cette rareté.'
+            ? (trPickRev && !autre ? 'Tu n\'as aucune Reverse à échanger.' : 'Tu n\'as aucune carte échangeable de cette rareté.')
             : 'Aucune carte à demander ici.'}</p>`}`,
     actions: [{ label: 'Fermer', fn: closeSheet }]
   });
