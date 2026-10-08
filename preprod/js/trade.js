@@ -91,6 +91,36 @@ function tCarte(c, sens, pseudo) {
   </figure>`;
 }
 
+/* ---------- Chez tes amis (version 2.0) ---------- */
+/* Les cartes qui te manquent et qu'un ami a en double : celles qu'il peut
+   céder sans y perdre. Une pression sur un ami prépare la demande. */
+let trDoublons = null;
+async function chargerDoublons() {
+  try { trDoublons = await Backend.rpc('amis_doublons') || []; } catch (e) { trDoublons = []; }
+  if (tab === 'social' && socVue === 'echanges' && trVue === 'amis') render();
+}
+
+function vChezAmis() {
+  if (trDoublons == null) { chargerDoublons(); return '<p class="muted boitecharge">Recherche chez tes amis…</p>'; }
+  const l = trDoublons.map(x => Object.assign({ c: byId[x.carte] }, x)).filter(x => x.c)
+    .sort((a, b) => RAR_ORDRE.indexOf(b.c.rar) - RAR_ORDRE.indexOf(a.c.rar) || b.amis.length - a.amis.length || a.c.num - b.c.num);
+  if (!l.length) {
+    return vide((Backend.amis || []).some(a => a.lien === 'ami') ? 'Rien en double chez tes amis' : 'Pas encore d\'amis',
+      (Backend.amis || []).some(a => a.lien === 'ami')
+        ? 'Aucun de tes amis n\'a en double une carte qui te manque, pour l\'instant.'
+        : 'Ajoute des amis : on verra ici ce qu\'ils ont en double et qui te manque.');
+  }
+  return `<p class="muted small">${l.length} carte${l.length > 1 ? 's' : ''} qui te manque${l.length > 1 ? 'nt' : ''}, en double chez tes amis. Touche un ami pour lui proposer un échange.</p>
+    <div class="chezamis">${l.map(x => `<article class="chezami">
+      <button class="chezcarte" data-show="${x.c.id}" data-snd="carte">${renderCard(x.c)}</button>
+      <div class="chezinfo">
+        <b>${nomH(x.c)}</b><small class="r${x.c.rar}">${(RAR[x.c.rar] || RAR.C).nom} · #${String(x.c.num || 0).padStart(3, '0')}</small>
+        <div class="chezqui">${x.amis.map(a => `<button class="amichip" data-trdemande="${h(a.pseudo)}" data-carte="${x.c.id}">
+          ${avatarHTML(a.avatar, a.frame, 'sm', a.photo)}<span>${h(a.pseudo)}</span><i>×${a.n}</i></button>`).join('')}</div>
+      </div>
+    </article>`).join('')}</div>`;
+}
+
 /* ---------- La section Échanges ---------- */
 function vEchanges() {
   if (trVue === 'nouvelle') return vNouvelleDemande();
@@ -103,11 +133,13 @@ function vEchanges() {
   const sous = [
     ['recues', 'Reçues', recues.length],
     ['envoyees', 'Envoyées', envoyees.length],
+    ['amis', 'Chez tes amis', 0],
     ['historique', 'Historique', 0]
   ];
 
   let corps;
-  if (trVue === 'historique') {
+  if (trVue === 'amis') corps = vChezAmis();
+  else if (trVue === 'historique') {
     corps = passees.length
       ? `<div class="thisto">${passees.map(ligneHisto).join('')}</div>`
       : vide('Rien pour l\'instant', 'Les échanges des sept derniers jours apparaîtront ici.');

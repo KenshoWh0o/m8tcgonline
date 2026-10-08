@@ -202,6 +202,7 @@ function proposerAccueil() {
   if (accueilDejaPropose) return;
   if (bienvenueAVoir()) return quandCalme(montrerBienvenue);
   if (chasseFinAVoir()) return quandCalme(montrerChasseFin);
+  if (recapAVoir()) return quandCalme(montrerRecap);
   if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
   if (discordAVoir()) return quandCalme(montrerDiscord);
 }
