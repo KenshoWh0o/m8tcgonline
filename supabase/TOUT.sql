@@ -1813,7 +1813,7 @@ delete from public.quests where id not in (
   'm_packs25','m_packs50','m_packs100','m_packs200',
   'm_trade25',
   'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_illu10','m_invite',
-  'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev30','e_trade','e_illu7','e_packs50',
+  'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev45','e_trade','e_illu7','e_packs70',
   'e_recycle','e_invite');
 
 -- ------------------------------------------------- l'evenement « Reflets »
@@ -1822,8 +1822,11 @@ delete from public.quests where id not in (
 -- l'evenement, une fois : 380. Elles portent sur les nouveautes de la 2.0 —
 -- c'est le role de l'evenement de les faire essayer. Le calcul du Pass est
 -- en tete de son tableau, dans 21_reflets.sql.
--- Objectifs tenables en deux semaines : 6 boosters par jour donnent ~42
--- Reverses Communes en 14 jours, ~25 differentes — d'ou 20, pas « toutes ».
+-- Etalees sur les deux semaines, pour un joueur qui ouvre ses 6 boosters par
+-- jour : 45 Reverses differentes vers le 11e jour (on en tire ~84, dont ~51
+-- differentes en 14 jours), 20 Communes differentes vers le 10e, 70 boosters
+-- vers le 12e, 7 illustrations sur 14 jours. Titre et personnalisation sont
+-- immediats : elles font decouvrir la 2.0, et ne paient que 20.
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
   ('e_check',   'ev_jour', 'ev_visite',   1, 10, null, 'Un reflet par jour',     'Passe voir l''événement aujourd''hui.', 1, 'reflets', 'prismes'),
   ('e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',        'Ouvre 4 boosters aujourd''hui.', 2, 'reflets', 'prismes'),
@@ -1831,12 +1834,12 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('e_revR',    'ev_jour', 'rev_R',     1, 15, null, 'Reflet rare',            'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'),
   ('e_titre',   'ev',      'titre',     1, 20, null, 'Un titre à ton nom',     'Équipe un titre sur ton profil.', 1, 'reflets', 'prismes'),
   ('e_perso',   'ev',      'perso',     1, 20, null, 'À ton image',            'Choisis une bannière ou une devise.', 2, 'reflets', 'prismes'),
-  ('e_rev30',   'ev',      'rset_ALL', 30, 50, null, 'Trente reflets',         'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'),
+  ('e_rev45',   'ev',      'rset_ALL', 45, 50, null, 'Quarante-cinq reflets',  'Possède 45 Reverses différentes.', 3, 'reflets', 'prismes'),
   ('e_revC',    'ev',      'rset_C',   20, 60, null, 'Vingt Communes reverses', 'Possède 20 Reverses Communes différentes.', 4, 'reflets', 'prismes'),
   ('e_illu7',   'ev',      'illu',      7, 60, null, 'L''œil affûté',          'Trouve 7 illustrations pendant l''événement.', 5, 'reflets', 'prismes'),
-  ('e_packs50', 'ev',      'packs',    50, 50, null, 'Cinquante boosters',     'Ouvre 50 boosters pendant l''événement.', 6, 'reflets', 'prismes'),
+  ('e_packs70', 'ev',      'packs',    70, 50, null, 'Soixante-dix boosters',  'Ouvre 70 boosters pendant l''événement.', 6, 'reflets', 'prismes'),
   ('e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets',    'Conclus 3 échanges.', 7, 'reflets', 'prismes'),
-  ('e_recycle', 'ev',      'recycle',  30, 30, null, 'Grand ménage',           'Recycle 30 doublons.', 8, 'reflets', 'prismes'),
+  ('e_recycle', 'ev',      'recycle', 150, 30, null, 'Grand ménage',           'Recycle 150 doublons pendant l''événement.', 8, 'reflets', 'prismes'),
   ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes')
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
@@ -1879,11 +1882,11 @@ on conflict (id) do update set
 -- Le Cadre Sceau ne se vend pas, et aucune quete ne le donne pour l'instant
 -- (voir FRAMES dans js/config.js). On le retire de la boutique s'il y
 -- trainait.
--- Version 2.0 : l'invitation, payee en Fragments (21_reflets.sql), et la
+-- Version 2.0 : l'invitation, payee en Eclats (21_reflets.sql), et la
 -- boutique de l'evenement « Reflets », payee en Prismes.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
   ('s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 10 boosters et 1 000 Éclats de bienvenue.',
-                                                                                               2000, 'invitation', 1, null, false, 1, 'fragments', null, 3),
+                                                                                               2000, 'invitation', 1, null, false, 1, 'eclats', null, 3),
   -- Un joueur assidu gagne ~1 100 Prismes sur l'evenement : la boutique en
   -- coute ~1 300, il faut choisir.
   ('ev_boosters',  'evenement', 'x2 Boosters',       'Deux boosters à ouvrir tout de suite.',     70, 'tickets',    2, null, false, 1, 'prismes', 'reflets', 5),
@@ -3238,6 +3241,9 @@ create table if not exists public.parametres (
   id                  int primary key check (id = 1),
   fabrication_reverse boolean not null default false
 );
+-- Le sel de Devine l'illu : tire au hasard a l'installation, jamais montre.
+-- Sans lui, l'ordre des illustrations se calculerait depuis le code public.
+alter table public.parametres add column if not exists illu_sel text not null default md5(random()::text || clock_timestamp()::text);
 insert into public.parametres (id) values (1) on conflict (id) do nothing;
 alter table public.parametres enable row level security;
 revoke all on public.parametres from anon, authenticated;
@@ -3477,12 +3483,18 @@ revoke all on public.illu_pixels, public.devine_illu from anon, authenticated;
 create or replace function public.illu_jour() returns date
 language sql stable as $$ select (now() at time zone 'Europe/Paris')::date; $$;
 
--- L'illustration du jour : un tirage fixe par la date (md5), le meme pour tous.
+-- L'illustration du jour, la meme pour tous. Les cartes sont rangees une
+-- fois pour toutes dans un ordre secret (md5 du sel de `parametres`), et
+-- chaque jour prend la suivante : aucune ne revient avant d'avoir vu passer
+-- toutes les autres (113 jours). Rien a lancer chaque jour : la date suffit.
 create or replace function public.illu_cible(j date) returns text
 language sql stable security definer set search_path = public as $$
-  select k.id from cards k join illu_pixels x on x.card_id = k.id
-   where not k.promo and k.cat <> 'essence'
-   order by md5(j::text || ':illu:' || k.id) limit 1;
+  with l as (
+    select k.id, row_number() over (order by md5((select illu_sel from parametres where id = 1) || ':' || k.id)) - 1 as rang
+      from cards k join illu_pixels x on x.card_id = k.id
+     where not k.promo and k.cat <> 'essence')
+  select id from l
+   where rang = ((j - date '2026-01-01') % (select count(*) from l) + (select count(*) from l)) % (select count(*) from l);
 $$;
 
 -- Ce que rapporte l'illu trouvee au n-ieme essai.
@@ -3583,7 +3595,7 @@ begin
 end $$;
 
 -- =========================================================== 4. invitations
--- Achetees en boutique (2 000 Fragments, trois par joueur, shop_buy dans
+-- Achetees en boutique (2 000 Eclats, trois par joueur, shop_buy dans
 -- 03_rpc.sql). Un code sert une fois : la personne invitee se connecte avec
 -- Discord, le saisit sur l'ecran d'attente, et entre sur la liste des
 -- invites. Elle trouve un cadeau de bienvenue de la part de son parrain :

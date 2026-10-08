@@ -222,7 +222,8 @@ const FRAMES = {
   f_azur:  { nom: 'Azur',  c1: '#39b8ff', c2: '#2f7fc9' },
   f_rose:  { nom: 'Rose',  c1: '#ee0073', c2: '#ffd7f0' },
   f_or:    { nom: 'Or',    c1: '#ffc73b', c2: '#fff3b0' },
-  /* `fx` : un cadre à texture, avec sa petite icône animée (css/reflets.css). */
+  /* `fx` : un cadre décoré — une illustration animée autour de l'avatar,
+     assets/cadres/<fx>.svg (css/reflets.css). */
   f_prisme:{ nom: 'Prisme', fx: 'prisme', c1: '#b7d4ff', c2: '#c9a8ff' },
   f_sceau: { nom: 'Sceau', fx: 'sceau', vente: false, c1: '#ffc73b', c2: '#5b1fc2' },
   /* Celui de la personne qui a tiré la carte unique, et de personne d'autre :

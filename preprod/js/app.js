@@ -105,8 +105,17 @@ function pastilleTiroir() {
    mouvement dit d'où vient le panneau, et où il retournera. */
 let tiroirOuvert = false;
 
-/* Les entrées du tiroir, Combats compris quand l'événement lui a pris sa place. */
-const ongletsTiroir = () => TABS.filter(t => (t.tiroir || (t.id === 'combats' && combatsAuTiroir())) && ongletDispo(t));
+/* Les entrées du tiroir, Combats compris quand l'événement lui a pris sa
+   place : il se range alors sous Recyclage, pas en tête de liste. */
+function ongletsTiroir() {
+  const l = TABS.filter(t => t.tiroir && ongletDispo(t));
+  const c = TABS.find(t => t.id === 'combats');
+  if (c && combatsAuTiroir() && ongletDispo(c)) {
+    const i = l.findIndex(t => t.id === 'recyclage');
+    l.splice(i < 0 ? l.length : i + 1, 0, c);
+  }
+  return l;
+}
 
 function vTiroir() {
   const items = ongletsTiroir();
@@ -302,7 +311,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere]');
   if (!el) return;
   const d = el.dataset;
 
@@ -362,6 +371,7 @@ async function clicPage(e) {
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
   if (d.pick) { trRetenirMot(); trPickRar = 'all'; return ouvrirChoixCarte(d.pick); }
   if (d.pickrar) return ouvrirChoixCarte(d.role, d.pickrar);
+  if (d.pickrev) return ouvrirChoixCarte(d.role, null, d.pickrev === '1');
   if (d.cardpick) return trChoisir(d.role, d.cardpick);
 
   /* Recyclage */

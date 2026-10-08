@@ -23,6 +23,9 @@ create table if not exists public.parametres (
   id                  int primary key check (id = 1),
   fabrication_reverse boolean not null default false
 );
+-- Le sel de Devine l'illu : tire au hasard a l'installation, jamais montre.
+-- Sans lui, l'ordre des illustrations se calculerait depuis le code public.
+alter table public.parametres add column if not exists illu_sel text not null default md5(random()::text || clock_timestamp()::text);
 insert into public.parametres (id) values (1) on conflict (id) do nothing;
 alter table public.parametres enable row level security;
 revoke all on public.parametres from anon, authenticated;
@@ -262,12 +265,18 @@ revoke all on public.illu_pixels, public.devine_illu from anon, authenticated;
 create or replace function public.illu_jour() returns date
 language sql stable as $$ select (now() at time zone 'Europe/Paris')::date; $$;
 
--- L'illustration du jour : un tirage fixe par la date (md5), le meme pour tous.
+-- L'illustration du jour, la meme pour tous. Les cartes sont rangees une
+-- fois pour toutes dans un ordre secret (md5 du sel de `parametres`), et
+-- chaque jour prend la suivante : aucune ne revient avant d'avoir vu passer
+-- toutes les autres (113 jours). Rien a lancer chaque jour : la date suffit.
 create or replace function public.illu_cible(j date) returns text
 language sql stable security definer set search_path = public as $$
-  select k.id from cards k join illu_pixels x on x.card_id = k.id
-   where not k.promo and k.cat <> 'essence'
-   order by md5(j::text || ':illu:' || k.id) limit 1;
+  with l as (
+    select k.id, row_number() over (order by md5((select illu_sel from parametres where id = 1) || ':' || k.id)) - 1 as rang
+      from cards k join illu_pixels x on x.card_id = k.id
+     where not k.promo and k.cat <> 'essence')
+  select id from l
+   where rang = ((j - date '2026-01-01') % (select count(*) from l) + (select count(*) from l)) % (select count(*) from l);
 $$;
 
 -- Ce que rapporte l'illu trouvee au n-ieme essai.
@@ -368,7 +377,7 @@ begin
 end $$;
 
 -- =========================================================== 4. invitations
--- Achetees en boutique (2 000 Fragments, trois par joueur, shop_buy dans
+-- Achetees en boutique (2 000 Eclats, trois par joueur, shop_buy dans
 -- 03_rpc.sql). Un code sert une fois : la personne invitee se connecte avec
 -- Discord, le saisit sur l'ecran d'attente, et entre sur la liste des
 -- invites. Elle trouve un cadeau de bienvenue de la part de son parrain :

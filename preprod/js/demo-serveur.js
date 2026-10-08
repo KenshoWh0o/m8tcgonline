@@ -143,12 +143,12 @@
     ['e_revR',    'ev_jour', 'rev_R',     1, 15, null, 'Reflet rare',         'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'],
     ['e_titre',   'ev',      'titre',     1, 20, null, 'Un titre à ton nom',  'Équipe un titre sur ton profil.', 1, 'reflets', 'prismes'],
     ['e_perso',   'ev',      'perso',     1, 20, null, 'À ton image',         'Choisis une bannière ou une devise.', 2, 'reflets', 'prismes'],
-    ['e_rev30',   'ev',      'rset_ALL', 30, 50, null, 'Trente reflets',      'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'],
+    ['e_rev45',   'ev',      'rset_ALL', 45, 50, null, 'Quarante-cinq reflets', 'Possède 45 Reverses différentes.', 3, 'reflets', 'prismes'],
     ['e_revC',    'ev',      'rset_C',   20, 60, null, 'Vingt Communes reverses', 'Possède 20 Reverses Communes différentes.', 4, 'reflets', 'prismes'],
     ['e_illu7',   'ev',      'illu',      7, 60, null, 'L\'œil affûté',       'Trouve 7 illustrations pendant l\'événement.', 5, 'reflets', 'prismes'],
-    ['e_packs50', 'ev',      'packs',    50, 50, null, 'Cinquante boosters',  'Ouvre 50 boosters pendant l\'événement.', 6, 'reflets', 'prismes'],
+    ['e_packs70', 'ev',      'packs',    70, 50, null, 'Soixante-dix boosters', 'Ouvre 70 boosters pendant l\'événement.', 6, 'reflets', 'prismes'],
     ['e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets', 'Conclus 3 échanges.', 7, 'reflets', 'prismes'],
-    ['e_recycle', 'ev',      'recycle',  30, 30, null, 'Grand ménage',        'Recycle 30 doublons.', 8, 'reflets', 'prismes'],
+    ['e_recycle', 'ev',      'recycle', 150, 30, null, 'Grand ménage',        'Recycle 150 doublons pendant l\'événement.', 8, 'reflets', 'prismes'],
     ['e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes']
   ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie]) =>
     ({ id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement: evenement || null, monnaie: monnaie || 'eclats' }));
@@ -167,7 +167,7 @@
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
     ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4],
     /* Version 2.0 : l'invitation (Fragments) et la boutique de l'événement (Prismes). */
-    ['s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 10 boosters et 1 000 Éclats de bienvenue.', 2000, 'invitation', 1, null, false, 1, 'fragments', null, 3],
+    ['s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 10 boosters et 1 000 Éclats de bienvenue.', 2000, 'invitation', 1, null, false, 1, 'eclats', null, 3],
     ['ev_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      70, 'tickets',   2,   null, false, 1, 'prismes', 'reflets', 5],
     ['ev_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 60, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5],
     ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
@@ -468,9 +468,13 @@
      recopiées par tools/demo.py dans window.DEMO_ILLU. */
   function hacher(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   const illuCartes = () => cards.filter(k => k.cat !== 'essence' && (window.DEMO_ILLU || {})[k.id]);
+  /* Un ordre fixe, et chaque jour prend la suivante : jamais deux fois la
+     même avant d'avoir vu toutes les autres (illu_cible, 21_reflets.sql). */
   function illuCible(j) {
-    const l = illuCartes();
-    return l.length ? l.map(k => [hacher(j + ':illu:' + k.id), k.id]).sort((a, b) => a[0] - b[0])[0][1] : null;
+    const l = illuCartes().map(k => [hacher('demo:' + k.id), k.id]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+    if (!l.length) return null;
+    const n = Math.round((Date.parse(j + 'T12:00:00Z') - Date.parse('2026-01-01T12:00:00Z')) / 86400000);
+    return l[((n % l.length) + l.length) % l.length];
   }
   const ILLU_GAINS = [{ prismes: 25, eclats: 40 }, { prismes: 18, eclats: 30 }, { prismes: 12, eclats: 20 }, { prismes: 6, eclats: 10 }];
   /* illu_grille : la grille fine moyennée par blocs de 4, 3, 2 ou 1 pixels. */
