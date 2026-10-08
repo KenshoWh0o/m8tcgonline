@@ -1,0 +1,129 @@
+# La sortie de la version 2.0 « Reflets », vendredi 9 octobre 2026 à midi
+# (heure de Paris, 10:00 UTC), sans personne au clavier.
+#
+#   1. Le serveur : supabase/TOUT.sql, joué d'un bloc dans une seule
+#      transaction. S'il échoue, rien n'a changé — ni la base ni le site.
+#   2. Le site : la branche de la 2.0 avancée sur main, puis GitHub Pages.
+#
+# Dans cet ordre : le site 1.5.8 tolère le serveur 2.0 le temps que Pages
+# publie (il ignore les cartes qu'il ne connaît pas) ; l'inverse non.
+#
+# Il faut UN secret : SUPABASE_DB_URL (Settings > Secrets and variables >
+# Actions), la chaîne de connexion « Session pooler » de Supabase.
+#
+# Les déclencheurs planifiés de GitHub partent souvent en retard : deux
+# créneaux avant l'heure, et le travail attend midi pile. Le second ne refait
+# rien si le premier a déjà publié la 2.0.
+#
+# À la main (Actions > Sortie 2.0 > Run workflow) :
+#   - « essai » : joue tout le SQL puis l'annule (ROLLBACK). Ne publie rien.
+#   - « maintenant » : la sortie, tout de suite.
+name: Sortie 2.0
+
+on:
+  schedule:
+    - cron: '25 9 9 10 *'
+    - cron: '45 9 9 10 *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'essai (SQL joué puis annulé) ou maintenant (sortie immédiate)'
+        required: true
+        default: essai
+        type: choice
+        options: [essai, maintenant]
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: sortie-2-0
+  cancel-in-progress: false
+
+env:
+  BRANCHE: claude/interface-ux-fixes-o92u4a
+  HEURE: '2026-10-09T10:00:00Z'
+  VERSION: '2.0.0'
+
+jobs:
+  sortie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then m="${{ inputs.mode }}"; else m=planifie; fi
+          echo "mode=$m" >> "$GITHUB_OUTPUT"
+          echo "Mode : $m"
+          # Le planning se répète chaque 9 octobre : seulement en 2026.
+          if [ "$m" = planifie ] && [ "$(date -u +%Y)" != 2026 ]; then
+            echo "Pas en 2026 : rien à faire."; echo "fini=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.mode.outputs.fini != '1'
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Déjà sortie ?
+        id: deja
+        if: steps.mode.outputs.fini != '1'
+        run: |
+          if grep -q "APP_VERSION = '${VERSION}'" js/pwa.js; then
+            echo "main est déjà en ${VERSION} : rien à faire."; echo "oui=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Le secret et la connexion
+        if: steps.mode.outputs.fini != '1' && steps.deja.outputs.oui != '1'
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB" ]; then echo "::error::Le secret SUPABASE_DB_URL manque."; exit 1; fi
+          psql "$DB" -v ON_ERROR_STOP=1 -tAc "select 'connexion ok'"
+
+      - name: La 2.0, préparée (sans rien publier)
+        if: steps.mode.outputs.fini != '1' && steps.deja.outputs.oui != '1'
+        run: |
+          git config user.name "Sortie 2.0"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch origin "$BRANCHE"
+          git merge --no-edit "origin/$BRANCHE"
+          grep -q "APP_VERSION = '${VERSION}'" js/pwa.js || { echo "::error::La branche n'est pas en ${VERSION}."; exit 1; }
+          test -s supabase/TOUT.sql
+
+      - name: Essai — SQL joué puis annulé
+        if: steps.mode.outputs.mode == 'essai' && steps.deja.outputs.oui != '1'
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          printf 'begin;\n\\i supabase/TOUT.sql\nrollback;\n' > /tmp/essai.sql
+          psql "$DB" -v ON_ERROR_STOP=1 -q -f /tmp/essai.sql
+          echo "Essai réussi : le SQL passe, et rien n'a été gardé."
+
+      - name: Attendre midi
+        if: steps.mode.outputs.mode == 'planifie' && steps.deja.outputs.oui != '1'
+        run: |
+          cible=$(date -u -d "$HEURE" +%s)
+          while [ "$(date -u +%s)" -lt "$cible" ]; do sleep 5; done
+          date -u
+
+      - name: Le serveur — TOUT.sql, d'un bloc
+        if: (steps.mode.outputs.mode == 'planifie' || steps.mode.outputs.mode == 'maintenant') && steps.deja.outputs.oui != '1'
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+        run: psql "$DB" -v ON_ERROR_STOP=1 -q --single-transaction -f supabase/TOUT.sql
+
+      - name: Le site — main, puis GitHub Pages
+        if: (steps.mode.outputs.mode == 'planifie' || steps.mode.outputs.mode == 'maintenant') && steps.deja.outputs.oui != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git push origin HEAD:main
+          # Une publication faite avec GITHUB_TOKEN ne relance pas toujours
+          # Pages : on la demande explicitement, sans échouer si c'est inutile.
+          curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds" || true
+          echo "La 2.0 est publiée."
