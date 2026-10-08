@@ -198,6 +198,51 @@ function vBandeauEvenement() {
   </button>`;
 }
 
+/* ---------- Le teaser de la version 2.0 ---------- */
+/* Une ligne au-dessus du paquet jusqu'à la sortie de la 2.0, puis plus rien :
+   le bandeau s'efface tout seul à l'heure dite (heure du serveur). On en dit
+   peu — la surprise fait partie du lancement. */
+const SORTIE_20 = Date.parse('2026-10-09T12:00:00+02:00');
+/* La même heure, sur l'horloge de l'appareil (srvTime : skew = appareil − serveur). */
+const sortie20Locale = () => SORTIE_20 + (Backend.skew || 0);
+const avantSortie20 = () => Date.now() < sortie20Locale();
+
+function vTeaser20() {
+  if (!avantSortie20()) return '';
+  const t = sortie20Locale();
+  return `<button class="teaser20" data-act="teaser20" aria-label="Version 2.0 : en savoir plus">
+    <span class="t20-dos" aria-hidden="true"><img src="${ART.back}" alt=""><img src="${ART.back}" alt=""></span>
+    <span class="t20-txt">
+      <small>Bientôt · dans <b data-rebours="${t}">${h(dureeCourte(t - Date.now()))}</b></small>
+      <b>Version 2.0</b>
+    </span>
+    <span class="t20-fl" aria-hidden="true">›</span>
+  </button>`;
+}
+
+function montrerTeaser20() {
+  const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span><span><b>${titre}</b> ${texte}</span></li>`;
+  openSheet({
+    title: 'Version 2.0',
+    body: `<div class="t20-hero">
+        <div class="t20-cartes" aria-hidden="true">${[0, 1, 2].map(() => `<img src="${ART.back}" alt="">`).join('')}</div>
+        <div class="t20-hertxt">
+          <span class="t20-kick">Vendredi 9 octobre · midi</span>
+          <b>Quelque chose brille dans les boosters…</b>
+          <small>La plus grosse mise à jour depuis le lancement.</small>
+        </div>
+      </div>
+      <ol class="bvpoints nvpoints">
+        ${point('star', 'De nouvelles cartes à trouver.', 'Et pas qu\'un peu.')}
+        ${point('promo', 'Un événement de deux semaines.', 'Avec sa propre monnaie, ses récompenses et sa boutique.')}
+        ${point('user', 'Ton profil, à ton image.', 'Titres, cadres, et plus encore.')}
+        ${point('quest', 'Un petit jeu chaque jour.', 'Le même pour tout le monde.')}
+      </ol>
+      <p class="muted small">Rendez-vous ${h(jourHeure(sortie20Locale()))}.</p>`,
+    actions: [{ label: 'J\'ai hâte', primary: true, fn: closeSheet }]
+  });
+}
+
 /* Le prochain moment où l'état change de lui-même : un événement qui
    commence ou finit, une chasse qui ouvre. La page redemande alors l'état au
    serveur (js/app.js) — le rythme des boosters en dépend. */
@@ -220,6 +265,7 @@ function vBoosters() {
   const bonus = save.bonus || 0;
 
   return `<section class="packzone">
+  ${vTeaser20()}
   ${vBandeauEvenement()}
   <header class="setbar">
     <img class="setlogo" src="${ART.set}" alt="${h(SET_NAME)}">
