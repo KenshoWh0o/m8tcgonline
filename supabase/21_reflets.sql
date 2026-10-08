@@ -6,9 +6,10 @@
 --  (les Reverses sont dans 03b_promos.sql, leur case de booster dans
 --  03_rpc.sql) :
 --    1. les parametres du jeu qu'un administrateur ouvre a la main ;
---    2. l'evenement « Reflets » : sa monnaie (les Prismes), sa piste de
+--    2. l'evenement « Reflets » : sa monnaie (les Prismes), son Pass de
 --       recompenses, sa boutique et ses quetes (04_seed.sql) ;
---    3. le Cartle, la carte a deviner chaque jour ;
+--    3. Devine l'illu, l'illustration a deviner chaque jour (ses pixels sont
+--       dans 21b_illu.sql) ;
 --    4. les invitations, achetees en boutique ;
 --    5. les titres et la personnalisation du profil.
 -- =====================================================================
@@ -58,7 +59,8 @@ begin
     do update set solde = evt_comptes.solde + n, total = evt_comptes.total + n;
 end $$;
 
--- ------------------------------------------------- la piste de recompenses
+-- ------------------------------------------------------- le Pass de l'evenement
+-- (`evt_piste` dans les tables : le Pass s'appelait la piste.)
 create table if not exists public.evt_piste (
   evenement text not null,
   palier    integer not null,
@@ -81,31 +83,44 @@ alter table public.evt_piste enable row level security;
 alter table public.evt_piste_prises enable row level security;
 revoke all on public.evt_piste, public.evt_piste_prises from anon, authenticated;
 
--- Quinze paliers. Un joueur assidu gagne ~70 Prismes par jour en quetes du
--- jour, et ~460 en quetes de l'evenement : le dernier palier (1 350) demande
--- de jouer presque chaque jour des deux semaines.
+-- Vingt paliers. Le calcul (quetes de 04_seed.sql, recompenses de Devine
+-- l'illu plus bas) :
+--   - un joueur qui vient chaque jour gagne ~55 Prismes par jour (du jour :
+--     10 + 15 + ~15 pour l'illu trouvee + ~20 de l'illu elle-meme + 15 x 62 %
+--     pour la Reverse Rare, 6 boosters par jour), soit ~770 en 14 jours, et
+--     ~330 avec les quetes de l'evenement : ~1 100. Il finit le Pass dans les
+--     derniers jours ;
+--   - un joueur regulier (10 jours sur 14) en gagne ~700 : palier 14 ;
+--   - un joueur de passage (5 jours) ~320 : palier 7.
+-- Les ecarts grandissent, pour que les premiers paliers tombent vite.
+delete from public.evt_piste where evenement = 'reflets' and palier > 20;
 insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values
-  ('reflets',  1,   20, 'boosters',   2, null,         '2 boosters'),
-  ('reflets',  2,   50, 'fragments', 300, null,        '300 Fragments'),
-  ('reflets',  3,   90, 'titre',      0, 't_eclaireur', 'Titre « Éclaireur des Reflets »'),
-  ('reflets',  4,  140, 'boosters',   3, null,         '3 boosters'),
-  ('reflets',  5,  200, 'eclats',   500, null,         '500 Éclats'),
-  ('reflets',  6,  270, 'fragments', 600, null,        '600 Fragments'),
-  ('reflets',  7,  350, 'reverse_R',  1, null,         'Une Reverse Rare'),
-  ('reflets',  8,  440, 'boosters',   5, null,         '5 boosters'),
-  ('reflets',  9,  540, 'cadre',      0, 'f_miroir',   'Cadre « Miroir »'),
-  ('reflets', 10,  650, 'eclats',  1000, null,         '1 000 Éclats'),
-  ('reflets', 11,  770, 'fragments', 1000, null,       '1 000 Fragments'),
-  ('reflets', 12,  900, 'reverse_R',  2, null,         'Deux Reverses Rares'),
-  ('reflets', 13, 1040, 'boosters',   8, null,         '8 boosters'),
-  ('reflets', 14, 1190, 'brillante',  1, null,         'Une Essence Brillante'),
-  ('reflets', 15, 1350, 'titre',      0, 't_ame',      'Titre « Âme des Reflets »')
+  ('reflets',  1,   15, 'boosters',   2, null,          '2 boosters'),
+  ('reflets',  2,   40, 'eclats',   150, null,          '150 Éclats'),
+  ('reflets',  3,   70, 'titre',      0, 't_eclaireur', 'Titre « Éclaireur des Reflets »'),
+  ('reflets',  4,  105, 'fragments', 250, null,         '250 Fragments'),
+  ('reflets',  5,  145, 'boosters',   2, null,          '2 boosters'),
+  ('reflets',  6,  190, 'reverse_R',  1, null,          'Une Reverse Rare'),
+  ('reflets',  7,  240, 'eclats',   300, null,          '300 Éclats'),
+  ('reflets',  8,  295, 'boosters',   3, null,          '3 boosters'),
+  ('reflets',  9,  355, 'fragments', 400, null,         '400 Fragments'),
+  ('reflets', 10,  420, 'cadre',      0, 'f_miroir',    'Cadre « Miroir »'),
+  ('reflets', 11,  490, 'eclats',   400, null,          '400 Éclats'),
+  ('reflets', 12,  560, 'reverse_R',  1, null,          'Une Reverse Rare'),
+  ('reflets', 13,  630, 'boosters',   3, null,          '3 boosters'),
+  ('reflets', 14,  700, 'fragments', 600, null,         '600 Fragments'),
+  ('reflets', 15,  770, 'brillante',  1, null,          'Une Essence Brillante'),
+  ('reflets', 16,  840, 'eclats',   500, null,          '500 Éclats'),
+  ('reflets', 17,  910, 'boosters',   4, null,          '4 boosters'),
+  ('reflets', 18,  980, 'reverse_R',  2, null,          'Deux Reverses Rares'),
+  ('reflets', 19, 1040, 'titre',      0, 't_ame',       'Titre « Âme des Reflets »'),
+  ('reflets', 20, 1100, 'cadre',      0, 'f_kaleido',   'Cadre « Kaléidoscope »')
 on conflict (evenement, palier) do update set
   seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
   objet = excluded.objet, titre = excluded.titre;
 
 -- ----------------------------------------------------------- accorder
--- Ce qu'une recompense donne, quelle qu'en soit la source (piste, boutique
+-- Ce qu'une recompense donne, quelle qu'en soit la source (Pass, boutique
 -- d'evenement). Renvoie les cartes accordees, pour que le navigateur les
 -- montre.
 --   reverse_R : une Reverse Rare qu'on n'a pas (une au hasard si on les a
@@ -159,7 +174,7 @@ begin
   return to_jsonb(cartes);
 end $$;
 
--- ----------------------------------------------- reclamer un palier
+-- ----------------------------------------------- reclamer un palier du Pass
 create or replace function public.piste_reclamer(p_palier int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); ev text := evenement_en_cours(); pa evt_piste; tot int; cartes jsonb;
@@ -181,7 +196,7 @@ begin
 end $$;
 
 -- ----------------------------------------------- l'etat de l'evenement
--- Pour l'onglet de l'evenement : son solde, sa piste, et les dix joueurs qui
+-- Pour l'onglet de l'evenement : son solde, son Pass, et les dix joueurs qui
 -- ont gagne le plus de Prismes.
 create or replace function public.evenement_etat() returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -214,100 +229,144 @@ begin
         join profiles pr on pr.id = c.user_id), '[]'::jsonb));
 end $$;
 
--- ================================================================ 3. Cartle
--- Une carte a deviner par jour, la meme pour tout le monde : une carte de
--- l'extension, Essences exceptees. Chaque essai dit, pour chaque indice, si
--- c'est juste — et pour la rarete et le numero, si la bonne reponse est plus
--- haut ou plus bas. Sept essais. C'est le serveur qui connait la reponse et
--- qui juge : le navigateur ne la voit qu'une fois la partie finie.
-create table if not exists public.cartle (
+-- ========================================================= 3. Devine l'illu
+-- Une illustration a deviner par jour, la meme pour tout le monde : celle
+-- d'une carte de l'extension, Essences exceptees. Elle arrive pixelisee, et
+-- chaque essai rate la rend plus nette : 9 x 6 pixels, puis 12 x 8, 18 x 12
+-- et 36 x 24. Quatre essais. Plus on trouve tot, plus ca rapporte.
+--
+-- Le serveur garde les grilles (illu_pixels, remplie par 21b_illu.sql) et
+-- n'envoie que celle du moment : le navigateur ne connait la carte qu'une
+-- fois la partie finie. Le jeu n'existe que pendant l'evenement Reflets.
+create table if not exists public.illu_pixels (
+  card_id text primary key references public.cards on delete cascade,
+  data    bytea not null          -- 36 x 24 pixels, 12 bits chacun
+);
+create table if not exists public.devine_illu (
   user_id uuid not null references public.profiles on delete cascade,
   jour    date not null,
   essais  text[] not null default '{}',
   trouve  boolean not null default false,
   primary key (user_id, jour)
 );
-alter table public.cartle enable row level security;
-revoke all on public.cartle from anon, authenticated;
+alter table public.illu_pixels enable row level security;
+alter table public.devine_illu enable row level security;
+revoke all on public.illu_pixels, public.devine_illu from anon, authenticated;
 
-create or replace function public.cartle_jour() returns date
+create or replace function public.illu_jour() returns date
 language sql stable as $$ select (now() at time zone 'Europe/Paris')::date; $$;
 
--- La carte du jour : un tirage fixe par la date (md5), le meme pour tous.
-create or replace function public.cartle_cible(j date) returns text
+-- L'illustration du jour : un tirage fixe par la date (md5), le meme pour tous.
+create or replace function public.illu_cible(j date) returns text
 language sql stable security definer set search_path = public as $$
-  select id from cards where not promo and cat <> 'essence'
-   order by md5(j::text || ':reflets:' || id) limit 1;
+  select k.id from cards k join illu_pixels x on x.card_id = k.id
+   where not k.promo and k.cat <> 'essence'
+   order by md5(j::text || ':illu:' || k.id) limit 1;
 $$;
 
-create or replace function public.cartle_rang(r text) returns int
+-- Ce que rapporte l'illu trouvee au n-ieme essai.
+create or replace function public.illu_gain(n int) returns jsonb
 language sql immutable as $$
-  select case r when 'C' then 1 when 'PC' then 2 when 'R' then 3 when 'E' then 4 when 'L' then 5 else 0 end;
+  select case n when 1 then '{"prismes":25,"eclats":40}'::jsonb
+                when 2 then '{"prismes":18,"eclats":30}'::jsonb
+                when 3 then '{"prismes":12,"eclats":20}'::jsonb
+                else        '{"prismes":6,"eclats":10}'::jsonb end;
 $$;
 
--- `+` : la bonne reponse est plus haut ; `-` : plus bas.
-create or replace function public.cartle_retour(cid text, cible text) returns jsonb
-language sql stable security definer set search_path = public as $$
-  select jsonb_build_object(
-    'carte', a.id,
-    'cat', case when a.cat = b.cat then '=' else 'x' end,
-    'col', case when a.col = b.col then '=' else 'x' end,
-    'rar', case when a.rar = b.rar then '='
-                when cartle_rang(b.rar) > cartle_rang(a.rar) then '+' else '-' end,
-    'num', case when a.num = b.num then '=' when b.num > a.num then '+' else '-' end)
-    from cards a, cards b where a.id = cid and b.id = cible;
-$$;
-
-create or replace function public.cartle_etat() returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); j date := cartle_jour(); c cartle; cible text := cartle_cible(cartle_jour()); fini boolean;
+-- La grille du niveau 1 a 4 : la grille fine, moyennee par blocs de 4, 3, 2
+-- ou 1 pixels de cote. En RGB, 3 octets par pixel, en base64.
+create or replace function public.illu_grille(cid text, niveau int) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  src bytea; f int := case niveau when 1 then 4 when 2 then 3 when 3 then 2 else 1 end;
+  w int := 36 / f; h int := 24 / f; o bytea; x int; y int; dx int; dy int; k int; i int; n int;
+  s int[];
 begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  select * into c from cartle where user_id = p and jour = j;
-  fini := coalesce(c.trouve, false) or coalesce(array_length(c.essais, 1), 0) >= 7;
-  return jsonb_build_object(
-    'jour', j, 'max', 7,
-    'essais', coalesce((select jsonb_agg(cartle_retour(e, cible) order by o)
-                          from unnest(c.essais) with ordinality u(e, o)), '[]'::jsonb),
-    'trouve', coalesce(c.trouve, false),
-    'fini', fini,
-    'cible', case when fini then cible end);
+  select data into src from illu_pixels where card_id = cid;
+  if src is null then return null; end if;
+  o := decode(repeat('00', w * h * 3), 'hex');
+  for y in 0 .. h - 1 loop
+    for x in 0 .. w - 1 loop
+      s := array[0, 0, 0];
+      for dy in 0 .. f - 1 loop
+        for dx in 0 .. f - 1 loop
+          i := (y * f + dy) * 36 + x * f + dx;
+          for k in 0 .. 2 loop
+            n := i * 3 + k;
+            s[k + 1] := s[k + 1] + 17 * (case when n % 2 = 0 then get_byte(src, n / 2) >> 4
+                                               else get_byte(src, n / 2) & 15 end);
+          end loop;
+        end loop;
+      end loop;
+      for k in 0 .. 2 loop
+        o := set_byte(o, (y * w + x) * 3 + k, round(s[k + 1]::numeric / (f * f))::int);
+      end loop;
+    end loop;
+  end loop;
+  return jsonb_build_object('w', w, 'h', h, 'data', encode(o, 'base64'));
 end $$;
 
--- Trouver rapporte 30 Eclats, et fait avancer les quetes « cartle » (celles
--- de l'evenement en tete).
-create or replace function public.cartle_essai(p_carte text) returns jsonb
+create or replace function public.illu_etat() returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); j date := cartle_jour(); c cartle; cible text := cartle_cible(cartle_jour());
+declare p uuid := auth.uid(); j date := illu_jour(); d devine_illu; cible text; n int; fini boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
+  if evenement_en_cours() is distinct from 'reflets' then return 'null'::jsonb; end if;
+  cible := illu_cible(j);
+  if cible is null then return 'null'::jsonb; end if;
+  select * into d from devine_illu where user_id = p and jour = j;
+  n := coalesce(array_length(d.essais, 1), 0);
+  fini := coalesce(d.trouve, false) or n >= 4;
+  return jsonb_build_object(
+    'jour', j, 'max', 4,
+    'essais', to_jsonb(coalesce(d.essais, '{}')),
+    'trouve', coalesce(d.trouve, false),
+    'fini', fini,
+    'niveau', case when fini then 4 else n + 1 end,
+    'grille', case when fini then null else illu_grille(cible, n + 1) end,
+    'cible', case when fini then cible end,
+    'gain', case when d.trouve then illu_gain(n) end,
+    'gains', jsonb_build_array(illu_gain(1), illu_gain(2), illu_gain(3), illu_gain(4)));
+end $$;
+
+-- Trouver rapporte des Prismes et des Eclats selon l'essai (illu_gain), et
+-- fait avancer les quetes « illu ».
+create or replace function public.illu_essai(p_carte text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); j date := illu_jour(); d devine_illu; cible text; n int; g jsonb; ok boolean;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if evenement_en_cours() is distinct from 'reflets' then raise exception 'Devine l''illu revient au prochain événement.'; end if;
+  cible := illu_cible(j);
   if not exists (select 1 from cards where id = p_carte and not promo and cat <> 'essence') then
-    raise exception 'Cette carte ne fait pas partie du Cartle.';
+    raise exception 'Cette carte ne fait pas partie du jeu.';
   end if;
 
-  insert into cartle (user_id, jour) values (p, j) on conflict do nothing;
-  select * into c from cartle where user_id = p and jour = j for update;
-  if c.trouve or coalesce(array_length(c.essais, 1), 0) >= 7 then
-    raise exception 'La partie du jour est finie : rendez-vous demain.';
-  end if;
-  if p_carte = any (c.essais) then raise exception 'Tu as déjà proposé cette carte.'; end if;
+  insert into devine_illu (user_id, jour) values (p, j) on conflict do nothing;
+  select * into d from devine_illu where user_id = p and jour = j for update;
+  n := coalesce(array_length(d.essais, 1), 0);
+  if d.trouve or n >= 4 then raise exception 'La partie du jour est finie : rendez-vous demain.'; end if;
+  if p_carte = any (d.essais) then raise exception 'Tu as déjà proposé cette carte.'; end if;
 
-  update cartle set essais = essais || p_carte, trouve = (p_carte = cible)
-   where user_id = p and jour = j;
-  if p_carte = cible then
-    update profiles set shards = shards + 30 where id = p;
-    perform bump_quests(p, 'cartle', 1);
+  ok := p_carte = cible;
+  update devine_illu set essais = essais || p_carte, trouve = ok where user_id = p and jour = j;
+  if ok then
+    g := illu_gain(n + 1);
+    update profiles set shards = shards + (g->>'eclats')::int where id = p;
+    perform crediter_prismes(p, 'reflets', (g->>'prismes')::int);
+    perform bump_quests(p, 'illu', 1);
   end if;
-  return jsonb_build_object('cartle', cartle_etat(), 'etat', me());
+  return jsonb_build_object('illu', illu_etat(), 'etat', me());
 end $$;
 
 -- =========================================================== 4. invitations
 -- Achetees en boutique (2 000 Fragments, trois par joueur, shop_buy dans
 -- 03_rpc.sql). Un code sert une fois : la personne invitee se connecte avec
 -- Discord, le saisit sur l'ecran d'attente, et entre sur la liste des
--- invites. Elle trouve un cadeau de bienvenue de la part de son parrain.
+-- invites. Elle trouve un cadeau de bienvenue de la part de son parrain :
+-- 10 boosters hors reserve (en plus des 5 de depart) et 1 000 Eclats.
 create table if not exists public.invitations (
   code        text primary key,
   auteur      uuid not null references public.profiles on delete cascade,
@@ -354,14 +413,14 @@ begin
   update invitations set utilise_par = p, utilise_le = now() where code = inv.code;
   perform bump_quests(inv.auteur, 'invite', 1);
   insert into cadeaux (user_id, boosters, eclats, message, auteur)
-  values (p, 5, 500, 'Bienvenue ! ' || coalesce(parrain, 'Un joueur') || ' t''a invité : voici de quoi bien commencer.', inv.auteur);
+  values (p, 10, 1000, 'Bienvenue ! ' || coalesce(parrain, 'Un joueur') || ' t''a invité : voici de quoi bien commencer.', inv.auteur);
   return me();
 end $$;
 
 -- ===================================================== 5. titres et profil
 -- Les titres qu'un joueur a debloques. La plupart viennent de ses succes
 -- (15_evenements.sql), calcules a la volee comme eux ; les autres sont des
--- objets gagnes (inventaire, `t_…`) : piste d'evenement, boutique, quetes.
+-- objets gagnes (inventaire, `t_…`) : Pass d'evenement, boutique, quetes.
 -- Les noms vivent dans TITRES (js/config.js).
 create or replace function public.titres_de(p uuid) returns text[]
 language plpgsql stable security definer set search_path = public as $$
@@ -423,15 +482,15 @@ end $$;
 -- boosters. Le redater, dans le SQL Editor :
 --   update public.evenements set debut = …, fin = … where code = 'reflets';
 insert into public.evenements (titre, texte, debut, fin, ticket_minutes, code)
-select 'Reflets', 'La version 2.0 : les Reverses, des cadres, des titres, le Cartle. Gagne des Prismes et remonte la piste.',
+select 'Reflets', 'La version 2.0 : les Reverses, des cadres, des titres, Devine l''illu. Gagne des Prismes et remonte le Pass.',
        now(), now() + interval '14 days', null, 'reflets'
  where not exists (select 1 from public.evenements where code = 'reflets');
 
 -- ================================================================= droits
 revoke all on function public.evenement_en_cours, public.crediter_prismes, public.accorder,
-  public.cartle_cible, public.cartle_retour, public.creer_invitation, public.titres_de
+  public.illu_cible, public.illu_grille, public.creer_invitation, public.titres_de
   from public, anon, authenticated;
-revoke all on function public.piste_reclamer, public.evenement_etat, public.cartle_etat,
-  public.cartle_essai, public.utiliser_invitation, public.personnaliser from public, anon;
-grant execute on function public.piste_reclamer, public.evenement_etat, public.cartle_etat,
-  public.cartle_essai, public.utiliser_invitation, public.personnaliser to authenticated;
+revoke all on function public.piste_reclamer, public.evenement_etat, public.illu_etat,
+  public.illu_essai, public.utiliser_invitation, public.personnaliser from public, anon;
+grant execute on function public.piste_reclamer, public.evenement_etat, public.illu_etat,
+  public.illu_essai, public.utiliser_invitation, public.personnaliser to authenticated;

@@ -198,7 +198,6 @@ const VUES = {
   quetes: () => vQuetes(),
   combats: () => vCombats(),
   reflets: () => vReflets(),
-  cartle: () => vCartlePage(),
   recyclage: () => vRecyclage(),
   classement: () => vClassement(),
   tirages: () => vTirages(),
@@ -250,6 +249,7 @@ function render() {
   if (haut) m.scrollTop = haut;
 
   if (tab === 'boosters') bindPack();
+  if (tab === 'reflets') placerPass();
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
@@ -277,12 +277,12 @@ function aller(id) {
       Promise.all([Backend.loadTrades(), Backend.loadAmis()]).then(render).catch(() => {});
     }
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
-    /* Version 2.0 : l'événement et le Cartle se chargent en arrivant. */
+    /* Version 2.0 : l'événement se charge en arrivant. */
     if (tab === 'reflets') {
+      passPlace = false;
       chargerReflets();
       if (!Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     }
-    if (tab === 'cartle') chargerCartle();
     /* Le recyclage met de côté les cartes promises dans un échange : il lui
        faut la liste à jour. */
     if (tab === 'recyclage') Backend.loadTrades().then(render).catch(() => {});
@@ -302,7 +302,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-theme],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-cartle],[data-ancre],[data-colvue],[data-invit],[data-titre],[data-banniere]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere]');
   if (!el) return;
   const d = el.dataset;
 
@@ -311,15 +311,11 @@ async function clicPage(e) {
   /* Version 2.0 */
   if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
   if (d.palier) return reclamerPalier(+d.palier);
-  if (d.cartle) return cartleProposer(d.cartle);
+  if (d.illu) return illuProposer(d.illu);
+  if (d.rfvue) return allerRf(d.rfvue);
   if (d.invit) return montrerInvitation(d.invit);
   if (el.matches('[data-titre]')) return choisirTitre(d.titre);
   if (el.matches('[data-banniere]')) return choisirBanniere(d.banniere);
-  if (d.ancre) {
-    const aller2 = () => { const x = document.getElementById(d.ancre); if (x) x.scrollIntoView({ behavior: RM() ? 'auto' : 'smooth', block: 'start' }); };
-    if (tab !== 'reflets') { aller('reflets'); return setTimeout(aller2, 400); }
-    return aller2();
-  }
   if (d.auth) return authFaire(d.auth);
   /* `data-qui` accompagne les cartes ouvertes depuis un écran d'échange : la
      visionneuse montre alors aussi combien l'autre en possède. */
@@ -338,7 +334,6 @@ async function clicPage(e) {
   }
   if (d.shv) { shopVue = d.shv; return render(); }
   if (d.shop) return ouvrirArticle(d.shop);
-  if (d.theme) { poserTheme(d.theme); return render(); }
   if (d.promo) return testPromo(d.promo);
 
   /* Amis. Une réponse donnée depuis la boite de réception la met à jour : la
@@ -385,7 +380,8 @@ async function clicPage(e) {
     case 'nouveautes': return montrerNouveautes();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
-    case 'cartle-partager': return cartlePartager();
+    case 'illu-partager': return illuPartager();
+    case 'pass-tout': return reclamerTout();
     case 'pf-devise': return enregistrerDevise();
     case 'pf-banniere': return ouvrirChoixBanniere();
     case 'col-toggle': colOuvert = !colOuvert; return render();
@@ -448,7 +444,9 @@ async function clicPage(e) {
     case 't-v2-reflets':
       if (evenementEnCours() !== 'reflets') return toast('L\'événement Reflets n\'est pas en cours.');
       return aller('reflets');
-    case 't-v2-cartle': return aller('cartle');
+    case 't-v2-illu':
+      if (evenementEnCours() !== 'reflets') return toast('L\'événement Reflets n\'est pas en cours.');
+      return allerRf('illu');
     case 't-partage':
       return partagerTirage({ ids: makeBooster(poolFor(), false).map(c => c.id), quand: new Date().toISOString() });
     case 't-fragments':
@@ -583,8 +581,8 @@ setInterval(() => {
 const ecranOccupe = () => !!rv || opening || promoEnCours;
 const enTrainDEcrire = () => (tab === 'social' && socVue === 'echanges' && trVue === 'nouvelle')
   || tab === 'labo'
-  /* Le Cartle, la devise du profil : un champ en cours de saisie. */
-  || (document.activeElement && ['ct-saisie', 'pf-devise'].includes(document.activeElement.id));
+  /* Devine l'illu, la devise du profil : un champ en cours de saisie. */
+  || (document.activeElement && ['il-saisie', 'pf-devise'].includes(document.activeElement.id));
 
 /* Les compteurs, la barre et le tiroir se remettent à jour sans toucher à la
    page. Le contenu, lui, n'est redessiné que si ça ne dérange personne. */
@@ -638,7 +636,7 @@ function visiteDuJourFaite() {
   rebuild();
   brand();
   rollPack();
-  poserTheme(reglageTheme());
+  oublierTheme();
   poserRM(reglageRM());
 
   /* Le service worker se branche toujours : c'est lui qui apporte les mises à

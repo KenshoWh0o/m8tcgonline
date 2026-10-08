@@ -29,7 +29,8 @@ MORCEAUX = [
     ('14_classement.sql', 'Le classement global des joueurs'),
     ('15_evenements.sql', 'Tirages, succes, evenements et chasse a la carte unique'),
     ('18_cadeaux.sql', 'Les cadeaux offerts par un administrateur'),
-    ('21_reflets.sql', 'Version 2.0 : evenement Reflets, Cartle, invitations, titres'),
+    ('21_reflets.sql', 'Version 2.0 : evenement Reflets, Devine l\'illu, invitations, titres'),
+    ('21b_illu.sql',   'Devine l\'illu : les illustrations en pixels'),
 ]
 
 entete = """-- =====================================================================

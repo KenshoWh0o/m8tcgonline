@@ -11,6 +11,10 @@ const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'":
 const h = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ESCAPE_MAP[c])
   .replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»');
 
+/* Le nom d'une carte, pour une liste sans image : une Reverse porte une
+   petite icône holographique (css/cards.css) plutôt que le mot, répétitif. */
+const nomH = c => h(c.nom) + (c.rev ? '<i class="revico" role="img" aria-label="Reverse" title="Reverse"></i>' : '');
+
 const noacc = s => String(s == null ? '' : s)
   .normalize('NFD')
   .replace(/[̀-ͯ]/g, '')

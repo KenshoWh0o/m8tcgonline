@@ -23,6 +23,8 @@
   background:linear-gradient(115deg,transparent 15%,rgba(137,54,255,.5) 30%,rgba(57,184,255,.5) 45%,rgba(255,199,59,.5) 60%,rgba(223,109,232,.45) 75%,transparent 90%);
   background-size:320% 320%;background-position:var(--hx,50%) 50%}
 .vw-card.rR .vw-holo{opacity:.25}.vw-card.rE .vw-holo{opacity:.45}.vw-card.rL .vw-holo{opacity:.62}
+/* Une Reverse a déjà sa nacre : le reflet de la visionneuse, par-dessus, la délavait. */
+.vw-card:has(.card.rev) .vw-holo{opacity:.1}
 .vw-shadow{position:relative;width:210px;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.7),transparent);margin-top:18px}
 .vw-info{position:relative;text-align:center;margin-top:10px;animation:fadeup .5s .15s both}
 .vw-name{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:23px;line-height:1.1}

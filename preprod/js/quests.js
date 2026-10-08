@@ -25,9 +25,9 @@ const QICO = {
   trades: 'swap', recycle: 'recycle', collection_pct: 'cards',
   /* Toutes les cartes d'une rareté (supabase/04_seed.sql). */
   set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin',
-  /* Version 2.0 : Reverses, Brillantes, Cartle, invitations, personnalisation. */
+  /* Version 2.0 : Reverses, Brillantes, Devine l'illu, invitations, personnalisation. */
   rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
-  brill_ALL: 'promo', cartle: 'cartle', invite: 'amis', titre: 'user', perso: 'user'
+  brill_ALL: 'promo', illu: 'illu', invite: 'amis', titre: 'user', perso: 'user'
 };
 
 /* ---------- Comptages ---------- */

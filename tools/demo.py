@@ -27,7 +27,7 @@ sans compte et sans toucher au vrai serveur. Par rapport a la demo :
   - pas de service worker : celui du vrai site couvre deja l'adresse, et deux
     service workers sur la meme origine se videraient leurs caches ;
   - un bandeau « PRE-PROD », pas d'indexation, et le Labo ouvert."""
-import os, re, shutil, sys, zipfile
+import json, os, re, shutil, sys, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, '_demo')
@@ -70,6 +70,14 @@ shutil.copy2(os.path.join(SRC, 'serveur.js'), os.path.join(OUT, 'js', 'demo-serv
 shutil.copy2(os.path.join(SRC, 'reglages.js'), os.path.join(OUT, 'js', 'demo-reglages.js'))
 shutil.copy2(os.path.join(SRC, 'LISEZMOI.txt'), os.path.join(OUT, 'LISEZMOI.txt'))
 
+# --- Devine l'illu : les grilles de pixels du serveur (supabase/21b_illu.sql).
+#     Une demo n'a rien a cacher : le faux serveur les garde dans la page.
+illu = dict(re.findall(r"\('(c\d+)', decode\('([^']+)', 'base64'\)\)",
+                       open(os.path.join(ROOT, 'supabase', '21b_illu.sql'), encoding='utf-8').read()))
+open(os.path.join(OUT, 'js', 'demo-illu.js'), 'w', encoding='utf-8').write(
+    '/* Devine l\'illu : les grilles du serveur, pour le faux serveur de la demo. */\n'
+    'window.DEMO_ILLU = ' + json.dumps(illu, separators=(',', ':')) + ';\n')
+
 # --- plus de vraies cles : Backend.init() voit une configuration, et le faux
 #     client la prend en charge.
 ecrire('js/supabase-config.js', '''/* Demo autonome : aucun serveur. Ces valeurs ne servent qu'a dire au jeu
@@ -87,6 +95,7 @@ v = version.group(1) if version else 'demo'
 page = remplacer(page,
     r'<script src="https://cdn\.jsdelivr\.net/npm/@supabase/supabase-js[^"]*"[^>]*></script>',
     f'<script src="js/demo-reglages.js?v={v}"></script>\n'
+    f'<script src="js/demo-illu.js?v={v}"></script>\n'
     f'<script src="js/demo-serveur.js?v={v}"></script>',
     'la balise de la bibliotheque Supabase dans index.html')
 ecrire('index.html', page)
@@ -94,7 +103,7 @@ ecrire('index.html', page)
 # --- le service worker garde aussi ces deux fichiers pour le hors reseau
 sw = lire('sw.js')
 sw = remplacer(sw, r"'js/app\.js',",
-    "'js/app.js', 'js/demo-reglages.js', 'js/demo-serveur.js',",
+    "'js/app.js', 'js/demo-reglages.js', 'js/demo-illu.js', 'js/demo-serveur.js',",
     "la liste ESSENTIEL de sw.js")
 ecrire('sw.js', sw)
 

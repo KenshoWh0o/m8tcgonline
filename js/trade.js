@@ -235,7 +235,7 @@ function vNouvelleDemande() {
   let aide;
   if (!trCible) aide = 'Choisis d\'abord avec qui échanger.';
   else if (ilManque) aide = `<span class="warn">${h(pseudo)} n'a pas cette carte : il ne pourra pas accepter.</span>`;
-  else if (pret) aide = `Tu reçois <b>${h(veut.nom)}</b>, tu donnes <b>${h(off.nom)}</b>.`;
+  else if (pret) aide = `Tu reçois <b>${nomH(veut)}</b>, tu donnes <b>${nomH(off)}</b>.`;
   else if (off || veut) aide = `Rareté imposée : <b>${(RAR[(off || veut).rar] || RAR.C).nom}</b>.`;
   else aide = 'Touche une case : la carte que tu veux, puis celle que tu donnes.';
 
@@ -356,7 +356,7 @@ function ouvrirChoixCarte(role, rar) {
       ${vue.length
         ? `<div class="pickgrid">${vue.map(c => `<button class="pick" data-cardpick="${c.id}" data-role="${role}" data-snd="carte">
             <span class="pickimg">${renderCard(c)}${etiquette(c, sens)}</span>
-            <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`
+            <span class="picknom">${nomH(c)}</span></button>`).join('')}</div>`
         : `<p class="muted">${role === 'offre'
             ? 'Tu n\'as aucune carte échangeable de cette rareté.'
             : 'Aucune carte à demander ici.'}</p>`}`,
@@ -423,7 +423,7 @@ function montrerCollectionDe(pseudo) {
   const grille = liste.length
     ? `<div class="pickgrid">${liste.map(c => `<button class="pick${mesEx(c.id) ? '' : ' manque'}" data-show="${c.id}" data-qui="${h(pseudo)}" data-snd="carte">
         <span class="pickimg">${renderCard(c)}<i class="tpill">×${col[c.id]}</i></span>
-        <span class="picknom">${h(c.nom)}</span></button>`).join('')}</div>`
+        <span class="picknom">${nomH(c)}</span></button>`).join('')}</div>`
     : `<p class="muted">${trColVue === 'manque'
         ? 'Il n\'a rien que tu n\'aies déjà.'
         : trColVue === 'doubles' ? 'Aucun doublon de son côté.' : 'Sa collection est vide.'}</p>`;

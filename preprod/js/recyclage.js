@@ -207,7 +207,7 @@ function recConfirmer() {
     title: `Recycler ${nb} carte${nb > 1 ? 's' : ''} ?`,
     body: `<ul class="reclist">${lots.map(l => `<li>
         <span class="reclmini">${renderCard(l.c)}</span>
-        <span class="recln"><b>${h(l.c.nom)}</b><small class="r${l.c.rar}">${(RAR[l.c.rar] || RAR.C).nom}</small></span>
+        <span class="recln"><b>${nomH(l.c)}</b><small class="r${l.c.rar}">${(RAR[l.c.rar] || RAR.C).nom}</small></span>
         <span class="reclq">×${l.n}</span>
         <span class="reclv">+${fmtN(l.n * recPrix(l.c))}</span></li>`).join('')}</ul>
       <div class="rectotal"><span>Tu gagnes</span><b>+${fmtN(recTotal())} ${fragIco}</b></div>
@@ -289,7 +289,7 @@ function ouvrirFabrication(id) {
       title: 'Pas encore',
       body: `<div class="fabfiche">
           <button class="fabcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
-          <div class="fabmeta"><b>${h(c.nom)}</b>
+          <div class="fabmeta"><b>${nomH(c)}</b>
             <p class="muted small">La fabrication des Reverses ouvrira plus tard : pour l'instant, elles se trouvent
               en booster — une par booster, en 4ᵉ carte — et s'échangent entre joueurs.</p></div>
         </div>`,
@@ -306,7 +306,7 @@ function ouvrirFabrication(id) {
     body: `<div class="fabfiche">
         <button class="fabcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
         <div class="fabmeta">
-          <b>${h(c.nom)}</b>
+          <b>${nomH(c)}</b>
           <span class="r${c.rar}">${R.nom}${c.rev ? ' Reverse' : ''} · #${String(c.num || 0).padStart(3, '0')}</span>
           <div class="achatprix"><span>Coût</span><b>${fragIco}${fmtN(cout)}</b></div>
           <p class="achatreste${manque ? ' court' : ''}">${manque

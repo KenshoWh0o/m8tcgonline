@@ -237,6 +237,23 @@ function announce() {
     }, RM() ? 700 : 1600);
     return;
   }
+  /* Une Reverse se montre un court instant avant qu'on puisse passer : le
+     temps de voir son reflet, sans freiner le paquet comme une Brillante. */
+  if (c.rev && !rv.god) {
+    top.classList.add('revhit');
+    if (rk(c) >= 3) top.classList.add('hitcard', 'h' + c.rar);
+    vibrer(12);
+    rv.lock = true;
+    const cur = rv;
+    $('#ophint').textContent = '';
+    setTimeout(() => {
+      if (rv !== cur) return;
+      cur.lock = false;
+      const hint = $('#ophint');
+      if (hint) hint.textContent = indice;
+    }, RM() ? 300 : 750);
+    return;
+  }
   $('#ophint').textContent = indice;
 
   if (rk(c) >= 3 && !rv.god) top.classList.add('hitcard', 'h' + c.rar);

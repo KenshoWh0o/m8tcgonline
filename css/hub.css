@@ -440,21 +440,8 @@
 .ava.md{width:56px;height:56px}
 .ava.lg{width:48px;height:48px}
 .ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--accent-glow)}
-.ava.prisme{animation:prisme 4s linear infinite}
-@keyframes prisme{
-  0%{box-shadow:0 0 0 3px #ee0073}
-  25%{box-shadow:0 0 0 3px #ffc73b}
-  50%{box-shadow:0 0 0 3px #55e6a6}
-  75%{box-shadow:0 0 0 3px #39b8ff}
-  100%{box-shadow:0 0 0 3px #ee0073}}
-
-/* Le Sceau : l'or du sceau de booster qui respire sur du violet. Plus lent et
-   plus court que le Prisme — il ne balaie pas tout le spectre, il pulse.
-   C'est le seul cadre qu'on ne peut pas acheter : il se gagne aux 500 boosters. */
-.ava.sceau{animation:sceau 3.2s ease-in-out infinite}
-@keyframes sceau{
-  0%,100%{box-shadow:0 0 0 3px #8936ff,0 0 14px rgba(137,54,255,.5)}
-  50%{box-shadow:0 0 0 3px #ffc73b,0 0 20px rgba(255,199,59,.6)}}
+/* Les cadres à texture (Prisme, Sceau, et ceux de la version 2.0) sont dans
+   css/reflets.css, « Les cadres d'avatar à texture ». */
 .avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
 
 .avagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;padding:4px 0 2px}

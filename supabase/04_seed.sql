@@ -179,7 +179,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_master',  'milestone', 'collection_pct',100,  0, 'f_master', 'Maître de l''extension', 'Possède les 122 cartes de l''extension.', 21),
   ('m_brill',   'milestone', 'brill_ALL', 9,           0, 'f_aurore', 'Aurore',               'Possède les 9 Essences Brillantes.', 22),
   ('m_packs300','milestone', 'packs',     300,         0, 'f_sceau',  'Trois cents paquets',  'Ouvre 300 boosters en tout.', 23),
-  ('m_cartle10','milestone', 'cartle',     10,         0, 't_devin',  'Le Devin',             'Résous 10 Cartle.', 24),
+  ('m_illu10',  'milestone', 'illu',       10,         0, 't_devin',  'Le Devin',             'Trouve 10 illustrations à Devine l''illu.', 24),
   ('m_invite',  'milestone', 'invite',      1,         0, 't_hote',   'L''Hôte',              'Un ami entre dans le jeu avec ton invitation.', 25)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
@@ -193,26 +193,29 @@ delete from public.quests where id not in (
   'm_setES','m_setC','m_setPC','m_setR','m_setE','m_setL',
   'm_packs25','m_packs50','m_packs100','m_packs200',
   'm_trade25',
-  'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_cartle10','m_invite',
-  'e_check','e_packs','e_cartle','e_revR','e_titre','e_perso','e_revC','e_rev30','e_trade','e_cartle7','e_packs50',
+  'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_illu10','m_invite',
+  'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev30','e_trade','e_illu7','e_packs50',
   'e_recycle','e_invite');
 
 -- ------------------------------------------------- l'evenement « Reflets »
--- Ses quetes paient en Prismes (21_reflets.sql). Du jour : ~70 Prismes pour
--- qui les fait toutes. De l'evenement, une fois : 440. Elles portent sur les
--- nouveautes de la 2.0 — c'est le role de l'evenement de les faire essayer.
+-- Ses quetes paient en Prismes (21_reflets.sql). Du jour : 50 Prismes pour
+-- qui les fait toutes, plus ce que rapporte Devine l'illu (6 a 25). De
+-- l'evenement, une fois : 380. Elles portent sur les nouveautes de la 2.0 —
+-- c'est le role de l'evenement de les faire essayer. Le calcul du Pass est
+-- en tete de son tableau, dans 21_reflets.sql.
+-- Objectifs tenables en deux semaines : 6 boosters par jour donnent ~42
+-- Reverses Communes en 14 jours, ~25 differentes — d'ou 20, pas « toutes ».
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
   ('e_check',   'ev_jour', 'checkin',   1, 10, null, 'Un reflet par jour',     'Passe voir l''événement aujourd''hui.', 1, 'reflets', 'prismes'),
   ('e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',        'Ouvre 4 boosters aujourd''hui.', 2, 'reflets', 'prismes'),
-  ('e_cartle',  'ev_jour', 'cartle',    1, 25, null, 'Le Cartle du jour',      'Devine la carte du jour.', 3, 'reflets', 'prismes'),
-  ('e_revR',    'ev_jour', 'rev_R',     1, 20, null, 'Reflet rare',            'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'),
+  ('e_illu',    'ev_jour', 'illu',      1, 10, null, 'L''illu du jour',        'Trouve l''illustration du jour.', 3, 'reflets', 'prismes'),
+  ('e_revR',    'ev_jour', 'rev_R',     1, 15, null, 'Reflet rare',            'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'),
   ('e_titre',   'ev',      'titre',     1, 20, null, 'Un titre à ton nom',     'Équipe un titre sur ton profil.', 1, 'reflets', 'prismes'),
   ('e_perso',   'ev',      'perso',     1, 20, null, 'À ton image',            'Choisis une bannière ou une devise.', 2, 'reflets', 'prismes'),
-  ('e_rev30',   'ev',      'rset_ALL', 30, 60, null, 'Trente reflets',         'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'),
-  ('e_revC',    'ev',      'rset_C',   (select count(*)::int from public.cards where reverse and rar = 'C'),
-                                              80, null, 'Toutes les Communes reverses', 'Possède toutes les Reverses Communes.', 4, 'reflets', 'prismes'),
-  ('e_cartle7', 'ev',      'cartle',    7, 80, null, 'Devin de la semaine',    'Résous 7 Cartle pendant l''événement.', 5, 'reflets', 'prismes'),
-  ('e_packs50', 'ev',      'packs',    50, 60, null, 'Cinquante boosters',     'Ouvre 50 boosters pendant l''événement.', 6, 'reflets', 'prismes'),
+  ('e_rev30',   'ev',      'rset_ALL', 30, 50, null, 'Trente reflets',         'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'),
+  ('e_revC',    'ev',      'rset_C',   20, 60, null, 'Vingt Communes reverses', 'Possède 20 Reverses Communes différentes.', 4, 'reflets', 'prismes'),
+  ('e_illu7',   'ev',      'illu',      7, 60, null, 'L''œil affûté',          'Trouve 7 illustrations pendant l''événement.', 5, 'reflets', 'prismes'),
+  ('e_packs50', 'ev',      'packs',    50, 50, null, 'Cinquante boosters',     'Ouvre 50 boosters pendant l''événement.', 6, 'reflets', 'prismes'),
   ('e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets',    'Conclus 3 échanges.', 7, 'reflets', 'prismes'),
   ('e_recycle', 'ev',      'recycle',  30, 30, null, 'Grand ménage',           'Recycle 30 doublons.', 8, 'reflets', 'prismes'),
   ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes')
@@ -247,7 +250,7 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
   ('f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2),
   ('f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3),
-  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre animé qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4)
+  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -260,15 +263,15 @@ on conflict (id) do update set
 -- Version 2.0 : l'invitation, payee en Fragments (21_reflets.sql), et la
 -- boutique de l'evenement « Reflets », payee en Prismes.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
-  ('s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 5 boosters et 500 Éclats de bienvenue.',
+  ('s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 10 boosters et 1 000 Éclats de bienvenue.',
                                                                                                2000, 'invitation', 1, null, false, 1, 'fragments', null, 3),
-  ('ev_boosters',  'evenement', 'x2 Boosters',       'Deux boosters à ouvrir tout de suite.',     60, 'tickets',    2, null, false, 1, 'prismes', 'reflets', 5),
-  ('ev_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 50, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5),
-  ('ev_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n''as pas encore.', 120, 'reverse_R',  1, null, false, 3, 'prismes', 'reflets', 3),
+  -- Un joueur assidu gagne ~1 100 Prismes sur l'evenement : la boutique en
+  -- coute ~1 300, il faut choisir.
+  ('ev_boosters',  'evenement', 'x2 Boosters',       'Deux boosters à ouvrir tout de suite.',     70, 'tickets',    2, null, false, 1, 'prismes', 'reflets', 5),
+  ('ev_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 60, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5),
+  ('ev_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n''as pas encore.', 150, 'reverse_R',  1, null, false, 3, 'prismes', 'reflets', 3),
   ('t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l''événement.',
-                                                                                                150, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null),
-  ('f_kaleido',    'evenement', 'Cadre « Kaléidoscope »', 'Un cadre animé, en vente pendant l''événement seulement.',
-                                                                                                250, 'cosmetique', 1, null, true, 5, 'prismes', 'reflets', null)
+                                                                                                200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -279,4 +282,4 @@ delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',
   'f_azur','f_rose','f_or','f_prisme',
-  's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect','f_kaleido');
+  's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect');

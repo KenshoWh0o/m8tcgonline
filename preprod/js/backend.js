@@ -381,11 +381,11 @@ Backend.pisteReclamer = async palier => {
   Backend.apply(r.etat);
   return r.cartes || [];
 };
-Backend.cartleEtat = () => Backend.rpc('cartle_etat');
-Backend.cartleEssai = async id => {
-  const r = await Backend.rpc('cartle_essai', { p_carte: id });
+Backend.illuEtat = () => Backend.rpc('illu_etat');
+Backend.illuEssai = async id => {
+  const r = await Backend.rpc('illu_essai', { p_carte: id });
   Backend.apply(r.etat);
-  return r.cartle;
+  return r.illu;
 };
 Backend.personnaliser = async (titre, banniere, devise) =>
   Backend.apply(await Backend.rpc('personnaliser', { p_titre: titre ?? null, p_banniere: banniere ?? null, p_devise: devise ?? null }));

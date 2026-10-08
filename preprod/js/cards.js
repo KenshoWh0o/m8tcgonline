@@ -154,7 +154,8 @@ function buildBrillantes(liste) {
 function buildReverses(liste) {
   return liste.filter(c => ['C', 'PC', 'R'].includes(c.rar) && c.cat !== 'essence').map(c => Object.assign({}, c, {
     id: 'r' + c.id.slice(1),
-    nom: c.nom + ' Reverse',
+    /* Le même nom : la carte se reconnaît à son reflet, et une petite icône
+       la signale dans les listes où l'on ne voit que le nom (nomH). */
     nomBase: c.nom,
     inBoost: false,
     promo: false,

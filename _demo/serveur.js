@@ -134,19 +134,19 @@
     ['m_master',  'milestone', 'collection_pct',100,    0, 'f_master', 'Maître de l\'extension', 'Possède les 122 cartes de l\'extension.', 21],
     ['m_brill',   'milestone', 'brill_ALL',       9,    0, 'f_aurore', 'Aurore',             'Possède les 9 Essences Brillantes.', 22],
     ['m_packs300','milestone', 'packs',         300,    0, 'f_sceau',  'Trois cents paquets', 'Ouvre 300 boosters en tout.', 23],
-    ['m_cartle10','milestone', 'cartle',         10,    0, 't_devin',  'Le Devin',           'Résous 10 Cartle.', 24],
+    ['m_illu10',  'milestone', 'illu',           10,    0, 't_devin',  'Le Devin',           'Trouve 10 illustrations à Devine l\'illu.', 24],
     ['m_invite',  'milestone', 'invite',          1,    0, 't_hote',   'L\'Hôte',            'Un ami entre dans le jeu avec ton invitation.', 25],
     /* L'événement « Reflets » : ses quêtes paient en Prismes. */
     ['e_check',   'ev_jour', 'checkin',   1, 10, null, 'Un reflet par jour',  'Passe voir l\'événement aujourd\'hui.', 1, 'reflets', 'prismes'],
     ['e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',     'Ouvre 4 boosters aujourd\'hui.', 2, 'reflets', 'prismes'],
-    ['e_cartle',  'ev_jour', 'cartle',    1, 25, null, 'Le Cartle du jour',   'Devine la carte du jour.', 3, 'reflets', 'prismes'],
-    ['e_revR',    'ev_jour', 'rev_R',     1, 20, null, 'Reflet rare',         'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'],
+    ['e_illu',    'ev_jour', 'illu',      1, 10, null, 'L\'illu du jour',     'Trouve l\'illustration du jour.', 3, 'reflets', 'prismes'],
+    ['e_revR',    'ev_jour', 'rev_R',     1, 15, null, 'Reflet rare',         'Décroche une Reverse Rare.', 4, 'reflets', 'prismes'],
     ['e_titre',   'ev',      'titre',     1, 20, null, 'Un titre à ton nom',  'Équipe un titre sur ton profil.', 1, 'reflets', 'prismes'],
     ['e_perso',   'ev',      'perso',     1, 20, null, 'À ton image',         'Choisis une bannière ou une devise.', 2, 'reflets', 'prismes'],
-    ['e_rev30',   'ev',      'rset_ALL', 30, 60, null, 'Trente reflets',      'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'],
-    ['e_revC',    'ev',      'rset_C', null, 80, null, 'Toutes les Communes reverses', 'Possède toutes les Reverses Communes.', 4, 'reflets', 'prismes'],
-    ['e_cartle7', 'ev',      'cartle',    7, 80, null, 'Devin de la semaine', 'Résous 7 Cartle pendant l\'événement.', 5, 'reflets', 'prismes'],
-    ['e_packs50', 'ev',      'packs',    50, 60, null, 'Cinquante boosters',  'Ouvre 50 boosters pendant l\'événement.', 6, 'reflets', 'prismes'],
+    ['e_rev30',   'ev',      'rset_ALL', 30, 50, null, 'Trente reflets',      'Possède 30 Reverses différentes.', 3, 'reflets', 'prismes'],
+    ['e_revC',    'ev',      'rset_C',   20, 60, null, 'Vingt Communes reverses', 'Possède 20 Reverses Communes différentes.', 4, 'reflets', 'prismes'],
+    ['e_illu7',   'ev',      'illu',      7, 60, null, 'L\'œil affûté',       'Trouve 7 illustrations pendant l\'événement.', 5, 'reflets', 'prismes'],
+    ['e_packs50', 'ev',      'packs',    50, 50, null, 'Cinquante boosters',  'Ouvre 50 boosters pendant l\'événement.', 6, 'reflets', 'prismes'],
     ['e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets', 'Conclus 3 échanges.', 7, 'reflets', 'prismes'],
     ['e_recycle', 'ev',      'recycle',  30, 30, null, 'Grand ménage',        'Recycle 30 doublons.', 8, 'reflets', 'prismes'],
     ['e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes']
@@ -165,28 +165,29 @@
     ['f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1],
     ['f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2],
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
-    ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un cadre animé qui balaie toutes les essences.',            5000, 'cosmetique', 1, null, true, 4],
+    ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4],
     /* Version 2.0 : l'invitation (Fragments) et la boutique de l'événement (Prismes). */
-    ['s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 5 boosters et 500 Éclats de bienvenue.', 2000, 'invitation', 1, null, false, 1, 'fragments', null, 3],
-    ['ev_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      60, 'tickets',   2,   null, false, 1, 'prismes', 'reflets', 5],
-    ['ev_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 50, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5],
-    ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 120, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
-    ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 150, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
-    ['f_kaleido',    'evenement', 'Cadre « Kaléidoscope »', 'Un cadre animé, en vente pendant l\'événement seulement.', 250, 'cosmetique', 1, null, true, 5, 'prismes', 'reflets', null]
+    ['s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 10 boosters et 1 000 Éclats de bienvenue.', 2000, 'invitation', 1, null, false, 1, 'fragments', null, 3],
+    ['ev_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      70, 'tickets',   2,   null, false, 1, 'prismes', 'reflets', 5],
+    ['ev_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 60, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5],
+    ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
+    ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null]
   ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
        devise: devise || 'eclats', evenement: evenement || null, limite: limite == null ? null : limite }));
 
-  /* La piste de récompenses de l'événement (21_reflets.sql). */
+  /* Le Pass de l'événement (21_reflets.sql). */
   const PISTE = [
-    [1, 20, 'boosters', 2, null, '2 boosters'], [2, 50, 'fragments', 300, null, '300 Fragments'],
-    [3, 90, 'titre', 0, 't_eclaireur', 'Titre « Éclaireur des Reflets »'], [4, 140, 'boosters', 3, null, '3 boosters'],
-    [5, 200, 'eclats', 500, null, '500 Éclats'], [6, 270, 'fragments', 600, null, '600 Fragments'],
-    [7, 350, 'reverse_R', 1, null, 'Une Reverse Rare'], [8, 440, 'boosters', 5, null, '5 boosters'],
-    [9, 540, 'cadre', 0, 'f_miroir', 'Cadre « Miroir »'], [10, 650, 'eclats', 1000, null, '1 000 Éclats'],
-    [11, 770, 'fragments', 1000, null, '1 000 Fragments'], [12, 900, 'reverse_R', 2, null, 'Deux Reverses Rares'],
-    [13, 1040, 'boosters', 8, null, '8 boosters'], [14, 1190, 'brillante', 1, null, 'Une Essence Brillante'],
-    [15, 1350, 'titre', 0, 't_ame', 'Titre « Âme des Reflets »']
+    [1, 15, 'boosters', 2, null, '2 boosters'], [2, 40, 'eclats', 150, null, '150 Éclats'],
+    [3, 70, 'titre', 0, 't_eclaireur', 'Titre « Éclaireur des Reflets »'], [4, 105, 'fragments', 250, null, '250 Fragments'],
+    [5, 145, 'boosters', 2, null, '2 boosters'], [6, 190, 'reverse_R', 1, null, 'Une Reverse Rare'],
+    [7, 240, 'eclats', 300, null, '300 Éclats'], [8, 295, 'boosters', 3, null, '3 boosters'],
+    [9, 355, 'fragments', 400, null, '400 Fragments'], [10, 420, 'cadre', 0, 'f_miroir', 'Cadre « Miroir »'],
+    [11, 490, 'eclats', 400, null, '400 Éclats'], [12, 560, 'reverse_R', 1, null, 'Une Reverse Rare'],
+    [13, 630, 'boosters', 3, null, '3 boosters'], [14, 700, 'fragments', 600, null, '600 Fragments'],
+    [15, 770, 'brillante', 1, null, 'Une Essence Brillante'], [16, 840, 'eclats', 500, null, '500 Éclats'],
+    [17, 910, 'boosters', 4, null, '4 boosters'], [18, 980, 'reverse_R', 2, null, 'Deux Reverses Rares'],
+    [19, 1040, 'titre', 0, 't_ame', 'Titre « Âme des Reflets »'], [20, 1100, 'cadre', 0, 'f_kaleido', 'Cadre « Kaléidoscope »']
   ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
 
   /* Le catalogue : celui du jeu (js/cards-data.js, js/promos-data.js). */
@@ -462,26 +463,42 @@
     return code;
   }
 
-  /* Le Cartle : la carte du jour, tirée par un hachage de la date. */
+  /* Devine l'illu : l'illustration du jour, tirée par un hachage de la date.
+     Les grilles de pixels sont celles du serveur (supabase/21b_illu.sql),
+     recopiées par tools/demo.py dans window.DEMO_ILLU. */
   function hacher(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  const cartleCartes = () => cards.filter(k => k.cat !== 'essence');
-  function cartleCible(j) {
-    return cartleCartes().map(k => [hacher(j + ':reflets:' + k.id), k.id]).sort((a, b) => a[0] - b[0])[0][1];
+  const illuCartes = () => cards.filter(k => k.cat !== 'essence' && (window.DEMO_ILLU || {})[k.id]);
+  function illuCible(j) {
+    const l = illuCartes();
+    return l.length ? l.map(k => [hacher(j + ':illu:' + k.id), k.id]).sort((a, b) => a[0] - b[0])[0][1] : null;
   }
-  const RANG = { C: 1, PC: 2, R: 3, E: 4, L: 5 };
-  function cartleRetour(cid, cible) {
-    const a = carte(cid), b = carte(cible);
-    return { carte: a.id, cat: a.cat === b.cat ? '=' : 'x', col: a.col === b.col ? '=' : 'x',
-      rar: a.rar === b.rar ? '=' : RANG[b.rar] > RANG[a.rar] ? '+' : '-',
-      num: a.num === b.num ? '=' : b.num > a.num ? '+' : '-' };
+  const ILLU_GAINS = [{ prismes: 25, eclats: 40 }, { prismes: 18, eclats: 30 }, { prismes: 12, eclats: 20 }, { prismes: 6, eclats: 10 }];
+  /* illu_grille : la grille fine moyennée par blocs de 4, 3, 2 ou 1 pixels. */
+  function illuGrille(cid, niveau) {
+    const src = Uint8Array.from(atob(window.DEMO_ILLU[cid]), c => c.charCodeAt(0));
+    const nib = n => (n % 2 === 0 ? src[n >> 1] >> 4 : src[n >> 1] & 15) * 17;
+    const f = [4, 3, 2, 1][niveau - 1], w = 36 / f, h = 24 / f, o = new Uint8Array(w * h * 3);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const s = [0, 0, 0];
+      for (let dy = 0; dy < f; dy++) for (let dx = 0; dx < f; dx++) {
+        const i = (y * f + dy) * 36 + x * f + dx;
+        for (let k = 0; k < 3; k++) s[k] += nib(i * 3 + k);
+      }
+      for (let k = 0; k < 3; k++) o[(y * w + x) * 3 + k] = Math.round(s[k] / (f * f));
+    }
+    return { w, h, data: btoa(String.fromCharCode(...o)) };
   }
-  function cartleEtat(p) {
+  function illuEtat(p) {
+    if (evenementEnCours() !== 'reflets') return null;
     const j = jourParis(now());
-    const c = S.cartle[p + '|' + j] || { essais: [], trouve: false };
-    const cible = cartleCible(j);
-    const fini = c.trouve || c.essais.length >= 7;
-    return { jour: j, max: 7, essais: c.essais.map(e => cartleRetour(e, cible)), trouve: c.trouve, fini,
-      cible: fini ? cible : null };
+    const cible = illuCible(j);
+    if (!cible) return null;
+    const d = S.illu[p + '|' + j] || { essais: [], trouve: false };
+    const n = d.essais.length;
+    const fini = d.trouve || n >= 4;
+    return { jour: j, max: 4, essais: d.essais.slice(), trouve: d.trouve, fini,
+      niveau: fini ? 4 : n + 1, grille: fini ? null : illuGrille(cible, n + 1),
+      cible: fini ? cible : null, gain: d.trouve ? ILLU_GAINS[n - 1] : null, gains: ILLU_GAINS };
   }
 
   /* =================================================== les actions (03_rpc) */
@@ -1058,21 +1075,24 @@
     const cartes = accorder(p, pa.type, pa.montant, pa.objet);
     return { cartes, etat: me(p) };
   };
-  RPC.cartle_etat = p => cartleEtat(p);
-  RPC.cartle_essai = (p, { p_carte }) => {
+  RPC.illu_etat = p => illuEtat(p);
+  RPC.illu_essai = (p, { p_carte }) => {
+    if (evenementEnCours() !== 'reflets') refuser('Devine l\'illu revient au prochain événement.');
     const k = carte(p_carte);
-    if (!k || k.promo || k.rev || k.cat === 'essence') refuser('Cette carte ne fait pas partie du Cartle.');
+    if (!k || k.promo || k.rev || k.cat === 'essence') refuser('Cette carte ne fait pas partie du jeu.');
     const j = jourParis(now());
-    const c = (S.cartle[p + '|' + j] = S.cartle[p + '|' + j] || { essais: [], trouve: false });
-    if (c.trouve || c.essais.length >= 7) refuser('La partie du jour est finie : rendez-vous demain.');
-    if (c.essais.includes(p_carte)) refuser('Tu as déjà proposé cette carte.');
-    c.essais.push(p_carte);
-    if (p_carte === cartleCible(j)) {
-      c.trouve = true;
-      profil(p).shards += 30;
-      bump(p, 'cartle', 1);
+    const d = (S.illu[p + '|' + j] = S.illu[p + '|' + j] || { essais: [], trouve: false });
+    if (d.trouve || d.essais.length >= 4) refuser('La partie du jour est finie : rendez-vous demain.');
+    if (d.essais.includes(p_carte)) refuser('Tu as déjà proposé cette carte.');
+    d.essais.push(p_carte);
+    if (p_carte === illuCible(j)) {
+      d.trouve = true;
+      const g = ILLU_GAINS[d.essais.length - 1];
+      profil(p).shards += g.eclats;
+      crediterPrismes(p, g.prismes);
+      bump(p, 'illu', 1);
     }
-    return { cartle: cartleEtat(p), etat: me(p) };
+    return { illu: illuEtat(p), etat: me(p) };
   };
   RPC.personnaliser = (p, { p_titre, p_banniere, p_devise }) => {
     const pr = profil(p);
@@ -1148,13 +1168,13 @@
      déjà gagné des Prismes et porté un titre. */
   function monde20() {
     S.parametres = S.parametres || { fabrication_reverse: false };
-    S.cartle = S.cartle || {};
+    S.illu = S.illu || {};
     S.invitations = S.invitations || [];
     if (!S.evt) {
       S.evt = { comptes: {}, prises: {} };
       const t = now();
       S.evenement = { titre: 'Reflets', code: 'reflets', debut: t - 3600000, fin: t + 14 * 86400000,
-        texte: 'La version 2.0 : les Reverses, des cadres, des titres, le Cartle. Gagne des Prismes et remonte la piste.' };
+        texte: 'La version 2.0 : les Reverses, des cadres, des titres, Devine l\'illu. Gagne des Prismes et remonte le Pass.' };
       [['b_nova', 430, 't_elu'], ['b_lumen', 260, 't_centurion'], ['b_mira', 120, null], ['b_kairo', 65, null]]
         .forEach(([id, tot, titre]) => {
           if (!S.profils[id]) return;

@@ -247,21 +247,3 @@ body.intheater #qnotif{visibility:hidden}
 
 .setbar .setlogo{position:relative}
 
-/* La plaque s'arrête au logo : la ligne « 122 cartes » est du texte courant,
-   elle reste dans les couleurs du thème et se lit en noir sur clair. */
-@media (prefers-color-scheme:light){
-  :root:not([data-theme="dark"]) #brand::before{opacity:1}
-  :root:not([data-theme="dark"]) .setlogo{padding:14px 20px;box-sizing:content-box;
-    border-radius:var(--radius-lg);background:linear-gradient(160deg,#1c1129,#0d0814);
-    box-shadow:var(--sh-2)}
-  /* L'ombre portée du paquet, calculée pour du noir, faisait une flaque sur
-     du clair. */
-  :root:not([data-theme="dark"]) .packshadow{opacity:.35}
-  :root:not([data-theme="dark"]) .pack{filter:drop-shadow(0 20px 30px rgba(48,30,66,.4))}
-}
-:root[data-theme="light"] #brand::before{opacity:1}
-:root[data-theme="light"] .setlogo{padding:14px 20px;box-sizing:content-box;
-  border-radius:var(--radius-lg);background:linear-gradient(160deg,#1c1129,#0d0814);
-  box-shadow:var(--sh-2)}
-:root[data-theme="light"] .packshadow{opacity:.35}
-:root[data-theme="light"] .pack{filter:drop-shadow(0 20px 30px rgba(48,30,66,.4))}
