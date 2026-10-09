@@ -779,15 +779,3 @@ sont pas marquées : elles ne changent jamais sans changer de nom.
 - **supabase-js**, chargé depuis un CDN, uniquement pour le compte en ligne. S'il est absent (hors réseau, bloqueur), le jeu bascule tout seul en mode hors ligne.
 
 Aucune autre bibliothèque, aucune étape de compilation : tout le reste est dans le dépôt.
-
-## Le Circuit (`circuit/`)
-
-Un **jeu autonome**, à part du jeu de collection : une saison esport, des Qualifs aux Worlds, jouée avec les cartes de l'extension. En ligne à `matetcg.com/circuit/` (non indexé, sans lien depuis le jeu), sans compte ni serveur : la saison et les records restent dans le navigateur. (`run/` ne fait plus que rediriger ici : le prototype précédent copiait trop Balatro et a été retiré.)
-
-**Les cartes telles qu'elles sont.** La Défense imprimée d'un Joueur est sa résistance ; ses attaques coûtent les Essences dessinées et font les dégâts écrits. Ces chiffres ne bougent jamais : la difficulté passe par la rareté des adversaires, leurs Objets et les Essences qu'ils tirent. Les mots-clés jouent selon notre lecture (`MOTS`, `circuit/moteur.js`) : Provocation, Shield, Garde, Riposte, Légion, Buff ; les effets d'attaque sont lus de leur texte imprimé (engager, renvoyer au banc, « +10 par Joueur engagé », Essences Mauves…), et une quinzaine de Signatures ont une version ici (`SIGNATURES`). Ce ne sont pas les règles officielles du jeu de cartes.
-
-**Un match** se joue en deux manches gagnantes. Une manche : trois Joueurs sur le terrain, deux sur le banc ; on tire 3 Essences par tour (celui qui ouvre la manche n'en tire qu'une à son premier tour) ; chaque Joueur agit une fois ; mettre un Joueur adverse hors jeu rapporte un PV, le premier à 3 PV prend la manche. Entre deux manches, tout le monde repart frais et l'équipe qui a perdu commence.
-
-**Une saison** : un coach (parmi 3 tirés), une draft de 5 Joueurs, puis trois tournois de trois matchs en double élimination. Après chaque victoire, une récompense : une recrue, un Objet (lié à un Joueur), un Moment (une fois par match), des Essences pour la Réserve, ou un bootcamp. Coachs, Objets et Moments reprennent l'illustration et le nom d'une carte de l'extension, avec un effet écrit pour ce jeu ; c'est pourquoi l'écran n'en montre que l'illustration, pas le texte imprimé.
-
-**Équilibrage** : `node tools/circuit-sim.js matchs` (une manche, IA contre IA : le premier joueur gagne ~56 %, ~2,5 tours chacun) et `node tools/circuit-sim.js saisons` (l'IA joue la saison : ~37 % de titres, ~8 matchs par saison).
