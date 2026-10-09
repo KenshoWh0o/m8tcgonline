@@ -174,7 +174,11 @@ Backend.apply = function (etat) {
     titres: p.titres || [],
     parametres: etat.parametres || {},
     prismes: etat.prismes || 0,
-    invitations: etat.invitations || []
+    invitations: etat.invitations || [],
+    /* Version 2.1 (supabase/22_garder.sql) : les exemplaires à garder, par
+       rareté et carte par carte. */
+    garder: p.garder || {},
+    gardes: etat.gardes || {}
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -263,6 +267,13 @@ Backend.openPack = async function (opts) {
   }
   return { cards: drawn, god };
 };
+
+/* Version 2.1 : combien d'exemplaires garder, d'une carte (`null` : celui
+   de sa rareté) ou de chaque rareté (supabase/22_garder.sql). */
+Backend.reglerGarde = async (id, n) =>
+  Backend.apply(await Backend.rpc('regler_garder', { p_carte: id, p_n: n }));
+Backend.reglerGardeDefaut = async garder =>
+  Backend.apply(await Backend.rpc('regler_garder_defaut', { p_garder: garder }));
 
 Backend.setProfile = async function (champs) {
   if (Backend.mode !== 'cloud') {

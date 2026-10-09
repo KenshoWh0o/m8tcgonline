@@ -888,6 +888,8 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .tpill.neuf,.tpill.perte{font-family:var(--body);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase}
 .tpill.neuf{background:var(--ok);color:#06251a}
 .tpill.perte{background:var(--warn);color:#2a1d00}
+.tpill.garde{font-family:var(--body);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
+  background:var(--accent-soft);color:#fff}
 
 .troc-mot{margin:12px auto 0;max-width:330px;background:var(--bg-2);border-radius:var(--radius-sm);
   padding:9px 12px;font-size:13px;font-style:italic;line-height:1.4;color:var(--subtle)}
@@ -983,7 +985,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 /* L'étiquette déborde du coin : la grille lui laisse de la place en haut. */
 .pickimg{position:relative;display:block}
 .pick .tpill{top:-5px;right:-5px;height:19px;min-width:22px;padding:0 6px;font-size:10.5px}
-.pick .tpill.neuf,.pick .tpill.perte{font-size:8.5px}
+.pick .tpill.neuf,.pick .tpill.perte,.pick .tpill.garde{font-size:8.5px}
 /* Une carte qui me manque, dans la collection d'un autre : un liseré. */
 .pick.manque .cwrap{box-shadow:0 0 0 2px var(--accent-soft),var(--sh-2)}
 .souschips .rarchip .rardot{color:var(--rc,var(--muted))}
@@ -1413,3 +1415,14 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .elu-texte small{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.85)}
 @media (prefers-reduced-motion:reduce){.ava.unique,.ava.unique::before,.ava.unique::after,.elu-rayons{animation:none}}
 html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.rm .elu-rayons{animation:none}
+
+/* ---------- Exemplaires à garder (version 2.1) ---------- */
+.recgardes{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin:-4px 0 14px}
+.recgardes .linkbtn{padding:0}
+.recgardes b{color:var(--text)}
+.gardes{display:grid;gap:6px;margin:12px 0}
+.garde-ligne{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.garde-rar{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-width:0}
+.garde-seg{flex:0 0 auto;width:min(176px,52%);margin:0}
+.garde-seg button{min-width:0;min-height:0;padding:6px 0;font-variant-numeric:tabular-nums}
+

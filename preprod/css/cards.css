@@ -130,6 +130,10 @@
 button.gcell:hover{transform:translateY(-3px)}
 .count{position:absolute;top:-6px;right:-5px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);font-size:10.5px;
   font-weight:800;padding:2px 7px;border-radius:999px;z-index:2}
+/* Version 2.1 : un objectif d'exemplaires. « 2/3 » en violet tant qu'il
+   manque des exemplaires, doré une fois atteint. */
+.count.garde{border-color:var(--accent-soft);color:var(--accent-soft);font-variant-numeric:tabular-nums}
+.count.garde.ok{border-color:var(--r-l);color:var(--r-l)}
 .new{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9.5px;font-weight:900;
   padding:3px 9px;border-radius:999px;z-index:2;letter-spacing:.08em;box-shadow:0 0 14px var(--accent-glow)}
 .num{display:block;text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:6px;letter-spacing:.04em}

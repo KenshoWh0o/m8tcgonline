@@ -4,7 +4,8 @@
    Toutes les raretés de l'extension se recyclent ; jamais ce qui est hors
    extension (Promos, Brillantes, carte unique). On garde toujours un
    exemplaire de chaque carte — recycler ne fait jamais reculer la
-   collection —, et les exemplaires proposés dans une demande d'échange encore
+   collection —, ou autant qu'on a choisi d'en garder (version 2.1,
+   aGarder dans js/trade.js), et les exemplaires proposés dans une demande d'échange encore
    en attente sont mis de côté : l'échange, s'il est accepté, doit pouvoir
    partir.
 
@@ -47,9 +48,12 @@ const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
 const recReserve = id => (Backend.trades || [])
   .filter(t => t.sens === 'envoyee' && t.status === 'pending' && t.offer === id).length;
 
-/* Ce qu'on peut jeter : tout, moins l'exemplaire qu'on garde, moins ce qui
-   est promis dans un échange. */
-const recDispo = c => Math.max(0, mesEx(c.id) - 1 - recReserve(c.id));
+/* Ce qu'on peut jeter : tout, moins ce qu'on garde, moins ce qui est promis
+   dans un échange. */
+const recDispo = c => Math.max(0, mesEx(c.id) - aGarder(c) - recReserve(c.id));
+/* Les exemplaires que tes réglages mettent de côté, au-delà du premier. */
+const recGardes = () => cards.concat(recReverses()).filter(c => !c.promo)
+  .reduce((s, c) => s + Math.max(0, Math.min(mesEx(c.id), aGarder(c)) - 1), 0);
 const recTotal = () => Object.keys(recSel).reduce((s, id) => s + recSel[id] * recPrix(byId[id]), 0);
 const recNombre = () => Object.values(recSel).reduce((s, n) => s + n, 0);
 
@@ -80,7 +84,7 @@ function vRecyclage() {
       <div>
         <h1>Recyclage</h1>
         <p>Tes doublons deviennent des ${FRAGMENTS.nom}, qui fabriquent les cartes qui te manquent.
-          Tu gardes toujours un exemplaire de chaque carte.</p>
+          Tu gardes toujours un exemplaire de chaque carte, ou plus si tu l'as choisi.</p>
       </div>
       <span class="wallet pageact">${fragIco}<b>${fmtN(save.fragments || 0)}</b></span>
     </div>`;
@@ -88,6 +92,7 @@ function vRecyclage() {
   return `${tete}
     ${vFabInfo()}
     ${vBareme()}
+    ${vGardesRec()}
     ${doublons.length
       ? `<div class="recfiltres">
            <div class="chips">
@@ -121,6 +126,16 @@ function vBareme() {
   const v = recValeurs();
   return `<div class="recbareme">${RAR_FILTRES.map(r =>
     `<span><i class="rardot r${r}"></i>${(RAR[r] || RAR.C).nom}<b>${fmtN(v[r])}</b></span>`).join('')}</div>`;
+}
+
+/* Ce que les réglages « exemplaires à garder » retiennent ici, et où les
+   changer. */
+function vGardesRec() {
+  const n = recGardes();
+  return `<p class="recgardes muted small">${n
+      ? `<b>${fmtN(n)}</b> exemplaire${n > 1 ? 's' : ''} mis de côté par tes réglages.`
+      : 'Tu veux garder plusieurs exemplaires de certaines cartes ?'}
+    <button class="linkbtn" data-act="vers-garder">Exemplaires à garder</button></p>`;
 }
 
 function vCaseRec(c) {
@@ -165,9 +180,12 @@ function recAjuster(id, d) {
   if (d > 0) {
     if (n > recDispo(c)) {
       SFX.jouer('erreur');
+      const g = aGarder(c);
+      const garde = g === GARDE_TOUT ? 'tous tes exemplaires' : g > 1 ? `${g} exemplaires` : 'un exemplaire';
       return toast(recReserve(id)
-        ? 'Le reste est gardé : un exemplaire, et ceux promis dans un échange.'
-        : 'Tu gardes toujours un exemplaire de chaque carte.');
+        ? `Le reste est gardé : ${garde}, et ceux promis dans un échange.`
+        : g > 1 ? `Tu as choisi d'en garder ${g === GARDE_TOUT ? 'tous les exemplaires' : g}.`
+          : 'Tu gardes toujours un exemplaire de chaque carte.');
     }
   }
 
@@ -214,7 +232,7 @@ function recConfirmer() {
         <span class="reclq">×${l.n}</span>
         <span class="reclv">+${fmtN(l.n * recPrix(l.c))}</span></li>`).join('')}</ul>
       <div class="rectotal"><span>Tu gagnes</span><b>+${fmtN(recTotal())} ${fragIco}</b></div>
-      <p class="muted small">Il te restera au moins un exemplaire de chacune.</p>
+      <p class="muted small">Il te restera au moins un exemplaire de chacune, et ce que tu as choisi de garder.</p>
       ${hauts.length ? `<label class="toggle recgarde">
           <span>Je recycle bien ${hauts.length > 1 ? 'ces cartes' : 'cette carte'}
             ${hauts.some(l => l.c.rar === 'L') ? 'Légendaire' : 'Épique'}${hauts.length > 1 ? 's' : ''}

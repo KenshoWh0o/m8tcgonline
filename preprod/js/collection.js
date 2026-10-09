@@ -21,7 +21,7 @@ let colOuvert = false;
 
 const filtresActifs = () =>
   (colFilter !== 'all' ? 1 : 0) + (essFilter !== 'all' ? 1 : 0)
-  + (rarFilter !== 'all' ? 1 : 0) + (colPossedees ? 1 : 0);
+  + (rarFilter !== 'all' ? 1 : 0) + (colPossedees ? 1 : 0) + (colObjectifs ? 1 : 0);
 
 /* Le résumé du tiroir replié : il doit suffire à savoir ce qu'on regarde. */
 function resumeFiltres() {
@@ -33,6 +33,7 @@ function resumeFiltres() {
   if (rarFilter !== 'all') bouts.push((RAR[rarFilter] || RAR.C).nom);
   if (essFilter !== 'all') bouts.push((COLORS[essFilter] || COLORS.neutre).nom);
   if (colPossedees) bouts.push('possédées');
+  if (colObjectifs) bouts.push('à compléter');
   return bouts.length ? bouts.join(' · ') : 'Tout afficher';
 }
 
@@ -131,7 +132,16 @@ const filtrer = all => all
   .filter(c => colFilter === 'all' || c.cat === colFilter)
   .filter(c => essFilter === 'all' || c.col === essFilter)
   .filter(c => rarFilter === 'all' || c.rar === rarFilter)
-  .filter(c => !colPossedees || save.col[c.id] > 0);
+  .filter(c => !colPossedees || save.col[c.id] > 0)
+  .filter(c => !colObjectifs || aCompleter(c));
+
+/* Version 2.1 : une carte qu'on a, mais en moins d'exemplaires qu'on veut
+   en garder. Celles qui manquent ont déjà leur case vide : les mêler ici
+   noierait la liste. « Toutes » n'a pas de compte à atteindre. */
+const aCompleter = c => { const g = aGarder(c); const n = mesEx(c.id); return g > 1 && g < GARDE_TOUT && n > 0 && n < g; };
+/* Le filtre n'apparaît qu'une fois un objectif posé : sans, il serait vide. */
+const objectifsPoses = () => Backend.mode === 'cloud' && (Object.keys(save.gardes || {}).length > 0
+  || Object.values(save.garder || {}).some(n => n > 1));
 
 /* ---------- Le tiroir de filtres ---------- */
 function vFiltres(all) {
@@ -171,6 +181,10 @@ function vFiltres(all) {
         <span>Seulement mes cartes<small>Masque les emplacements vides</small></span>
         <input type="checkbox" id="col-poss" ${colPossedees ? 'checked' : ''}>
       </label>
+      ${objectifsPoses() || colObjectifs ? `<label class="toggle filtoggle">
+        <span>À compléter<small>Tu les as, mais moins que ce que tu veux garder</small></span>
+        <input type="checkbox" id="col-obj" ${colObjectifs ? 'checked' : ''}>
+      </label>` : ''}
 
       ${n ? '<button class="linkbtn filreset" data-act="col-reset">Tout réafficher</button>' : ''}
     </div>
@@ -205,12 +219,22 @@ function vCase(c) {
   /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
      de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(c)}<span class="num">${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}</span></button>`;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(c, n)}${renderCard(c)}<span class="num">${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}</span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);
   return caseVide(no).replace('<div class="gcell"', `<button class="gcell fab" data-craft="${c.id}" aria-label="Fabriquer la carte ${no}"`)
     .replace(/<\/div>\s*$/, '</button>');
+}
+
+/* Le compte posé sur une case. Avec un objectif (version 2.1), il dit où on
+   en est : « 2/3 », doré une fois atteint ; « Toutes » garde le simple ×n,
+   doré aussi. */
+function vCompte(c, n) {
+  const g = aGarder(c);
+  if (g <= 1) return n > 1 ? `<span class="count">×${n}</span>` : '';
+  if (g === GARDE_TOUT) return `<span class="count garde ok" title="Tu gardes tous tes exemplaires">×${n}</span>`;
+  return `<span class="count garde${n >= g ? ' ok' : ''}" title="Tu veux en garder ${g}">${n}/${g}</span>`;
 }
 
 /* Les Secrets prolongent la grille sans en changer le total : des emplacements vides
