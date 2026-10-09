@@ -1425,4 +1425,6 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
 .garde-rar{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-width:0}
 .garde-seg{flex:0 0 auto;width:min(176px,52%);margin:0}
 .garde-seg button{min-width:0;min-height:0;padding:6px 0;font-variant-numeric:tabular-nums}
+.garde-groupe{display:flex;align-items:center;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin:14px 0 0}
 

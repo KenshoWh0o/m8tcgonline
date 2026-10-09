@@ -21,7 +21,7 @@ let colOuvert = false;
 
 const filtresActifs = () =>
   (colFilter !== 'all' ? 1 : 0) + (essFilter !== 'all' ? 1 : 0)
-  + (rarFilter !== 'all' ? 1 : 0) + (colPossedees ? 1 : 0) + (colObjectifs ? 1 : 0);
+  + (rarFilter !== 'all' ? 1 : 0) + (colPossedees ? 1 : 0) + (colObjectifs ? 1 : 0) + (colFavoris ? 1 : 0);
 
 /* Le résumé du tiroir replié : il doit suffire à savoir ce qu'on regarde. */
 function resumeFiltres() {
@@ -34,6 +34,7 @@ function resumeFiltres() {
   if (essFilter !== 'all') bouts.push((COLORS[essFilter] || COLORS.neutre).nom);
   if (colPossedees) bouts.push('possédées');
   if (colObjectifs) bouts.push('à compléter');
+  if (colFavoris) bouts.push('favoris');
   return bouts.length ? bouts.join(' · ') : 'Tout afficher';
 }
 
@@ -133,7 +134,11 @@ const filtrer = all => all
   .filter(c => essFilter === 'all' || c.col === essFilter)
   .filter(c => rarFilter === 'all' || c.rar === rarFilter)
   .filter(c => !colPossedees || save.col[c.id] > 0)
-  .filter(c => !colObjectifs || aCompleter(c));
+  .filter(c => !colObjectifs || aCompleter(c))
+  .filter(c => !colFavoris || estFavori(c));
+
+/* Version 2.1 : les cartes en favori (le cœur de la visionneuse). */
+const estFavori = c => !!c && (save.favoris || []).includes(c.id);
 
 /* Version 2.1 : une carte qu'on a, mais en moins d'exemplaires qu'on veut
    en garder. Celles qui manquent ont déjà leur case vide : les mêler ici
@@ -181,6 +186,10 @@ function vFiltres(all) {
         <span>Seulement mes cartes<small>Masque les emplacements vides</small></span>
         <input type="checkbox" id="col-poss" ${colPossedees ? 'checked' : ''}>
       </label>
+      ${(save.favoris || []).length || colFavoris ? `<label class="toggle filtoggle">
+        <span>Mes favoris<small>Les cartes où tu as posé un cœur</small></span>
+        <input type="checkbox" id="col-fav" ${colFavoris ? 'checked' : ''}>
+      </label>` : ''}
       ${objectifsPoses() || colObjectifs ? `<label class="toggle filtoggle">
         <span>À compléter<small>Tu les as, mais moins que ce que tu veux garder</small></span>
         <input type="checkbox" id="col-obj" ${colObjectifs ? 'checked' : ''}>
@@ -219,13 +228,18 @@ function vCase(c) {
   /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
      de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c)}<span class="num"><span class="numtxt">${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c)}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);
   return caseVide(no).replace('<div class="gcell"', `<button class="gcell fab" data-craft="${c.id}" aria-label="Fabriquer la carte ${no}"`)
     .replace(/<\/div>\s*$/, '</button>');
 }
+
+/* Version 2.1 : un petit cœur à gauche du numéro, en miroir de l'objectif
+   à droite : le numéro reste au centre. */
+const vCoeur = c => estFavori(c)
+  ? `<i class="gfav" role="img" aria-label="Dans tes favoris" title="Dans tes favoris">${NAVICO.coeur}</i>` : '';
 
 /* Le compte posé sur une case : celui d'avant, inchangé. */
 const vCompte = n => n > 1 ? `<span class="count">×${n}</span>` : '';
@@ -266,7 +280,7 @@ function cellulesPromo() {
   const connues = promos.map(p => {
     const n = save.col[p.id] || 0;
     return { code: p.code, tri: p.num, html: n
-      ? `<button class="gcell" data-show="${p.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(p)}<span class="num">${h(p.code)}</span></button>`
+      ? `<button class="gcell" data-show="${p.id}">${vCompte(n)}${renderCard(p)}<span class="num"><span class="numtxt">${vCoeur(p)}${h(p.code)}</span></span></button>`
       : caseVide(p.code, 'promovide', PROMO_COMMENT[p.obtention] || '') };
   });
 
@@ -306,7 +320,7 @@ function vBrillantesSection() {
   const cases = brillantes.map(b => {
     const n = save.col[b.id] || 0;
     return n
-      ? `<button class="gcell" data-show="${b.id}">${n > 1 ? `<span class="count">×${n}</span>` : ''}${renderCard(b)}<span class="num">${h(b.code)}</span></button>`
+      ? `<button class="gcell" data-show="${b.id}">${vCompte(n)}${renderCard(b)}<span class="num"><span class="numtxt">${vCoeur(b)}${h(b.code)}</span></span></button>`
       : caseVide(b.code, 'promovide');
   }).join('');
   return `<section class="promosec brsec">
