@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-10-08
+--   Assemble le 2026-10-09
 --
 -- =====================================================================
 
@@ -2175,6 +2175,8 @@ begin
       -- les titres debloques.
       'titre', pr.titre, 'banniere', pr.banniere, 'devise', pr.devise,
       'titres', to_jsonb(titres_de(p)),
+      -- Version 2.1 (22_garder.sql) : les exemplaires a garder, par rarete.
+      'garder', pr.garder,
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
@@ -2216,6 +2218,8 @@ begin
         from invitations i where i.auteur = p), '[]'::jsonb),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
+    -- Version 2.1 : les exemplaires a garder, carte par carte.
+    'gardes', coalesce((select jsonb_object_agg(card_id, n) from gardes where user_id = p), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
     'quetes', coalesce((
@@ -2283,6 +2287,13 @@ begin
     'col', case when ami then
       coalesce((select jsonb_object_agg(card_id, qty) from collection
                  where user_id = o.id and qty > 0), '{}'::jsonb)
+      else null end,
+    -- Version 2.1 (22_garder.sql) : entre amis, ce qu'il garde au-dela d'un
+    -- exemplaire. Ses doublons, ce sont les exemplaires en plus.
+    'garde', case when ami then
+      coalesce((select jsonb_object_agg(x.card_id, x.g) from (
+                  select card_id, garde_de(o.id, card_id) as g from collection
+                   where user_id = o.id and qty > 0) x where x.g > 1), '{}'::jsonb)
       else null end);
 end $$;
 
@@ -2609,7 +2620,7 @@ create or replace function public.recycler(p_lots jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); lot jsonb; cid text; n int; k cards;
-  possede int; reserve int; prix int; total int := 0; nb int := 0; vus text[] := '{}';
+  possede int; reserve int; prix int; total int := 0; nb int := 0; vus text[] := '{}'; garde int;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -2645,7 +2656,13 @@ begin
     select qty into possede from collection where user_id = p and card_id = cid for update;
     select count(*) into reserve from trades
      where from_user = p and offer_card = cid and status = 'pending';
-    if coalesce(possede, 0) - 1 - reserve < n then
+    -- Version 2.1 : ce que le joueur a choisi de garder (garde_de,
+    -- 22_garder.sql), un exemplaire au moins.
+    garde := garde_de(p, cid);
+    if coalesce(possede, 0) - garde - reserve < n then
+      if garde > 1 then
+        raise exception 'Tu as choisi de garder % exemplaires de « % ».', garde, k.nom;
+      end if;
       raise exception 'Pas assez de doublons de « % » : tu gardes toujours un exemplaire.', k.nom;
     end if;
 
@@ -3680,7 +3697,8 @@ begin
                              order by c.qty desc, lower(o.pseudo)) as amis
               from friendships f
               join profiles o on o.id = case when f.a = moi then f.b else f.a end
-              join collection c on c.user_id = o.id and c.qty > 1
+              -- Version 2.1 : au-dela de ce qu'il garde (garde_de, 22_garder.sql).
+              join collection c on c.user_id = o.id and c.qty > garde_de(o.id, c.card_id)
               join cards k on k.id = c.card_id
              where (f.a = moi or f.b = moi) and f.accepte
                and k.cat <> 'essence' and (not k.promo or k.reverse)
@@ -3951,6 +3969,101 @@ insert into public.illu_pixels (card_id, data) values
   ('c121', decode('RGRHV5RnUzQyMiIiIhIiVUVWmaqadpdph5qKiamrmbiaiJRWVWdWhWhWVGRGRGNGNFNGNGRWNXN5VVQyIiMiIhIhIhZVdnZod4h4dod4VXVWVWVWiJd5qriJdnVWVGRGRGRGRGNFNFNFNFRGV3VDMyIhIhIiIhMyVUmJVXRWh4d4VGZWZGZGZGVWh4RWZnZnVnZoZXRGRGRGNFNFNFNFNFNFQyIiIiIhIhIhMyZlh5mJVGVGmJh4VFRFRFNFNFNFd4RFNFd4RFVGZGZGVFRFRFNFNFNFNFNFIiIiIiIhIiMyVEaJVWd4M1NFiId3M0M1M1M1M1M1d3RFNFd4VFVFlWpmhWVFRFM1M1M1RGM1IiIiIhIhMzVDRoVGZnVWM0M0iIZmM0M0M1M1M1M1VWVWRGZnZndW2X7K2HZGRFM1M1M1NFM1IiIhIhRDRDRFRGM0d3M0IjIjmIVWM0M0M0M0M0M0RFdnM0RFmIhW65/92odWRFM1M1M1M1M1IhIhIiMzVDRYM1M0ZnMzIiIiqZRXVXZWZGQ0REM0M0dnM0Q1mIlW2F63x1hWQ1M1M0M0M0M0IhIhIiRERWRpM0M0ZmIjIiMzqqVVMiMiQzdlVXNEM0ZmM0M0VVdmZFhVZFQ1M0M0M0M0M1NFIhIhMyQzNFRHM0RERFIjMzRWuqQydCdDQzQzdUVnM0VWM0M0M0d3M0M0M0M0M0M0I1M2ZVNGIhERIiQyREVHQ0VWIjMzVEZ4l3dDpTxjpjhTlkuWNEREREMzMzZmM0M0MzMzM0I1JHZDiIRFIRIhIhIiRDZGZGVWIjMzdnZohmhEpTxjxzxz2D2lRVMjVVIjIjM0VVIjIjIjI1I3dDRFZoM2MhERIhIiQzVDhXZWIjIjd4RGl3dDhCtjxzxz2DymREIjVVIjIjIjZmIjIjIkM2hTZFRXdmZEQyIhERIhMiVDZVh5M0Mjh4Q0qIczZUYztkpjyDyoMjIjVVIjIjIjVWMjIjI1ZUhDcydDZnRGQyIhERIRIhQyh2Z5ZGM0VoQjqJpUtkhEpkllpjl3MjIjVFIjIjIjMzVVIjVFhTlmYycyhVdDRDMiIRIRIiQyZlRWdYQ1WLRFmJhUlUlTx0xzyEVFIiIiMzREIjIjIjZmIkZEdCdUUycydWRGVVQyIhIhIiQzZVQzVFdZicQ1mIZEUzUztjxzp1MjIiIiIiVVIjIjIjVVM1VEhDhVYzY0VmZmZEREMiIhIiMiVEMyQzZmisMjh4VEdEhEpkt1dWIiIiIjIjVFIjIjIjIjZoQzU0ZWVGhnVFMzdEVEQzIiIhREIiIhIiQyQzMidmVEdElTlUmIQ0IjIjIjIjVVIjIjIjIjZ4QyIiMidVVEREIjY1lVREMiIhVUIhIiIhMyMiIhZlREQyYyZUiIMzMjIjI0I0VVM0I0I0I1VnRDIiMiZVIjREMzQ1tohnMzIiVUIhIiIhIiIiMiVVVUIiIiZ3VXM0M0M0M1M1NFVWM1M1I2REZmIiMiVVMzM0REM1dYt5RFMzVVERERIhIiIiMzREVUIiMiSJVIM2M1NGNGNGNFVnM1M2JHRDZmIiMyZmM0M0RWRHhZpJVYVVMzERERERIhIiREZVZVMiIiRWaLZpNHNHNGNGNGVoNGNYR5QzVUVEMyVXRGNFVWVZt6tZZpd3ZTVUVUMzIhIhVEdVZVMyMiIiZmm9h6NZNINHNHZpNHmbZ3MyMyZmQyRXVoNHVn', 'base64')),
   ('c122', decode('eGVliYm5m5u4umzIqWdkZkqmZ2Z2Z2RVRVVmRFNEM0I0IzI0M0I0I0I0I0IzIzRDIzMzMzIjZ2d2VmrKvbvLiGumZkd2mXmFh1d1ZmVVVVVVRVNENEM0M0M0M0I0IzIzIzIzIzREIzIiMzIjZ2iXRERVZ2mpvJu3um3YumhlVUmVZ2eGVlRVZ2RERERFRERVVmVlRVI0I0NERERDRDMzMzIjeYiYRUiWd2REREZlZUunhkd2qoqVd0iFZ2ZlVVRERFRVVVRERVRVRVNEI0I0VUMzMzMzMzEiiqiZVmiWq4moiGVlREd1uniFumh1REd0h1ZlVlVlZ2Z2eGeHRVNEM0IzIzNEREREQzIjQ0IjrMiqaIiXm5m5q5m5mod2ZUqWqVVUeGmFl1mGqnmniXm4eXVVRFNEMzIzIzREMzREREREIjIjvMvMiqiYm5m5q5q5m5mYVEZmu3unzHmFunqoeGeHeXeHVlREVVREMzIzIzIzM0IzIzREIjM0m7vMzcipq6q6q6vKvKvKq5mqeHdUy3u5q6eHZmd3Z2ZmVVVEVFM0IzIjIzREM0IzMzQ0IjM0iYvMzceYm5rKrKvLvLzLvcrLvKVEzK3cvLVWd3Z2ZmREVVREREVVVVVVVVRFVVZnREIjI0RFrLvMrLaHmovLvLvMzczcrLzLmYqo7r3bZmVFVViHiYiHiHiHiHeGd3Z3VWNFM0VGM0IjM0VFq6vLeId3u6zczczczciZd3d2qpzK7rmHVFZFmYzcm7mpmpmoq4mYVVVVRFM0MzQ0IjIjQ1VFm5mpVViHzb3c3s3cq7q7zbmpq6u63KZVZVh33bzczcqqmYmXmYiHQ0REVVM0MzMjMzM0RFVFq5ZmVEu53c3c3szcm6zbzLvLvLzKuozKu6zK7r3sqqVFZEZUZUdUMzQ0Q0Q0M0IjIjM0RFVFiHM0dlzLzLzczcrMq6zbzLvLzLmYzKzK3b3b3cu6VVQ0ZEdUZEZUMzQ0Q0M0IjIjIjIjM0RFREREqozbzbzczcmqiHiIvMzLu5u5zKzKzbzKzLZmVFQ0VEZVd2h2VVM0MzIzIjIzVVM0I0Q1M0d2vKzLvLvMiZmpqovKvLzKmXzKzKvKu5vKd3VVZEVEZVu6mpiZd3ZmVVZmVWRFM0ZnM1M0VVq5zLvLvLmqiZmomYzbvKqou4zKvKu5u5d2h2dmZVZEqozbvMm7mqmZqqZnd4ZWRFRFI0M0mXq6q7rLrLrLeYiHq5zavJmXzJvKvKq5h2ZFZVdmiHmYzLzbzczcd4VVREM0REM0IzIzIjI0mpiZeZiqm7rLiYiXvKzKqoq4zKvKvKmYZEZVd3h3qYmpzb3bvLdoZFZEVEQ0VEQ0M0IjIzM0iZeZeZeZiqrLZ2q5vKzKmXzKzKvJu5ZFdmd3d3iHmIqqzLu6dWVEVEdEZEVEZFVEM0M0IzM1eIaHaHaYi7eJiHq5vJqpu5zKvKvKdmdmiId3dnh3qYu7qqdnZFU0U0hVdVQ0VEREMzIzIjM0Z3VmVmWIiqVniHmovJmHzKzKvKmYdViYiHdndnmIuqu6dnU1ZEZEQ0ZWZXZXRFM0M0M0VVM0V2VmRmVnZ4VViHiXmYqozKvKu5dViId3dndniJzMqadWdFZFZFU0dnuqmad6ZoVXVWRGM1RVRWRmRVRVVmeGiXiXiGu5u6u5dld3d3dndnh4u7mJdGZFU0ZFhnZWuqqru8mbmamJVFRFI0RF', 'base64'))
 on conflict (card_id) do update set data = excluded.data;
+
+
+-- #####################################################################
+-- ###  22_garder.sql
+-- ###  Version 2.1 : les exemplaires a garder
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 2.1 : les exemplaires a garder
+--  A executer apres 21_reflets.sql. Rejouable sans danger.
+--
+--  Jusqu'ici, une carte en deux exemplaires avait un doublon : le second
+--  partait au recyclage d'un geste, et les amis le voyaient comme cessible.
+--  Un collectionneur qui veut trois exemplaires d'une carte n'avait aucun
+--  moyen de le dire.
+--
+--  Deux reglages, sur le compte :
+--    · par rarete (profiles.garder) : « garder 2 de chaque Legendaire » ;
+--    · par carte (gardes) : « garder 3 de celle-ci », ou toutes (99).
+--  Le reglage d'une carte l'emporte sur celui de sa rarete. Sans rien, on
+--  garde un exemplaire : rien ne change pour qui n'y touche pas.
+--
+--  Ce que ca change : le recyclage ne touche plus aux exemplaires gardes
+--  (recycler, 12_recyclage.sql), et les amis ne les voient plus comme des
+--  doublons (amis_doublons, 21_reflets.sql ; player_profile, 07_vitrine.sql).
+--  Les echanges restent libres : le navigateur previent, il n'interdit pas.
+-- =====================================================================
+
+alter table public.profiles
+  add column if not exists garder jsonb not null default '{}';
+
+create table if not exists public.gardes (
+  user_id uuid not null references public.profiles on delete cascade,
+  card_id text not null references public.cards on delete cascade,
+  n       smallint not null check (n between 1 and 99),
+  primary key (user_id, card_id)
+);
+alter table public.gardes enable row level security;
+revoke all on public.gardes from anon, authenticated;
+
+-- Combien d'exemplaires de cette carte le joueur garde : jamais moins d'un.
+create or replace function public.garde_de(p uuid, cid text) returns int
+language sql stable security definer set search_path = public as $$
+  select greatest(1, coalesce(
+    (select g.n from gardes g where g.user_id = p and g.card_id = cid),
+    (select (pr.garder ->> k.rar)::int from profiles pr, cards k where pr.id = p and k.id = cid),
+    1))
+$$;
+revoke all on function public.garde_de from public, anon, authenticated;
+
+-- Le reglage d'une carte. Egal a celui de sa rarete, il s'efface : la carte
+-- suit alors sa rarete si celle-ci change.
+create or replace function public.regler_garder(p_carte text, p_n int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); k cards; defaut int;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into k from cards where id = p_carte;
+  if not found then raise exception 'Carte inconnue.'; end if;
+  if k.promo and not k.reverse then raise exception 'Cette carte se garde toujours.'; end if;
+  if p_n is not null and (p_n < 1 or p_n > 99) then raise exception 'Entre 1 et 99 exemplaires.'; end if;
+
+  select greatest(1, coalesce((garder ->> k.rar)::int, 1)) into defaut from profiles where id = p;
+  if p_n is null or p_n = defaut then
+    delete from gardes where user_id = p and card_id = p_carte;
+  else
+    insert into gardes (user_id, card_id, n) values (p, p_carte, p_n)
+    on conflict (user_id, card_id) do update set n = excluded.n;
+  end if;
+  return me();
+end $$;
+
+-- Le reglage par rarete : de 1 a 4 exemplaires. Seuls les ecarts a 1 sont
+-- gardes.
+create or replace function public.regler_garder_defaut(p_garder jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); propre jsonb := '{}'; cle text; v jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if p_garder is null or jsonb_typeof(p_garder) <> 'object' then raise exception 'Réglage invalide.'; end if;
+  for cle, v in select key, value from jsonb_each(p_garder) loop
+    if cle not in ('ES', 'C', 'PC', 'R', 'E', 'L') then raise exception 'Rareté inconnue.'; end if;
+    if jsonb_typeof(v) <> 'number' or (v #>> '{}')::numeric not in (1, 2, 3, 4) then
+      raise exception 'Entre 1 et 4 exemplaires.';
+    end if;
+    if (v #>> '{}')::int > 1 then propre := propre || jsonb_build_object(cle, (v #>> '{}')::int); end if;
+  end loop;
+  update profiles set garder = propre where id = p;
+  return me();
+end $$;
+
+revoke all on function public.regler_garder, public.regler_garder_defaut from public, anon;
+grant execute on function public.regler_garder, public.regler_garder_defaut to authenticated;
 
 
 -- =====================================================================

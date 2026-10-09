@@ -74,6 +74,7 @@ mate-tcg-online/
 │   ├── 18_cadeaux.sql    Les cadeaux offerts par un administrateur (aussi dans TOUT.sql)
 │   ├── 19_maj-boosters-offerts.sql  Mise à jour 1.5.5 : boosters offerts sans carte unique
 │   ├── 20_maj-boosters-hors-reserve.sql  Mise à jour 1.5.6 : boosters achetés et offerts hors réserve, cadre Unique
+│   ├── 22_garder.sql     Version 2.1 : les exemplaires à garder (aussi dans TOUT.sql)
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -390,7 +391,7 @@ Le serveur fait tout le calcul (`classement()`, `supabase/14_classement.sql`) et
 
 ## Le recyclage et la fabrication
 
-Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une carte qui manque**. Toutes les raretés de l'extension se recyclent et se fabriquent ; jamais ce qui est hors extension (Promos, Essences Brillantes, carte unique). **On garde toujours un exemplaire** de chaque carte : recycler ne fait jamais reculer la collection. Les exemplaires proposés dans une demande d'échange encore en attente sont mis de côté — sinon l'échange, une fois accepté, prendrait le dernier.
+Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une carte qui manque**. Toutes les raretés de l'extension se recyclent et se fabriquent ; jamais ce qui est hors extension (Promos, Essences Brillantes, carte unique). **On garde toujours un exemplaire** de chaque carte : recycler ne fait jamais reculer la collection. Et depuis la version 2.1, **autant d'exemplaires qu'on a choisi d'en garder** (voir plus bas). Les exemplaires proposés dans une demande d'échange encore en attente sont mis de côté — sinon l'échange, une fois accepté, prendrait le dernier.
 
 | Rareté | Recycler rapporte | Fabriquer coûte |
 |---|---|---|
@@ -410,6 +411,12 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 **Pas de bêtise.** On choisit carte par carte, exemplaire par exemplaire ; « Tout sélectionner » laisse les Épiques et les Légendaires de côté. Un récapitulatif liste chaque carte et ce qu'elle rapporte — avec une case à cocher s'il y a une Épique ou une Légendaire dedans —, puis une dernière confirmation dont le bouton ne répond qu'au bout de trois secondes. Le serveur revérifie tout (doublons, réservations) et refuse l'envoi entier si un seul point ne tient pas. Chaque recyclage est journalisé dans la table `recyclages`.
 
 ## Essences Brillantes, carte unique et événements
+
+**Les exemplaires à garder (version 2.1).** Pour ceux qui collectionnent plusieurs exemplaires d'une carte. Deux réglages, enregistrés sur le compte (`supabase/22_garder.sql`) :
+- **par rareté**, dans Réglages › Exemplaires à garder : de 1 à 4 (« garder 2 de chaque Légendaire ») ;
+- **par carte**, dans la visionneuse (toucher une carte de sa Collection) : de 1 à 10, ou « Tous ». Le réglage d'une carte l'emporte sur celui de sa rareté ; revenu à la même valeur, il s'efface et la carte suit de nouveau sa rareté.
+
+Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change sinon : le Recyclage ne propose plus que les exemplaires en plus (le serveur le revérifie dans `recycler`) ; les amis ne voient plus les exemplaires gardés comme des doublons (sa fiche, « Ses doublons », « Chez tes amis ») ; dans la Collection, la case dit « 2/3 », dorée une fois l'objectif atteint, et le tiroir de filtres gagne « À compléter ». Les échanges restent libres : proposer ou accepter de céder une carte gardée demande seulement une confirmation.
 
 **Les Essences Brillantes** sont la version brillante des 9 Essences : même illustration, avec un reflet arc-en-ciel et des paillettes posés par le CSS (`.card.r-BR`, `css/cards.css`). La case Essence d'un booster en donne une **une fois sur 50** (`cfg('foil_odds')`) — une tous les huit jours environ pour un joueur régulier. Identifiants `b001` à `b009`, hors extension comme les Promos : ni dans les 122, ni échangeables, ni recyclables, ni fabricables. Elles ont leur section dans la Collection.
 

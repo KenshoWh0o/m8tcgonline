@@ -226,6 +226,11 @@
   /* ------------------------------------------------------------ outils SQL */
   const ajouter = (uid, cid, n) => { const c = colDe(uid); c[cid] = (c[cid] || 0) + n; };
   const possede = (uid, cid) => (colDe(uid)[cid] || 0) > 0;
+  /* garde_de, 22_garder.sql : la carte, sinon sa rareté, sinon un. */
+  const gardeDe = (uid, cid) => {
+    const k = carte(cid);
+    return Math.max(1, ((S.gardes || {})[uid] || {})[cid] || (k && (profil(uid).garder || {})[k.rar]) || 1);
+  };
 
   /* regen_tickets, 01_schema.sql */
   function regenTickets(p) {
@@ -366,6 +371,7 @@
         boosters_bonus: pr.boosters_bonus || 0, bonus_offerts: pr.tickets_offerts || 0,
         titre: pr.titre || null, banniere: pr.banniere || null, devise: pr.devise || null,
         titres: titresDe(p),
+        garder: Object.assign({}, pr.garder || {}),
         invite: true,
         ticket_cap: cfg('ticket_cap'), ticket_minutes: cfg('ticket_minutes'),
         serveur: iso(now())
@@ -386,6 +392,7 @@
       invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
       col: garde(colDe(p)),
+      gardes: Object.assign({}, (S.gardes || {})[p] || {}),
       inv: garde(invDe(p)),
       quetes: QUETES.filter(q => !q.evenement || q.evenement === evenementEnCours())
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
@@ -891,7 +898,7 @@
       const o = profil(f.a === moi ? f.b : f.a);
       Object.entries(colDe(o.id)).forEach(([id, n]) => {
         const k = carte(id);
-        if (!k || n < 2 || (mien[id] || 0) > 0 || k.cat === 'essence' || (k.promo && !k.rev)) return;
+        if (!k || n <= gardeDe(o.id, id) || (mien[id] || 0) > 0 || k.cat === 'essence' || (k.promo && !k.rev)) return;
         (parCarte[id] = parCarte[id] || []).push({ pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null, n });
       });
     });
@@ -918,8 +925,34 @@
       vitrine: o.vitrine.slice(),
       succes: succesDe(o.id),
       ami, moi: o.id === moi,
-      col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null
+      col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null,
+      garde: ami ? Object.fromEntries(Object.keys(c).filter(id => c[id] > 0)
+        .map(id => [id, gardeDe(o.id, id)]).filter(([, g]) => g > 1)) : null
     };
+  };
+
+  /* regler_garder et regler_garder_defaut, 22_garder.sql */
+  RPC.regler_garder = (p, { p_carte, p_n }) => {
+    const k = carte(p_carte);
+    if (!k) refuser('Carte inconnue.');
+    if (k.promo) refuser('Cette carte se garde toujours.');
+    if (p_n != null && (p_n < 1 || p_n > 99)) refuser('Entre 1 et 99 exemplaires.');
+    const g = (S.gardes[p] = S.gardes[p] || {});
+    if (p_n == null || p_n === Math.max(1, (profil(p).garder || {})[k.rar] || 1)) delete g[p_carte];
+    else g[p_carte] = Math.trunc(p_n);
+    return me(p);
+  };
+
+  RPC.regler_garder_defaut = (p, { p_garder }) => {
+    if (!p_garder || typeof p_garder !== 'object') refuser('Réglage invalide.');
+    const propre = {};
+    Object.entries(p_garder).forEach(([r, n]) => {
+      if (!['ES', 'C', 'PC', 'R', 'E', 'L'].includes(r)) refuser('Rareté inconnue.');
+      if (![1, 2, 3, 4].includes(n)) refuser('Entre 1 et 4 exemplaires.');
+      if (n > 1) propre[r] = n;
+    });
+    profil(p).garder = propre;
+    return me(p);
   };
 
   RPC.set_vitrine = (p, { p_cards }) => {
@@ -1005,8 +1038,11 @@
       const prix = cfg('recyclage_' + k.rar);
       if (prix == null) refuser('Cette carte ne se recycle pas.');
       const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === cid && t.status === 'pending').length;
-      if ((col[cid] || 0) - 1 - reserve < n)
+      const g = gardeDe(p, cid);
+      if ((col[cid] || 0) - g - reserve < n) {
+        if (g > 1) refuser(`Tu as choisi de garder ${g} exemplaires de « ${k.nom} ».`);
         refuser(`Pas assez de doublons de « ${k.nom} » : tu gardes toujours un exemplaire.`);
+      }
       col[cid] -= n;
       journal.push({ user_id: p, card_id: cid, qty: n, eclats: 0, fragments: n * prix, created_at: now() });
       total += n * prix;
@@ -1286,7 +1322,7 @@
     const moi = colDe(MOI), lui = colDe(bot.id);
     const ok = (id, r) => carte(id) && carte(id).rar === r && !carte(id).promo && carte(id).cat !== 'essence';
     for (const r of ['R', 'PC', 'C', 'E']) {
-      const doublons = Object.keys(moi).filter(id => moi[id] >= 2 && ok(id, r));
+      const doublons = Object.keys(moi).filter(id => moi[id] > gardeDe(MOI, id) && ok(id, r));
       const manque = doublons.filter(id => !(lui[id] > 0));
       const veut = manque.length ? manque : doublons.filter(id => !(lui[id] > 1));
       const donne = Object.keys(lui).filter(id => lui[id] >= 2 && ok(id, r) && !(moi[id] > 0));
@@ -1372,6 +1408,8 @@
         if (!S || S.v !== 1) { creerMonde(); await sauver(); }
         /* Une démo commencée avant la version 1.5 : ce qui lui manque. */
         S.tirages = S.tirages || [];
+        /* Version 2.1 : les exemplaires à garder. */
+        S.gardes = S.gardes || {};
         S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
         chasseTerminee();
         monde20();

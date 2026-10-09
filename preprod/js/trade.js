@@ -33,6 +33,15 @@ const tradeJetons = () => (save.inv || {}).trade_token || 0;
 /* Mes exemplaires : toujours connus. */
 const mesEx = id => save.col[id] || 0;
 
+/* Version 2.1 : combien j'en garde (supabase/22_garder.sql). Le réglage de
+   la carte, sinon celui de sa rareté, sinon un : jamais moins. 99 veut dire
+   « toutes ». Ce qui dépasse est un doublon — recyclable, cessible. */
+const GARDE_TOUT = 99;
+const aGarder = c => !c ? 1 : Math.max(1, (save.gardes || {})[c.id] || (save.garder || {})[c.rar] || 1);
+/* Céder celle-ci me ferait passer sous ce que j'ai choisi de garder. Le
+   cas d'un seul exemplaire a déjà son étiquette, « Dernière ». */
+const sousObjectif = c => aGarder(c) > 1 && mesEx(c.id) <= aGarder(c);
+
 /* Les collections des autres, rangées par pseudo. Le serveur ne les donne
    qu'entre amis (player_profile dans supabase/06_social.sql) ; une fois
    rapportées, elles ne bougent plus pendant qu'on compose, donc on ne les
@@ -47,12 +56,21 @@ function sesEx(pseudo, id) {
   return col ? (col[id] || 0) : null;
 }
 
+/* Ce qu'il garde, lui (player_profile, supabase/07_vitrine.sql) : rangé à
+   côté de sa collection. Ses doublons, ce sont les exemplaires en plus. */
+const trGardes = {};
+const saGarde = (pseudo, id) => Math.max(1, ((pseudo && trGardes[noacc(pseudo)]) || {})[id] || 1);
+const sesDoublons = (pseudo, c) => {
+  const n = sesEx(pseudo, c.id);
+  return n == null ? 0 : Math.max(0, n - saGarde(pseudo, c.id));
+};
+
 async function chargerCollection(pseudo) {
   const cle = noacc(pseudo);
   if (trCols[cle]) return trCols[cle];
   try {
     const f = await Backend.ficheJoueur(pseudo);
-    if (f && f.col) trCols[cle] = f.col;
+    if (f && f.col) { trCols[cle] = f.col; trGardes[cle] = f.garde || {}; }
     return f && f.col ? f.col : null;
   } catch (e) {
     return null;
@@ -71,6 +89,10 @@ function etiquette(c, sens) {
   if (sens === 'entre') {
     return n ? `<i class="tpill" title="Tu en as déjà ${n}">×${n}</i>`
              : '<i class="tpill neuf">Nouvelle</i>';
+  }
+  if (n > 1 && sousObjectif(c)) {
+    const g = aGarder(c);
+    return `<i class="tpill garde" title="Tu en as ${n}, et tu as choisi d'en garder ${g === GARDE_TOUT ? 'tous les exemplaires' : g}">Gardée</i>`;
   }
   if (n > 1) return `<i class="tpill" title="Tu en as ${n}">×${n}</i>`;
   return n === 1 ? '<i class="tpill perte" title="Ton seul exemplaire">Dernière</i>'
@@ -267,6 +289,9 @@ function vNouvelleDemande() {
   let aide;
   if (!trCible) aide = 'Choisis d\'abord avec qui échanger.';
   else if (ilManque) aide = `<span class="warn">${h(pseudo)} n'a pas cette carte : il ne pourra pas accepter.</span>`;
+  else if (veut && pseudo && sesEx(pseudo, veut.id) && !sesDoublons(pseudo, veut)) {
+    aide = `<span class="warn">${h(pseudo)} garde ses exemplaires de cette carte : il risque de refuser.</span>`;
+  }
   else if (pret) aide = `Tu reçois <b>${nomH(veut)}</b>, tu donnes <b>${nomH(off)}</b>.`;
   else if (off || veut) aide = `Rareté imposée : <b>${(RAR[(off || veut).rar] || RAR.C).nom}</b>.`;
   else aide = 'Touche une case : la carte que tu veux, puis celle que tu donnes.';
@@ -370,7 +395,7 @@ function ouvrirChoixCarte(role, rar, rev) {
 
   vue.sort((a, b) => {
     const d = role === 'offre'
-      ? (mesEx(b.id) > 1) - (mesEx(a.id) > 1)
+      ? (mesEx(b.id) > aGarder(b)) - (mesEx(a.id) > aGarder(a))
       : (!mesEx(b.id)) - (!mesEx(a.id));
     return d || RAR_ORDRE.indexOf(b.rar) - RAR_ORDRE.indexOf(a.rar) || a.num - b.num;
   });
@@ -448,7 +473,7 @@ function montrerCollectionDe(pseudo) {
   const listes = {
     manque: sienne.filter(c => !mesEx(c.id)),
     /* Même définition qu'en fiche : un doublon est une carte cessible. */
-    doubles: sienne.filter(c => col[c.id] > 1 && echangeable(c)),
+    doubles: sienne.filter(c => sesDoublons(pseudo, c) > 0 && echangeable(c)),
     tout: sienne
   };
   const liste = (listes[trColVue] || sienne).slice().sort(parRarete);
@@ -511,8 +536,13 @@ function trRetenirMot() {
   if (el) trBrouillon.note = el.value;
 }
 
-async function trEnvoyer() {
+async function trEnvoyer(confirme) {
   if (!trCible || !trBrouillon.offre || !trBrouillon.veut) return;
+  const off = byId[trBrouillon.offre];
+  if (!confirme && sousObjectif(off)) {
+    trRetenirMot();
+    return confirmerGarde(off, 'Proposer quand même', () => trEnvoyer(true));
+  }
   const note = $('#tr-note') ? $('#tr-note').value.trim() : '';
   const qui = trCible.pseudo;
   await agir(async () => {
@@ -521,4 +551,31 @@ async function trEnvoyer() {
     trCible = null;
     trVue = 'envoyees';
   }, 'Demande envoyée à ' + qui + '.');
+}
+
+/* Version 2.1 : céder une carte qu'on a choisi de garder. Rien n'est
+   interdit — c'est ta collection —, mais on le dit avant, pas après. */
+function confirmerGarde(c, oui, fn) {
+  const g = aGarder(c);
+  const n = mesEx(c.id);
+  openSheet({
+    title: 'Une carte que tu gardes',
+    body: `<p>Tu as choisi de garder ${g === GARDE_TOUT ? 'tous tes exemplaires' : `${g} exemplaires`} de
+        <b>${nomH(c)}</b>. Après l'échange, il t'en restera ${n - 1}.</p>
+      <p class="muted small">Le réglage se change en touchant la carte dans ta Collection.</p>`,
+    actions: [
+      { label: oui, primary: true, fn: () => { closeSheet(); fn(); } },
+      { label: 'Annuler', fn: closeSheet }
+    ]
+  });
+}
+
+/* Accepter une demande reçue : même prévenance, si la carte qui part est gardée. */
+function trRepondre(id, ok, confirme) {
+  const t = (Backend.trades || []).find(x => x.id === id);
+  const sort = t && byId[t.want];
+  if (ok && !confirme && sort && sousObjectif(sort)) {
+    return confirmerGarde(sort, 'Accepter quand même', () => trRepondre(id, ok, true));
+  }
+  return agir(() => Backend.tradeRespond(id, ok), ok ? 'Échange conclu.' : 'Demande refusée.');
 }

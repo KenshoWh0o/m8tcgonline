@@ -453,7 +453,8 @@ begin
                              order by c.qty desc, lower(o.pseudo)) as amis
               from friendships f
               join profiles o on o.id = case when f.a = moi then f.b else f.a end
-              join collection c on c.user_id = o.id and c.qty > 1
+              -- Version 2.1 : au-dela de ce qu'il garde (garde_de, 22_garder.sql).
+              join collection c on c.user_id = o.id and c.qty > garde_de(o.id, c.card_id)
               join cards k on k.id = c.card_id
              where (f.a = moi or f.b = moi) and f.accepte
                and k.cat <> 'essence' and (not k.promo or k.reverse)

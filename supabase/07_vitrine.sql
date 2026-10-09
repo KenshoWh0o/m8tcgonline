@@ -71,6 +71,8 @@ begin
       -- les titres debloques.
       'titre', pr.titre, 'banniere', pr.banniere, 'devise', pr.devise,
       'titres', to_jsonb(titres_de(p)),
+      -- Version 2.1 (22_garder.sql) : les exemplaires a garder, par rarete.
+      'garder', pr.garder,
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
@@ -112,6 +114,8 @@ begin
         from invitations i where i.auteur = p), '[]'::jsonb),
     'col', coalesce((select jsonb_object_agg(card_id, qty) from collection
                      where user_id = p and qty > 0), '{}'::jsonb),
+    -- Version 2.1 : les exemplaires a garder, carte par carte.
+    'gardes', coalesce((select jsonb_object_agg(card_id, n) from gardes where user_id = p), '{}'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
     'quetes', coalesce((
@@ -179,6 +183,13 @@ begin
     'col', case when ami then
       coalesce((select jsonb_object_agg(card_id, qty) from collection
                  where user_id = o.id and qty > 0), '{}'::jsonb)
+      else null end,
+    -- Version 2.1 (22_garder.sql) : entre amis, ce qu'il garde au-dela d'un
+    -- exemplaire. Ses doublons, ce sont les exemplaires en plus.
+    'garde', case when ami then
+      coalesce((select jsonb_object_agg(x.card_id, x.g) from (
+                  select card_id, garde_de(o.id, card_id) as g from collection
+                   where user_id = o.id and qty > 0) x where x.g > 1), '{}'::jsonb)
       else null end);
 end $$;
 

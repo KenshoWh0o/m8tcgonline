@@ -87,7 +87,7 @@ create or replace function public.recycler(p_lots jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); lot jsonb; cid text; n int; k cards;
-  possede int; reserve int; prix int; total int := 0; nb int := 0; vus text[] := '{}';
+  possede int; reserve int; prix int; total int := 0; nb int := 0; vus text[] := '{}'; garde int;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -123,7 +123,13 @@ begin
     select qty into possede from collection where user_id = p and card_id = cid for update;
     select count(*) into reserve from trades
      where from_user = p and offer_card = cid and status = 'pending';
-    if coalesce(possede, 0) - 1 - reserve < n then
+    -- Version 2.1 : ce que le joueur a choisi de garder (garde_de,
+    -- 22_garder.sql), un exemplaire au moins.
+    garde := garde_de(p, cid);
+    if coalesce(possede, 0) - garde - reserve < n then
+      if garde > 1 then
+        raise exception 'Tu as choisi de garder % exemplaires de « % ».', garde, k.nom;
+      end if;
       raise exception 'Pas assez de doublons de « % » : tu gardes toujours un exemplaire.', k.nom;
     end if;
 

@@ -318,7 +318,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef]');
   if (!el) return;
   const d = el.dataset;
 
@@ -374,8 +374,8 @@ async function clicPage(e) {
   /* Quêtes, boutique, échanges */
   if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.')
     .then(ok => { if (ok && tab === 'reflets') chargerReflets(); });
-  if (d.trep) return agir(() => Backend.tradeRespond(d.trep, d.ok === '1'),
-    d.ok === '1' ? 'Échange conclu.' : 'Demande refusée.');
+  if (d.trep) return trRepondre(d.trep, d.ok === '1');
+  if (d.gdef) return reglerGardeDefaut(d.gdef, +d.n);
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
   if (d.pick) { trRetenirMot(); trPickRar = 'all'; return ouvrirChoixCarte(d.pick); }
   if (d.pickrar) return ouvrirChoixCarte(d.role, d.pickrar);
@@ -398,6 +398,7 @@ async function clicPage(e) {
     case 'nouveautes': return montrerNouveautes();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
+    case 'vers-garder': return versGarder();
     case 'illu-partager': return illuPartager();
     case 'pass-tout': return reclamerTout();
     case 'pf-devise': return enregistrerDevise();
@@ -405,7 +406,7 @@ async function clicPage(e) {
     case 'col-toggle': colOuvert = !colOuvert; return render();
     case 'col-reset':
       colFilter = essFilter = rarFilter = 'all';
-      colPossedees = false;
+      colPossedees = colObjectifs = false;
       return render();
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();

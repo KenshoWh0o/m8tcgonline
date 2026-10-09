@@ -99,6 +99,8 @@ function vReglages() {
     ${bascule('set-gyro', 'Incliner avec le téléphone', 'Les cartes suivent le mouvement de l\'appareil', JEU.gyro)}
   </section>
 
+  ${enLigne ? vGarderReglage() : ''}
+
   <section class="panel">
     <h2>Compte</h2>
     ${enLigne
@@ -158,6 +160,45 @@ function vReglages() {
   </section>`;
 }
 
+/* ---------- Exemplaires à garder (version 2.1) ---------- */
+/* Le seul réglage de cette page qui vit sur le compte et pas dans le
+   navigateur : le serveur s'en sert pour le recyclage et pour ce que voient
+   les amis (supabase/22_garder.sql). Par rareté ici ; carte par carte, dans
+   la visionneuse (js/viewer.js). */
+function vGarderReglage() {
+  const g = save.garder || {};
+  const perso = Object.keys(save.gardes || {}).length;
+  return `<section class="panel" id="reglages-garder">
+    <h2>Exemplaires à garder</h2>
+    <p class="muted small">Combien d'exemplaires de chaque carte tu veux conserver. Le recyclage n'y
+      touche pas, et tes amis ne les voient pas comme des doublons.</p>
+    <div class="gardes">${RAR_FILTRES.map(r => `<div class="garde-ligne">
+        <span class="garde-rar"><i class="rardot r${r}"></i>${(RAR[r] || RAR.C).nom}</span>
+        <div class="segbar garde-seg">${[1, 2, 3, 4].map(n =>
+          `<button data-gdef="${r}" data-n="${n}" class="${(g[r] || 1) === n ? 'on' : ''}"
+            aria-label="${(RAR[r] || RAR.C).nom} : garder ${n}">${n}</button>`).join('')}</div>
+      </div>`).join('')}</div>
+    <p class="muted small">Pour une carte en particulier, touche-la dans ta Collection.${perso
+      ? ` ${perso} carte${perso > 1 ? 's ont leur' : ' a son'} propre réglage.` : ''}</p>
+  </section>`;
+}
+
+async function reglerGardeDefaut(r, n) {
+  if (((save.garder || {})[r] || 1) === n) return;
+  const g = Object.assign({}, save.garder || {}, { [r]: n });
+  await agir(() => Backend.reglerGardeDefaut(g),
+    `${(RAR[r] || RAR.C).nom} : ${n === 1 ? 'un exemplaire gardé' : `${n} exemplaires gardés`}.`);
+}
+
+/* Depuis le Recyclage : la page, et la section. */
+function versGarder() {
+  aller('reglages');
+  requestAnimationFrame(() => {
+    const el = $('#reglages-garder');
+    if (el) el.scrollIntoView({ block: 'start', behavior: RM() ? 'auto' : 'smooth' });
+  });
+}
+
 /* ---------- Branchements ---------- */
 /* Rejoué après chaque rendu : les nœuds viennent d'être recréés, les anciens
    écouteurs sont partis avec eux. */
@@ -196,6 +237,7 @@ function bindReglages() {
 
   /* Collection : la case « seulement mes cartes ». */
   b('col-poss', e => e.onchange = () => { colPossedees = e.checked; render(); });
+  b('col-obj', e => e.onchange = () => { colObjectifs = e.checked; render(); });
 
   b('pf-pseudo', e => e.onkeydown = ev => { if (ev.key === 'Enter') changerPseudo(); });
   b('tr-pseudo', e => {
