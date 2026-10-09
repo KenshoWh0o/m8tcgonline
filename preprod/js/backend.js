@@ -180,7 +180,9 @@ Backend.apply = function (etat) {
        rareté et carte par carte. */
     garder: p.garder || {},
     gardes: etat.gardes || {},
-    favoris: etat.favoris || []
+    favoris: etat.favoris || [],
+    /* Version 2.1 : entré grâce au code d'un autre, il n'invite pas à son tour. */
+    filleul: p.filleul === true
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });

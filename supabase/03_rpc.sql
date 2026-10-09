@@ -348,6 +348,11 @@ begin
   if it.evenement is not null and it.evenement is distinct from evenement_en_cours() then
     raise exception 'Cet événement est terminé.';
   end if;
+  -- Version 2.1 : un joueur entre par invitation n'invite pas a son tour
+  -- (est_filleul, 21_reflets.sql). Verifie avant de faire payer.
+  if it.effet = 'invitation' and est_filleul(p) then
+    raise exception 'Les joueurs invités ne peuvent pas inviter à leur tour.';
+  end if;
 
   select * into pr from profiles where id = p for update;
 

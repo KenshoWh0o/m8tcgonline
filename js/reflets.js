@@ -180,7 +180,7 @@ function vRfNouveautes() {
         'La Collection',
         'Classiques, Reverses et Spéciales, chacune sa page.',
         '<button class="btn tiny ghost" data-tab="collection">Ouvrir</button>')}
-      ${ligne('', `<div class="rf-nvinvit">M8-<b>••••</b></div>`,
+      ${save.filleul ? '' : ligne('', `<div class="rf-nvinvit">M8-<b>••••</b></div>`,
         'Les invitations',
         'Fais entrer un ami, avec un cadeau de bienvenue.',
         '<button class="btn tiny ghost" data-tab="boutique">Boutique</button>')}

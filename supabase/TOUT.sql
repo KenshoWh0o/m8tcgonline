@@ -1201,6 +1201,11 @@ begin
   if it.evenement is not null and it.evenement is distinct from evenement_en_cours() then
     raise exception 'Cet événement est terminé.';
   end if;
+  -- Version 2.1 : un joueur entre par invitation n'invite pas a son tour
+  -- (est_filleul, 21_reflets.sql). Verifie avant de faire payer.
+  if it.effet = 'invitation' and est_filleul(p) then
+    raise exception 'Les joueurs invités ne peuvent pas inviter à leur tour.';
+  end if;
 
   select * into pr from profiles where id = p for update;
 
@@ -2198,6 +2203,8 @@ begin
       'titres', to_jsonb(titres_de(p)),
       -- Version 2.1 (22_garder.sql) : les exemplaires a garder, par rarete.
       'garder', pr.garder,
+      -- Version 2.1 : entre grace au code d'un autre, il n'invite pas a son tour.
+      'filleul', est_filleul(p),
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
@@ -2256,7 +2263,9 @@ begin
       left join quest_progress qp
         on qp.quest_id = q.id and qp.user_id = p and qp.period_key = period_key(q.scope)
       -- Les quetes d'un evenement n'existent que pendant qu'il dure.
-      where q.evenement is null or q.evenement = evenement_en_cours()
+      where (q.evenement is null or q.evenement = evenement_en_cours())
+        -- Un filleul ne peut pas inviter : les quetes d'invitation lui sont cachees.
+        and not (q.metric = 'invite' and est_filleul(p))
     ), '[]'::jsonb)
   );
 end $$;
@@ -3745,10 +3754,19 @@ create table if not exists public.invitations (
 alter table public.invitations enable row level security;
 revoke all on public.invitations from anon, authenticated;
 
+-- Un filleul : un compte entre grace au code d'un autre. Il ne peut pas
+-- inviter a son tour (version 2.1) : sinon chaque invite ouvre la porte a
+-- d'autres, et la liste d'acces ne veut plus rien dire.
+create or replace function public.est_filleul(p uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from invitations where utilise_par = p)
+$$;
+
 create or replace function public.creer_invitation(p uuid) returns text
 language plpgsql security definer set search_path = public as $$
 declare c text;
 begin
+  if est_filleul(p) then raise exception 'Les joueurs invités ne peuvent pas inviter à leur tour.'; end if;
   loop
     c := 'M8-' || upper(substr(md5(random()::text), 1, 4)) || '-' || upper(substr(md5(random()::text), 1, 4));
     exit when not exists (select 1 from invitations where code = c);
@@ -3784,6 +3802,29 @@ begin
   values (p, 10, 1000, 'Bienvenue ! ' || coalesce(parrain, 'Un joueur') || ' t''a invité : voici de quoi bien commencer.', inv.auteur);
   return me();
 end $$;
+
+-- Version 2.1 : les codes qu'un filleul avait achetes avant la regle, et
+-- qui n'ont pas servi, sont annules et rembourses (prix de l'article, et
+-- une place de plus dans sa limite d'achat). Rejouable : une fois annules,
+-- il n'en reste plus a rembourser. Les codes deja utilises restent : on ne
+-- reprend pas l'acces a quelqu'un qui est entre.
+with revoques as (
+  delete from public.invitations i
+   where i.utilise_par is null
+     and exists (select 1 from public.invitations f where f.utilise_par = i.auteur)
+  returning i.auteur
+), parjoueur as (
+  select auteur, count(*)::int as n from revoques group by auteur
+), rembourse as (
+  update public.profiles pr
+     set shards = pr.shards + j.n * coalesce((select prix from public.shop_items where id = 's_invite'), 2000)
+    from parjoueur j where pr.id = j.auteur
+  returning pr.id
+)
+update public.inventory iv
+   set qty = greatest(0, iv.qty - j.n)
+  from parjoueur j
+ where iv.user_id = j.auteur and iv.item_id = 's_invite';
 
 -- ===================================================== 5. titres et profil
 -- Les titres qu'un joueur a debloques. La plupart viennent de ses succes
@@ -3856,7 +3897,7 @@ select 'Reflets', 'La version 2.0 : les Reverses, des cadres, des titres, Devine
 
 -- ================================================================= droits
 revoke all on function public.evenement_en_cours, public.crediter_prismes, public.accorder,
-  public.illu_cible, public.illu_grille, public.creer_invitation, public.titres_de
+  public.illu_cible, public.illu_grille, public.creer_invitation, public.est_filleul, public.titres_de
   from public, anon, authenticated;
 revoke all on function public.piste_reclamer, public.evenement_etat, public.illu_etat,
   public.illu_essai, public.utiliser_invitation, public.personnaliser, public.evenement_recap,

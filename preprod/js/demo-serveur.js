@@ -230,6 +230,8 @@
   /* ------------------------------------------------------------ outils SQL */
   const ajouter = (uid, cid, n) => { const c = colDe(uid); c[cid] = (c[cid] || 0) + n; };
   const possede = (uid, cid) => (colDe(uid)[cid] || 0) > 0;
+  /* est_filleul, 21_reflets.sql : entré grâce au code d'un autre. */
+  const estFilleul = uid => (S.invitations || []).some(i => i.utilise_par === uid);
   /* garde_cle et garde_de, 22_garder.sql : la carte, sinon sa rareté (les
      Reverses à part : « r » + rareté), sinon un. */
   const gardeCle = k => (k.rev ? 'r' : '') + k.rar;
@@ -380,6 +382,7 @@
         titre: pr.titre || null, banniere: pr.banniere || null, devise: pr.devise || null,
         titres: titresDe(p),
         garder: Object.assign({}, pr.garder || {}),
+        filleul: estFilleul(p),
         invite: true,
         ticket_cap: cfg('ticket_cap'), ticket_minutes: cfg('ticket_minutes'),
         serveur: iso(now())
@@ -403,7 +406,7 @@
       gardes: Object.assign({}, (S.gardes || {})[p] || {}),
       favoris: ((S.favoris || {})[p] || []).slice(),
       inv: garde(invDe(p)),
-      quetes: QUETES.filter(q => !q.evenement || q.evenement === evenementEnCours())
+      quetes: QUETES.filter(q => (!q.evenement || q.evenement === evenementEnCours()) && !(q.metric === 'invite' && estFilleul(p)))
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
         .map(q => {
           const qp = S.qp[cleQp(p, q)];
@@ -688,6 +691,7 @@
     const it = BOUTIQUE.find(x => x.id === p_item && x.actif);
     if (!it) refuser('Article indisponible.');
     if (it.evenement && it.evenement !== evenementEnCours()) refuser('Cet événement est terminé.');
+    if (it.effet === 'invitation' && estFilleul(p)) refuser('Les joueurs invités ne peuvent pas inviter à leur tour.');
     const pr = profil(p);
     const inv = invDe(p);
     if (it.unique_buy && it.id in inv) refuser('Tu possèdes déjà cet article.');

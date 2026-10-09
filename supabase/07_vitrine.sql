@@ -73,6 +73,8 @@ begin
       'titres', to_jsonb(titres_de(p)),
       -- Version 2.1 (22_garder.sql) : les exemplaires a garder, par rarete.
       'garder', pr.garder,
+      -- Version 2.1 : entre grace au code d'un autre, il n'invite pas a son tour.
+      'filleul', est_filleul(p),
       -- La seule fonction qui reponde a un compte non invite : c'est elle qui
       -- permet au navigateur d'afficher « tu n'es pas sur la liste » au lieu
       -- d'une erreur muette. Toutes les autres refusent (garde_beta).
@@ -131,7 +133,9 @@ begin
       left join quest_progress qp
         on qp.quest_id = q.id and qp.user_id = p and qp.period_key = period_key(q.scope)
       -- Les quetes d'un evenement n'existent que pendant qu'il dure.
-      where q.evenement is null or q.evenement = evenement_en_cours()
+      where (q.evenement is null or q.evenement = evenement_en_cours())
+        -- Un filleul ne peut pas inviter : les quetes d'invitation lui sont cachees.
+        and not (q.metric = 'invite' and est_filleul(p))
     ), '[]'::jsonb)
   );
 end $$;

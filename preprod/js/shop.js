@@ -123,6 +123,12 @@ function vRayon(id, items) {
   const r = RAYONS.find(x => x.id === id) || RAYONS[0];
 
   const blocs = r.sections.map(sec => {
+    /* Version 2.1 : un joueur entré par invitation n'invite pas à son tour
+       (est_filleul, supabase/21_reflets.sql). */
+    if (sec.invitations && save.filleul) {
+      return `<section class="rayon"><h2>${h(sec.titre)}</h2>
+        <p class="muted small">Tu es entré grâce à une invitation : les invitations sont réservées aux joueurs qui ne sont pas arrivés ainsi.</p></section>`;
+    }
     const cases = sec.avenir
       ? vCosmetiquesAVenir()
       : items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
@@ -185,6 +191,7 @@ const vCosmetiquesAVenir = () => COSMETIQUES_A_VENIR.map(([nom, quoi]) =>
 function ouvrirArticle(id) {
   const it = (Backend.shop || []).find(x => x.id === id);
   if (!it) return;
+  if (it.effet === 'invitation' && save.filleul) return toast('Les joueurs invités ne peuvent pas inviter à leur tour.');
 
   const dv = deviseDe(it);
   const cher = dv.solde() < it.prix;
