@@ -219,7 +219,7 @@ function vCase(c) {
   /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
      de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(c, n)}${renderCard(c)}<span class="num">${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}</span></button>`;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c)}<span class="num">${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);
@@ -227,14 +227,23 @@ function vCase(c) {
     .replace(/<\/div>\s*$/, '</button>');
 }
 
-/* Le compte posé sur une case. Avec un objectif (version 2.1), il dit où on
-   en est : « 2/3 », doré une fois atteint ; « Toutes » garde le simple ×n,
-   doré aussi. */
-function vCompte(c, n) {
+/* Le compte posé sur une case : celui d'avant, inchangé. */
+const vCompte = n => n > 1 ? `<span class="count">×${n}</span>` : '';
+
+/* Version 2.1 : où on en est de ce qu'on veut garder. Rien sur la carte :
+   sous elle, à côté du numéro, comme l'éclat de la Reverse. Un point par
+   exemplaire voulu, plein pour ceux qu'on a, dorés une fois au complet ;
+   au-delà de cinq, « 3/8 » ; un cadenas pour « Tous ». */
+function vGarde(c, n) {
   const g = aGarder(c);
-  if (g <= 1) return n > 1 ? `<span class="count">×${n}</span>` : '';
-  if (g === GARDE_TOUT) return `<span class="count garde ok" title="Tu gardes tous tes exemplaires">×${n}</span>`;
-  return `<span class="count garde${n >= g ? ' ok' : ''}" title="Tu veux en garder ${g}">${n}/${g}</span>`;
+  if (g <= 1) return '';
+  if (g === GARDE_TOUT) {
+    return `<i class="gmark glock" role="img" aria-label="Tu gardes tous tes exemplaires" title="Tu gardes tous tes exemplaires">${NAVICO.lock}</i>`;
+  }
+  const dit = `Tu en as ${n}, tu veux en garder ${g}`;
+  if (g > 5) return `<i class="gmark gnum${n >= g ? ' ok' : ''}" role="img" aria-label="${dit}" title="${dit}">${Math.min(n, g)}/${g}</i>`;
+  return `<i class="gmark gpips${n >= g ? ' ok' : ''}" role="img" aria-label="${dit}" title="${dit}">${
+    Array.from({ length: g }, (_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('')}</i>`;
 }
 
 /* Les Secrets prolongent la grille sans en changer le total : des emplacements vides
