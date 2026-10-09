@@ -226,10 +226,12 @@
   /* ------------------------------------------------------------ outils SQL */
   const ajouter = (uid, cid, n) => { const c = colDe(uid); c[cid] = (c[cid] || 0) + n; };
   const possede = (uid, cid) => (colDe(uid)[cid] || 0) > 0;
-  /* garde_de, 22_garder.sql : la carte, sinon sa rareté, sinon un. */
+  /* garde_cle et garde_de, 22_garder.sql : la carte, sinon sa rareté (les
+     Reverses à part : « r » + rareté), sinon un. */
+  const gardeCle = k => (k.rev ? 'r' : '') + k.rar;
   const gardeDe = (uid, cid) => {
     const k = carte(cid);
-    return Math.max(1, ((S.gardes || {})[uid] || {})[cid] || (k && (profil(uid).garder || {})[k.rar]) || 1);
+    return Math.max(1, ((S.gardes || {})[uid] || {})[cid] || (k && (profil(uid).garder || {})[gardeCle(k)]) || 1);
   };
 
   /* regen_tickets, 01_schema.sql */
@@ -393,6 +395,7 @@
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
       col: garde(colDe(p)),
       gardes: Object.assign({}, (S.gardes || {})[p] || {}),
+      favoris: ((S.favoris || {})[p] || []).slice(),
       inv: garde(invDe(p)),
       quetes: QUETES.filter(q => !q.evenement || q.evenement === evenementEnCours())
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
@@ -938,7 +941,7 @@
     if (k.promo) refuser('Cette carte se garde toujours.');
     if (p_n != null && (p_n < 1 || p_n > 99)) refuser('Entre 1 et 99 exemplaires.');
     const g = (S.gardes[p] = S.gardes[p] || {});
-    if (p_n == null || p_n === Math.max(1, (profil(p).garder || {})[k.rar] || 1)) delete g[p_carte];
+    if (p_n == null || p_n === Math.max(1, (profil(p).garder || {})[gardeCle(k)] || 1)) delete g[p_carte];
     else g[p_carte] = Math.trunc(p_n);
     return me(p);
   };
@@ -947,12 +950,20 @@
     if (!p_garder || typeof p_garder !== 'object') refuser('Réglage invalide.');
     const propre = {};
     Object.entries(p_garder).forEach(([r, n]) => {
-      if (!['ES', 'C', 'PC', 'R', 'E', 'L'].includes(r)) refuser('Rareté inconnue.');
+      if (!['ES', 'C', 'PC', 'R', 'E', 'L', 'rC', 'rPC', 'rR'].includes(r)) refuser('Rareté inconnue.');
       if (![1, 2, 3, 4].includes(n)) refuser('Entre 1 et 4 exemplaires.');
       if (n > 1) propre[r] = n;
     });
     profil(p).garder = propre;
     return me(p);
+  };
+
+  /* favori, 22_garder.sql */
+  RPC.favori = (p, { p_carte, p_on }) => {
+    if (!carte(p_carte)) refuser('Carte inconnue.');
+    const l = (S.favoris[p] = (S.favoris[p] || []).filter(id => id !== p_carte));
+    if (p_on) l.push(p_carte);
+    return l.slice();
   };
 
   RPC.set_vitrine = (p, { p_cards }) => {
@@ -1411,6 +1422,7 @@
         S.tirages = S.tirages || [];
         /* Version 2.1 : les exemplaires à garder. */
         S.gardes = S.gardes || {};
+        S.favoris = S.favoris || {};
         S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
         chasseTerminee();
         monde20();

@@ -168,26 +168,35 @@ function vReglages() {
 function vGarderReglage() {
   const g = save.garder || {};
   const perso = Object.keys(save.gardes || {}).length;
+  /* Une ligne par rareté ; les Reverses à part (clé « r » + rareté), et
+     seulement les raretés qu'elles ont. */
+  const ligne = (cle, rar, rev) => `<div class="garde-ligne">
+      <span class="garde-rar"><i class="rardot r${rar}"></i>${(RAR[rar] || RAR.C).nom}</span>
+      <div class="segbar garde-seg">${[1, 2, 3, 4].map(n =>
+        `<button data-gdef="${cle}" data-n="${n}" class="${(g[cle] || 1) === n ? 'on' : ''}"
+          aria-label="${(RAR[rar] || RAR.C).nom}${rev ? ' Reverse' : ''} : garder ${n}">${n}</button>`).join('')}</div>
+    </div>`;
+  const revRars = RAR_FILTRES.filter(r => reverses.some(c => c.rar === r));
   return `<section class="panel" id="reglages-garder">
     <h2>Exemplaires à garder</h2>
     <p class="muted small">Combien d'exemplaires de chaque carte tu veux conserver. Le recyclage n'y
       touche pas, et tes amis ne les voient pas comme des doublons.</p>
-    <div class="gardes">${RAR_FILTRES.map(r => `<div class="garde-ligne">
-        <span class="garde-rar"><i class="rardot r${r}"></i>${(RAR[r] || RAR.C).nom}</span>
-        <div class="segbar garde-seg">${[1, 2, 3, 4].map(n =>
-          `<button data-gdef="${r}" data-n="${n}" class="${(g[r] || 1) === n ? 'on' : ''}"
-            aria-label="${(RAR[r] || RAR.C).nom} : garder ${n}">${n}</button>`).join('')}</div>
-      </div>`).join('')}</div>
+    <h3 class="garde-groupe">Classiques</h3>
+    <div class="gardes">${RAR_FILTRES.map(r => ligne(r, r, false)).join('')}</div>
+    ${revRars.length ? `<h3 class="garde-groupe">Reverses<i class="revico"></i></h3>
+    <div class="gardes">${revRars.map(r => ligne('r' + r, r, true)).join('')}</div>` : ''}
     <p class="muted small">Pour une carte en particulier, touche-la dans ta Collection.${perso
       ? ` ${perso} carte${perso > 1 ? 's ont leur' : ' a son'} propre réglage.` : ''}</p>
   </section>`;
 }
 
-async function reglerGardeDefaut(r, n) {
-  if (((save.garder || {})[r] || 1) === n) return;
-  const g = Object.assign({}, save.garder || {}, { [r]: n });
+async function reglerGardeDefaut(cle, n) {
+  if (((save.garder || {})[cle] || 1) === n) return;
+  const g = Object.assign({}, save.garder || {}, { [cle]: n });
+  const rev = cle[0] === 'r';
+  const nom = (RAR[rev ? cle.slice(1) : cle] || RAR.C).nom + (rev ? ' Reverse' : '');
   await agir(() => Backend.reglerGardeDefaut(g),
-    `${(RAR[r] || RAR.C).nom} : ${n === 1 ? 'un exemplaire gardé' : `${n} exemplaires gardés`}.`);
+    `${nom} : ${n === 1 ? 'un exemplaire gardé' : `${n} exemplaires gardés`}.`);
 }
 
 /* Depuis le Recyclage : la page, et la section. */
@@ -238,6 +247,7 @@ function bindReglages() {
   /* Collection : la case « seulement mes cartes ». */
   b('col-poss', e => e.onchange = () => { colPossedees = e.checked; render(); });
   b('col-obj', e => e.onchange = () => { colObjectifs = e.checked; render(); });
+  b('col-fav', e => e.onchange = () => { colFavoris = e.checked; render(); });
 
   b('pf-pseudo', e => e.onkeydown = ev => { if (ev.key === 'Enter') changerPseudo(); });
   b('tr-pseudo', e => {

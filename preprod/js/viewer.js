@@ -18,7 +18,7 @@ function openViewer(c, qui) {
   const R = RAR[c.rar] || RAR.C;
   const v = $('#viewer');
 
-  v.innerHTML = `<div class="vw-bg" data-v="close"></div><button class="vw-close" data-v="close" aria-label="Fermer">✕</button>
+  v.innerHTML = `<div class="vw-bg" data-v="close"></div><button class="vw-close" data-v="close" aria-label="Fermer">✕</button>${vFavVw(c)}
   <div class="vw-stage"><div class="vw-card r${c.rar}" id="vwc">${renderCard(c)}<div class="vw-holo"></div><div class="vw-glare"></div></div></div>
   <div class="vw-shadow" id="vwsh"></div>
   <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span>${c.rev ? '<span class="rc-tag rev">Reverse</span>' : ''}<span class="vw-col">${essIcon(c.col)}${colOf(c).nom}</span><span class="vw-num">${c.promo ? h(c.code) : '#' + String(c.num || 0).padStart(3, '0')}</span><span class="vw-own${n ? '' : ' zero'}">${n ? `Tu en as ${n}` : 'Tu ne l\'as pas'}</span>${lui != null ? `<span class="vw-own autre">${h(qui)} en a ${lui}</span>` : ''}</div></div>
@@ -106,11 +106,46 @@ function vGardeVw(c) {
   </div>`;
 }
 
+/* ---------- Le cœur (version 2.1) ---------- */
+/* En haut à gauche, en face de la croix. Rien que pour soi : il sert à
+   retrouver ses cartes préférées dans la Collection (filtre « Mes
+   favoris »). On peut aimer une carte qu'on n'a pas, ou plus. */
+const vFavVw = c => `<button class="vw-fav${estFavori(c) ? ' on' : ''}" data-v="fav"
+  aria-pressed="${estFavori(c)}" aria-label="${estFavori(c) ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${NAVICO.coeur}</button>`;
+
+async function basculerFavoriVw() {
+  const c = VW && VW.c;
+  if (!c) return;
+  const on = !estFavori(c);
+  const maj = () => {
+    const b = $('#viewer .vw-fav');
+    if (!b) return;
+    b.classList.toggle('on', estFavori(c));
+    b.setAttribute('aria-pressed', estFavori(c));
+    b.setAttribute('aria-label', estFavori(c) ? 'Retirer des favoris' : 'Ajouter aux favoris');
+  };
+  /* Tout de suite à l'écran ; le serveur suit. */
+  save.favoris = on ? (save.favoris || []).concat(c.id) : (save.favoris || []).filter(id => id !== c.id);
+  maj();
+  const b = $('#viewer .vw-fav');
+  if (b && on) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+  SFX.jouer(on ? 'tap' : 'retour');
+  if (on) vibrer(12);
+  try {
+    await Backend.favori(c.id, on);
+  } catch (e) {
+    toast(e.message || 'Le cœur n\'est pas passé.');
+    await Backend.pull().catch(() => {});
+    maj();
+  }
+  render();
+}
+
 let gardeEnvoi = null;
 function changerGardeVw(sens) {
   const c = VW && VW.c;
   if (!c) return;
-  const defaut = Math.max(1, (save.garder || {})[c.rar] || 1);
+  const defaut = gardeRarete(c);
   const g = aGarder(c);
   let n = sens === 0 ? defaut
     : sens > 0 ? (g >= 10 ? GARDE_TOUT : g + 1)
@@ -147,6 +182,7 @@ function closeViewer() {
 
 $('#viewer').addEventListener('click', e => {
   if (e.target.closest('[data-v="close"]')) return closeViewer();
+  if (e.target.closest('[data-v="fav"]')) return basculerFavoriVw();
   const g = e.target.closest('[data-v^="g"]');
   if (g) changerGardeVw(g.dataset.v === 'g+' ? 1 : g.dataset.v === 'g-' ? -1 : 0);
 });

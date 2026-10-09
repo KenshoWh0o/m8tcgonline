@@ -116,6 +116,8 @@ begin
                      where user_id = p and qty > 0), '{}'::jsonb),
     -- Version 2.1 : les exemplaires a garder, carte par carte.
     'gardes', coalesce((select jsonb_object_agg(card_id, n) from gardes where user_id = p), '{}'::jsonb),
+    -- Version 2.1 : les cartes en favori, de la plus ancienne a la plus recente.
+    'favoris', coalesce((select jsonb_agg(card_id order by le) from favoris where user_id = p), '[]'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
     'quetes', coalesce((

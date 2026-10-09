@@ -337,6 +337,7 @@ const NAVICO = {
   moon:  '<svg viewBox="0 0 24 24"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/></svg>',
   auto:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></svg>',
+  coeur: '<svg viewBox="0 0 24 24"><path d="M12 20.3s-7.6-4.5-9.4-9.1C1.3 7.9 3.3 4.4 6.9 4.4c2.1 0 3.7 1.1 5.1 3 1.4-1.9 3-3 5.1-3 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.4 9.1-9.4 9.1Z"/></svg>',
   lock:  '<svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
   caret: '<svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>',
   partage:'<svg viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></svg>',

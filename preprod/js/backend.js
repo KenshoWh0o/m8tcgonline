@@ -91,6 +91,7 @@ Backend.loadLocal = async function () {
   save.inv = save.inv || {};
   save.quetes = [];
   save.vitrine = save.vitrine || [];
+  save.favoris = save.favoris || [];
   save.pseudo = save.pseudo || 'Invité';
   save.avatar = save.avatar || 'star';
   save.frame = save.frame || 'default';
@@ -178,7 +179,8 @@ Backend.apply = function (etat) {
     /* Version 2.1 (supabase/22_garder.sql) : les exemplaires à garder, par
        rareté et carte par carte. */
     garder: p.garder || {},
-    gardes: etat.gardes || {}
+    gardes: etat.gardes || {},
+    favoris: etat.favoris || []
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -266,6 +268,16 @@ Backend.openPack = async function (opts) {
     await persist();
   }
   return { cards: drawn, god };
+};
+
+/* Version 2.1 : le cœur posé sur une carte. Hors ligne, il reste dans le
+   navigateur, comme le reste. */
+Backend.favori = async function (id, on) {
+  if (Backend.mode !== 'cloud') {
+    save.favoris = (save.favoris || []).filter(x => x !== id).concat(on ? [id] : []);
+    return persist();
+  }
+  save.favoris = await Backend.rpc('favori', { p_carte: id, p_on: !!on }) || [];
 };
 
 /* Version 2.1 : combien d'exemplaires garder, d'une carte (`null` : celui

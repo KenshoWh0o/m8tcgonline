@@ -406,7 +406,7 @@ async function clicPage(e) {
     case 'col-toggle': colOuvert = !colOuvert; return render();
     case 'col-reset':
       colFilter = essFilter = rarFilter = 'all';
-      colPossedees = colObjectifs = false;
+      colPossedees = colObjectifs = colFavoris = false;
       return render();
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();

@@ -2220,6 +2220,8 @@ begin
                      where user_id = p and qty > 0), '{}'::jsonb),
     -- Version 2.1 : les exemplaires a garder, carte par carte.
     'gardes', coalesce((select jsonb_object_agg(card_id, n) from gardes where user_id = p), '{}'::jsonb),
+    -- Version 2.1 : les cartes en favori, de la plus ancienne a la plus recente.
+    'favoris', coalesce((select jsonb_agg(card_id order by le) from favoris where user_id = p), '[]'::jsonb),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
     'quetes', coalesce((
@@ -3973,11 +3975,11 @@ on conflict (card_id) do update set data = excluded.data;
 
 -- #####################################################################
 -- ###  22_garder.sql
--- ###  Version 2.1 : les exemplaires a garder
+-- ###  Version 2.1 : les exemplaires a garder, et les favoris
 -- #####################################################################
 
 -- =====================================================================
---  Mate TCG Online — version 2.1 : les exemplaires a garder
+--  Mate TCG Online — version 2.1 : les exemplaires a garder, et les favoris
 --  A executer apres 21_reflets.sql. Rejouable sans danger.
 --
 --  Jusqu'ici, une carte en deux exemplaires avait un doublon : le second
@@ -3986,7 +3988,9 @@ on conflict (card_id) do update set data = excluded.data;
 --  moyen de le dire.
 --
 --  Deux reglages, sur le compte :
---    · par rarete (profiles.garder) : « garder 2 de chaque Legendaire » ;
+--    · par rarete (profiles.garder) : « garder 2 de chaque Legendaire ».
+--      Les Reverses ont les leurs, a part : cle « r » + rarete (rC, rPC,
+--      rR) — garder trois Communes ne dit rien des Reverses Communes ;
 --    · par carte (gardes) : « garder 3 de celle-ci », ou toutes (99).
 --  Le reglage d'une carte l'emporte sur celui de sa rarete. Sans rien, on
 --  garde un exemplaire : rien ne change pour qui n'y touche pas.
@@ -4009,15 +4013,22 @@ create table if not exists public.gardes (
 alter table public.gardes enable row level security;
 revoke all on public.gardes from anon, authenticated;
 
+-- La cle d'une carte dans profiles.garder : sa rarete, precedee de « r »
+-- pour une Reverse.
+create or replace function public.garde_cle(k cards) returns text
+language sql immutable as $$
+  select case when k.reverse then 'r' || k.rar else k.rar end
+$$;
+
 -- Combien d'exemplaires de cette carte le joueur garde : jamais moins d'un.
 create or replace function public.garde_de(p uuid, cid text) returns int
 language sql stable security definer set search_path = public as $$
   select greatest(1, coalesce(
     (select g.n from gardes g where g.user_id = p and g.card_id = cid),
-    (select (pr.garder ->> k.rar)::int from profiles pr, cards k where pr.id = p and k.id = cid),
+    (select (pr.garder ->> garde_cle(k))::int from profiles pr, cards k where pr.id = p and k.id = cid),
     1))
 $$;
-revoke all on function public.garde_de from public, anon, authenticated;
+revoke all on function public.garde_de, public.garde_cle from public, anon, authenticated;
 
 -- Le reglage d'une carte. Egal a celui de sa rarete, il s'efface : la carte
 -- suit alors sa rarete si celle-ci change.
@@ -4032,7 +4043,7 @@ begin
   if k.promo and not k.reverse then raise exception 'Cette carte se garde toujours.'; end if;
   if p_n is not null and (p_n < 1 or p_n > 99) then raise exception 'Entre 1 et 99 exemplaires.'; end if;
 
-  select greatest(1, coalesce((garder ->> k.rar)::int, 1)) into defaut from profiles where id = p;
+  select greatest(1, coalesce((garder ->> garde_cle(k))::int, 1)) into defaut from profiles where id = p;
   if p_n is null or p_n = defaut then
     delete from gardes where user_id = p and card_id = p_carte;
   else
@@ -4042,8 +4053,8 @@ begin
   return me();
 end $$;
 
--- Le reglage par rarete : de 1 a 4 exemplaires. Seuls les ecarts a 1 sont
--- gardes.
+-- Le reglage par rarete : de 1 a 4 exemplaires, les Reverses a part. Seuls
+-- les ecarts a 1 sont gardes.
 create or replace function public.regler_garder_defaut(p_garder jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); propre jsonb := '{}'; cle text; v jsonb;
@@ -4052,7 +4063,7 @@ begin
   perform garde_beta();
   if p_garder is null or jsonb_typeof(p_garder) <> 'object' then raise exception 'Réglage invalide.'; end if;
   for cle, v in select key, value from jsonb_each(p_garder) loop
-    if cle not in ('ES', 'C', 'PC', 'R', 'E', 'L') then raise exception 'Rareté inconnue.'; end if;
+    if cle not in ('ES', 'C', 'PC', 'R', 'E', 'L', 'rC', 'rPC', 'rR') then raise exception 'Rareté inconnue.'; end if;
     if jsonb_typeof(v) <> 'number' or (v #>> '{}')::numeric not in (1, 2, 3, 4) then
       raise exception 'Entre 1 et 4 exemplaires.';
     end if;
@@ -4064,6 +4075,40 @@ end $$;
 
 revoke all on function public.regler_garder, public.regler_garder_defaut from public, anon;
 grant execute on function public.regler_garder, public.regler_garder_defaut to authenticated;
+
+-- =========================================================== les favoris
+-- Un coeur pose sur une carte : rien que pour soi. Il ne protege de rien
+-- (c'est le role des exemplaires a garder), il sert a retrouver ses cartes
+-- preferees dans la Collection. On peut aimer une carte qu'on n'a plus.
+create table if not exists public.favoris (
+  user_id uuid not null references public.profiles on delete cascade,
+  card_id text not null references public.cards on delete cascade,
+  le      timestamptz not null default now(),
+  primary key (user_id, card_id)
+);
+alter table public.favoris enable row level security;
+revoke all on public.favoris from anon, authenticated;
+
+-- Pose ou retire le coeur (pas de bascule : deux appuis partis ensemble ne
+-- s'annulent pas). Rend la liste, pas me() : un coeur ne change rien d'autre.
+create or replace function public.favori(p_carte text, p_on boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if not exists (select 1 from cards where id = p_carte) then raise exception 'Carte inconnue.'; end if;
+  if coalesce(p_on, false) then
+    insert into favoris (user_id, card_id) values (p, p_carte) on conflict do nothing;
+  else
+    delete from favoris where user_id = p and card_id = p_carte;
+  end if;
+  return coalesce((select jsonb_agg(card_id order by le) from favoris where user_id = p), '[]'::jsonb);
+end $$;
+
+revoke all on function public.favori from public, anon;
+grant execute on function public.favori to authenticated;
+
 
 
 -- =====================================================================

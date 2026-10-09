@@ -413,10 +413,12 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 ## Essences Brillantes, carte unique et événements
 
 **Les exemplaires à garder (version 2.1).** Pour ceux qui collectionnent plusieurs exemplaires d'une carte. Deux réglages, enregistrés sur le compte (`supabase/22_garder.sql`) :
-- **par rareté**, dans Réglages › Exemplaires à garder : de 1 à 4 (« garder 2 de chaque Légendaire ») ;
+- **par rareté**, dans Réglages › Exemplaires à garder : de 1 à 4 (« garder 2 de chaque Légendaire »), les Reverses à part (clés `rC`, `rPC`, `rR`) ;
 - **par carte**, dans la visionneuse (toucher une carte de sa Collection) : de 1 à 10, ou « Tous ». Le réglage d'une carte l'emporte sur celui de sa rareté ; revenu à la même valeur, il s'efface et la carte suit de nouveau sa rareté.
 
 Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change sinon : le Recyclage ne propose plus que les exemplaires en plus (le serveur le revérifie dans `recycler`) ; les amis ne voient plus les exemplaires gardés comme des doublons (sa fiche, « Ses doublons », « Chez tes amis ») ; dans la Collection, sous la carte et à côté de son numéro, un point par exemplaire voulu (pleins pour ceux qu'on a, dorés au complet ; « 3/8 » au-delà de cinq ; un cadenas pour « Tous »), et le tiroir de filtres gagne « À compléter ». Les échanges restent libres : proposer ou accepter de céder une carte gardée demande seulement une confirmation.
+
+**Les favoris (version 2.1).** Un cœur, en haut à gauche de la visionneuse, en face de la croix. Rien que pour soi : il ne protège de rien (c'est le rôle des exemplaires à garder) ; il sert à retrouver ses cartes préférées, avec le filtre « Mes favoris » de la Collection, et pose un petit cœur à gauche du numéro, sous la carte. Enregistré sur le compte (table `favoris`, fonction `favori`, `supabase/22_garder.sql`) ; hors ligne, dans le navigateur. On peut aimer une carte qu'on n'a plus.
 
 **Les Essences Brillantes** sont la version brillante des 9 Essences : même illustration, avec un reflet arc-en-ciel et des paillettes posés par le CSS (`.card.r-BR`, `css/cards.css`). La case Essence d'un booster en donne une **une fois sur 50** (`cfg('foil_odds')`) — une tous les huit jours environ pour un joueur régulier. Identifiants `b001` à `b009`, hors extension comme les Promos : ni dans les 122, ni échangeables, ni recyclables, ni fabricables. Elles ont leur section dans la Collection.
 

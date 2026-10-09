@@ -37,7 +37,10 @@ const mesEx = id => save.col[id] || 0;
    la carte, sinon celui de sa rareté, sinon un : jamais moins. 99 veut dire
    « toutes ». Ce qui dépasse est un doublon — recyclable, cessible. */
 const GARDE_TOUT = 99;
-const aGarder = c => !c ? 1 : Math.max(1, (save.gardes || {})[c.id] || (save.garder || {})[c.rar] || 1);
+/* Les Reverses ont leur réglage par rareté à elles : « rC », « rPC », « rR ». */
+const gardeCle = c => (c.rev ? 'r' : '') + c.rar;
+const gardeRarete = c => Math.max(1, (save.garder || {})[gardeCle(c)] || 1);
+const aGarder = c => !c ? 1 : Math.max(1, (save.gardes || {})[c.id] || gardeRarete(c));
 /* Céder celle-ci me ferait passer sous ce que j'ai choisi de garder. Le
    cas d'un seul exemplaire a déjà son étiquette, « Dernière ». */
 const sousObjectif = c => aGarder(c) > 1 && mesEx(c.id) <= aGarder(c);

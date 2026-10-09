@@ -64,6 +64,8 @@ let colPossedees = false;
 /* Version 2.1 : seulement les cartes dont on a moins d'exemplaires que ce
    qu'on veut garder. */
 let colObjectifs = false;
+/* Version 2.1 : seulement les cartes en favori. */
+let colFavoris = false;
 let opening = false;
 
 const persist = () => kvSet('save2', save);

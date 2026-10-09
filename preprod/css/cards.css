@@ -308,4 +308,8 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
 .gnum.ok{color:var(--r-l)}
 .glock{width:1em;height:1em;color:var(--r-l)}
 .glock svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+/* Le cœur d'une carte en favori : à gauche du numéro, en miroir. */
+.gfav{position:absolute;right:100%;top:50%;transform:translateY(calc(-50% - .18em));margin-right:.45em;
+  display:inline-flex;width:1em;height:1em;color:var(--r-pr);font-style:normal;line-height:1}
+.gfav svg{width:100%;height:100%;fill:currentColor}
 
