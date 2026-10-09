@@ -779,3 +779,16 @@ sont pas marquées : elles ne changent jamais sans changer de nom.
 - **supabase-js**, chargé depuis un CDN, uniquement pour le compte en ligne. S'il est absent (hors réseau, bloqueur), le jeu bascule tout seul en mode hors ligne.
 
 Aucune autre bibliothèque, aucune étape de compilation : tout le reste est dans le dépôt.
+
+## Road to Worlds (prototype, `run/`)
+
+Un **autre jeu**, à part : un roguelike à deck dans l'esprit de Balatro, avec les cartes de l'extension. Il sert à répondre à une question — a-t-on envie d'y rejouer ? — avant d'investir plus. En ligne à `matetcg.com/run/` (non indexé, sans lien depuis le jeu), sans compte ni serveur : la partie et les records restent dans le navigateur.
+
+- **Une saison** : 4 étapes (Qualifs, Ligue, Major, Worlds) de 3 matchs ; le dernier oppose une équipe rivale (inventée) qui impose une contrainte.
+- **Une manche** : poser 1 à 5 Joueurs. Leur **formation** (Doublé, Triplé, Synergie = 5 de la même Essence, Roster = 5 Essences différentes, Full squad, Carré, Quintuplé…) donne Points et Multi ; chaque Joueur compté ajoute ses Points (sa première attaque ÷ 10) ; Rare +2 Multi, Épique +4, Légendaire ×1,5.
+- **Le staff** : 5 places de Coachs et d'Objets, chacun avec un effet propre à ce jeu (`STAFF` dans `run/moteur.js`).
+- **Le mercato** entre les matchs : staff, Joueurs pour le deck, Moments qui entraînent une formation, recruter un double ou libérer un Joueur.
+- **Saison du jour** : la même graine pour tout le monde ce jour-là.
+
+`run/moteur.js` contient toutes les règles, sans rien toucher à la page ; il tourne aussi sous Node. `node tools/run-sim.js 600` simule des saisons avec un joueur automatique simple (meilleur coup de la main, achats sommaires). Réglage actuel : il gagne ~27 % des saisons, et perd surtout au Major et aux Worlds. Ce ne sont pas les règles du jeu de cartes Mate TCG.
+
