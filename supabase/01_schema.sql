@@ -573,6 +573,17 @@ begin
     from quests q where q.metric like 'rset\_%' or q.metric = 'brill_ALL'
   on conflict (user_id, quest_id, period_key)
     do update set progress = greatest(quest_progress.progress, excluded.progress);
+
+  -- Version 2.1 : le plus d'exemplaires d'une meme carte classique d'une
+  -- rarete (« ex_R », « ex_E », « ex_L ») — ni Reverse, ni Promo.
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, 'all',
+         coalesce((select max(c.qty) from collection c join cards k on k.id = c.card_id
+                    where c.user_id = p and not k.promo and not k.reverse
+                      and k.rar = substr(q.metric, 4)), 0)
+    from quests q where q.metric like 'ex\_%'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;
 
 -- =====================================================================

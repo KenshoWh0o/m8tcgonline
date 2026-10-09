@@ -111,7 +111,7 @@ function montrerDiscord() {
 /* Une fois par version et par appareil, à ceux qui jouaient déjà. Elle annonce
    aussi l'événement en cours, et se rouvre depuis son bandeau (js/booster.js).
    Changer NOUVEAUTES_VERSION la remontre à tout le monde. */
-const NOUVEAUTES_VERSION = '2.0';
+const NOUVEAUTES_VERSION = '2.1';
 
 /* Un événement se signale aussi : une fois annoncé, une fois commencé — même
    à qui a déjà vu les nouveautés de la version. */
@@ -135,7 +135,7 @@ function montrerNouveautes() {
     <span><b>${titre}</b> ${texte}</span></li>`;
 
   openSheet({
-    title: 'Version 2.0 · Reflets',
+    title: 'Version 2.1 · Reflets',
     body: `<div class="nvhero v2">
         <div class="rf-holo" aria-hidden="true"></div>
         <div class="nvtrio">${trio.map(c => `<div class="nvcarte">${renderCard(c)}</div>`).join('')}</div>
@@ -146,6 +146,9 @@ function montrerNouveautes() {
         </div>
       </div>
       <ol class="bvpoints nvpoints">
+        ${point('lock', 'Exemplaires à garder.', 'Dis combien tu en gardes, par rareté dans les Réglages ou carte par carte : le recyclage n\'y touche plus, et tes amis ne les voient plus comme des doublons.')}
+        ${point('coeur', 'Tes favoris.', 'Un cœur sur tes cartes préférées, et un filtre pour les retrouver dans ta Collection.')}
+        ${point('quest', 'Dix fois la même.', '10 exemplaires d\'une même Rare, 5 d\'une Épique, 3 d\'une Légendaire : trois nouvelles quêtes saisonnières.')}
         ${point('cards', 'La Collection repensée.', 'Classiques, Reverses et Spéciales, chacune sa page, et une jauge pour tout.')}
         ${point('user', 'Cadres, titres, profil.', `De nouveaux cadres à gagner, ${Object.keys(TITRES).length} titres à porter, une bannière et une devise sur ta fiche.`)}
         ${point('illu', 'Devine l\'illu.', 'Une illustration pixelisée par jour, la même pour tout le monde. Quatre essais.')}

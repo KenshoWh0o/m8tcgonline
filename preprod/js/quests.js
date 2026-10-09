@@ -27,7 +27,9 @@ const QICO = {
   set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin',
   /* Version 2.0 : Reverses, Brillantes, Devine l'illu, invitations, personnalisation. */
   rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
-  brill_ALL: 'promo', illu: 'illu', ev_visite: 'reflets', invite: 'amis', titre: 'user', perso: 'user'
+  brill_ALL: 'promo', illu: 'illu', ev_visite: 'reflets', invite: 'amis', titre: 'user', perso: 'user',
+  /* Version 2.1 : plusieurs exemplaires d'une même carte. */
+  ex_R: 'cards', ex_E: 'cards', ex_L: 'coin'
 };
 
 /* ---------- Comptages ---------- */
@@ -231,7 +233,7 @@ document.addEventListener('toggle', e => {
   if (t) qThemes[t] = e.target.open;
 }, true);
 const JALON_THEMES = [
-  ['Collection', m => m === 'collection_pct' || m.startsWith('set_') || m.startsWith('rarity_')],
+  ['Collection', m => m === 'collection_pct' || m.startsWith('set_') || m.startsWith('rarity_') || m.startsWith('ex_')],
   ['Reverses', m => m.startsWith('rset_')],
   ['Boosters', m => m === 'packs'],
   ['Et aussi', () => true]
@@ -310,12 +312,23 @@ function vQuete(q, apres) {
     <span class="qico">${NAVICO[fini ? 'check' : QICO[q.metric] || 'quest']}</span>
     <div class="qcorps">
       <div class="qhead"><b>${h(q.titre)}</b>${vRecompense(q)}</div>
-      <p class="qdetail">${h(q.detail)}${apres ? ` <span class="qsuite">+${apres} palier${apres > 1 ? 's' : ''}</span>` : ''}</p>
+      <p class="qdetail">${h(q.detail)}${apres ? ` <span class="qsuite">+${apres} palier${apres > 1 ? 's' : ''}</span>` : ''}${q.claimed ? '' : vMeilleure(q)}</p>
       ${q.claimed ? '' : `<div class="qfoot"><div class="qbar"><i style="width:${pct}%"></i></div>
         ${fini ? `<button class="btn tiny qbtn" data-quete="${h(q.id)}" data-snd="piece">Récupérer</button>`
           : `<span class="qcompte"><b>${fmtN(q.progress)}${unite}</b> / ${fmtN(q.goal)}${unite}</span>`}</div>`}
     </div>
   </article>`;
+}
+
+/* Version 2.1 : pour « plusieurs exemplaires d'une même carte », celle dont
+   on a le plus — une pression l'ouvre, et c'est là qu'on règle « Garder »
+   pour ne pas la recycler en route. */
+function vMeilleure(q) {
+  if (!q.metric.startsWith('ex_')) return '';
+  const rar = q.metric.slice(3);
+  const c = cards.filter(k => k.rar === rar && !k.promo && mesEx(k.id) > 0)
+    .sort((a, b) => mesEx(b.id) - mesEx(a.id) || a.num - b.num)[0];
+  return c ? ` <button class="linkbtn qmeilleure" data-show="${c.id}" data-snd="carte">${nomH(c)} ×${mesEx(c.id)}</button>` : '';
 }
 
 /* Le compte à rebours bat sans redessiner la page : un seul nœud change. */

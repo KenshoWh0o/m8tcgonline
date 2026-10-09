@@ -136,6 +136,10 @@
     ['m_packs300','milestone', 'packs',         300,    0, 'f_sceau',  'Trois cents paquets', 'Ouvre 300 boosters en tout.', 23],
     ['m_illu10',  'milestone', 'illu',           10,    0, 't_devin',  'Le Devin',           'Trouve 10 illustrations à Devine l\'illu.', 24],
     ['m_invite',  'milestone', 'invite',          1,    0, 't_hote',   'L\'Hôte',            'Un ami entre dans le jeu avec ton invitation.', 25],
+    /* Version 2.1 (04_seed.sql) */
+    ['m_exR',     'milestone', 'ex_R',           10, 1000, null, 'Dix fois la même',     'Possède 10 exemplaires d\'une même Rare.', 26],
+    ['m_exE',     'milestone', 'ex_E',            5, 1500, null, 'Cinq fois la même',    'Possède 5 exemplaires d\'une même Épique.', 27],
+    ['m_exL',     'milestone', 'ex_L',            3, 2500, null, 'Trois fois la même',   'Possède 3 exemplaires d\'une même Légendaire.', 28],
     /* L'événement « Reflets » : ses quêtes paient en Prismes. */
     ['e_check',   'ev_jour', 'ev_visite',   1, 10, null, 'Un reflet par jour',  'Passe voir l\'événement aujourd\'hui.', 1, 'reflets', 'prismes'],
     ['e_packs',   'ev_jour', 'packs',     4, 15, null, 'Quatre boosters',     'Ouvre 4 boosters aujourd\'hui.', 2, 'reflets', 'prismes'],
@@ -283,8 +287,10 @@
     const valeur = q => q.metric === 'collection_pct' ? pct
       : extension().filter(k => k.rar === q.metric.slice(4) && (c[k.id] || 0) > 0).length;
     const etat = q => q.metric === 'collection_pct' || q.metric.startsWith('set_')
-      || q.metric.startsWith('rset_') || q.metric === 'brill_ALL';
-    const valeur2 = q => q.metric === 'rset_ALL' ? reverses.filter(k => (c[k.id] || 0) > 0).length
+      || q.metric.startsWith('rset_') || q.metric === 'brill_ALL' || q.metric.startsWith('ex_');
+    const valeur2 = q => q.metric.startsWith('ex_')
+        ? Math.max(0, ...extension().filter(k => k.rar === q.metric.slice(3)).map(k => c[k.id] || 0))
+      : q.metric === 'rset_ALL' ? reverses.filter(k => (c[k.id] || 0) > 0).length
       : q.metric.startsWith('rset_') ? reverses.filter(k => k.rar === q.metric.slice(5) && (c[k.id] || 0) > 0).length
       : q.metric === 'brill_ALL' ? brillantes.filter(k => (c[k.id] || 0) > 0).length
       : valeur(q);

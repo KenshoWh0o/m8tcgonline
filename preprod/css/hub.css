@@ -200,6 +200,7 @@
 .qhead b{font-size:14px;font-weight:800;line-height:1.25}
 .qdetail{margin:0;line-height:1.35;font-size:12px;color:var(--muted)}
 .qsuite{color:var(--subtle);font-weight:700}
+.qmeilleure{display:inline;padding:0;min-height:0;font-size:inherit;font-weight:700;color:var(--accent-soft)}
 .qreward{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-family:var(--display);
   font-weight:900;font-size:13.5px;color:var(--brand-light)}
 .qfoot{display:flex;align-items:center;gap:10px;margin-top:4px}

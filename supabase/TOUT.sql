@@ -597,6 +597,17 @@ begin
     from quests q where q.metric like 'rset\_%' or q.metric = 'brill_ALL'
   on conflict (user_id, quest_id, period_key)
     do update set progress = greatest(quest_progress.progress, excluded.progress);
+
+  -- Version 2.1 : le plus d'exemplaires d'une meme carte classique d'une
+  -- rarete (« ex_R », « ex_E », « ex_L ») — ni Reverse, ni Promo.
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, 'all',
+         coalesce((select max(c.qty) from collection c join cards k on k.id = c.card_id
+                    where c.user_id = p and not k.promo and not k.reverse
+                      and k.rar = substr(q.metric, 4)), 0)
+    from quests q where q.metric like 'ex\_%'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;
 
 -- =====================================================================
@@ -1800,7 +1811,16 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_brill',   'milestone', 'brill_ALL', 9,           0, 'f_aurore', 'Aurore',               'Possède les 9 Essences Brillantes.', 22),
   ('m_packs300','milestone', 'packs',     300,         0, 'f_sceau',  'Trois cents paquets',  'Ouvre 300 boosters en tout.', 23),
   ('m_illu10',  'milestone', 'illu',       10,         0, 't_devin',  'Le Devin',             'Trouve 10 illustrations à Devine l''illu.', 24),
-  ('m_invite',  'milestone', 'invite',      1,         0, 't_hote',   'L''Hôte',              'Un ami entre dans le jeu avec ton invitation.', 25)
+  ('m_invite',  'milestone', 'invite',      1,         0, 't_hote',   'L''Hôte',              'Un ami entre dans le jeu avec ton invitation.', 25),
+  -- ---------------------------------------------------------- version 2.1
+  -- Plusieurs exemplaires d'une meme carte classique (pas une Reverse) :
+  -- l'appel des exemplaires a garder (22_garder.sql). Simulation, sans rien
+  -- recycler de la carte : 10 d'une meme Rare vers 170 boosters, 5 d'une
+  -- meme Epique vers 200, 3 d'une meme Legendaire vers 230 (medianes) —
+  -- un mois environ chacune a six boosters par jour. Les echanges y aident.
+  ('m_exR',     'milestone', 'ex_R',       10,      1000, null,      'Dix fois la même',      'Possède 10 exemplaires d''une même Rare.', 26),
+  ('m_exE',     'milestone', 'ex_E',        5,      1500, null,      'Cinq fois la même',     'Possède 5 exemplaires d''une même Épique.', 27),
+  ('m_exL',     'milestone', 'ex_L',        3,      2500, null,      'Trois fois la même',    'Possède 3 exemplaires d''une même Légendaire.', 28)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -1814,6 +1834,7 @@ delete from public.quests where id not in (
   'm_packs25','m_packs50','m_packs100','m_packs200',
   'm_trade25',
   'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_illu10','m_invite',
+  'm_exR','m_exE','m_exL',
   'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev45','e_trade','e_illu7','e_packs70',
   'e_recycle','e_invite');
 
