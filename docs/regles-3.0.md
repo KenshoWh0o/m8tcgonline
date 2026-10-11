@@ -167,9 +167,11 @@ données : « étoile » et « déclencheur » ; certaines n'en ont pas).
    [Carte]
 
 - **Le premier CEO n'attaque pas à son premier tour.** [Maison] (Pokémon et
-  One Piece font de même). En simulation, le premier CEO gagne alors un peu
-  plus d'une partie sur deux (≈ 54 % entre deux IA Difficiles) ; donner une
-  Essence de plus au second le faisait passer à ≈ 43 %.
+  One Piece font de même).
+- **Le second CEO joue 2 Essences à son premier tour**, au lieu d'une : sa
+  compensation pour jouer en second. [Maison] Sur 400 parties entre deux IA
+  de niveau Normal, le premier CEO gagnait 55 % des parties sans cette
+  compensation, 49 % avec.
 - **Un Joueur peut attaquer dès le tour où il est déployé.** [Déduit,
   moyenne] : l'effet d'entrée de Calma (« ne peut pas défendre une attaque
   de ce Joueur **ce tour** ») suppose qu'il attaque le tour de son entrée.
@@ -359,7 +361,7 @@ l'usage), voici ce que les cartes ne permettent pas de trancher et qui a
 | Main de départ | 5 (+1 changement) | Maison |
 | Club | 30 | Maison |
 | Réserve | 10 | Maison |
-| Essences par tour | 1 | Maison |
+| Essences par tour | 1 (2 au premier tour du second CEO) | Maison |
 | Joueurs déployés par tour | 1 | Maison |
 | Coachs par tour | 1 | Maison (indice faible) |
 | Objets par Joueur | 3 | Maison |

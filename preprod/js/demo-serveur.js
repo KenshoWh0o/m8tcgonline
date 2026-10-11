@@ -128,6 +128,16 @@
     ['d_revR',    'daily',     'rev_R',           1,   40, null, 'Reflet rare',          'Décroche une Reverse Rare.', 7],
     ['w_revR',    'weekly',    'rev_R',           5,  250, null, 'Cinq reflets',         'Décroche 5 Reverses Rares cette semaine.', 7],
     ['m_revC',    'milestone', 'rset_C',       null,  400, null, 'Reverses Communes',    'Possède toutes les Reverses Communes.', 17],
+    /* Version 3.0 (23_combats.sql) : les combats. */
+    ['d_combat',   'daily',     'combats',          1,   30, null, 'Sur le terrain',         'Joue un combat, contre l\'IA ou un ami.', 8],
+    ['d_victoire', 'daily',     'victoires',        1,   50, null, 'Première victoire',      'Gagne un combat.', 9],
+    ['d_vaincus',  'daily',     'vaincus',          5,   40, null, 'Faucheur',               'Vaincs 5 Joueurs adverses en combat.', 10],
+    ['w_victoires','weekly',    'victoires',       10,  300, null, 'Série de victoires',     'Gagne 10 combats cette semaine.', 8],
+    ['w_dur',      'weekly',    'victoires_dures',  3,  350, null, 'Sans trembler',          'Gagne 3 combats en Difficile ou plus.', 9],
+    ['w_defi',     'weekly',    'defis',            1,  200, null, 'Entre amis',             'Joue un défi contre un ami.', 10],
+    ['m_campagne', 'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 20],
+    ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l\'IA en Légende.', 21],
+    ['m_cent',     'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 22],
     ['m_revPC',   'milestone', 'rset_PC',      null,  700, null, 'Reverses Peu communes','Possède toutes les Reverses Peu communes.', 18],
     ['m_revR',    'milestone', 'rset_R',       null, 2500, null, 'Reverses Rares',       'Possède toutes les Reverses Rares.', 19],
     ['m_revALL',  'milestone', 'rset_ALL',     null,    0, 'f_reflet', 'Le Reflet complet', 'Possède les 85 Reverses.', 20],
@@ -170,6 +180,15 @@
     ['f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2],
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
     ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4],
+    /* Version 3.0 (23_combats.sql) : les tapis de jeu et les sleeves. */
+    ['t_chateau',   'tapis',  'Tapis « Le Château »',   'Le château et ses feux d\'artifice, sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1],
+    ['t_reverie',   'tapis',  'Tapis « Rêverie »',      'La montagne violette, et les visages dans les nuages.', 4000, 'cosmetique', 1, null, true, 2],
+    ['t_chevalier', 'tapis',  'Tapis « Le Chevalier »', 'Le chevalier en armure, médaillon M8 au cou.',          5000, 'cosmetique', 1, null, true, 3],
+    ['t_veste',     'tapis',  'Tapis « Veste Rose »',   'La veste rose et ses éclats.',                           4000, 'cosmetique', 1, null, true, 4],
+    ['t_pilote',    'tapis',  'Tapis « Petit Pilote »', 'Une voiture téléguidée lancée à pleine vitesse.',        4000, 'cosmetique', 1, null, true, 5],
+    ['t_peche',     'tapis',  'Tapis « Grosse Prise »', 'Une partie de pêche qui tourne mal pour le requin.',     4000, 'cosmetique', 1, null, true, 6],
+    ['s_sorcier',   'sleeve', 'Sleeve « Le Sorcier »',  'Le dos de tes cartes : le sorcier en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1],
+    ['s_argent',    'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2],
     /* Version 2.0 : l'invitation (Fragments) et la boutique de l'événement (Prismes). */
     ['s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 10 boosters et 1 000 Éclats de bienvenue.', 2000, 'invitation', 1, null, false, 1, 'eclats', null, 3],
     ['ev_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      70, 'tickets',   2,   null, false, 1, 'prismes', 'reflets', 5],
@@ -405,6 +424,7 @@
       col: garde(colDe(p)),
       gardes: Object.assign({}, (S.gardes || {})[p] || {}),
       favoris: ((S.favoris || {})[p] || []).slice(),
+      combat: combatEtat(p),
       inv: garde(invDe(p)),
       quetes: QUETES.filter(q => (!q.evenement || q.evenement === evenementEnCours()) && !(q.metric === 'invite' && estFilleul(p)))
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
@@ -1395,6 +1415,9 @@
       change = true;
     });
 
+    /* Version 3.0 : les défis et la Guerre des Sections. */
+    if (vivreCombats(t)) change = true;
+
     /* Kairo demande à devenir ton ami, une fois. */
     if (S.kairo && t >= S.kairo) {
       S.kairo = 0;
@@ -1411,6 +1434,318 @@
       if (attente < 2) fait = amis.sort(() => Math.random() - .5).some(proposerEchange);
       S.prochaineOffre = t + (fait ? alea(6, 12) * 60000 : 60000);
       change = change || fait;
+    }
+    return change;
+  }
+
+  /* ================================== version 3.0, 23_combats.sql */
+  /* Les combats : la Section, les decks, les cosmétiques, les récompenses
+     d'un combat contre l'IA, les défis entre amis, la Guerre des Sections.
+     Les tables de récompenses viennent de la page (js/combat/campagne.js),
+     comme la table SQL en est la copie. */
+  const SEC_PROMO = { toxique: 'p03', deter: 'p04' };
+  const CB_MIN_MS = 20000;
+  const cb = p => {
+    S.cb = S.cb || {};
+    return (S.cb[p] = S.cb[p] || { section: null, decks: [], deck_actif: null, cosm: {}, faits: [], finie: false,
+      jour: null, recompensees: 0, stats: { victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0 }, ouverts: {}, defis_jour: null, defis_rec: 0 });
+  };
+  const guerre = () => {
+    const sem = semaineParis(now());
+    if (!S.guerre || S.guerre.semaine !== sem) {
+      const ancien = S.guerre;
+      S.guerre = { semaine: sem, toxique: 0, deter: 0, contrib: {} };
+      if (ancien && (ancien.toxique || ancien.deter)) S.guerrePassee = ancien;
+    }
+    return S.guerre;
+  };
+  function marquerPoints(p, n) {
+    const c = cb(p);
+    if (!c.section || !(n > 0)) return;
+    const g = guerre();
+    g[c.section] += n;
+    g.contrib[p] = (g.contrib[p] || 0) + n;
+  }
+  function combatEtat(p) {
+    const c = cb(p);
+    const auj = jourParis(now());
+    const g = guerre();
+    const lundi = debutSemaine(now()) + 7 * 86400000;
+    return {
+      section: c.section, decks: c.decks.map(d => Object.assign({}, d)), deck_actif: c.deck_actif,
+      cosm: Object.assign({}, c.cosm),
+      campagne: { faits: c.faits.slice(), finie: !!c.finie },
+      jour: { recompensees: c.jour === auj ? c.recompensees : 0, plafond: PVE_PLAFOND },
+      stats: Object.assign({}, c.stats),
+      guerre: { toxique: g.toxique, deter: g.deter, moi: g.contrib[p] || 0, fin: iso(lundi), prix: '2 boosters et 200 Éclats' },
+      defis: (S.defis || []).filter(d => (d.de === p || d.pour === p) && ['attente', 'en_cours'].includes(d.statut)).map(d => {
+        const o = profil(d.de === p ? d.pour : d.de);
+        return { id: d.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null,
+          pour_moi: d.pour === p, statut: d.statut, vu: d.de === p ? !!d.vu_de : !!d.vu_pour };
+      })
+    };
+  }
+
+  RPC.combat_section = (p, { p_section }) => {
+    if (!SEC_PROMO[p_section]) refuser('Section inconnue.');
+    const c = cb(p);
+    if (c.section) refuser('Tu as déjà rejoint une Section.');
+    c.section = p_section;
+    ajouter(p, SEC_PROMO[p_section], 1);
+    return me(p);
+  };
+
+  /* Les réglages : on ne choisit que ce qu'on possède. */
+  RPC.combat_reglages = (p, { p_reglages }) => {
+    const c = cb(p);
+    const r = p_reglages || {};
+    if (r.deck_actif !== undefined) c.deck_actif = r.deck_actif;
+    for (const k of ['tapis', 'sleeve', 'jeton']) {
+      if (!r[k]) continue;
+      const base = { tapis: 't_base', sleeve: 's_base', jeton: 'j_base' }[k];
+      if (r[k] !== base && !((invDe(p)[r[k]] || 0) > 0)) refuser('Tu ne possèdes pas cet objet.');
+      c.cosm[k] = r[k];
+    }
+    return me(p);
+  };
+
+  /* deck_sauver : au plus 20 decks ; les cartes, possédées ; les limites
+     d'exemplaires, respectées. Un deck incomplet s'enregistre (on le finira
+     plus tard), il ne se joue simplement pas. */
+  RPC.deck_sauver = (p, { p_deck }) => {
+    const c = cb(p);
+    const d = p_deck || {};
+    if (!d.cartes || typeof d.cartes !== 'object') refuser('Deck invalide.');
+    const nom = String(d.nom || '').trim().slice(0, 32) || 'Mon deck';
+    const err = Decks.verifier({ cartes: d.cartes, reserve: d.reserve || {} }, colDe(p))
+      .filter(e => !/manque|de trop|Réserve doit|au moins un Joueur/.test(e));
+    if (err.length) refuser(err[0]);
+    if (!d.id && c.decks.length >= 20) refuser('20 decks au plus.');
+    const id = d.id && c.decks.some(x => x.id === d.id) ? d.id : 'd' + (++S.seq);
+    const propre = { id, nom, cartes: Object.assign({}, d.cartes), reserve: Object.assign({}, d.reserve || {}), couverture: d.couverture || null };
+    c.decks = c.decks.filter(x => x.id !== id).concat([propre]);
+    if (!c.deck_actif) c.deck_actif = id;
+    return me(p);
+  };
+  RPC.deck_supprimer = (p, { p_id }) => {
+    const c = cb(p);
+    c.decks = c.decks.filter(x => x.id !== p_id);
+    if (c.deck_actif === p_id) c.deck_actif = null;
+    return me(p);
+  };
+
+  /* combat_debut : le serveur ouvre un combat et tire la graine. */
+  RPC.combat_debut = (p, { p_mode, p_cle, p_niveau }) => {
+    const c = cb(p);
+    if (!c.section) refuser('Rejoins d\'abord une Section.');
+    if (!['campagne', 'infini'].includes(p_mode)) refuser('Mode inconnu.');
+    if (p_mode === 'campagne') {
+      const l = combatsCampagne(c.section);
+      const f = l.find(x => x.id === p_cle);
+      if (!f) refuser('Combat inconnu.');
+      if (f.n > 0 && !c.faits.includes(l[f.n - 1].id) && !c.faits.includes(f.id)) refuser('Gagne d\'abord le combat précédent.');
+    } else if (!(p_niveau >= 1 && p_niveau <= 5)) refuser('Difficulté inconnue.');
+    const id = 'cb' + (++S.seq);
+    c.ouverts = c.ouverts || {};
+    /* Un seul combat ouvert à la fois : le précédent compte comme perdu. */
+    Object.keys(c.ouverts).forEach(k => { delete c.ouverts[k]; c.stats.defaites++; });
+    const graine = Math.floor(Math.random() * 4294967295) + 1;
+    c.ouverts[id] = { mode: p_mode, cle: p_cle, niveau: p_mode === 'campagne' ? combatsCampagne(c.section).find(x => x.id === p_cle).niveau : p_niveau, debut: now(), graine };
+    return { id, graine };
+  };
+
+  /* combat_fin : le résultat, et ce qu'il rapporte. */
+  RPC.combat_fin = (p, { p_id, p_gagne, p_resume }) => {
+    const c = cb(p);
+    const o = (c.ouverts || {})[p_id];
+    if (!o) refuser('Ce combat n\'est plus ouvert.');
+    delete c.ouverts[p_id];
+    const auj = jourParis(now());
+    if (c.jour !== auj) { c.jour = auj; c.recompensees = 0; }
+    const r = { eclats: 0, boosters: 0, fragments: 0, points: 0, carte: null, titre: null, message: '' };
+    const res = p_resume || {};
+    const trop = now() - o.debut < CB_MIN_MS;
+    bump(p, 'combats', 1);
+    if (!p_gagne) {
+      c.stats.defaites++;
+      r.message = 'Pas de récompense pour une défaite — mais la quête « Sur le terrain » avance.';
+      return { etat: me(p), recompense: r };
+    }
+    c.stats.victoires++;
+    bump(p, 'victoires', 1);
+    bump(p, 'vaincus', Math.min(20, Math.max(0, +res.vaincus || 0)));
+    if (o.niveau >= 4) bump(p, 'victoires_dures', 1);
+    if (o.niveau >= 5 && o.mode === 'infini') bump(p, 'legende', 1);
+    if (trop) { r.message = 'Combat trop court pour être récompensé.'; return { etat: me(p), recompense: r }; }
+    const pr = profil(p);
+    const plafond = () => c.recompensees < PVE_PLAFOND;
+    if (o.mode === 'campagne') {
+      const l = combatsCampagne(c.section);
+      const f = l.find(x => x.id === o.cle);
+      if (!c.faits.includes(f.id)) {
+        c.faits.push(f.id);
+        bump(p, 'campagne', 1);
+        r.eclats = f.recompense.eclats || 0;
+        r.boosters = f.recompense.boosters || 0;
+        r.fragments = f.recompense.fragments || 0;
+        r.points = 3;
+        if (c.faits.length >= l.length && !c.finie) {
+          c.finie = true;
+          const autre = c.section === 'toxique' ? 'deter' : 'toxique';
+          ajouter(p, SEC_PROMO[autre], 1);
+          r.carte = SEC_PROMO[autre];
+          r.message = 'Campagne terminée : la Promo de l\'autre Section est à toi.';
+        }
+      } else {
+        r.points = 1;
+        if (plafond()) { c.recompensees++; r.eclats = RECOMPENSE_REJOUER.eclats; }
+        else r.message = 'Victoires récompensées du jour atteintes : celle-ci est pour le plaisir.';
+      }
+    } else {
+      const d = DIFFICULTES[o.niveau - 1];
+      r.points = d.points;
+      if (plafond()) { c.recompensees++; r.eclats = d.eclats; }
+      else r.message = 'Victoires récompensées du jour atteintes : celle-ci est pour le plaisir.';
+    }
+    pr.shards += r.eclats;
+    pr.boosters_bonus = (pr.boosters_bonus || 0) + r.boosters;
+    pr.fragments = (pr.fragments || 0) + r.fragments;
+    marquerPoints(p, r.points);
+    syncCollection(p);
+    checkPromos(p);
+    return { etat: me(p), recompense: r };
+  };
+
+  /* ---------- les défis entre amis ---------- */
+  const defisDe = () => (S.defis = S.defis || []);
+  const vueDefi = (d, p, depuis) => {
+    const moi = d.de === p ? 0 : 1;
+    const o = profil(moi === 0 ? d.pour : d.de);
+    return {
+      id: d.id, statut: d.statut, moi,
+      init: d.statut === 'attente' ? null : { decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine },
+      actions: (d.actions || []).slice(depuis || 0),
+      adversaire: { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null, cosm: (cb(o.id).cosm || {}) }
+    };
+  };
+  function deckBot() {
+    const r = () => Math.random();
+    return Decks.versMoteur(Decks.aleatoire(r, { niveau: 3 }));
+  }
+  RPC.defi_lancer = (p, { p_pseudo, p_deck }) => {
+    const o = parPseudo(p_pseudo);
+    if (!o) refuser('Joueur introuvable.');
+    if (!(paire(p, o.id) || {}).accepte) refuser('Tu ne peux défier que tes amis.');
+    if (!p_deck || !Array.isArray(p_deck.club) || p_deck.club.length !== Combat.REGLE.CLUB) refuser('Deck invalide.');
+    if (defisDe().some(d => ['attente', 'en_cours'].includes(d.statut) && ((d.de === p && d.pour === o.id) || (d.de === o.id && d.pour === p))))
+      refuser('Un défi est déjà en cours avec ce joueur.');
+    const d = { id: 'df' + (++S.seq), de: p, pour: o.id, statut: 'attente', deck_de: p_deck, deck_pour: null,
+      graine: Math.floor(Math.random() * 4294967295) + 1, actions: [], cree: now(), maj: now() };
+    defisDe().push(d);
+    notifier(o.id, 'defi', p, d.id);
+    /* Un ami simulé accepte au bout de quelques secondes. */
+    if (o.bot) d.accepter_a = now() + alea(3, 6) * 1000;
+    return me(p);
+  };
+  RPC.defi_repondre = (p, { p_id, p_ok, p_deck }) => {
+    const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
+    if (!d || d.statut !== 'attente') refuser('Ce défi n\'est plus en attente.');
+    if (!p_ok) { d.statut = 'refuse'; d.maj = now(); return { etat: me(p) }; }
+    if (d.pour !== p) refuser('C\'est à ton ami de répondre.');
+    if (!p_deck || !Array.isArray(p_deck.club) || p_deck.club.length !== Combat.REGLE.CLUB) refuser('Deck invalide.');
+    d.deck_pour = p_deck;
+    d.statut = 'en_cours';
+    d.vu_pour = true;
+    d.maj = now();
+    notifier(d.de, 'defi_accepte', p, d.id);
+    return { etat: me(p), defi: vueDefi(d, p, 0) };
+  };
+  /* L'adversaire simulé joue ses coups dès qu'on lui demande l'état. */
+  function faireJouerBot(d) {
+    const bot = profil(d.de).bot ? 0 : profil(d.pour).bot ? 1 : -1;
+    if (bot < 0 || d.statut !== 'en_cours') return;
+    const E = Combat.rejouer({ decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine }, d.actions);
+    let n = 0;
+    while (Combat.demande(E) && Combat.demande(E).qui === bot && n++ < 80) {
+      const a = IA.choisir(E, { niveau: 3 });
+      Combat.agir(E, a);
+      d.actions.push(a);
+    }
+    if (E.fin) d.fini = true;
+  }
+  RPC.defi_etat = (p, { p_id, p_depuis }) => {
+    const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
+    if (!d) refuser('Défi introuvable.');
+    if (d.de === p) d.vu_de = true; else d.vu_pour = true;
+    faireJouerBot(d);
+    return vueDefi(d, p, p_depuis || 0);
+  };
+  RPC.defi_jouer = (p, { p_id, p_n, p_action }) => {
+    const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
+    if (!d || d.statut !== 'en_cours') refuser('Ce défi n\'est plus en cours.');
+    if (p_n !== d.actions.length) refuser('Actions désynchronisées.');
+    d.actions.push(p_action);
+    d.maj = now();
+    return { n: d.actions.length };
+  };
+  RPC.defi_fin = (p, { p_id }) => {
+    const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
+    if (!d) refuser('Défi introuvable.');
+    const E = Combat.rejouer({ decks: [d.deck_de, d.deck_pour], noms: ['', ''], graine: d.graine }, d.actions);
+    if (!E.fin) refuser('Le défi n\'est pas fini.');
+    if (d.statut === 'en_cours') d.statut = 'fini';
+    const moi = d.de === p ? 0 : 1;
+    const c = cb(p);
+    const r = { eclats: 0, points: 0, message: '' };
+    d.payes = d.payes || {};
+    if (!d.payes[p]) {
+      d.payes[p] = true;
+      const auj = jourParis(now());
+      if (c.defis_jour !== auj) { c.defis_jour = auj; c.defis_rec = 0; }
+      const gagne = E.fin.gagnant === moi;
+      c.stats[gagne ? 'pvp_v' : 'pvp_d']++;
+      bump(p, 'defis', 1);
+      bump(p, 'combats', 1);
+      if (gagne) { bump(p, 'victoires', 1); r.points = DEFI_GAIN.points; marquerPoints(p, r.points); }
+      if (c.defis_rec < DEFI_GAIN.plafond) { c.defis_rec++; r.eclats = gagne ? DEFI_GAIN.victoire : DEFI_GAIN.defaite; profil(p).shards += r.eclats; }
+      else r.message = 'Défis récompensés du jour atteints.';
+    }
+    return { etat: me(p), recompense: r };
+  };
+
+  /* La vie des combats : les amis simulés acceptent tes défis, t'en lancent
+     parfois, et les deux Sections marquent des points. */
+  function vivreCombats(t) {
+    let change = false;
+    defisDe().forEach(d => {
+      if (d.statut === 'attente' && d.accepter_a && d.accepter_a <= t) {
+        delete d.accepter_a;
+        d.deck_pour = deckBot();
+        d.statut = 'en_cours';
+        notifier(d.de, 'defi_accepte', d.pour, d.id);
+        change = true;
+      }
+    });
+    const g = guerre();
+    S.guerreTic = S.guerreTic || t;
+    if (t - S.guerreTic > 45000) {
+      S.guerreTic = t;
+      g.toxique += Math.floor(Math.random() * 4);
+      g.deter += Math.floor(Math.random() * 4);
+      change = true;
+    }
+    /* Un ami simulé te défie, une fois, après quelques minutes. */
+    const c = cb(MOI);
+    if (c.section && !S.defiOffert && t - (S.debut || t) > 4 * 60000) {
+      const ami = BOTS.find(b => (paire(MOI, b.id) || {}).accepte);
+      if (ami && !defisDe().some(d => d.statut === 'attente' || d.statut === 'en_cours')) {
+        S.defiOffert = true;
+        const d = { id: 'df' + (++S.seq), de: ami.id, pour: MOI, statut: 'attente', deck_de: deckBot(), deck_pour: null,
+          graine: Math.floor(Math.random() * 4294967295) + 1, actions: [], cree: t, maj: t };
+        defisDe().push(d);
+        notifier(MOI, 'defi', ami.id, d.id);
+        change = true;
+      }
     }
     return change;
   }

@@ -182,7 +182,10 @@ Backend.apply = function (etat) {
     gardes: etat.gardes || {},
     favoris: etat.favoris || [],
     /* Version 2.1 : entré grâce au code d'un autre, il n'invite pas à son tour. */
-    filleul: p.filleul === true
+    filleul: p.filleul === true,
+    /* Version 3.0 (supabase/23_combats.sql) : la Section, les decks, les
+       cosmétiques de combat, la campagne, les défis, la Guerre des Sections. */
+    combat: etat.combat || null
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -500,3 +503,94 @@ function traduireAuth(m) {
   for (const [re, fr] of AUTH_FR) if (re.test(m)) return m.replace(re, fr);
   return m;
 }
+
+/* ================================================== Version 3.0 : les combats */
+/* Tout ce qui rapporte passe par le serveur (supabase/23_combats.sql). Hors
+   ligne, le combat se joue quand même : la Section, les decks et les
+   cosmétiques restent dans le navigateur, et il n'y a rien à gagner. */
+const combatLocal = () => {
+  save.combat = save.combat || { section: null, decks: [], deck_actif: null, cosm: {}, campagne: { faits: [], finie: false }, jour: {}, stats: {}, defis: [] };
+  return save.combat;
+};
+
+Backend.combatSection = async function (section) {
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    if (c.section) throw new Error('Tu as déjà rejoint une Section.');
+    c.section = section;
+    const promo = SECTIONS[section].promo;
+    save.col[promo] = (save.col[promo] || 0) + 1;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('combat_section', { p_section: section }));
+};
+
+/* Le deck actif, le tapis, la sleeve, le jeton. */
+Backend.combatReglages = async function (o) {
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    if (o.deck_actif !== undefined) c.deck_actif = o.deck_actif;
+    c.cosm = Object.assign({}, c.cosm, Object.fromEntries(['tapis', 'sleeve', 'jeton'].filter(k => o[k]).map(k => [k, o[k]])));
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('combat_reglages', { p_reglages: o }));
+};
+
+Backend.deckSauver = async function (deck) {
+  const err = Decks.verifier(deck, save.col).filter(e => !/manque|de trop|Réserve doit|au moins un Joueur/.test(e));
+  if (err.length) throw new Error(err[0]);
+  const propre = { id: deck.id, nom: deck.nom, cartes: deck.cartes, reserve: deck.reserve, couverture: deck.couverture };
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    if (!propre.id) propre.id = 'd' + Date.now().toString(36);
+    c.decks = c.decks.filter(d => d.id !== propre.id).concat([propre]);
+    if (!c.deck_actif && !Decks.verifier(propre, save.col).length) c.deck_actif = propre.id;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('deck_sauver', { p_deck: propre }));
+};
+
+Backend.deckSupprimer = async function (id) {
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    c.decks = c.decks.filter(d => d.id !== id);
+    if (c.deck_actif === id) c.deck_actif = null;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('deck_supprimer', { p_id: id }));
+};
+
+/* Un combat contre l'IA : le serveur l'ouvre et donne la graine. */
+Backend.combatDebut = async function (mode, cle, niveau) {
+  if (Backend.mode !== 'cloud') return { id: 'local-' + Date.now(), graine: (Math.random() * 4294967296) >>> 0 };
+  return Backend.rpc('combat_debut', { p_mode: mode, p_cle: String(cle), p_niveau: niveau });
+};
+
+/* … et le referme, avec le résultat. Il rend ce qu'il a donné. */
+Backend.combatFin = async function (id, gagne, resume) {
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    c.stats = c.stats || {};
+    c.stats[gagne ? 'victoires' : 'defaites'] = (c.stats[gagne ? 'victoires' : 'defaites'] || 0) + 1;
+    await persist();
+    return { recompense: { message: 'Hors ligne : les combats ne rapportent rien.' } };
+  }
+  const r = await Backend.rpc('combat_fin', { p_id: id, p_gagne: !!gagne, p_resume: resume || {} });
+  Backend.apply(r.etat);
+  return r;
+};
+
+/* Les défis entre amis (js/combat/defis.js). */
+Backend.defiLancer = async (pseudo, deck) => Backend.apply(await Backend.rpc('defi_lancer', { p_pseudo: pseudo, p_deck: deck }));
+Backend.defiRepondre = async function (id, ok, deck) {
+  const r = await Backend.rpc('defi_repondre', { p_id: id, p_ok: !!ok, p_deck: deck || null });
+  Backend.apply(r.etat);
+  return r;
+};
+Backend.defiEtat = (id, depuis) => Backend.rpc('defi_etat', { p_id: id, p_depuis: depuis || 0 });
+Backend.defiJouer = (id, n, a) => Backend.rpc('defi_jouer', { p_id: id, p_n: n, p_action: a });
+Backend.defiFin = async function (id) {
+  const r = await Backend.rpc('defi_fin', { p_id: id });
+  Backend.apply(r.etat);
+  return r;
+};

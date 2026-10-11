@@ -25,8 +25,13 @@ const RAYONS = [
     ] },
   { id: 'cosmetique', titre: 'Cosmétiques', sous: 'Purement décoratif : aucun effet sur le jeu.',
     sections: [
-      { categ: 'cosmetique', titre: 'Cadres d\'avatar' },
-      { titre: 'Avec les combats', avenir: true }
+      { categ: 'cosmetique', titre: 'Cadres d\'avatar' }
+    ] },
+  /* Version 3.0 : ce qui habille les combats. */
+  { id: 'combat', titre: 'Combat', sous: 'Le tapis sur lequel tu joues, le dos de tes cartes. Rien qui change le jeu.',
+    sections: [
+      { categ: 'tapis', titre: 'Tapis de jeu' },
+      { categ: 'sleeve', titre: 'Sleeves' }
     ] }
 ];
 
@@ -53,6 +58,9 @@ function vArticleArt(it) {
   const c = carteDe(it);
   if (c) return renderCard(c);
   if (FRAMES[it.id]) return avatarHTML(save.avatar, it.id, 'lg', maPhoto());
+  /* Version 3.0 : un tapis de jeu, une sleeve. */
+  if (typeof TAPIS !== 'undefined' && TAPIS[it.id]) return `<img class="oftapis" src="${TAPIS[it.id].img.replace('.webp', '-mini.webp')}" alt="">`;
+  if (typeof SLEEVES !== 'undefined' && SLEEVES[it.id]) return `<img class="ofsleeve" src="${SLEEVES[it.id].img}" alt="">`;
   if (TITRES[it.id]) return `<span class="qrtitre t${TITRES[it.id].ton}">${h(TITRES[it.id].nom)}</span>`;
   if (it.effet === 'invitation') return `<span class="ofinvit">M8-<b>••••</b></span>`;
   if (it.effet === 'reverse_R') return reverses.length ? renderCard(reverses.find(c => c.rar === 'R') || reverses[0]) : ICON.star;
@@ -244,6 +252,13 @@ function vAchatScene(it) {
   if (FRAMES[it.id]) {
     return `<div class="a3d cadre"><div class="a3d-cadre">${avatarHTML(save.avatar, it.id, 'xl', maPhoto())}</div></div>`;
   }
+  /* Version 3.0 : le tapis en entier, la sleeve sur une carte. */
+  if (typeof TAPIS !== 'undefined' && TAPIS[it.id]) {
+    return `<div class="a3d cadre"><div class="a3d-tapis"><img src="${TAPIS[it.id].img}" alt=""></div></div>`;
+  }
+  if (typeof SLEEVES !== 'undefined' && SLEEVES[it.id]) {
+    return `<div class="a3d cadre"><div class="a3d-sleeve"><img src="${SLEEVES[it.id].img}" alt=""></div></div>`;
+  }
   /* Version 2.0 : un titre se montre sous le pseudo, une invitation comme un billet. */
   if (TITRES[it.id]) {
     return `<div class="a3d cadre"><div class="a3d-titre"><b>${h(save.pseudo)}</b>
@@ -376,6 +391,18 @@ async function acheter(it) {
     return;
   }
   if (it.evenement && typeof chargerReflets === 'function') chargerReflets();
+  /* Version 3.0 : un tapis ou une sleeve, qu'on peut mettre tout de suite. */
+  if (it.categ === 'tapis' || it.categ === 'sleeve') {
+    SFX.jouer('gagne');
+    return openSheet({
+      title: `${it.titre} débloqué`,
+      body: '<p class="muted">Tu peux le changer quand tu veux dans Combats › Decks.</p>',
+      actions: [
+        { label: 'L\'utiliser', primary: true, fn: () => { closeSheet(); agir(() => Backend.combatReglages({ [it.categ]: it.id }), 'C\'est fait.'); } },
+        { label: 'Plus tard', fn: closeSheet }
+      ]
+    });
+  }
   toast(it.unique_buy ? `${it.titre} débloqué.` : `${it.titre} : c'est dans ta réserve.`);
   SFX.jouer('gagne');
 }

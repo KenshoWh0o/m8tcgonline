@@ -30,6 +30,29 @@ const PROMO_DATA = [
     illustrateur: 'Rexpo',
     obtention: 'boutique'
   },
+  /* Version 3.0 : les Promos des deux Starter Decks. Leur contenu n'est pas
+     encore connu : ces deux cartes sont provisoires (`provisoire`), sans
+     illustration — renderCard leur dessine un visuel en texte — et avec des
+     valeurs de combat sobres, sans talent, en attendant les vraies. On les
+     reçoit en rejoignant sa Section, puis en finissant la campagne. */
+  {
+    code: 'P03', nom: 'Section Toxique', provisoire: true, section: 'toxique',
+    categorie: 'Joueur', couleur: 'Rose', def: 120,
+    attaques: [
+      { nom: 'Toxicité', cout: { rose: 1, neutre: 1 }, degats: 120 }
+    ],
+    ambiance: 'Promo du Starter Deck Section Toxique — visuel à venir.',
+    obtention: 'section'
+  },
+  {
+    code: 'P04', nom: 'Section Déter', provisoire: true, section: 'deter',
+    categorie: 'Joueur', couleur: 'Mauve', def: 130,
+    attaques: [
+      { nom: 'Déter', cout: { mauve: 1, neutre: 1 }, degats: 120 }
+    ],
+    ambiance: 'Promo du Starter Deck Section Déter — visuel à venir.',
+    obtention: 'section'
+  },
   {
     code: 'P05', fichier: 'promos/P05-Tout_Commence_Ici.webp', nom: 'Tout Commence Ici',
     categorie: 'Joueur', couleur: 'Rose', def: 60,

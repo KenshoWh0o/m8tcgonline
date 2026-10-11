@@ -47,7 +47,10 @@ const TEXTES_BOITE = {
   ami_accepte:     ['a accepté ta demande d\'ami', 'Nouvel ami'],
   echange_recu:    ['te propose un échange', 'Échange'],
   echange_accepte: ['a accepté ton échange', 'Échange conclu'],
-  echange_refuse:  ['a refusé ton échange', 'Échange refusé']
+  echange_refuse:  ['a refusé ton échange', 'Échange refusé'],
+  /* Version 3.0 : les défis entre amis. */
+  defi:            ['te défie en combat', 'Défi'],
+  defi_accepte:    ['accepte ton défi', 'Défi accepté']
 };
 
 /* ---------- Ce qu'il y a dans la boite ---------- */
@@ -99,6 +102,7 @@ function boiteTexte(x) {
 function boiteAller(x) {
   if (x.type === 'annonce') return aller('boite');
   if (x.type === 'ami_demande' || x.type === 'ami_accepte') { socVue = 'amis'; return aller('social'); }
+  if (x.type === 'defi' || x.type === 'defi_accepte') return allerCb('defis');
   socVue = 'echanges';
   trVue = x.type === 'echange_recu' ? 'recues' : 'historique';
   aller('social');

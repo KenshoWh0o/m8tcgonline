@@ -44,7 +44,9 @@ const REGLE = {
   COACHS: 1,          /* Coachs joués par tour */
   ESSENCES: 1,        /* Essences jouées de la Réserve à chaque tour */
   ESSENCES_P1: 1,     /* … au tout premier tour du premier CEO */
-  ESSENCES_P2: 1      /* … au premier tour du second CEO */
+  ESSENCES_P2: 2      /* … au premier tour du second CEO : sa compensation
+                         (sur 400 parties d'IA, le premier CEO gagne 55 % des
+                         parties avec 1, 49 % avec 2) */
 };
 
 /* Les neuf couleurs d'Essence. Le Neutre n'en est pas une : c'est un coût

@@ -125,7 +125,7 @@ const STARTERS = {
   deter: {
     id: 'starter-deter', nom: 'Starter · Section Déter', starter: true, couverture: 'c077',
     cartes: {
-      p04: 1, c051: 2, c052: 2, c050: 1, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c078: 1, c059: 1,
+      p04: 1, c051: 2, c052: 2, c050: 1, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c078: 2, c059: 1,
       c053: 2, c087: 1, c088: 2,
       c054: 2, c055: 2, c083: 2, c082: 1, c092: 2
     },

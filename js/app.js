@@ -22,12 +22,11 @@ const evenementEnCours = () => {
   return ev && !ev.a_venir && ev.code ? ev.code : null;
 };
 
-/* La barre du bas : pendant l'événement Reflets, son onglet prend la place de
-   Combats — qui n'est encore qu'un aperçu de la version 3.0 et passe dans le
-   tiroir. */
+/* La barre du bas. Version 3.0 : Combats y reste, même pendant un
+   événement — ce n'est plus un aperçu. L'onglet de l'événement passe en
+   tête du tiroir (ongletsTiroir). */
 function ongletsBas() {
-  const ev = TABS.find(t => t.evenement && ongletDispo(t));
-  return TABS.filter(t => t.bas).map(t => (t.id === 'combats' && ev ? ev : t));
+  return TABS.filter(t => t.bas);
 }
 const combatsAuTiroir = () => !ongletsBas().some(t => t.id === 'combats');
 
@@ -96,6 +95,8 @@ function pastilleOnglet(id) {
   if (id === 'reflets') return evQuetesPretes();
   if (id === 'illu') return illuData && !illuData.fini ? 1 : 0;
   if (id === 'social') return socNotifs();
+  /* Version 3.0 : un défi qui attend une réponse. */
+  if (id === 'combats') return ((save.combat || {}).defis || []).filter(d => d.pour_moi && d.statut === 'attente').length;
   return 0;
 }
 
@@ -113,6 +114,8 @@ let tiroirOuvert = false;
    place : il se range alors sous Recyclage, pas en tête de liste. */
 function ongletsTiroir() {
   const l = TABS.filter(t => t.tiroir && ongletDispo(t));
+  const ev = TABS.find(t => t.evenement && ongletDispo(t));
+  if (ev) l.unshift(ev);
   const c = TABS.find(t => t.id === 'combats');
   if (c && combatsAuTiroir() && ongletDispo(c)) {
     const i = l.findIndex(t => t.id === 'recyclage');
@@ -264,6 +267,7 @@ function render() {
 
   if (tab === 'boosters') bindPack();
   if (tab === 'reflets') placerPass();
+  if (tab === 'combats' && cbVue === 'atelier') bindAtelier();
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
@@ -305,6 +309,11 @@ function aller(id) {
     if (tab === 'boite') ouvrirBoite();
     if (tab === 'classement') chargerClassement();
     if (tab === 'tirages') chargerTirages();
+    /* Version 3.0 : les défis et la Guerre des Sections bougent sans nous. */
+    if (tab === 'combats') {
+      Backend.pull().then(() => { if (tab === 'combats' && !enTrainDEcrire()) render(); }).catch(() => {});
+      if (!Backend.amis.length) Backend.loadAmis().then(() => { if (tab === 'combats' && cbVue === 'defis') render(); }).catch(() => {});
+    }
   }
 }
 
@@ -318,11 +327,13 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb]');
   if (!el) return;
   const d = el.dataset;
 
   if (d.tab) return aller(d.tab);
+  /* Version 3.0 : l'onglet Combats et son atelier (js/battle.js). */
+  if (d.cb) return cbAction(d.cb, el);
   if (d.apercu) return labMontrerApercu(d.apercu);
   /* Version 2.0 */
   if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
@@ -600,11 +611,12 @@ setInterval(() => {
      · pendant qu'une demande d'échange ou une annonce se compose — le champ
        de saisie perdrait le curseur et le texte déjà tapé.
    Les deux tests vivent ici, et nulle part ailleurs. */
-const ecranOccupe = () => !!rv || opening || promoEnCours;
+const ecranOccupe = () => !!rv || opening || promoEnCours || (typeof Table !== 'undefined' && Table.ouverte());
 const enTrainDEcrire = () => (tab === 'social' && socVue === 'echanges' && trVue === 'nouvelle')
   || tab === 'labo'
-  /* Devine l'illu, la devise du profil : un champ en cours de saisie. */
-  || (document.activeElement && ['il-saisie', 'pf-devise'].includes(document.activeElement.id));
+  /* Devine l'illu, la devise du profil, l'atelier de decks : un champ en
+     cours de saisie. */
+  || (document.activeElement && ['il-saisie', 'pf-devise', 'at-q', 'at-nom', 'at-code'].includes(document.activeElement.id));
 
 /* Les compteurs, la barre et le tiroir se remettent à jour sans toucher à la
    page. Le contenu, lui, n'est redessiné que si ça ne dérange personne. */
@@ -656,6 +668,8 @@ function visiteDuJourFaite() {
   reverses = buildReverses(cards);
   uniques = buildUniques();
   rebuild();
+  /* Version 3.0 : le moteur de combat connaît toutes les cartes jouables. */
+  Combat.catalogue(cards.concat(promos, reverses, uniques, typeof secretes !== 'undefined' ? secretes : []));
   brand();
   rollPack();
   oublierTheme();

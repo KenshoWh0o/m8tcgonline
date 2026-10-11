@@ -204,6 +204,10 @@ const TITRES = {
   t_collect:   { nom: 'Collectionneur de Reflets', ton: 'EV', comment: 'Boutique de l\'événement « Reflets »' },
   t_ame:       { nom: 'Âme des Reflets',           ton: 'EV', comment: 'Palier 19 du Pass Reflets' },
   t_elu:       { nom: 'L\'Élu',                    ton: 'UN', comment: 'Posséder la carte unique' },
+  /* Version 3.0 : les combats. */
+  t_sections:  { nom: 'Champion des Sections',     ton: 'L',  comment: 'Finir la campagne des Combats' },
+  t_legende:   { nom: 'Tombeur de Légende',        ton: 'E',  comment: 'Battre l\'IA Légende' },
+  t_stratege:  { nom: 'Stratège',                  ton: 'R',  comment: 'Gagner 100 combats' },
   t_admin:     { nom: 'Administrateur',            ton: 'ADM', comment: 'Réservé à l\'équipe du jeu' }
 };
 
@@ -265,7 +269,7 @@ const TRADE_COOLDOWN_H = 6;
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
-  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Bientôt : la version 3.0' },
+  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Campagne, PvE, défis entre amis' },
   /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, il prend la
      place de Combats dans la barre (navHTML, js/app.js). */
   { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets', online: true },

@@ -313,3 +313,26 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
   display:inline-flex;width:1em;height:1em;color:var(--r-pr);font-style:normal;line-height:1}
 .gfav svg{width:100%;height:100%;fill:currentColor}
 
+
+/* ============ Version 3.0 : une carte en texte ============ */
+/* Les Promos provisoires des Starter Decks : leur contenu existe, leur
+   visuel pas encore. Une composition typographique, aux couleurs de la carte. */
+.card.textuel{padding:6cqi 6cqi 5cqi;border:2.6cqi solid var(--tc);color:#fff;gap:3cqi;
+  background:radial-gradient(ellipse 90% 60% at 50% 0%,color-mix(in srgb,var(--tc) 55%,transparent),transparent 70%),
+    linear-gradient(170deg,#241634,#120b1b 70%)}
+.card.textuel::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
+  background:url('../assets/pack-star.svg') 50% 46%/58% no-repeat}
+.tx-tete{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:2cqi}
+.tx-tete b{font-family:var(--display);font-style:italic;font-weight:900;font-size:10.5cqi;line-height:1}
+.tx-tete i{font-style:normal;font-size:5.5cqi;opacity:.7}
+.tx-type{position:relative;display:flex;justify-content:space-between;font-size:6cqi;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  padding:1.5cqi 3cqi;border-radius:2cqi;background:rgba(0,0,0,.35)}
+.tx-type b{font-size:8cqi}
+.tx-corps{position:relative;margin-top:auto;display:flex;flex-direction:column;gap:2cqi}
+.tx-atk{display:flex;align-items:center;gap:2.5cqi;font-size:7cqi;font-weight:800;padding:2cqi 2.5cqi;border-radius:2cqi;background:rgba(255,255,255,.08)}
+.tx-atk b{margin-left:auto;font-family:var(--display);font-size:10cqi}
+.tx-cout{display:inline-flex;gap:.6cqi}
+.tx-cout .ess{width:7cqi;height:7cqi}
+.tx-corps p{margin:0;font-size:6cqi;line-height:1.3}
+.tx-pied{position:relative;text-align:center;font-size:5.5cqi;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tc);
+  border-top:1px dashed color-mix(in srgb,var(--tc) 60%,transparent);padding-top:2cqi}

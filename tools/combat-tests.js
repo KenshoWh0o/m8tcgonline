@@ -223,6 +223,22 @@ test('après la première attaque, plus de Joueur ni d\'Objet', () => {
   egal(options(E).filter(a => a.t === 'deployer' || a.t === 'lier').length, 0);
 });
 
+console.log('Decks');
+test('les deux Starter Decks sont valides', () => {
+  for (const k of ['toxique', 'deter']) egal(Decks.verifier(Decks.STARTERS[k]), [], k);
+});
+test('les decks de campagne et tirés au sort sont valides', () => {
+  let s = 3;
+  const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 200; i++) egal(Decks.verifier(Decks.aleatoire(r, { niveau: 1 + (i % 5) })), []);
+});
+test('le code d\'un deck se relit à l\'identique', () => {
+  const d = Decks.STARTERS.toxique;
+  const x = Decks.decoder(Decks.encoder(d));
+  egal(x.cartes, Object.fromEntries(Object.keys(d.cartes).sort().map(k => [k, d.cartes[k]])));
+  egal(x.reserve, d.reserve);
+});
+
 console.log('Copie et reprise');
 test('rejouer redonne exactement la même partie', () => {
   const r = (() => { let s = 9; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
