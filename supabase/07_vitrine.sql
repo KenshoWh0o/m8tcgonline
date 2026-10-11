@@ -120,6 +120,12 @@ begin
     'gardes', coalesce((select jsonb_object_agg(card_id, n) from gardes where user_id = p), '{}'::jsonb),
     -- Version 2.1 : les cartes en favori, de la plus ancienne a la plus recente.
     'favoris', coalesce((select jsonb_agg(card_id order by le) from favoris where user_id = p), '[]'::jsonb),
+    -- Version 3.0 : les exemplaires obtenus de chaque carte, pour la maitrise
+    -- (collection.total, 01_schema.sql), et l'etat des Combats
+    -- (combat_etat, 23_combats.sql).
+    'obtenus', coalesce((select jsonb_object_agg(card_id, greatest(total, qty)) from collection
+                          where user_id = p and greatest(total, qty) > 0), '{}'::jsonb),
+    'combat', combat_etat(p),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
     'quetes', coalesce((

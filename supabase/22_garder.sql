@@ -60,7 +60,8 @@ begin
   perform garde_beta();
   select * into k from cards where id = p_carte;
   if not found then raise exception 'Carte inconnue.'; end if;
-  if k.promo and not k.reverse then raise exception 'Cette carte se garde toujours.'; end if;
+  -- Les Secretes (version 3.0) s'echangent : on peut dire combien en garder.
+  if k.promo and not k.reverse and not k.secrete then raise exception 'Cette carte se garde toujours.'; end if;
   if p_n is not null and (p_n < 1 or p_n > 99) then raise exception 'Entre 1 et 99 exemplaires.'; end if;
 
   select greatest(1, coalesce((garder ->> garde_cle(k))::int, 1)) into defaut from profiles where id = p;

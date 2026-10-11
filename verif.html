@@ -259,6 +259,22 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
     : { etat: 'ok', titre: 'Écran d\'attente, boîte de réception, recyclage, fabrication, classement et historique sont installés' });
 
+  /* ---- 6 ter. La version 3.0 : les Combats et le Choc des Sections ---- */
+  /* PGRST202 : la fonction n'existe pas. Toute autre erreur (non connecté,
+     Section manquante, événement fini) prouve qu'elle est là. */
+  const manque30 = [];
+  for (const [fn, args, quoi] of [['combat_debut', { p_mode: '', p_cle: '', p_niveau: 0 }, 'les Combats'],
+                                   ['defi_etat', { p_id: '', p_depuis: 0 }, 'les défis entre amis'],
+                                   ['choc_etat', {}, 'l\'événement du Choc des Sections']]) {
+    const { error } = await sb.rpc(fn, args);
+    if (error && error.code === 'PGRST202') manque30.push(quoi);
+  }
+  poser(manque30.length
+    ? { etat: 'ko', titre: 'La version 3.0 n\'est pas installée sur le serveur',
+        detail: `Il manque : ${manque30.join(', ')}. Le jeu en 3.0 ne pourra ni ouvrir un combat, ni en payer un.`,
+        faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
+    : { etat: 'ok', titre: 'Combats, défis et événement de la 3.0 sont installés' });
+
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');
   poser({ etat: 'warn', titre: 'Les adresses de retour sont à vérifier à la main',

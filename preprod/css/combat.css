@@ -438,6 +438,7 @@ button.ar-lc:not(.grise) .ar-c{box-shadow:0 0 0 2px rgba(255,199,59,.6)}
 .cb-guerre-barre::after{content:"";position:absolute;left:var(--pt);top:-4px;bottom:-4px;width:3px;translate:-50% 0;background:#fff;box-shadow:0 0 12px #fff}
 .cb-guerre-barre span{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;font-size:16px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .cb-guerre p{margin:10px 0 0}
+.cb-passee{font-size:12.5px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
 
 /* Les modes */
 .cb-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}

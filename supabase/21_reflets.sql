@@ -128,7 +128,9 @@ on conflict (evenement, palier) do update set
 -- montre.
 --   reverse_R : une Reverse Rare qu'on n'a pas (une au hasard si on les a
 --               toutes) ; brillante : une Essence Brillante qu'on n'a pas
---               (2 000 Fragments si on les a toutes).
+--               (2 000 Fragments si on les a toutes) ; legendaire : une
+--               Legendaire qu'on n'a pas (4 000 Fragments sinon) ; tapis,
+--               sleeve : un cosmetique de combat (version 3.0).
 create or replace function public.accorder(p uuid, t text, n int, objet text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare cartes text[] := '{}'; cid text; i int;
@@ -139,9 +141,25 @@ begin
     update profiles set shards = shards + n where id = p;
   elsif t = 'fragments' then
     update profiles set fragments = fragments + n where id = p;
-  elsif t in ('titre', 'cadre') then
+  elsif t in ('titre', 'cadre', 'tapis', 'sleeve') then
+    -- Version 3.0 : un tapis de jeu ou un sleeve (23_combats.sql) se range
+    -- comme un cadre, sous son identifiant.
     insert into inventory (user_id, item_id, qty) values (p, objet, 1)
       on conflict (user_id, item_id) do nothing;
+  elsif t = 'legendaire' then
+    -- Version 3.0 (Pass du Choc) : une Legendaire de l'extension qu'on n'a
+    -- pas ; si on les a toutes, la moitie du prix d'une Legendaire fabriquee.
+    select k.id into cid from cards k
+     where k.rar = 'L' and not k.promo
+       and not exists (select 1 from collection c where c.user_id = p and c.card_id = k.id and c.qty > 0)
+     order by random() limit 1;
+    if cid is null then
+      update profiles set fragments = fragments + cfg('fabrication_L') / 2 where id = p;
+    else
+      insert into collection (user_id, card_id, qty) values (p, cid, 1)
+        on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+      cartes := cartes || cid;
+    end if;
   elsif t = 'reverse_R' then
     for i in 1..greatest(n, 1) loop
       select k.id into cid from cards k
@@ -212,7 +230,7 @@ begin
   -- l'evenement ». Pas la connexion du jour (`checkin`) : elle a souvent eu
   -- lieu avant l'ouverture de l'evenement, et la quete serait restee vide.
   insert into quest_progress (user_id, quest_id, period_key, progress)
-  select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite'
+  select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite' and q.evenement = ev
   on conflict (user_id, quest_id, period_key) do nothing;
   select * into cpt from evt_comptes where user_id = p and evenement = ev;
 
@@ -289,7 +307,10 @@ begin
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = e.code and total > 0
                order by total desc limit 3) c
-        join profiles pr on pr.id = c.user_id), '[]'::jsonb));
+        join profiles pr on pr.id = c.user_id), '[]'::jsonb))
+    -- Version 3.0 : ce que le Choc des Sections ajoute au recap (25_choc.sql) —
+    -- et le titre de la Section gagnante, accorde ici.
+    || case when e.code = 'choc' then choc_recap(p) else '{}'::jsonb end;
 end $$;
 
 -- ========================================================= 3. Devine l'illu
@@ -457,7 +478,7 @@ begin
               join collection c on c.user_id = o.id and c.qty > garde_de(o.id, c.card_id)
               join cards k on k.id = c.card_id
              where (f.a = moi or f.b = moi) and f.accepte
-               and k.cat <> 'essence' and (not k.promo or k.reverse)
+               and k.cat <> 'essence' and (not k.promo or k.reverse or k.secrete)
                and not exists (select 1 from collection m where m.user_id = moi and m.card_id = k.id and m.qty > 0)
              group by k.id) x), '[]'::jsonb);
 end $$;

@@ -98,7 +98,9 @@ function ouvrirDefi(d) {
     },
     surFin: async (E2, gagne) => {
       arreterDefi();
-      const r = await Backend.defiFin(d.id).catch(() => null);
+      /* Le vrai serveur ne fait pas tourner le moteur : chacun lui dit qui a
+         gagné (supabase/23_combats.sql), et il note un désaccord. */
+      const r = await Backend.defiFin(d.id, E2.fin ? E2.fin.gagnant : null, E2.tour).catch(() => null);
       return htmlRecompense(r);
     },
     surQuitter: () => { arreterDefi(); render(); }

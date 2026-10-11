@@ -1575,10 +1575,29 @@
     if (!S.guerre || S.guerre.semaine !== sem) {
       const ancien = S.guerre;
       S.guerre = { semaine: sem, toxique: 0, deter: 0, contrib: {} };
-      if (ancien && (ancien.toxique || ancien.deter)) S.guerrePassee = ancien;
+      if (ancien && (ancien.toxique || ancien.deter)) S.guerrePassee = Object.assign(ancien, { payes: {} });
     }
     return S.guerre;
   };
+  /* guerre_prix, 23_combats.sql : la semaine finie paie ceux qui ont
+     marqué — 2 boosters et 200 Éclats pour la Section gagnante, un booster
+     pour l'autre. Une fois, à la première visite de la semaine suivante. */
+  function guerrePassee(p) {
+    guerre();
+    const a = S.guerrePassee;
+    if (!a || a.toxique === a.deter) return a ? { semaine: a.semaine, toxique: a.toxique, deter: a.deter, gagnante: null, recompense: null } : null;
+    const gagnante = a.toxique > a.deter ? 'toxique' : 'deter';
+    a.payes = a.payes || {};
+    let recompense = a.payes[p] || null;
+    if (!recompense && (a.contrib[p] || 0) > 0) {
+      recompense = cb(p).section === gagnante ? { boosters: 2, eclats: 200 } : { boosters: 1, eclats: 0 };
+      a.payes[p] = recompense;
+      const pr = profil(p);
+      pr.boosters_bonus = (pr.boosters_bonus || 0) + recompense.boosters;
+      pr.shards += recompense.eclats;
+    }
+    return { semaine: a.semaine, toxique: a.toxique, deter: a.deter, gagnante, recompense };
+  }
   /* Les points d'une victoire. Pendant le Choc des Sections, ils comptent
      double, et s'ajoutent aussi à la Guerre de l'événement. Renvoie les
      points vraiment marqués. */
@@ -1608,7 +1627,7 @@
       campagne: { faits: c.faits.slice(), finie: !!c.finie },
       jour: { recompensees: c.jour === auj ? c.recompensees : 0, plafond: PVE_PLAFOND },
       stats: Object.assign({}, c.stats),
-      guerre: { toxique: g.toxique, deter: g.deter, moi: g.contrib[p] || 0, fin: iso(lundi), prix: '2 boosters et 200 Éclats' },
+      guerre: { toxique: g.toxique, deter: g.deter, moi: g.contrib[p] || 0, fin: iso(lundi), prix: '2 boosters et 200 Éclats', passee: guerrePassee(p) },
       defis: (S.defis || []).filter(d => (d.de === p || d.pour === p) && ['attente', 'en_cours'].includes(d.statut)).map(d => {
         const o = profil(d.de === p ? d.pour : d.de);
         return { id: d.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null,
@@ -1843,6 +1862,8 @@
     d.maj = now();
     return { n: d.actions.length };
   };
+  /* Le vrai serveur croit chaque joueur sur parole (p_gagnant) ; la démo,
+     qui a le moteur, rejoue la partie. */
   RPC.defi_fin = (p, { p_id }) => {
     const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
     if (!d) refuser('Défi introuvable.');

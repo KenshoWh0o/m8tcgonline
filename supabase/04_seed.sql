@@ -205,7 +205,15 @@ delete from public.quests where id not in (
   'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_illu10','m_invite',
   'm_exR','m_exE','m_exL',
   'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev45','e_trade','e_illu7','e_packs70',
-  'e_recycle','e_invite');
+  'e_recycle','e_invite',
+  -- Version 3.0 : les combats, les Secretes, la maitrise ; et l'evenement du
+  -- Choc des Sections. Les oublier ici effacerait leur progression a chaque
+  -- fois qu'on rejoue ce fichier (quest_progress suit la quete en cascade).
+  'd_combat','d_victoire','d_vaincus','w_victoires','w_dur','w_defi',
+  'm_campagne','m_legende','m_cent','m_secrete','m_mt_or','m_mt_or10','m_mt_prisme',
+  'c_visite','c_combats','c_raid','c_epreuve','c_vaincus','c_packs',
+  'c_deg100','c_raidv5','c_ep7','c_pts','c_vic30','c_dur5','c_legende','c_defis','c_deck','c_cosm',
+  'c_packs60','c_trade','c_invite');
 
 -- ------------------------------------------------- l'evenement « Reflets »
 -- Ses quetes paient en Prismes (21_reflets.sql). Du jour : 50 Prismes pour
@@ -232,6 +240,74 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets',    'Conclus 3 échanges.', 7, 'reflets', 'prismes'),
   ('e_recycle', 'ev',      'recycle', 150, 30, null, 'Grand ménage',           'Recycle 150 doublons pendant l''événement.', 8, 'reflets', 'prismes'),
   ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes')
+on conflict (id) do update set
+  scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
+  reward = excluded.reward, item_id = excluded.item_id, titre = excluded.titre,
+  detail = excluded.detail, ordre = excluded.ordre, evenement = excluded.evenement,
+  monnaie = excluded.monnaie;
+
+-- --------------------------------------------- version 3.0 : les combats
+-- (23_combats.sql) Des quetes de combat a cote de celles de la collection, pas
+-- a leur place : un collectionneur qui ne combat pas garde tout ce qu'il
+-- avait. Le calcul de ce qu'elles ajoutent est dans docs/economie-3.0.md :
+-- un combattant regulier y gagne ~190 Eclats par jour (quetes), plus ses
+-- victoires (5 par jour au plus, js/combat/campagne.js).
+--   combats          : un combat termine, contre l'IA ou un ami
+--   victoires        : une victoire ; victoires_dures : en Difficile ou plus
+--   vaincus          : des Joueurs adverses vaincus
+--   defis            : un defi entre amis termine
+--   campagne         : un combat de campagne gagne pour la premiere fois
+--   legende          : l'IA battue en Legende (PvE infini)
+--   rarity_S         : une Secrete sortie d'un booster (24_secretes_maitrise.sql)
+--   maitrise_3/4     : des cartes a la maitrise Or / Prisme (24_secretes_maitrise.sql)
+insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
+  ('d_combat',    'daily',     'combats',          1,   20, null,         'Sur le terrain',        'Joue un combat, contre l''IA ou un ami.', 8),
+  ('d_victoire',  'daily',     'victoires',        1,   40, null,         'Première victoire',     'Gagne un combat.', 9),
+  ('d_vaincus',   'daily',     'vaincus',          5,   30, null,         'Faucheur',              'Vaincs 5 Joueurs adverses en combat.', 10),
+  ('w_victoires', 'weekly',    'victoires',       10,  250, null,         'Série de victoires',    'Gagne 10 combats cette semaine.', 8),
+  ('w_dur',       'weekly',    'victoires_dures',  3,  300, null,         'Sans trembler',         'Gagne 3 combats en Difficile ou plus.', 9),
+  ('w_defi',      'weekly',    'defis',            1,  150, null,         'Entre amis',            'Joue un défi contre un ami.', 10),
+  ('m_campagne',  'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 30),
+  ('m_legende',   'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l''IA en Légende.', 31),
+  ('m_cent',      'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 32),
+  ('m_secrete',   'milestone', 'rarity_S',         1,  500, null,         'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
+  ('m_mt_or',     'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d''or',        'Amène une carte à la maîtrise Or.', 34),
+  ('m_mt_or10',   'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l''or',        'Amène 10 cartes à la maîtrise Or.', 35),
+  ('m_mt_prisme', 'milestone', 'maitrise_4',       1,  800, null,         'Prisme',                'Amène une carte à la maîtrise Prisme.', 36)
+on conflict (id) do update set
+  scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
+  reward = excluded.reward, item_id = excluded.item_id,
+  titre = excluded.titre, detail = excluded.detail, ordre = excluded.ordre,
+  evenement = null, monnaie = 'eclats';
+
+-- ------------------------------- l'evenement « Le Choc des Sections » (3.0)
+-- Ses quetes paient en Insignes (25_choc.sql ; la colonne `monnaie` dit
+-- « prismes » pour toute monnaie d'evenement). Du jour : 75 Insignes ; de
+-- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
+--   raid, raid_degats, raid_victoires : le Raid du Marionnettiste
+--   epreuve, epreuve_victoires        : l'Epreuve du jour
+--   points_section                    : les points marques pour sa Section
+--   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
+insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
+  ('c_visite',  'ev_jour', 'ev_visite',          1, 10, null, 'Au rapport',          'Passe voir l''événement aujourd''hui.', 1, 'choc', 'prismes'),
+  ('c_combats', 'ev_jour', 'combats',            2, 15, null, 'Deux combats',        'Joue 2 combats, contre l''IA ou un ami.', 2, 'choc', 'prismes'),
+  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Un coup de ciseaux',  'Attaque le Marionnettiste.', 3, 'choc', 'prismes'),
+  ('c_epreuve', 'ev_jour', 'epreuve',            1, 10, null, 'L''Épreuve du jour',  'Tente l''Épreuve du jour.', 4, 'choc', 'prismes'),
+  ('c_vaincus', 'ev_jour', 'vaincus',            6, 15, null, 'Six de chute',        'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'),
+  ('c_packs',   'ev_jour', 'packs',              3, 10, null, 'Trois boosters',      'Ouvre 3 boosters aujourd''hui.', 6, 'choc', 'prismes'),
+  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Marionnettiste.', 1, 'choc', 'prismes'),
+  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Marionnettiste 5 fois.', 2, 'choc', 'prismes'),
+  ('c_ep7',     'ev',      'epreuve_victoires',  7, 80, null, 'Sept Épreuves',       'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'),
+  ('c_pts',     'ev',      'points_section',    80, 60, null, 'Pour la Section',     'Marque 80 points pour ta Section.', 4, 'choc', 'prismes'),
+  ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
+  ('c_dur5',    'ev',      'victoires_dures',    5, 60, null, 'Sans trembler',       'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'),
+  ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Bats l''IA en Légende, en PvE infini.', 7, 'choc', 'prismes'),
+  ('c_defis',   'ev',      'defis',              5, 50, null, 'Entre amis',          'Joue 5 défis contre des amis.', 8, 'choc', 'prismes'),
+  ('c_deck',    'ev',      'deck',               1, 20, null, 'Mon deck à moi',      'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'),
+  ('c_cosm',    'ev',      'cosm',               1, 20, null, 'À mes couleurs',      'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'),
+  ('c_packs60', 'ev',      'packs',             60, 50, null, 'Soixante boosters',   'Ouvre 60 boosters pendant l''événement.', 11, 'choc', 'prismes'),
+  ('c_trade',   'ev',      'trades',             3, 30, null, 'Échanges de guerre',  'Conclus 3 échanges.', 12, 'choc', 'prismes'),
+  ('c_invite',  'ev',      'invite',             1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 13, 'choc', 'prismes')
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id, titre = excluded.titre,
@@ -291,8 +367,35 @@ on conflict (id) do update set
   carte_id = excluded.carte_id, unique_buy = excluded.unique_buy, ordre = excluded.ordre,
   devise = excluded.devise, evenement = excluded.evenement, limite = excluded.limite, actif = true;
 
+-- Version 3.0 : les tapis de jeu et les sleeves (23_combats.sql), en Eclats.
+-- Les visuels sont adaptes des illustrations fournies (tools/cosmetiques.py) ;
+-- le tapis et le sleeve de base sont a tout le monde, sans achat.
+-- Et la boutique du Choc des Sections (25_choc.sql), en Insignes.
+insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
+  ('t_chateau',    'tapis',  'Tapis « Le Château »',   'Le château et ses feux d''artifice, sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('t_reverie',    'tapis',  'Tapis « Rêverie »',      'La montagne violette, et les visages dans les nuages.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
+  ('t_chevalier',  'tapis',  'Tapis « Le Chevalier »', 'Le chevalier en armure, médaillon M8 au cou.',          5000, 'cosmetique', 1, null, true, 3, 'eclats', null, null),
+  ('t_veste',      'tapis',  'Tapis « Veste Rose »',   'La veste rose et ses éclats.',                           4000, 'cosmetique', 1, null, true, 4, 'eclats', null, null),
+  ('t_pilote',     'tapis',  'Tapis « Petit Pilote »', 'Une voiture téléguidée lancée à pleine vitesse.',        4000, 'cosmetique', 1, null, true, 5, 'eclats', null, null),
+  ('t_peche',      'tapis',  'Tapis « Grosse Prise »', 'Une partie de pêche qui tourne mal pour le requin.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
+  ('s_sorcier',    'sleeve', 'Sleeve « Le Sorcier »',  'Le dos de tes cartes : le sorcier en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('s_argent',     'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
+  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      90, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 8),
+  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6),
+  ('ch_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n''as pas encore.', 180, 'reverse_R', 1,   null, false, 3, 'prismes', 'choc', 3),
+  ('ch_brillante', 'evenement', 'Une Essence Brillante', 'Une Essence Brillante que tu n''as pas encore.', 450, 'brillante', 1, null, false, 4, 'prismes', 'choc', 1),
+  ('t_theatre',    'evenement', 'Tapis « Le Théâtre »', 'La scène du Marionnettiste, sous tes cartes. Ne se vendra plus après l''événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
+  ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 250, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null)
+on conflict (id) do update set
+  categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
+  prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
+  carte_id = excluded.carte_id, unique_buy = excluded.unique_buy, ordre = excluded.ordre,
+  devise = excluded.devise, evenement = excluded.evenement, limite = excluded.limite, actif = true;
+
 delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',
   'f_azur','f_rose','f_or','f_prisme',
-  's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect');
+  's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
+  't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
+  'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_theatre','t_supporter');

@@ -32,6 +32,9 @@ MORCEAUX = [
     ('21_reflets.sql', 'Version 2.0 : evenement Reflets, Devine l\'illu, invitations, titres'),
     ('21b_illu.sql',   'Devine l\'illu : les illustrations en pixels'),
     ('22_garder.sql',  'Version 2.1 : les exemplaires a garder, et les favoris'),
+    ('23_combats.sql', 'Version 3.0 : les Combats — Sections, decks, combats, defis, Guerre des Sections'),
+    ('24_secretes_maitrise.sql', 'Version 3.0 : les Secretes'),
+    ('25_choc.sql',    'Version 3.0 : l\'evenement « Le Choc des Sections »'),
 ]
 
 entete = """-- =====================================================================

@@ -111,6 +111,15 @@ language plpgsql volatile as $$
 declare out_id text; ord text[]; essai text;
 begin
   -- On vise la rarete demandee, puis on se rabat sur la plus proche si elle est vide.
+  -- Version 3.0 : une Secrete (24_secretes_maitrise.sql). Hors extension,
+  -- donc `promo`, elle a son propre tirage ; sans Secrete au catalogue, on
+  -- retombe sur une Legendaire.
+  if r = 'S' then
+    select id into out_id from cards where secrete order by random() limit 1;
+    if out_id is not null then return out_id; end if;
+    r := 'L';
+  end if;
+
   ord := case r
     when 'C'  then array['C','PC','R','E','L']
     when 'PC' then array['PC','C','R','E','L']
@@ -165,7 +174,8 @@ begin
   --   4 · Essence
   --   5 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
   --       Rare 15 %
-  --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
+  --   6 · le hit : Rare 79 %, Epique 16 %, Legendaire 4,25 %, Secrete 0,75 %
+  --       (version 3.0 ; avant : Rare 80 %, Legendaire 4 %)
   -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
   -- derniere carte porte la mise en scene de la revelation.
   --
@@ -201,9 +211,10 @@ begin
     ids := ids || cid;
 
     x := random() * 100.0;
-    ids := ids || pick_card(case when x < 80.0 then 'R'
-                                 when x < 96.0 then 'E'
-                                 else 'L' end);
+    ids := ids || pick_card(case when x < 79.0 then 'R'
+                                 when x < 95.0 then 'E'
+                                 when x < 99.25 then 'L'
+                                 else 'S' end);
   end if;
 
   ids := array_remove(ids, null);
@@ -274,6 +285,9 @@ begin
   -- Version 2.0 : les Reverses Rares sorties.
   perform bump_quests(p, 'rev_R', (select count(*)::int from cards
                                    where id = any(ids) and reverse and rar = 'R'));
+  -- Version 3.0 : les Secretes sorties.
+  perform bump_quests(p, 'rarity_S', (select count(*)::int from cards
+                                      where id = any(ids) and rar = 'S'));
   perform sync_collection_quests(p);
   perform check_promos(p);
 
@@ -373,7 +387,11 @@ begin
   elsif it.devise = 'prismes' then
     update evt_comptes set solde = solde - it.prix
      where user_id = p and evenement = it.evenement and solde >= it.prix;
-    if not found then raise exception 'Pas assez de Prismes.'; end if;
+    -- Chaque evenement a le nom de sa monnaie : les Prismes de Reflets, les
+    -- Insignes du Choc des Sections (25_choc.sql).
+    if not found then
+      raise exception '%', case it.evenement when 'choc' then 'Pas assez d''Insignes.' else 'Pas assez de Prismes.' end;
+    end if;
   else
     if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
     update profiles set shards = shards - it.prix where id = p;
@@ -394,7 +412,7 @@ begin
       on conflict (user_id, item_id) do update set qty = inventory.qty + excluded.qty;
   elsif it.effet = 'invitation' then
     perform creer_invitation(p);
-  elsif it.effet in ('fragments', 'reverse_R') then
+  elsif it.effet in ('fragments', 'reverse_R', 'brillante') then
     perform accorder(p, it.effet, it.montant, null);
   elsif it.effet = 'carte' then
     -- Une carte achetee entre dans la collection comme n'importe quelle autre.
@@ -466,8 +484,9 @@ begin
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
   -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
   -- unique — reste a qui l'a obtenu. Les Reverses, elles, s'echangent : contre
-  -- une Reverse de meme rarete.
-  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse) then
+  -- une Reverse de meme rarete. Les Secretes aussi (version 3.0) : contre une
+  -- autre Secrete, puisque la rarete doit etre la meme.
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse and not secrete) then
     raise exception 'Cette carte ne s''échange pas.';
   end if;
   if (select count(distinct reverse) from cards where id in (p_offer, p_want)) > 1 then

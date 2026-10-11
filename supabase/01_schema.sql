@@ -69,6 +69,10 @@ alter table public.cards add column if not exists promo boolean not null default
 -- du tirage classique — et `reverse` : c'est ce drapeau qui les rend
 -- echangeables, recyclables et fabricables, contrairement aux Promos.
 alter table public.cards add column if not exists reverse boolean not null default false;
+-- Version 3.0 : les Secretes (24_secretes_maitrise.sql). Hors des 122 comme
+-- les Promos (`promo`), tirees a la place du hit une fois sur 133, et
+-- echangeables (`secrete`) — mais ni recyclables ni fabricables.
+alter table public.cards add column if not exists secrete boolean not null default false;
 create index if not exists cards_rar_idx on public.cards (rar) where in_booster;
 
 -- ------------------------------------------------------------ collection
@@ -79,6 +83,28 @@ create table if not exists public.collection (
   first_at timestamptz not null default now(),
   primary key (user_id, card_id)
 );
+
+-- Version 3.0 : la maitrise des cartes. `total` compte chaque exemplaire
+-- jamais obtenu — booster, echange, recompense —, meme s'il repart ensuite
+-- (recycle, echange). Tenu par un declencheur : aucune des fonctions qui
+-- ajoutent une carte n'a a s'en soucier.
+alter table public.collection add column if not exists total integer not null default 0;
+
+create or replace function public.collection_total() returns trigger
+language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    new.total := greatest(coalesce(new.total, 0), new.qty);
+  else
+    new.total := greatest(old.total, old.qty) + greatest(new.qty - old.qty, 0);
+  end if;
+  return new;
+end $$;
+drop trigger if exists collection_total on public.collection;
+create trigger collection_total before insert or update of qty on public.collection
+  for each row execute function public.collection_total();
+-- Les collections d'avant la 3.0 : ce qu'on possede compte comme obtenu.
+update public.collection set total = qty where total < qty;
 
 -- --------------------------------------------------------------- quetes
 create table if not exists public.quests (
@@ -128,7 +154,7 @@ alter table public.shop_items add column if not exists limite    integer;
 do $$ begin
   alter table public.shop_items drop constraint if exists shop_items_categ_check;
   alter table public.shop_items add constraint shop_items_categ_check
-    check (categ in ('boosters','echange','cosmetique','promo','evenement','invitation'));
+    check (categ in ('boosters','echange','cosmetique','promo','evenement','invitation','tapis','sleeve'));
   alter table public.shop_items drop constraint if exists shop_items_devise_check;
   alter table public.shop_items add constraint shop_items_devise_check
     check (devise in ('eclats','fragments','prismes'));
@@ -521,8 +547,12 @@ create or replace function public.bump_quests(p uuid, m text, amount int)
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if amount <= 0 then return; end if;
+  -- Une quete d'evenement n'avance que pendant son evenement (version 3.0) :
+  -- sans ce filtre, les quetes « ev » (sur toute la duree) d'un evenement
+  -- futur commenceraient avec de l'avance.
   insert into quest_progress (user_id, quest_id, period_key, progress)
-  select p, q.id, period_key(q.scope), amount from quests q where q.metric = m
+  select p, q.id, period_key(q.scope), amount from quests q
+   where q.metric = m and (q.evenement is null or q.evenement = evenement_en_cours())
   on conflict (user_id, quest_id, period_key)
     do update set progress = quest_progress.progress + amount
     where not quest_progress.claimed;
@@ -584,7 +614,39 @@ begin
     from quests q where q.metric like 'ex\_%'
   on conflict (user_id, quest_id, period_key)
     do update set progress = greatest(quest_progress.progress, excluded.progress);
+
+  -- Version 3.0 : le nombre de cartes qui ont atteint tel palier de maitrise
+  -- (« maitrise_3 » : Or). Une carte et sa Reverse progressent ensemble ; les
+  -- Secretes comptent, pas les Promos. Les seuils sont ceux de MAITRISE dans
+  -- js/maitrise.js.
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, 'all',
+         (select count(*) from cards k
+            left join collection c on c.user_id = p and c.card_id = k.id
+            left join collection r on r.user_id = p and r.card_id = 'r' || substr(k.id, 2)
+           where (not k.promo or k.secrete) and not k.reverse
+             and seuil_maitrise(k.rar, substr(q.metric, 10)::int) is not null
+             and greatest(coalesce(c.total, 0), coalesce(c.qty, 0))
+               + greatest(coalesce(r.total, 0), coalesce(r.qty, 0))
+                 >= seuil_maitrise(k.rar, substr(q.metric, 10)::int))
+    from quests q where q.metric like 'maitrise\_%'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;
+
+-- Les exemplaires obtenus qu'il faut pour le palier `n` (1 a 4) de maitrise
+-- d'une carte de rarete `r`. Doit rester egal a MAITRISE.seuils, js/maitrise.js.
+create or replace function public.seuil_maitrise(r text, n int) returns integer
+language sql immutable as $$
+  select (case r
+    when 'ES' then array[10, 30, 60, 120]
+    when 'C'  then array[5, 15, 30, 60]
+    when 'PC' then array[4, 10, 20, 40]
+    when 'R'  then array[3, 7, 15, 30]
+    when 'E'  then array[2, 4, 8, 15]
+    when 'L'  then array[2, 3, 5, 8]
+    when 'S'  then array[2, 3, 4, 5] end)[n];
+$$;
 
 -- =====================================================================
 --  Droits de lecture

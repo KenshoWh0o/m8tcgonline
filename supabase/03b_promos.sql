@@ -16,6 +16,10 @@
 insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo) values
   ('p01',  1, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
   ('p02',  2, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
+  -- Version 3.0 : les Promos des deux Starter Decks, donnees en Combats
+  -- (23_combats.sql). Provisoires : leur visuel n'est pas encore connu.
+  ('p03',  3, 'Section Toxique',   'joueur', 'rose',   'PR', false, true),
+  ('p04',  4, 'Section Déter',     'joueur', 'mauve',  'PR', false, true),
   ('p05',  5, 'Tout Commence Ici', 'joueur', 'rose',   'PR', false, true),
   ('p06',  6, 'Le Marionnettiste', 'joueur', 'neutre', 'PR', false, true)
 on conflict (id) do update set

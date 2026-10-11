@@ -192,7 +192,8 @@ function vGuerre(e) {
       <span class="t">${emblemeSection('toxique')}<b class="tnum">${fmtN(t)}</b></span>
       <span class="d"><b class="tnum">${fmtN(d)}</b>${emblemeSection('deter')}</span>
     </div>
-    <p class="muted small">Ta contribution : <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>. Chaque victoire compte — la Section gagnante reçoit ${h(g.prix || '2 boosters et 200 Éclats')} lundi ; l'autre, de quoi se consoler.${evenementEnCours() === 'choc' ? ` <b class="cb-x2">Points ×${CHOC.guerre.multiplicateur} pendant le Choc des Sections.</b>` : ''}</p>
+    ${g.passee && g.passee.gagnante ? `<p class="cb-passee">La semaine dernière, la <b>${h(SECTIONS[g.passee.gagnante].nom)}</b> l'a emporté (${fmtN(g.passee.toxique)} à ${fmtN(g.passee.deter)}).${g.passee.recompense ? ` Tu as reçu ${h(recompenseTexte(g.passee.recompense))}.` : ''}</p>` : ''}
+    <p class="muted small">Ta contribution : <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>. Chaque victoire compte — la Section gagnante reçoit ${h(g.prix || '2 boosters et 200 Éclats')} lundi ; l'autre, un booster pour se consoler.${evenementEnCours() === 'choc' ? ` <b class="cb-x2">Points ×${CHOC.guerre.multiplicateur} pendant le Choc des Sections.</b>` : ''}</p>
   </section>`;
 }
 
@@ -259,7 +260,7 @@ function ouvrirCombatCampagne(id) {
   });
 }
 
-const recompenseTexte = r => [r.eclats ? `${fmtN(r.eclats)} Éclats` : '', r.boosters ? `${r.boosters} boosters` : '', r.fragments ? `${fmtN(r.fragments)} Fragments` : ''].filter(Boolean).join(', ');
+const recompenseTexte = r => [r.eclats ? `${fmtN(r.eclats)} Éclats` : '', r.boosters ? `${r.boosters} booster${r.boosters > 1 ? 's' : ''}` : '', r.fragments ? `${fmtN(r.fragments)} Fragments` : ''].filter(Boolean).join(', ');
 
 /* Le deck avec lequel on part : le deck actif, modifiable sur place. */
 function vChoixDeck() {

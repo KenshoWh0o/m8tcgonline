@@ -604,8 +604,8 @@ Backend.defiRepondre = async function (id, ok, deck) {
 };
 Backend.defiEtat = (id, depuis) => Backend.rpc('defi_etat', { p_id: id, p_depuis: depuis || 0 });
 Backend.defiJouer = (id, n, a) => Backend.rpc('defi_jouer', { p_id: id, p_n: n, p_action: a });
-Backend.defiFin = async function (id) {
-  const r = await Backend.rpc('defi_fin', { p_id: id });
+Backend.defiFin = async function (id, gagnant, tours) {
+  const r = await Backend.rpc('defi_fin', { p_id: id, p_gagnant: gagnant == null ? null : gagnant, p_tours: tours || 0 });
   Backend.apply(r.etat);
   return r;
 };
