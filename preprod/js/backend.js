@@ -201,7 +201,10 @@ Backend.apply = function (etat) {
 Backend.rpc = async function (nom, args) {
   const { data, error } = await Backend.sb.rpc(nom, args || {});
   if (error) {
-    const brut = String(error.message || '').replace(/^.*?:\s*/, '').trim();
+    /* Seul un préfixe technique (« ERROR: », un code SQLSTATE) s'en va :
+       le texte d'un refus peut lui-même contenir « : » (« Épreuve terminée :
+       une nouvelle demain. »), qu'il ne faut pas couper. */
+    const brut = String(error.message || '').replace(/^(?:ERROR|ERREUR|[A-Z0-9]{5})\s*:\s*/, '').trim();
     const e = new Error(MSG_SERVEUR[brut] || brut || 'Le serveur a refusé.');
     e.code = brut;
     throw e;
@@ -581,6 +584,15 @@ Backend.combatFin = async function (id, gagne, resume) {
   const r = await Backend.rpc('combat_fin', { p_id: id, p_gagne: !!gagne, p_resume: resume || {} });
   Backend.apply(r.etat);
   return r;
+};
+
+/* L'événement « Le Choc des Sections » (js/choc.js, supabase/25_choc.sql) :
+   le Raid, l'Épreuve du jour et la Guerre de l'événement. */
+Backend.chocEtat = () => Backend.rpc('choc_etat');
+Backend.raidReclamer = async function (phase) {
+  const r = await Backend.rpc('raid_reclamer', { p_phase: phase });
+  Backend.apply(r.etat);
+  return r.cartes || [];
 };
 
 /* Les défis entre amis (js/combat/defis.js). */

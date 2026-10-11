@@ -7,7 +7,7 @@
    engagé ou non, avec quelles Essences — puis joue des actions et vérifie
    ce que dit la règle (docs/regles-3.0.md). */
 "use strict";
-const { Combat, Decks } = require('./combat-sim.js');
+const { Combat, Decks, Choc, Campagne } = require('./combat-sim.js');
 
 let ok = 0, ko = 0;
 function test(nom, f) {
@@ -237,6 +237,62 @@ test('le code d\'un deck se relit à l\'identique', () => {
   const x = Decks.decoder(Decks.encoder(d));
   egal(x.cartes, Object.fromEntries(Object.keys(d.cartes).sort().map(k => [k, d.cartes[k]])));
   egal(x.reserve, d.reserve);
+});
+
+test('les quarante rivaux de campagne ont un deck valide, avec leur carte', () => {
+  for (const sec of ['toxique', 'deter']) {
+    for (const f of Campagne.combatsCampagne(sec)) {
+      const d = Campagne.deckRival(f, sec);
+      egal(Decks.verifier(d), [], sec + ' ' + f.id);
+      vrai(d.cartes[f.rival] >= 1, f.rival + ' absent');
+    }
+  }
+});
+
+console.log('Le Choc des Sections');
+test('le deck du Marionnettiste est valide et le contient, chaque jour et à chaque phase', () => {
+  for (let j = 0; j < 14; j++) {
+    const jour = new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10);
+    for (let n = 1; n <= 6; n++) {
+      const d = Choc.deckMarionnettiste(jour, n);
+      egal(Decks.verifier(d), [], jour + ' phase ' + n);
+      vrai(d.cartes[Choc.CHOC.raid.boss] === 1, 'Le Marionnettiste manque');
+      egal(JSON.stringify(Choc.deckMarionnettiste(jour, n)), JSON.stringify(d), 'même jour, même deck');
+    }
+  }
+});
+test('l\'Épreuve du jour est la même pour tous, et ses decks sont valides', () => {
+  const a = Choc.epreuveDuJour('2026-10-11', 123456789), b = Choc.epreuveDuJour('2026-10-11', 123456789);
+  egal(JSON.stringify(a), JSON.stringify(b));
+  egal(Decks.verifier(a.moi), []);
+  egal(Decks.verifier(a.adv), []);
+  const vus = new Set();
+  for (let j = 0; j < 7; j++) vus.add(Choc.epreuveDuJour(new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10), 1).regle.id);
+  egal(vus.size, Choc.CHOC.epreuve.regles.length, 'une règle différente chaque jour de la semaine');
+});
+test('le score de l\'Épreuve : victoire, puis moins de tours, puis plus de PV', () => {
+  const s = Choc.scoreEpreuve;
+  vrai(s({ gagne: true, tours: 20, pv: 1 }) > s({ gagne: false, touches: 6, pv: 5 }));
+  vrai(s({ gagne: true, tours: 8, pv: 1 }) > s({ gagne: true, tours: 9, pv: 5 }));
+  vrai(s({ gagne: true, tours: 8, pv: 3 }) > s({ gagne: true, tours: 8, pv: 2 }));
+  vrai(s({ gagne: false, touches: 4, pv: 0 }) > s({ gagne: false, touches: 3, pv: 2 }));
+});
+test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme', () => {
+  const p = Choc.chocPhase(5);
+  const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckMarionnettiste('2026-10-11', 5))],
+    graine: 77, pv: [5, p.pvBoss], essDepart: [0, p.ess] });
+  egal(E.j[1].pvDepart, 8);
+  let n = 0;
+  while (Combat.demande(E) && n++ < 3000) {
+    const d = Combat.demande(E);
+    let a;
+    if (d.type === 'tour') { const o = Combat.optionsTour(E); a = o.find(x => x.t === 'attaquer') || o.find(x => x.t === 'deployer') || o.find(x => x.t === 'finTour'); }
+    else if (d.type === 'choix') a = { t: 'choix', v: d.options[0].v };
+    else if (d.type === 'cartes') a = { t: 'cartes', u: d.parmi.slice(0, d.min) };
+    else a = { t: 'ordre', u: d.parmi };
+    Combat.agir(E, a);
+  }
+  vrai(E.fin, 'la partie doit finir');
 });
 
 console.log('Copie et reprise');

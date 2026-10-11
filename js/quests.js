@@ -29,7 +29,12 @@ const QICO = {
   rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
   brill_ALL: 'promo', illu: 'illu', ev_visite: 'reflets', invite: 'amis', titre: 'user', perso: 'user',
   /* Version 2.1 : plusieurs exemplaires d'une même carte. */
-  ex_R: 'cards', ex_E: 'cards', ex_L: 'coin'
+  ex_R: 'cards', ex_E: 'cards', ex_L: 'coin',
+  /* Version 3.0 : les combats, les Secrètes, la maîtrise, le Choc des Sections. */
+  combats: 'sword', victoires: 'sword', vaincus: 'sword', victoires_dures: 'sword', defis: 'amis',
+  campagne: 'trophy', legende: 'trophy', rarity_S: 'coin', maitrise_3: 'cards', maitrise_4: 'cards',
+  raid: 'fils', raid_degats: 'fils', raid_victoires: 'fils', epreuve: 'epreuve', epreuve_victoires: 'epreuve',
+  points_section: 'choc', deck: 'cards', cosm: 'user'
 };
 
 /* ---------- Comptages ---------- */
@@ -128,7 +133,7 @@ function notifQuete(q) {
   /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
      bannière de réussite donnerait l'impression d'un bug. */
   const gain = q.reward > 0
-    ? `${q.monnaie === 'prismes' ? prismeIco : shardIco}${fmtN(q.reward)}`
+    ? `${q.monnaie === 'prismes' ? evIco() : shardIco}${fmtN(q.reward)}`
     : q.item ? 'Récompense' : '';
   el.innerHTML = `<span class="qnico">${NAVICO.check}</span>
     <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
@@ -290,7 +295,7 @@ function vRecompense(q) {
     return `<span class="qreward objet titre" title="Titre ${h(t.nom)}">
       <span class="qrtitre t${t.ton}">${h(t.nom)}</span><small>Titre</small></span>`;
   }
-  if (q.monnaie === 'prismes') return `<span class="qreward prismes">${prismeIco}${fmtN(q.reward)}</span>`;
+  if (q.monnaie === 'prismes') return `<span class="qreward prismes">${evIco()}${fmtN(q.reward)}</span>`;
   const f = q.item ? FRAMES[q.item] : null;
   if (f) {
     return `<span class="qreward objet" title="Cadre ${h(f.nom)}">
@@ -309,7 +314,7 @@ function vQuete(q, apres) {
   const unite = q.metric === 'collection_pct' ? ' %' : '';
 
   return `<article class="quest${q.claimed ? ' done' : fini ? ' ready' : ''}">
-    <span class="qico">${NAVICO[fini ? 'check' : QICO[q.metric] || 'quest']}</span>
+    <span class="qico">${NAVICO[fini ? 'check' : (q.metric === 'ev_visite' && q.evenement === 'choc' ? 'choc' : QICO[q.metric]) || 'quest']}</span>
     <div class="qcorps">
       <div class="qhead"><b>${h(q.titre)}</b>${vRecompense(q)}</div>
       <p class="qdetail">${h(q.detail)}${apres ? ` <span class="qsuite">+${apres} palier${apres > 1 ? 's' : ''}</span>` : ''}${q.claimed ? '' : vMeilleure(q)}</p>

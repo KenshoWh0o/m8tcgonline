@@ -98,6 +98,19 @@ function vTest() {
   </section>
 
   <section class="panel">
+    <h2>Version 3.0 · Le Choc des Sections</h2>
+    <p class="muted small">L'onglet de l'événement (s'il est en cours), et son récap avec des chiffres inventés — rien n'est enregistré.</p>
+    <div class="row">
+      <button class="btn ghost" data-act="t-v3-choc">Onglet de l'événement</button>
+      <button class="btn ghost" data-act="t-v3-recap">Onglet récap</button>
+      <button class="btn ghost" data-act="t-v3-recap-pop">Fenêtre de fin</button>
+      <button class="btn ghost" data-act="t-v3-recap-ban">Bandeau récap</button>
+    </div>
+    <p class="muted small" style="margin-top:8px">L'événement s'ouvre côté serveur (supabase/25_choc.sql, en fin de fichier) ;
+      la barre de vie du Raid se règle avec <code>update public.parametres set raid_echelle = 0.5 where id = 1;</code></p>
+  </section>
+
+  <section class="panel">
     <h2>Annonce à tous les joueurs</h2>
     <p class="muted small">Elle arrive dans la boîte de réception de chacun, avec un ping
       pour ceux qui sont en jeu. Pour la retirer : « Retirer l'annonce » dans ta boîte.</p>

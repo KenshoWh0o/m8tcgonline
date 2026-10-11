@@ -1249,12 +1249,17 @@ const TAPIS = {
   t_chevalier: { nom: 'Le Chevalier', img: 'assets/combat/tapis/t_chevalier.webp', prix: 5000 },
   t_veste:     { nom: 'Veste Rose', img: 'assets/combat/tapis/t_veste.webp', prix: 4000 },
   t_pilote:    { nom: 'Petit Pilote', img: 'assets/combat/tapis/t_pilote.webp', prix: 4000 },
-  t_peche:     { nom: 'Grosse Prise', img: 'assets/combat/tapis/t_peche.webp', prix: 4000 }
+  t_peche:     { nom: 'Grosse Prise', img: 'assets/combat/tapis/t_peche.webp', prix: 4000 },
+  /* L'événement « Le Choc des Sections » : ni en vente, ni en Éclats.
+     `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
+  t_arene:     { nom: 'L\'Arène', img: 'assets/combat/tapis/t_arene.webp', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
+  t_theatre:   { nom: 'Le Théâtre', img: 'assets/combat/tapis/t_theatre.webp', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
 };
 const SLEEVES = {
   s_base:    { nom: 'Classique', img: 'assets/card-back.webp', prix: 0 },
   s_sorcier: { nom: 'Le Sorcier', img: 'assets/combat/sleeves/s_sorcier.webp', prix: 3000 },
-  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp', prix: 2500 }
+  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp', prix: 2500 },
+  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
 };
 const JETONS = {
   j_base: { nom: 'Jeton M8', img: 'assets/jeton-echange.webp', prix: 0 }

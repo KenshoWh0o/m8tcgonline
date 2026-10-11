@@ -144,6 +144,7 @@ function vCbAccueil(e) {
   const reste = Math.max(0, e.jour.plafond - e.jour.recompensees);
   const enCours = combatEnCours();
   return `
+    ${evenementEnCours() === 'choc' ? vBandeauChoc('combats') : ''}
     ${enCours ? `<section class="cb-reprendre"><div><b>Un combat est en cours</b><p class="muted small">${h(enCours.meta && enCours.meta.titre || 'Combat')} — tu peux le reprendre où tu l'as laissé.</p></div>
       <div class="cb-reprendre-act"><button class="btn" data-cb="reprendre">Reprendre</button><button class="btn ghost" data-cb="oublier">Abandonner</button></div></section>` : ''}
     ${vGuerre(e)}
@@ -191,7 +192,7 @@ function vGuerre(e) {
       <span class="t">${emblemeSection('toxique')}<b class="tnum">${fmtN(t)}</b></span>
       <span class="d"><b class="tnum">${fmtN(d)}</b>${emblemeSection('deter')}</span>
     </div>
-    <p class="muted small">Ta contribution : <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>. Chaque victoire compte — la Section gagnante reçoit ${h(g.prix || '2 boosters et 200 Éclats')} lundi ; l'autre, de quoi se consoler.</p>
+    <p class="muted small">Ta contribution : <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>. Chaque victoire compte — la Section gagnante reçoit ${h(g.prix || '2 boosters et 200 Éclats')} lundi ; l'autre, de quoi se consoler.${evenementEnCours() === 'choc' ? ` <b class="cb-x2">Points ×${CHOC.guerre.multiplicateur} pendant le Choc des Sections.</b>` : ''}</p>
   </section>`;
 }
 
@@ -323,7 +324,9 @@ function vCbDefis(e) {
     </section>
     <p class="muted small">Un défi gagné rapporte ${DEFI_GAIN.victoire} Éclats et ${DEFI_GAIN.points} points de Section (${DEFI_GAIN.plafond} défis récompensés par jour).</p>`;
 }
-const DEFI_GAIN = { victoire: 50, defaite: 15, points: 5, plafond: 3 };
+/* Rééquilibré pour la 3.0 (docs/economie-3.0.md) : un défi rapporte un
+   peu plus qu'une victoire en Normal, puisqu'il faut un ami en face. */
+const DEFI_GAIN = { victoire: 40, defaite: 15, points: 5, plafond: 3 };
 
 /* ---------- Les decks et la personnalisation ---------- */
 function vCbDecks(e) {
@@ -351,12 +354,18 @@ function vCbDecks(e) {
 }
 
 function vPersonnaliser(e) {
-  const possede = id => TAPIS[id] && (TAPIS[id].prix === 0 || (save.inv || {})[id] > 0) || SLEEVES[id] && (SLEEVES[id].prix === 0 || (save.inv || {})[id] > 0) || JETONS[id] && (JETONS[id].prix === 0 || (save.inv || {})[id] > 0);
+  /* Le cosmétique de base est à tout le monde ; les autres, achetés ou gagnés. */
+  const possede = id => {
+    const x = TAPIS[id] || SLEEVES[id] || JETONS[id];
+    return !!x && ((x.prix === 0 && !x.ev) || (save.inv || {})[id] > 0);
+  };
+  /* Un cosmétique d'événement ne s'achète pas en Éclats : il dit d'où il vient. */
   const tuile = (type, id, x, actif) => {
     const a = possede(id);
-    return `<button class="cb-cosm ${type}${actif ? ' on' : ''}${a ? '' : ' verrou'}" data-cb="${a ? 'cosm' : 'boutique-cosm'}" data-t="${type}" data-v="${id}">
+    const verrou = x.ev ? `<i class="cb-cosm-prix ev">${h(x.ev)}</i>` : `<i class="cb-cosm-prix">${shardIco}${fmtN(x.prix)}</i>`;
+    return `<button class="cb-cosm ${type}${actif ? ' on' : ''}${a ? '' : ' verrou'}" data-cb="${a ? 'cosm' : x.ev ? 'cosm-ev' : 'boutique-cosm'}" data-t="${type}" data-v="${id}">
       <span class="cb-cosm-img">${type === 'tapis' ? (x.img ? `<img src="${x.img.replace('.webp', '-mini.webp')}" alt="" loading="lazy">` : '<i class="cb-tapis-base"></i>')
-        : `<img src="${x.img}" alt="" loading="lazy">`}${a ? '' : `<i class="cb-cosm-prix">${shardIco}${fmtN(x.prix)}</i>`}</span>
+        : `<img src="${x.img}" alt="" loading="lazy">`}${a ? '' : verrou}</span>
       <b>${h(x.nom)}</b></button>`;
   };
   return `<section class="cb-bloc cb-perso"><h3>Personnaliser</h3>
@@ -479,7 +488,7 @@ async function demarrer(o) {
   const init = {
     decks: [Decks.versMoteur(o.deck), Decks.versMoteur(deckIA)],
     noms: [save.pseudo, o.adversaire.nom], graine: ouv.graine,
-    pv: [Combat.REGLE.PV, o.pv || Combat.REGLE.PV], essDepart: [0, o.ess || 0]
+    pv: [o.pvMoi || Combat.REGLE.PV, o.pv || Combat.REGLE.PV], essDepart: [o.essMoi || 0, o.ess || 0]
   };
   const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null };
   ouvrirArene({ init }, meta);
@@ -505,6 +514,8 @@ async function finirCombat(meta, E, gagne) {
   const resume = resumeCombat(E, 0);
   const r = await Backend.combatFin(meta.id, gagne, resume);
   try { localStorage.removeItem(CLE_COMBAT); } catch (err) { /* */ }
+  /* Le Raid et l'Épreuve ont changé l'état de l'événement (js/choc.js). */
+  if (meta.mode === 'raid' || meta.mode === 'epreuve') chargerChoc();
   return htmlRecompense(r);
 }
 
@@ -522,6 +533,8 @@ function htmlRecompense(r) {
   if (!r) return '';
   const g = r.recompense || {};
   const l = [];
+  if (g.degats) l.push(`<span class="ar-recompense">${NAVICO.fils}${fmtN(g.degats)} dégât${g.degats > 1 ? 's' : ''}</span>`);
+  if (g.insignes) l.push(`<span class="ar-recompense">${insigneIco}+${fmtN(g.insignes)}</span>`);
   if (g.eclats) l.push(`<span class="ar-recompense">${shardIco}+${fmtN(g.eclats)}</span>`);
   if (g.boosters) l.push(`<span class="ar-recompense"><img src="${ART.seal}" alt="">+${g.boosters}</span>`);
   if (g.fragments) l.push(`<span class="ar-recompense">${NAVICO.fragment}+${fmtN(g.fragments)}</span>`);
@@ -582,6 +595,11 @@ function cbAction(k, el) {
     case 'activer': return agir(() => Backend.combatReglages({ deck_actif: v }), 'Deck activé.');
     case 'cosm': return agir(() => Backend.combatReglages({ [el.dataset.t]: v }));
     case 'boutique-cosm': shopVue = 'combat'; return aller('boutique');
+    case 'cosm-ev': {
+      const x = TAPIS[v] || SLEEVES[v] || {};
+      if (evenementEnCours() === 'choc') return allerCh(x.vue || 'pass');
+      return toast(`${x.nom || 'Ce cosmétique'} : exclusif à l'événement « ${CHOC.nom} ».`);
+    }
     case 'voir-deck': return voirDeck(v);
     case 'copier-deck': return copierDeck(v);
     case 'editer': return ouvrirAtelier(v);

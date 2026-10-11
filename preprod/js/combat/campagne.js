@@ -72,14 +72,16 @@ const RECOMPENSE_REJOUER = { eclats: 10 };
 
 /* Le PvE infini : la difficulté choisie, ce que rapporte une victoire.
    Au plus PVE_PLAFOND victoires récompensées par jour, tous modes PvE
-   confondus (campagne rejouée comprise). */
+   confondus (campagne rejouée comprise). Valeurs rééquilibrées pour la 3.0
+   (docs/economie-3.0.md) : cinq victoires en Normal rapportent 125 Éclats,
+   en Légende 250 — de quoi compter, sans doubler les revenus d'un joueur. */
 const PVE_PLAFOND = 5;
 const DIFFICULTES = [
-  { niveau: 1, nom: 'Débutant', eclats: 15, points: 1, texte: 'Elle apprend encore. Elle joue un coup sur deux au hasard.' },
-  { niveau: 2, nom: 'Facile', eclats: 25, points: 2, texte: 'Des règles simples, sans calcul.' },
-  { niveau: 3, nom: 'Normal', eclats: 40, points: 3, texte: 'Elle essaie ses coups avant de jouer.' },
-  { niveau: 4, nom: 'Difficile', eclats: 55, points: 4, texte: 'Elle calcule, et se méfie de ta riposte.' },
-  { niveau: 5, nom: 'Légende', eclats: 75, points: 5, texte: 'Elle prévoit ta réponse, avec un deck de Légendaires.' }
+  { niveau: 1, nom: 'Débutant', eclats: 10, points: 1, texte: 'Elle apprend encore. Elle joue un coup sur deux au hasard.' },
+  { niveau: 2, nom: 'Facile', eclats: 15, points: 2, texte: 'Des règles simples, sans calcul.' },
+  { niveau: 3, nom: 'Normal', eclats: 25, points: 3, texte: 'Elle essaie ses coups avant de jouer.' },
+  { niveau: 4, nom: 'Difficile', eclats: 35, points: 4, texte: 'Elle calcule, et se méfie de ta riposte.' },
+  { niveau: 5, nom: 'Légende', eclats: 50, points: 5, texte: 'Elle prévoit ta réponse, avec un deck de Légendaires.' }
 ];
 
 /* Les combats de la campagne, pour qui joue `section`. */
@@ -106,15 +108,26 @@ function deckRival(f, section) {
   const autres = sec.couleurs.filter(c => c !== f.couleur);
   const couleurs = f.n >= 5 && r() < 0.5 ? [f.couleur, autres[Math.floor(r() * autres.length)]] : [f.couleur];
   const d = Decks.aleatoire(r, { niveau: Math.min(5, f.niveau + (f.rang ? 1 : 0)), couleurs, nom: 'Deck de ' + (Combat.carte(f.rival) || {}).nom });
-  /* Sa carte, toujours là : elle remplace un Joueur tiré au sort. */
-  if (!d.cartes[f.rival] && Combat.carte(f.rival)) {
-    const js = Object.keys(d.cartes).filter(id => Combat.carte(id).cat === 'joueur');
-    const out = js[Math.floor(r() * js.length)];
-    if (--d.cartes[out] <= 0) delete d.cartes[out];
-    d.cartes[f.rival] = 1;
-    d.reserve = Decks.reserveAuto(d.cartes, f.couleur);
-  }
+  /* Sa carte, toujours là. */
+  imposerCarte(d, f.rival, f.couleur, r);
   d.couverture = f.rival;
+  return d;
+}
+
+/* Une carte toujours présente dans un deck tiré au sort : elle prend la
+   place d'un Joueur. Si le deck a déjà une carte qui compte pour la même
+   (la Promo P06 et Le Marionnettiste #121, par exemple : Decks.cleCopie),
+   c'est celle-là qui cède sa place — sinon on dépasserait la limite
+   d'exemplaires. */
+function imposerCarte(d, id, couleur, r) {
+  if (d.cartes[id] || !Combat.carte(id)) return d;
+  const meme = Object.keys(d.cartes).filter(k => Decks.cleCopie(k) === Decks.cleCopie(id));
+  const js = Object.keys(d.cartes).filter(k => Combat.carte(k).cat === 'joueur');
+  const l = meme.length ? meme : js;
+  const out = l[Math.floor(r() * l.length)];
+  if (out && --d.cartes[out] <= 0) delete d.cartes[out];
+  d.cartes[id] = 1;
+  d.reserve = Decks.reserveAuto(d.cartes, couleur);
   return d;
 }
 

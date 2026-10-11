@@ -305,6 +305,8 @@ button.ar-lc:not(.grise) .ar-c{box-shadow:0 0 0 2px rgba(255,199,59,.6)}
 .ar-recompenses{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:6px 0}
 .ar-recompense{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);font-weight:800}
 .ar-recompense svg,.ar-recompense img{width:20px;height:20px}
+/* Les icônes au trait (Fragments, Raid) : sans ça, elles se remplissent de noir. */
+.ar-recompense>svg:not(.shard):not(.prismeico){fill:none;stroke:#ffc73b;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 
 .ar-journal{position:absolute;top:0;right:0;bottom:0;z-index:15;width:min(86vw,340px);display:flex;flex-direction:column;
   background:rgba(14,9,22,.97);border-left:1px solid rgba(255,255,255,.12);box-shadow:-20px 0 40px rgba(0,0,0,.5);
