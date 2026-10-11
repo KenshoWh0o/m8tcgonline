@@ -59,7 +59,9 @@ const RATES = {
   /* Quatrième carte, la Reverse (version 2.0). */
   REVERSE: { C: 50, PC: 35, R: 15 },
   /* La dernière, celle qu'on attend. */
-  HIT: { R: 80, E: 16, L: 4 },
+  /* Version 3.0 : la Légendaire passe à 4,25 %, la Secrète arrive à 0,75 %
+     (la Rare cède le point qu'il fallait). */
+  HIT: { R: 79, E: 16, L: 4.25, S: 0.75 },
   /* Le godpack, case par case : ça monte jusqu'à la légendaire garantie. */
   GODPACK: [
     { R: 90, E: 10 },
@@ -73,6 +75,12 @@ const RATES = {
 const GOD = 1 / 2000;
 
 function pickFrom(pool, r) {
+  /* Une Secrète se tire dans les Secrètes (version 3.0). */
+  if (r === 'S') {
+    const l = (typeof secretes !== 'undefined' ? secretes : []);
+    if (l.length) return rnd(l);
+    r = 'L';
+  }
   const order = ['C', 'PC', 'R', 'E', 'L'].sort((a, b) =>
     Math.abs(RAR[a].rank - RAR[r].rank) - Math.abs(RAR[b].rank - RAR[r].rank) || RAR[b].rank - RAR[a].rank
   );
@@ -100,7 +108,7 @@ function weighted(w) {
      3 · Peu commune
      4 · Essence
      5 · une Reverse : Commune 50 %, Peu commune 35 %, Rare 15 %
-     6 · le hit : Rare 80 %, Épique 16 %, Légendaire 4 %
+     6 · le hit : Rare 79 %, Épique 16 %, Légendaire 4,25 %, Secrète 0,75 %
    L'ordre compte : la pile se feuillette de la première à la dernière, et
    c'est la dernière qui porte la mise en scène de la révélation.
    Godpack : six cartes qui montent, de la rare à la légendaire garantie. */

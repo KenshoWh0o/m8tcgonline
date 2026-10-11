@@ -93,3 +93,36 @@ const UNIQUE_DATA = [
     ambiance: 'Une Chevalière pour les honorer tous'
   }
 ];
+
+/* Version 3.0 : les Secrètes. Numérotées à la suite de l'extension
+   (« 123/122 »), elles sortent des boosters — 0,75 % de la dernière carte —
+   mais ne comptent pas dans les 122 : comme les Promos, elles sont hors du
+   total et du pourcentage. Elles s'échangent ; elles ne se recyclent ni ne
+   se fabriquent. Trois ne sont pas encore révélées (`cachee`) : leur visuel
+   est flouté, et elles n'ont ni nom ni texte connus — on peut les obtenir,
+   pas les jouer. Le serveur les tire dans public.cards (supabase/23_combats.sql). */
+const SECRET_DATA = [
+  {
+    fichier: '123_S_Joueur_Orange_Le-Quatrieme-du-Nom.avif', num: 123, nom: 'Le Quatrième du Nom',
+    categorie: 'Joueur', couleur: 'Orange', def: 160,
+    attaques: [
+      { nom: 'Kalinade', cout: { orange: 1, neutre: 1 }, degats: 100 },
+      { nom: 'Victoire Royale', cout: { orange: 4 }, degats: 180 }
+    ],
+    illustrateur: 'Levinky',
+    ambiance: 'Vous savez que j\'ai participé à la première World Cup moi ?'
+  },
+  { fichier: '124_S_Secrete.avif', num: 124, cachee: true },
+  {
+    fichier: '125_S_Joueur_Mauve_6W26L.avif', num: 125, nom: '6W26L',
+    categorie: 'Joueur', couleur: 'Mauve', def: 60,
+    attaques: [
+      { nom: 'UltiM8um', cout: { mauve: 2 }, degats: 60, plus: true, effet: '+60 pour chaque PV récupéré par votre adversaire ce tour.' }
+    ],
+    mot_cle: { nom: 'Légion', icone: 'declencheur', texte: 'Lorsqu\'il est vaincu, vous pouvez défausser une carte pour récupérer ce Joueur dans votre main.' },
+    illustrateur: 'Gobli Prin',
+    ambiance: 'Je reviens mais à une condition...'
+  },
+  { fichier: '126_S_Secrete.avif', num: 126, cachee: true },
+  { fichier: '127_S_Secrete.avif', num: 127, cachee: true }
+];

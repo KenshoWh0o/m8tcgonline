@@ -284,13 +284,13 @@ function doReveal(done) {
     stage.classList.remove('charging');
     top.classList.remove('veiled', 'charging');
     top.classList.add('unveil', 'hitcard', 'h' + c.rar);
-    const haut = c.rar === 'L' || c.rar === 'UN';
+    const haut = c.rar === 'L' || c.rar === 'UN' || c.rar === 'S';
     SFX.jouer(haut ? 'legend' : c.rar === 'E' ? 'epique' : 'rare');
     /* La vibration double le son : sur un téléphone en silencieux, c'est tout ce
        qui reste pour dire qu'il vient de se passer quelque chose. */
     vibrer(c.rar === 'UN' ? [40, 60, 40, 60, 40, 60, 120] : haut ? [30, 50, 30, 50, 60] : c.rar === 'E' ? [25, 45, 40] : 30);
     if (c.rar === 'E' || c.rar === 'L') top.classList.add('spin' + c.rar);
-    if (c.rar === 'UN') top.classList.add('spinL');
+    if (c.rar === 'UN' || c.rar === 'S') top.classList.add('spinL');
     rv.revealed = true;
 
     const r = top.getBoundingClientRect();
@@ -316,21 +316,21 @@ function doReveal(done) {
     void s3.offsetWidth;
     s3.classList.add('punch');
 
-    stage.classList.remove('flash-R', 'flash-E', 'flash-L');
+    stage.classList.remove('flash-R', 'flash-E', 'flash-L', 'flash-S', 'flash-UN');
     void stage.offsetWidth;
     stage.classList.add('flash-' + c.rar);
 
     FX.burst(cx, cy, { n: cfg.n, colors: cfg.colors, speed: cfg.speed, shape: 'star', g: .06, size: 4, life: 45 });
     FX.burst(cx, cy, { n: Math.round(cfg.n / 2), colors: cfg.colors, speed: cfg.speed * .55, g: .03, size: 2.2, life: 40 });
-    if (haut) setTimeout(() => FX.sparkle({ n: c.rar === 'UN' ? 220 : 120, colors: cfg.colors, size: 4 }), 200);
-    if (c.rar === 'UN') setTimeout(() => FX.sparkle({ n: 160, colors: cfg.colors, size: 3.4 }), 1100);
+    if (haut) setTimeout(() => FX.sparkle({ n: c.rar === 'UN' || c.rar === 'S' ? 220 : 120, colors: cfg.colors, size: 4 }), 200);
+    if (c.rar === 'UN' || c.rar === 'S') setTimeout(() => FX.sparkle({ n: 160, colors: cfg.colors, size: 3.4 }), 1100);
     else if (c.rar === 'E') setTimeout(() => FX.sparkle({ n: 45, colors: cfg.colors }), 200);
 
     $('#oprar').className = 'op-rar big r' + c.rar;
     $('#oprar').innerHTML = `<span class="slam">${cfg.label}</span>${rv.news[rv.idx] ? '<em>NEW</em>' : ''}`;
     $('#ophint').textContent = 'Glisse d\'un coup sec ou touche pour voir ton récap';
 
-    setTimeout(done, c.rar === 'UN' ? 1400 : c.rar === 'L' ? 900 : c.rar === 'E' ? 600 : 250);
+    setTimeout(done, c.rar === 'UN' || c.rar === 'S' ? 1400 : c.rar === 'L' ? 900 : c.rar === 'E' ? 600 : 250);
   }, RM() ? 0 : cfg.charge);
 }
 
@@ -487,7 +487,7 @@ function showRecap() {
   </div>`);
 
   SFX.jouer('gagne');
-  if ((best.rar === 'L' || best.rar === 'UN') && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: (REVEAL[best.rar] || REVEAL.L).colors }), 500);
+  if ((best.rar === 'L' || best.rar === 'UN' || best.rar === 'S') && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: (REVEAL[best.rar] || REVEAL.L).colors }), 500);
   /* Le paquet qu'on vient d'ouvrir, gardé pour le bouton « Partager ». */
   dernierTirage = { ids: drawn.map(c => c.id), god: rv.god, quand: new Date().toISOString() };
 }

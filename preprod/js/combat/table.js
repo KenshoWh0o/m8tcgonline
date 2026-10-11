@@ -27,6 +27,9 @@ const Table = (() => {
   const adv = j => 1 - j;
   const nomCEO = j => T.E.j[j].nom;
 
+  /* Une url() posée dans une variable CSS se lit depuis la feuille de style
+     (css/), pas depuis la page : on la donne en absolu. */
+  const abs = p => new URL(p, document.baseURI).href;
   /* Le dos des cartes : la sleeve choisie (Decks › Personnaliser). */
   const sleeveDe = j => (SLEEVES[(T.cosm[j] || {}).sleeve] || SLEEVES.s_base).img;
   const TAPIS_DEFAUT = 't_base';
@@ -38,7 +41,9 @@ const Table = (() => {
     const img = c.img
       ? `<img src="${c.img}" alt="" draggable="false" decoding="async">`
       : `<div class="ar-texte r-${c.rar}" style="--tc:${tcol(c)}"><b>${h(c.nom)}</b><small>${h(c.provisoire ? 'Promo provisoire' : (RAR[c.rar] || {}).nom || '')}</small>${c.def != null ? `<em>Déf ${c.def}</em>` : ''}${(c.atks || []).map(a => `<span>${coutHTML(a.cout)} ${h(a.nom)} <i>${a.degats == null ? '' : a.degats}</i></span>`).join('')}</div>`;
-    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' || c.rar === 'S' ? ' holo' : ''}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}</div>`;
+    /* La maîtrise (js/maitrise.js) : seulement sur ses propres cartes. */
+    const m = o.maitrise && typeof maitriseDe === 'function' ? maitriseDe(c) : null;
+    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' || c.rar === 'S' ? ' holo' : ''}${m && m.niveau ? ' mt' + m.niveau : ''}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}</div>`;
   }
   const dos = j => `<div class="ar-c dos"><img src="${sleeveDe(j)}" alt="" draggable="false"></div>`;
 
@@ -113,14 +118,14 @@ const Table = (() => {
   /* ---------- Le squelette ---------- */
   function squelette() {
     const tapis = (TAPIS[(T.cosm[T.moi] || {}).tapis] || TAPIS[TAPIS_DEFAUT]);
-    return `<div class="ar-fond${tapis.img ? '' : ' base'}" style="${tapis.img ? `--tapis:url('${tapis.img}')` : ''}"></div>
+    return `<div class="ar-fond${tapis.img ? '' : ' base'}" style="${tapis.img ? `--tapis:url('${abs(tapis.img)}')` : ''}"></div>
     <header class="ar-haut">
       <button class="ar-bouton ar-menu" data-ar="menu" aria-label="Menu du combat">${NAVICO.menu}</button>
       <div class="ar-ceo lui" data-cible="ceo"></div>
       <div class="ar-titre">${h(T.o.titre || 'Combat')}${T.o.sousTitre ? `<small>${h(T.o.sousTitre)}</small>` : ''}</div>
     </header>
     <div class="ar-scene">
-      <div class="ar-plateau${tapis.img ? '' : ' base'}" style="${tapis.img ? `--tapis:url('${tapis.img}')` : ''}">
+      <div class="ar-plateau${tapis.img ? '' : ' base'}" style="${tapis.img ? `--tapis:url('${abs(tapis.img)}')` : ''}">
         <div class="ar-camp lui"><div class="ar-esss"></div><div class="ar-lignes"></div></div>
         <div class="ar-milieu"><span class="ar-phase"></span></div>
         <div class="ar-camp moi"><div class="ar-lignes"></div><div class="ar-esss"></div></div>
@@ -193,8 +198,8 @@ const Table = (() => {
     const actif = T.E.actif === j && !T.E.fin;
     return `<span class="ar-ava${actif ? ' actif' : ''}">${avatarHTML(inf.avatar || 'star', inf.frame || 'default', 'md', inf.photo || null)}</span>
       <span class="ar-qui"><b>${h(P.nom)}</b><span class="ar-pvs" aria-label="${pv} PV">${pips}<em>${pv} PV</em></span></span>
-      ${haut ? `<span class="ar-mainadv" aria-label="${P.main.length} cartes en main">${Array.from({ length: Math.min(P.main.length, 8) }, () => `<i style="--dos:url('${sleeveDe(j)}')"></i>`).join('')}<em>${P.main.length}</em></span>
-        <span class="ar-clubadv"><i style="--dos:url('${sleeveDe(j)}')"></i><em>${P.club.length}</em></span>` : ''}`;
+      ${haut ? `<span class="ar-mainadv" aria-label="${P.main.length} cartes en main">${Array.from({ length: Math.min(P.main.length, 8) }, () => `<i style="--dos:url('${abs(sleeveDe(j))}')"></i>`).join('')}<em>${P.main.length}</em></span>
+        <span class="ar-clubadv"><i style="--dos:url('${abs(sleeveDe(j))}')"></i><em>${P.club.length}</em></span>` : ''}`;
   }
 
   function rendreCamp(j, el) {
@@ -226,7 +231,7 @@ const Table = (() => {
 
   function htmlJoueurInterieur(c) {
     return `<div class="ar-objs">${c.obj.map(o => `<span class="ar-obj" data-u="${o.u}">${htmlCarte(o.id)}</span>`).join('')}</div>
-      ${htmlCarte(c.id)}<div class="ar-stats"></div><div class="ar-marques"></div>`;
+      ${htmlCarte(c.id, { maitrise: c.j === T.moi })}<div class="ar-stats"></div><div class="ar-marques"></div>`;
   }
   function majJoueur(x, c) {
     const objs = x.querySelector('.ar-objs');
@@ -272,7 +277,7 @@ const Table = (() => {
     const cle = P.main.map(c => c.u).join(',');
     if (el.dataset.k !== cle) {
       el.dataset.k = cle;
-      el.innerHTML = P.main.map((c, i) => `<button class="ar-m" data-mu="${c.u}" style="--i:${i};--n:${n}" aria-label="${h(carte(c.id).nom)}">${htmlCarte(c.id)}</button>`).join('');
+      el.innerHTML = P.main.map((c, i) => `<button class="ar-m" data-mu="${c.u}" style="--i:${i};--n:${n}" aria-label="${h(carte(c.id).nom)}">${htmlCarte(c.id, { maitrise: true })}</button>`).join('');
     }
     el.style.setProperty('--n', n);
   }

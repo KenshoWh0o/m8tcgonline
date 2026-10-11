@@ -225,7 +225,9 @@ function vCbCampagne(e) {
       <p class="muted small">La Promo ${h((byId[adverse.promo] || {}).nom || '')}, le titre « Champion des Sections » et le Starter Deck adverse, prêté pour toujours.</p></div></div>`;
 }
 
+let cbRouvrir = null;
 function ouvrirCombatCampagne(id) {
+  cbRouvrir = () => ouvrirCombatCampagne(id);
   const e = cbEtat();
   const combats = combatsCampagne(e.section);
   const f = combats.find(x => x.id === id);
@@ -302,7 +304,7 @@ function vCbInfini(e) {
 /* ---------- Les défis entre amis ---------- */
 function vCbDefis(e) {
   if (Backend.mode !== 'cloud') return horsLigne('Les défis');
-  const amis = (Backend.amis || []).filter(a => a.statut === 'ami' || a.status === 'accepted' || a.ami);
+  const amis = (Backend.amis || []).filter(a => a.lien === 'ami');
   const recus = e.defis.filter(d => d.pour_moi && d.statut === 'attente');
   const envoyes = e.defis.filter(d => !d.pour_moi && d.statut === 'attente');
   const enCours = e.defis.filter(d => d.statut === 'en_cours');
@@ -568,7 +570,12 @@ function cbAction(k, el) {
     case 'combat': return ouvrirCombatCampagne(v);
     case 'diff': cbChoix.infini = +v; return render();
     case 'lancer-infini': return lancerInfini();
-    case 'choisir-deck': closeSheet(); return choisirDeckRapide(() => render());
+    case 'choisir-deck': {
+      /* Depuis la fiche d'un combat : on y revient une fois le deck choisi. */
+      const rouvrir = !$('#sheet').hidden && cbRouvrir;
+      closeSheet();
+      return choisirDeckRapide(() => (rouvrir ? rouvrir() : render()));
+    }
     case 'reprendre': return reprendreCombat();
     case 'oublier': return oublierCombat();
     case 'guide': cbGuide = v || null; render(); return $('#main').scrollTo({ top: 0 });

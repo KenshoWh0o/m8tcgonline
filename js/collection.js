@@ -89,7 +89,6 @@ function vColClassiques() {
   /* Les Secrets prennent la suite de la numérotation sans entrer dans le total.
      On ne les montre que sans filtre : ils n'ont encore ni catégorie ni essence. */
   const noFilter = !filtresActifs();
-  const secretFrom = all.reduce((m, c) => Math.max(m, c.num || 0), 0) + 1;
 
   return `${Backend.mode === 'cloud' && owned < all.length
       ? `<div class="colsous"><span class="colfab">${NAVICO.fragment}<b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom} · touche une case vide pour la fabriquer</span></div>`
@@ -100,7 +99,7 @@ function vColClassiques() {
     ${vFiltres(all)}
 
     ${list.length
-      ? `<div class="grid">${list.map(vCase).join('')}${noFilter ? secretCells(secretFrom) : ''}</div>`
+      ? `<div class="grid">${list.map(vCase).join('')}${noFilter ? cellulesSecretes() : ''}</div>`
       : `<p class="empty">Aucune carte avec ces filtres.
           <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}`;
 }
@@ -228,7 +227,7 @@ function vCase(c) {
   /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
      de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c)}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${avecMaitrise(renderCard(c), c)}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);
@@ -260,11 +259,12 @@ function vGarde(c, n) {
     Array.from({ length: g }, (_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('')}</i>`;
 }
 
-/* Les Secrets prolongent la grille sans en changer le total : des emplacements vides
-   comme les autres, seul le reflet les distingue. */
-function secretCells(from) {
-  return Array.from({ length: SECRETS }, (_, i) =>
-    caseVide('#' + String(from + i).padStart(3, '0'), 'secretcell')).join('');
+/* Les Secrètes (version 3.0) prolongent la grille sans en changer le total.
+   Obtenue, une Secrète s'y montre comme les autres — floutée si elle n'est
+   pas encore révélée ; sinon, un emplacement vide marqué d'un « ? ». */
+function cellulesSecretes() {
+  return secretes.map(c => (save.col[c.id] > 0 ? vCase(c)
+    : caseVide('#' + String(c.num).padStart(3, '0'), 'secretcell'))).join('');
 }
 
 /* ---------- Les Promos ---------- */

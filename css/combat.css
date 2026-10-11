@@ -619,6 +619,8 @@ button.ar-lc:not(.grise) .ar-c{box-shadow:0 0 0 2px rgba(255,199,59,.6)}
 .at-chip{flex:none;display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:800;
   color:var(--subtle);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
 .at-chip.e{padding:6px 8px}
+.at-chip .ess{width:18px;height:18px}
+.at-ligne-art:not([style*="http"]){background:linear-gradient(135deg,var(--sc,#a95cf2),#1b1027)}
 .at-chip.on{color:#fff;background:var(--accent);box-shadow:none}
 .at-toutes{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
 .at-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}

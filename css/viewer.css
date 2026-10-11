@@ -71,3 +71,12 @@
 html.rm .vw-fav.pop svg{animation:none}
 @media (prefers-reduced-motion:reduce){.vw-fav.pop svg{animation:none}}
 
+
+/* Version 3.0 : la maîtrise de la carte. */
+.vw-maitrise{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:5px;width:min(320px,86vw);margin-top:6px}
+.vw-mt-nom{font-family:var(--display);font-style:italic;font-weight:900;font-size:14px;letter-spacing:.02em;color:rgba(255,255,255,.75)}
+.vw-maitrise.mt1 .vw-mt-nom{color:#e09a5f}.vw-maitrise.mt2 .vw-mt-nom{color:#e8eef8}.vw-maitrise.mt3 .vw-mt-nom{color:#ffc73b}
+.vw-maitrise.mt4 .vw-mt-nom{background:linear-gradient(90deg,#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.vw-mt-barre{display:block;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.vw-mt-barre i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#b8743c,#dfe6f2,#ffc73b,#b38cff)}
+.vw-maitrise small{font-size:11.5px;color:rgba(255,255,255,.55)}

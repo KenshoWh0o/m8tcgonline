@@ -92,7 +92,7 @@ function vAtCartes() {
   return `<div class="at-filtres">
       <div class="at-cherche"><input id="at-q" type="search" placeholder="Chercher une carte, un mot-clé…" value="${h(f.q)}" autocomplete="off"></div>
       <div class="at-chips">${AT_TYPES.map(([id, nom]) => `<button class="at-chip${f.type === id ? ' on' : ''}" data-cb="at-type" data-v="${id}">${nom}</button>`).join('')}</div>
-      <div class="at-chips ess">
+      <div class="at-chips coul">
         <button class="at-chip${f.coul === 'all' ? ' on' : ''}" data-cb="at-coul" data-v="all">Toutes</button>
         ${['rose', 'orange', 'jade', 'violette', 'jaune', 'mauve', 'verte', 'bleue', 'azur', 'neutre'].map(k => `<button class="at-chip e${f.coul === k ? ' on' : ''}" data-cb="at-coul" data-v="${k}" title="${COLORS[k].nom}">${essIcon(k)}</button>`).join('')}
       </div>
@@ -129,7 +129,7 @@ function grilleAtelier() {
     const lim = Decks.limite(c.id);
     const plein = totalCle >= lim || dans >= a || Decks.total(d.cartes) >= Combat.REGLE.CLUB;
     return `<div class="at-carte${dans ? ' dedans' : ''}${a ? '' : ' absente'}">
-      <button class="at-carte-c" data-cb="at-plus" data-v="${c.id}" ${plein ? 'aria-disabled="true"' : ''} aria-label="Ajouter ${h(c.nom)}">${renderCard(c)}</button>
+      <button class="at-carte-c" data-cb="at-plus" data-v="${c.id}" ${plein ? 'aria-disabled="true"' : ''} aria-label="Ajouter ${h(c.nom)}">${a ? avecMaitrise(renderCard(c), c) : renderCard(c)}</button>
       ${dans ? `<span class="at-n">${dans}</span><button class="at-moins" data-cb="at-moins" data-v="${c.id}" aria-label="Retirer">−</button>` : ''}
       <span class="at-info"><span class="at-poss">${a ? `${a} possédée${a > 1 ? 's' : ''}` : 'non possédée'}</span><button class="at-i" data-show="${c.id}" aria-label="Voir la carte">i</button></span>
     </div>`;
@@ -154,7 +154,7 @@ function vAtDeck() {
         const c = byId[id];
         const atk = c.cat === 'joueur' ? c.atks.map(a => `${Combat.totalCout(a.cout)}`).join('·') : '';
         return `<div class="at-ligne${d.couverture === id ? ' couv' : ''}">
-          <span class="at-ligne-art" style="--art:url('${h(c.img || '')}')"></span>
+          <span class="at-ligne-art" style="--art:url('${c.img ? new URL(c.img, document.baseURI).href : ''}')"></span>
           <span class="at-ligne-nom"><b>${nomH(c)}</b><small>${c.cat === 'joueur' ? `Déf ${c.def} · coût ${atk}` : (RAR[c.rar] || {}).nom || ''}</small></span>
           <span class="at-ligne-act">
             <button data-cb="at-couv" data-v="${id}" class="at-etoile${d.couverture === id ? ' on' : ''}" title="Carte de couverture" aria-label="En faire la couverture">★</button>

@@ -462,6 +462,7 @@ async function clicPage(e) {
     case 't-god': return openBooster({ test: true, god: true });
     case 't-BR': return openBooster({ test: true, god: false, brillante: true });
     case 't-UN': return openBooster({ test: true, god: false, unique: true });
+    case 't-S': return openBooster({ test: true, force: 'S', god: false });
     case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
     case 't-v2-nouveautes': return montrerNouveautes();
     case 't-v2-palier': {
@@ -667,9 +668,10 @@ function visiteDuJourFaite() {
   brillantes = buildBrillantes(cards);
   reverses = buildReverses(cards);
   uniques = buildUniques();
+  secretes = buildSecretes();
   rebuild();
   /* Version 3.0 : le moteur de combat connaît toutes les cartes jouables. */
-  Combat.catalogue(cards.concat(promos, reverses, uniques, typeof secretes !== 'undefined' ? secretes : []));
+  Combat.catalogue(cards.concat(promos, reverses, uniques, secretes));
   brand();
   rollPack();
   oublierTheme();

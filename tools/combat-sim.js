@@ -25,7 +25,7 @@ for (const f of ['js/config.js', 'js/utils.js', 'js/cards-data.js', 'js/promos-d
 }
 vm.runInContext(`
   var __cartes = buildCards();
-  var __liste = __cartes.concat(buildPromos(), buildReverses(__cartes), buildUniques());
+  var __liste = __cartes.concat(buildPromos(), buildReverses(__cartes), buildUniques(), buildSecretes());
   Combat.catalogue(__liste);
 `, ctx);
 const Combat = ctx.Combat, Decks = ctx.Decks, IA = ctx.IA;

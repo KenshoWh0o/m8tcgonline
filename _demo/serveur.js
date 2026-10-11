@@ -138,6 +138,10 @@
     ['m_campagne', 'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 20],
     ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l\'IA en Légende.', 21],
     ['m_cent',     'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 22],
+    ['m_secrete',  'milestone', 'rarity_S',         1,  500, null,         'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
+    ['m_mt_or',    'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d\'or',         'Amène une carte à la maîtrise Or.', 24],
+    ['m_mt_or10',  'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l\'or',         'Amène 10 cartes à la maîtrise Or.', 25],
+    ['m_mt_prisme','milestone', 'maitrise_4',       1,  800, null,         'Prisme',                'Amène une carte à la maîtrise Prisme.', 26],
     ['m_revPC',   'milestone', 'rset_PC',      null,  700, null, 'Reverses Peu communes','Possède toutes les Reverses Peu communes.', 18],
     ['m_revR',    'milestone', 'rset_R',       null, 2500, null, 'Reverses Rares',       'Possède toutes les Reverses Rares.', 19],
     ['m_revALL',  'milestone', 'rset_ALL',     null,    0, 'f_reflet', 'Le Reflet complet', 'Possède les 85 Reverses.', 20],
@@ -247,7 +251,14 @@
   }
 
   /* ------------------------------------------------------------ outils SQL */
-  const ajouter = (uid, cid, n) => { const c = colDe(uid); c[cid] = (c[cid] || 0) + n; };
+  /* Version 3.0 : chaque exemplaire gagné compte pour la maîtrise
+     (collection.total, 24_secretes_maitrise.sql), même s'il repart ensuite. */
+  const obtDe = uid => { S.obt = S.obt || {}; return (S.obt[uid] = S.obt[uid] || Object.assign({}, colDe(uid))); };
+  const ajouter = (uid, cid, n) => {
+    const c = colDe(uid);
+    if (n > 0) { const o = obtDe(uid); o[cid] = Math.max(o[cid] || 0, c[cid] || 0) + n; }
+    c[cid] = (c[cid] || 0) + n;
+  };
   const possede = (uid, cid) => (colDe(uid)[cid] || 0) > 0;
   /* est_filleul, 21_reflets.sql : entré grâce au code d'un autre. */
   const estFilleul = uid => (S.invitations || []).some(i => i.utilise_par === uid);
@@ -308,8 +319,20 @@
     const valeur = q => q.metric === 'collection_pct' ? pct
       : extension().filter(k => k.rar === q.metric.slice(4) && (c[k.id] || 0) > 0).length;
     const etat = q => q.metric === 'collection_pct' || q.metric.startsWith('set_')
-      || q.metric.startsWith('rset_') || q.metric === 'brill_ALL' || q.metric.startsWith('ex_');
-    const valeur2 = q => q.metric.startsWith('ex_')
+      || q.metric.startsWith('rset_') || q.metric === 'brill_ALL' || q.metric.startsWith('ex_')
+      || q.metric.startsWith('maitrise_');
+    /* Version 3.0 : les cartes à tel palier de maîtrise (24_secretes_maitrise.sql). */
+    const maitrises = niv => {
+      const o = obtDe(p);
+      return extension().concat(secretes).filter(k => {
+        const s = MAITRISE.seuils[k.rar];
+        if (!s) return false;
+        const n = (o[k.id] || 0) + (o['r' + k.id.slice(1)] || 0);
+        return n >= s[niv - 1];
+      }).length;
+    };
+    const valeur2 = q => q.metric.startsWith('maitrise_') ? maitrises(+q.metric.slice(9))
+      : q.metric.startsWith('ex_')
         ? Math.max(0, ...extension().filter(k => k.rar === q.metric.slice(3)).map(k => c[k.id] || 0))
       : q.metric === 'rset_ALL' ? reverses.filter(k => (c[k.id] || 0) > 0).length
       : q.metric.startsWith('rset_') ? reverses.filter(k => k.rar === q.metric.slice(5) && (c[k.id] || 0) > 0).length
@@ -425,6 +448,14 @@
       gardes: Object.assign({}, (S.gardes || {})[p] || {}),
       favoris: ((S.favoris || {})[p] || []).slice(),
       combat: combatEtat(p),
+      obtenus: (() => {
+        const o = obtDe(p), c = colDe(p), r = {};
+        for (const id of new Set(Object.keys(o).concat(Object.keys(c)))) {
+          const n = Math.max(o[id] || 0, c[id] || 0);
+          if (n > 0) r[id] = n;
+        }
+        return r;
+      })(),
       inv: garde(invDe(p)),
       quetes: QUETES.filter(q => (!q.evenement || q.evenement === evenementEnCours()) && !(q.metric === 'invite' && estFilleul(p)))
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
@@ -595,6 +626,8 @@
     E: ['E', 'R', 'L', 'PC', 'C'], L: ['L', 'E', 'R', 'PC', 'C']
   };
   function pickCard(r) {
+    /* Version 3.0 : les Secrètes (23_combats.sql). */
+    if (r === 'S') { const l = secretes; if (l.length) return choix(l).id; r = 'L'; }
     for (const essai of REPLI[r] || REPLI.C) {
       const l = dansBooster().filter(c => c.rar === essai && c.cat !== 'essence');
       if (l.length) return choix(l).id;
@@ -633,7 +666,8 @@
         pickCard('PC'),
         essence(ess),
         reverseCard(tirage([[50, 'C'], [85, 'PC'], [100, 'R']])),
-        pickCard(tirage([[80, 'R'], [96, 'E'], [100, 'L']]))
+        /* Version 3.0 : Rare 79 %, Épique 16 %, Légendaire 4,25 %, Secrète 0,75 %. */
+        pickCard(tirage([[79, 'R'], [95, 'E'], [99.25, 'L'], [100, 'S']]))
       ];
     }
     return { ids: ids.filter(Boolean), god };
@@ -684,6 +718,7 @@
     bump(p, 'rarity_R', distinctes.filter(c => ['R', 'E', 'L'].includes(c.rar)).length);
     bump(p, 'rarity_E', distinctes.filter(c => ['E', 'L'].includes(c.rar)).length);
     bump(p, 'rarity_L', distinctes.filter(c => c.rar === 'L').length);
+    bump(p, 'rarity_S', distinctes.filter(c => c.rar === 'S').length);
     bump(p, 'rev_R', distinctes.filter(c => c.rev && c.rar === 'R').length);
     syncCollection(p);
     checkPromos(p);

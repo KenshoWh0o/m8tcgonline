@@ -41,7 +41,9 @@ const Table = (() => {
     const img = c.img
       ? `<img src="${c.img}" alt="" draggable="false" decoding="async">`
       : `<div class="ar-texte r-${c.rar}" style="--tc:${tcol(c)}"><b>${h(c.nom)}</b><small>${h(c.provisoire ? 'Promo provisoire' : (RAR[c.rar] || {}).nom || '')}</small>${c.def != null ? `<em>Déf ${c.def}</em>` : ''}${(c.atks || []).map(a => `<span>${coutHTML(a.cout)} ${h(a.nom)} <i>${a.degats == null ? '' : a.degats}</i></span>`).join('')}</div>`;
-    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' || c.rar === 'S' ? ' holo' : ''}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}</div>`;
+    /* La maîtrise (js/maitrise.js) : seulement sur ses propres cartes. */
+    const m = o.maitrise && typeof maitriseDe === 'function' ? maitriseDe(c) : null;
+    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' || c.rar === 'S' ? ' holo' : ''}${m && m.niveau ? ' mt' + m.niveau : ''}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}</div>`;
   }
   const dos = j => `<div class="ar-c dos"><img src="${sleeveDe(j)}" alt="" draggable="false"></div>`;
 
@@ -229,7 +231,7 @@ const Table = (() => {
 
   function htmlJoueurInterieur(c) {
     return `<div class="ar-objs">${c.obj.map(o => `<span class="ar-obj" data-u="${o.u}">${htmlCarte(o.id)}</span>`).join('')}</div>
-      ${htmlCarte(c.id)}<div class="ar-stats"></div><div class="ar-marques"></div>`;
+      ${htmlCarte(c.id, { maitrise: c.j === T.moi })}<div class="ar-stats"></div><div class="ar-marques"></div>`;
   }
   function majJoueur(x, c) {
     const objs = x.querySelector('.ar-objs');
@@ -275,7 +277,7 @@ const Table = (() => {
     const cle = P.main.map(c => c.u).join(',');
     if (el.dataset.k !== cle) {
       el.dataset.k = cle;
-      el.innerHTML = P.main.map((c, i) => `<button class="ar-m" data-mu="${c.u}" style="--i:${i};--n:${n}" aria-label="${h(carte(c.id).nom)}">${htmlCarte(c.id)}</button>`).join('');
+      el.innerHTML = P.main.map((c, i) => `<button class="ar-m" data-mu="${c.u}" style="--i:${i};--n:${n}" aria-label="${h(carte(c.id).nom)}">${htmlCarte(c.id, { maitrise: true })}</button>`).join('');
     }
     el.style.setProperty('--n', n);
   }

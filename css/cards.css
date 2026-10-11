@@ -336,3 +336,41 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
 .tx-corps p{margin:0;font-size:6cqi;line-height:1.3}
 .tx-pied{position:relative;text-align:center;font-size:5.5cqi;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tc);
   border-top:1px dashed color-mix(in srgb,var(--tc) 60%,transparent);padding-top:2cqi}
+
+/* ============ Version 3.0 : les Secrètes ============ */
+/* Un reflet d'argent qui passe, plus froid que l'or des Légendaires. */
+.card.r-S::after{content:'';position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(115deg,transparent 20%,rgba(232,236,255,.55) 34%,rgba(255,124,200,.3) 42%,rgba(127,216,255,.35) 50%,rgba(255,226,138,.3) 58%,transparent 70%);
+  background-size:260% 100%;background-repeat:no-repeat;animation:holo 3.6s ease-in-out infinite}
+.cwrap:has(.card.r-S){box-shadow:0 0 0 1px rgba(232,236,255,.6),0 0 18px rgba(201,214,255,.45)}
+.rS{color:#d8e0ff}
+.rarchip.rS{--rc:#d8e0ff}
+html.rm .card.r-S::after{animation:none}
+
+/* ============ Version 3.0 : la maîtrise ============ */
+/* Quatre paliers, du plus discret au plus vivant : un liseré de bronze, un
+   argent brossé, un or qui brille, un prisme qui tourne. Le cadre est posé
+   autour de l'enveloppe de la carte (.cwrap), jamais sur l'illustration. */
+.cwrap.mt1,.cwrap.mt2,.cwrap.mt3,.cwrap.mt4,.ar-c.mt1,.ar-c.mt2,.ar-c.mt3,.ar-c.mt4{position:relative;isolation:isolate}
+.cwrap.mt1{box-shadow:0 0 0 2px #b8743c,0 0 0 3px rgba(0,0,0,.35),var(--sh-2)}
+.cwrap.mt2{box-shadow:0 0 0 2px #dfe6f2,0 0 0 3.5px #7b8496,0 0 14px rgba(223,230,242,.35),var(--sh-2)}
+.cwrap.mt2::after,.cwrap.mt3::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;mix-blend-mode:soft-light;opacity:.55;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.0) 0 3px,rgba(255,255,255,.25) 3px 4px)}
+.cwrap.mt3{box-shadow:0 0 0 2.5px #ffc73b,0 0 0 4px #8a5a00,0 0 20px rgba(255,199,59,.5),var(--sh-2)}
+.cwrap.mt3::before,.cwrap.mt4::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;mix-blend-mode:screen;
+  background:linear-gradient(110deg,transparent 30%,rgba(255,240,190,.6) 45%,transparent 60%) no-repeat;background-size:250% 100%;animation:mt-brille 3.4s ease-in-out infinite}
+.cwrap.mt4{box-shadow:0 0 22px rgba(201,168,255,.55),var(--sh-2)}
+.cwrap.mt4::after{content:"";position:absolute;inset:-3px;border-radius:calc(5.5cqi + 3px);z-index:-1;pointer-events:none;
+  background:conic-gradient(from var(--mt-a,0deg),#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8);animation:mt-tourne 4s linear infinite}
+.cwrap.mt4::before{background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.55) 40%,rgba(127,216,255,.4) 48%,rgba(255,124,200,.4) 56%,transparent 70%) no-repeat;background-size:250% 100%}
+@property --mt-a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes mt-tourne{to{--mt-a:360deg}}
+@keyframes mt-brille{0%{background-position:130% 0}70%,100%{background-position:-130% 0}}
+html.rm .cwrap.mt3::before,html.rm .cwrap.mt4::before,html.rm .cwrap.mt4::after{animation:none}
+/* Dans l'arène : le même habit, en plus fin. */
+.ar-c.mt1{box-shadow:0 0 0 1.5px #b8743c}
+.ar-c.mt2{box-shadow:0 0 0 1.5px #dfe6f2,0 0 10px rgba(223,230,242,.3)}
+.ar-c.mt3{box-shadow:0 0 0 2px #ffc73b,0 0 14px rgba(255,199,59,.45)}
+.ar-c.mt4{box-shadow:0 0 0 2px #e3c8ff,0 0 16px rgba(201,168,255,.6)}
+.ar-c.mt4::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:color-dodge;opacity:.35;
+  background:conic-gradient(from var(--mt-a,0deg),#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8);animation:mt-tourne 4s linear infinite}

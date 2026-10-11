@@ -195,6 +195,27 @@ function buildUniques() {
   });
 }
 
+/* ---------- Les Secrètes (version 3.0) ---------- */
+/* `c123`… comme les cartes de l'extension, et le même moule ; mais elles
+   vivent dans leur liste (`secretes`), hors des 122. `secrete` les met à part
+   partout où l'on compte, et les laisse s'échanger. Une Secrète pas encore
+   révélée (`cachee`) n'a que son visuel flouté. */
+function buildSecretes() {
+  if (typeof SECRET_DATA === 'undefined') return [];
+  return SECRET_DATA.map(meta => {
+    const c = makeCard(Object.assign({ rarete: 'S' }, meta, meta.cachee
+      ? { nom: 'Secrète n°' + meta.num, categorie: 'Joueur', couleur: 'Neutre', attaques: [] } : {}), meta.num - 1);
+    c.rar = 'S';
+    c.secrete = true;
+    c.promo = false;
+    c.code = '#' + meta.num + '/' + CARD_DATA.length;
+    c.illustrateur = meta.illustrateur || '';
+    c.ambiance = meta.ambiance || '';
+    if (meta.cachee) { c.cachee = true; c.atks = []; c.kw = null; c.def = null; }
+    return c;
+  });
+}
+
 /* ---------- La liste complète ---------- */
 function buildCards() {
   const list = CARD_DATA.map(makeCard).sort((a, b) => a.num - b.num);

@@ -85,6 +85,8 @@ const RAR = {
   R: { nom: 'Rare', sym: '◆◆◆', rank: 3 },
   E: { nom: 'Épique', sym: '★', rank: 4 },
   L: { nom: 'Légendaire', sym: '★★', rank: 5 },
+  /* Version 3.0 : les Secrètes, au-delà des 122 (« 123/122 »). */
+  S: { nom: 'Secrète', sym: '✦✦', rank: 5.5 },
   PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true },
   /* Hors extension, comme les Promos : jamais dans les 122, jamais échangées
      ni recyclées. La Brillante sort de la case Essence d'un booster, une fois
@@ -110,15 +112,14 @@ let TICKET_CAP = 5;
    (supabase/03_rpc.sql). */
 const PACK_SIZE = 6;
 
-/* Emplacements Secrets tenus en réserve dans la collection : numérotés à la suite des cartes
-   existantes, mais hors du total puisqu'ils ne sont pas encore sortis. 0 pour les masquer. */
-const SECRETS = 5;
 
 /* Mise en scène de la dernière carte selon la rareté (durée de charge en ms, particules, couleurs) */
 const REVEAL = {
   R: { charge: 450, colors: ['#39b8ff', '#ffffff', '#b8ecff'], n: 50, speed: 9, label: 'Rare', rc: '#39b8ff' },
   E: { charge: 800, colors: ['#8936ff', '#ec8fff', '#ffffff', '#d9b8ff'], n: 100, speed: 11, label: 'Épique', rc: '#8936ff' },
   L: { charge: 1150, colors: ['#ffc73b', '#fff3b0', '#ec8fff', '#ffffff'], n: 160, speed: 14, label: 'Légendaire', rc: '#ffc73b' },
+  /* Version 3.0 : la Secrète, presque aussi rare que l'Unique. */
+  S: { charge: 1500, colors: ['#ffffff', '#c9d6ff', '#ff7cc8', '#7fd8ff', '#ffe28a'], n: 200, speed: 15, label: 'Secrète', rc: '#e8ecff' },
   /* La carte unique : la plus longue charge du jeu, et toutes les couleurs. */
   UN: { charge: 1900, colors: ['#ffc73b', '#ec8fff', '#39b8ff', '#55e6a6', '#ffffff'], n: 240, speed: 16, label: 'Unique', rc: '#ec8fff' }
 };

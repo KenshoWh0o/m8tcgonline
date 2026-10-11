@@ -185,7 +185,10 @@ Backend.apply = function (etat) {
     filleul: p.filleul === true,
     /* Version 3.0 (supabase/23_combats.sql) : la Section, les decks, les
        cosmétiques de combat, la campagne, les défis, la Guerre des Sections. */
-    combat: etat.combat || null
+    combat: etat.combat || null,
+    /* Version 3.0 : les exemplaires obtenus de chaque carte, depuis toujours
+       — la maîtrise (js/maitrise.js). */
+    obtenus: etat.obtenus || null
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });

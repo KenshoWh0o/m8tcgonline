@@ -39,7 +39,8 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-ceo .ava.md{width:40px;height:40px}
 .ar-ava.actif .ava{box-shadow:0 0 0 2px var(--ar-or),0 0 16px rgba(255,199,59,.5)}
 .ar-qui{display:flex;flex-direction:column;min-width:0;line-height:1.1}
-.ar-qui b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.ar-qui b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.ar-ceo.lui{flex:1;max-width:max-content}
 .ar-pvs{display:flex;align-items:center;gap:3px;margin-top:3px}
 .ar-pv{width:9px;height:12px;border-radius:2.5px;background:linear-gradient(160deg,#ffd7f0,#ee0073);box-shadow:0 0 6px rgba(238,0,115,.6)}
 .ar-pv.perdu{background:rgba(255,255,255,.12);box-shadow:none}
@@ -64,7 +65,6 @@ body.en-arene .preprod-bandeau{display:none}
   box-shadow:0 40px 70px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.08),inset 0 0 60px rgba(0,0,0,.45)}
 /* Le tapis de base, aux couleurs du site : la nuit violette, l'étoile du logo. */
 .ar-plateau.base{background:
-  url('../assets/pack-star.svg') center/26% no-repeat,
   radial-gradient(ellipse 80% 40% at 50% 50%,rgba(137,54,255,.28),transparent 70%),
   radial-gradient(circle at 15% 12%,rgba(238,0,115,.22),transparent 40%),
   radial-gradient(circle at 85% 88%,rgba(57,184,255,.16),transparent 40%),
@@ -74,7 +74,8 @@ body.en-arene .preprod-bandeau{display:none}
   radial-gradient(1.4px 1.4px at 88% 33%,#ffd7f0,transparent),radial-gradient(1px 1px at 30% 62%,#fff,transparent),
   radial-gradient(1.2px 1.2px at 58% 78%,#cfeeff,transparent),radial-gradient(1px 1px at 8% 88%,#fff,transparent),
   radial-gradient(1.3px 1.3px at 92% 70%,#fff,transparent),radial-gradient(1px 1px at 44% 30%,#fff,transparent)}
-.ar-plateau.base::after{content:"";position:absolute;inset:14px;border-radius:20px;border:1.5px solid rgba(255,215,240,.18);pointer-events:none}
+.ar-plateau.base::after{content:"";position:absolute;inset:14px;border-radius:20px;border:1.5px solid rgba(255,215,240,.18);pointer-events:none;
+  background:url('../assets/pack-star.svg') center/22% no-repeat;opacity:.9;filter:opacity(.22)}
 .ar-plateau.base .ar-milieu::before{background:linear-gradient(90deg,transparent,rgba(223,109,232,.5),transparent)}
 
 .ar-camp{position:relative;display:flex;flex-direction:column;gap:3%;transform-style:preserve-3d}
@@ -157,14 +158,13 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-j.bulle-shield>.ar-c{animation:ar-bulle .6s ease-out}
 @keyframes ar-bulle{40%{box-shadow:0 0 0 6px rgba(127,216,255,.6),0 0 40px rgba(127,216,255,.9)}}
 
-.ar-stats{position:absolute;left:50%;bottom:-7%;translate:-50% 0;display:flex;gap:3px;z-index:3;pointer-events:none}
-.ar-def,.ar-atk{display:grid;place-items:center;min-width:28px;height:19px;padding:0 5px;border-radius:7px;font-size:11px;font-weight:900;
+.ar-stats{position:absolute;left:4%;right:4%;bottom:3%;display:flex;justify-content:space-between;gap:3px;z-index:3;pointer-events:none}
+.ar-def,.ar-atk{display:grid;place-items:center;min-width:30px;height:20px;padding:0 5px;border-radius:7px;font-size:11.5px;font-weight:900;
   font-variant-numeric:tabular-nums;color:#fff;box-shadow:0 2px 5px rgba(0,0,0,.6)}
-.ar-def{background:linear-gradient(180deg,#3b6aa8,#213c66);border:1px solid rgba(160,205,255,.45)}
-.ar-atk{background:linear-gradient(180deg,#a8364f,#661c33);border:1px solid rgba(255,170,190,.45)}
+.ar-def{order:1;background:linear-gradient(180deg,#3b6aa8,#213c66);border:1px solid rgba(160,205,255,.45)}
+.ar-atk{order:0;background:linear-gradient(180deg,#a8364f,#661c33);border:1px solid rgba(255,170,190,.45)}
 .ar-def.plus,.ar-atk.plus{color:#b9ffd9}
 .ar-def.moins,.ar-atk.moins{color:#ffb3c7}
-.ar-camp.lui .ar-j.eng .ar-stats,.ar-camp.moi .ar-j.eng .ar-stats{bottom:-10%}
 .ar-marques{position:absolute;top:-6%;right:-8%;display:flex;flex-direction:column;gap:2px;z-index:3;pointer-events:none}
 .ar-mk{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(14,9,22,.88);border:1px solid rgba(255,255,255,.3);
   font-style:normal;font-size:11px;color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.5)}
@@ -293,7 +293,9 @@ button.ar-lc:not(.grise) .ar-c{box-shadow:0 0 0 2px rgba(255,199,59,.6)}
 @keyframes ar-jeton{0%{transform:translateY(120px) rotateY(0) scale(.6)}60%{transform:translateY(-40px) rotateY(1440deg) scale(1.1)}100%{transform:translateY(0) rotateY(1800deg) scale(1)}}
 @keyframes ar-jeton-pile{0%{transform:translateY(120px) rotateY(0) scale(.6)}60%{transform:translateY(-40px) rotateY(1530deg) scale(1.1)}100%{transform:translateY(0) rotateY(1980deg) scale(1);filter:brightness(.7) hue-rotate(160deg)}}
 .ar-annonce.fin{pointer-events:auto;background:radial-gradient(ellipse at 50% 40%,rgba(20,10,30,.92),rgba(5,3,8,.96));padding:24px;align-content:center}
-.ar-annonce.fin h2{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:clamp(44px,14vw,84px);line-height:1;
+.ar-annonce.fin h2::before,.gd-page h2::before{content:none}
+.ar-annonce.fin h2,.gd-page h2{padding-left:0}
+.ar-annonce.fin h2{margin:0;padding:0 .1em;font-family:var(--display);font-style:italic;font-weight:900;font-size:clamp(44px,14vw,84px);line-height:1;
   animation:ar-annonce 1s cubic-bezier(.2,.9,.3,1)}
 .ar-annonce.victoire h2{background:linear-gradient(180deg,#fff3b0,#ffc73b 60%,#e0941d);-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 6px 30px rgba(255,199,59,.4))}
@@ -351,6 +353,10 @@ button.ar-lc:not(.grise) .ar-c{box-shadow:0 0 0 2px rgba(255,199,59,.6)}
 .ar-flot.info{font-size:15px;font-family:var(--body);font-style:normal;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(14,9,22,.85);text-shadow:none}
 @keyframes ar-flot{0%{transform:translateY(10px) scale(.6);opacity:0}15%{transform:translateY(0) scale(1.15);opacity:1}30%{transform:scale(1)}100%{transform:translateY(-46px);opacity:0}}
 
+@media (max-width:480px){
+  .ar-titre{display:none}
+  .ar-clubadv{display:none}
+}
 @media (min-width:900px){
   .ar-main{--w:110px}
   .ar-panneau{left:auto;right:24px;width:420px}
@@ -613,6 +619,8 @@ button.ar-lc:not(.grise) .ar-c{box-shadow:0 0 0 2px rgba(255,199,59,.6)}
 .at-chip{flex:none;display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:800;
   color:var(--subtle);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
 .at-chip.e{padding:6px 8px}
+.at-chip .ess{width:18px;height:18px}
+.at-ligne-art:not([style*="http"]){background:linear-gradient(135deg,var(--sc,#a95cf2),#1b1027)}
 .at-chip.on{color:#fff;background:var(--accent);box-shadow:none}
 .at-toutes{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
 .at-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}

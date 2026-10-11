@@ -53,6 +53,8 @@ let brillantes = [];
 let uniques = [];
 /* Version 2.0 : les Reverses, à côté des 122 elles aussi (js/cards.js). */
 let reverses = [];
+/* Version 3.0 : les Secrètes, hors des 122. */
+let secretes = [];
 let packArt = PACK_ARTS[0];
 let byId = {};
 let tab = 'boosters';
@@ -90,6 +92,7 @@ function rebuild() {
   brillantes.forEach(c => byId[c.id] = c);
   reverses.forEach(c => byId[c.id] = c);
   uniques.forEach(c => byId[c.id] = c);
+  secretes.forEach(c => byId[c.id] = c);
 }
 
 function poolFor() {
