@@ -85,6 +85,8 @@ const RAR = {
   R: { nom: 'Rare', sym: '◆◆◆', rank: 3 },
   E: { nom: 'Épique', sym: '★', rank: 4 },
   L: { nom: 'Légendaire', sym: '★★', rank: 5 },
+  /* Version 3.0 : les Secrètes, au-delà des 122 (« 123/122 »). */
+  S: { nom: 'Secrète', sym: '✦✦', rank: 5.5 },
   PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true },
   /* Hors extension, comme les Promos : jamais dans les 122, jamais échangées
      ni recyclées. La Brillante sort de la case Essence d'un booster, une fois
@@ -110,15 +112,14 @@ let TICKET_CAP = 5;
    (supabase/03_rpc.sql). */
 const PACK_SIZE = 6;
 
-/* Emplacements Secrets tenus en réserve dans la collection : numérotés à la suite des cartes
-   existantes, mais hors du total puisqu'ils ne sont pas encore sortis. 0 pour les masquer. */
-const SECRETS = 5;
 
 /* Mise en scène de la dernière carte selon la rareté (durée de charge en ms, particules, couleurs) */
 const REVEAL = {
   R: { charge: 450, colors: ['#39b8ff', '#ffffff', '#b8ecff'], n: 50, speed: 9, label: 'Rare', rc: '#39b8ff' },
   E: { charge: 800, colors: ['#8936ff', '#ec8fff', '#ffffff', '#d9b8ff'], n: 100, speed: 11, label: 'Épique', rc: '#8936ff' },
   L: { charge: 1150, colors: ['#ffc73b', '#fff3b0', '#ec8fff', '#ffffff'], n: 160, speed: 14, label: 'Légendaire', rc: '#ffc73b' },
+  /* Version 3.0 : la Secrète, presque aussi rare que l'Unique. */
+  S: { charge: 1500, colors: ['#ffffff', '#c9d6ff', '#ff7cc8', '#7fd8ff', '#ffe28a'], n: 200, speed: 15, label: 'Secrète', rc: '#e8ecff' },
   /* La carte unique : la plus longue charge du jeu, et toutes les couleurs. */
   UN: { charge: 1900, colors: ['#ffc73b', '#ec8fff', '#39b8ff', '#55e6a6', '#ffffff'], n: 240, speed: 16, label: 'Unique', rc: '#ec8fff' }
 };
@@ -204,13 +205,39 @@ const TITRES = {
   t_collect:   { nom: 'Collectionneur de Reflets', ton: 'EV', comment: 'Boutique de l\'événement « Reflets »' },
   t_ame:       { nom: 'Âme des Reflets',           ton: 'EV', comment: 'Palier 19 du Pass Reflets' },
   t_elu:       { nom: 'L\'Élu',                    ton: 'UN', comment: 'Posséder la carte unique' },
+  /* Version 3.0 : les combats. */
+  t_sections:  { nom: 'Champion des Sections',     ton: 'L',  comment: 'Finir la campagne des Combats' },
+  t_legende:   { nom: 'Tombeur de Légende',        ton: 'E',  comment: 'Battre l\'IA Légende' },
+  t_stratege:  { nom: 'Stratège',                  ton: 'R',  comment: 'Gagner 100 combats' },
+  /* L'événement de la 3.0, « Le Choc des Sections » (js/combat/choc-data.js). */
+  t_recrue:    { nom: 'Recrue du Choc',            ton: 'EV', comment: 'Palier 3 du Pass du Choc' },
+  t_veteran:   { nom: 'Vétéran du Choc',           ton: 'EV', comment: 'Palier 19 du Pass du Choc' },
+  t_maitre_choc:{ nom: 'Maître du Choc',           ton: 'EV', comment: 'Palier 29 du Pass du Choc' },
+  t_supporter: { nom: 'Supporter du Choc',         ton: 'EV', comment: 'Boutique de l\'événement « Le Choc des Sections »' },
+  t_choc:      { nom: 'Vainqueur du Choc',         ton: 'L',  comment: 'Avoir marqué pour la Section gagnante du Choc des Sections' },
   t_admin:     { nom: 'Administrateur',            ton: 'ADM', comment: 'Réservé à l\'équipe du jeu' }
 };
 
 /* La monnaie d'un événement (supabase/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
-   avancer son Pass de récompenses. */
-const PRISMES = { nom: 'Prismes', un: 'Prisme' };
+   avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
+   de Reflets (2.0), les Insignes du Choc des Sections (3.0). Le serveur les
+   range toutes au même endroit (evt_comptes) ; seuls le nom et l'icône
+   changent. `PRISMES` suit l'événement en cours, ou celui dont on lit le
+   récap. */
+const MONNAIES_EV = {
+  reflets: { nom: 'Prismes', un: 'Prisme' },
+  choc: { nom: 'Insignes', un: 'Insigne' }
+};
+const evMonnaieCode = () => {
+  const ev = typeof evenementEnCours === 'function' ? evenementEnCours() : null;
+  const r = typeof save !== 'undefined' && save && save.recap ? save.recap.code : null;
+  return MONNAIES_EV[ev] ? ev : MONNAIES_EV[r] ? r : 'reflets';
+};
+const PRISMES = {
+  get nom() { return MONNAIES_EV[evMonnaieCode()].nom; },
+  get un() { return MONNAIES_EV[evMonnaieCode()].un; }
+};
 
 /* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
@@ -234,7 +261,10 @@ const FRAMES = {
   f_reflet: { nom: 'Reflet', fx: 'reflet', vente: false, c1: '#ffd3ec', c2: '#cfeeff' },
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
-  f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' }
+  f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
+  /* Version 3.0 : le Pass et le Raid du Choc des Sections. */
+  f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#ee0073', c2: '#8936ff' },
+  f_fils:   { nom: 'Fils d\'or', fx: 'fils', vente: false, c1: '#ffc73b', c2: '#b97a10' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
@@ -265,10 +295,13 @@ const TRADE_COOLDOWN_H = 6;
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
-  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Bientôt : la version 3.0' },
+  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Campagne, PvE, défis entre amis' },
   /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, il prend la
      place de Combats dans la barre (navHTML, js/app.js). */
   { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets', online: true },
+  /* Version 3.0 : « Le Choc des Sections » (js/choc.js). */
+  { id: 'choc',       nom: 'Le Choc',    evenement: 'choc', ico: 'choc', online: true,
+    desc: 'L\'événement : Raid, Épreuve du jour, Pass' },
   { id: 'social',     nom: 'Social',     bas: true, ico: 'amis',  online: true },
   { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest', online: true },
 
@@ -349,7 +382,13 @@ const NAVICO = {
   illu: '<svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 15.5 8.5 11l4 3.5 2.5-2 5.5 4.5"/><path d="M14 4.5v4h-3.5v-4M10.5 8.5h3.5" opacity=".9"/><circle cx="16.7" cy="9" r="1.3"/></svg>',
   fragment:'<svg viewBox="0 0 24 24"><path d="M12 2.8 18.6 9 12 21.2 5.4 9Z"/><path d="M5.4 9h13.2M12 2.8 9.4 9 12 21.2 14.6 9Z"/></svg>',
   rotate:'<svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"/><path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"/><path d="M18 2.5V6h-3.5M6 21.5V18h3.5"/></svg>',
-  filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>'
+  filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>',
+  /* Version 3.0 : le Choc des Sections (un écusson frappé d'un éclair), le
+     Raid (la croix du marionnettiste et ses fils), l'Épreuve du jour (un
+     calendrier coché). */
+  choc: '<svg viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.6v6.2c0 4.4-3.1 7.6-7.5 9.4-4.4-1.8-7.5-5-7.5-9.4V5.6Z"/><path d="M13 6.5 9.5 12.5h3l-1.5 5 4-6.5h-3Z"/></svg>',
+  fils: '<svg viewBox="0 0 24 24"><path d="M5 5h14M12 2.5v6"/><path d="M6.5 5 5 15M17.5 5 19 15M9 5l-1.5 14M15 5l1.5 14"/><circle cx="5" cy="16.4" r="1.3"/><circle cx="19" cy="16.4" r="1.3"/><circle cx="7.3" cy="20.2" r="1.3"/><circle cx="16.7" cy="20.2" r="1.3"/></svg>',
+  epreuve: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="m9.3 14.3 1.9 1.9 3.6-3.8"/></svg>'
 };
 
 /* ---------- Cartes Promo ---------- */
@@ -366,11 +405,15 @@ const PROMO_COMMENT = {
   boutique: 'En boutique',
   palier: 'Quêtes saisonnières',
   master: 'Quêtes saisonnières',
+  /* Version 3.0 : les Promos des Starter Decks, en Combats. */
+  section: 'Combats · Sections',
   bientot: 'Coming soon…'
 };
 
 /* Les emplacements Promo tenus en réserve : les cartes existent dans la série
    mais ne nous sont pas encore parvenues. Comme les Secrets de la collection,
-   ils occupent leur case pour que la suite de la numérotation se voie. */
-const PROMOS_A_VENIR = ['P03', 'P04'];
+   ils occupent leur case pour que la suite de la numérotation se voie.
+   Version 3.0 : P03 et P04, les Promos des Starter Decks, sont arrivées —
+   provisoires, en attendant leur visuel (js/promos-data.js). */
+const PROMOS_A_VENIR = [];
 

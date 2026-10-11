@@ -190,6 +190,13 @@ const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><pat
 /* Le Prisme, monnaie de l'événement (version 2.0). */
 const prismeIco = '<svg class="prismeico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="prg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7cc8"/><stop offset=".5" stop-color="#b38cff"/><stop offset="1" stop-color="#7fd8ff"/></linearGradient></defs><path d="M12 2.5 21 18.5H3Z" fill="url(#prg)"/><path d="M12 2.5 9.4 18.5h5.2Z" fill="#fff" opacity=".35"/></svg>';
 
+/* L'Insigne, monnaie du Choc des Sections (version 3.0) : un écusson moitié
+   rose Toxique, moitié mauve Déter, frappé d'un éclair. */
+const insigneIco = '<svg class="prismeico insigneico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2 20 5.2v6.6c0 4.7-3.3 8.1-8 10-4.7-1.9-8-5.3-8-10V5.2Z" fill="#ee0073"/><path d="M12 2.2 20 5.2v6.6c0 4.7-3.3 8.1-8 10Z" fill="#8936ff"/><path d="M13.2 5.8 9 12.6h3.4l-1.6 5.6 4.6-7.3H12Z" fill="#ffd75e"/></svg>';
+
+/* L'icône de la monnaie de l'événement en cours (MONNAIES_EV, js/config.js). */
+const evIco = () => (evMonnaieCode() === 'choc' ? insigneIco : prismeIco);
+
 const fmtN = n => String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 /* Compte à rebours court : « 2 h 40 », « 12 min », « 8 s ». */

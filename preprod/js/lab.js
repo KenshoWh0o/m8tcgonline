@@ -42,6 +42,7 @@ function vTest() {
       <button class="labbtn tE" data-act="t-E" ${has('E') ? '' : 'disabled'}><b>Épique</b><span>en dernière carte</span></button>
       <button class="labbtn tL" data-act="t-L" ${has('L') ? '' : 'disabled'}><b>Légendaire</b><span>en dernière carte</span></button>
       <button class="labbtn tBR" data-act="t-BR" ${brillantes.length ? '' : 'disabled'}><b>Essence Brillante</b><span>1 Essence sur ${FOIL_ODDS} en vrai</span></button>
+      <button class="labbtn tL" data-act="t-S" ${secretes.length ? '' : 'disabled'}><b>Secrète</b><span>en dernière carte</span></button>
       <button class="labbtn tUN" data-act="t-UN" ${uniques.length ? '' : 'disabled'}><b>Carte unique</b><span>à la place de la dernière carte</span></button>
       <button class="labbtn tG" data-act="t-god"><b>Godpack</b><span>1 sur 2 000 en vrai</span></button>
       <button class="labbtn tREV" data-act="t-REV" ${reverses.length ? '' : 'disabled'}><b>Reverse Rare</b><span>en 5ᵉ carte, 15 % en vrai</span></button>
@@ -76,7 +77,7 @@ function vTest() {
     <h2>Version 2.0 · Reflets</h2>
     <p class="muted small">Les fenêtres de la 2.0, sans rien réclamer ni dépenser.</p>
     <div class="row">
-      <button class="btn ghost" data-act="t-v2-nouveautes">Nouveautés 2.0</button>
+      <button class="btn ghost" data-act="t-v2-nouveautes">Nouveautés 2.1</button>
       <button class="btn ghost" data-act="t-v2-palier">Palier : une carte</button>
       <button class="btn ghost" data-act="t-v2-palier-titre">Palier : un titre</button>
     </div>
@@ -94,6 +95,20 @@ function vTest() {
     </div>
     <p class="muted small" style="margin-top:8px">La fabrication des Reverses s'ouvre côté serveur :
       <code>update public.parametres set fabrication_reverse = true where id = 1;</code></p>
+  </section>
+
+  <section class="panel">
+    <h2>Version 3.0 · Le Choc des Sections</h2>
+    <p class="muted small">L'onglet de l'événement (s'il est en cours), et son récap avec des chiffres inventés — rien n'est enregistré.</p>
+    <div class="row">
+      <button class="btn ghost" data-act="t-v3-nouveautes">Nouveautés 3.0</button>
+      <button class="btn ghost" data-act="t-v3-choc">Onglet de l'événement</button>
+      <button class="btn ghost" data-act="t-v3-recap">Onglet récap</button>
+      <button class="btn ghost" data-act="t-v3-recap-pop">Fenêtre de fin</button>
+      <button class="btn ghost" data-act="t-v3-recap-ban">Bandeau récap</button>
+    </div>
+    <p class="muted small" style="margin-top:8px">L'événement s'ouvre côté serveur (supabase/25_choc.sql, en fin de fichier) ;
+      la barre de vie du Raid se règle avec <code>update public.parametres set raid_echelle = 0.5 where id = 1;</code></p>
   </section>
 
   <section class="panel">

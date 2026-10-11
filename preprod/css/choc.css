@@ -1,0 +1,191 @@
+/* Version 3.0 : l'événement « Le Choc des Sections » (js/choc.js).
+   L'onglet reprend la charpente de Reflets (css/reflets.css : .rf-tete,
+   .rf-onglets, .rf-pass, .rf-arts…) et la repeint aux couleurs des deux
+   Sections : le rose Toxique, le mauve Déter, et l'or des fils du
+   Marionnettiste. */
+
+.insigneico{width:1.1em;height:1.1em}
+.sac.prismes .insigneico + b{background:linear-gradient(90deg,#ff5bb0,#b38cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ============ L'en-tête ============ */
+/* Le Marionnettiste (#121) en fond : son illustration est cadrée sur le
+   haut de la carte, où sont la croix et les fils. */
+.ch-tete{background:#170816}
+.ch-tete .rf-fond>i,.chban .rf-fond>i{--t:.3;--z:1.35;filter:saturate(1.1) brightness(.85)}
+.ch-tete::before{background:linear-gradient(110deg,transparent 25%,rgba(238,0,115,.75) 40%,rgba(255,215,94,.9) 48%,rgba(137,54,255,.75) 56%,transparent 72%) no-repeat;
+  background-size:300% 100%}
+.ch-tete::after{background:radial-gradient(80% 120% at 0% 40%,rgba(23,8,22,.7),transparent 70%)}
+.ch-tete .rf-tetenom h1{background:linear-gradient(100deg,#fff 0%,#ffc2e4 32%,#ffe7a0 52%,#d9c4ff 78%,#fff);-webkit-background-clip:text;background-clip:text;font-size:36px}
+.ch-tete .rf-tetenom h1 span{display:block;font-size:.5em;letter-spacing:.02em;margin-top:2px}
+.ch .rf-onglets button.on::after{background:linear-gradient(90deg,#ee0073,#ffc73b,#8936ff)}
+.ch .rf-pastille{background:#ee0073}
+.ch .rf-point{background:#ffc73b}
+
+/* Les tuiles, le Pass, les articles : les accents passent au rose et à l'or. */
+.ch .rf-tuile:hover{box-shadow:inset 0 0 0 1.5px #ffc73b}
+.ch .rf-tuile.chaud{box-shadow:inset 0 0 0 1.5px #ee0073}
+.ch .rf-tuile.chaud .rf-tuiletxt span{color:#ff5bb0}
+.ch .rf-tuileico{background:linear-gradient(135deg,#ee0073,#8936ff)}
+.ch-tuiles{grid-template-columns:repeat(2,1fr)}
+@media (min-width:640px){.ch-tuiles{grid-template-columns:repeat(4,1fr)}}
+.ch .rf-jauge i{background:linear-gradient(90deg,#ee0073,#ffc73b,#8936ff)}
+.ch .rf-pal.pris::before,.ch .rf-pal.pret::before{background:linear-gradient(#ee0073,#8936ff)}
+.ch .rf-pal.pris .rf-palnum,.ch .rf-pal.pret .rf-palnum{background:linear-gradient(135deg,#ee0073,#ffc73b,#8936ff)}
+.ch .rf-pal.prochain .rf-palnum,.ch .rf-pal.prochain .rf-palcarte{box-shadow:inset 0 0 0 2px #ffc73b}
+.ch .rf-pal.prochain .rf-paletat{color:#ffc73b}
+.ch .rf-pal.pret .rf-palcarte{box-shadow:inset 0 0 0 1.5px #ee0073,0 0 18px rgba(238,0,115,.18)}
+.ch .rf-pal.rare .rf-palcarte{background:linear-gradient(110deg,rgba(238,0,115,.13),rgba(255,199,59,.07),rgba(137,54,255,.12)),var(--surface)}
+.ch .rf-palico{color:#ff9ad5}
+.ch-ico-tapis{width:24px;height:40px;object-fit:cover;border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
+.ch-ico-sleeve{width:28px;height:39px;object-fit:cover;border-radius:4px}
+.ch-ico-l{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#ffc73b 55%,#b97a10)}
+.ch-ico-l svg{width:18px!important;height:18px!important;fill:#5a3200!important;stroke:none!important}
+.rf-palico .insigneico{width:24px;height:24px}
+.ch-gainico{background:linear-gradient(135deg,#ee0073,#8936ff)!important}
+.ch-gainico .ch-ico-tapis{width:44px;height:76px}
+.ch-gainico .ch-ico-sleeve{width:50px;height:70px}
+.ch-nvico{color:#ffc73b}
+.ch-nvico svg{width:40px;height:40px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+.ch-nvico .insigneico{width:40px;height:40px}
+.ch .rf-artvis{color:#ff9ad5}
+.ch-art-tapis{height:78px;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.ch-art-sleeve{height:78px;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.ch-art-pack{height:78px}
+.ch-seg{margin:0}
+
+/* ============ La barre de vie commune ============ */
+.ch-barre{display:flex;flex-direction:column;gap:6px;width:100%}
+.ch-barre-tete{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px}
+.ch-barre-tete b{font-weight:800}
+.ch-barre-tete span{color:var(--muted);font-weight:800;white-space:nowrap}
+.ch-pv{position:relative;height:12px;border-radius:999px;overflow:hidden;background:#2a0f1f;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),inset 0 2px 5px rgba(0,0,0,.5)}
+.ch-pv>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff3d8b,#ff8a3d 60%,#ffc73b);
+  box-shadow:0 0 12px rgba(255,90,140,.6);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.ch-barre.grand .ch-pv{height:16px}
+.ch-barre.rappel .ch-pv>i{background:repeating-linear-gradient(115deg,#8936ff 0 12px,#b38cff 12px 24px);animation:chrappel 1.6s linear infinite;background-size:34px 100%}
+@keyframes chrappel{to{background-position:34px 0}}
+
+/* ============ Accueil : le Raid en vedette ============ */
+.ch-hero{position:relative;display:flex;align-items:center;gap:14px;width:100%;padding:14px;border:0;border-radius:var(--radius);cursor:pointer;
+  font:inherit;text-align:left;color:var(--text);overflow:hidden;
+  background:radial-gradient(120% 140% at 0% 0%,rgba(238,0,115,.22),transparent 55%),radial-gradient(120% 140% at 100% 100%,rgba(137,54,255,.22),transparent 55%),var(--surface);
+  box-shadow:inset 0 0 0 1px rgba(255,199,59,.25)}
+.ch-hero:hover{box-shadow:inset 0 0 0 1.5px #ffc73b}
+.ch-hero-carte{flex:0 0 82px;rotate:-4deg;filter:drop-shadow(0 10px 18px rgba(0,0,0,.5))}
+.ch-hero-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ch-hero-txt small{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#ffc73b}
+.ch-hero-txt>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px;line-height:1.1}
+.ch-hero-txt>em{font-style:normal;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+
+/* ============ Le Raid ============ */
+.ch-boss{display:flex;gap:14px;align-items:flex-start;padding:14px;border-radius:var(--radius);
+  background:radial-gradient(100% 120% at 0% 0%,rgba(255,199,59,.12),transparent 60%),var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch-boss-carte{flex:0 0 112px;filter:drop-shadow(0 12px 22px rgba(0,0,0,.55))}
+.ch-boss-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
+.ch-boss-dit{margin:0;font-size:13px;line-height:1.45;font-style:italic;color:var(--subtle)}
+.ch-couleurs{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:12.5px;color:var(--muted)}
+.ch-couleurs b{color:var(--text)}
+.ch-couleurs .ess{width:18px;height:18px}
+.ch-regles{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.ch-regles li{font-size:11.5px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+@media (max-width:420px){.ch-boss{flex-direction:column;align-items:center}.ch-boss-carte{flex-basis:auto;width:128px}}
+
+.ch-attaque{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch-attaque .cb-choixdeck{margin-top:0}
+.ch-moi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ch-moi>div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border-radius:var(--radius-sm);background:var(--bg-2);text-align:center}
+.ch-moi b{font-family:var(--display);font-weight:900;font-size:22px;line-height:1}
+.ch-moi b small{font-size:12px;color:var(--muted)}
+.ch-moi>div>small{font-size:11px;color:var(--muted);font-weight:700}
+.ch-lancer{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(100deg,#ee0073,#b0189e 50%,#8936ff)}
+.ch-lancer svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
+.ch-lancer:disabled{background:var(--bg-2);color:var(--muted)}
+.ch-attaque>p{margin:0}
+
+.ch-phases{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ch-ph{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch-ph-n{flex:0 0 32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:900;
+  background:var(--bg-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line-2)}
+.ch-ph-n svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.6}
+.ch-ph-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ch-ph-txt b{font-size:13.5px}
+.ch-ph-txt small{font-size:11px;color:var(--muted)}
+.ch-ph-gain{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:96px;text-align:center}
+.ch-ph-gain .rf-palico{flex-basis:auto;width:38px;height:38px}
+.ch-ph-gain small{font-size:10.5px;color:var(--muted);line-height:1.2}
+.ch-ph-gain .btn{padding:6px 10px;font-size:11px}
+.ch-ph.cours{box-shadow:inset 0 0 0 1.5px #ffc73b;background:linear-gradient(110deg,rgba(255,199,59,.1),transparent 60%),var(--surface)}
+.ch-ph.cours .ch-ph-n{color:#ffc73b;box-shadow:inset 0 0 0 2px #ffc73b}
+.ch-ph.tombee,.ch-ph.pris{background:linear-gradient(110deg,rgba(238,0,115,.12),rgba(137,54,255,.1)),var(--surface)}
+.ch-ph.tombee .ch-ph-n,.ch-ph.pris .ch-ph-n{color:#fff;background:linear-gradient(135deg,#ee0073,#8936ff);box-shadow:none}
+.ch-ph.tombee{box-shadow:inset 0 0 0 1.5px #ee0073}
+.ch-ph.pris{opacity:.65}
+.ch-ph.loin{opacity:.75}
+.ch-rappel{margin:10px 0 0;padding:10px 12px;border-radius:var(--radius-sm);font-size:12.5px;background:rgba(137,54,255,.14);box-shadow:inset 0 0 0 1px rgba(137,54,255,.4)}
+.ch-sec{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);font-weight:700}
+.ch-sec .cb-embleme{width:14px;height:14px}
+
+/* ============ L'Épreuve du jour ============ */
+.ch-ep-regle{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--radius);
+  background:linear-gradient(110deg,rgba(255,199,59,.16),rgba(238,0,115,.08) 60%,transparent),var(--surface);box-shadow:inset 0 0 0 1px rgba(255,199,59,.35)}
+.ch-ep-ico{flex:0 0 46px;height:46px;border-radius:14px;display:grid;place-items:center;color:#2a1600;background:linear-gradient(135deg,#fff3b0,#ffc73b)}
+.ch-ep-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ch-ep-regle small{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#ffc73b}
+.ch-ep-regle b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px}
+.ch-ep-regle p{margin:2px 0 0;font-size:12.5px;color:var(--subtle)}
+.ch-ep-decks{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ch-ep-decks .cb-vs{top:50%}
+.ch-ep-deck{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 10px;border:0;border-radius:var(--radius);cursor:pointer;
+  font:inherit;color:var(--text);text-align:center;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch-ep-deck:hover{box-shadow:inset 0 0 0 1.5px #ffc73b}
+.ch-ep-deck-art{width:84px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45))}
+.ch-ep-deck>span:last-child{display:flex;flex-direction:column;gap:2px}
+.ch-ep-deck small{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ch-ep-deck em{font-style:normal;font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:3px;justify-content:center;flex-wrap:wrap}
+.ch-ep-deck em .ess{width:14px;height:14px}
+.ch-ep-etat{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch-ep-etat p{margin:0;font-size:13px}
+.ch-ep-pips{display:flex;gap:8px}
+.ch-ep-pips i{flex:1;height:8px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.ch-ep-pips i.ok{background:linear-gradient(90deg,#1fd1a0,#55e6a6);box-shadow:none}
+.ch-ep-pips i.ko{background:#6b2a3c;box-shadow:none}
+
+/* ============ La Guerre du Choc ============ */
+.ch-guerre{background:radial-gradient(120% 140% at 50% 0%,rgba(255,199,59,.1),transparent 60%),var(--surface)}
+.cb-x2{color:#ffc73b}
+
+/* ============ Les bandeaux ============ */
+.chban{background:#170816}
+.chban::before{background:linear-gradient(110deg,transparent 25%,rgba(238,0,115,.8) 40%,rgba(255,215,94,.95) 48%,rgba(137,54,255,.8) 56%,transparent 72%) no-repeat;
+  background-size:300% 100%}
+.chban .rfban-txt b{background:linear-gradient(100deg,#fff,#ffc2e4 35%,#ffe7a0 55%,#d9c4ff);-webkit-background-clip:text;background-clip:text;font-size:19px}
+.chban-sous{font-style:normal;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.8)}
+.chban .rfban-n{background:#ee0073}
+.chban.combats,.chban.boutique{max-width:none;margin:0 0 12px}
+
+/* ============ Le récap ============ */
+.ch-vainqueur{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius);
+  background:radial-gradient(100% 140% at 0% 0%,color-mix(in srgb,var(--sc) 35%,transparent),transparent 65%),var(--surface);
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--sc) 60%,var(--line))}
+.ch-vainqueur img{flex:0 0 96px;width:96px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.5))}
+.ch-vainqueur small{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ch-vainqueur b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:21px}
+.ch-vainqueur p{margin:4px 0 0;font-size:12.5px}
+.ch-vainqueur-titre{font-weight:800;color:#ffc73b}
+
+/* ============ Les cadres décorés de l'événement ============ */
+.ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg')}
+.ava.fx-fils .fx-deco{background-image:url('../assets/cadres/fils.svg')}
+
+/* ============ Les nouveautés de la 3.0 ============ */
+.nvhero.v3{isolation:isolate;background:radial-gradient(90% 140% at 0% 30%,rgba(238,0,115,.55),transparent 60%),
+  radial-gradient(90% 140% at 60% 70%,rgba(137,54,255,.55),transparent 60%),#160a20}
+.nvboites{position:relative;flex:0 0 42%;display:flex;align-items:center;justify-content:center}
+.nvboites img{width:52%;filter:drop-shadow(0 10px 16px rgba(0,0,0,.55))}
+.nvboites img:first-child{rotate:-8deg;margin-right:-10%}
+.nvboites img:last-child{rotate:8deg;margin-left:-10%}
+.nvboites i{position:relative;z-index:2;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-style:italic;font-weight:900;
+  font-size:12px;color:#fff;background:#120b1b;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+
+/* ============ Combats : un cosmétique d'événement ============ */
+.cb-cosm-prix.ev{font-size:9.5px;white-space:nowrap;background:linear-gradient(90deg,#ee0073,#8936ff);color:#fff}

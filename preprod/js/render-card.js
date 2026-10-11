@@ -28,8 +28,27 @@ function renderCard(c) {
         ? `<i class="revtampon" aria-hidden="true" style="--logo:url('${logoAbsolu()}')"><i></i></i><i class="revlueur" aria-hidden="true"></i>` : ''}</div></div>`;
   }
 
+  /* Version 3.0 : une carte dont le visuel n'est pas encore connu (les
+     Promos provisoires des Starter Decks). Elle a un vrai texte : on la
+     compose en typographie, sans prétendre à une illustration. */
+  if (c.provisoire) return carteTextuelle(c);
+
   /* Pas d'illustration : la carte existe dans la donnée mais pas sur le
      disque. On le montre plutôt que de le maquiller. */
   return `<div class="cwrap"><div class="card sans-image" style="--tc:${tcol(c)}">
     <b>${h(c.nom)}</b><small>illustration manquante</small></div></div>`;
+}
+
+/* La carte en texte : le nom, le type, la Défense, les attaques avec leur
+   coût en Essences, et la mention qui dit que le visuel arrive. */
+function carteTextuelle(c) {
+  const cout = o => Object.keys(o || {}).flatMap(k => Array(o[k]).fill(k))
+    .sort((a, b) => (a === 'neutre') - (b === 'neutre')).map(k => essIcon(k)).join('');
+  const type = { joueur: 'Joueur', coach: 'Coach', moment: 'Moment', objet: 'Objet' }[c.cat] || '';
+  return `<div class="cwrap"><div class="card textuel r-${c.rar}" style="--tc:${tcol(c)}">
+    <div class="tx-tete"><b>${h(c.nom)}</b><i>${h(c.code || '')}</i></div>
+    <div class="tx-type"><span>${type}</span>${c.def != null ? `<span>Déf <b>${c.def}</b></span>` : ''}</div>
+    <div class="tx-corps">${(c.atks || []).map(a => `<div class="tx-atk"><span class="tx-cout">${cout(a.cout)}</span><span>${h(a.nom)}</span><b>${a.degats == null ? '' : a.degats}</b></div>`).join('')}
+      ${(c.fx || []).map(t => `<p>${h(t)}</p>`).join('')}</div>
+    <div class="tx-pied">Visuel à venir</div></div></div>`;
 }
