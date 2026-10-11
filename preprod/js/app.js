@@ -480,7 +480,8 @@ async function clicPage(e) {
     case 't-UN': return openBooster({ test: true, god: false, unique: true });
     case 't-S': return openBooster({ test: true, force: 'S', god: false });
     case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
-    case 't-v2-nouveautes': return montrerNouveautes();
+    case 't-v2-nouveautes': return montrerNouveautes21();
+    case 't-v3-nouveautes': return montrerNouveautes30();
     case 't-v2-palier': {
       const x = { palier: 7, type: 'reverse_R', titre: 'Une Reverse Rare' };
       return montrerPalier(7, x, reverses.filter(c => c.rar === 'R').slice(0, 1));

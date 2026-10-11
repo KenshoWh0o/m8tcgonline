@@ -177,5 +177,15 @@
 .ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg')}
 .ava.fx-fils .fx-deco{background-image:url('../assets/cadres/fils.svg')}
 
+/* ============ Les nouveautés de la 3.0 ============ */
+.nvhero.v3{isolation:isolate;background:radial-gradient(90% 140% at 0% 30%,rgba(238,0,115,.55),transparent 60%),
+  radial-gradient(90% 140% at 60% 70%,rgba(137,54,255,.55),transparent 60%),#160a20}
+.nvboites{position:relative;flex:0 0 42%;display:flex;align-items:center;justify-content:center}
+.nvboites img{width:52%;filter:drop-shadow(0 10px 16px rgba(0,0,0,.55))}
+.nvboites img:first-child{rotate:-8deg;margin-right:-10%}
+.nvboites img:last-child{rotate:8deg;margin-left:-10%}
+.nvboites i{position:relative;z-index:2;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-style:italic;font-weight:900;
+  font-size:12px;color:#fff;background:#120b1b;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+
 /* ============ Combats : un cosmétique d'événement ============ */
 .cb-cosm-prix.ev{font-size:9.5px;white-space:nowrap;background:linear-gradient(90deg,#ee0073,#8936ff);color:#fff}

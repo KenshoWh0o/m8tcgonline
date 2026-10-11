@@ -77,7 +77,7 @@ function vTest() {
     <h2>Version 2.0 · Reflets</h2>
     <p class="muted small">Les fenêtres de la 2.0, sans rien réclamer ni dépenser.</p>
     <div class="row">
-      <button class="btn ghost" data-act="t-v2-nouveautes">Nouveautés 2.0</button>
+      <button class="btn ghost" data-act="t-v2-nouveautes">Nouveautés 2.1</button>
       <button class="btn ghost" data-act="t-v2-palier">Palier : une carte</button>
       <button class="btn ghost" data-act="t-v2-palier-titre">Palier : un titre</button>
     </div>
@@ -101,6 +101,7 @@ function vTest() {
     <h2>Version 3.0 · Le Choc des Sections</h2>
     <p class="muted small">L'onglet de l'événement (s'il est en cours), et son récap avec des chiffres inventés — rien n'est enregistré.</p>
     <div class="row">
+      <button class="btn ghost" data-act="t-v3-nouveautes">Nouveautés 3.0</button>
       <button class="btn ghost" data-act="t-v3-choc">Onglet de l'événement</button>
       <button class="btn ghost" data-act="t-v3-recap">Onglet récap</button>
       <button class="btn ghost" data-act="t-v3-recap-pop">Fenêtre de fin</button>

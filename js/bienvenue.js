@@ -111,7 +111,7 @@ function montrerDiscord() {
 /* Une fois par version et par appareil, à ceux qui jouaient déjà. Elle annonce
    aussi l'événement en cours, et se rouvre depuis son bandeau (js/booster.js).
    Changer NOUVEAUTES_VERSION la remontre à tout le monde. */
-const NOUVEAUTES_VERSION = '2.1';
+const NOUVEAUTES_VERSION = '3.0';
 
 /* Un événement se signale aussi : une fois annoncé, une fois commencé — même
    à qui a déjà vu les nouveautés de la version. */
@@ -127,6 +127,48 @@ function nouveautesAVoir() {
 function montrerNouveautes() {
   const ev = save.evenement;
   accueilNoter({ nouveautes: NOUVEAUTES_VERSION, evenement: cleEvenement(ev) });
+  /* Version 3.0 : les Combats. Les nouveautés de la 2.1 restent plus bas
+     (montrerNouveautes21), pour le Labo. */
+  if (NOUVEAUTES_VERSION === '3.0') return montrerNouveautes30();
+  montrerNouveautes21();
+}
+
+function montrerNouveautes30() {
+  const choc = evenementEnCours() === 'choc';
+  const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span>
+    <span><b>${titre}</b> ${texte}</span></li>`;
+  const nbS = (typeof secretes !== 'undefined' ? secretes : []).length;
+  openSheet({
+    title: 'Version 3.0 · Les Combats',
+    body: `<div class="nvhero v3">
+        <div class="nvboites" aria-hidden="true">
+          <img src="${SECTIONS.toxique.boite}" alt=""><i>VS</i><img src="${SECTIONS.deter.boite}" alt="">
+        </div>
+        <div class="nvtexte">
+          <span class="nvkicker">${choc ? 'Événement en cours' : 'Nouveau'}</span>
+          <b>Tes cartes quittent le classeur</b>
+          <small>Choisis ta Section, construis ton deck, et entre dans l'arène.</small>
+        </div>
+      </div>
+      <ol class="bvpoints nvpoints">
+        ${point('sword', 'Les Combats.', 'Une campagne de vingt combats contre la Section adverse, le PvE infini à la difficulté de ton choix, et des défis en direct contre tes amis.')}
+        ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
+        ${point('quest', 'Les règles, pas à pas.', 'Les Guides de l\'onglet Combats expliquent tout, section par section.')}
+        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, une chance sur 133 par booster. La Légendaire passe à 4,25 %.`)}
+        ${point('star', 'La maîtrise des cartes.', 'Chaque exemplaire obtenu fait monter une carte : Bronze, Argent, Or, Prisme. Tes doublons servent enfin à quelque chose.')}
+        ${point('shop', 'Tapis et sleeves.', 'Six tapis de jeu et deux sleeves en boutique, et tes Essences Brillantes brillent en combat.')}
+        ${choc ? point('choc', 'Le Choc des Sections.', `Le Raid du Marionnettiste, l'Épreuve du jour, des points qui comptent double, un Pass de trente paliers — pendant trois semaines.`) : ''}
+      </ol>`,
+    actions: choc
+      ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('choc'); } },
+         { label: 'Aux Combats', fn: () => { closeSheet(); aller('combats'); } }]
+      : [{ label: 'Aux Combats', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('combats'); } },
+         { label: 'Plus tard', fn: closeSheet }]
+  });
+}
+
+/* Les nouveautés de la 2.1. */
+function montrerNouveautes21() {
   const reflets = evenementEnCours() === 'reflets';
   const rv = reverses.filter(c => c.rar === 'R');
   const trio = rv.length ? [0, 1, 2].map(i => rv[(i * 7 + new Date().getDate()) % rv.length]) : [];

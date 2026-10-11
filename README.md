@@ -204,7 +204,7 @@ Six cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
 | 3 | **Peu commune garantie** |
 | 4 | Essence — Brillante une fois sur 50 |
 | 5 | **Une Reverse** (version 2.0) : Commune 50 %, Peu commune 35 %, Rare 15 % (`RATES.REVERSE`) |
-| 6 | Le hit : rare, épique ou légendaire (`RATES.HIT` = 80 / 16 / 4 %) |
+| 6 | Le hit : rare, épique, légendaire ou secrète (`RATES.HIT` = 79 / 16 / 4,25 / 0,75 %, version 3.0 ; avant : 80 / 16 / 4) |
 
 Environ un booster sur 2 000 (`GOD`) est un **godpack** : 5 rares, 4 épiques et une légendaire en dernier. Rien ne l'annonce, ni écran, ni mot : voir plus bas.
 
@@ -262,9 +262,9 @@ Dans un godpack, `announce()` **n'ajoute pas** la surbrillance de rareté carte 
 - **Couleurs :** Rose, Orange, Jade, Violette, Jaune, Mauve, Verte, Bleue, Azur, Neutre
 - **Facultatif :** `sous_type`, `mot_cle`, `ambiance`, `resilience`, et `booster: false` pour qu'une carte ne sorte jamais dans un paquet.
 
-### Les Secrets
+### Les Secrètes
 
-`SECRETS` (`js/config.js`) prolonge la grille de collection avec des emplacements numérotés à la suite des cartes existantes (#123 à #127 aujourd'hui) mais **hors du total** : la barre de progression reste sur 122. Ils s'ajoutent dans la même grille, juste après la dernière carte (`secretCells()`), et disparaissent dès qu'un filtre est actif puisqu'ils n'ont encore ni catégorie ni essence. Mets `SECRETS = 0` pour les masquer ; ajoute les vraies cartes dans `js/cards-data.js` quand elles sortent, et baisse `SECRETS` d'autant.
+Version 3.0. Cinq cartes numérotées après l'extension (#123 à #127), **hors du total** : la barre de progression reste sur 122. Deux sont révélées, trois encore floutées : elles existent, se tirent et s'échangent, mais leur texte arrivera plus tard (`cachee` dans `SECRET_DATA`, `js/promos-data.js` ; `buildSecretes()`, `js/cards.js`). Rareté `S`, tirées à la place du hit une fois sur 133 (0,75 %). Elles s'échangent contre une autre Secrète, mais ne se recyclent ni ne se fabriquent. Côté serveur, ce sont des lignes de `cards` marquées `promo` (hors des 122) et `secrete` (échangeables), créées par `supabase/24_secretes_maitrise.sql`. Quand une Secrète floutée est révélée : remplir sa fiche dans `SECRET_DATA`, retirer `cachee`, poser son image dans `cards/`, et mettre son nom à jour dans le SQL.
 
 > Le numéro sert d'identifiant : changer le `num` d'une carte déjà collectionnée la fait repartir à zéro dans la collection. Les champs `ambiance` et `resilience` sont conservés avec la carte mais ne sont pas affichés : ils font déjà partie de l'image.
 
@@ -451,6 +451,27 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 **Échanges · Chez tes amis** : les cartes qui te manquent et qu'un ami a en double (`amis_doublons()`), une pression sur l'ami prépare la demande.
 
 **Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
+
+## Version 3.0 · Les Combats
+
+> **Pré-build.** Les règles du jeu de cartes ne sont pas encore publiées : celles du jeu sont **reconstituées** à partir des cartes, et tout ce qui a été inventé est signalé (`docs/regles-3.0.md`, et le guide « Ce qui est maison » dans le jeu). La 3.0 ne sortira qu'avec les vraies règles et les visuels des Secrètes.
+
+**Le moteur** (`js/combat/moteur.js`) fait tourner une partie entière dans la page, sans serveur de jeu : un générateur qui s'arrête à chaque décision, une graine tirée par le serveur, et un journal d'actions qui suffit à rejouer la partie à l'identique (reprise après un rechargement, défis entre amis). Les effets des cartes sont dans `js/combat/effets.js`, l'IA (cinq niveaux, du hasard à la recherche sur deux tours) dans `js/combat/ia.js`, l'arène animée dans `js/combat/table.js`. Le banc d'essai et les tests tournent sans navigateur :
+
+    node tools/combat-tests.js          les règles, une par une
+    node tools/combat-sim.js ia 200     IA contre IA : durée, équilibre
+
+**L'onglet Combats** (`js/battle.js`) : on choisit sa **Section** (Toxique ou Déter, les deux Starter Decks — sa Promo et son deck, prêté), puis la **campagne** (vingt combats en quatre actes contre l'autre Section ; la finir donne sa Promo), le **PvE infini** (cinq difficultés, cinq victoires récompensées par jour), les **défis** entre amis (en direct, chacun sur son écran : le serveur range les actions, chaque navigateur rejoue celles de l'autre), l'**atelier de decks** (`js/combat/atelier.js` ; codes de partage) et les **Guides** (`js/combat/guides.js`). Chaque victoire marque des points pour sa Section dans la **Guerre des Sections** de la semaine ; le lundi, ceux qui ont marqué reçoivent leur part (2 boosters et 200 Éclats dans la Section gagnante, un booster dans l'autre).
+
+**Les cosmétiques** : six tapis de jeu et deux sleeves en boutique (rayon Combats ; visuels adaptés des illustrations par `tools/cosmetiques.py`), plus ceux de l'événement (`tools/choc-visuels.py`). Les Essences Brillantes qu'on possède brillent en combat.
+
+**La maîtrise des cartes** (`js/maitrise.js`) : chaque exemplaire obtenu d'une carte — Reverse comprise, même s'il est recyclé ou échangé ensuite — la fait monter de palier : Bronze, Argent, Or, Prisme. Les seuils dépendent de la rareté. Le serveur compte les exemplaires dans `collection.total` (un déclencheur, `supabase/01_schema.sql`) ; les collections d'avant la 3.0 partent de ce qu'elles possèdent.
+
+**L'événement « Le Choc des Sections »** (`code = 'choc'`, trois semaines ; `js/choc.js`, `js/combat/choc-data.js`, `supabase/25_choc.sql`) : le **Raid** contre Le Marionnettiste (une barre de vie commune à tout le serveur, cinq phases dont chacune ouvre une récompense à ceux qui l'ont frappé, trois tentatives par jour), l'**Épreuve du jour** (le même combat pour tout le monde, trois essais, un classement du jour), la Guerre des Sections **doublée** et un titre pour la Section gagnante, des quêtes et un **Pass de trente paliers** en **Insignes**, une boutique. Son onglet passe en tête du tiroir : Combats garde sa place dans la barre du bas, et un bandeau annonce l'événement sur les écrans Boosters, Combats et Boutique. La barre du Raid se règle sans redéployer, selon le nombre de joueurs : `update public.parametres set raid_echelle = … where id = 1;`. L'équilibrage complet, chiffres et hypothèses, est dans **`docs/economie-3.0.md`**.
+
+**Côté serveur** : `supabase/23_combats.sql` (Sections, decks, combats, défis, Guerre), `24_secretes_maitrise.sql` (les Secrètes) et `25_choc.sql` (l'événement), plus des retouches des fichiers existants (taux du hit, compteur d'exemplaires, quêtes et boutique 3.0, `me()`). Le serveur ne fait pas tourner le moteur : il fixe la graine de chaque combat, plafonne ce qu'un combat peut rapporter, et croit le navigateur sur le résultat — un défi est déclaré par les deux joueurs, et un désaccord est noté (`defis.desaccord`). `verif.html` contrôle que la 3.0 est installée.
+
+**Sortie de la 3.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase (il passe sur une base 2.x sans rien perdre — testé sur PostgreSQL 16). L'événement ne s'ouvre pas tout seul : la commande est en fin de `supabase/25_choc.sql`.
 
 ## Succès, historique et partage
 
