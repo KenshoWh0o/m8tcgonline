@@ -366,11 +366,15 @@ const PROMO_COMMENT = {
   boutique: 'En boutique',
   palier: 'Quêtes saisonnières',
   master: 'Quêtes saisonnières',
+  /* Version 3.0 : les Promos des Starter Decks, en Combats. */
+  section: 'Combats · Sections',
   bientot: 'Coming soon…'
 };
 
 /* Les emplacements Promo tenus en réserve : les cartes existent dans la série
    mais ne nous sont pas encore parvenues. Comme les Secrets de la collection,
-   ils occupent leur case pour que la suite de la numérotation se voie. */
-const PROMOS_A_VENIR = ['P03', 'P04'];
+   ils occupent leur case pour que la suite de la numérotation se voie.
+   Version 3.0 : P03 et P04, les Promos des Starter Decks, sont arrivées —
+   provisoires, en attendant leur visuel (js/promos-data.js). */
+const PROMOS_A_VENIR = [];
 
