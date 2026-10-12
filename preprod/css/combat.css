@@ -432,16 +432,15 @@ button.cb-une:active{transform:scale(.98)}
 /* ============ L'atelier de decks ============ */
 .at{display:flex;flex-direction:column;gap:10px}
 /* La tête de l'atelier reste sous l'en-tête pendant qu'on fait défiler les
-   cartes : une capsule de verre, comme le pied. Ce qu'elle contient n'est
-   pas du verre (pas de verre sur du verre).
+   cartes : une capsule pleine (en verre, le message d'état se lisait au
+   travers en défilant, comme s'ils se chevauchaient).
    Ce qui défile, c'est <main>, et sa marge intérieure tient déjà compte de
    l'en-tête et de la barre du bas : les positions collantes se comptent
    depuis cette marge (top:0, bottom négatif). Compter l'en-tête une seconde
    fois posait la tête sur le message d'état, et le pied au milieu de
    l'écran. */
-.at-tete{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:6px;
-  border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
-  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:var(--glass-hi),var(--sh-3)}
+.at-tete{position:sticky;top:-8px;z-index:5;display:flex;align-items:center;gap:6px;padding:6px;
+  border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),var(--sh-3)}
 .at-retour{display:grid;place-items:center;width:40px;height:40px;flex:none;border:0;border-radius:50%;
   background:rgba(255,255,255,.08);color:var(--text);cursor:pointer}
 .at-retour svg{width:20px;height:20px;transform:rotate(90deg);fill:none;stroke:currentColor;stroke-width:2.2}
