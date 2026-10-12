@@ -237,12 +237,11 @@
     ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
     ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
     /* Le Choc des Sections (25_choc.sql), en Insignes. */
-    ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      90, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 8],
-    ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6],
-    ['ch_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 180, 'reverse_R', 1,   null, false, 3, 'prismes', 'choc', 3],
-    ['ch_brillante', 'evenement', 'Une Essence Brillante', 'Une Essence Brillante que tu n\'as pas encore.', 450, 'brillante', 1, null, false, 4, 'prismes', 'choc', 1],
-    ['t_orage',      'evenement', 'Tapis « L\'Orage »', 'Le ciel de The French Sorcerer, sous tes cartes. Ne se vendra plus après l\'événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
-    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 250, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
+    ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10],
+    ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3],
+    ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8],
+    ['t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L\'illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l\'événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null],
+    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null]
   ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
        devise: devise || 'eclats', evenement: evenement || null, limite: limite == null ? null : limite }));
@@ -271,12 +270,12 @@
     [13, 1040, 'boosters', 3, null, '3 boosters'], [14, 1180, 'reverse_R', 1, null, 'Une Reverse Rare'],
     [15, 1320, 'brillante', 1, null, 'Une Essence Brillante'], [16, 1460, 'eclats', 400, null, '400 Éclats'],
     [17, 1600, 'fragments', 600, null, '600 Fragments'], [18, 1740, 'boosters', 4, null, '4 boosters'],
-    [19, 1880, 'titre', 0, 't_veteran', 'Titre « Vétéran du Choc »'], [20, 2020, 'tapis', 0, 't_arene', 'Tapis « L\'Arène »'],
+    [19, 1880, 'titre', 0, 't_veteran', 'Titre « Vétéran du Choc »'], [20, 2020, 'reverse_R', 1, null, 'Une Reverse Rare'],
     [21, 2160, 'eclats', 500, null, '500 Éclats'], [22, 2300, 'reverse_R', 2, null, 'Deux Reverses Rares'],
     [23, 2440, 'boosters', 4, null, '4 boosters'], [24, 2580, 'fragments', 800, null, '800 Fragments'],
-    [25, 2720, 'brillante', 1, null, 'Une Essence Brillante'], [26, 2860, 'eclats', 600, null, '600 Éclats'],
+    [25, 2720, 'fragments', 700, null, '700 Fragments'], [26, 2860, 'eclats', 600, null, '600 Éclats'],
     [27, 3000, 'boosters', 5, null, '5 boosters'], [28, 3150, 'fragments', 1000, null, '1 000 Fragments'],
-    [29, 3300, 'titre', 0, 't_maitre_choc', 'Titre « Maître du Choc »'], [30, 3500, 'legendaire', 1, null, 'Une Légendaire que tu n\'as pas']
+    [29, 3300, 'titre', 0, 't_maitre_choc', 'Titre « Maître du Choc »'], [30, 3500, 'tapis', 0, 't_arene', 'Tapis « Le Choc des Sections »']
   ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
   const PISTES = { reflets: PISTE, choc: PISTE_CHOC };
   const pisteDe = code => PISTES[code] || PISTE;

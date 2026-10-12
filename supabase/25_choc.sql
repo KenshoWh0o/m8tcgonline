@@ -79,17 +79,17 @@ insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, ti
   ('choc', 17, 1600, 'fragments',  600, null,           '600 Fragments'),
   ('choc', 18, 1740, 'boosters',    4, null,            '4 boosters'),
   ('choc', 19, 1880, 'titre',       0, 't_veteran',     'Titre « Vétéran du Choc »'),
-  ('choc', 20, 2020, 'tapis',       0, 't_arene',       'Tapis « L''Arène »'),
+  ('choc', 20, 2020, 'reverse_R',   1, null,            'Une Reverse Rare'),
   ('choc', 21, 2160, 'eclats',    500, null,            '500 Éclats'),
   ('choc', 22, 2300, 'reverse_R',   2, null,            'Deux Reverses Rares'),
   ('choc', 23, 2440, 'boosters',    4, null,            '4 boosters'),
   ('choc', 24, 2580, 'fragments',  800, null,           '800 Fragments'),
-  ('choc', 25, 2720, 'brillante',   1, null,            'Une Essence Brillante'),
+  ('choc', 25, 2720, 'fragments',  700, null,           '700 Fragments'),
   ('choc', 26, 2860, 'eclats',    600, null,            '600 Éclats'),
   ('choc', 27, 3000, 'boosters',    5, null,            '5 boosters'),
   ('choc', 28, 3150, 'fragments', 1000, null,           '1 000 Fragments'),
   ('choc', 29, 3300, 'titre',       0, 't_maitre_choc', 'Titre « Maître du Choc »'),
-  ('choc', 30, 3500, 'legendaire',  1, null,            'Une Légendaire que tu n''as pas')
+  ('choc', 30, 3500, 'tapis',       0, 't_arene',       'Tapis « Le Choc des Sections »')
 on conflict (evenement, palier) do update set
   seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
   objet = excluded.objet, titre = excluded.titre;

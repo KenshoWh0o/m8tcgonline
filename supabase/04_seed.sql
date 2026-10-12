@@ -395,12 +395,11 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('t_peche',      'tapis',  'Tapis « Vanyabubu »', 'L''illustration de la carte « Vanyabubu », sous tes cartes.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
   ('s_sorcier',    'sleeve', 'Sleeve « 6W26L »', 'Le dos de tes cartes : la Secrète 6W26L, en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
   ('s_argent',     'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
-  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      90, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 8),
-  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6),
-  ('ch_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n''as pas encore.', 180, 'reverse_R', 1,   null, false, 3, 'prismes', 'choc', 3),
-  ('ch_brillante', 'evenement', 'Une Essence Brillante', 'Une Essence Brillante que tu n''as pas encore.', 450, 'brillante', 1, null, false, 4, 'prismes', 'choc', 1),
-  ('t_orage',      'evenement', 'Tapis « L''Orage »', 'Le ciel de The French Sorcerer, sous tes cartes. Ne se vendra plus après l''événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
-  ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 250, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null)
+  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10),
+  ('ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l''unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3),
+  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8),
+  ('t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L''illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l''événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null),
+  ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -413,4 +412,4 @@ delete from public.shop_items where id not in (
   'f_azur','f_rose','f_or','f_prisme','f_toxique','f_deter',
   's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
   't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
-  'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_orage','t_supporter');
+  'ch_boosters','ch_boosters5','ch_fragments','t_orage','t_supporter');

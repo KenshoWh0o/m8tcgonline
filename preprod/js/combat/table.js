@@ -1686,8 +1686,8 @@ const TAPIS = {
   t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.4', prix: 4000 },
   /* L'événement « Le Choc des Sections » : ni en vente, ni en Éclats.
      `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
-  t_arene:     { nom: 'L\'Arène', img: 'assets/combat/tapis/t_arene.webp?v=3.0.4', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
-  t_orage:     { nom: 'L\'Orage', img: 'assets/combat/tapis/t_orage.webp?v=3.0.4', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
+  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.4', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
+  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.4', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
 };
 const SLEEVES = {
   s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.4', prix: 0 },

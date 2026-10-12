@@ -197,7 +197,8 @@ begin
                                           victoires = choc_joueurs.victoires + excluded.victoires;
     return jsonb_build_object('insignes', gain, 'degats', d, 'message', msg);
   end if;
-  gain := d * 4 + case when gagne then 20 else 0 end;
+  -- Hors evenement, en Eclats (RAID.parDegatEclats, RAID.victoireEclats).
+  gain := d * 2 + case when gagne then 15 else 0 end;
   update profiles set shards = shards + gain where id = p;
   return jsonb_build_object('eclats', gain, 'degats', d, 'message', msg);
 end $$;

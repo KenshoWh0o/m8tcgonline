@@ -9,6 +9,7 @@ Ecrit dans assets/cadres/ :
                                             (js/combat/niveaux.js) : l'arene,
                                             en bronze, argent, or et prisme
   toxique.svg deter.svg                     les deux Sections (Boutique)
+  choc.svg                                  le Pass du Choc des Sections
   secrete.svg                               la premiere Secrete (quete)
 
 Meme gabarit que les autres cadres decores (css/reflets.css) : 128 x 128,
@@ -189,6 +190,68 @@ def deter():
     ecrire('deter', corps)
 
 
+# ------------------------------------------------------------ le Choc
+def choc():
+    """Les deux Sections dans un meme anneau : le vert Toxique a gauche, le
+    violet Deter a droite, coupes en biais par un trait de lumiere. En haut,
+    un medaillon partage de meme, frappe d'un eclair blanc ; une bulle
+    d'un cote, un crepitement de l'autre."""
+    p = 'ck'
+    vert = ('#e2ffd4', '#86ff5e', '#38c23c', '#0c4a1c')
+    viol = ('#f1ebff', '#b79bff', '#7c3aed', '#25095f')
+    # La coupe : une droite de (70, -4) a (58, 132), qui passe par le
+    # centre du medaillon (64, 8) a peu pres.
+    a, b = (70.5, -4), (57.5, 132)
+    # Clairs pres de la coupe, sombres vers les bords : le choc se lit au
+    # milieu.
+    defs = (f"<defs><linearGradient id='{p}-v' x1='.62' y1='.2' x2='0' y2='.8'><stop offset='0' stop-color='{vert[0]}'/>"
+            f"<stop offset='.25' stop-color='{vert[1]}'/><stop offset='.65' stop-color='{vert[2]}'/><stop offset='1' stop-color='{vert[3]}'/></linearGradient>"
+            f"<linearGradient id='{p}-m' x1='.4' y1='.8' x2='1' y2='.2'><stop offset='0' stop-color='{viol[0]}'/>"
+            f"<stop offset='.25' stop-color='{viol[1]}'/><stop offset='.62' stop-color='{viol[2]}'/><stop offset='1' stop-color='{viol[3]}'/></linearGradient>"
+            f"<clipPath id='{p}-g'><path d='M-10 -10H{a[0]}L{b[0]} 140H-10Z'/></clipPath>"
+            f"<clipPath id='{p}-d'><path d='M{a[0]} -10H140V140H{b[0]}Z'/></clipPath>"
+            f"<mask id='{p}-r'><path d='M121 64A57 57 0 1 0 7 64A57 57 0 1 0 121 64ZM115.5 64A51.5 51.5 0 1 1 12.5 64A51.5 51.5 0 1 1 115.5 64Z' fill='#fff' fill-rule='evenodd'/>"
+            f"<circle cx='64' cy='8' r='11.5' fill='#fff'/></mask>"
+            f"<filter id='{p}-f' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='1.6'/></filter>"
+            f"<filter id='{p}-h' x='-20%' y='-20%' width='140%' height='140%'><feGaussianBlur stdDeviation='2.6'/></filter></defs>")
+    style = ("<style>.bu{transform-box:fill-box;transform-origin:center;animation:bu 2.8s ease-in infinite}.bu2{animation-delay:-1.4s}"
+             "@keyframes bu{0%{transform:translateY(0) scale(.6);opacity:0}25%{opacity:1}100%{transform:translateY(-8px) scale(1.1);opacity:0}}"
+             ".ec{animation:ec 1.9s steps(1) infinite}.ec2{animation-delay:-.9s}"
+             "@keyframes ec{0%,62%{opacity:1}64%{opacity:.15}68%{opacity:1}72%{opacity:.3}76%,100%{opacity:1}}"
+             ".cp{animation:cp 2.6s ease-in-out infinite alternate}@keyframes cp{from{opacity:.55}to{opacity:1}}" + RM + "</style>")
+    corps = defs + style
+    # Les lueurs, chacune de son cote.
+    corps += (f"<g clip-path='url(#{p}-g)'><circle cx='64' cy='64' r='55' fill='none' stroke='{vert[1]}' stroke-width='7' opacity='.5' filter='url(#{p}-h)'/></g>"
+              f"<g clip-path='url(#{p}-d)'><circle cx='64' cy='64' r='55' fill='none' stroke='{viol[1]}' stroke-width='7' opacity='.55' filter='url(#{p}-h)'/></g>")
+    corps += f"<g clip-path='url(#{p}-g)'>{anneau(f'url(#{p}-v)')}</g><g clip-path='url(#{p}-d)'>{anneau(f'url(#{p}-m)')}</g>"
+    corps += filets('#ffffff', '#140a22')
+    # Une bulle qui monte a gauche, un eclair qui crepite a droite.
+    for ang, r, cls in ((200, 3, ''), (226, 2.2, 'bu'), (250, 2.6, ''), (150, 2.4, 'bu bu2')):
+        x, y = pt(54.3, ang)
+        corps += (f"<circle class='{cls}' cx='{x:.1f}' cy='{y:.1f}' r='{r}' fill='{vert[1]}' stroke='{vert[3]}' stroke-width='.5'/>"
+                  f"<circle cx='{x - r * .35:.1f}' cy='{y - r * .35:.1f}' r='{r * .28:.2f}' fill='#fff' opacity='.85'/>")
+    for ang, cls in ((330, 'ec'), (25, 'ec ec2')):
+        x, y = pt(54.3, ang)
+        ox, oy = pt(63.5, ang)
+        ix, iy = pt(49, ang)
+        nx, ny = -(oy - iy), (ox - ix)
+        n = math.hypot(nx, ny) or 1
+        nx, ny = nx / n * 3, ny / n * 3
+        d = f"M{ix:.1f} {iy:.1f} L{x + nx:.1f} {y + ny:.1f} L{x - nx * .4:.1f} {y - ny * .4:.1f} L{ox:.1f} {oy:.1f}"
+        corps += (f"<path class='{cls}' d='{d}' fill='none' stroke='{viol[1]}' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round' opacity='.55'/>"
+                  f"<path class='{cls}' d='{d}' fill='none' stroke='#fff' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/>")
+    # Le medaillon, partage comme l'anneau, et l'eclair blanc du Choc.
+    corps += (f"<circle cx='64' cy='8' r='12.5' fill='#fff' opacity='.35' filter='url(#{p}-f)'/>"
+              f"<g clip-path='url(#{p}-g)'><circle cx='64' cy='8' r='10.5' fill='#0f3a18'/></g>"
+              f"<g clip-path='url(#{p}-d)'><circle cx='64' cy='8' r='10.5' fill='#2c0c72'/></g>"
+              f"<circle cx='64' cy='8' r='10.5' fill='none' stroke='#fff' stroke-width='1.4'/>"
+              f"<path d='M66.6 .4 59.4 9.8h4.4l-1.8 7.2 7.2-9.6h-4.5Z' fill='#fff'/>")
+    # La coupe : un trait de lumiere, seulement sur l'anneau et le medaillon.
+    corps += (f"<g mask='url(#{p}-r)'><line class='cp' x1='{a[0]}' y1='{a[1]}' x2='{b[0]}' y2='{b[1]}' stroke='#fff' stroke-width='4' filter='url(#{p}-f)'/>"
+              f"<line x1='{a[0]}' y1='{a[1]}' x2='{b[0]}' y2='{b[1]}' stroke='#fff' stroke-width='1.2'/></g>")
+    ecrire('choc', corps)
+
+
 # ------------------------------------------------------------ la Secrete
 def secrete():
     p = 'se'
@@ -217,4 +280,5 @@ if __name__ == '__main__':
         arene(cle, n)
     toxique()
     deter()
+    choc()
     secrete()

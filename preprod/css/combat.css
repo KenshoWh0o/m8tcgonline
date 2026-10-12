@@ -208,6 +208,7 @@ button.cb-une:active{transform:scale(.98)}
   .cb-une{margin:-64px 20px 0;width:auto}
   .cb-portes{gap:14px}
   .cb-porte{min-height:210px;padding:16px 18px}
+  .cb-porte-art,.cb-porte-art.duo i{background-size:125% auto;background-position:50% 30%}
   .cb-porte-t b{font-size:28px}
   .cb-mode{min-height:230px;padding:22px}
   .cb-acte-tete{padding-top:110px}
@@ -411,6 +412,7 @@ button.cb-une:active{transform:scale(.98)}
 .cb-cosm-prix{position:absolute;left:50%;bottom:6px;translate:-50% 0;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
   font-style:normal;font-size:10.5px;font-weight:900;background:rgba(18,17,25,.85);white-space:nowrap}
 .cb-cosm-prix .shard{width:11px;height:11px;color:var(--brand-light)}
+.cb-cosm-prix.ev{max-width:94%;overflow:hidden;text-overflow:ellipsis;font-size:9.5px;background:rgba(93,75,217,.9)}
 .cb-brillantes{display:flex;flex-wrap:wrap;gap:6px}
 .cb-br{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);opacity:.4}
 .cb-br.eue{opacity:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 0 12px rgba(255,255,255,.35);

@@ -5,29 +5,40 @@
     python3 tools/choc-visuels.py
 
 Ecrit :
-  assets/combat/tapis/t_arene.webp (+ -mini)    Pass, palier 20
-  assets/combat/tapis/t_orage.webp (+ -mini)    boutique de l'evenement
-  assets/combat/sleeves/s_choc.webp             Pass, palier 8
+  assets/combat/tapis/t_arene.webp (+ -mini)   Pass, palier 30 : « Le Choc des Sections »
+  assets/combat/tapis/t_orage.webp (+ -mini)   boutique de l'evenement : « The French Sorcerer »
+  assets/combat/sleeves/s_choc.webp            Pass, palier 8 : « Le Choc »
 
-Contrairement aux tapis de tools/cosmetiques.py, ceux-ci ne partent d'aucune
-illustration : ils sont dessines ici, aux couleurs des deux Sections (le vert
-Toxique, le violet Deter). Les memes reperes que les autres tapis : bords
-sombres, bande plus sombre au milieu, filet interieur. Necessite Pillow."""
-import math
+Comme les tapis de la Boutique (tools/cosmetiques.py), ils partent
+d'illustrations du jeu, pas d'un dessin invente :
+  - Le Choc des Sections : Gotaga Pose (#060, Deter) en haut, chez
+    l'adversaire ; Squeezie le Toxique (#012) en bas, chez soi. Chacun teinte
+    a la couleur de sa Section, une coupe lumineuse en biais entre les deux.
+  - The French Sorcerer : l'illustration de la carte #116, en grand du haut
+    jusqu'au milieu, fondue ensuite dans le violet sombre de son ciel.
+  - Le Choc (sleeve) : le dos officiel des cartes (assets/card-back.webp),
+    recolore moitie vert, moitie violet, la meme coupe en diagonale.
+Les memes reperes que les autres tapis : bords sombres, bande plus sombre au
+milieu, filet interieur. Necessite Pillow, avec l'AVIF (les cartes)."""
 import os
-import random
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'assets', 'combat')
+CARTES = os.path.join(ROOT, 'cards')
 W, H = 720, 1280
-# Les couleurs des Sections (js/combat/campagne.js, SECTIONS).
-ROSE = (98, 216, 78)      # Toxique : vert
-ROSE2 = (183, 242, 154)
-MAUVE = (124, 58, 237)    # Deter : violet
-MAUVE2 = (196, 181, 253)
-NUIT = (10, 6, 16)
-OR = (255, 199, 59)
+NUIT = (8, 5, 12)
+# Les couleurs des Sections (js/combat/campagne.js, SECTIONS) : sombre,
+# milieu, clair, pour recolorer une image en degrade.
+VERT = ((4, 26, 10), (56, 194, 60), (226, 255, 212))
+VIOLET = ((16, 6, 40), (124, 58, 237), (241, 235, 255))
+
+# L'illustration d'une carte : le rectangle sous le titre, au-dessus du
+# bandeau « Joueur · Def » (gabarit commun des cartes, 1000 x 1397).
+ILLU = (85, 205, 895, 684)
+SQUEEZIE = ('012_PC_Joueur_Rose_Squeezie-Le-Toxique.avif', (85, 222, 895, 684))
+GOTAGA = ('060_E_Joueur_Mauve_Gotaga-Pose.avif', ILLU)
+SORCIER = ('116_L_Joueur_Mauve_The-French-Sorcerer.avif', ILLU)
 
 
 def dossier(*p):
@@ -36,46 +47,64 @@ def dossier(*p):
     return d
 
 
-def police(taille):
-    for f in ('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-              '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf'):
-        if os.path.exists(f):
-            return ImageFont.truetype(f, taille)
-    return ImageFont.load_default()
+def illustration(carte):
+    fichier, boite = carte
+    return Image.open(os.path.join(CARTES, fichier)).convert('RGB').crop(boite)
 
 
-def melange(a, b, t):
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+def couvrir(im, w, h, cx=.5, cy=.5):
+    """Remplit w x h sans deformer ; (cx, cy) : le point garde au centre."""
+    r = max(w / im.width, h / im.height)
+    im = im.resize((round(im.width * r), round(im.height * r)), Image.LANCZOS)
+    x = round((im.width - w) * cx)
+    y = round((im.height - h) * cy)
+    return im.crop((x, y, x + w, y + h))
 
 
-def lueur(taille, centre, rayon, couleur, force, flou):
-    """Une tache de lumiere coloree, a ajouter par-dessus."""
-    calque = Image.new('RGBA', taille, couleur + (0,))
-    m = Image.new('L', taille, 0)
-    ImageDraw.Draw(m).ellipse((centre[0] - rayon[0], centre[1] - rayon[1], centre[0] + rayon[0], centre[1] + rayon[1]),
-                              fill=round(255 * force))
-    calque.putalpha(m.filter(ImageFilter.GaussianBlur(flou)))
+def teinter(im, teinte, force):
+    """Pousse une image vers la couleur d'une Section, sans perdre son dessin."""
+    sombre, milieu, clair = teinte
+    col = ImageOps.colorize(ImageOps.grayscale(im), sombre, clair, milieu)
+    return Image.blend(im, col, force)
+
+
+def coupe(taille, a, b, couleurs, epaisseur=3):
+    """La coupe lumineuse de a a b : un trait blanc, et une lueur de chaque
+    couleur de part et d'autre. Renvoie un calque RGBA."""
+    calque = Image.new('RGBA', taille, (0, 0, 0, 0))
+    for couleur, decal, largeur, flou in ((couleurs[0], -6, 16, 14), (couleurs[1], 6, 16, 14), ((255, 255, 255), 0, 9, 7)):
+        l = Image.new('RGBA', taille, couleur + (0,))
+        m = Image.new('L', taille, 0)
+        ImageDraw.Draw(m).line((a[0], a[1] + decal, b[0], b[1] + decal), fill=200, width=largeur)
+        l.putalpha(m.filter(ImageFilter.GaussianBlur(flou)))
+        calque = Image.alpha_composite(calque, l)
+    ImageDraw.Draw(calque).line((a, b), fill=(255, 255, 255, 255), width=epaisseur)
     return calque
 
 
-def finitions(im):
+def finitions(im, bande=95):
     """Les reperes communs a tous les tapis : vignette, frontiere, filet."""
     noir = Image.new('RGB', (W, H), NUIT)
     vign = Image.new('L', (W, H), 0)
     dv = ImageDraw.Draw(vign)
     for i in range(48):
         t = i / 48
-        a = round(200 * (1 - t) ** 2.2)
-        dv.rounded_rectangle((t * W * .22, t * H * .16, W - t * W * .22, H - t * H * .16), radius=60, outline=a, width=7)
+        dv.rounded_rectangle((t * W * .22, t * H * .16, W - t * W * .22, H - t * H * .16), radius=60,
+                             outline=round(200 * (1 - t) ** 2.2), width=7)
     im = Image.composite(noir, im, vign.filter(ImageFilter.GaussianBlur(26)))
-    bande = Image.new('L', (W, H), 0)
-    ImageDraw.Draw(bande).rectangle((0, H * .5 - 60, W, H * .5 + 60), fill=95)
-    im = Image.composite(noir, im, bande.filter(ImageFilter.GaussianBlur(40)))
-    filet = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    df = ImageDraw.Draw(filet)
+    if bande:
+        b = Image.new('L', (W, H), 0)
+        ImageDraw.Draw(b).rectangle((0, H * .5 - 60, W, H * .5 + 60), fill=bande)
+        im = Image.composite(noir, im, b.filter(ImageFilter.GaussianBlur(40)))
+    return im
+
+
+def filet(im):
+    f = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    df = ImageDraw.Draw(f)
     df.rounded_rectangle((16, 16, W - 17, H - 17), radius=34, outline=(255, 236, 250, 60), width=2)
     df.rounded_rectangle((24, 24, W - 25, H - 25), radius=28, outline=(255, 236, 250, 22), width=1)
-    return Image.alpha_composite(im.convert('RGBA'), filet).convert('RGB')
+    return Image.alpha_composite(im.convert('RGBA'), f).convert('RGB')
 
 
 def enregistrer_tapis(im, cle):
@@ -85,243 +114,67 @@ def enregistrer_tapis(im, cle):
     print('tapis', cle, os.path.getsize(os.path.join(d, cle + '.webp')) // 1024, 'Ko')
 
 
-def eclair(d, points, couleur, largeur):
-    d.line(points, fill=couleur, width=largeur, joint='curve')
-
-
-def ligne_brisee(rand, x0, x1, y, amp, pas):
-    pts = []
-    x = x0
-    while x <= x1:
-        pts.append((x, y + rand.uniform(-amp, amp)))
-        x += pas * rand.uniform(.6, 1.3)
-    pts.append((x1, y))
-    return pts
-
-
-# ------------------------------------------------------------ L'Arene
-def arene():
-    """Le camp du haut au violet Deter, celui du bas au vert Toxique, et entre
-    les deux une faille d'energie. Au sol, les anneaux d'une arene, et deux
-    projecteurs qui tombent du plafond."""
-    rand = random.Random(30)
+# ------------------------------------------------- Le Choc des Sections
+def choc_des_sections():
+    """Deter en haut, Toxique en bas ; la coupe passe en biais au milieu."""
+    haut = couvrir(illustration(GOTAGA), W, 760, cx=.52, cy=.5)
+    haut = ImageEnhance.Contrast(ImageEnhance.Brightness(haut).enhance(.56)).enhance(1.15)
+    haut = teinter(haut, ((10, 4, 28), (96, 40, 200), (226, 214, 255)), .4)
+    bas = couvrir(illustration(SQUEEZIE), W, 760, cx=.4, cy=.35)
+    bas = teinter(ImageEnhance.Brightness(bas).enhance(.85), VERT, .35)
     im = Image.new('RGB', (W, H), NUIT)
-    px = im.load()
-    for y in range(H):
-        t = y / (H - 1)
-        haut = melange((40, 12, 84), (22, 8, 40), min(1, t * 2))
-        bas = melange((8, 22, 12), (18, 58, 24), max(0, t * 2 - 1))
-        c = haut if t < .5 else bas
-        for x in range(W):
-            px[x, y] = c
-    im = im.convert('RGBA')
-    # Deux projecteurs, un par camp.
-    im = Image.alpha_composite(im, lueur((W, H), (W * .5, H * .22), (330, 260), MAUVE, .55, 70))
-    im = Image.alpha_composite(im, lueur((W, H), (W * .5, H * .78), (330, 260), ROSE, .5, 70))
-    # Le sol de l'arene : des anneaux concentriques, et des rayons.
-    sol = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    ds = ImageDraw.Draw(sol)
-    cx, cy = W / 2, H / 2
-    for i, r in enumerate((120, 210, 300, 400, 520, 660)):
-        a = 70 - i * 8
-        ds.ellipse((cx - r, cy - r * .62, cx + r, cy + r * .62), outline=(255, 255, 255, a), width=2)
-    for k in range(16):
-        ang = k * math.pi / 8
-        ds.line((cx + math.cos(ang) * 130, cy + math.sin(ang) * 130 * .62,
-                 cx + math.cos(ang) * 700, cy + math.sin(ang) * 700 * .62), fill=(255, 255, 255, 18), width=1)
-    im = Image.alpha_composite(im, sol.filter(ImageFilter.GaussianBlur(.6)))
-    # Les hexagones d'un ecran de tournoi, tres discrets.
-    hexa = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dh = ImageDraw.Draw(hexa)
-    r = 34
-    for row in range(-1, int(H / (r * 1.5)) + 2):
-        for col in range(-1, int(W / (r * 1.73)) + 2):
-            x = col * r * 1.732 + (r * .866 if row % 2 else 0)
-            y = row * r * 1.5
-            c = MAUVE2 if y < H / 2 else ROSE2
-            a = 16 if abs(y - H / 2) > 180 else 6
-            pts = [(x + r * math.cos(math.pi / 6 + k * math.pi / 3), y + r * math.sin(math.pi / 6 + k * math.pi / 3)) for k in range(6)]
-            dh.polygon(pts, outline=c + (a,))
-    im = Image.alpha_composite(im, hexa)
-    # La faille : un eclair horizontal, avec son halo.
-    halo = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dl = ImageDraw.Draw(halo)
-    pts = ligne_brisee(rand, -10, W + 10, H / 2, 26, 60)
-    eclair(dl, pts, (255, 140, 220, 255), 26)
-    im = Image.alpha_composite(im, halo.filter(ImageFilter.GaussianBlur(18)))
-    trait = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dt = ImageDraw.Draw(trait)
-    eclair(dt, pts, (255, 220, 245, 230), 4)
-    for _ in range(9):
-        i = rand.randrange(1, len(pts) - 1)
-        x, y = pts[i]
-        bx = [(x, y)]
-        sens = rand.choice((-1, 1))
-        for _ in range(3):
-            x += rand.uniform(-30, 30)
-            y += sens * rand.uniform(18, 40)
-            bx.append((x, y))
-        eclair(dt, bx, (255, 200, 240, 150), 2)
-    im = Image.alpha_composite(im, trait)
-    # Des etincelles.
-    et = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    de = ImageDraw.Draw(et)
-    for _ in range(140):
-        x, y = rand.uniform(0, W), rand.gauss(H / 2, 160)
-        s = rand.uniform(.8, 2.4)
-        c = MAUVE2 if y < H / 2 else ROSE2
-        de.ellipse((x - s, y - s, x + s, y + s), fill=c + (rand.randrange(60, 200),))
-    im = Image.alpha_composite(im, et.filter(ImageFilter.GaussianBlur(.4)))
-    enregistrer_tapis(finitions(im.convert('RGB')), 't_arene')
+    im.paste(bas, (0, H - 760))
+    a, b = (0, 668), (W, 612)
+    masque = Image.new('L', (W, H), 0)
+    ImageDraw.Draw(masque).polygon([(0, 0), (W, 0), b, a], fill=255)
+    toile = Image.new('RGB', (W, H), NUIT)
+    toile.paste(haut, (0, 0))
+    im = Image.composite(toile, im, masque)
+    im = finitions(im, bande=70)
+    im = Image.alpha_composite(im.convert('RGBA'), coupe((W, H), a, b, ((196, 181, 253), (183, 242, 154)))).convert('RGB')
+    enregistrer_tapis(filet(im), 't_arene')
 
 
-# ----------------------------------------------------------- L'Orage
-def orage():
-    """Le ciel de The French Sorcerer : des nuages d'orage mauves qui
-    roulent en haut et en bas, une pluie fine en biais, et ses eclairs qui
-    tombent sur les bords du plateau. Le milieu reste calme et sombre, pour
-    les cartes."""
-    rand = random.Random(116)
-    im = Image.new('RGB', (W, H), NUIT)
-    px = im.load()
-    for y in range(H):
-        t = y / (H - 1)
-        c = melange((34, 12, 58), (12, 6, 22), 1 - abs(t - .5) * 2)
-        for x in range(W):
-            px[x, y] = c
-    im = im.convert('RGBA')
-    # Les nuages : des volutes floues, plus denses aux deux bords du plateau.
-    nu = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dn = ImageDraw.Draw(nu)
-    for bord in (0, 1):
-        for _ in range(70):
-            x = rand.uniform(-80, W + 80)
-            y0 = rand.uniform(-40, 300)
-            y = y0 if bord == 0 else H - y0
-            r = rand.uniform(60, 150)
-            c = melange((90, 40, 150), (180, 110, 230), rand.random() * .6)
-            dn.ellipse((x - r, y - r * .6, x + r, y + r * .6), fill=c + (rand.randrange(18, 46),))
-    im = Image.alpha_composite(im, nu.filter(ImageFilter.GaussianBlur(26)))
-    im = Image.alpha_composite(im, lueur((W, H), (W * .5, H * .1), (360, 200), (236, 143, 255), .32, 80))
-    im = Image.alpha_composite(im, lueur((W, H), (W * .5, H * .9), (360, 200), (236, 143, 255), .26, 80))
-    # La pluie, fine et en biais.
-    pl = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dp = ImageDraw.Draw(pl)
-    for _ in range(520):
-        x, y = rand.uniform(-100, W + 40), rand.uniform(0, H)
-        l = rand.uniform(14, 34)
-        dp.line((x, y, x + l * .32, y + l), fill=(220, 200, 255, rand.randrange(14, 46)), width=1)
-    im = Image.alpha_composite(im, pl)
-
-    # Les eclairs : un tronc qui tombe en zigzag, des branches qui s'en
-    # detachent ; un halo flou dessous, un trait blanc-mauve dessus.
-    def foudre(x, y, vers_y, sens, larg):
-        pts = [(x, y)]
-        while (y < vers_y) if sens > 0 else (y > vers_y):
-            x += rand.uniform(-34, 34)
-            y += sens * rand.uniform(26, 52)
-            pts.append((x, y))
-        return pts
-    halo = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    trait = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dh, dt = ImageDraw.Draw(halo), ImageDraw.Draw(trait)
-    for (x0, y0, y1, sens) in ((110, -10, 420, 1), (620, -10, 360, 1), (150, H + 10, H - 380, -1), (590, H + 10, H - 430, -1)):
-        tronc = foudre(x0, y0, y1, sens, 4)
-        eclair(dh, tronc, (236, 143, 255, 255), 22)
-        eclair(dt, tronc, (250, 232, 255, 240), 4)
-        for _ in range(4):
-            i = rand.randrange(1, len(tronc) - 1)
-            x, y = tronc[i]
-            br = [(x, y)]
-            cote = rand.choice((-1, 1))
-            for _ in range(rand.randrange(2, 5)):
-                x += cote * rand.uniform(10, 34)
-                y += sens * rand.uniform(18, 36)
-                br.append((x, y))
-            eclair(dh, br, (201, 140, 255, 200), 10)
-            eclair(dt, br, (236, 200, 255, 170), 2)
-    im = Image.alpha_composite(im, halo.filter(ImageFilter.GaussianBlur(14)))
-    im = Image.alpha_composite(im, trait)
-    # Des escarbilles d'electricite.
-    et = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    de = ImageDraw.Draw(et)
-    for _ in range(110):
-        x = rand.uniform(0, W)
-        y = rand.choice((rand.uniform(0, H * .3), rand.uniform(H * .7, H)))
-        s = rand.uniform(.6, 2.2)
-        de.ellipse((x - s, y - s, x + s, y + s), fill=(240, 210, 255, rand.randrange(50, 190)))
-    im = Image.alpha_composite(im, et)
-    enregistrer_tapis(finitions(im.convert('RGB')), 't_orage')
+# ------------------------------------------------- The French Sorcerer
+def french_sorcerer():
+    """L'illustration en grand dans le camp du haut et jusqu'au milieu ;
+    elle se fond ensuite dans le violet sombre de son ciel."""
+    art = illustration(SORCIER)
+    fond = couvrir(art, W, H, cx=.45, cy=.5).filter(ImageFilter.GaussianBlur(30))
+    fond = teinter(ImageEnhance.Brightness(fond).enhance(.42), VIOLET, .45)
+    grand = couvrir(art, W, 860, cx=.42, cy=.5).filter(ImageFilter.UnsharpMask(2, 60, 2))
+    grand = ImageEnhance.Brightness(grand).enhance(.84)
+    m = Image.new('L', grand.size, 255)
+    dm = ImageDraw.Draw(m)
+    for y in range(260):
+        dm.line((0, grand.height - 1 - y, W, grand.height - 1 - y), fill=round(255 * (y / 260) ** 1.4))
+    fond.paste(grand, (0, 0), m)
+    im = finitions(fond)
+    enregistrer_tapis(filet(im), 't_orage')
 
 
-# ----------------------------------------------------------- la sleeve
+# ------------------------------------------------- La sleeve
 def sleeve():
-    """Le dos des cartes : coupe en diagonale, violet et vert, un eclair dans
-    la coupure, et l'ecusson du Choc au milieu."""
-    w, h = 360, 498
-    rand = random.Random(8)
-    im = Image.new('RGBA', (w, h), NUIT + (255,))
-    px = im.load()
-    for y in range(h):
-        for x in range(w):
-            d = (x / w - y / h)  # > 0 : en haut a droite
-            if d > 0:
-                c = melange((80, 30, 170), (34, 10, 72), min(1, d * 1.6))
-            else:
-                c = melange((40, 120, 32), (10, 40, 14), min(1, -d * 1.6))
-            px[x, y] = c + (255,)
-    # La coupure.
-    pts = []
-    for i in range(13):
-        t = i / 12
-        pts.append((t * w + rand.uniform(-8, 8), t * h + rand.uniform(-8, 8)))
-    halo = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(halo).line(pts, fill=(220, 210, 255, 255), width=12, joint='curve')
-    im = Image.alpha_composite(im, halo.filter(ImageFilter.GaussianBlur(9)))
-    tr = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(tr).line(pts, fill=(245, 242, 255, 240), width=3, joint='curve')
-    im = Image.alpha_composite(im, tr)
-    # L'ecusson.
-    ec = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    de = ImageDraw.Draw(ec)
-    cx, cy = w / 2, h / 2
-    bouclier = [(cx, cy - 92), (cx + 78, cy - 62), (cx + 70, cy + 30), (cx, cy + 96), (cx - 70, cy + 30), (cx - 78, cy - 62)]
-    ombre = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(ombre).polygon([(x, y + 6) for x, y in bouclier], fill=(0, 0, 0, 150))
-    im = Image.alpha_composite(im, ombre.filter(ImageFilter.GaussianBlur(8)))
-    de.polygon(bouclier, fill=(18, 10, 28, 235), outline=OR + (255,))
-    de.line(bouclier + [bouclier[0]], fill=OR + (255,), width=4, joint='curve')
-    interieur = [(cx + (x - cx) * .84, cy + (y - cy) * .84) for x, y in bouclier]
-    de.line(interieur + [interieur[0]], fill=OR + (120,), width=1)
-    # Deux etoiles, une par Section, et l'eclair entre elles.
-    def etoile(x, y, r, c):
-        p = []
-        for k in range(10):
-            a = -math.pi / 2 + k * math.pi / 5
-            rr = r if k % 2 == 0 else r * .45
-            p.append((x + rr * math.cos(a), y + rr * math.sin(a)))
-        de.polygon(p, fill=c)
-    etoile(cx - 30, cy - 18, 24, ROSE + (255,))
-    etoile(cx + 30, cy - 18, 24, MAUVE + (255,))
-    de.polygon([(cx + 6, cy - 52), (cx - 10, cy - 8), (cx + 2, cy - 8), (cx - 8, cy + 26), (cx + 14, cy - 18), (cx + 2, cy - 18)],
-               fill=(255, 240, 200, 255))
-    f = police(19)
-    texte = 'LE CHOC'
-    tw = de.textlength(texte, font=f)
-    de.text((cx - tw / 2, cy + 34), texte, font=f, fill=OR + (255,))
-    im = Image.alpha_composite(im, ec)
-    # Le bord dore.
-    bord = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    db = ImageDraw.Draw(bord)
-    db.rounded_rectangle((6, 6, w - 7, h - 7), radius=18, outline=OR + (220,), width=3)
-    db.rounded_rectangle((14, 14, w - 15, h - 15), radius=12, outline=OR + (90,), width=1)
-    im = Image.alpha_composite(im, bord)
+    """Le dos officiel, recolore : vert a gauche, violet a droite."""
+    dos = Image.open(os.path.join(ROOT, 'assets', 'card-back.webp')).convert('RGBA')
+    w, h = 360, round(360 * dos.height / dos.width)
+    dos = dos.resize((w, h), Image.LANCZOS)
+    alpha = dos.getchannel('A')
+    gris = ImageEnhance.Contrast(ImageOps.grayscale(dos.convert('RGB'))).enhance(1.25)
+    vert = ImageOps.colorize(gris, (3, 20, 8), (214, 250, 196), (40, 150, 48))
+    violet = ImageOps.colorize(gris, (12, 4, 32), (232, 224, 255), (102, 44, 206))
+    a, b = (round(w * .64), 0), (round(w * .36), h)
+    masque = Image.new('L', (w, h), 0)
+    ImageDraw.Draw(masque).polygon([(0, 0), a, b, (0, h)], fill=255)
+    im = Image.composite(vert, violet, masque).convert('RGBA')
+    im = Image.alpha_composite(im, coupe((w, h), a, b, ((183, 242, 154), (196, 181, 253)), epaisseur=2))
+    im.putalpha(alpha)
     d = dossier('sleeves')
-    im.convert('RGB').save(os.path.join(d, 's_choc.webp'), 'WEBP', quality=86, method=6)
+    im.save(os.path.join(d, 's_choc.webp'), 'WEBP', quality=86, method=6)
     print('sleeve s_choc', (w, h))
 
 
 if __name__ == '__main__':
-    arene()
-    orage()
+    choc_des_sections()
+    french_sorcerer()
     sleeve()

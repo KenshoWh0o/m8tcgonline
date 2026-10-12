@@ -33,7 +33,7 @@ const RAID = {
   /* Ce que rapporte un combat : par PV pris, et s'il tombe (+ bonusDegats
      sur la barre). Pendant le Choc, en Insignes ; sinon, en Éclats. */
   parDegat: 3, victoire: 15, bonusDegats: 3,
-  parDegatEclats: 4, victoireEclats: 20,
+  parDegatEclats: 2, victoireEclats: 15,
   /* Le coffre d'un niveau tombé, à tour de rôle. */
   coffres: [
     { type: 'boosters', montant: 2, titre: '2 boosters' },

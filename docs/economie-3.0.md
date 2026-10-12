@@ -88,37 +88,68 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 - **C'est voulu, et c'est un choix** : sans plafond, celui qui joue le plus gagne le plus. La pente de la courbe (plafond à 1 100 XP par niveau) et le fait que les paliers s'espacent limitent l'écart, sans le supprimer.
 - **Ce qu'on ne sait pas** : la durée réelle d'une partie. [fait] Une partie IA contre IA dure en moyenne 12 tours au total, soit 6 par joueur (`node tools/combat-sim.js ia 60`, niveau 3). [hypothèse] Avec un humain, qui lit et choisit, cela donnerait 3 à 5 minutes ; ce n'est mesuré sur personne. On ne sait pas non plus quelle part des joueurs enchaînera les combats. Si les parties sont plus courtes, tout va plus vite d'autant. Les « 6 tours » de la règle des défaites sont des tours de la partie (les deux joueurs comptés), donc environ la moitié d'une partie moyenne.
 
-## 3. L'événement « Le Choc des Sections » (21 jours)
+## 3. L'événement « Le Choc des Sections » (21 jours) et le Raid
+
+### Le Raid, toute l'année [fait] `RAID`, `js/combat/choc-data.js` ; `supabase/27_raid.sql`
+
+- Un boss commun à tout le serveur, The French Sorcerer, par **niveaux**. La barre d'un niveau vaut `300 + 150 × (n − 1)` dégâts, multipliés sur le vrai serveur par `parametres.raid_echelle` (1 par défaut).
+- Chaque PV pris au boss en combat fait un dégât sur la barre ; le faire tomber ajoute 3 dégâts. Les dégâts d'un combat sont plafonnés côté serveur (PV du boss + 1, + 3 s'il tombe).
+- Trois tentatives par jour. Le combat durcit avec le niveau : IA de 3 à 5 étoiles, boss de 6 à 9 PV, jusqu'à 2 Essences d'avance.
+- Quand la barre est vide, **chacun de ceux qui ont frappé ce niveau** ouvre un coffre, à tour de rôle : 2 boosters, 300 Fragments, 3 boosters, 400 Éclats. Le boss revient au niveau suivant ; les dégâts en trop passent sur la nouvelle barre.
+- Ce que paie un combat : pendant le Choc, 3 Insignes par dégât et 15 si le boss tombe ; le reste de l'année, 2 Éclats par dégât et 15 s'il tombe. Une victoire compte « PV du boss + 1 » dégâts (le PV qui manque fait gagner), plus les 3 du bonus.
+
+| [calcul] Par jour, au plus (3 victoires) | Boss à 6 PV (niveaux 1-2) | Boss à 9 PV (niveau 7 et plus) |
+|---|---|---|
+| Dégâts par victoire | 6 + 1 + 3 = 10 | 9 + 1 + 3 = 13 |
+| Hors événement, en Éclats | 3 × (10 × 2 + 15) = 105 | 3 × (13 × 2 + 15) = 123 |
+| Pendant le Choc, en Insignes | 3 × (10 × 3 + 15) = 135 | 3 × (13 × 3 + 15) = 162 |
+
+- **[calcul]** Hors événement, le Raid ajoute donc jusqu'à ≈ 105-125 Éclats par jour à un joueur qui gagne ses trois tentatives, l'équivalent de cinq victoires payées en Normal, en plus de celles-ci. Un premier réglage (4 Éclats par dégât, 20 par victoire) montait à 216 par jour, soit ≈ +50 % de revenu pour un joueur actif : jugé trop généreux, il a été divisé par deux environ avant la sortie.
+- **[inconnu]** La vitesse à laquelle les niveaux tombent : elle dépend du nombre de joueurs qui frappent. Un joueur engagé fait ≈ 20 dégâts par jour ; il faut ≈ 15 joueurs engagés pour faire tomber le niveau 1 en un jour, ≈ 30 pour le niveau 5 (900 dégâts). Le réglage se fait sans redéployer : `update public.parametres set raid_echelle = … where id = 1;`.
 
 ### Ce que rapportent les Insignes [calcul]
 
 | Source | Par jour, au plus |
 |---|---|
 | Quêtes du jour | 75 |
-| Raid : 3 tentatives, 3 Insignes par dégât, + 15 si le boss tombe | 153 (3 victoires en phase 5) |
+| Raid : 3 tentatives (voir plus haut) | 135 à 162 |
 | Épreuve : 5 par essai, + 25 à la première victoire | 40 |
 | Quêtes de l'événement (une fois) | 670 au total |
 
 | Profil [hypothèse] | Insignes sur 21 jours | Pass (30 paliers, 3 500 pour le dernier) |
 |---|---|---|
-| Tout au maximum | ≈ 6 300 | fini vers le 12ᵉ jour |
+| Tout au maximum | ≈ 6 500 | fini vers le 11ᵉ jour |
 | Engagé (toutes les quêtes du jour, 3 Raids, 3 Épreuves) | ≈ 4 000 | fini vers le 18ᵉ jour |
 | Occasionnel (1 Raid, 1 Épreuve, la moitié des quêtes) | ≈ 2 000 | palier 19 ou 20 |
 
-- Le Pass du Choc rapporte en tout : 23 boosters, 2 200 Éclats, 3 050 Fragments, 4 Reverses Rares, 2 Essences Brillantes, une Légendaire manquante, un sleeve, un tapis, un cadre et 3 titres. [fait] `PISTE_CHOC`, `_demo/serveur.js`. C'est plus gros que le Pass Reflets (14 boosters, 1 350 Éclats, 1 250 Fragments). C'était la demande : « encore plus big ».
-- Tout acheter dans la boutique coûte 3 140 Insignes. [calcul]
+### Le Pass [fait] `PISTE_CHOC`, `_demo/serveur.js` ; `evt_piste`, `supabase/25_choc.sql`
 
-### La barre commune du Raid : la grande inconnue
+- Il rapporte en tout : 23 boosters, 2 200 Éclats, 3 750 Fragments, 5 Reverses Rares, **une** Essence Brillante (palier 15), le sleeve « Le Choc » (palier 8), le cadre « Choc » (palier 12), trois titres, et au bout, au palier 30, le tapis « Le Choc des Sections ».
+- Retirés à la demande : la Légendaire du palier 30 (« trop op ») et la seconde Essence Brillante (palier 25). Le palier 30 est désormais le tapis (il était au palier 20) ; le 20 donne une Reverse Rare, le 25, 700 Fragments.
+- C'est plus gros que le Pass Reflets (14 boosters, 1 350 Éclats, 1 250 Fragments), sans carte rare garantie au-delà d'une Essence Brillante.
 
-- **[fait]** Les cinq phases totalisent 5 000 dégâts (400 + 600 + 900 + 1 300 + 1 800), multipliés sur le vrai serveur par `parametres.raid_echelle` (1 par défaut).
-- **[calcul]** Un joueur engagé inflige ≈ 22 dégâts par jour, soit ≈ 460 sur l'événement. Il faut donc ≈ 11 joueurs engagés, ou ≈ 25 occasionnels, pour faire tomber les cinq phases.
-- **[fait]** Les phases ne peuvent pas tomber plus vite que le calendrier : la phase n ne commence qu'à son jour d'ouverture (jours 1, 4, 8, 12 et 16 de l'événement, `choc_phases.ouvre`). Une phase vidée avant l'ouverture de la suivante reste à terre : on peut toujours combattre le Sorcier, et les dégâts comptent pour chacun (Insignes, quêtes, classement), mais pas pour la barre suivante. Un serveur très actif ne finit donc pas le Raid en deux jours ; un serveur peu actif peut, lui, ne pas le finir — d'où `raid_echelle`.
-- **[inconnu]** Le nombre de joueurs actifs pendant l'événement. Le réglage se fait sans redéployer : `update public.parametres set raid_echelle = … where id = 1;`. Une règle simple : `raid_echelle ≈ joueurs actifs attendus ÷ 15`. Ensuite, le surveiller pendant la première semaine.
-- **[fait]** Le serveur ne rejoue pas les combats contre l'IA. Il croit le client sur le résultat, pour le PvE comme pour le Raid, comme l'ensemble du PvE de la 3.0. Trois garde-fous existent : les dégâts d'un combat sont plafonnés (PV du boss + 1, + 3 s'il tombe), un combat doit durer au moins 20 s, et on a 3 tentatives par jour. Un tricheur peut donc gagner au plus 51 Insignes et 12 dégâts par tentative (54 et 13 pendant le rappel, après la 5ᵉ phase). Pour les défis entre amis, le serveur de démo rejoue la partie, puisqu'il dispose du moteur en JavaScript. Le vrai serveur ne le peut pas : Postgres n'exécute pas ce moteur. Chaque joueur y déclare donc son résultat, comme en PvE, et un désaccord entre les deux déclarations est enregistré (`defis.desaccord`) pour que l'administration puisse le voir.
+### La boutique de l'événement [fait] `04_seed.sql`, `_demo/serveur.js`
+
+| Article | Prix | Limite | Total |
+|---|---|---|---|
+| 2 boosters | 80 | 10 | 800 |
+| 5 boosters | 180 | 3 | 540 |
+| 500 Fragments | 70 | 8 | 560 |
+| Tapis « The French Sorcerer » | 600 | 1 | 600 |
+| Titre « Supporter du Choc » | 200 | 1 | 200 |
+
+- Tout acheter coûte **2 700 Insignes** [calcul] (3 140 avant). Retirés à la demande : l'Essence Brillante et la Reverse Rare. Pour que les Insignes gardent un usage, les boosters et les Fragments y sont un peu moins chers et plus nombreux, et un lot de 5 boosters s'ajoute.
+- [hypothèse] Un joueur engagé (≈ 4 000 Insignes) peut tout acheter ; un occasionnel (≈ 2 000) prend le tapis, le titre et une partie des boosters.
+- Le Pass compte les Insignes **gagnées**, la boutique dépense le **solde** : acheter ne fait pas reculer dans le Pass.
+
+### Ce que le serveur croit sur parole [fait]
+
+- Le serveur ne rejoue pas les combats contre l'IA : il croit le client sur le résultat, pour le PvE comme pour le Raid. Trois garde-fous : les dégâts d'un combat sont plafonnés (PV du boss + 1, + 3 s'il tombe), un combat doit durer au moins 20 s, et on a 3 tentatives par jour. Un tricheur peut donc gagner au plus 54 Insignes (ou 41 Éclats) et 13 dégâts par tentative.
+- Pour les défis entre amis, le serveur de démo rejoue la partie, puisqu'il dispose du moteur en JavaScript. Le vrai serveur ne le peut pas : Postgres n'exécute pas ce moteur. Chaque joueur y déclare donc son résultat, et un désaccord entre les deux déclarations est enregistré (`defis.desaccord`) pour que l'administration puisse le voir.
 
 ## 4. Ce qui reste ouvert
 
 1. Le rythme réel de jeu des combats : à mesurer après l'ouverture (voir l'introduction). Il fixe aussi la vitesse de montée en niveau (partie 2 bis).
-2. La valeur de `raid_echelle` au lancement : elle dépend du nombre de joueurs.
+2. La valeur de `raid_echelle` au lancement : elle dépend du nombre de joueurs, et décide de la fréquence des coffres du Raid.
 3. Le prix des cosmétiques de combat (4 000 à 5 000 Éclats par tapis) est une proposition. Rien ne permet encore de dire s'il est trop haut ou trop bas.
 4. Les règles du jeu elles-mêmes sont reconstituées (`docs/regles-3.0.md`). Si les vraies règles changent la durée d'une partie, le rythme des gains change avec elle.

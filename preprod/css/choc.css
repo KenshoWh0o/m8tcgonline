@@ -10,52 +10,97 @@
 .sac.prismes .insigneico + b{color:var(--gold)}
 
 /* ============ L'en-tête : les deux Sections face à face ============ */
-/* Chaque Starter Deck sur la couleur de sa Section, séparés par une coupe en
-   biais. L'illustration du Sorcier est réservée au Raid : l'en-tête ne la
-   répète pas. */
-.ch-tete{background:#16151e;padding-top:18px}
+/* Une illustration par Section — Squeezie le Toxique, Gotaga Pose —, teintée
+   à sa couleur et fondue dans le fond : à gauche sous le titre (assombrie
+   pour qu'il se lise), à droite en pleine lumière. Une coupe en biais qui
+   brille les sépare, le VS posé dessus. Les pourcentages de la coupe sont
+   les mêmes partout : elle reste droite quelle que soit la largeur. */
+.ch-tete{background:#16151e;padding-top:18px;min-height:212px}
 .ch-tete::before{display:none}
-.ch-tete::after{background:linear-gradient(90deg,rgba(22,21,30,1) 0%,rgba(22,21,30,.9) 38%,rgba(22,21,30,0) 56%)}
-.ch-affiche{position:absolute;inset:0;z-index:-3;display:flex;pointer-events:none;overflow:hidden}
-.ch-aff-sec{position:relative;flex:1;display:grid;place-items:center;overflow:hidden}
-.ch-aff-sec.toxique{margin-left:42%;background:radial-gradient(90% 90% at 50% 60%,rgba(98,216,78,.5),rgba(98,216,78,.08) 70%),#14251a;
-  clip-path:polygon(0 0,100% 0,88% 100%,0 100%)}
-.ch-aff-sec.deter{margin-left:-12%;background:radial-gradient(90% 90% at 50% 60%,rgba(124,58,237,.6),rgba(124,58,237,.1) 70%),#1c1430;
-  clip-path:polygon(12% 0,100% 0,100% 100%,0 100%)}
-.ch-aff-sec img{width:96%;max-width:150px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
-.ch-aff-sec.toxique img{rotate:-7deg;translate:-6% 8%}
-.ch-aff-sec.deter img{rotate:7deg;translate:6% 8%}
-.ch-aff-vs{position:absolute;left:72%;top:50%;z-index:2;translate:-50% -50%;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
-  font-family:var(--display);font-style:italic;font-weight:900;font-size:14px;color:#fff;background:#16151e;box-shadow:0 0 0 2px rgba(255,255,255,.25),0 6px 16px rgba(0,0,0,.5)}
-/* Le texte à gauche, les deux boîtes à droite : les compteurs passent sous
-   le titre pour ne pas mordre sur les boîtes. */
-.ch-tete{min-height:200px}
+.ch-tete::after{background:linear-gradient(90deg,rgba(22,21,30,.9) 0%,rgba(22,21,30,.55) 26%,rgba(22,21,30,.05) 48%,rgba(22,21,30,0) 70%),
+  linear-gradient(180deg,rgba(22,21,30,.25) 0%,rgba(22,21,30,0) 30%,rgba(22,21,30,.2) 60%,rgba(22,21,30,.92) 88%,#16151e)}
+.ch-affiche{position:absolute;inset:0;z-index:-3;pointer-events:none;overflow:hidden}
+.ch-aff-sec{position:absolute;top:0;bottom:0;background-repeat:no-repeat;background-size:cover}
+.ch-aff-sec::after{content:"";position:absolute;inset:0;mix-blend-mode:color}
+.ch-aff-sec.toxique{left:0;width:72%;background-image:url('../assets/combat/choc-toxique.webp?v=3.0.4');background-position:12% 24%;
+  clip-path:polygon(0 0,100% 0,77.8% 100%,0 100%)}
+.ch-aff-sec.toxique::after{background:radial-gradient(80% 90% at 70% 40%,rgba(98,216,78,.3),rgba(98,216,78,.12))}
+.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp?v=3.0.4');background-position:52% 30%;
+  clip-path:polygon(36.4% 0,100% 0,100% 100%,0 100%)}
+.ch-aff-sec.deter::after{background:rgba(124,58,237,.36)}
+.ch-aff-coupe{position:absolute;inset:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.7)) drop-shadow(0 0 14px rgba(179,166,255,.8))}
+.ch-aff-coupe i{position:absolute;inset:0;background:linear-gradient(180deg,#b7f29a,#fff 45%,#c4b5fd);
+  clip-path:polygon(calc(72% - 2px) 0,calc(72% + 2px) 0,calc(56% + 2px) 100%,calc(56% - 2px) 100%)}
+.ch-aff-vs{position:absolute;left:66%;top:36%;z-index:2;translate:-50% -50%;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;
+  font-family:var(--display);font-style:italic;font-weight:900;font-size:14px;color:#fff;background:#16151e;
+  box-shadow:0 0 0 2px rgba(255,255,255,.85),0 0 18px rgba(179,166,255,.8),0 6px 16px rgba(0,0,0,.5)}
+/* Le texte à gauche : les compteurs passent sous le titre. */
 .ch-tete .rf-tetehaut{flex-direction:column;align-items:flex-start;gap:12px;max-width:58%}
-.ch-tete .rf-tetenom h1{background:none;color:#fff;font-size:32px}
+.ch-tete .rf-tetenom h1{background:none;color:#fff;font-size:32px;text-shadow:0 2px 16px rgba(0,0,0,.6)}
 .ch-tete .rf-tetenom h1 span{display:block;font-size:.52em;letter-spacing:.01em;margin-top:2px}
 .ch-tete .rf-tetechiffres{flex-direction:row;align-items:center;flex-wrap:wrap}
-@media (min-width:640px){.ch-tete .rf-tetehaut{max-width:50%}.ch-tete .rf-tetenom h1{font-size:40px}}
+@media (min-width:640px){.ch-tete{min-height:250px}.ch-tete .rf-tetehaut{max-width:50%}.ch-tete .rf-tetenom h1{font-size:40px}}
 .ch .rf-pastille{background:var(--brand)}
 .rf-solde{cursor:pointer}
 
 /* ============ L'accueil ============ */
 .ch-tuiles{grid-template-columns:repeat(2,1fr)}
 @media (min-width:640px){.ch-tuiles{grid-template-columns:repeat(4,1fr)}}
-.ch-nvboites{display:flex;align-items:center;justify-content:center}
-.ch-nvboites img{width:58%;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
-.ch-nvboites img:first-child{rotate:-8deg;margin-right:-14%}
-.ch-nvboites img:last-child{rotate:8deg}
-.ch-nvsecrete{width:64px;rotate:-5deg}
-.ch-nvniv{display:flex;flex-direction:column;align-items:center;justify-content:center;width:62px;height:62px;border-radius:50%;line-height:1;color:#fff;
-  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 18px -6px var(--accent-glow)}
-.ch-nvniv b{font-family:var(--display);font-weight:900;font-size:24px}
-.ch-nvniv small{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+
+/* Nouveau dans la 3.0 : les Combats en grand, sous le chevalier de leur
+   bandeau ; six tuiles illustrées, chacune mène à ce qu'elle montre. */
+.ch-nouveau{display:flex;flex-direction:column;gap:10px}
+.ch-nv-une{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;gap:12px;min-height:200px;padding:16px;border:0;
+  border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:linear-gradient(180deg,rgba(18,17,25,0) 20%,rgba(18,17,25,.55) 55%,rgba(24,23,33,.97) 88%),
+    radial-gradient(70% 80% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
+    url('../assets/combat/banniere-combats.webp?v=3.0.4') 50% 12%/cover no-repeat,var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.ch-nv-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ch-nv-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.ch-nv-une-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:28px;line-height:1}
+.ch-nv-une-t>span{font-size:13px;color:var(--subtle)}
+.ch-nv-modes{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.ch-nv-modes i{font-style:normal;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(18,17,25,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.ch-nv-grille{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:640px){.ch-nv-grille{grid-template-columns:repeat(3,1fr)}}
+.ch-nv{display:flex;flex-direction:column;overflow:hidden;padding:0;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .18s var(--spring)}
+.ch-nv:active{transform:scale(.97)}
+.ch-nv-art{position:relative;display:grid;place-items:center;height:96px;overflow:hidden;background:var(--surface-2)}
+.ch-nv-art>i{position:absolute;inset:0;background-repeat:no-repeat;background-size:240% auto;background-position:50% 24%}
+.ch-nv-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,27,37,0) 40%,var(--surface))}
+.ch-nv.tapis .ch-nv-art>i{background-size:cover;background-position:50% 30%}
+.ch-nv.raid .ch-nv-art>i{background-size:200% auto;background-position:50% 26%}
+.ch-nv-t{display:flex;flex-direction:column;gap:2px;padding:4px 12px 12px}
+.ch-nv-t b{font-size:14px;font-weight:800}
+.ch-nv-t small{font-size:11.5px;line-height:1.35;color:var(--muted)}
+.ch-nv.niv .ch-nv-art,.ch-nv.guide .ch-nv-art{background:radial-gradient(70% 90% at 50% 30%,rgba(138,120,245,.3),transparent 70%),var(--surface-2)}
+.ch-nv-niv{position:relative;z-index:1;display:grid;place-items:center;width:66px;height:66px;border-radius:50%;
+  background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.14) 0)}
+.ch-nv-niv>span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;line-height:1;color:#fff;
+  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.ch-nv-niv b{font-family:var(--display);font-weight:900;font-size:22px}
+.ch-nv-niv small{font-size:8.5px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
+.ch-nv-ico{position:relative;z-index:1;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;color:var(--deco-ink);background:var(--deco-wash)}
+.ch-nv-ico svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============ Les exclusifs du Pass ============ */
+.ch-exclus{display:flex;flex-direction:column;gap:8px}
+.ch-ex-l{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ch-ex{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px 10px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);cursor:pointer;
+  background:radial-gradient(80% 70% at 50% 30%,rgba(138,120,245,.22),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch-ex.pret{box-shadow:inset 0 0 0 1.5px var(--accent-soft),0 0 18px -6px var(--accent-glow)}
+.ch-ex.pris{opacity:.7}
+.ch-ex-vis{display:grid;place-items:center;height:104px;margin-bottom:4px}
+.ch-ex-tapis{height:104px;aspect-ratio:9/16;object-fit:cover;border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.12)}
+.ch-ex-sleeve{height:96px;border-radius:6px;box-shadow:0 8px 18px rgba(0,0,0,.5)}
+.ch-ex b{font-size:12.5px;line-height:1.15;text-align:center}
+.ch-ex small{font-size:11px;color:var(--muted)}
 
 /* ============ Les icônes des récompenses ============ */
 .ch-ico-tapis{width:24px;height:40px;object-fit:cover;border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
 .ch-ico-sleeve{width:28px;height:39px;object-fit:cover;border-radius:4px}
-.ch-ico-l{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff1c2,var(--gold) 55%,#a7791a)}
-.ch-ico-l svg{width:18px!important;height:18px!important;fill:#4a3200!important;stroke:none!important}
 .rf-palico .insigneico{width:24px;height:24px}
 .ch-gainico{background:linear-gradient(180deg,#8f7dfb,#5d4bd9)!important}
 .ch-gainico .ch-ico-tapis{width:44px;height:76px}
@@ -157,6 +202,12 @@
 /* ============ Les bandeaux (écran Boosters, Combats, Boutique) ============ */
 .chban{background:#16151e}
 .chban::before{display:none}
+/* Le petit bandeau (Boosters, Boutique) reprend l'affiche de l'en-tête :
+   les deux illustrations, la coupe et le VS, sous un voile à gauche pour
+   le texte. */
+.chban::after{background:linear-gradient(90deg,rgba(22,21,30,.95) 0%,rgba(22,21,30,.75) 38%,rgba(22,21,30,.1) 70%,rgba(22,21,30,0))}
+.chban .ch-affiche{z-index:-3}
+.chban .ch-aff-vs{width:30px;height:30px;font-size:11px;top:50%}
 .chban .rfban-txt b{background:none;color:#fff;font-size:19px}
 .chban-sous{font-style:normal;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.8)}
 .chban .rfban-n{background:var(--brand)}
