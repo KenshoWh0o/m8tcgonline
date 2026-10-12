@@ -190,9 +190,10 @@ const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><pat
 /* Le Prisme, monnaie de l'événement (version 2.0). */
 const prismeIco = '<svg class="prismeico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="prg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7cc8"/><stop offset=".5" stop-color="#b38cff"/><stop offset="1" stop-color="#7fd8ff"/></linearGradient></defs><path d="M12 2.5 21 18.5H3Z" fill="url(#prg)"/><path d="M12 2.5 9.4 18.5h5.2Z" fill="#fff" opacity=".35"/></svg>';
 
-/* L'Insigne, monnaie du Choc des Sections (version 3.0) : un écusson moitié
-   rose Toxique, moitié mauve Déter, frappé d'un éclair. */
-const insigneIco = '<svg class="prismeico insigneico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2 20 5.2v6.6c0 4.7-3.3 8.1-8 10-4.7-1.9-8-5.3-8-10V5.2Z" fill="#ee0073"/><path d="M12 2.2 20 5.2v6.6c0 4.7-3.3 8.1-8 10Z" fill="#8936ff"/><path d="M13.2 5.8 9 12.6h3.4l-1.6 5.6 4.6-7.3H12Z" fill="#ffd75e"/></svg>';
+/* L'Insigne, monnaie du Choc des Sections (version 3.0) : un écusson d'or
+   frappé de deux galons, comme un grade. Lisible à 14 px : une forme, deux
+   chevrons, pas de détail qui se brouille. */
+const insigneIco = '<svg class="prismeico insigneico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="insg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a8"/><stop offset=".55" stop-color="#ffc73b"/><stop offset="1" stop-color="#d98a12"/></linearGradient></defs><path d="M12 1.8 20.2 4.9v6.6c0 5-3.4 8.7-8.2 10.7-4.8-2-8.2-5.7-8.2-10.7V4.9Z" fill="url(#insg)" stroke="#8a5600" stroke-width="1.1" stroke-linejoin="round"/><path d="m7.4 9.6 4.6-2.9 4.6 2.9M7.4 13.8 12 10.9l4.6 2.9" fill="none" stroke="#7a4300" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3.3 18.8 5.9v2.2" fill="none" stroke="#fff" stroke-width=".9" stroke-linecap="round" opacity=".7"/></svg>';
 
 /* L'icône de la monnaie de l'événement en cours (MONNAIES_EV, js/config.js). */
 const evIco = () => (evMonnaieCode() === 'choc' ? insigneIco : prismeIco);

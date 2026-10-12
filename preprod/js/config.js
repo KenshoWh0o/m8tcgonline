@@ -215,6 +215,11 @@ const TITRES = {
   t_maitre_choc:{ nom: 'Maître du Choc',           ton: 'EV', comment: 'Palier 29 du Pass du Choc' },
   t_supporter: { nom: 'Supporter du Choc',         ton: 'EV', comment: 'Boutique de l\'événement « Le Choc des Sections »' },
   t_choc:      { nom: 'Vainqueur du Choc',         ton: 'L',  comment: 'Avoir marqué pour la Section gagnante du Choc des Sections' },
+  /* Les niveaux de combattant (js/combat/niveaux.js). */
+  t_bagarreur: { nom: 'Bagarreur',                 ton: 'C',  comment: 'Atteindre le niveau 5 de combattant' },
+  t_veteran_arene:{ nom: 'Vétéran de l\'arène',    ton: 'R',  comment: 'Atteindre le niveau 20 de combattant' },
+  t_maitre_arene:{ nom: 'Maître de l\'arène',      ton: 'E',  comment: 'Atteindre le niveau 40 de combattant' },
+  t_legende_arene:{ nom: 'Légende de l\'arène',    ton: 'L',  comment: 'Atteindre le niveau 50 de combattant' },
   t_admin:     { nom: 'Administrateur',            ton: 'ADM', comment: 'Réservé à l\'équipe du jeu' }
 };
 
@@ -264,7 +269,18 @@ const FRAMES = {
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
   /* Version 3.0 : le Pass et le Raid du Choc des Sections. */
   f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#ee0073', c2: '#8936ff' },
-  f_fils:   { nom: 'Fils d\'or', fx: 'fils', vente: false, c1: '#ffc73b', c2: '#b97a10' }
+  f_foudre: { nom: 'Foudre', fx: 'foudre', vente: false, c1: '#ec8fff', c2: '#6a2bd6' },
+  /* Version 3.0 : les niveaux de combattant (js/combat/niveaux.js), les deux
+     Sections (Boutique), la première Secrète et la maîtrise Prisme (quêtes).
+     Dessinés par tools/cadres-30.py. */
+  f_niv10:  { nom: 'Arène · Bronze', fx: 'niv10', vente: false, c1: '#d08a4c', c2: '#7a3f12' },
+  f_niv20:  { nom: 'Arène · Argent', fx: 'niv20', vente: false, c1: '#c9d1de', c2: '#6f7889' },
+  f_niv30:  { nom: 'Arène · Or', fx: 'niv30', vente: false, c1: '#f2c24a', c2: '#9a620a' },
+  f_niv50:  { nom: 'Arène · Prisme', fx: 'niv50', vente: false, c1: '#b38cff', c2: '#39b8ff' },
+  f_toxique:{ nom: 'Toxique', fx: 'toxique', c1: '#ee0073', c2: '#ffd7f0' },
+  f_deter:  { nom: 'Déter', fx: 'deter', c1: '#8936ff', c2: '#e9dcff' },
+  f_secrete:{ nom: 'Secrète', fx: 'secrete', vente: false, c1: '#c9d6ff', c2: '#ffd0ec' },
+  f_maitrise:{ nom: 'Maîtrise', fx: 'maitrise', vente: false, c1: '#ff7cc8', c2: '#39b8ff' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
@@ -384,10 +400,12 @@ const NAVICO = {
   rotate:'<svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"/><path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"/><path d="M18 2.5V6h-3.5M6 21.5V18h3.5"/></svg>',
   filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>',
   /* Version 3.0 : le Choc des Sections (un écusson frappé d'un éclair), le
-     Raid (la croix du marionnettiste et ses fils), l'Épreuve du jour (un
+     Raid (l'éclair de The French Sorcerer), l'Épreuve du jour (un
      calendrier coché). */
   choc: '<svg viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.6v6.2c0 4.4-3.1 7.6-7.5 9.4-4.4-1.8-7.5-5-7.5-9.4V5.6Z"/><path d="M13 6.5 9.5 12.5h3l-1.5 5 4-6.5h-3Z"/></svg>',
-  fils: '<svg viewBox="0 0 24 24"><path d="M5 5h14M12 2.5v6"/><path d="M6.5 5 5 15M17.5 5 19 15M9 5l-1.5 14M15 5l1.5 14"/><circle cx="5" cy="16.4" r="1.3"/><circle cx="19" cy="16.4" r="1.3"/><circle cx="7.3" cy="20.2" r="1.3"/><circle cx="16.7" cy="20.2" r="1.3"/></svg>',
+  foudre: '<svg viewBox="0 0 24 24"><path d="M13.5 2.5 5.5 13.5h5.6l-1.6 8 8.5-11.4h-5.7Z"/></svg>',
+  /* Le niveau de combattant : trois chevrons de grade. */
+  niveau: '<svg viewBox="0 0 24 24"><path d="m5 11.5 7-5 7 5"/><path d="m5 16.5 7-5 7 5"/><path d="m5 21.5 7-5 7 5" opacity=".55"/></svg>',
   epreuve: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="m9.3 14.3 1.9 1.9 3.6-3.8"/></svg>'
 };
 

@@ -151,13 +151,14 @@ function montrerNouveautes30() {
         </div>
       </div>
       <ol class="bvpoints nvpoints">
-        ${point('sword', 'Les Combats.', 'Une campagne de vingt combats contre la Section adverse, le PvE infini à la difficulté de ton choix, et des défis en direct contre tes amis.')}
+        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt combats, le PvE infini) et Versus en direct contre tes amis, dans une arène en plein écran.')}
+        ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
         ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
-        ${point('quest', 'Les règles, pas à pas.', 'Les Guides de l\'onglet Combats expliquent tout, section par section.')}
-        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, une chance sur 133 par booster. La Légendaire passe à 4,25 %.`)}
-        ${point('star', 'La maîtrise des cartes.', 'Chaque exemplaire obtenu fait monter une carte : Bronze, Argent, Or, Prisme. Tes doublons servent enfin à quelque chose.')}
-        ${point('shop', 'Tapis et sleeves.', 'Six tapis de jeu et deux sleeves en boutique, et tes Essences Brillantes brillent en combat.')}
-        ${choc ? point('choc', 'Le Choc des Sections.', `Le Raid du Marionnettiste, l'Épreuve du jour, des points qui comptent double, un Pass de trente paliers — pendant trois semaines.`) : ''}
+        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, une chance sur 133 par booster, et une finition à part. La Légendaire passe à 4,25 %.`)}
+        ${point('star', 'La maîtrise des cartes.', 'Chaque exemplaire obtenu fait monter une carte : Bronze, Argent, Or, Prisme — un médaillon et un cadre sur la carte. La visionneuse montre chaque palier.')}
+        ${point('user', 'Dix nouveaux cadres.', 'Arène (niveaux 10 à 50), Toxique et Déter, Secrète, Maîtrise, et ceux de l\'événement. Ton profil montre où gagner chacun.')}
+        ${point('shop', 'Tapis et sleeves.', 'Des tapis de jeu et des sleeves en boutique ; en combat, c\'est le tapis de celui qui joue qui s\'affiche.')}
+        ${choc ? point('choc', 'Le Choc des Sections.', `Le Raid contre The French Sorcerer, l'Épreuve du jour, des points qui comptent double, un Pass de trente paliers — pendant trois semaines.`) : ''}
       </ol>`,
     actions: choc
       ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('choc'); } },

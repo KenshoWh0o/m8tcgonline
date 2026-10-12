@@ -33,9 +33,17 @@ const QICO = {
   /* Version 3.0 : les combats, les Secrètes, la maîtrise, le Choc des Sections. */
   combats: 'sword', victoires: 'sword', vaincus: 'sword', victoires_dures: 'sword', defis: 'amis',
   campagne: 'trophy', legende: 'trophy', rarity_S: 'coin', maitrise_3: 'cards', maitrise_4: 'cards',
-  raid: 'fils', raid_degats: 'fils', raid_victoires: 'fils', epreuve: 'epreuve', epreuve_victoires: 'epreuve',
-  points_section: 'choc', deck: 'cards', cosm: 'user'
+  raid: 'foudre', raid_degats: 'foudre', raid_victoires: 'foudre', epreuve: 'epreuve', epreuve_victoires: 'epreuve',
+  points_section: 'choc', deck: 'cards', cosm: 'user',
+  /* L'XP et le niveau de combattant (js/combat/niveaux.js). */
+  xp: 'niveau', niveau: 'niveau'
 };
+
+/* Les quêtes qui parlent de combat : la page Missions de l'onglet Combats
+   les réunit, et les quêtes de saison en font un thème. */
+const METRIQUES_COMBAT = ['combats', 'victoires', 'vaincus', 'victoires_dures', 'defis', 'campagne', 'legende',
+  'xp', 'niveau', 'points_section', 'raid', 'raid_degats', 'raid_victoires', 'epreuve', 'epreuve_victoires'];
+const estMissionCombat = q => METRIQUES_COMBAT.includes(q.metric);
 
 /* ---------- Comptages ---------- */
 const questesDe = scope => (save.quetes || []).filter(q => q.scope === scope);
@@ -239,6 +247,8 @@ document.addEventListener('toggle', e => {
 }, true);
 const JALON_THEMES = [
   ['Collection', m => m === 'collection_pct' || m.startsWith('set_') || m.startsWith('rarity_') || m.startsWith('ex_')],
+  ['Combats', m => METRIQUES_COMBAT.includes(m) && m !== 'niveau'],
+  ['Niveau', m => m === 'niveau'],
   ['Reverses', m => m.startsWith('rset_')],
   ['Boosters', m => m === 'packs'],
   ['Et aussi', () => true]

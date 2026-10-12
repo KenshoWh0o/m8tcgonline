@@ -44,7 +44,7 @@ function attendreAcceptation() {
         toast(`${d.pseudo} accepte ton défi !`);
         SFX.jouer('notif');
         jouerDefi(d.id);
-      } else if (tab === 'combats' && cbVue === 'defis') majDiscrete(true);
+      } else if (tab === 'combats' && cbVue === 'versus') majDiscrete(true);
     } catch (e) { /* on réessaiera */ }
   }, 2000);
 }

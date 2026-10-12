@@ -141,10 +141,23 @@
     ['m_campagne', 'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 20],
     ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l\'IA en Légende.', 21],
     ['m_cent',     'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 22],
-    ['m_secrete',  'milestone', 'rarity_S',         1,  500, null,         'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
+    ['m_secrete',  'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
     ['m_mt_or',    'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d\'or',         'Amène une carte à la maîtrise Or.', 24],
     ['m_mt_or10',  'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l\'or',         'Amène 10 cartes à la maîtrise Or.', 25],
-    ['m_mt_prisme','milestone', 'maitrise_4',       1,  800, null,         'Prisme',                'Amène une carte à la maîtrise Prisme.', 26],
+    ['m_mt_prisme','milestone', 'maitrise_4',       1,  800, 'f_maitrise', 'Prisme',                'Amène une carte à la maîtrise Prisme.', 26],
+    /* L'XP et le niveau de combattant (26_niveaux.sql). */
+    ['d_xp',       'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11],
+    ['w_xp',       'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11],
+    ['m_combats50','milestone', 'combats',         50,  300, null,         'Habitué de l\'arène',    'Joue 50 combats.', 27],
+    ['m_vaincus100','milestone','vaincus',        100,  400, null,         'Cent à terre',          'Vaincs 100 Joueurs adverses.', 28],
+    ['m_defis10',  'milestone', 'defis',           10,  400, null,         'Rival attitré',         'Joue 10 défis contre des amis.', 29],
+    ['m_dures25',  'milestone', 'victoires_dures', 25,  600, null,         'Sans pitié',            'Gagne 25 combats en Difficile ou plus.', 30],
+    ['m_niv5',     'milestone', 'niveau',           5,  100, null,         'Niveau 5',              'Atteins le niveau 5 de combattant.', 31],
+    ['m_niv10',    'milestone', 'niveau',          10,  200, null,         'Niveau 10',             'Atteins le niveau 10 de combattant.', 32],
+    ['m_niv20',    'milestone', 'niveau',          20,  400, null,         'Niveau 20',             'Atteins le niveau 20 de combattant.', 33],
+    ['m_niv30',    'milestone', 'niveau',          30,  600, null,         'Niveau 30',             'Atteins le niveau 30 de combattant.', 34],
+    ['m_niv40',    'milestone', 'niveau',          40,  800, null,         'Niveau 40',             'Atteins le niveau 40 de combattant.', 35],
+    ['m_niv50',    'milestone', 'niveau',          50, 1500, null,         'Niveau 50',             'Atteins le niveau 50 de combattant.', 36],
     ['m_revPC',   'milestone', 'rset_PC',      null,  700, null, 'Reverses Peu communes','Possède toutes les Reverses Peu communes.', 18],
     ['m_revR',    'milestone', 'rset_R',       null, 2500, null, 'Reverses Rares',       'Possède toutes les Reverses Rares.', 19],
     ['m_revALL',  'milestone', 'rset_ALL',     null,    0, 'f_reflet', 'Le Reflet complet', 'Possède les 85 Reverses.', 20],
@@ -176,12 +189,12 @@
        d'événement, c'est l'événement qui lui donne son nom. */
     ['c_visite',  'ev_jour', 'ev_visite',         1, 10, null, 'Au rapport',           'Passe voir l\'événement aujourd\'hui.', 1, 'choc', 'prismes'],
     ['c_combats', 'ev_jour', 'combats',           2, 15, null, 'Deux combats',         'Joue 2 combats, contre l\'IA ou un ami.', 2, 'choc', 'prismes'],
-    ['c_raid',    'ev_jour', 'raid',              1, 15, null, 'Un coup de ciseaux',   'Attaque le Marionnettiste.', 3, 'choc', 'prismes'],
+    ['c_raid',    'ev_jour', 'raid',              1, 15, null, 'Paratonnerre',         'Affronte The French Sorcerer.', 3, 'choc', 'prismes'],
     ['c_epreuve', 'ev_jour', 'epreuve',           1, 10, null, 'L\'Épreuve du jour',   'Tente l\'Épreuve du jour.', 4, 'choc', 'prismes'],
     ['c_vaincus', 'ev_jour', 'vaincus',           6, 15, null, 'Six de chute',         'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'],
     ['c_packs',   'ev_jour', 'packs',             3, 10, null, 'Trois boosters',       'Ouvre 3 boosters aujourd\'hui.', 6, 'choc', 'prismes'],
-    ['c_deg100',  'ev',      'raid_degats',     100, 80, null, 'Cent dégâts',          'Inflige 100 dégâts au Marionnettiste.', 1, 'choc', 'prismes'],
-    ['c_raidv5',  'ev',      'raid_victoires',    5, 60, null, 'Cinq fois à terre',    'Fais tomber le Marionnettiste 5 fois.', 2, 'choc', 'prismes'],
+    ['c_deg100',  'ev',      'raid_degats',     100, 80, null, 'Cent dégâts',          'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'],
+    ['c_raidv5',  'ev',      'raid_victoires',    5, 60, null, 'Cinq fois à terre',    'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'],
     ['c_ep7',     'ev',      'epreuve_victoires', 7, 80, null, 'Sept Épreuves',        'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'],
     ['c_pts',     'ev',      'points_section',   80, 60, null, 'Pour la Section',      'Marque 80 points pour ta Section.', 4, 'choc', 'prismes'],
     ['c_vic30',   'ev',      'victoires',        30, 60, null, 'Trente victoires',     'Gagne 30 combats pendant l\'événement.', 5, 'choc', 'prismes'],
@@ -209,6 +222,8 @@
     ['f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2],
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
     ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4],
+    ['f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5],
+    ['f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6],
     /* Version 3.0 (23_combats.sql) : les tapis de jeu et les sleeves. */
     ['t_chateau',   'tapis',  'Tapis « Le Château »',   'Le château et ses feux d\'artifice, sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1],
     ['t_reverie',   'tapis',  'Tapis « Rêverie »',      'La montagne violette, et les visages dans les nuages.', 4000, 'cosmetique', 1, null, true, 2],
@@ -229,7 +244,7 @@
     ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6],
     ['ch_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 180, 'reverse_R', 1,   null, false, 3, 'prismes', 'choc', 3],
     ['ch_brillante', 'evenement', 'Une Essence Brillante', 'Une Essence Brillante que tu n\'as pas encore.', 450, 'brillante', 1, null, false, 4, 'prismes', 'choc', 1],
-    ['t_theatre',    'evenement', 'Tapis « Le Théâtre »', 'La scène du Marionnettiste, sous tes cartes. Ne se vendra plus après l\'événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
+    ['t_orage',      'evenement', 'Tapis « L\'Orage »', 'Le ciel de The French Sorcerer, sous tes cartes. Ne se vendra plus après l\'événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
     ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 250, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
   ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
@@ -1413,22 +1428,24 @@
   }
 
   /* La version 3.0 : « Le Choc des Sections » prend la suite de Reflets,
-     pour trois semaines à partir de la première visite en 3.0. Les joueurs
-     simulés ont rejoint une Section, et le Raid a déjà commencé : la
-     première phase est entamée. */
+     pour trois semaines. Dans la démo, il a commencé quatre jours avant la
+     première visite en 3.0 : la première phase du Raid est tombée, la
+     deuxième (ouverte au 4e jour) est entamée. Les joueurs simulés ont
+     rejoint une Section. */
   function monde30() {
     if (S.choc) return;
     const ch = chocDe();
     const t = now();
-    S.evenement = { titre: CHOC.nom, code: 'choc', debut: t - 3600000, fin: t + 21 * 86400000,
-      texte: 'La version 3.0 : le Raid du Marionnettiste, l\'Épreuve du jour, et des points de Section qui comptent double.' };
+    const debut = t - 4 * 86400000;
+    S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: debut + 21 * 86400000,
+      texte: 'La version 3.0 : le Raid contre The French Sorcerer, l\'Épreuve du jour, et des points de Section qui comptent double.' };
     [['b_lumen', 'toxique', 24], ['b_mira', 'toxique', 15], ['b_kairo', 'deter', 9], ['b_nova', 'deter', 30]]
       .forEach(([id, sec, d]) => {
         if (!S.profils[id]) return;
         const c = cb(id);
         if (!c.section) { c.section = sec; ajouter(id, SEC_PROMO[sec], 1); }
-        frapperRaid(id, d);
-        ch.raid.joueurs[id].victoires = Math.floor(d / 12);
+        frapperRaid(id, d * 2);
+        ch.raid.joueurs[id].victoires = Math.floor(d / 8);
         S.evt.comptes[id + '|choc'] = { solde: d * 2, total: d * 4 + 30 };
         ch.guerre[sec] += d * 2;
         ch.guerre.contrib[id] = d * 2;
@@ -1628,6 +1645,7 @@
       campagne: { faits: c.faits.slice(), finie: !!c.finie },
       jour: { recompensees: c.jour === auj ? c.recompensees : 0, plafond: PVE_PLAFOND },
       stats: Object.assign({}, c.stats),
+      xp: c.xp || 0,
       guerre: { toxique: g.toxique, deter: g.deter, moi: g.contrib[p] || 0, fin: iso(lundi), prix: '2 boosters et 200 Éclats', passee: guerrePassee(p) },
       defis: (S.defis || []).filter(d => (d.de === p || d.pour === p) && ['attente', 'en_cours'].includes(d.statut)).map(d => {
         const o = profil(d.de === p ? d.pour : d.de);
@@ -1701,7 +1719,8 @@
       if (p_mode === 'raid') {
         const k = p + '|' + auj;
         if ((ch.tentatives[k] || 0) >= CHOC.raid.tentatives) refuser('Plus de tentative aujourd\'hui : reviens demain.');
-        if (String(ch.raid.phase) !== String(p_cle)) refuser('Le Marionnettiste a changé de phase : recharge la page du Raid.');
+        avancerRaid();
+        if (String(ch.raid.phase) !== String(p_cle)) refuser('Le Sorcier a changé de phase : recharge la page du Raid.');
         ch.tentatives[k] = (ch.tentatives[k] || 0) + 1;
         phase = ch.raid.phase;
         niveau = chocPhase(phase).ia;
@@ -1729,6 +1748,33 @@
   };
 
   /* combat_fin : le résultat, et ce qu'il rapporte. */
+  /* gagner_xp, 26_niveaux.sql : chaque niveau franchi paie ; les quêtes
+     « xp » avancent, les quêtes « niveau » suivent le niveau atteint. */
+  function gagnerXp(p, d) {
+    if (!(d > 0)) return null;
+    const c = cb(p);
+    const avant = niveauDe(c.xp || 0).niveau;
+    c.xp = (c.xp || 0) + d;
+    const apres = niveauDe(c.xp).niveau;
+    const paliers = [];
+    for (let k = avant + 1; k <= apres; k++) {
+      const r = recompenseNiveau(k);
+      accorder(p, 'eclats', r.eclats);
+      if (r.boosters) accorder(p, 'boosters', r.boosters);
+      if (r.fragments) accorder(p, 'fragments', r.fragments);
+      if (r.cadre) accorder(p, 'cadre', 1, r.cadre);
+      if (r.titre) accorder(p, 'titre', 1, r.titre);
+      paliers.push({ niveau: k, eclats: r.eclats, boosters: r.boosters || 0, fragments: r.fragments || 0, cadre: r.cadre || null, titre: r.titre || null });
+    }
+    bump(p, 'xp', d);
+    QUETES.filter(q => q.metric === 'niveau').forEach(q => {
+      const k = cleQp(p, q);
+      const qp = (S.qp[k] = S.qp[k] || { progress: 0, claimed: false });
+      if (!qp.claimed) qp.progress = Math.max(qp.progress, apres);
+    });
+    return { gagne: d, total: c.xp, avant, niveau: apres, paliers };
+  }
+
   RPC.combat_fin = (p, { p_id, p_gagne, p_resume }) => {
     const c = cb(p);
     const o = (c.ouverts || {})[p_id];
@@ -1740,10 +1786,11 @@
     const res = p_resume || {};
     const trop = now() - o.debut < CB_MIN_MS;
     bump(p, 'combats', 1);
+    if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
     if (o.mode === 'raid' || o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
     if (!p_gagne) {
       c.stats.defaites++;
-      r.message = 'Pas de récompense pour une défaite — mais la quête « Sur le terrain » avance.';
+      r.message = 'Pas d\'Éclats pour une défaite, mais l\'XP compte.';
       return { etat: me(p), recompense: r };
     }
     c.stats.victoires++;
@@ -1884,6 +1931,7 @@
       bump(p, 'defis', 1);
       bump(p, 'combats', 1);
       if (gagne) { bump(p, 'victoires', 1); r.points = marquerPoints(p, DEFI_GAIN.points); }
+      r.xp = gagnerXp(p, xpCombat('defi', 0, gagne, 0, E.tour));
       if (c.defis_rec < DEFI_GAIN.plafond) { c.defis_rec++; r.eclats = gagne ? DEFI_GAIN.victoire : DEFI_GAIN.defaite; profil(p).shards += r.eclats; }
       else r.message = 'Défis récompensés du jour atteints.';
     }
@@ -1908,20 +1956,42 @@
   /* La graine de l'Épreuve : la même pour tout le monde, un jour donné. */
   const graineEpreuve = j => (hacher('choc-epreuve:' + j) % 4294967295) + 1;
 
-  /* Des dégâts sur la barre commune : une phase tombe quand sa barre est
-     vide, et le surplus entame la suivante. Renvoie la phase tombée. */
-  function frapperRaid(p, d) {
+  /* Le jour de l'événement (0 = le premier), à l'heure de Paris. */
+  const jourEv = () => {
+    const e = S.evenement;
+    if (!e || e.code !== 'choc') return 0;
+    return Math.max(0, Math.round((Date.parse(jourParis(now()) + 'T12:00:00Z') - Date.parse(jourParis(e.debut) + 'T12:00:00Z')) / 86400000));
+  };
+  const ouvre = n => (CHOC.raid.phases[n - 1] || CHOC.raid.phases[CHOC.raid.phases.length - 1]).ouvre;
+  /* Le Raid dure les trois semaines (choc_avancer, 25_choc.sql) : une phase
+     tombée ne laisse la place à la suivante que le jour où celle-ci s'ouvre.
+     Entre les deux, le Sorcier reste à terre. */
+  function avancerRaid() {
     const r = chocDe().raid;
+    while (r.phase <= CHOC.raid.phases.length && r.tombees[r.phase] && ouvre(r.phase + 1) <= jourEv()) {
+      r.phase++;
+      r.degats = 0;
+    }
+    return r;
+  }
+
+  /* Des dégâts sur la barre commune : une phase tombe quand sa barre est
+     vide ; le surplus entame la suivante si elle est déjà ouverte. Renvoie
+     la phase qui vient de tomber. */
+  function frapperRaid(p, d) {
+    const r = avancerRaid();
     let tombee = null;
     if (!(d > 0)) return null;
     const j = (r.joueurs[p] = r.joueurs[p] || { degats: 0, victoires: 0 });
     j.degats += d;
     r.total += d;
+    if (r.tombees[r.phase]) return null;
     r.degats += d;
     while (r.phase <= CHOC.raid.phases.length && r.degats >= pvPhase(r.phase)) {
-      r.degats -= pvPhase(r.phase);
       r.tombees[r.phase] = now();
       tombee = r.phase;
+      if (ouvre(r.phase + 1) > jourEv()) { r.degats = pvPhase(r.phase); break; }
+      r.degats -= pvPhase(r.phase);
       r.phase++;
     }
     return tombee;
@@ -1982,7 +2052,7 @@
       const k = cleQp(p, q);
       if (!S.qp[k]) S.qp[k] = { progress: 1, claimed: false };
     });
-    const r = ch.raid;
+    const r = avancerRaid();
     const moi = r.joueurs[p] || { degats: 0, victoires: 0 };
     const essais = (ch.epreuves[p + '|' + auj] || []).map(x => Object.assign({}, x));
     const meilleur = essais.slice().sort((a, b) => scoreEpreuve(b) - scoreEpreuve(a))[0] || null;
@@ -1993,9 +2063,9 @@
     return {
       jour: auj,
       raid: {
-        phase: r.phase, degats: r.degats, pv: pvPhase(r.phase), total: r.total,
+        phase: r.phase, degats: r.degats, pv: pvPhase(r.phase), total: r.total, jour_ev: jourEv(),
         joueurs: Object.values(r.joueurs).filter(x => x.degats > 0).length,
-        phases: CHOC.raid.phases.map(x => ({ n: x.n, pv: pvPhase(x.n), tombee: !!r.tombees[x.n], tombee_le: r.tombees[x.n] ? iso(r.tombees[x.n]) : null })),
+        phases: CHOC.raid.phases.map(x => ({ n: x.n, pv: pvPhase(x.n), ouvre: x.ouvre, tombee: !!r.tombees[x.n], tombee_le: r.tombees[x.n] ? iso(r.tombees[x.n]) : null })),
         moi: { degats: moi.degats, victoires: moi.victoires, tentatives: ch.tentatives[p + '|' + auj] || 0, max: CHOC.raid.tentatives },
         prises: (ch.prises[p] || []).slice(),
         top: Object.entries(r.joueurs).filter(([, x]) => x.degats > 0).sort((a, b) => b[1].degats - a[1].degats).slice(0, 10)
@@ -2012,7 +2082,7 @@
     const x = CHOC.raid.phases.find(y => y.n === p_phase);
     if (!x) refuser('Phase inconnue.');
     if (!ch.raid.tombees[x.n]) refuser('Cette phase n\'est pas encore tombée.');
-    if (((ch.raid.joueurs[p] || {}).degats || 0) < CHOC.raid.minimum) refuser('Frappe d\'abord le Marionnettiste.');
+    if (((ch.raid.joueurs[p] || {}).degats || 0) < CHOC.raid.minimum) refuser('Frappe d\'abord le Sorcier.');
     const l = (ch.prises[p] = ch.prises[p] || []);
     if (l.includes(x.n)) refuser('Récompense déjà récupérée.');
     l.push(x.n);
@@ -2059,7 +2129,7 @@
       g.deter += Math.floor(Math.random() * 4);
       change = true;
     }
-    /* Pendant le Choc, les joueurs simulés frappent le Marionnettiste,
+    /* Pendant le Choc, les joueurs simulés frappent le Sorcier,
        tentent l'Épreuve, et gagnent des Insignes. */
     if (evenementEnCours() === 'choc') {
       const ch = chocDe();

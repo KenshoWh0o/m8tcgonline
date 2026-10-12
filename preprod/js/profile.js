@@ -101,7 +101,12 @@ const CADRE_SOURCE = {
   f_azur: 'Boutique', f_rose: 'Boutique', f_or: 'Boutique', f_prisme: 'Boutique',
   f_sceau: '300 boosters ouverts', f_master: 'Les 122 cartes', f_reflet: 'Les 85 Reverses',
   f_aurore: 'Les 9 Brillantes', f_miroir: 'Pass Reflets, palier 10', f_nebuleuse: 'Pass Reflets, palier 20',
-  f_unique: 'La carte unique'
+  f_unique: 'La carte unique',
+  /* Version 3.0. */
+  f_choc: 'Pass du Choc, palier 12', f_foudre: 'Raid, phase 5',
+  f_niv10: 'Niveau 10 de combattant', f_niv20: 'Niveau 20 de combattant', f_niv30: 'Niveau 30 de combattant',
+  f_niv50: 'Niveau 50 de combattant', f_toxique: 'Boutique', f_deter: 'Boutique',
+  f_secrete: 'Ta première Secrète', f_maitrise: 'Une carte en maîtrise Prisme'
 };
 
 /* Le titre sous un pseudo. */

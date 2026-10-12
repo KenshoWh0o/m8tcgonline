@@ -325,8 +325,10 @@ function aller(id) {
     if (tab === 'tirages') chargerTirages();
     /* Version 3.0 : les défis et la Guerre des Sections bougent sans nous. */
     if (tab === 'combats') {
+      /* L'affiche du Raid dit sa phase et les tentatives du jour. */
+      if (evenementEnCours() === 'choc' && !chEtat) chargerChoc();
       Backend.pull().then(() => { if (tab === 'combats' && !enTrainDEcrire()) render(); }).catch(() => {});
-      if (!Backend.amis.length) Backend.loadAmis().then(() => { if (tab === 'combats' && cbVue === 'defis') render(); }).catch(() => {});
+      if (!Backend.amis.length) Backend.loadAmis().then(() => { if (tab === 'combats' && cbVue === 'versus') render(); }).catch(() => {});
     }
   }
 }

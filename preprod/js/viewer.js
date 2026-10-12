@@ -12,18 +12,22 @@ let VW = null;
    carte est ouverte depuis un écran d'échange. Sa collection est alors déjà
    connue, et son compte s'affiche à côté du nôtre : c'est exactement ce qu'on
    vient vérifier avant d'accepter. */
+/* Le palier de maîtrise en aperçu dans la visionneuse (0 : le sien). */
+let vwApercu = 0;
 function openViewer(c, qui) {
   const n = save.col[c.id] || 0;
   const lui = qui ? sesEx(qui, c.id) : null;
   const R = RAR[c.rar] || RAR.C;
   const v = $('#viewer');
+  v.dataset.id = c.id;
+  vwApercu = 0;
 
   v.innerHTML = `<div class="vw-bg" data-v="close"></div><button class="vw-close" data-v="close" aria-label="Fermer">✕</button>${vFavVw(c)}
   <div class="vw-stage"><div class="vw-card r${c.rar}" id="vwc">${n ? avecMaitrise(renderCard(c), c) : renderCard(c)}<div class="vw-holo"></div><div class="vw-glare"></div></div></div>
   <div class="vw-shadow" id="vwsh"></div>
   <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span>${c.rev ? '<span class="rc-tag rev">Reverse</span>' : ''}<span class="vw-col">${essIcon(c.col)}${colOf(c).nom}</span><span class="vw-num">${c.promo ? h(c.code) : '#' + String(c.num || 0).padStart(3, '0')}</span><span class="vw-own${n ? '' : ' zero'}">${n ? `Tu en as ${n}` : 'Tu ne l\'as pas'}</span>${lui != null ? `<span class="vw-own autre">${h(qui)} en a ${lui}</span>` : ''}</div></div>
   <div class="vw-gardebox">${vGardeVw(c)}</div>
-  ${n ? vMaitrise(c) : ''}
+  ${vMaitrise(c)}
   ${c.promo ? `<p class="vw-promo">${h(promoSousTitre(c))}${c.illustrateur ? ' · Illustration : ' + h(c.illustrateur) : ''}</p>` : ''}
   ${c.secrete ? `<p class="vw-promo">Secrète ${h(c.code)} — hors des ${cards.length}, ${c.cachee ? 'pas encore révélée' : 'Illustration : ' + h(c.illustrateur || '?')}. Elle s'échange, mais ne se recycle ni ne se fabrique.</p>` : ''}
   <p class="vw-hint">Fais glisser la carte pour la faire pivoter</p>`;
@@ -185,6 +189,10 @@ function closeViewer() {
 $('#viewer').addEventListener('click', e => {
   if (e.target.closest('[data-v="close"]')) return closeViewer();
   if (e.target.closest('[data-v="fav"]')) return basculerFavoriVw();
+  /* L'aperçu d'un palier de maîtrise : la carte de la visionneuse s'en
+     habille ; un second appui rend la sienne. */
+  const ap = e.target.closest('[data-v^="mt"]');
+  if (ap) return apercuMaitrise(+ap.dataset.v.slice(2));
   const g = e.target.closest('[data-v^="g"]');
   if (g) changerGardeVw(g.dataset.v === 'g+' ? 1 : g.dataset.v === 'g-' ? -1 : 0);
 });
@@ -192,3 +200,19 @@ $('#viewer').addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && VW) closeViewer();
 });
+
+/* ---------- L'aperçu des paliers de maîtrise (version 3.0) ---------- */
+function apercuMaitrise(k) {
+  const v = $('#viewer');
+  const carte = v && v.querySelector('#vwc');
+  const c = v && byId[v.dataset.id];
+  if (!carte || !c) return;
+  vwApercu = vwApercu === k ? 0 : k;
+  const m = maitriseDe(c);
+  const ancien = carte.querySelector('.cwrap');
+  const neuf = document.createElement('div');
+  neuf.innerHTML = vwApercu ? avecMaitrise(renderCard(c), c, vwApercu) : (m && m.niveau ? avecMaitrise(renderCard(c), c) : renderCard(c));
+  ancien.replaceWith(neuf.firstElementChild);
+  v.querySelectorAll('.vw-mt-ap').forEach(b => b.classList.toggle('on', +b.dataset.v.slice(2) === vwApercu));
+  SFX.jouer('carte');
+}
