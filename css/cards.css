@@ -29,8 +29,8 @@
    carte manque, et en `--line-2` il tombait sous 1,5:1 de contraste en thème
    clair — c'est-à-dire nulle part. */
 .card.ghost-card{position:relative;border:0;
-  background:linear-gradient(180deg,var(--bg-2),var(--bg));
-  box-shadow:inset 0 0 0 1px var(--line);
+  background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06);
   display:flex;align-items:center;justify-content:center;color:var(--muted);
   font-family:var(--display);font-weight:900;font-style:italic;font-size:10cqi;
   letter-spacing:.02em}
@@ -45,7 +45,7 @@
 .ghostmark svg{width:100%;height:auto;fill:currentColor;stroke:none}
 /* Le point d'interrogation des cases encore inconnues. */
 .ghostmark.inconnue{width:auto;height:auto;font-size:34cqi;line-height:1;
-  color:var(--accent-soft);opacity:.28}
+  color:var(--deco-ink);opacity:.3}
 
 /* Symboles d'essence */
 .ess{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;object-fit:contain}
@@ -60,15 +60,15 @@
 .colheadtop h1{margin:0}
 .colpct{font-family:var(--display);font-stretch:110%;font-weight:900;font-style:italic;font-size:30px;
   line-height:1;letter-spacing:-.04em;
-  background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+  background:linear-gradient(90deg,#b49aff,#ff8fcd);
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .colpct small{font-size:.52em;margin-left:1px}
 .prog{display:flex;align-items:center;gap:11px;font-size:12.5px;font-weight:700;color:var(--muted);margin-top:9px}
 .prog .bar{flex:1;height:8px;border-radius:999px;background:var(--bg-2);overflow:hidden;
   box-shadow:inset 0 0 0 1px var(--line)}
 .prog .bar i{display:block;height:100%;border-radius:999px;
-  background:linear-gradient(90deg,var(--accent),var(--accent-soft));
-  box-shadow:0 0 10px var(--accent-glow);transition:width .6s cubic-bezier(.2,1,.4,1)}
+  background:var(--progress);
+  box-shadow:0 0 12px var(--violet-glow);transition:width .6s cubic-bezier(.2,1,.4,1)}
 .prog b{color:var(--text)}
 
 /* ============ Tiroir de filtres ============ */
@@ -76,12 +76,12 @@
    trois axes. Trois rangées de puces toujours visibles repoussaient la première
    carte sous la ligne de flottaison. */
 .filtres{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-  margin:0 0 var(--gap-3);overflow:hidden;box-shadow:var(--sh-1)}
+  margin:0 0 var(--gap-3);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 .filbar{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;
   padding:11px 13px;color:var(--subtle);text-align:left;transition:background .14s}
 .filbar:hover{background:var(--hover)}
 .filico{display:grid;place-items:center;width:28px;height:28px;flex:0 0 auto;border-radius:var(--radius-xs);
-  background:var(--accent-wash);color:var(--accent-soft)}
+  background:var(--deco-wash);color:var(--deco-ink)}
 .filico svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
 .filresume{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -128,16 +128,16 @@
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(94px,27vw,138px),1fr));gap:18px 10px;padding-top:2px}
 .gcell{position:relative;background:none;border:0;padding:0;text-align:left;transition:transform .16s}
 button.gcell:hover{transform:translateY(-3px)}
-.count{position:absolute;top:-6px;right:-5px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);font-size:10.5px;
+.count{position:absolute;top:-6px;right:-5px;background:var(--plate-3);border:1px solid var(--line-2);color:var(--text);font-size:10.5px;
   font-weight:800;padding:2px 7px;border-radius:999px;z-index:2}
-.new{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9.5px;font-weight:900;
+.new{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;font-size:9.5px;font-weight:900;
   padding:3px 9px;border-radius:999px;z-index:2;letter-spacing:.08em;box-shadow:0 0 14px var(--accent-glow)}
 .num{display:block;text-align:center;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:6px;letter-spacing:.04em}
 
 /* ============ Secrets (à venir) ============ */
 /* Même emplacement vide que les autres : on n'ajoute que le reflet qui balaie la carte. */
 .card.ghost-card.secret-card{overflow:hidden;
-  background:linear-gradient(165deg,var(--surface-3),var(--bg-2) 58%,var(--surface-2));
+  background:linear-gradient(165deg,var(--surface-3),rgba(255,255,255,.02) 58%,var(--surface-2));
   box-shadow:inset 0 0 0 1px var(--line-2)}
 .card.ghost-card.secret-card::before{content:'';position:absolute;inset:0;opacity:.4;
   background:linear-gradient(115deg,transparent 26%,rgba(169,92,242,.36) 44%,rgba(223,109,232,.26) 55%,transparent 72%);
@@ -228,7 +228,7 @@ html.rm .card.r-BR::before,html.rm .card.r-BR::after,html.rm .card.r-UN::after{a
 /* Les Fragments, sous la barre de progression : la seule invitation à
    toucher une case vide. */
 .colfab{display:flex;align-items:center;gap:7px;margin:9px 0 0;font-size:12.5px;color:var(--muted)}
-.colfab svg{width:16px;height:16px;flex:0 0 auto;fill:none;stroke:var(--accent-soft);stroke-width:1.9;stroke-linejoin:round}
+.colfab svg{width:16px;height:16px;flex:0 0 auto;fill:none;stroke:var(--deco-ink);stroke-width:1.9;stroke-linejoin:round}
 .colfab b{color:var(--text)}
 /* Une case vide qui se fabrique : elle répond au doigt comme une carte. */
 button.gcell.fab{cursor:pointer}
@@ -302,9 +302,9 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
   display:inline-flex;align-items:center;font-style:normal;white-space:nowrap;line-height:1}
 .gpips{gap:2px}
 .gpips>i{width:5px;height:5px;border-radius:50%;box-shadow:inset 0 0 0 1px var(--muted)}
-.gpips>i.on{background:var(--accent-soft);box-shadow:none}
+.gpips>i.on{background:var(--deco-ink);box-shadow:none}
 .gpips.ok>i{background:var(--r-l)}
-.gnum{font-size:.9em;font-weight:800;color:var(--accent-soft);font-variant-numeric:tabular-nums}
+.gnum{font-size:.9em;font-weight:800;color:var(--deco-ink);font-variant-numeric:tabular-nums}
 .gnum.ok{color:var(--r-l)}
 .glock{width:1em;height:1em;color:var(--r-l)}
 .glock svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
@@ -319,7 +319,7 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
    visuel pas encore. Une composition typographique, aux couleurs de la carte. */
 .card.textuel{padding:6cqi 6cqi 5cqi;border:2.6cqi solid var(--tc);color:#fff;gap:3cqi;
   background:radial-gradient(ellipse 90% 60% at 50% 0%,color-mix(in srgb,var(--tc) 55%,transparent),transparent 70%),
-    linear-gradient(170deg,#241634,#120b1b 70%)}
+    linear-gradient(170deg,#221a44,#0e0a24 70%)}
 .card.textuel::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
   background:url('../assets/pack-star.svg') 50% 46%/58% no-repeat}
 .tx-tete{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:2cqi}
@@ -399,7 +399,7 @@ html.rm .cwrap.mt3::before,html.rm .cwrap.mt4::before,html.rm .cwrap.mt4::after{
 /* Le médaillon de maîtrise, dans le coin haut droit de la carte : la
    couleur du palier, et autant de points que de paliers. */
 .mt-badge{position:absolute;top:-5.5cqi;right:-5.5cqi;z-index:5;width:16cqi;aspect-ratio:1;border-radius:50%;pointer-events:none;
-  box-shadow:0 0 0 1.4cqi #120a1c,0 1.5cqi 3cqi rgba(0,0,0,.5);
+  box-shadow:0 0 0 1.4cqi #120b29,0 1.5cqi 3cqi rgba(0,0,0,.5);
   background:radial-gradient(circle at 50% 50%,#fff 0 9%,transparent 11%) 50% 50%/100% 100% no-repeat,var(--mtb)}
 .mt-badge.mt1{--mtb:radial-gradient(circle at 35% 30%,#ffd9b5,#c27a3f 55%,#6b3b14)}
 .mt-badge.mt2{--mtb:radial-gradient(circle at 35% 30%,#ffffff,#c9d1de 55%,#6f7889)}

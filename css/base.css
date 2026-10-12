@@ -1,98 +1,129 @@
 /* Structure générale : fond, en-tête, navigation, typo, boutons, fenêtres, notifications.
-   Aucune couleur écrite en dur : tout vient des jetons de css/tokens.css, sinon
-   le thème clair s'effondre. */
+   Aucune couleur écrite en dur : tout vient des jetons de css/tokens.css.
+
+   Version 3.0 : la page est une scène éclairée (le fond de chaque écran
+   vient d'une illustration du jeu) sur laquelle flottent deux barres de verre
+   — l'en-tête et la barre des onglets. Le contenu défile dessous : le verre
+   n'a de sens que s'il a quelque chose à flouter. Les règles de matière sont
+   dans docs/design-3.0.md. */
 
 /* ============ Fond ============ */
-/* Une nappe de couleur en haut et une trame de points qui s'efface : la page a
-   une profondeur sans qu'on ait à poser une image. */
-.bgdeco{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.bgdeco::before{content:'';position:absolute;left:50%;top:-24%;width:min(1020px,152vw);aspect-ratio:1;
-  transform:translateX(-50%);
-  background:radial-gradient(circle,var(--accent-glow),transparent 62%);opacity:.34}
+/* Trois couches : la nuit (le fond plein), l'illustration de l'écran en
+   cours, floutée d'avance (assets/ambiance, tools/ambiances.py), et trois
+   lumières — violet, rose, cyan — qui lient le tout aux couleurs du jeu.
+   L'illustration s'efface vers le bas : le contenu se lit sur du sombre. */
+.bgdeco{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:var(--bg)}
+.bgdeco::before{content:'';position:absolute;left:0;right:0;top:0;height:min(86vh,820px);
+  background:center 30%/cover no-repeat;opacity:.52;
+  -webkit-mask:linear-gradient(180deg,#000 22%,transparent);mask:linear-gradient(180deg,#000 22%,transparent)}
 .bgdeco::after{content:'';position:absolute;inset:0;
-  background:radial-gradient(currentColor .7px,transparent .8px) 0 0/26px 26px;color:var(--line-2);opacity:.5;
-  -webkit-mask:linear-gradient(180deg,#000,transparent 58%);mask:linear-gradient(180deg,#000,transparent 58%)}
+  background:
+    radial-gradient(70% 42% at 0% 0%,var(--violet-glow),transparent 72%),
+    radial-gradient(60% 36% at 100% 0%,rgba(255,80,165,.2),transparent 72%),
+    radial-gradient(90% 40% at 50% 112%,var(--cyan-glow),transparent 72%)}
+body[data-tab=boosters] .bgdeco::before{background-image:url(../assets/ambiance/boosters.webp)}
+body[data-tab=collection] .bgdeco::before{background-image:url(../assets/ambiance/collection.webp)}
+body[data-tab=combats] .bgdeco::before{background-image:url(../assets/ambiance/combats.webp)}
+body[data-tab=choc] .bgdeco::before{background-image:url(../assets/ambiance/choc.webp)}
+body[data-tab=quetes] .bgdeco::before{background-image:url(../assets/ambiance/quetes.webp)}
+body[data-tab=social] .bgdeco::before{background-image:url(../assets/ambiance/social.webp)}
+body[data-tab=boutique] .bgdeco::before{background-image:url(../assets/ambiance/boutique.webp)}
+body[data-tab=classement] .bgdeco::before{background-image:url(../assets/ambiance/classement.webp)}
+body[data-tab=profil] .bgdeco::before{background-image:url(../assets/ambiance/profil.webp)}
 
 /* `display` posé sur une classe l'emporterait sur la règle du navigateur : on tranche. */
 [hidden]{display:none!important}
 
 /* ============ Tête ============ */
-.top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:calc(9px + env(safe-area-inset-top,0px)) 16px 10px;
-  background:linear-gradient(180deg,var(--veil-2),var(--veil));
-  border-bottom:1px solid var(--line);backdrop-filter:blur(14px) saturate(1.3)}
+/* Elle flotte au-dessus du contenu, sans fond ni filet : le logo à gauche,
+   des capsules de verre à droite. Sous elle, un bord qui floute et
+   assombrit ce qui remonte — la page s'efface au lieu de se couper net. */
+.top{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;height:calc(var(--top-h) + env(safe-area-inset-top,0px));
+  padding:env(safe-area-inset-top,0px) 14px 0}
+.top::before{content:'';position:absolute;inset:0 0 -26px;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(10,7,31,.9),rgba(10,7,31,.6) 58%,rgba(10,7,31,0));
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  -webkit-mask:linear-gradient(180deg,#000 55%,transparent);mask:linear-gradient(180deg,#000 55%,transparent)}
 #brand{display:flex;align-items:center;user-select:none;cursor:pointer}
-#brand img{display:block;height:clamp(34px,10vw,46px);width:auto;
-  filter:drop-shadow(0 0 18px var(--accent-glow))}
+#brand img{display:block;height:clamp(32px,9vw,38px);width:auto;
+  filter:drop-shadow(0 2px 12px rgba(255,80,165,.35))}
 
 main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
-  padding:16px 16px 28px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  padding:calc(var(--top-h) + env(safe-area-inset-top,0px) + 8px) 16px
+          calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 30px);
+  scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
 /* Sur `#main` et non sur `main` : une classe comme `.pagehead` pose un `margin`
    raccourci, qui l'emporterait sur un sélecteur d'éléments seuls et décollerait
    l'en-tête de page du reste de la colonne. */
 #main>*{max-width:1180px;margin-inline:auto}
 
 /* ============ Navigation ============ */
-/* Tout est accroché à #nav, et non à l'élément <nav> : le panneau du tiroir en
-   est un aussi, et héritait sinon de la mise en colonne de la barre du bas. */
-#nav{position:relative;z-index:3;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));
-  background:linear-gradient(180deg,var(--veil-2),var(--bg-2));
-  border-top:1px solid var(--line-2);backdrop-filter:blur(16px) saturate(1.3)}
+/* Une capsule de verre qui flotte au-dessus du bas de l'écran, à distance des
+   bords : on la voit comme un objet qu'on touche, et la page passe dessous.
+   Tout est accroché à #nav, et non à l'élément <nav> : le panneau du tiroir en
+   est un aussi. */
+#nav{position:absolute;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:6;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:0;height:var(--nav-h);padding:6px;
+  border-radius:calc(var(--nav-h) / 2);background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
+  box-shadow:var(--glass-hi),var(--sh-4)}
 
-/* Filet de sécurité : si le navigateur rend quand même la page plus courte que
-   l'écran, cette bande peint le bas aux couleurs de la barre. */
-body::after{content:'';position:fixed;left:0;right:0;bottom:0;z-index:2;pointer-events:none;
-  height:env(safe-area-inset-bottom,0px);background:var(--bg-2)}
-
-#nav button{position:relative;background:none;border:0;padding:7px 0 6px;display:flex;flex-direction:column;
-  align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.01em;color:var(--muted);
-  border-radius:var(--radius-sm);white-space:nowrap;transition:color .16s,background .16s}
-#nav button:hover{color:var(--subtle);background:var(--hover)}
-#nav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
+#nav button{position:relative;background:none;border:0;padding:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.01em;
+  color:var(--muted);border-radius:calc(var(--nav-h) / 2 - 6px);white-space:nowrap;
+  transition:color .16s,transform .16s var(--spring)}
+#nav button:active{transform:scale(.94)}
+#nav svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;
   stroke-linecap:round;stroke-linejoin:round}
 /* L'étoile du logo est pleine : elle sert de marque, pas d'icône au trait. */
 #nav svg.ico-star,.btn svg.ico-star{width:24px;height:22px;stroke:none;fill:currentColor}
 
-/* L'onglet en cours : la pastille se dessine derrière l'icône seule, pas
-   derrière toute la colonne. Un bloc de couleur haut de 46 px écrasait la barre ;
-   une pastille de la taille du doigt la laisse respirer. */
-#nav button .navbg{position:absolute;top:3px;left:50%;width:52px;height:30px;translate:-50% 0;
-  border-radius:999px;opacity:0;scale:.7;pointer-events:none;
-  background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));
-  box-shadow:inset 0 0 0 1px var(--accent-wash-2);
-  transition:opacity .2s,scale .24s cubic-bezier(.2,1.3,.4,1)}
-#nav button.on .navbg{opacity:1;scale:1}
+/* L'onglet en cours : une lentille de verre plus clair sous l'icône et le
+   libellé. Elle glisse depuis l'onglet qu'on quitte (`--de`, posé par
+   navHTML dans js/app.js) : l'œil suit le mouvement au lieu de chercher. */
+#nav button .navbg{position:absolute;inset:0;border-radius:inherit;opacity:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(255,255,255,.07)}
+#nav button.on .navbg{opacity:1;animation:lentille .38s var(--spring)}
+@keyframes lentille{from{transform:translateX(calc(var(--de,0) * 100%))}}
 #nav button.on{color:var(--text)}
 #nav button.on svg{stroke:var(--accent-soft)}
-#nav button.on svg.ico-star{fill:var(--accent-soft);filter:drop-shadow(0 0 9px var(--accent-glow))}
-/* Le contenu passe au-dessus de la pastille de sélection. La pastille de
-   compte, elle, garde son positionnement absolu : la remettre dans le flux la
-   renvoyait sous le libellé, à cheval sur le bord de l'écran. */
+#nav button.on svg.ico-star{fill:var(--accent-soft);filter:drop-shadow(0 0 8px var(--accent-glow))}
+/* Le contenu passe au-dessus de la lentille. La pastille de compte garde son
+   positionnement absolu. */
 #nav button>svg,#nav button>span{position:relative;z-index:1}
 #nav button>.pastille{z-index:2}
 
 body.intheater #nav,body.intheater .top,body.intheater main,body.intheater .bgdeco{visibility:hidden}
 
+/* Pas de flou disponible, ou transparence réduite à la demande du système :
+   le verre devient un aplat. Rien ne doit devenir illisible faute de flou. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  #nav,.sheet,.tiroir-panneau,#toast,.qn,.verre{background:var(--glass-solid)!important}
+}
+@media (prefers-reduced-transparency:reduce){
+  #nav,.sheet,.tiroir-panneau,#toast,.qn,.verre{background:var(--glass-solid)!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .top::before{background:var(--veil-2);-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+
 /* ============ Typo ============ */
-/* Les titres de page sont en Archivo étiré et penché : c'est la typo du logo.
-   Une graisse de labeur en petites capitales grises, c'était le réglage par
-   défaut d'un éditeur de texte, pas une identité. */
-h1{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:27px;
+/* Le titre de page est en Archivo étiré et penché : c'est la typo du logo,
+   et le seul italique de l'écran avec les noms mis en scène. */
+h1{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:29px;
   margin:6px 0 4px;letter-spacing:-.03em;line-height:1.04}
 
-/* Les titres de section : même famille, même pente, taille de texte courant.
-   Le petit trait qui les précède tient lieu de puce — il aligne l'œil sans
-   ajouter un mot. */
-h2{position:relative;font-family:var(--display);font-stretch:108%;font-weight:800;font-style:italic;
-  font-size:16.5px;letter-spacing:-.015em;text-transform:none;color:var(--text);
-  margin:var(--gap-5) 0 var(--gap-2);padding-left:13px;line-height:1.2}
-h2::before{content:'';position:absolute;left:0;top:.18em;bottom:.18em;width:3px;border-radius:3px;
-  background:linear-gradient(180deg,var(--accent-soft),var(--accent));opacity:.9}
+/* Les titres de section : la même famille, droite. Un titre se lit, il n'a
+   pas besoin d'un trait de couleur pour exister. */
+h2{position:relative;font-family:var(--display);font-stretch:104%;font-weight:800;font-style:normal;
+  font-size:17px;letter-spacing:-.01em;text-transform:none;color:var(--text);
+  margin:var(--gap-5) 0 var(--gap-2);line-height:1.2}
 /* Un sous-titre glissé dans un h2 redevient une phrase. */
-h2 .small,h2 .muted{font-family:var(--body);font-style:normal;font-weight:600;letter-spacing:0}
+h2 .small,h2 .muted{font-family:var(--body);font-weight:600;letter-spacing:0}
 
-h3{font-family:var(--display);font-stretch:106%;font-weight:800;font-style:italic;font-size:15px;
+h3{font-family:var(--display);font-stretch:104%;font-weight:800;font-size:15px;
   margin:0 0 6px;letter-spacing:-.01em}
 p{line-height:1.5;margin:6px 0}
 .muted{color:var(--muted)}
@@ -100,36 +131,31 @@ p{line-height:1.5;margin:6px 0}
 b,strong{font-weight:800}
 a{color:var(--accent-soft)}
 
-/* ============ Boutons pressables ============ */
-/* Un rebord plein sous le bouton : il s'enfonce au clic, comme dans les jeux de
-   cartes mobiles. C'est la signature tactile du site — tout ce qui s'appuie
-   descend de la même hauteur. */
+/* ============ Boutons ============ */
+/* Le bouton principal : une capsule rose, bombée par son reflet, avec une
+   lueur de sa couleur dessous. Il ne s'enfonce plus d'un rebord : il se
+   tasse sous le doigt, d'un ressort. Un écran n'en montre qu'un. */
 .btn{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
-  border:0;border-radius:999px;padding:15px 24px;font-family:var(--display);font-weight:900;
-  font-size:15px;letter-spacing:.055em;text-transform:uppercase;color:var(--on-accent);
-  background:linear-gradient(180deg,var(--accent-soft),var(--accent));
-  box-shadow:0 5px 0 var(--accent-deep),var(--sh-3),inset 0 1px 0 var(--gloss);
-  transition:transform .09s ease-out,box-shadow .09s ease-out,filter .15s}
-.btn:hover:not(:disabled){filter:brightness(1.07)}
-.btn:active:not(:disabled){transform:translateY(5px);
-  box-shadow:0 0 0 var(--accent-deep),var(--sh-1),inset 0 1px 0 var(--gloss-soft)}
-.btn.ghost{background:linear-gradient(180deg,var(--surface-2),var(--surface));color:var(--text);
-  box-shadow:0 4px 0 var(--sh-press),var(--sh-2),inset 0 0 0 1px var(--line-2)}
-.btn.ghost:active:not(:disabled){transform:translateY(4px);
-  box-shadow:0 0 0 var(--sh-press),var(--sh-1),inset 0 0 0 1px var(--line-2)}
-/* Sur un fond déjà sombre — théâtre, bandeau de carte — le fantôme s'éclaircit. */
+  border:0;border-radius:999px;padding:15px 24px;font-family:var(--display);font-weight:800;
+  font-size:16px;letter-spacing:.005em;text-transform:none;color:var(--on-accent);
+  background:var(--cta);text-shadow:0 1px 1px rgba(90,0,45,.3);
+  box-shadow:inset 0 1px 0 var(--gloss),inset 0 -1px 0 rgba(0,0,0,.16),0 10px 26px -8px var(--accent-glow);
+  transition:transform .18s var(--spring),filter .15s,box-shadow .2s}
+.btn:hover:not(:disabled){filter:brightness(1.08)}
+.btn:active:not(:disabled){transform:scale(.97);filter:brightness(.96)}
+/* Le secondaire : du verre clair. Il accompagne, il ne rivalise pas. */
+.btn.ghost{background:rgba(255,255,255,.085);color:var(--text);text-shadow:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.1)}
+.btn.ghost:hover:not(:disabled){background:rgba(255,255,255,.12);filter:none}
 .btn.ghost.dark{background:rgba(255,255,255,.12);color:#fff;
-  box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.18)}
-.btn.ghost.dark:active:not(:disabled){box-shadow:0 0 0 rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.18)}
-.btn:disabled{opacity:.38;cursor:not-allowed;box-shadow:0 4px 0 var(--sh-press);filter:grayscale(.3)}
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.14)}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;filter:saturate(.4)}
 .btn svg{width:19px;height:19px;flex:0 0 auto}
 
-/* Petit bouton plein, pour les actions posées dans une ligne. */
-.btn.tiny{width:auto;flex:0 0 auto;padding:9px 16px;font-size:12.5px;border-radius:999px;gap:5px;
-  letter-spacing:.04em;box-shadow:0 4px 0 var(--accent-deep),inset 0 1px 0 var(--gloss)}
-.btn.tiny:active:not(:disabled){transform:translateY(4px);box-shadow:0 0 0 var(--accent-deep)}
-.btn.tiny.ghost{box-shadow:0 3px 0 var(--sh-press),inset 0 0 0 1px var(--line-2)}
-.btn.tiny.ghost:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--sh-press),inset 0 0 0 1px var(--line-2)}
+/* Petit bouton, pour les actions posées dans une ligne. */
+.btn.tiny{width:auto;flex:0 0 auto;padding:9px 16px;font-size:13px;border-radius:999px;gap:5px;
+  box-shadow:inset 0 1px 0 var(--gloss),0 6px 16px -6px var(--accent-glow)}
+.btn.tiny.ghost{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.1)}
 
 /* Un bouton peut être un lien : les destinations extérieures s'ouvrent comme
    des liens, pas comme des gestes de l'application. */
@@ -137,32 +163,32 @@ a.btn{text-decoration:none}
 
 .linkbtn{background:none;border:0;color:var(--muted);font-weight:700;font-size:13px;padding:6px}
 .linkbtn:hover{color:var(--text)}
-/* Une rangée d'actions. Elle passe à la ligne plutôt que de déborder : deux
-   boutons dont les libellés sont longs ne tiennent pas côte à côte sur un écran
-   de 320 px, et le second sortait de l'écran — avec son texte. */
+/* Une rangée d'actions. Elle passe à la ligne plutôt que de déborder. */
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .row>.btn{flex:1 1 150px;min-width:0;padding-inline:16px}
 
 /* ============ Puces de filtre ============ */
 /* `overflow-y:hidden` et `touch-action:pan-x` : une rangée de puces se fait
-   glisser de gauche à droite, jamais de haut en bas. Avec `overflow:auto` sur
-   les deux axes, le doigt accrochait la rangée au lieu de faire défiler la
-   page — le geste vertical était mangé, et la rangée tressautait. */
+   glisser de gauche à droite, jamais de haut en bas.
+   La puce choisie est du verre plus clair et du texte blanc, comme l'onglet
+   en cours : choisir n'est pas agir, ça ne prend pas le rose. */
 .chips{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
   touch-action:pan-x;padding:2px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .chips::-webkit-scrollbar{display:none}
-.chips button{flex:0 0 auto;border:0;background:linear-gradient(180deg,var(--surface-2),var(--surface));
-  color:var(--subtle);padding:8px 16px;font-size:12.5px;font-weight:800;border-radius:999px;
-  box-shadow:0 3px 0 var(--sh-press),inset 0 0 0 1px var(--line);
-  transition:color .14s,transform .09s,box-shadow .09s}
-.chips button:hover{color:var(--text)}
-.chips button:active{transform:translateY(3px);box-shadow:0 0 0 var(--sh-press),inset 0 0 0 1px var(--line)}
-.chips button.on{background:linear-gradient(180deg,var(--accent-soft),var(--accent));color:var(--on-accent);
-  box-shadow:0 3px 0 var(--accent-deep),inset 0 1px 0 var(--gloss-soft)}
+.chips button{flex:0 0 auto;border:0;background:var(--surface);
+  color:var(--subtle);padding:8px 15px;font-size:13px;font-weight:700;border-radius:999px;
+  box-shadow:inset 0 0 0 1px var(--line);
+  transition:color .14s,background .14s,transform .16s var(--spring)}
+.chips button:hover{color:var(--text);background:var(--surface-2)}
+.chips button:active{transform:scale(.95)}
+.chips button.on{background:rgba(255,255,255,.17);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.14)}
 
 /* ============ Panneaux ============ */
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-  padding:2px 16px 18px;margin-bottom:12px;box-shadow:var(--sh-1)}
+/* Le voile : la surface de contenu. Pas de flou — il y en a déjà sous les
+   barres — un clair transparent, un filet, et le reflet du bord haut. */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:2px 16px 18px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 .panel h2{margin-top:18px}
 .panel>h2:first-child{margin-top:16px}
 .empty{text-align:center;padding:56px 10px;color:var(--muted)}
@@ -173,48 +199,54 @@ details{background:var(--surface);border:1px solid var(--line);border-radius:var
 summary{font-weight:700;cursor:pointer}
 
 /* ============ Feuille modale ============ */
-.sheet-wrap{position:fixed;inset:0;background:var(--scrim);backdrop-filter:blur(7px);
+/* Le verre couvrant : une feuille qui monte du bas, assez opaque pour qu'on
+   lise ce qu'elle porte, assez claire pour qu'on sache d'où elle vient. */
+.sheet-wrap{position:fixed;inset:0;background:var(--scrim);
   display:flex;align-items:flex-end;justify-content:center;z-index:50;animation:fadein .2s}
 .sheet-wrap[hidden]{display:none}
 @keyframes fadein{from{opacity:0}}
-.sheet{position:relative;background:var(--surface);border:1px solid var(--line);border-bottom:0;
-  width:100%;max-width:520px;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));
-  max-height:90%;overflow-y:auto;overscroll-behavior-y:none;border-radius:var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow:var(--sh-4);animation:up .3s cubic-bezier(.2,1.1,.4,1)}
+.sheet{position:relative;background:var(--glass-strong);
+  -webkit-backdrop-filter:blur(32px) saturate(160%);backdrop-filter:blur(32px) saturate(160%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-bottom:0;
+  width:100%;max-width:520px;padding:24px 18px calc(18px + env(safe-area-inset-bottom,0px));
+  max-height:90%;overflow-y:auto;overscroll-behavior-y:none;border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow:var(--glass-hi),var(--sh-4);animation:up .34s var(--spring)}
 @keyframes up{from{transform:translateY(60px);opacity:.3}}
 /* La poignée : elle dit que le panneau vient du bas et qu'il y repartira — on
-   le tire vers le bas pour le fermer (voir « Glisser vers le bas », js/ui.js).
-   `overscroll-behavior` : arrivé en haut du contenu, le doigt tire la feuille
-   au lieu de faire rebondir son contenu. */
-.sheet::before{content:'';position:absolute;top:8px;left:50%;width:38px;height:4px;translate:-50% 0;
-  border-radius:99px;background:var(--line-2)}
+   le tire vers le bas pour le fermer (voir « Glisser vers le bas », js/ui.js). */
+.sheet::before{content:'';position:absolute;top:8px;left:50%;width:38px;height:5px;translate:-50% 0;
+  border-radius:99px;background:rgba(255,255,255,.22)}
 .sheet h3{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
-  margin:4px 0 10px;font-size:21px;letter-spacing:-.02em}
+  margin:4px 0 10px;font-size:22px;letter-spacing:-.02em}
 .sheet .acts{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+/* Dans une feuille, un voile de contenu se lit sur le verre : un peu plus clair. */
+.sheet .panel,.sheet details{background:rgba(255,255,255,.05)}
 
 /* ============ Notification passagère ============ */
-#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);
-  transform:translateX(-50%) translateY(8px);background:var(--surface-2);border:1px solid var(--line-2);
-  color:var(--text);padding:11px 18px;border-radius:999px;font-weight:600;font-size:13.5px;z-index:80;
-  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90%;text-align:center;
-  box-shadow:var(--sh-3)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + var(--nav-h) + 22px);
+  transform:translateX(-50%) translateY(8px);background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
+  color:var(--text);padding:11px 18px;border-radius:999px;font-weight:700;font-size:13.5px;z-index:80;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .24s var(--spring);max-width:90%;text-align:center;
+  box-shadow:var(--glass-hi),var(--sh-3)}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ============ Notification de quête et de promo ============ */
 /* Elles passent en haut, à l'opposé du toast : les deux peuvent tomber en même
-   temps — on encaisse une récompense pendant qu'une autre quête se termine — et
-   elles ne doivent pas se marcher dessus. Rien à fermer, rien à lire
+   temps et ne doivent pas se marcher dessus. Rien à fermer, rien à lire
    absolument : la pastille de l'onglet garde la trace. */
-#qnotif{position:fixed;top:calc(env(safe-area-inset-top,0px) + 66px);left:50%;transform:translateX(-50%);
+#qnotif{position:fixed;top:calc(env(safe-area-inset-top,0px) + var(--top-h) + 6px);left:50%;transform:translateX(-50%);
   z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;
   width:max-content;max-width:min(380px,calc(100vw - 32px));pointer-events:none}
-.qn{display:flex;align-items:center;gap:11px;width:100%;background:var(--surface-2);
-  border:1px solid var(--ok-line);border-radius:var(--radius);padding:10px 13px;
-  box-shadow:var(--sh-3);cursor:pointer;pointer-events:auto;
-  animation:qn-in .34s cubic-bezier(.2,1.2,.4,1)}
+.qn{display:flex;align-items:center;gap:11px;width:100%;background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-radius:var(--radius-lg);
+  padding:10px 14px 10px 10px;box-shadow:var(--glass-hi),var(--sh-3);cursor:pointer;pointer-events:auto;
+  animation:qn-in .4s var(--spring)}
 .qn.out{animation:qn-out .3s ease-in forwards}
-.qnico{display:grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border-radius:50%;
-  background:var(--ok-wash);color:var(--ok)}
+.qnico{display:grid;place-items:center;flex:0 0 auto;width:34px;height:34px;border-radius:50%;
+  background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
 .qnico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .qntxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -231,19 +263,8 @@ body.intheater #qnotif{visibility:hidden}
 /* Réduction des animations si demandé par le système */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-/* ============ Les visuels de marque en thème clair ============ */
-/* Le logo du jeu, celui de l'extension et la pastille « 1re édition » sont des
-   images pensées pour du noir : du blanc, de l'argenté, des halos. Posées sur
-   un fond clair, elles s'effacent — et on ne peut pas les redessiner pour
-   autant, ce sont les visuels officiels.
-
-   On leur rend donc leur fond : une plaque sombre, taillée à leur forme. Ce
-   n'est pas un rattrapage, c'est ce que fait n'importe quelle charte quand un
-   logo n'existe qu'en version claire. */
+/* ============ Le logo ============ */
 #brand{position:relative;border-radius:999px;padding:0 2px}
-#brand::before{content:'';position:absolute;inset:-5px -12px;border-radius:999px;opacity:0;
-  background:linear-gradient(135deg,#1c1129,#0d0814);transition:opacity .2s}
 #brand img{position:relative}
 
 .setbar .setlogo{position:relative}
-

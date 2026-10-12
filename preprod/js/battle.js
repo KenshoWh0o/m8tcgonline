@@ -439,7 +439,7 @@ function vCbDefis(e) {
       `<button class="btn tiny ghost" data-cb="defi-annuler" data-v="${d.id}">Annuler</button>`)).join('')}</section>` : ''}
     <section class="cb-bloc"><h3>Tes amis</h3>
       ${amis.length ? amis.map(a => ligne(Object.assign({ texte: a.en_ligne ? 'en ligne' : '' }, a),
-        `<button class="btn tiny" data-cb="defier" data-v="${h(a.pseudo)}">Défier</button>`)).join('')
+        `<button class="btn tiny ghost" data-cb="defier" data-v="${h(a.pseudo)}">Défier</button>`)).join('')
         : `<p class="muted">Ajoute des amis depuis l'onglet Social pour les défier.</p><button class="btn ghost" data-tab="social">Aller dans Social</button>`}
     </section>
     <p class="muted small">Un défi gagné rapporte ${DEFI_GAIN.victoire} Éclats et ${DEFI_GAIN.points} points de Section (${DEFI_GAIN.plafond} défis récompensés par jour).</p>`;

@@ -923,7 +923,7 @@ const Table = (() => {
       haut = `<div class="ar-s-def">${att ? htmlCarte(att.id) : ''}<div><p class="ar-s-titre gauche">${h(d.titre)}</p><p class="ar-s-texte gauche">${h(d.texte)}</p></div></div>`;
       const boutons = d.options.map(o => o.v === 'non'
         ? `<button class="ar-b ghost" data-ar="opt" data-v="non">${h(o.label)}</button>`
-        : `<button class="ar-b ${o.info && o.info.vaincu ? 'rouge' : 'vert'}" data-ar="opt" data-v="${o.v}">${h(o.label.replace('Défendre avec ', ''))}<small>${o.info ? (o.info.vaincu ? `vaincu · ${o.info.def} contre ${o.info.val}` : `tient · ${o.info.def} contre ${o.info.val}`) : ''}</small></button>`).join('');
+        : `<button class="ar-b def ${o.info && o.info.vaincu ? 'tombe' : 'tient'}" data-ar="opt" data-v="${o.v}">${h(o.label.replace('Défendre avec ', ''))}<small>${o.info ? (o.info.vaincu ? `vaincu · ${o.info.def} contre ${o.info.val}` : `tient · ${o.info.def} contre ${o.info.val}`) : ''}</small></button>`).join('');
       ouvrirSheet(`${haut}<p class="ar-s-aide">Défendre avec un de tes Joueurs (allumés sur le plateau), ou laisser passer.</p><div class="ar-s-act">${boutons}</div>`, 'decision defense');
       surligner();
       SFX.jouer('notif');
@@ -1156,7 +1156,7 @@ const Table = (() => {
   function eclats(x, couleurs, n) {
     if (!x || typeof FX === 'undefined') return;
     const r = rect(x);
-    FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: n || 26, colors: couleurs || ['#fff', '#ffd7f0', '#a95cf2'], speed: 6, size: 3, g: .1 });
+    FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: n || 26, colors: couleurs || ['#fff', '#ffd65e', '#c3adff'], speed: 6, size: 3, g: .1 });
   }
 
   /* Un bandeau qui traverse le plateau : « À toi de jouer », la fin d'une
@@ -1243,7 +1243,7 @@ const Table = (() => {
         await vol(e.id, rect(de), rect(vers), { ms: 400, s1: 0.4, arc: 30 });
       }
       rendre();
-      eclats(elU(e.cible), ['#ffc73b', '#fff'], 12);
+      eclats(elU(e.cible), ['#ffbd34', '#fff'], 12);
     },
     async attaque(e) {
       rendre();
@@ -1274,7 +1274,7 @@ const Table = (() => {
       SFX.jouer('dechire');
       secousse(e.cible === 'ceo' ? 7 : 4);
       if (e.val != null && e.cible !== 'ceo') flottant(c, String(e.val), 'degats');
-      eclats(c, ['#fff', '#ff4d8d', '#ffc73b'], 22);
+      eclats(c, ['#fff', '#ff6b5e', '#ffb4aa'], 22);
       await attendre(240);
     },
     async repousse(e) {
@@ -1293,7 +1293,7 @@ const Table = (() => {
     },
     async vaincu(e) {
       const x = elU(e.u);
-      if (x) { x.classList.add('vaincu'); eclats(x, ['#fff', '#ff4d8d', '#8936ff'], 34); }
+      if (x) { x.classList.add('vaincu'); eclats(x, ['#fff', '#ff6b5e', '#c3adff'], 34); }
       SFX.jouer('craque');
       flottant(x, 'Vaincu', 'mort');
       await attendre(600);
@@ -1421,7 +1421,7 @@ const Table = (() => {
     const E = T.E;
     const gagne = E.fin.gagnant === T.moi;
     const raisons = { pv: gagne ? 'Le CEO adverse n\'a plus de PV.' : 'Ton CEO n\'a plus de PV.', abandon: gagne ? `${h(nomCEO(adv(T.moi)))} abandonne.` : 'Tu as abandonné.', club: 'Club vide.' };
-    if (gagne) { SFX.jouer('legend'); if (typeof FX !== 'undefined') FX.confetti({ colors: ['#ee0073', '#a95cf2', '#ffc73b', '#fff'] }); }
+    if (gagne) { SFX.jouer('legend'); if (typeof FX !== 'undefined') FX.confetti({ colors: ['#ffbd34', '#ffd65e', '#ff7ac4', '#fff'] }); }
     else SFX.jouer('erreur');
     const a = qs('.ar-annonce');
     a.className = 'ar-annonce fin ' + (gagne ? 'victoire' : 'defaite');

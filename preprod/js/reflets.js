@@ -357,7 +357,7 @@ function vRfBoutique() {
       <small>${h(it.detail)}</small>
       ${reste ? `<span class="rf-artreste">${fini && !it.unique_buy ? 'Épuisé' : reste}</span>` : ''}
       ${fini ? '<span class="qtag">Acquis</span>'
-        : `<button class="btn tiny" data-shop="${h(it.id)}" ${rfData.solde < it.prix ? 'disabled' : ''}>${prismeIco}${fmtN(it.prix)}</button>`}
+        : `<button class="btn tiny ghost" data-shop="${h(it.id)}" ${rfData.solde < it.prix ? 'disabled' : ''}>${prismeIco}${fmtN(it.prix)}</button>`}
     </article>`;
   };
   return `${rfTitre('Boutique', `En ${PRISMES.nom}, seulement pendant l'événement. Ton solde : ${prismeIco}<b class="tnum">${fmtN(rfData.solde)}</b>`)}

@@ -44,16 +44,21 @@
    a appuyé. Sur mobile il couvre presque tout, sur ordinateur il n'existe pas. */
 #tiroir{position:fixed;inset:0;z-index:45}
 #tiroir[hidden]{display:none}
-.tiroir-bg{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);
+.tiroir-bg{position:absolute;inset:0;background:var(--scrim);
   opacity:0;transition:opacity .24s ease}
 #tiroir.on .tiroir-bg{opacity:1}
 
-.tiroir-panneau{position:absolute;top:0;right:0;bottom:0;width:min(336px,88vw);
+/* Une feuille de verre couvrant qui flotte, décollée des bords comme la
+   barre du bas : même matière, même famille d'objets. */
+.tiroir-panneau{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));right:8px;
+  bottom:calc(8px + env(safe-area-inset-bottom,0px));width:min(340px,calc(100vw - 40px));
   display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
-  background:linear-gradient(180deg,var(--surface-2),var(--bg-2) 46%);
-  border-left:1px solid var(--line-2);box-shadow:var(--sh-4);
-  padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));
-  transform:translateX(100%);transition:transform .28s cubic-bezier(.2,1,.35,1)}
+  background:var(--glass-strong);
+  -webkit-backdrop-filter:blur(32px) saturate(160%);backdrop-filter:blur(32px) saturate(160%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-radius:var(--radius-xl);
+  box-shadow:var(--glass-hi),var(--sh-4);
+  padding:16px 14px 16px;
+  transform:translateX(calc(100% + 12px));transition:transform .32s var(--ease)}
 #tiroir.on .tiroir-panneau{transform:translateX(0)}
 
 .tiroir-id{display:flex;align-items:center;gap:12px;padding:4px 0 16px}
@@ -79,9 +84,11 @@
   background:none;border-radius:var(--radius-sm);padding:11px 10px;color:var(--subtle);
   transition:background .14s,color .14s}
 .tiroir-liste button:hover{background:var(--hover);color:var(--text)}
-.tiroir-liste button.on{background:linear-gradient(90deg,var(--accent-wash-2),transparent);color:var(--text)}
+.tiroir-liste button{border-radius:var(--radius)}
+.tiroir-liste button.on{background:rgba(255,255,255,.1);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 .tiroir-ico{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:var(--radius-sm);
-  background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--accent-soft)}
+  background:var(--surface-2);color:var(--subtle);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.tiroir-liste button.on .tiroir-ico{color:var(--accent-soft)}
 .tiroir-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
 .tiroir-ico svg.ico-star{width:22px;height:20px;stroke:none;fill:currentColor}
@@ -102,31 +109,39 @@
 
 /* ============ Pastille de compte ============ */
 .pastille{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
-  background:var(--brand);color:#fff;font-size:11px;font-weight:900;font-style:normal;line-height:1}
-.pastille.nav{position:absolute;top:1px;right:calc(50% - 24px);box-shadow:0 0 0 2px var(--bg-2);z-index:2}
+  background:var(--brand);color:#fff;font-size:11px;font-weight:900;font-style:normal;line-height:1;
+  box-shadow:0 2px 8px var(--accent-glow)}
+.pastille.nav{position:absolute;top:4px;right:calc(50% - 22px);z-index:2}
 
 /* ============ En-tête ============ */
 .hdr{display:flex;align-items:center;gap:7px}
-.pill{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--surface);
-  border:1px solid var(--line);border-radius:999px;padding:6px 15px 6px 11px;
+/* Les compteurs et les boutons de l'en-tête sont des capsules de verre. Ils
+   n'ont pas de flou à eux : le bord de l'en-tête floute déjà ce qui passe
+   dessous (pas de verre sur du verre, et un calque de moins à calculer). */
+.pill{position:relative;display:inline-flex;align-items:center;gap:7px;background:var(--glass);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-radius:999px;
+  padding:0 14px 0 10px;height:38px;box-shadow:var(--glass-hi),var(--sh-2);
   font-family:var(--display);font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;
-  transition:border-color .15s,background .15s}
-.pill:hover{border-color:var(--line-2);background:var(--surface-2)}
+  cursor:pointer;transition:background .15s,transform .16s var(--spring)}
+.pill:hover{background:rgba(52,42,96,.6)}
+.pill:active{transform:scale(.95)}
 .pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px var(--accent-glow))}
-.pill.ec{padding:6px 13px 6px 10px;gap:5px}
+.pill.ec{padding:0 13px 0 11px;gap:5px}
 .pill.ec .shard{width:15px;height:15px}
 
-.hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:50%;
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--subtle)}
-.hdrbtn:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid var(--glass-line);
+  border-top-color:var(--glass-line-top);border-radius:50%;background:var(--glass);
+  box-shadow:var(--glass-hi),var(--sh-2);color:var(--subtle);transition:color .15s,transform .16s var(--spring)}
+.hdrbtn:hover{color:var(--text)}
+.hdrbtn:active{transform:scale(.93)}
 .hdrbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
 /* L'avatar n'a ni fond ni cadre : c'est l'image qui fait le bouton. */
-.hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;width:auto;height:auto;overflow:visible}
+.hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;border:0;width:auto;height:auto;overflow:visible}
 
 /* Le chevron qui dit « ça se déplie ». Il tourne quand le tiroir est ouvert. */
 .moicaret{position:absolute;right:-3px;bottom:-3px;display:grid;place-items:center;width:17px;height:17px;
-  border-radius:50%;background:var(--surface-2);color:var(--subtle);
+  border-radius:50%;background:var(--plate-3);color:var(--subtle);
   box-shadow:0 0 0 2px var(--bg),var(--sh-1);transition:transform .24s,color .15s}
 .moicaret svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.6;
   stroke-linecap:round;stroke-linejoin:round}
@@ -141,15 +156,16 @@
 /* Un second niveau de navigation, à l'intérieur d'une page : un rail segmenté
    où le curseur glisse. Ce n'est pas un changement d'onglet, donc ce ne sont pas
    les mêmes puces que les filtres. */
-.segbar{display:flex;gap:3px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;
-  padding:3px;margin:0 0 var(--gap-4);overflow-x:auto;overflow-y:hidden;
+.segbar{display:flex;gap:2px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;
+  padding:4px;margin:0 0 var(--gap-4);overflow-x:auto;overflow-y:hidden;
   overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
 .segbar::-webkit-scrollbar{display:none}
 .segbar button{flex:1 1 0;min-width:max-content;display:inline-flex;align-items:center;justify-content:center;
   gap:7px;border:0;background:none;color:var(--muted);padding:9px 14px;border-radius:999px;
   font-size:13px;font-weight:800;white-space:nowrap;transition:color .15s,background .15s}
 .segbar button:hover{color:var(--subtle)}
-.segbar button.on{background:var(--surface);color:var(--text);box-shadow:var(--sh-1),inset 0 0 0 1px var(--line-2)}
+.segbar button.on{background:rgba(255,255,255,.15);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(255,255,255,.08),var(--sh-1)}
 .segbar .pastille{min-width:17px;height:17px;font-size:10px}
 .segbar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -161,16 +177,18 @@
   font-size:12px;font-weight:800;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);
   display:inline-flex;align-items:center;gap:6px;transition:color .14s,background .14s}
 .souschips button:hover{color:var(--subtle)}
-.souschips button.on{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.souschips button.on{background:rgba(255,255,255,.15);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.1)}
 
 /* ============ Quêtes ============ */
 /* Un bandeau par période : ce qu'il reste à faire, et dans combien de temps tout
    repart à zéro. Le compte à rebours remplace la phrase d'explication — « remis
    à zéro chaque nuit » ne dit pas quand, « dans 4 h 20 » si. */
-.qperiode{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--accent-wash),var(--surface) 64%);
-  border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;margin:0 0 var(--gap-3)}
+.qperiode{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--deco-wash),var(--surface) 64%);
+  border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px 16px;margin:0 0 var(--gap-3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .qpico{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:var(--radius-sm);
-  background:var(--surface);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line-2)}
+  background:var(--deco-wash);color:var(--deco-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
 .qpico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .qptxt{flex:1;min-width:0}
 .qptxt b{display:block;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;
@@ -184,14 +202,15 @@
 
 /* Une quête, compacte : titre et récompense, une ligne d'explication, puis
    la barre — ou le bouton. Une liste qu'on parcourt, pas un formulaire. */
-.quest{position:relative;display:flex;gap:11px;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius-sm);padding:10px 12px;box-shadow:var(--sh-1);transition:border-color .16s,box-shadow .16s}
-.questlist{display:flex;flex-direction:column;gap:7px}
-.quest.ready{border-color:var(--ok-line);box-shadow:0 0 0 1px var(--ok-wash),var(--sh-2)}
-.quest.done{opacity:.55;padding:8px 12px}
+.quest{position:relative;display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:12px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .16s,box-shadow .16s}
+.questlist{display:flex;flex-direction:column;gap:8px}
+.quest.ready{border-color:var(--ok-line);background:linear-gradient(135deg,var(--ok-wash),var(--surface) 60%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 8px 22px -10px var(--ok-line)}
+.quest.done{opacity:.55;padding:9px 14px}
 .quest.done .qdetail{display:none}
-.qico{display:grid;place-items:center;width:32px;height:32px;flex:0 0 auto;border-radius:10px;
-  background:var(--accent-wash);color:var(--accent-soft);align-self:flex-start}
+.qico{display:grid;place-items:center;width:36px;height:36px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--deco-wash);color:var(--deco-ink);align-self:flex-start;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .qico svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .quest.ready .qico{background:var(--ok-wash);color:var(--ok)}
 .quest.done .qico{background:var(--surface-2);color:var(--muted);width:26px;height:26px}
@@ -206,7 +225,7 @@
 .qfoot{display:flex;align-items:center;gap:10px;margin-top:4px}
 .qbar{flex:1;height:6px;border-radius:99px;background:var(--bg-2);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
 .qbar i{display:block;height:100%;border-radius:99px;
-  background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+  background:var(--progress);
   transition:width .5s cubic-bezier(.2,1,.4,1)}
 .qcompte{flex:0 0 auto;font-size:11.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
 .qcompte b{color:var(--subtle);font-weight:800}
@@ -252,7 +271,7 @@
 
 /* ============ Boutique ============ */
 .walletrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 var(--gap-3)}
-.wallet{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
+.wallet{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);
   border-radius:999px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--subtle)}
 .wallet b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
 .wallet svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
@@ -278,9 +297,9 @@
 .offres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .offre{position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;
   background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);
-  border-radius:var(--radius);padding:14px 12px 12px;box-shadow:var(--sh-1);
+  border-radius:var(--radius);padding:12px 12px 12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
   transition:transform .14s,border-color .14s,box-shadow .14s}
-.offre:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:var(--sh-3)}
+.offre:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),var(--sh-3)}
 .offre:active{transform:translateY(0)}
 .offre.owned{opacity:.58}
 .offre.owned:hover{transform:none}
@@ -289,18 +308,18 @@
 
 /* La vignette : l'objet, en grand, sur un fond qui en dit la nature. */
 .ofart{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1;max-height:112px;
-  border-radius:var(--radius-sm);background:radial-gradient(circle at 50% 38%,var(--accent-wash-2),var(--bg-2) 72%);
+  border-radius:var(--radius-sm);background:radial-gradient(circle at 50% 38%,var(--violet-glow),var(--bg-2) 72%);
   overflow:hidden}
 .ofart img{width:62%;height:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
 .ofart .cwrap{width:64%}
 .ofart svg{width:40%;height:40%;stroke:currentColor;fill:none;stroke-width:1.6;
-  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+  stroke-linecap:round;stroke-linejoin:round;color:var(--deco-ink)}
 .ofart svg.ico-star{stroke:none;fill:currentColor;width:46%;height:auto}
 .ofart .ava{width:60%;height:60%}
 .ofart .ofjeton{width:72%;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
 .wallet .wjeton{width:17px;height:17px;flex:0 0 auto}
 /* La quantité vendue, en pastille sur la vignette. */
-.ofqte{position:absolute;right:6px;bottom:6px;background:var(--surface);color:var(--text);
+.ofqte{position:absolute;right:6px;bottom:6px;background:var(--plate-3);color:var(--text);
   border-radius:999px;padding:2px 9px;font-family:var(--display);font-weight:900;font-size:12.5px;
   box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1)}
 
@@ -310,14 +329,14 @@
 .ofprix .shard{width:15px;height:15px;color:currentColor}
 /* Les rubans passent au-dessus de la vignette : sans `z-index`, l'illustration
    de l'article les recouvrait dès qu'elle atteignait le coin. */
-.ofbadge{position:absolute;z-index:2;top:8px;left:8px;background:var(--accent);color:var(--on-accent);
+.ofbadge{position:absolute;z-index:2;top:8px;left:8px;background:var(--plate-3);color:var(--text);
   border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;letter-spacing:.07em;
   text-transform:uppercase;box-shadow:var(--sh-1)}
 /* Une remise est une bonne nouvelle chiffrée : elle prend le vert des
    signaux positifs, le même que les quêtes accomplies. « Unique » n'est pas
    une bonne nouvelle, c'est une nature : il prend la couleur d'action. */
 .ofbadge.eco{background:var(--ok);color:#06251a;letter-spacing:.02em}
-.ofbadge.unique{background:linear-gradient(90deg,var(--accent),var(--accent-soft))}
+.ofbadge.unique{background:linear-gradient(180deg,var(--gold-light),var(--gold));color:var(--gold-ink)}
 .ofcoche{position:absolute;z-index:2;top:8px;right:8px;display:grid;place-items:center;width:22px;height:22px;
   border-radius:50%;background:var(--ok);color:#06251a}
 .ofcoche svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
@@ -325,7 +344,7 @@
 /* Un rayon vide ou à venir : la case reste, barrée d'un cadenas. */
 .oflock{align-items:center;justify-content:center;min-height:150px;border-style:dashed;opacity:.72;
   cursor:default;background:var(--bg-2)}
-.oflock:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}
+.oflock:hover{transform:none;box-shadow:none;border-color:var(--line)}
 .oflockico{display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius-sm);
   background:var(--surface-2);color:var(--muted)}
 .oflockico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -343,7 +362,7 @@
 .a3d{position:relative;width:100%;max-width:260px;margin:0 auto 16px;aspect-ratio:1;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   border-radius:var(--radius);perspective:1100px;touch-action:none;cursor:grab;
-  background:radial-gradient(circle at 50% 40%,var(--accent-wash-2),var(--bg-2) 74%);
+  background:radial-gradient(circle at 50% 40%,var(--violet-glow),transparent 74%);
   box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;user-select:none;-webkit-user-select:none}
 .a3d:active{cursor:grabbing}
 /* Un balayage de lumière qui suit l'inclinaison : c'est ce qui donne l'idée
@@ -386,7 +405,7 @@
 .a3d.carte .a3d-obj{width:56%;height:auto;aspect-ratio:5/7}
 .a3d-face,.a3d-dos{position:absolute;inset:0;border-radius:9px;overflow:hidden;
   box-shadow:0 14px 26px rgba(0,0,0,.6)}
-.a3d-dos{transform:rotateY(180deg);background:var(--bg-2)}
+.a3d-dos{transform:rotateY(180deg);background:var(--plate)}
 .a3d-dos img{width:100%;height:100%;object-fit:cover;display:block}
 .a3d-face .cwrap,.a3d-face .card{width:100%;height:100%;margin:0}
 .a3d-face img{width:100%;height:100%;object-fit:cover;display:block}
@@ -408,7 +427,7 @@
 }
 
 /* ---- Les libellés posés sur la scène ---- */
-.a3d-qte{position:absolute;right:10px;bottom:10px;background:var(--surface);color:var(--text);
+.a3d-qte{position:absolute;right:10px;bottom:10px;background:var(--plate-3);color:var(--text);
   border-radius:999px;padding:3px 11px;font-family:var(--display);font-weight:900;font-size:14px;
   box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1);pointer-events:none}
 .a3d-dit{position:absolute;left:0;right:0;bottom:10px;display:flex;align-items:center;
@@ -463,7 +482,7 @@
 .ava.sm{width:34px;height:34px}
 .ava.md{width:56px;height:56px}
 .ava.lg{width:48px;height:48px}
-.ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--accent-glow)}
+.ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--violet-glow)}
 /* Les cadres à texture (Prisme, Sceau, et ceux de la version 2.0) sont dans
    css/reflets.css, « Les cadres d'avatar à texture ». */
 .avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
@@ -474,7 +493,7 @@
 .avapick:hover{background:var(--hover)}
 .avapick>span{font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.2;text-align:center;
   overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
-.avapick.on{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.avapick.on{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.75)}
 .avapick.on>span{color:var(--text)}
 
 /* ============ Vitrine ============ */
@@ -487,7 +506,7 @@
 .vit.vide{justify-content:center;aspect-ratio:5/7;border:0;border-radius:var(--radius-sm);
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);gap:2px}
 .vit.vide.muette{opacity:.4}
-.vitplus{font-size:22px;font-weight:300;line-height:1;color:var(--accent-soft)}
+.vitplus{font-size:22px;font-weight:300;line-height:1;color:var(--muted)}
 .vit.vide.muette .vitplus{color:var(--muted)}
 .vitcarte{display:block;width:100%;background:none;border:0;padding:0;border-radius:var(--radius-xs);
   box-shadow:var(--sh-2);transition:transform .16s}
@@ -502,7 +521,7 @@
 
 /* ============ Profil ============ */
 .idcard{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
-  background:linear-gradient(135deg,var(--accent-wash-2),var(--surface) 62%);
+  background:linear-gradient(135deg,var(--deco-wash),var(--surface) 62%);
   border:1px solid var(--line);border-radius:var(--radius);padding:16px 15px;margin-bottom:10px;
   box-shadow:var(--sh-1)}
 /* `flex:1 1 150px` et non `flex:1` : avec une base de zéro, la colonne du nom
@@ -586,9 +605,9 @@
 .pickopt:hover{background:var(--surface-3);color:var(--text)}
 .pickopt svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
-.pickopt.on{background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--text);
-  box-shadow:inset 0 0 0 1px var(--accent-soft)}
-.pickopt.on svg{color:var(--accent-soft)}
+.pickopt.on{background:rgba(255,255,255,.12);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 0 0 1.5px rgba(255,255,255,.6)}
+.pickopt.on svg{color:var(--text)}
 
 .reglabel{font-size:12.5px;font-weight:700;color:var(--muted);margin:14px 0 7px}
 .about code{background:var(--bg-2);border-radius:5px;padding:1px 5px;font-size:12px}
@@ -605,7 +624,7 @@
 .clligne{display:flex;align-items:center;gap:11px;width:100%;background:var(--surface);
   border:1px solid var(--line);border-radius:var(--radius);padding:8px 13px 8px 9px;text-align:left}
 .clligne:hover{background:var(--hover)}
-.clligne.moi{border-color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.clligne.moi{border-color:rgba(154,115,255,.55);background:linear-gradient(90deg,var(--deco-wash),var(--surface) 70%);box-shadow:inset 0 0 0 1px rgba(154,115,255,.4)}
 .clrang{flex:0 0 30px;text-align:center;font-family:var(--display);font-weight:900;font-size:15px;color:var(--muted)}
 .podium .clrang{height:28px;line-height:28px;border-radius:99px;color:#1a1205}
 /* Teintes fixes et claires, chiffre sombre : lisibles dans les deux thèmes
@@ -672,12 +691,11 @@
 .iossteps li{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--subtle)}
 .iossteps b{color:var(--text)}
 .iosico,.iosnum{flex:0 0 auto;width:34px;height:34px;border-radius:var(--radius-sm);display:grid;place-items:center;
-  background:var(--surface-2);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line)}
+  background:var(--deco-wash);color:var(--deco-ink);box-shadow:inset 0 0 0 1px var(--line)}
 .iosico{padding:6px}
 .iosnum{font-weight:900;color:var(--ok)}
 .iosarrow{text-align:center;font-size:26px;color:var(--accent-soft);margin:14px 0 -6px;animation:bob 1.5s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(7px);opacity:.55}}
-body.installsheet .sheet{border-bottom:2px solid var(--accent)}
 
 /* ============ Attente serveur ============ */
 body.busy{cursor:progress}
@@ -692,12 +710,11 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
      l'en-tête et celui des notifications en découlent tous. */
   :root{--rail:236px}
 
-  /* Une grille, pas un flex qui passe à la ligne : avec `flex-wrap`, le
-     navigateur répartit la hauteur restante entre les lignes, et l'en-tête
-     s'allongeait dès que le contenu de la page était court. */
-  body{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);grid-template-rows:auto minmax(0,1fr);
-    grid-template-areas:"top top" "main nav";height:100%}
-  .top{grid-area:top;padding:12px 26px}
+  /* Une grille à deux colonnes : le contenu, et la place du rail. L'en-tête
+     flotte au-dessus des deux (css/base.css) : il n'a pas de rangée à lui. */
+  body{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);grid-template-rows:minmax(0,1fr);
+    grid-template-areas:"main nav";height:100%}
+  .top{padding:env(safe-area-inset-top,0px) 22px 0;--top-h:68px}
   #nav{grid-area:nav}
   main{grid-area:main}
 
@@ -707,7 +724,7 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   body.inauth,body.inlock{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
     grid-template-areas:"main"}
   body.inauth #main>*,body.inlock #main>*{max-width:none;margin-inline:auto}
-  #brand img{height:44px}
+  #brand img{height:42px}
 
   /* Le rail passe à droite : sous la main qui tient la souris, et à l'opposé
      du logo, pour que l'en-tête ne soit pas déséquilibré d'un seul côté.
@@ -716,43 +733,39 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   /* Une colonne, et non une grille : c'est ce qui permet au pied de menu
      d'être poussé tout en bas par `margin-top:auto`, quelle que soit la
      hauteur de la liste au-dessus. */
-  #nav{display:flex;flex-direction:column;gap:2px;
-    padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));
-    border-top:0;border-left:1px solid var(--line);background:var(--bg-2);backdrop-filter:none;
-    overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  /* Le rail est la même capsule de verre que la barre du bas, debout :
+     décollé des bords, arrondi, et la page passe derrière lui. */
+  #nav{position:relative;left:auto;right:auto;bottom:auto;height:auto;display:flex;flex-direction:column;gap:2px;
+    margin:80px 14px 14px 0;padding:12px 10px 14px;border-radius:var(--radius-xl);
+    overflow-y:auto;scrollbar-width:none}
+  #nav::-webkit-scrollbar{display:none}
   #nav>*{flex:0 0 auto}
-  #nav button{flex-direction:row;justify-content:flex-start;gap:13px;padding:11px 13px;font-size:13.5px;
-    font-weight:700;letter-spacing:.005em;border-radius:var(--radius-sm);color:var(--subtle)}
+  #nav button{flex-direction:row;justify-content:flex-start;gap:13px;padding:11px 13px;font-size:14px;
+    font-weight:700;letter-spacing:.005em;border-radius:var(--radius);color:var(--subtle)}
   #nav button svg{width:20px;height:20px;flex:0 0 auto}
   #nav button svg.ico-star{width:22px;height:20px}
   #nav button span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis}
   #nav button:hover{color:var(--text);background:var(--hover)}
 
-  /* Sélection : une pastille pleine sur toute la ligne. La pastille ronde de la
-     version mobile est dessinée pour une icône seule ; ici elle laisserait le
-     libellé dehors. */
-  #nav button .navbg{position:absolute;inset:0;width:auto;height:auto;translate:none;scale:1;opacity:0;
-    border-radius:var(--radius-sm);background:linear-gradient(180deg,var(--accent-soft),var(--accent));
-    box-shadow:0 2px 10px var(--accent-glow),inset 0 1px 0 var(--gloss-soft);transition:opacity .18s}
-  #nav button.on .navbg{opacity:1}
-  #nav button.on{color:var(--on-accent);font-weight:800}
-  #nav button.on svg{stroke:var(--on-accent)}
-  #nav button.on svg.ico-star{fill:var(--on-accent);filter:none}
+  /* Sélection : la même lentille que sur mobile, sur toute la ligne. Elle ne
+     glisse pas : les lignes du rail n'ont pas toutes la même hauteur. */
+  #nav button.on .navbg{animation:none}
+  #nav button.on{color:var(--text);font-weight:800}
 
   /* Le compteur se range au bout de la ligne, à la place où l'œil le cherche. */
-  .pastille.nav{position:static;margin-left:auto;box-shadow:none}
-  #nav button.on .pastille.nav{background:rgba(0,0,0,.3);color:#fff}
+  .pastille.nav{position:static;margin-left:auto}
 
   /* Le contenu se centre dans la colonne qui lui reste, et non contre le rail :
      collé à gauche, la page paraissait décalée d'un côté sur un grand écran. */
   main{min-width:0;min-height:0;padding:24px 36px 44px}
+  main{padding-top:84px}
   #main>*{max-width:860px;margin-inline:auto}
   #main.tab-boosters>*,#main.tab-collection>*{max-width:1180px}
 
   /* Plus de barre en bas : les notifications se recentrent sur la zone de
      contenu plutôt que sur la fenêtre entière. */
   #toast{bottom:26px;left:calc(50% - var(--rail) / 2)}
-  #qnotif{top:88px;left:calc(50% - var(--rail) / 2)}
+  #qnotif{top:84px;left:calc(50% - var(--rail) / 2)}
 
   .stats{grid-template-columns:repeat(4,1fr)}
   .offres{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
@@ -764,11 +777,11 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
 
   /* Le rail a la place d'afficher les deux groupes : plus besoin de tiroir. */
   #nav .second{display:flex}
-  #nav .navsep{display:block;height:1px;margin:14px 10px 12px;background:var(--line);border:0}
+  #nav .navsep{display:block;height:1px;margin:10px 12px;background:var(--line);border:0}
   #nav .second span{font-weight:inherit;color:inherit}
   #nav button.second{padding:9px 13px;font-size:12.5px}
   #nav button.second svg{width:18px;height:18px}
-  #nav .navpied{display:block;margin-top:auto;padding:16px 13px 0;
+  #nav .navpied{display:block;margin-top:auto;padding:14px 8px 0;
     border-top:1px solid var(--line)}
 
   .soonart{height:250px;max-width:380px}
@@ -778,7 +791,7 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
 
   /* Les feuilles modales se centrent plutôt que de monter du bas. */
   .sheet-wrap{align-items:center}
-  .sheet{border-radius:var(--radius-lg);border-bottom:1px solid var(--line);max-height:82vh;padding-bottom:20px}
+  .sheet{border-radius:var(--radius-xl);border-bottom:1px solid var(--glass-line);max-height:82vh;padding-bottom:20px}
   .sheet::before{display:none}
   .pickgrid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));max-height:46vh}
 }
@@ -842,12 +855,12 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px 8px 12px;
   font-size:12.5px;font-weight:700;color:var(--subtle)}
 .trecharge::before{content:'';position:absolute;inset:0 auto 0 0;width:var(--p,0%);
-  background:var(--accent-wash);pointer-events:none;transition:width 1s linear}
+  background:var(--deco-wash);pointer-events:none;transition:width 1s linear}
 .trecharge>*{position:relative}
 .trecharge>span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trecharge>span b{color:var(--text)}
 .trecharge>svg{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+  stroke-linecap:round;stroke-linejoin:round;color:var(--deco-ink)}
 .trecharge.pret{border-color:var(--ok-line)}
 .trecharge.pret>svg{color:var(--ok);stroke-width:2.6}
 /* ---------- Une demande ---------- */
@@ -865,7 +878,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .troc-cartes{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;
   gap:12px;max-width:330px;margin:0 auto}
 .troc-fleche{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;
-  background:var(--surface-2);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line)}
+  background:var(--deco-wash);color:var(--deco-ink);box-shadow:inset 0 0 0 1px var(--line)}
 .troc-fleche svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 
@@ -890,7 +903,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .tpill.neuf{background:var(--ok);color:#06251a}
 .tpill.perte{background:var(--warn);color:#2a1d00}
 .tpill.garde{font-family:var(--body);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
-  background:var(--accent-soft);color:#fff}
+  background:var(--plate-3);color:var(--text)}
 
 .troc-mot{margin:12px auto 0;max-width:330px;background:var(--bg-2);border-radius:var(--radius-sm);
   padding:9px 12px;font-size:13px;font-style:italic;line-height:1.4;color:var(--subtle)}
@@ -988,13 +1001,13 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .pick .tpill{top:-5px;right:-5px;height:19px;min-width:22px;padding:0 6px;font-size:10.5px}
 .pick .tpill.neuf,.pick .tpill.perte,.pick .tpill.garde{font-size:8.5px}
 /* Une carte qui me manque, dans la collection d'un autre : un liseré. */
-.pick.manque .cwrap{box-shadow:0 0 0 2px var(--accent-soft),var(--sh-2)}
+.pick.manque .cwrap{box-shadow:0 0 0 2px var(--ok),var(--sh-2)}
 .souschips .rarchip .rardot{color:var(--rc,var(--muted))}
 .sheet .souschips{margin-top:4px}
 .pickn{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;
   margin-left:5px;border-radius:9px;background:var(--surface-3);color:var(--subtle);
   font-size:10px;font-weight:900;font-style:normal;line-height:1}
-.souschips button.on .pickn{background:var(--accent-wash-2);color:var(--accent-soft)}
+.souschips button.on .pickn{background:rgba(255,255,255,.2);color:var(--text)}
 .trcolvues{padding-top:4px}
 /* Dans une fiche, la grille est déjà courte : elle n'a pas à défiler dans son
    coin à l'intérieur d'une feuille qui défile déjà. */
@@ -1006,7 +1019,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   border-radius:999px;padding:5px 13px;font-size:12px;font-weight:600;color:var(--muted);
   box-shadow:inset 0 0 0 1px var(--line)}
 .colchip b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
-.colchip.fort b{color:var(--accent-soft)}
+.colchip.fort b{color:var(--deco-ink)}
 .ficheacts{margin-top:12px}
 
 /* =====================================================================
@@ -1025,13 +1038,13 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .bmsg{position:relative;display:flex;gap:11px;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--radius);padding:12px 13px;margin-bottom:8px;box-shadow:var(--sh-1)}
 /* Du neuf : un lavis, et un point dans le coin. */
-.bmsg.neuf{border-color:var(--accent-wash-2);
-  background:linear-gradient(135deg,var(--accent-wash),var(--surface) 62%)}
+.bmsg.neuf{border-color:rgba(154,115,255,.35);
+  background:linear-gradient(135deg,var(--deco-wash),var(--surface) 62%)}
 .bmsg.neuf::after{content:'';position:absolute;top:15px;right:14px;width:8px;height:8px;
   border-radius:50%;background:var(--brand)}
 .bava{flex:0 0 auto;align-self:flex-start;border:0;background:none;padding:0}
 .bico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;align-self:flex-start;
-  border-radius:50%;background:var(--accent-wash);color:var(--accent-soft)}
+  border-radius:50%;background:var(--deco-wash);color:var(--deco-ink)}
 .bico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .bcorps{flex:1;min-width:0;padding-right:16px}
@@ -1055,8 +1068,8 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .qn.boiteqn{border-color:var(--line-2)}
 .qn.boiteqn .qntxt b{font-weight:600}
 .qn.boiteqn .qntxt strong{font-weight:800}
-.qn.boiteqn .qntxt small{color:var(--accent-soft)}
-.qn.boiteqn .qnico{background:var(--accent-wash);color:var(--accent-soft)}
+.qn.boiteqn .qntxt small{color:var(--deco-ink)}
+.qn.boiteqn .qnico{background:var(--deco-wash);color:var(--deco-ink);box-shadow:none}
 .qn.froid .qnico{background:var(--surface-3);color:var(--muted)}
 .qn.froid .qntxt small{color:var(--muted)}
 .qnav{flex:0 0 auto;display:grid;place-items:center}
@@ -1076,14 +1089,14 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .recplafond-tete span b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
 .recbarre{display:flex;height:8px;margin:9px 0 7px;border-radius:99px;background:var(--bg-2);
   overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
-.recbarre i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+.recbarre i{display:block;height:100%;background:var(--progress);
   transition:width .35s cubic-bezier(.2,1,.4,1)}
 .recbarre i.sel{background:repeating-linear-gradient(135deg,var(--ok) 0 5px,var(--ok-deep) 5px 10px)}
 .recplafond small{font-size:12px;color:var(--muted)}
 
 /* Les Fragments : le même losange que les Éclats, en creux. */
 .fragico{display:inline-flex;vertical-align:-2px}
-.fragico svg{width:1.05em;height:1.05em;fill:none;stroke:var(--accent-soft);stroke-width:2;stroke-linejoin:round}
+.fragico svg{width:1.05em;height:1.05em;fill:none;stroke:var(--deco-ink);stroke-width:2;stroke-linejoin:round}
 .wallet .fragico svg{width:17px;height:17px}
 .fabinfo small{display:block;margin-top:5px;line-height:1.45}
 .fabinfo .linkbtn{margin-top:6px;font-size:12.5px}
@@ -1181,7 +1194,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
    petit écran, la marge est ce qui coûte le plus cher.
    ===================================================================== */
 @media (max-width:560px){
-  main{padding:12px 12px 24px}
+  main{padding-left:12px;padding-right:12px}
 
   /* ---- Boutique ---- */
   .offres{grid-template-columns:repeat(3,1fr);gap:8px}
@@ -1235,7 +1248,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   color:var(--muted)}
 .bvpoints b{color:var(--text)}
 .bvico{display:grid;place-items:center;width:32px;height:32px;flex:0 0 auto;
-  border-radius:var(--radius-sm);background:var(--accent-wash);color:var(--accent-soft)}
+  border-radius:var(--radius-sm);background:var(--deco-wash);color:var(--deco-ink)}
 .bvico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .bvico svg.ico-star{width:20px;height:14px;stroke:none;fill:currentColor}
@@ -1280,10 +1293,10 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .nvtexte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
 .nvtexte small{font-size:12.5px;line-height:1.4;opacity:.88}
 .nvevent{display:flex;align-items:flex-start;gap:10px;margin:0 0 4px;padding:10px 12px;border-radius:var(--radius);
-  background:var(--accent-wash);color:var(--muted);font-size:13px;line-height:1.4}
+  background:var(--deco-wash);color:var(--muted);font-size:13px;line-height:1.4}
 .nvevent b{color:var(--text)}
 .nvevent small{display:block;margin-top:2px}
-.nvevent svg{flex:0 0 auto;width:20px;height:14px;margin-top:3px;fill:var(--accent-soft)}
+.nvevent svg{flex:0 0 auto;width:20px;height:14px;margin-top:3px;fill:var(--deco-ink)}
 .nvpoints{margin-top:12px}
 
 /* ============ Mes tirages ============ */
@@ -1356,7 +1369,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .cdde b{color:#fff}
 .cadeau .cdmot,.sheet .cdmot{margin:4px 0 0;padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;line-height:1.45;font-style:italic;
   background:rgba(255,255,255,.1);color:inherit;max-width:100%}
-.sheet > .cdmot{background:var(--accent-wash);color:var(--text)}
+.sheet > .cdmot{background:var(--deco-wash);color:var(--text)}
 .cadeau .cdaide{margin:2px 0 0;color:rgba(255,255,255,.6)}
 .cadeau.ouvert{padding-top:20px}
 .cdcarte{width:42%;max-width:170px;padding:0;border:0;background:none;cursor:pointer;rotate:-3deg;margin-bottom:6px;

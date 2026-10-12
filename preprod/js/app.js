@@ -74,12 +74,20 @@ function header() {
    sous un filet — inutile de cacher derrière un menu ce qui tient à l'écran. */
 const surOrdi = () => matchMedia('(min-width:900px)').matches;
 
+/* L'onglet affiché au rendu précédent : la lentille de la barre du bas glisse
+   depuis lui (`--de`, en nombre d'onglets ; css/base.css). */
+let navPrec = null;
+
 function navHTML() {
+  const bas = ongletsBas().map(t => t.id);
+  const ici = bas.indexOf(tab), avant = bas.indexOf(navPrec);
+  const de = ici >= 0 && avant >= 0 ? avant - ici : 0;
+  navPrec = tab;
   const bouton = (t, groupe) => {
     const n = pastilleOnglet(t.id);
     const cls = [groupe, tab === t.id ? 'on' : ''].filter(Boolean).join(' ');
     return `<button data-tab="${t.id}" class="${cls}" aria-label="${h(t.nom)}"
-      ${tab === t.id ? 'aria-current="page"' : ''}><i class="navbg" aria-hidden="true"></i>
+      ${tab === t.id ? `aria-current="page" style="--de:${de}"` : ''}><i class="navbg" aria-hidden="true"></i>
       ${NAVICO[t.ico]}<span>${h(t.nom)}</span>${n ? `<i class="pastille nav">${n}</i>` : ''}</button>`;
   };
   /* Le pied n'existe que sur le rail d'ordinateur : sur mobile, ces destinations
@@ -261,6 +269,8 @@ function render() {
   majBoutonInstall();
 
   tab = ongletValide(tab);
+  /* Le fond d'ambiance suit l'onglet (css/base.css, « Fond »). */
+  document.body.dataset.tab = tab;
   const vue = VUES[tab] || VUES.boosters;
   const m = $('#main');
   /* Remplacer le contenu remet le défilement à zéro. Sur le même onglet, la

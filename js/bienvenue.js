@@ -151,6 +151,7 @@ function montrerNouveautes30() {
         </div>
       </div>
       <ol class="bvpoints nvpoints">
+        ${point('star', 'Un nouveau visage.', 'Tout le site est redessiné : des barres de verre qui flottent sur la page, chaque écran éclairé par une illustration du jeu, et une seule couleur pour ce qu\'on peut faire — le rose sur le site, l\'or dans l\'arène.')}
         ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt combats, le PvE infini) et Versus en direct contre tes amis, dans une arène en plein écran.')}
         ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
         ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
