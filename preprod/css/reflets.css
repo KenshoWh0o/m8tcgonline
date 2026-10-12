@@ -31,8 +31,8 @@
 /* Le reflet nacré qui passe, lentement, et revient. */
 @keyframes rfnacre{from{background-position:100% 0}to{background-position:0% 0}}
 
-.rf-tete{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--radius);padding:22px 16px 0;color:#fff;
-  background:#140b24;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 14px 34px rgba(0,0,0,.4)}
+.rf-tete{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--radius-lg);padding:22px 16px 0;color:#fff;
+  background:var(--plate);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.24),var(--sh-3)}
 .rf-tete .rf-fond{left:22%;
   -webkit-mask:linear-gradient(90deg,transparent,#000 45%),linear-gradient(0deg,transparent,#000 42%);-webkit-mask-composite:source-in;
   mask:linear-gradient(90deg,transparent,#000 45%),linear-gradient(0deg,transparent,#000 42%);mask-composite:intersect}
@@ -154,7 +154,7 @@
 .rf-pal.pris .rf-palcarte{opacity:.5}
 .rf-palico{flex:0 0 40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--bg-2);color:#b38cff}
 .rf-palico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round;stroke-linecap:round}
-.rf-palico .shard{width:22px;height:22px;stroke:none;color:var(--accent-soft)}
+.rf-palico .shard{width:22px;height:22px;stroke:none;color:var(--brand-light)}
 .rf-palico .ava{width:32px;height:32px}
 .rf-paltxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .rf-paltxt b{font-size:13.5px;line-height:1.25}
@@ -214,7 +214,7 @@
 .il-marches li span{font-weight:800}
 .il-marches li b,.il-marches li small{display:inline-flex;align-items:center;gap:3px}
 .il-marches li b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
-.il-marches li .shard{width:12px;height:12px;color:var(--accent-soft)}
+.il-marches li .shard{width:12px;height:12px;color:var(--brand-light)}
 .il-marches li.cours{box-shadow:inset 0 0 0 1.5px #b38cff;background:rgba(179,140,255,.08);color:var(--text)}
 .il-marches li.rate{opacity:.38}
 .il-marches li.ok{box-shadow:inset 0 0 0 2px #55e6a6;background:rgba(85,230,166,.1);color:var(--text)}
@@ -238,14 +238,15 @@
 .il-fin>div>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:18px}
 .il-fin p{margin:4px 0}
 .il-gain{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:13px}
-.il-gain .shard{width:14px;height:14px;color:var(--accent-soft)}
+.il-gain .shard{width:14px;height:14px;color:var(--brand-light)}
 .il-fin .btn{margin-top:6px}
 
 /* ============ Le bandeau de l'événement (écran Boosters) ============ */
 /* Une ligne, pas une affiche : le booster reste la vedette. */
 .rfban{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;max-width:520px;flex:0 0 auto;
-  margin:0 0 6px;padding:11px 12px 11px 16px;border:0;border-radius:16px;cursor:pointer;font:inherit;text-align:left;color:#fff;
-  background:#140b24;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 8px 22px rgba(0,0,0,.35);transition:box-shadow .15s}
+  margin:0 0 6px;padding:11px 12px 11px 16px;border:0;border-radius:var(--radius-lg);cursor:pointer;font:inherit;text-align:left;color:#fff;
+  background:var(--plate);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.24),var(--sh-3);transition:box-shadow .15s,transform .2s var(--spring)}
+.rfban:active{transform:scale(.98)}
 .rfban:hover{box-shadow:inset 0 0 0 1px rgba(210,184,255,.5),0 8px 22px rgba(0,0,0,.35)}
 .rfban .rf-fond{left:30%;-webkit-mask:linear-gradient(90deg,transparent,#000 55%);mask:linear-gradient(90deg,transparent,#000 55%)}
 .rfban .rf-fond>i{--t:.34;--z:1.55;filter:brightness(.9)}
@@ -282,20 +283,22 @@
 
 /* ============ La Collection en trois vues ============ */
 .colvues{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0 12px}
-.colvue{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 11px 12px;border:0;cursor:pointer;
-  border-radius:var(--radius-sm);font:inherit;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);text-align:left}
+.colvue{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 11px 13px;border:0;cursor:pointer;
+  border-radius:var(--radius);font:inherit;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);text-align:left;
+  transition:background .15s,transform .18s var(--spring)}
+.colvue:active{transform:scale(.97)}
 .colvue b{font-size:13px}
 .colvue span{font-family:var(--display);font-weight:900;font-size:16px}
 .colvue span small{font-size:11px;color:var(--muted);font-weight:700}
-.colvue.on{box-shadow:inset 0 0 0 2px var(--accent-soft)}
-.colvue.reverses.on{box-shadow:inset 0 0 0 2px #b38cff,0 0 16px rgba(179,140,255,.25)}
+/* La vue choisie : du verre plus clair, comme un segment (docs/design-3.0.md). */
+.colvue.on,.colvue.reverses.on{background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.16)}
 .colvuebar{position:absolute;left:11px;right:11px;bottom:6px;height:3px;border-radius:999px;background:var(--bg-2);overflow:hidden}
-.colvuebar i{display:block;height:100%;background:var(--accent-soft)}
+.colvuebar i{display:block;height:100%;background:var(--progress)}
 .colvue.reverses .colvuebar i{background:linear-gradient(90deg,#ff5bb0,#b38cff,#39b8ff)}
 .colsous{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px;font-size:12.5px;color:var(--muted)}
 .colsous b{color:var(--text)}
 .colsous .colfab{display:inline-flex;align-items:center;gap:5px}
-.colsous .colfab svg{width:14px;height:14px;fill:none;stroke:var(--accent-soft);stroke-width:2}
+.colsous .colfab svg{width:14px;height:14px;fill:none;stroke:var(--deco-ink);stroke-width:2}
 .revfab{gap:6px}
 .revfab svg{width:14px;height:14px;fill:none;stroke:#b38cff;stroke-width:2}
 .gcell .num .revico{margin-left:.25em}
@@ -320,8 +323,8 @@
 .persotitre{margin:14px 0 8px;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .titregrille{display:flex;flex-wrap:wrap;gap:6px}
 .titrechoix{border:0;cursor:pointer;font:inherit;font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:999px;
-  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--text)}
-.titrechoix.on{box-shadow:inset 0 0 0 2px var(--accent-soft);background:var(--accent-wash)}
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--text)}
+.titrechoix.on{background:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1.5px rgba(255,255,255,.6)}
 .titresverrou{margin-top:10px;font-size:12.5px}
 .titresverrou summary{cursor:pointer;color:var(--muted);font-weight:700}
 .titresverrou ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -355,7 +358,7 @@
    d'où le débord de 14 % de chaque côté). Le cercle de couleur des cadres
    simples s'efface derrière. */
 .ava.fx{overflow:visible;box-shadow:none}
-.ava.xl.fx{box-shadow:0 0 22px var(--accent-glow)}
+.ava.xl.fx{box-shadow:0 0 22px var(--violet-glow)}
 .fx-deco{position:absolute;inset:-14%;z-index:2;pointer-events:none;background:center/contain no-repeat;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
 .ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg')}
@@ -370,7 +373,7 @@
 .ofbadge.limite{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
 .ofinvit,.rf-nvinvit{font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.06em}
 .ofinvit{font-size:15px;padding:8px 10px;border-radius:10px;border:1.5px dashed #b38cff;color:var(--text)}
-.offrag svg{width:44px;height:44px;fill:none;stroke:var(--accent-soft);stroke-width:1.6}
+.offrag svg{width:44px;height:44px;fill:none;stroke:var(--deco-ink);stroke-width:1.6}
 .rfban.shopev{max-width:none;margin:0 0 12px}
 .rfban.shopev .rfban-ico{flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ff5bb0,#b38cff 55%,#7fd8ff)}
 .rfban.shopev .rfban-ico svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
@@ -457,7 +460,7 @@ html.rm .rf-holo,html.rm #nav button.evnav svg,html.rm .il-pix.net,html.rm .il-a
 .rr-suite{display:flex;flex-direction:column;gap:8px}
 .rr-teaser{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;gap:14px;padding:16px;border-radius:var(--radius);color:#fff}
 .rr-teaser.combats{background:radial-gradient(120% 160% at 100% 50%,#6b1d2e,#2a0f1a 60%,#140a12)}
-.rr-teaser.secrets{background:radial-gradient(120% 160% at 100% 50%,#2a1452,#140b24 60%,#0d0818)}
+.rr-teaser.secrets{background:radial-gradient(120% 160% at 100% 50%,#2a1452,var(--plate) 60%,#0d0818)}
 .rr-teaser small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65)}
 .rr-teaser b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px}
 .rr-teaser p{margin:3px 0 0;font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.8)}
@@ -469,7 +472,7 @@ html.rm .rf-holo,html.rm #nav button.evnav svg,html.rm .il-pix.net,html.rm .il-a
 .rr-secrets i:nth-child(1){left:0;rotate:-10deg}.rr-secrets i:nth-child(2){left:9px;top:0;z-index:2}.rr-secrets i:nth-child(3){left:18px;rotate:10deg}
 .rr-secrets i:nth-child(2)::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#d2b8ff}
 .rr-pop{display:flex;flex-direction:column;gap:12px}
-.rr-poptete{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:2px;padding:20px 16px;border-radius:var(--radius);color:#fff;background:#140b24}
+.rr-poptete{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:2px;padding:20px 16px;border-radius:var(--radius);color:#fff;background:var(--plate)}
 .rr-poptete .rf-fond{left:30%;-webkit-mask:linear-gradient(90deg,transparent,#000 55%);mask:linear-gradient(90deg,transparent,#000 55%)}
 .rr-poptete .rf-fond>i{--t:.36;--z:1.5}
 .rr-poptete b{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px}

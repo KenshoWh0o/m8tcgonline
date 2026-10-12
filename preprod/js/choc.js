@@ -529,7 +529,7 @@ function vChBoutique() {
       <small>${h(it.detail)}</small>
       ${reste ? `<span class="rf-artreste">${fini && !it.unique_buy ? 'Épuisé' : reste}</span>` : ''}
       ${fini ? '<span class="qtag">Acquis</span>'
-        : `<button class="btn tiny" data-shop="${h(it.id)}" ${chEv.solde < it.prix ? 'disabled' : ''}>${insigneIco}${fmtN(it.prix)}</button>`}
+        : `<button class="btn tiny ghost" data-shop="${h(it.id)}" ${chEv.solde < it.prix ? 'disabled' : ''}>${insigneIco}${fmtN(it.prix)}</button>`}
     </article>`;
   };
   return `${chSousTete('Boutique', `En ${CHOC.monnaie.nom}, seulement pendant l'événement`, chSoldeChip())}

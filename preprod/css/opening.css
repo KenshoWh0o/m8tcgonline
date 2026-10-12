@@ -2,7 +2,7 @@
 /* ============ Théâtre (ouverture plein écran) ============ */
 #theater{position:fixed;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;color:#fff;
   padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
-  background:radial-gradient(90% 52% at 50% 30%,rgba(137,54,255,.22) 0%,transparent 68%),linear-gradient(180deg,#120e18,#07050a)}
+  background:radial-gradient(90% 52% at 50% 30%,rgba(124,77,255,.24) 0%,transparent 68%),linear-gradient(180deg,#110c2c,#05041a)}
 #theater[hidden]{display:none}
 #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
 .th-stage{position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -72,7 +72,7 @@ html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,
   display:flex;align-items:center;gap:9px}
 .op-rar.rC,.op-rar.rPC,.op-rar.rES{color:rgba(255,255,255,.6)}
 .op-rar.rR{color:var(--r-r)}.op-rar.rE{color:#c79bff}.op-rar.rL{color:var(--r-l)}
-.op-rar em{font-style:normal;font-family:var(--body);font-size:10.5px;font-weight:900;letter-spacing:.08em;background:var(--accent);
+.op-rar em{font-style:normal;font-family:var(--body);font-size:10.5px;font-weight:900;letter-spacing:.08em;background:var(--brand);
   color:#fff;padding:3px 10px;border-radius:999px;box-shadow:0 0 14px rgba(137,54,255,.55)}
 .op-rar.big{font-size:38px;font-stretch:125%}
 .op-rar.big.rL .slam{background:linear-gradient(180deg,#fff6d0,#ffc73b 55%,#e08a00);-webkit-background-clip:text;background-clip:text;
@@ -120,7 +120,7 @@ html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,
 .rc-bestlabel{position:relative;display:flex;gap:8px;align-items:center;margin-top:14px}
 .rc-tag{font-family:var(--display);font-weight:900;font-style:italic;font-size:13px;background:#fff;color:#12111a;padding:5px 13px;border-radius:999px}
 .rc-tag.rR{background:var(--r-r)}.rc-tag.rE{background:#b67dff}.rc-tag.rL{background:var(--r-l)}
-.rc-bestlabel em{font-style:normal;font-weight:900;font-size:10.5px;letter-spacing:.08em;background:var(--accent);color:#fff;
+.rc-bestlabel em{font-style:normal;font-weight:900;font-size:10.5px;letter-spacing:.08em;background:var(--brand);color:#fff;
   padding:4px 11px;border-radius:999px;box-shadow:0 0 14px rgba(137,54,255,.5)}
 .rc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:420px;margin:18px 0 20px}
 .rc-stats div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);padding:11px 6px;

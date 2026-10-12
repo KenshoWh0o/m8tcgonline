@@ -71,7 +71,7 @@ function vAmis() {
     <button class="btn tiny ghost" data-ami-non="${h(a.pseudo)}">Refuser</button>`)}
 
   ${bloc('Tes amis', amis, a => `
-    <button class="btn tiny" data-troc="${h(a.pseudo)}">Échanger</button>`)}
+    <button class="btn tiny ghost" data-troc="${h(a.pseudo)}">Échanger</button>`)}
 
   ${bloc('Demandes envoyées', envoyees, a => `
     <button class="btn tiny ghost" data-ami-non="${h(a.pseudo)}">Annuler</button>`)}
