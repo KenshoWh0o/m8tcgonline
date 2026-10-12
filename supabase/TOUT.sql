@@ -1932,6 +1932,8 @@ delete from public.quests where id not in (
   -- fois qu'on rejoue ce fichier (quest_progress suit la quete en cascade).
   'd_combat','d_victoire','d_vaincus','w_victoires','w_dur','w_defi',
   'm_campagne','m_legende','m_cent','m_secrete','m_mt_or','m_mt_or10','m_mt_prisme',
+  'd_xp','w_xp','m_combats50','m_vaincus100','m_defis10','m_dures25',
+  'm_niv5','m_niv10','m_niv20','m_niv30','m_niv40','m_niv50',
   'c_visite','c_combats','c_raid','c_epreuve','c_vaincus','c_packs',
   'c_deg100','c_raidv5','c_ep7','c_pts','c_vic30','c_dur5','c_legende','c_defis','c_deck','c_cosm',
   'c_packs60','c_trade','c_invite');
@@ -1981,6 +1983,9 @@ on conflict (id) do update set
 --   legende          : l'IA battue en Legende (PvE infini)
 --   rarity_S         : une Secrete sortie d'un booster (24_secretes_maitrise.sql)
 --   maitrise_3/4     : des cartes a la maitrise Or / Prisme (24_secretes_maitrise.sql)
+--   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
+--   niveau           : le niveau de combattant atteint — un etat, pas un
+--                      compteur : gagner_xp le recopie (26_niveaux.sql)
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_combat',    'daily',     'combats',          1,   20, null,         'Sur le terrain',        'Joue un combat, contre l''IA ou un ami.', 8),
   ('d_victoire',  'daily',     'victoires',        1,   40, null,         'Première victoire',     'Gagne un combat.', 9),
@@ -1991,10 +1996,22 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_campagne',  'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 30),
   ('m_legende',   'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l''IA en Légende.', 31),
   ('m_cent',      'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 32),
-  ('m_secrete',   'milestone', 'rarity_S',         1,  500, null,         'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
+  ('m_secrete',   'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
   ('m_mt_or',     'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d''or',        'Amène une carte à la maîtrise Or.', 34),
   ('m_mt_or10',   'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l''or',        'Amène 10 cartes à la maîtrise Or.', 35),
-  ('m_mt_prisme', 'milestone', 'maitrise_4',       1,  800, null,         'Prisme',                'Amène une carte à la maîtrise Prisme.', 36)
+  ('m_mt_prisme', 'milestone', 'maitrise_4',       1,  800, 'f_maitrise', 'Prisme',                'Amène une carte à la maîtrise Prisme.', 36),
+  ('d_xp',        'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11),
+  ('w_xp',        'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11),
+  ('m_combats50', 'milestone', 'combats',         50,  300, null,         'Habitué de l''arène',   'Joue 50 combats.', 37),
+  ('m_vaincus100','milestone', 'vaincus',        100,  400, null,         'Cent à terre',          'Vaincs 100 Joueurs adverses.', 38),
+  ('m_defis10',   'milestone', 'defis',           10,  400, null,         'Rival attitré',         'Joue 10 défis contre des amis.', 39),
+  ('m_dures25',   'milestone', 'victoires_dures', 25,  600, null,         'Sans pitié',            'Gagne 25 combats en Difficile ou plus.', 40),
+  ('m_niv5',      'milestone', 'niveau',           5,  100, null,         'Niveau 5',              'Atteins le niveau 5 de combattant.', 41),
+  ('m_niv10',     'milestone', 'niveau',          10,  200, null,         'Niveau 10',             'Atteins le niveau 10 de combattant.', 42),
+  ('m_niv20',     'milestone', 'niveau',          20,  400, null,         'Niveau 20',             'Atteins le niveau 20 de combattant.', 43),
+  ('m_niv30',     'milestone', 'niveau',          30,  600, null,         'Niveau 30',             'Atteins le niveau 30 de combattant.', 44),
+  ('m_niv40',     'milestone', 'niveau',          40,  800, null,         'Niveau 40',             'Atteins le niveau 40 de combattant.', 45),
+  ('m_niv50',     'milestone', 'niveau',          50, 1500, null,         'Niveau 50',             'Atteins le niveau 50 de combattant.', 46)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -2060,7 +2077,10 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
   ('f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2),
   ('f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3),
-  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4)
+  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4),
+  -- Version 3.0 : les couleurs des deux Sections.
+  ('f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5),
+  ('f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -2116,7 +2136,7 @@ on conflict (id) do update set
 delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',
-  'f_azur','f_rose','f_or','f_prisme',
+  'f_azur','f_rose','f_or','f_prisme','f_toxique','f_deter',
   's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
   't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
   'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_orage','t_supporter');
@@ -4756,6 +4776,8 @@ begin
                                'plafond', 5),
     'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites,
                                 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d),
+    -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
+    'xp', c.xp,
     'guerre', jsonb_build_object(
       'toxique', coalesce(g.toxique, 0), 'deter', coalesce(g.deter, 0),
       'moi', coalesce((select points from guerre_contrib where semaine = sem and user_id = p), 0),
@@ -4895,7 +4917,7 @@ create or replace function public.combat_fin(p_id text, p_gagne boolean, p_resum
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; o combats_ouverts; r jsonb; trop boolean;
         v_n int; pc pve_campagne; pd pve_difficultes; g_eclats int := 0; g_boosters int := 0; g_fragments int := 0;
-        g_points int := 0; carte text; msg text := ''; plafond boolean; autre text;
+        g_points int := 0; carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -4919,15 +4941,21 @@ begin
     if o.niveau >= 4 then perform bump_quests(p, 'victoires_dures', 1); end if;
     if o.niveau >= 5 and o.mode = 'infini' then perform bump_quests(p, 'legende', 1); end if;
   end if;
+  -- L'XP, sans limite par jour (26_niveaux.sql) : tout combat fini en
+  -- rapporte, sauf un combat trop court.
+  if not trop then
+    v_xp := gagner_xp(p, xp_combat(o.mode, o.niveau, coalesce(p_gagne, false),
+                                 coalesce((p_resume->>'vaincus')::int, 0), coalesce((p_resume->>'tours')::int, 0)));
+  end if;
 
   -- Le Raid et l'Epreuve paient en Insignes (25_choc.sql).
   if o.mode in ('raid', 'epreuve') then
     r := choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop);
-    return jsonb_build_object('etat', me(), 'recompense', r);
+    return jsonb_build_object('etat', me(), 'recompense', r || jsonb_build_object('xp', v_xp));
   end if;
 
   if not coalesce(p_gagne, false) then
-    msg := 'Pas de récompense pour une défaite — mais la quête « Sur le terrain » avance.';
+    msg := 'Pas d''Éclats pour une défaite, mais l''XP compte.';
   elsif trop then
     msg := 'Combat trop court pour être récompensé.';
   else
@@ -4976,7 +5004,7 @@ begin
 
   return jsonb_build_object('etat', me(), 'recompense', jsonb_build_object(
     'eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments, 'points', g_points,
-    'carte', carte, 'titre', null, 'message', msg));
+    'carte', carte, 'titre', null, 'message', msg, 'xp', v_xp));
 end $$;
 
 -- ===================================================== 7. les defis entre amis
@@ -5082,7 +5110,7 @@ end $$;
 create or replace function public.defi_fin(p_id text, p_gagnant int default null, p_tours int default 0) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); d defis; c combat_joueurs; moi int; gagne boolean;
-        g_eclats int := 0; g_points int := 0; msg text := ''; deja boolean;
+        g_eclats int := 0; g_points int := 0; msg text := ''; deja boolean; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -5122,6 +5150,7 @@ begin
         perform bump_quests(p, 'victoires', 1);
         g_points := marquer_points(p, 5);
       end if;
+      v_xp := gagner_xp(p, xp_combat('defi', 0, gagne, 0, coalesce(p_tours, 0)));
       if c.defis_rec < 3 then
         update combat_joueurs set defis_rec = defis_rec + 1 where user_id = p;
         g_eclats := case when gagne then 40 else 15 end;
@@ -5132,7 +5161,7 @@ begin
     end if;
   end if;
   return jsonb_build_object('etat', me(), 'recompense',
-    jsonb_build_object('eclats', g_eclats, 'points', g_points, 'message', msg));
+    jsonb_build_object('eclats', g_eclats, 'points', g_points, 'message', msg, 'xp', v_xp));
 end $$;
 
 -- ===================================================== 8. droits
@@ -5696,6 +5725,123 @@ grant execute on function public.choc_etat, public.raid_reclamer to authenticate
 --  pas le rythme des boosters. Pour le fermer plus tot :
 --    update public.evenements set fin = now() where code = 'choc' and fin > now();
 -- =====================================================================
+
+
+-- #####################################################################
+-- ###  26_niveaux.sql
+-- ###  Version 3.0 : l'XP et le niveau de combattant
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0 : l'XP et le niveau de combattant
+--  A executer apres 25_choc.sql. Rejouable sans danger.
+--
+--  Chaque combat fini rapporte de l'XP, sans limite par jour : c'est la
+--  recompense de ceux qui jouent beaucoup, quand les Eclats des combats
+--  s'arretent a cinq victoires recompensees par jour (23_combats.sql).
+--  Chaque niveau atteint paie des Eclats ; certains paliers ajoutent des
+--  boosters, des Fragments, un cadre ou un titre. Pas de niveau maximum.
+--
+--  Les chiffres sont aussi dans js/combat/niveaux.js (NIVEAUX) : les deux
+--  doivent rester d'accord. L'equilibrage est explique dans
+--  docs/economie-3.0.md. combat_fin et defi_fin (23_combats.sql) appellent
+--  gagner_xp ; PL/pgSQL resout l'appel a l'execution.
+-- =====================================================================
+
+alter table public.combat_joueurs add column if not exists xp integer not null default 0;
+
+-- Les paliers qui paient plus que les Eclats de chaque niveau.
+create table if not exists public.niveau_paliers (
+  niveau    integer primary key check (niveau >= 2),
+  boosters  integer not null default 0,
+  fragments integer not null default 0,
+  cadre     text,
+  titre     text
+);
+delete from public.niveau_paliers where niveau not in (3, 5, 10, 15, 20, 25, 30, 40, 50);
+insert into public.niveau_paliers (niveau, boosters, fragments, cadre, titre) values
+  (3,  1, 0,   null,      null),
+  (5,  2, 0,   null,      't_bagarreur'),
+  (10, 2, 0,   'f_niv10', null),
+  (15, 3, 0,   null,      null),
+  (20, 0, 0,   'f_niv20', 't_veteran_arene'),
+  (25, 0, 500, null,      null),
+  (30, 3, 0,   'f_niv30', null),
+  (40, 5, 0,   null,      't_maitre_arene'),
+  (50, 0, 0,   'f_niv50', 't_legende_arene')
+on conflict (niveau) do update set boosters = excluded.boosters, fragments = excluded.fragments,
+  cadre = excluded.cadre, titre = excluded.titre;
+alter table public.niveau_paliers enable row level security;
+revoke all on public.niveau_paliers from anon, authenticated;
+
+-- L'XP pour passer du niveau n au suivant (xpRequis).
+create or replace function public.xp_requis(n int) returns integer
+language sql immutable as $$ select least(100 + 25 * (n - 1), 1100); $$;
+
+-- Le niveau d'un total d'XP (niveauDe).
+create or replace function public.niveau_de(xp int) returns integer
+language plpgsql immutable as $$
+declare v_n int := 1; reste int := greatest(0, coalesce(xp, 0));
+begin
+  while reste >= xp_requis(v_n) loop
+    reste := reste - xp_requis(v_n);
+    v_n := v_n + 1;
+  end loop;
+  return v_n;
+end $$;
+
+-- L'XP d'un combat (xpCombat) : contre l'IA, selon la difficulte (1 a 5) ;
+-- un defi entre amis a ses propres montants. Plus 4 par Joueur adverse
+-- vaincu, six au plus. Une defaite ne rapporte que si la partie a dure six
+-- tours : sinon, abandonner tout de suite rapporterait plus vite que jouer.
+drop function if exists public.xp_combat(text, int, boolean, int);
+create or replace function public.xp_combat(p_mode text, etoiles int, gagne boolean, vaincus int, tours int) returns integer
+language sql immutable as $$
+  select case when not gagne and coalesce(tours, 0) < 6 then 0
+    else (case when p_mode = 'defi' then case when gagne then 80 else 35 end
+              else round((case when gagne then 50 else 20 end)
+                         * (array[0.6, 0.8, 1, 1.25, 1.5])[least(5, greatest(1, coalesce(etoiles, 3)))])::int end
+         + least(6, greatest(0, coalesce(vaincus, 0))) * 4) end;
+$$;
+
+-- Gagner de l'XP : chaque niveau franchi paie (50 Eclats, plus son palier ;
+-- apres 50, deux boosters tous les cinq niveaux). Les quetes « xp » avancent,
+-- les quetes « niveau » suivent le niveau atteint. Renvoie ce qu'il faut
+-- montrer en fin de combat.
+create or replace function public.gagner_xp(p uuid, d int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare avant int; apres int; total int; k int; pal niveau_paliers; paliers jsonb := '[]'::jsonb;
+        g_eclats int; g_boosters int;
+begin
+  if coalesce(d, 0) <= 0 then return null; end if;
+  update combat_joueurs set xp = xp + d where user_id = p returning xp into total;
+  if total is null then return null; end if;
+  avant := niveau_de(total - d);
+  apres := niveau_de(total);
+  for k in avant + 1 .. apres loop
+    select * into pal from niveau_paliers where niveau = k;
+    g_eclats := 50;
+    g_boosters := coalesce(pal.boosters, 0) + case when k > 50 and k % 5 = 0 then 2 else 0 end;
+    update profiles set shards = shards + g_eclats, boosters_bonus = boosters_bonus + g_boosters,
+                        fragments = fragments + coalesce(pal.fragments, 0)
+     where id = p;
+    if pal.cadre is not null then perform accorder(p, 'cadre', 1, pal.cadre); end if;
+    if pal.titre is not null then perform accorder(p, 'titre', 1, pal.titre); end if;
+    paliers := paliers || jsonb_build_object('niveau', k, 'eclats', g_eclats, 'boosters', g_boosters,
+      'fragments', coalesce(pal.fragments, 0), 'cadre', pal.cadre, 'titre', pal.titre);
+    pal := null;
+  end loop;
+  perform bump_quests(p, 'xp', d);
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, period_key(q.scope), apres from quests q where q.metric = 'niveau'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress)
+    where not quest_progress.claimed;
+  return jsonb_build_object('gagne', d, 'total', total, 'avant', avant, 'niveau', apres, 'paliers', paliers);
+end $$;
+
+revoke all on function public.xp_requis, public.niveau_de, public.xp_combat, public.gagner_xp
+  from public, anon, authenticated;
 
 
 -- =====================================================================

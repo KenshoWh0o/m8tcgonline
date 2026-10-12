@@ -1,29 +1,29 @@
 /* L'onglet Combats (version 3.0).
 
-   Un en-tête — sa Section, la Guerre des Sections — et des sous-onglets qui
-   ont chacun leur page, comme l'onglet d'un événement : Accueil, Campagne,
-   PvE infini, Défis entre amis, Decks, Guides. Le combat lui-même se joue
-   dans l'arène, en plein écran (js/combat/table.js) ; l'atelier de decks a
-   son fichier (js/combat/atelier.js).
+   Une page d'accueil courte, faite pour qu'on y lance un combat en deux
+   gestes : en tête, son niveau de combattant ; puis la grande affiche du
+   moment (le Raid pendant l'événement, sinon le prochain combat de
+   campagne) ; deux grandes portes, Solo (contre l'IA) et Versus (entre
+   amis) ; trois raccourcis, Decks, Missions et Guide ; et la Guerre des
+   Sections en une ligne. Chaque porte ouvre sa page, avec un retour vers
+   l'accueil. Le combat se joue dans l'arène, en plein écran
+   (js/combat/table.js) ; l'atelier de decks a son fichier
+   (js/combat/atelier.js).
 
    Le serveur décide de tout ce qui rapporte : la Section rejointe, les
-   decks enregistrés, les récompenses d'un combat (supabase/23_combats.sql).
-   Le combat, lui, se joue dans la page : le serveur fournit la graine, et
-   reçoit le résultat. */
+   decks enregistrés, les récompenses et l'XP d'un combat
+   (supabase/23_combats.sql, 26_niveaux.sql). Le combat, lui, se joue dans
+   la page : le serveur fournit la graine, et reçoit le résultat. */
 "use strict";
 
 let cbVue = 'accueil';
-/* Le combat de campagne ou la difficulté choisis. */
-let cbChoix = { infini: 3 };
+/* Le combat de campagne ou la difficulté choisis ; la moitié de Solo ouverte. */
+let cbChoix = { infini: 3, solo: 'campagne' };
 let cbGuide = null;
-const CB_VUES = [
-  ['accueil', 'Accueil'],
-  ['campagne', 'Campagne'],
-  ['infini', 'PvE infini'],
-  ['defis', 'Défis'],
-  ['decks', 'Decks'],
-  ['guides', 'Guides']
-];
+const CB_VUES = ['accueil', 'solo', 'versus', 'decks', 'missions', 'guides', 'atelier'];
+/* Les anciennes adresses (avant la nouvelle page d'accueil) mènent encore
+   quelque part. */
+const CB_ALIAS = { campagne: ['solo', 'campagne'], infini: ['solo', 'infini'], defis: ['versus'] };
 const CLE_COMBAT = 'mtcg.combat.encours';
 
 /* ---------- L'état de combat du joueur ---------- */
@@ -39,6 +39,7 @@ function cbEtat() {
     campagne: Object.assign({ faits: [], finie: false }, c.campagne || {}),
     jour: Object.assign({ recompensees: 0, plafond: PVE_PLAFOND }, c.jour || {}),
     stats: Object.assign({ victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0 }, c.stats || {}),
+    xp: c.xp || 0,
     guerre: c.guerre || null,
     defis: c.defis || []
   };
@@ -63,8 +64,11 @@ function cbDeckActif() {
 const deckValide = d => !Decks.verifier(d, d.starter ? null : save.col).length;
 
 /* ---------- La navigation ---------- */
-function allerCb(vue) {
-  cbVue = CB_VUES.some(v => v[0] === vue) || vue === 'atelier' ? vue : 'accueil';
+function allerCb(vue, sous) {
+  const alias = CB_ALIAS[vue];
+  if (alias) { vue = alias[0]; if (alias[1]) cbChoix.solo = alias[1]; }
+  if (sous && vue === 'solo') cbChoix.solo = sous;
+  cbVue = CB_VUES.includes(vue) ? vue : 'accueil';
   if (tab !== 'combats') return aller('combats');
   render();
   const m = $('#main');
@@ -77,31 +81,51 @@ function vCombats() {
   if (!e.section) return vChoixSection();
   if (cbVue === 'atelier' && typeof vAtelier === 'function') return vAtelier();
   const corps = {
-    accueil: vCbAccueil, campagne: vCbCampagne, infini: vCbInfini,
-    defis: vCbDefis, decks: vCbDecks, guides: vCbGuides
+    accueil: vCbAccueil, solo: vCbSolo, versus: vCbDefis,
+    decks: vCbDecks, missions: vCbMissions, guides: vCbGuides
   }[cbVue] || vCbAccueil;
-  return `<div class="cb sec-${e.section}">${vCbTete(e)}<div class="cb-page">${corps(e)}</div></div>`;
+  return `<div class="cb sec-${e.section}" style="--sc:${SECTIONS[e.section].c};--sc2:${SECTIONS[e.section].c2}">${corps(e)}</div>`;
 }
 
-function vCbTete(e) {
-  const s = SECTIONS[e.section];
-  const pastille = id => (id === 'defis' && e.defis.filter(d => d.pour_moi).length
-    ? `<i class="rf-pastille">${e.defis.filter(d => d.pour_moi).length}</i>` : '');
-  return `<header class="cb-tete" style="--sc:${s.c};--sc2:${s.c2}">
-    <span class="cb-tete-fond" aria-hidden="true"><img src="${s.boite}" alt=""></span>
-    <div class="cb-tetehaut">
-      <div class="cb-tetenom"><small>Version 3.0 · Pré-build</small><h1>Combats</h1></div>
-      <span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(s.nom)}</b></span>
-    </div>
-    <nav class="rf-onglets cb-onglets" role="tablist">
-      ${CB_VUES.map(([id, nom]) => `<button class="${cbVue === id ? 'on' : ''}" data-cb="vue" data-v="${id}" role="tab"
-        aria-selected="${cbVue === id}">${nom}${pastille(id)}</button>`).join('')}
-    </nav>
-  </header>`;
-}
+/* L'en-tête d'une page : le retour vers l'accueil, le titre, et à droite ce
+   que la page veut y mettre. */
+const cbSousTete = (titre, sous, droite) => `<header class="cb-sous">
+  <button class="cb-retour" data-cb="vue" data-v="accueil" aria-label="Retour à l'accueil des Combats">${NAVICO.caret}</button>
+  <div class="cb-sous-t"><h1>${h(titre)}</h1>${sous ? `<p>${sous}</p>` : ''}</div>${droite || ''}</header>`;
 
 /* L'emblème d'une Section : une étoile à ses couleurs. */
 const emblemeSection = id => `<i class="cb-embleme sec-${id}" aria-hidden="true">${ICON.star}</i>`;
+
+/* Le niveau de combattant : un badge, et la barre jusqu'au suivant. */
+function vCbNiveau(e, grand) {
+  const n = niveauDe(e.xp);
+  const pct = Math.round(100 * n.dans / n.requis);
+  return `<button class="cb-niv${grand ? ' grand' : ''}" data-cb="niveau" aria-label="Niveau ${n.niveau} : ${n.dans} XP sur ${n.requis}">
+    <span class="cb-niv-n"><small>Niv.</small><b class="tnum">${n.niveau}</b></span>
+    <span class="cb-niv-t"><span class="cb-niv-barre"><i style="width:${pct}%"></i></span><small class="tnum">${fmtN(n.dans)} / ${fmtN(n.requis)} XP</small></span>
+  </button>`;
+}
+
+/* Le détail du niveau : ce qui attend, et comment on gagne de l'XP. */
+function ouvrirNiveau() {
+  const e = cbEtat();
+  const n = niveauDe(e.xp);
+  const palier = r => [r.boosters ? `${r.boosters} booster${r.boosters > 1 ? 's' : ''}` : '', r.fragments ? `${fmtN(r.fragments)} Fragments` : '',
+    r.cadre ? `cadre « ${h((FRAMES[r.cadre] || {}).nom || r.cadre)} »` : '', r.titre ? `titre « ${h((TITRES[r.titre] || {}).nom || r.titre)} »` : ''].filter(Boolean).join(', ');
+  openSheet({
+    title: `Niveau ${n.niveau}`,
+    body: `<div class="cb-nivfiche">
+        <div class="cb-niv-barre grand"><i style="width:${Math.round(100 * n.dans / n.requis)}%"></i></div>
+        <p class="tnum"><b>${fmtN(n.requis - n.dans)} XP</b> avant le niveau ${n.niveau + 1} · ${fmtN(e.xp)} XP en tout</p>
+        <h4>Ce qui attend</h4>
+        <ul class="cb-paliers">${prochainsPaliers(n.niveau, 4).map(r => `<li><b>Niveau ${r.niveau}</b><span>${palier(r)}${r.eclats ? ` et ${r.eclats} Éclats` : ''}</span></li>`).join('')}</ul>
+        <p class="muted small">Chaque niveau rapporte aussi ${NIVEAUX.eclats} Éclats.</p>
+        <h4>Gagner de l'XP</h4>
+        <p class="small">Chaque combat fini en rapporte, <b>sans limite par jour</b> : ${NIVEAUX.victoire} pour une victoire en Normal, ${NIVEAUX.defaite} pour une défaite, plus pour un adversaire plus fort (×${NIVEAUX.facteur[5]} en Légende), +${NIVEAUX.parVaincu} par Joueur adverse vaincu. Un défi entre amis : ${NIVEAUX.defi.victoire} ou ${NIVEAUX.defi.defaite}. Ne comptent pas : les combats de moins de 20 secondes, et les défaites de moins de ${NIVEAUX.toursDefaite} tours.</p>
+      </div>`,
+    actions: [{ label: 'Voir les missions', primary: true, fn: () => { closeSheet(); allerCb('missions'); } }, { label: 'Fermer', fn: closeSheet }]
+  });
+}
 
 /* ---------- Choisir sa Section ---------- */
 function vChoixSection() {
@@ -136,65 +160,160 @@ function choisirSection(id) {
 }
 
 /* ---------- L'accueil ---------- */
+/* L'illustration d'une carte, cadrée sur le haut, en fond d'une tuile. */
+const cbArt = id => {
+  const c = byId[id];
+  return c && c.img ? `<span class="cb-art" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
+};
+/* Les missions de combat à récupérer (js/quests.js). */
+const cbMissionsPretes = () => (save.quetes || []).filter(q => estMissionCombat(q) && questePrete(q)).length;
+
 function vCbAccueil(e) {
+  const s = SECTIONS[e.section];
   const deck = cbDeckActif();
   const combats = combatsCampagne(e.section);
   const fait = new Set(e.campagne.faits);
   const prochain = combats.find(f => !fait.has(f.id));
   const reste = Math.max(0, e.jour.plafond - e.jour.recompensees);
   const enCours = combatEnCours();
-  return `
-    ${evenementEnCours() === 'choc' ? vBandeauChoc('combats') : ''}
-    ${enCours ? `<section class="cb-reprendre"><div><b>Un combat est en cours</b><p class="muted small">${h(enCours.meta && enCours.meta.titre || 'Combat')} — tu peux le reprendre où tu l'as laissé.</p></div>
-      <div class="cb-reprendre-act"><button class="btn" data-cb="reprendre">Reprendre</button><button class="btn ghost" data-cb="oublier">Abandonner</button></div></section>` : ''}
-    ${vGuerre(e)}
-    <div class="cb-modes">
-      <button class="cb-mode campagne" data-cb="vue" data-v="campagne">
-        <span class="cb-mode-art">${prochain ? renderCard(byId[prochain.rival] || {}) : renderCard(byId[SECTIONS[autreSection(e.section)].promo] || {})}</span>
-        <span class="cb-mode-txt"><small>Mode histoire</small><b>Campagne</b>
-          <em>${e.campagne.finie ? 'Terminée — rejouable à volonté' : prochain ? `${h(prochain.acte.nom)} · combat ${prochain.n + 1}/20` : ''}</em>
-          <span class="cb-barre"><i style="width:${Math.round(100 * fait.size / combats.length)}%"></i></span></span>
+  const defis = e.defis.filter(d => d.pour_moi && d.statut === 'attente').length;
+  const missions = cbMissionsPretes();
+  return `<header class="cb-haut">
+      <div class="cb-haut-t"><h1>Combats</h1><span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(s.court || s.nom)}</b></span></div>
+      ${vCbNiveau(e)}
+    </header>
+    ${enCours ? `<section class="cb-reprendre"><div><b>Un combat est en cours</b><p class="muted small">${h(enCours.meta && enCours.meta.titre || 'Combat')} — reprends-le où tu l'as laissé.</p></div>
+      <div class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Reprendre</button><button class="btn tiny ghost" data-cb="oublier">Abandonner</button></div></section>` : ''}
+    ${vCbAffiche(e, prochain)}
+    <div class="cb-portes">
+      <button class="cb-porte solo" data-cb="vue" data-v="solo">
+        ${cbArt(prochain ? prochain.rival : SECTIONS[autreSection(e.section)].promo)}
+        <span class="cb-porte-t"><b>Solo</b><small>Contre l'IA</small></span>
+        <span class="cb-porte-info">${e.campagne.finie ? 'Campagne finie' : `Campagne ${fait.size}/20`} · ${reste ? `${reste} victoire${reste > 1 ? 's' : ''} payée${reste > 1 ? 's' : ''}` : 'XP à volonté'}</span>
       </button>
-      <button class="cb-mode infini" data-cb="vue" data-v="infini">
-        <span class="cb-mode-ico">${NAVICO.sword}</span>
-        <span class="cb-mode-txt"><small>Contre l'IA</small><b>PvE infini</b>
-          <em>${reste ? `${reste} victoire${reste > 1 ? 's' : ''} récompensée${reste > 1 ? 's' : ''} aujourd'hui` : 'Récompenses du jour prises — pour le plaisir'}</em></span>
-      </button>
-      <button class="cb-mode defis" data-cb="vue" data-v="defis">
-        <span class="cb-mode-ico">${NAVICO.amis}</span>
-        <span class="cb-mode-txt"><small>Entre amis</small><b>Défis</b>
-          <em>${e.defis.filter(d => d.pour_moi).length ? `${e.defis.filter(d => d.pour_moi).length} défi en attente` : 'Défie un ami, en direct'}</em></span>
-      </button>
-      <button class="cb-mode decks" data-cb="vue" data-v="decks">
-        <span class="cb-mode-art">${deck ? renderCard(byId[deck.couverture] || {}) : ''}</span>
-        <span class="cb-mode-txt"><small>Ton deck</small><b>${deck ? h(deck.nom) : 'Aucun deck valide'}</b>
-          <em>${cbDecks().length} deck${cbDecks().length > 1 ? 's' : ''} · tapis, sleeves</em></span>
+      <button class="cb-porte versus" data-cb="vue" data-v="versus">
+        <span class="cb-vsart" aria-hidden="true">${emblemeSection('toxique')}<b>VS</b>${emblemeSection('deter')}</span>
+        <span class="cb-porte-t"><b>Versus</b><small>Entre amis</small></span>
+        <span class="cb-porte-info">${defis ? `${defis} défi${defis > 1 ? 's' : ''} pour toi` : 'Défie un ami, en direct'}</span>
+        ${defis ? `<i class="rf-pastille">${defis}</i>` : ''}
       </button>
     </div>
-    <section class="cb-bilan">
-      <div><b class="tnum">${fmtN(e.stats.victoires)}</b><small>victoires</small></div>
-      <div><b class="tnum">${fmtN(e.stats.defaites)}</b><small>défaites</small></div>
-      <div><b class="tnum">${fmtN(e.stats.pvp_v)}</b><small>défis gagnés</small></div>
-      <div><b class="tnum">${fait.size}<small>/20</small></b><small>campagne</small></div>
-    </section>
-    <button class="cb-guide-lien" data-cb="vue" data-v="guides"><span>${NAVICO.quest}</span><span><b>Nouveau ?</b><small>Les règles, section par section</small></span>${NAVICO.caret}</button>`;
+    <div class="cb-raccourcis">
+      <button class="cb-rac" data-cb="vue" data-v="decks">
+        <span class="cb-rac-art">${deck ? renderCard(byId[deck.couverture] || {}) : NAVICO.cards}</span>
+        <span class="cb-rac-t"><b>Decks</b><small>${deck ? h(deck.nom) : 'Aucun deck valide'}</small></span>
+      </button>
+      <button class="cb-rac" data-cb="vue" data-v="missions">
+        <span class="cb-rac-ico">${NAVICO.quest}</span>
+        <span class="cb-rac-t"><b>Missions</b><small>${missions ? `${missions} à récupérer` : 'Quêtes de combat'}</small></span>
+        ${missions ? `<i class="rf-pastille">${missions}</i>` : ''}
+      </button>
+      <button class="cb-rac" data-cb="vue" data-v="guides">
+        <span class="cb-rac-ico">${NAVICO.illu}</span>
+        <span class="cb-rac-t"><b>Guide</b><small>Les règles</small></span>
+      </button>
+    </div>
+    ${vGuerre(e)}`;
 }
 
-/* La Guerre des Sections : les points de la semaine, des deux côtés. */
+/* La grande affiche : le Raid pendant le Choc des Sections, sinon le
+   prochain combat de la campagne, sinon le PvE infini. */
+function vCbAffiche(e, prochain) {
+  if (evenementEnCours() === 'choc') {
+    const r = typeof chEtat !== 'undefined' && chEtat ? chEtat.raid : null;
+    const tr = r ? chTentativesRestantes() : null;
+    const p = r ? chocPhase(Math.min(r.phase, 6)) : null;
+    return `<button class="cb-affiche ev" data-ch="vue" data-v="raid">
+      ${cbArt(CHOC.raid.boss)}
+      <span class="cb-affiche-t"><small>${h(CHOC.nom)} · Raid</small><b>${h(CHOC.raid.nom)}</b>
+        <em>${p ? `${r.phase > 5 ? h(p.nom) : `Phase ${r.phase} · ${h(p.nom)}`} · ${tr ? `${tr} tentative${tr > 1 ? 's' : ''}` : 'reviens demain'}` : 'Un boss pour tout le serveur'}</em></span>
+      <span class="cb-affiche-go">Affronter</span>
+    </button>`;
+  }
+  if (prochain) {
+    const k = byId[prochain.rival] || {};
+    return `<button class="cb-affiche" data-cb="combat" data-v="${prochain.id}">
+      ${cbArt(prochain.rival)}
+      <span class="cb-affiche-t"><small>Campagne · ${h(prochain.acte.nom)}</small><b>${h(k.nom || '')}</b>
+        <em>Combat ${prochain.n + 1}/20 · ${'★'.repeat(prochain.niveau)}</em></span>
+      <span class="cb-affiche-go">Combattre</span>
+    </button>`;
+  }
+  const n = cbChoix.infini || 3;
+  return `<button class="cb-affiche" data-cb="vue" data-v="infini">
+    ${cbArt(SECTIONS[autreSection(e.section)].promo)}
+    <span class="cb-affiche-t"><small>PvE infini</small><b>${h(DIFFICULTES[n - 1].nom)} ${'★'.repeat(n)}</b><em>Un deck adverse tiré au sort, à chaque fois</em></span>
+    <span class="cb-affiche-go">Jouer</span>
+  </button>`;
+}
+
+/* La Guerre des Sections, en une ligne ; le détail s'ouvre au toucher. */
 function vGuerre(e) {
   const g = e.guerre || { toxique: 0, deter: 0, moi: 0 };
   const t = g.toxique || 0, d = g.deter || 0, tot = t + d;
   const pt = tot ? Math.round(100 * t / tot) : 50;
-  const fin = g.fin ? srvTime(g.fin) : null;
-  return `<section class="cb-guerre">
-    <div class="cb-guerre-tete"><b>Guerre des Sections</b>${fin ? `<small>fin ${h(jourHeure(fin, ''))}</small>` : '<small>cette semaine</small>'}</div>
-    <div class="cb-guerre-barre" style="--pt:${pt}%">
+  const x2 = evenementEnCours() === 'choc';
+  return `<button class="cb-guerre" data-cb="guerre">
+    <span class="cb-guerre-tete"><b>Guerre des Sections</b>${x2 ? `<i class="cb-x2">×${CHOC.guerre.multiplicateur}</i>` : ''}<small>ta part : ${fmtN(g.moi || 0)} pt${(g.moi || 0) > 1 ? 's' : ''}</small></span>
+    <span class="cb-guerre-barre" style="--pt:${pt}%">
       <span class="t">${emblemeSection('toxique')}<b class="tnum">${fmtN(t)}</b></span>
       <span class="d"><b class="tnum">${fmtN(d)}</b>${emblemeSection('deter')}</span>
-    </div>
-    ${g.passee && g.passee.gagnante ? `<p class="cb-passee">La semaine dernière, la <b>${h(SECTIONS[g.passee.gagnante].nom)}</b> l'a emporté (${fmtN(g.passee.toxique)} à ${fmtN(g.passee.deter)}).${g.passee.recompense ? ` Tu as reçu ${h(recompenseTexte(g.passee.recompense))}.` : ''}</p>` : ''}
-    <p class="muted small">Ta contribution : <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>. Chaque victoire compte — la Section gagnante reçoit ${h(g.prix || '2 boosters et 200 Éclats')} lundi ; l'autre, un booster pour se consoler.${evenementEnCours() === 'choc' ? ` <b class="cb-x2">Points ×${CHOC.guerre.multiplicateur} pendant le Choc des Sections.</b>` : ''}</p>
-  </section>`;
+    </span>
+  </button>`;
+}
+function ouvrirGuerre() {
+  const g = cbEtat().guerre || { toxique: 0, deter: 0, moi: 0 };
+  const fin = g.fin ? srvTime(g.fin) : null;
+  openSheet({
+    title: 'Guerre des Sections',
+    body: `<div class="cb-guerre-fiche">
+      ${vGuerre(cbEtat())}
+      <p>${fin ? `Fin de la semaine ${h(jourHeure(fin, ''))}. ` : ''}Chaque victoire marque des points pour ta Section : la Section gagnante reçoit ${h(g.prix || '2 boosters et 200 Éclats')} lundi ; l'autre, un booster pour se consoler.${evenementEnCours() === 'choc' ? ` <b class="cb-x2t">Pendant le Choc des Sections, chaque point compte ×${CHOC.guerre.multiplicateur}.</b>` : ''}</p>
+      <p>Ta contribution cette semaine : <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>.</p>
+      ${g.passee && g.passee.gagnante ? `<p class="cb-passee">La semaine dernière, la <b>${h(SECTIONS[g.passee.gagnante].nom)}</b> l'a emporté (${fmtN(g.passee.toxique)} à ${fmtN(g.passee.deter)}).${g.passee.recompense ? ` Tu as reçu ${h(recompenseTexte(g.passee.recompense))}.` : ''}</p>` : ''}
+    </div>`,
+    actions: [{ label: 'Fermer', fn: closeSheet }]
+  });
+}
+
+/* ---------- Solo : la campagne et le PvE infini ---------- */
+function vCbSolo(e) {
+  const reste = Math.max(0, e.jour.plafond - e.jour.recompensees);
+  const seg = (id, nom) => `<button class="${cbChoix.solo === id ? 'on' : ''}" data-cb="solo" data-v="${id}">${nom}</button>`;
+  return `${cbSousTete('Solo', 'Contre l\'IA', `<span class="cb-jour-chip" title="Victoires payées en Éclats aujourd'hui (l'XP, elle, est sans limite)"><b class="tnum">${reste}/${e.jour.plafond}</b><small>payées</small></span>`)}
+    <div class="segbar cb-seg">${seg('campagne', 'Campagne')}${seg('infini', 'PvE infini')}</div>
+    ${cbChoix.solo === 'infini' ? vCbInfini(e) : vCbCampagne(e)}`;
+}
+
+/* ---------- Missions : les quêtes de combat et de niveau ---------- */
+function vCbMissions(e) {
+  const qs = (save.quetes || []).filter(estMissionCombat);
+  const n = niveauDe(e.xp);
+  const groupe = (titre, l, sous) => {
+    const ouvertes = trierQuetes(l.filter(q => !q.claimed));
+    if (!ouvertes.length) return '';
+    return `<section class="cb-mgroupe"><h3>${h(titre)}${sous ? `<small>${sous}</small>` : ''}</h3><div class="questlist">${ouvertes.map(q => vQuete(q)).join('')}</div></section>`;
+  };
+  /* Les quêtes de saison forment des chaînes (25, 50, 100…) : la prochaine
+     de chaque chaîne, plus celles déjà prêtes. */
+  const saison = [];
+  const chaines = {};
+  qs.filter(q => q.scope === 'milestone').forEach(q => (chaines[q.metric] = chaines[q.metric] || []).push(q));
+  Object.values(chaines).forEach(ch => {
+    ch.sort((a, b) => a.goal - b.goal);
+    const ouvertes = ch.filter(q => !q.claimed);
+    ouvertes.filter(q => q.progress >= q.goal).forEach(q => saison.push(q));
+    const prochaine = ouvertes.find(q => q.progress < q.goal);
+    if (prochaine) saison.push(prochaine);
+  });
+  const corps = groupe('Aujourd\'hui', qs.filter(q => q.scope === 'daily'), dureeCourte(resteAvantRemise('daily')))
+    + groupe('Cette semaine', qs.filter(q => q.scope === 'weekly'), dureeCourte(resteAvantRemise('weekly')))
+    + groupe('Niveau', saison.filter(q => q.metric === 'niveau'))
+    + groupe('Saison', saison.filter(q => q.metric !== 'niveau'))
+    + (evenementEnCours() === 'choc' ? groupe(CHOC.nom, qs.filter(q => q.evenement === 'choc' && (q.scope === 'ev_jour' || q.scope === 'ev'))) : '');
+  return `${cbSousTete('Missions', 'Les quêtes des combats et de ton niveau', vCbNiveau(e))}
+    ${corps || vide('Tout est fait', 'Plus aucune mission en cours : reviens demain.')}
+    <p class="muted small">Toutes les quêtes sont aussi dans l'onglet Quêtes. Niveau ${n.niveau} : ${fmtN(n.requis - n.dans)} XP avant le suivant.</p>`;
 }
 
 /* ---------- La campagne ---------- */
@@ -218,9 +337,9 @@ function vCbCampagne(e) {
       }).join('')}</div>
     </section>`;
   }).join('');
-  return `<div class="rf-ptitre"><h2>Campagne</h2><p>Ta Section contre la ${h(adverse.nom)}. ${e.campagne.finie
+  return `<p class="cb-intro">Ta Section contre la ${h(adverse.nom)}. ${e.campagne.finie
       ? 'Terminée : la Promo adverse est à toi. Rejoue pour le plaisir.'
-      : `Finis-la pour gagner la Promo de la ${h(adverse.nom)}.`}</p></div>
+      : `Finis-la pour gagner la Promo de la ${h(adverse.nom)}.`}</p>
     <div class="cb-campagne-prog"><span class="cb-barre"><i style="width:${Math.round(100 * fait.size / 20)}%"></i></span><b class="tnum">${fait.size}/20</b></div>
     ${actes}
     <div class="cb-campagne-fin${e.campagne.finie ? ' eue' : ''}">${renderCard(byId[adverse.promo] || {})}<div><b>Au bout de la campagne</b>
@@ -294,8 +413,7 @@ function choisirDeckRapide(apres) {
 function vCbInfini(e) {
   const reste = Math.max(0, e.jour.plafond - e.jour.recompensees);
   const n = cbChoix.infini || 3;
-  return `<div class="rf-ptitre"><h2>PvE infini</h2><p>Choisis la difficulté : l'IA reçoit un deck tiré au sort, dans une ou deux couleurs. Plus c'est dur, plus ça rapporte.</p></div>
-    <p class="cb-jour"><b class="tnum">${reste}/${e.jour.plafond}</b> victoire${e.jour.plafond > 1 ? 's' : ''} récompensée${e.jour.plafond > 1 ? 's' : ''} restante${reste > 1 ? 's' : ''} aujourd'hui <small class="muted">(tous modes contre l'IA confondus)</small></p>
+  return `<p class="cb-intro">L'IA reçoit un deck tiré au sort, dans une ou deux couleurs. Plus c'est dur, plus ça rapporte — en Éclats (${e.jour.plafond} victoires par jour) comme en XP (sans limite).</p>
     <div class="cb-diffs">${DIFFICULTES.map(d => `<button class="cb-diff n${d.niveau}${n === d.niveau ? ' on' : ''}" data-cb="diff" data-v="${d.niveau}">
         <span class="cb-diff-et">${'★'.repeat(d.niveau)}</span><b>${h(d.nom)}</b><small>${h(d.texte)}</small>
         <em>${reste ? `+${d.eclats} Éclats` : 'pour le plaisir'} · ${d.points} pt${d.points > 1 ? 's' : ''} de Section</em></button>`).join('')}</div>
@@ -305,13 +423,14 @@ function vCbInfini(e) {
 
 /* ---------- Les défis entre amis ---------- */
 function vCbDefis(e) {
-  if (Backend.mode !== 'cloud') return horsLigne('Les défis');
+  const tete = cbSousTete('Versus', 'Entre amis, en direct');
+  if (Backend.mode !== 'cloud') return tete + horsLigne('Les défis');
   const amis = (Backend.amis || []).filter(a => a.lien === 'ami');
   const recus = e.defis.filter(d => d.pour_moi && d.statut === 'attente');
   const envoyes = e.defis.filter(d => !d.pour_moi && d.statut === 'attente');
   const enCours = e.defis.filter(d => d.statut === 'en_cours');
   const ligne = (d, act) => `<div class="cb-defi">${avatarHTML(d.avatar, d.frame, 'sm', d.photo)}<span><b>${h(d.pseudo)}</b><small>${h(d.texte || '')}</small></span>${act}</div>`;
-  return `<div class="rf-ptitre"><h2>Défis entre amis</h2><p>Pas de recherche d'adversaire : défie un ami. Il accepte, et vous jouez en direct, chacun sur son écran.</p></div>
+  return `${tete}<p class="cb-intro">Pas de recherche d'adversaire : défie un ami. Il accepte, et vous jouez en direct, chacun sur son écran.</p>
     ${recus.length ? `<section class="cb-bloc"><h3>Pour toi</h3>${recus.map(d => ligne(Object.assign({ texte: 'te défie' }, d),
       `<span class="cb-defi-act"><button class="btn tiny" data-cb="defi-ok" data-v="${d.id}">Accepter</button><button class="btn tiny ghost" data-cb="defi-non" data-v="${d.id}">Refuser</button></span>`)).join('')}</section>` : ''}
     ${enCours.length ? `<section class="cb-bloc"><h3>En cours</h3>${enCours.map(d => ligne(Object.assign({ texte: 'combat en cours' }, d),
@@ -346,7 +465,7 @@ function vCbDecks(e) {
         ${d.starter ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Copier</button>` : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`}
       </div></div>`;
   };
-  return `<div class="rf-ptitre"><h2>Decks</h2><p>${Combat.REGLE.CLUB} cartes et ${Combat.REGLE.RESERVE} Essences. Construis-en autant que tu veux.</p></div>
+  return `${cbSousTete('Decks', `${Combat.REGLE.CLUB} cartes et ${Combat.REGLE.RESERVE} Essences`)}
     <div class="cb-decks">${l.map(ligne).join('')}
       <button class="cb-deck nouveau" data-cb="nouveau-deck"><span>+</span><b>Nouveau deck</b></button>
       <button class="cb-deck nouveau" data-cb="importer-deck"><span>${NAVICO.partage}</span><b>Importer un code</b></button>
@@ -409,7 +528,7 @@ function vCbGuides() {
         ${i < GUIDES.length - 1 ? `<button class="btn" data-cb="guide" data-v="${GUIDES[i + 1].id}">${h(GUIDES[i + 1].titre)} →</button>` : ''}</nav>
     </div>`;
   }
-  return `<div class="rf-ptitre"><h2>Guides</h2><p>Les règles du combat, section par section. Elles sont reconstituées à partir des cartes : ce qui a été inventé est dit dans « Ce qui est maison ».</p></div>
+  return `${cbSousTete('Guide', 'Les règles, section par section')}<p class="cb-intro">Elles sont reconstituées à partir des cartes : ce qui a été inventé est dit dans « Ce qui est maison ».</p>
     <div class="gd-liste">${GUIDES.map((x, i) => `<button class="gd-entree" data-cb="guide" data-v="${x.id}">
       <span class="gd-num">${i + 1}</span><span class="gd-ico">${NAVICO[x.ico] || NAVICO.quest}</span>
       <span><b>${h(x.titre)}</b><small>${h(x.resume)}</small></span>${NAVICO.caret}</button>`).join('')}</div>`;
@@ -545,7 +664,26 @@ function htmlRecompense(r) {
   if (g.carte) l.push(`<span class="ar-recompense">${NAVICO.promo}${h((byId[g.carte] || {}).nom || g.carte)}</span>`);
   if (g.titre) l.push(`<span class="ar-recompense">Titre « ${h((TITRES[g.titre] || {}).nom || g.titre)} »</span>`);
   const msg = g.message ? `<p class="ar-consigne">${h(g.message)}</p>` : '';
-  return (l.length ? `<div class="ar-recompenses">${l.join('')}</div>` : '') + msg;
+  return htmlXp(g.xp) + (l.length ? `<div class="ar-recompenses">${l.join('')}</div>` : '') + msg;
+}
+
+/* L'XP gagnée : la barre du niveau qui se remplit, et chaque niveau franchi
+   avec ce qu'il paie. */
+function htmlXp(x) {
+  if (!x || !x.gagne) return '';
+  const n = niveauDe(x.total);
+  const avant = niveauDe(x.total - x.gagne);
+  /* La barre part de là où elle était (0 si on a changé de niveau). */
+  const de = avant.niveau === n.niveau ? Math.round(100 * avant.dans / n.requis) : 0;
+  const vers = Math.round(100 * n.dans / n.requis);
+  const palier = r => [r.eclats ? `${shardIco}${r.eclats}` : '', r.boosters ? `<img src="${ART.seal}" alt="">${r.boosters}` : '',
+    r.fragments ? `${NAVICO.fragment}${fmtN(r.fragments)}` : '', r.cadre ? `cadre « ${h((FRAMES[r.cadre] || {}).nom || r.cadre)} »` : '',
+    r.titre ? `titre « ${h((TITRES[r.titre] || {}).nom || r.titre)} »` : ''].filter(Boolean).join(' · ');
+  return `<div class="ar-xp">
+    <div class="ar-xp-l"><span class="ar-xp-n">Niv. <b>${n.niveau}</b></span><b class="ar-xp-g">+${fmtN(x.gagne)} XP</b><small class="tnum">${fmtN(n.dans)} / ${fmtN(n.requis)}</small></div>
+    <span class="ar-xp-barre" style="--de:${de}%;--vers:${vers}%"><i></i></span>
+    ${(x.paliers || []).map(r => `<p class="ar-xp-palier"><b>Niveau ${r.niveau} !</b><span>${palier(r)}</span></p>`).join('')}
+  </div>`;
 }
 
 /* Un combat interrompu (page rechargée) : on le reprend où il en était. */
@@ -582,6 +720,9 @@ function cbAction(k, el) {
   const v = el.dataset.v;
   switch (k) {
     case 'vue': return allerCb(v);
+    case 'solo': cbChoix.solo = v; return render();
+    case 'niveau': return ouvrirNiveau();
+    case 'guerre': return ouvrirGuerre();
     case 'section': return choisirSection(v);
     case 'combat': return ouvrirCombatCampagne(v);
     case 'diff': cbChoix.infini = +v; return render();

@@ -7,7 +7,7 @@
    engagé ou non, avec quelles Essences — puis joue des actions et vérifie
    ce que dit la règle (docs/regles-3.0.md). */
 "use strict";
-const { Combat, Decks, Choc, Campagne } = require('./combat-sim.js');
+const { Combat, Decks, Choc, Campagne, Niveaux } = require('./combat-sim.js');
 
 let ok = 0, ko = 0;
 function test(nom, f) {
@@ -315,6 +315,35 @@ test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme', () => {
     Combat.agir(E, a);
   }
   vrai(E.fin, 'la partie doit finir');
+});
+
+console.log('XP et niveaux');
+test('la courbe d\'XP : 100 au niveau 1, +25 par niveau, plafonnée à 1 100', () => {
+  egal(Niveaux.xpRequis(1), 100);
+  egal(Niveaux.xpRequis(2), 125);
+  egal(Niveaux.xpRequis(41), 1100);
+  egal(Niveaux.xpRequis(200), 1100);
+  egal(JSON.stringify(Niveaux.niveauDe(0)), JSON.stringify({ niveau: 1, dans: 0, requis: 100 }));
+  egal(Niveaux.niveauDe(99).niveau, 1);
+  egal(Niveaux.niveauDe(100).niveau, 2);
+  egal(JSON.stringify(Niveaux.niveauDe(230)), JSON.stringify({ niveau: 3, dans: 5, requis: 150 }));
+});
+test('l\'XP d\'un combat : victoire > défaite, difficulté, vaincus plafonnés', () => {
+  egal(Niveaux.xpCombat('infini', 3, true, 0, 9), 50);
+  egal(Niveaux.xpCombat('infini', 3, false, 0, 9), 20);
+  egal(Niveaux.xpCombat('infini', 3, false, 0, 2), 0, 'un abandon au 2e tour ne rapporte rien');
+  egal(Niveaux.xpCombat('infini', 5, true, 0, 3), 75);
+  egal(Niveaux.xpCombat('campagne', 1, true, 2, 8), 38);
+  egal(Niveaux.xpCombat('infini', 3, true, 40, 8), 74);
+  egal(Niveaux.xpCombat('defi', 0, true, 0, 7), 80);
+});
+test('chaque niveau paie, les paliers paient plus, sans fin après 50', () => {
+  egal(Niveaux.recompenseNiveau(1), null);
+  egal(Niveaux.recompenseNiveau(2).eclats, 50);
+  egal(Niveaux.recompenseNiveau(10).cadre, 'f_niv10');
+  egal(Niveaux.recompenseNiveau(55).boosters, 2);
+  egal(Niveaux.recompenseNiveau(56).boosters, undefined);
+  vrai(Niveaux.prochainsPaliers(1, 3).map(r => r.niveau).join() === '3,5,10');
 });
 
 console.log('Copie et reprise');

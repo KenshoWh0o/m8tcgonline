@@ -141,10 +141,23 @@
     ['m_campagne', 'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 20],
     ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l\'IA en Légende.', 21],
     ['m_cent',     'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 22],
-    ['m_secrete',  'milestone', 'rarity_S',         1,  500, null,         'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
+    ['m_secrete',  'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
     ['m_mt_or',    'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d\'or',         'Amène une carte à la maîtrise Or.', 24],
     ['m_mt_or10',  'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l\'or',         'Amène 10 cartes à la maîtrise Or.', 25],
-    ['m_mt_prisme','milestone', 'maitrise_4',       1,  800, null,         'Prisme',                'Amène une carte à la maîtrise Prisme.', 26],
+    ['m_mt_prisme','milestone', 'maitrise_4',       1,  800, 'f_maitrise', 'Prisme',                'Amène une carte à la maîtrise Prisme.', 26],
+    /* L'XP et le niveau de combattant (26_niveaux.sql). */
+    ['d_xp',       'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11],
+    ['w_xp',       'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11],
+    ['m_combats50','milestone', 'combats',         50,  300, null,         'Habitué de l\'arène',    'Joue 50 combats.', 27],
+    ['m_vaincus100','milestone','vaincus',        100,  400, null,         'Cent à terre',          'Vaincs 100 Joueurs adverses.', 28],
+    ['m_defis10',  'milestone', 'defis',           10,  400, null,         'Rival attitré',         'Joue 10 défis contre des amis.', 29],
+    ['m_dures25',  'milestone', 'victoires_dures', 25,  600, null,         'Sans pitié',            'Gagne 25 combats en Difficile ou plus.', 30],
+    ['m_niv5',     'milestone', 'niveau',           5,  100, null,         'Niveau 5',              'Atteins le niveau 5 de combattant.', 31],
+    ['m_niv10',    'milestone', 'niveau',          10,  200, null,         'Niveau 10',             'Atteins le niveau 10 de combattant.', 32],
+    ['m_niv20',    'milestone', 'niveau',          20,  400, null,         'Niveau 20',             'Atteins le niveau 20 de combattant.', 33],
+    ['m_niv30',    'milestone', 'niveau',          30,  600, null,         'Niveau 30',             'Atteins le niveau 30 de combattant.', 34],
+    ['m_niv40',    'milestone', 'niveau',          40,  800, null,         'Niveau 40',             'Atteins le niveau 40 de combattant.', 35],
+    ['m_niv50',    'milestone', 'niveau',          50, 1500, null,         'Niveau 50',             'Atteins le niveau 50 de combattant.', 36],
     ['m_revPC',   'milestone', 'rset_PC',      null,  700, null, 'Reverses Peu communes','Possède toutes les Reverses Peu communes.', 18],
     ['m_revR',    'milestone', 'rset_R',       null, 2500, null, 'Reverses Rares',       'Possède toutes les Reverses Rares.', 19],
     ['m_revALL',  'milestone', 'rset_ALL',     null,    0, 'f_reflet', 'Le Reflet complet', 'Possède les 85 Reverses.', 20],
@@ -209,6 +222,8 @@
     ['f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2],
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
     ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4],
+    ['f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5],
+    ['f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6],
     /* Version 3.0 (23_combats.sql) : les tapis de jeu et les sleeves. */
     ['t_chateau',   'tapis',  'Tapis « Le Château »',   'Le château et ses feux d\'artifice, sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1],
     ['t_reverie',   'tapis',  'Tapis « Rêverie »',      'La montagne violette, et les visages dans les nuages.', 4000, 'cosmetique', 1, null, true, 2],
@@ -1629,6 +1644,7 @@
       campagne: { faits: c.faits.slice(), finie: !!c.finie },
       jour: { recompensees: c.jour === auj ? c.recompensees : 0, plafond: PVE_PLAFOND },
       stats: Object.assign({}, c.stats),
+      xp: c.xp || 0,
       guerre: { toxique: g.toxique, deter: g.deter, moi: g.contrib[p] || 0, fin: iso(lundi), prix: '2 boosters et 200 Éclats', passee: guerrePassee(p) },
       defis: (S.defis || []).filter(d => (d.de === p || d.pour === p) && ['attente', 'en_cours'].includes(d.statut)).map(d => {
         const o = profil(d.de === p ? d.pour : d.de);
@@ -1731,6 +1747,33 @@
   };
 
   /* combat_fin : le résultat, et ce qu'il rapporte. */
+  /* gagner_xp, 26_niveaux.sql : chaque niveau franchi paie ; les quêtes
+     « xp » avancent, les quêtes « niveau » suivent le niveau atteint. */
+  function gagnerXp(p, d) {
+    if (!(d > 0)) return null;
+    const c = cb(p);
+    const avant = niveauDe(c.xp || 0).niveau;
+    c.xp = (c.xp || 0) + d;
+    const apres = niveauDe(c.xp).niveau;
+    const paliers = [];
+    for (let k = avant + 1; k <= apres; k++) {
+      const r = recompenseNiveau(k);
+      accorder(p, 'eclats', r.eclats);
+      if (r.boosters) accorder(p, 'boosters', r.boosters);
+      if (r.fragments) accorder(p, 'fragments', r.fragments);
+      if (r.cadre) accorder(p, 'cadre', 1, r.cadre);
+      if (r.titre) accorder(p, 'titre', 1, r.titre);
+      paliers.push({ niveau: k, eclats: r.eclats, boosters: r.boosters || 0, fragments: r.fragments || 0, cadre: r.cadre || null, titre: r.titre || null });
+    }
+    bump(p, 'xp', d);
+    QUETES.filter(q => q.metric === 'niveau').forEach(q => {
+      const k = cleQp(p, q);
+      const qp = (S.qp[k] = S.qp[k] || { progress: 0, claimed: false });
+      if (!qp.claimed) qp.progress = Math.max(qp.progress, apres);
+    });
+    return { gagne: d, total: c.xp, avant, niveau: apres, paliers };
+  }
+
   RPC.combat_fin = (p, { p_id, p_gagne, p_resume }) => {
     const c = cb(p);
     const o = (c.ouverts || {})[p_id];
@@ -1742,10 +1785,11 @@
     const res = p_resume || {};
     const trop = now() - o.debut < CB_MIN_MS;
     bump(p, 'combats', 1);
+    if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
     if (o.mode === 'raid' || o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
     if (!p_gagne) {
       c.stats.defaites++;
-      r.message = 'Pas de récompense pour une défaite — mais la quête « Sur le terrain » avance.';
+      r.message = 'Pas d\'Éclats pour une défaite, mais l\'XP compte.';
       return { etat: me(p), recompense: r };
     }
     c.stats.victoires++;
@@ -1886,6 +1930,7 @@
       bump(p, 'defis', 1);
       bump(p, 'combats', 1);
       if (gagne) { bump(p, 'victoires', 1); r.points = marquerPoints(p, DEFI_GAIN.points); }
+      r.xp = gagnerXp(p, xpCombat('defi', 0, gagne, 0, E.tour));
       if (c.defis_rec < DEFI_GAIN.plafond) { c.defis_rec++; r.eclats = gagne ? DEFI_GAIN.victoire : DEFI_GAIN.defaite; profil(p).shards += r.eclats; }
       else r.message = 'Défis récompensés du jour atteints.';
     }

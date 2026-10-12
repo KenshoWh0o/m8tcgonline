@@ -19,7 +19,7 @@ ctx.globalThis = ctx;
 ctx.window = ctx;
 for (const f of ['js/config.js', 'js/utils.js', 'js/cards-data.js', 'js/promos-data.js', 'js/cards.js',
   'js/combat/moteur.js', 'js/combat/effets.js', 'js/combat/decks.js', 'js/combat/ia.js',
-  'js/combat/campagne.js', 'js/combat/choc-data.js']) {
+  'js/combat/campagne.js', 'js/combat/choc-data.js', 'js/combat/niveaux.js']) {
   const p = path.join(RACINE, f);
   if (!fs.existsSync(p)) continue;
   vm.runInContext(fs.readFileSync(p, 'utf8'), ctx, { filename: f });
@@ -34,6 +34,7 @@ const Combat = ctx.Combat, Decks = ctx.Decks, IA = ctx.IA;
    du contexte : on les sort une par une). */
 const Choc = vm.runInContext('({ CHOC, chocPhase, chocPhaseMax, deckSorcier, posesBoss, epreuveDuJour, scoreEpreuve })', ctx);
 const Campagne = vm.runInContext('({ combatsCampagne, deckRival, SECTIONS })', ctx);
+const Niveaux = vm.runInContext('({ NIVEAUX, xpRequis, niveauDe, xpCombat, recompenseNiveau, prochainsPaliers })', ctx);
 
 function rng(seed) {
   let s = seed >>> 0;
@@ -156,4 +157,4 @@ if ((mode === 'ia' || mode === 'starters') && IA) {
     `— ${(ms / N).toFixed(0)} ms/partie, ${(ms / decisions).toFixed(2)} ms/décision`);
 }
 
-module.exports = { Combat, Decks, IA, Choc, Campagne, partie, auHasard, rng };
+module.exports = { Combat, Decks, IA, Choc, Campagne, Niveaux, partie, auHasard, rng };

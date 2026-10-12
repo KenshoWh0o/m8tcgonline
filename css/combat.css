@@ -1,4 +1,4 @@
-/* Version 3.0 : l'onglet Combats (js/combat/hub.js) et les guides.
+/* Version 3.0 : l'onglet Combats (js/battle.js) et les guides.
    L'arène elle-même a sa feuille : css/arene.css. */
 
 /* ============ L'onglet Combats ============ */
@@ -8,26 +8,108 @@
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
 .champ:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent-soft)}
 
-/* L'en-tête : la boîte du Starter Deck en fond, la Section en badge. */
-.cb-tete{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--radius);padding:22px 16px 0;color:#fff;
-  background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--sc) 45%,transparent),transparent 60%),#140b20;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 14px 34px rgba(0,0,0,.4)}
-.cb-tete-fond{position:absolute;right:-6%;top:-18%;width:52%;z-index:-1;opacity:.55;transform:rotate(8deg);
-  -webkit-mask:linear-gradient(90deg,transparent,#000 50%);mask:linear-gradient(90deg,transparent,#000 50%)}
-.cb-tete-fond img{width:100%;filter:saturate(1.1)}
-.cb-tetehaut{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.cb-tetenom small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7)}
-.cb-tetenom h1{margin:4px 0 0;font-family:var(--display);font-stretch:120%;font-style:italic;font-weight:900;font-size:40px;line-height:1;
-  padding-right:.1em;background:linear-gradient(100deg,#fff 10%,var(--sc2) 60%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 2px 10px rgba(0,0,0,.6))}
-.cb-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 8px;border-radius:999px;font-size:12px;white-space:nowrap;
-  background:rgba(14,8,26,.6);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 60%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* L'emblème d'une Section, et son badge. */
+.cb-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 4px;border-radius:999px;font-size:12px;white-space:nowrap;
+  background:var(--surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 55%,transparent)}
 .cb-embleme{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;
   background:radial-gradient(circle at 35% 30%,#fff7,var(--ec,#a95cf2))}
 .cb-embleme.sec-toxique{--ec:#ee0073}
 .cb-embleme.sec-deter{--ec:#8936ff}
 .cb-embleme svg{width:14px;height:12px;fill:#fff}
-.cb-onglets button.on::after{background:linear-gradient(90deg,var(--sc),var(--sc2))}
+
+/* ---- L'accueil : en tête, le titre, la Section et le niveau ---- */
+.cb-haut{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cb-haut-t{display:flex;align-items:center;gap:10px;min-width:0}
+.cb-haut{flex-wrap:nowrap}
+.cb-haut h1{margin:0;font-family:var(--display);font-stretch:118%;font-style:italic;font-weight:900;font-size:28px;line-height:1}
+/* Le niveau : un badge et sa barre d'XP. */
+.cb-niv{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;border:0;border-radius:14px;font:inherit;color:var(--text);cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2);min-width:0;width:150px;flex:none}
+.cb-niv-n{display:flex;flex-direction:column;align-items:center;justify-content:center;width:38px;height:38px;border-radius:11px;line-height:1;color:#1a0a1e;
+  background:linear-gradient(160deg,#fff3b0,#ffc73b 55%,#e0941d);box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
+.cb-niv-n small{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:.75}
+.cb-niv-n b{font-family:var(--display);font-weight:900;font-size:17px}
+.cb-niv-t{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left}
+.cb-niv-t small{font-size:11px;font-weight:700;color:var(--muted)}
+.cb-niv-barre{display:block;height:7px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
+.cb-niv-barre i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffc73b,#ff5bb0)}
+.cb-niv-barre.grand{height:12px;margin:4px 0 8px}
+.cb-nivfiche p{margin:0 0 6px}
+.cb-nivfiche h4{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cb-paliers{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cb-paliers li{display:flex;gap:10px;align-items:baseline;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
+.cb-paliers b{flex:none;font-family:var(--display);font-style:italic;color:var(--warn)}
+.cb-paliers span{font-size:13px;color:var(--subtle)}
+
+/* L'illustration d'une carte, en fond d'une tuile : cadrée sur le haut de
+   la carte, là où est l'illustration. */
+.cb-art{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:inherit}
+.cb-art i{position:absolute;inset:-2%;background-size:122% auto;background-position:50% 22%;background-repeat:no-repeat;transition:transform .5s}
+.cb-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,16,.05) 25%,rgba(10,6,16,.88) 92%)}
+
+/* La grande affiche du moment. */
+.cb-affiche{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;gap:12px;min-height:184px;padding:16px;border:0;
+  border-radius:20px;font:inherit;color:#fff;text-align:left;cursor:pointer;background:#140b20;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 16px 36px rgba(0,0,0,.45);transition:transform .15s}
+.cb-affiche:hover .cb-art i{transform:scale(1.04)}
+.cb-affiche:active{transform:scale(.99)}
+.cb-affiche.ev{box-shadow:inset 0 0 0 1.5px rgba(236,143,255,.55),0 16px 40px rgba(137,54,255,.35)}
+.cb-affiche.ev .cb-art::after{background:linear-gradient(180deg,rgba(40,10,70,.1) 20%,rgba(16,6,28,.92) 92%)}
+.cb-affiche-t{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cb-affiche-t small{font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.cb-affiche-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px;line-height:1.05;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.cb-affiche-t em{font-style:normal;font-size:13px;font-weight:700;color:rgba(255,255,255,.82)}
+.cb-affiche-go{flex:none;padding:11px 18px;border-radius:13px;font-family:var(--display);font-style:italic;font-weight:900;font-size:15px;color:#2a1405;
+  background:linear-gradient(180deg,#ffe28a,#ffc73b);box-shadow:0 3px 0 #a5780f}
+.cb-affiche.ev .cb-affiche-go{color:#fff;background:linear-gradient(180deg,#f3a6ff,#8936ff);box-shadow:0 3px 0 #4b1590}
+
+/* Les deux grandes portes : Solo et Versus. */
+.cb-portes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cb-porte{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;min-height:150px;padding:14px;
+  border:0;border-radius:18px;font:inherit;color:#fff;text-align:left;cursor:pointer;background:#140b20;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 10px 26px rgba(0,0,0,.35);transition:transform .15s}
+.cb-porte:active{transform:scale(.98)}
+.cb-porte-t{display:flex;flex-direction:column;line-height:1.05}
+.cb-porte-t b{font-family:var(--display);font-stretch:118%;font-style:italic;font-weight:900;font-size:26px;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cb-porte-t small{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.cb-porte-info{font-size:12px;font-weight:700;color:rgba(255,255,255,.8);line-height:1.3}
+.cb-porte.solo{background:linear-gradient(160deg,color-mix(in srgb,var(--sc) 35%,#140b20),#140b20)}
+.cb-porte.versus{background:radial-gradient(90% 70% at 0% 0%,rgba(238,0,115,.45),transparent 70%),radial-gradient(90% 70% at 100% 0%,rgba(137,54,255,.5),transparent 70%),#140b20}
+.cb-vsart{position:absolute;left:0;right:0;top:20px;display:flex;align-items:center;justify-content:center;gap:10px;z-index:-1}
+.cb-vsart .cb-embleme{width:44px;height:44px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.cb-vsart .cb-embleme svg{width:26px;height:22px}
+.cb-vsart b{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.5)}
+.cb-porte .rf-pastille,.cb-rac .rf-pastille{position:absolute;top:10px;right:10px}
+
+/* Les trois raccourcis. */
+.cb-raccourcis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cb-rac{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:10px;border:0;border-radius:14px;font:inherit;
+  color:var(--text);text-align:left;cursor:pointer;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);min-width:0}
+.cb-rac:active{transform:scale(.98)}
+.cb-rac-art{width:30px}
+.cb-rac-art svg,.cb-rac-ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cb-rac-ico{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--sc) 22%,var(--surface-2));color:var(--sc2)}
+.cb-rac-t{display:flex;flex-direction:column;min-width:0;width:100%}
+.cb-rac-t b{font-size:14px}
+.cb-rac-t small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Les pages : un retour, un titre. */
+.cb-sous{display:flex;align-items:center;gap:10px}
+.cb-retour{flex:none;display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:12px;cursor:pointer;color:var(--text);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-retour svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;transform:rotate(90deg)}
+.cb-sous-t{flex:1;min-width:0}
+.cb-sous-t h1{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.05}
+.cb-sous-t p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.cb-sous .cb-niv{min-width:0}
+.cb-sous .cb-niv-t{display:none}
+.cb-intro{margin:0;font-size:13.5px;color:var(--subtle);line-height:1.45}
+.cb-jour-chip{display:flex;flex-direction:column;align-items:center;padding:5px 10px;border-radius:12px;line-height:1.1;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-jour-chip b{font-family:var(--display);font-weight:900;font-size:15px}
+.cb-jour-chip small{font-size:10px;color:var(--muted);font-weight:700}
+.cb-seg button.on{background:linear-gradient(90deg,color-mix(in srgb,var(--sc) 70%,#000),var(--sc))}
+.cb-mgroupe h3{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 8px;font-size:15px}
+.cb-mgroupe h3 small{font-size:12px;font-weight:700;color:var(--muted)}
 
 /* Choisir sa Section */
 .cb-choix{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:10px 0 24px}
@@ -60,48 +142,37 @@
 .cb-reprendre-act{display:flex;gap:8px}
 .cb-reprendre-act .btn{width:auto;padding-inline:18px}
 
-/* La Guerre des Sections */
-.cb-guerre{padding:14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.cb-guerre-tete{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
-.cb-guerre-tete b{font-family:var(--display);font-style:italic;font-size:16px}
-.cb-guerre-tete small{color:var(--muted);font-size:12px}
-.cb-guerre-barre{position:relative;display:flex;justify-content:space-between;align-items:center;height:38px;border-radius:999px;overflow:hidden;padding:0 8px;
+/* La Guerre des Sections, en une ligne. */
+.cb-guerre{display:flex;flex-direction:column;gap:8px;width:100%;padding:12px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-guerre-tete{display:flex;align-items:baseline;gap:8px}
+.cb-guerre-tete b{font-family:var(--display);font-style:italic;font-size:15px}
+.cb-guerre-tete small{margin-left:auto;color:var(--muted);font-size:12px}
+.cb-x2{font-style:normal;font-weight:900;font-size:11px;padding:1px 6px;border-radius:999px;color:#fff;background:linear-gradient(90deg,#ee0073,#8936ff)}
+.cb-x2t{color:#e3c8ff}
+.cb-guerre-barre{position:relative;display:flex;justify-content:space-between;align-items:center;height:32px;border-radius:999px;overflow:hidden;padding:0 6px;
   background:linear-gradient(90deg,#ee0073 0,#ff5bb0 var(--pt),#a95cf2 var(--pt),#8936ff 100%);box-shadow:inset 0 2px 6px rgba(0,0,0,.35)}
 .cb-guerre-barre::after{content:"";position:absolute;left:var(--pt);top:-4px;bottom:-4px;width:3px;translate:-50% 0;background:#fff;box-shadow:0 0 12px #fff}
-.cb-guerre-barre span{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;font-size:16px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
-.cb-guerre p{margin:10px 0 0}
+.cb-guerre-barre>span{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;font-size:15px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.cb-guerre-fiche{display:flex;flex-direction:column;gap:10px}
+.cb-guerre-fiche .cb-guerre{cursor:default}
+.cb-guerre-fiche p{margin:0;font-size:13.5px}
 .cb-passee{font-size:12.5px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
-
-/* Les modes */
-.cb-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.cb-mode{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;min-height:150px;padding:14px;
-  border:0;border-radius:var(--radius);text-align:left;font:inherit;color:var(--text);cursor:pointer;background:var(--surface);
-  box-shadow:inset 0 0 0 1px var(--line);transition:transform .15s,box-shadow .15s}
-.cb-mode:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px var(--line-3),var(--sh-3)}
-.cb-mode.campagne{grid-column:1/-1;min-height:170px;background:radial-gradient(120% 120% at 100% 0%,color-mix(in srgb,var(--sc) 40%,transparent),transparent 60%),var(--surface)}
-.cb-mode-art{position:absolute;right:-4%;top:-10%;width:38%;z-index:-1;transform:rotate(10deg);opacity:.9;
-  -webkit-mask:linear-gradient(200deg,#000 40%,transparent 85%);mask:linear-gradient(200deg,#000 40%,transparent 85%)}
-.cb-mode.campagne .cb-mode-art{width:30%;max-width:170px}
-.cb-mode-ico{position:absolute;right:12px;top:12px;width:38px;height:38px;color:var(--sc2);opacity:.85}
-.cb-mode-ico svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.cb-mode-txt{display:flex;flex-direction:column;gap:3px;max-width:78%}
-.cb-mode-txt small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-.cb-mode-txt b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.05}
-.cb-mode-txt em{font-style:normal;font-size:12.5px;color:var(--subtle)}
 .cb-barre{display:block;height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin-top:6px}
 .cb-barre i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--sc),var(--sc2))}
-.cb-bilan{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.cb-bilan div{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:var(--radius-sm);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.cb-bilan b{font-family:var(--display);font-weight:900;font-size:20px}
-.cb-bilan b small{font-size:12px;color:var(--muted)}
-.cb-bilan>div>small{font-size:11px;color:var(--muted)}
-.cb-guide-lien{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);text-align:left;cursor:pointer;
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.cb-guide-lien>span:first-child{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--accent-wash);color:var(--accent-soft)}
-.cb-guide-lien svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
-.cb-guide-lien>span:nth-child(2){flex:1;display:flex;flex-direction:column}
-.cb-guide-lien small{color:var(--muted);font-size:12.5px}
-.cb-guide-lien>svg:last-child{transform:rotate(-90deg);color:var(--muted)}
+
+/* Sur un petit téléphone, le badge de Section garde son emblème. */
+@media (max-width:420px){
+  .cb-haut .cb-badge b{display:none}
+  .cb-haut .cb-badge{padding:4px}
+  .cb-niv{width:132px}
+}
+@media (min-width:760px){
+  .cb-affiche{min-height:230px;padding:22px}
+  .cb-affiche-t b{font-size:30px}
+  .cb-porte{min-height:190px}
+  .cb-haut h1{font-size:36px}
+}
 
 /* La campagne */
 .cb-campagne-prog{display:flex;align-items:center;gap:10px}

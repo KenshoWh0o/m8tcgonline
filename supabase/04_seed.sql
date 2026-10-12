@@ -211,6 +211,8 @@ delete from public.quests where id not in (
   -- fois qu'on rejoue ce fichier (quest_progress suit la quete en cascade).
   'd_combat','d_victoire','d_vaincus','w_victoires','w_dur','w_defi',
   'm_campagne','m_legende','m_cent','m_secrete','m_mt_or','m_mt_or10','m_mt_prisme',
+  'd_xp','w_xp','m_combats50','m_vaincus100','m_defis10','m_dures25',
+  'm_niv5','m_niv10','m_niv20','m_niv30','m_niv40','m_niv50',
   'c_visite','c_combats','c_raid','c_epreuve','c_vaincus','c_packs',
   'c_deg100','c_raidv5','c_ep7','c_pts','c_vic30','c_dur5','c_legende','c_defis','c_deck','c_cosm',
   'c_packs60','c_trade','c_invite');
@@ -260,6 +262,9 @@ on conflict (id) do update set
 --   legende          : l'IA battue en Legende (PvE infini)
 --   rarity_S         : une Secrete sortie d'un booster (24_secretes_maitrise.sql)
 --   maitrise_3/4     : des cartes a la maitrise Or / Prisme (24_secretes_maitrise.sql)
+--   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
+--   niveau           : le niveau de combattant atteint — un etat, pas un
+--                      compteur : gagner_xp le recopie (26_niveaux.sql)
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_combat',    'daily',     'combats',          1,   20, null,         'Sur le terrain',        'Joue un combat, contre l''IA ou un ami.', 8),
   ('d_victoire',  'daily',     'victoires',        1,   40, null,         'Première victoire',     'Gagne un combat.', 9),
@@ -270,10 +275,22 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_campagne',  'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 30),
   ('m_legende',   'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l''IA en Légende.', 31),
   ('m_cent',      'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 32),
-  ('m_secrete',   'milestone', 'rarity_S',         1,  500, null,         'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
+  ('m_secrete',   'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
   ('m_mt_or',     'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d''or',        'Amène une carte à la maîtrise Or.', 34),
   ('m_mt_or10',   'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l''or',        'Amène 10 cartes à la maîtrise Or.', 35),
-  ('m_mt_prisme', 'milestone', 'maitrise_4',       1,  800, null,         'Prisme',                'Amène une carte à la maîtrise Prisme.', 36)
+  ('m_mt_prisme', 'milestone', 'maitrise_4',       1,  800, 'f_maitrise', 'Prisme',                'Amène une carte à la maîtrise Prisme.', 36),
+  ('d_xp',        'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11),
+  ('w_xp',        'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11),
+  ('m_combats50', 'milestone', 'combats',         50,  300, null,         'Habitué de l''arène',   'Joue 50 combats.', 37),
+  ('m_vaincus100','milestone', 'vaincus',        100,  400, null,         'Cent à terre',          'Vaincs 100 Joueurs adverses.', 38),
+  ('m_defis10',   'milestone', 'defis',           10,  400, null,         'Rival attitré',         'Joue 10 défis contre des amis.', 39),
+  ('m_dures25',   'milestone', 'victoires_dures', 25,  600, null,         'Sans pitié',            'Gagne 25 combats en Difficile ou plus.', 40),
+  ('m_niv5',      'milestone', 'niveau',           5,  100, null,         'Niveau 5',              'Atteins le niveau 5 de combattant.', 41),
+  ('m_niv10',     'milestone', 'niveau',          10,  200, null,         'Niveau 10',             'Atteins le niveau 10 de combattant.', 42),
+  ('m_niv20',     'milestone', 'niveau',          20,  400, null,         'Niveau 20',             'Atteins le niveau 20 de combattant.', 43),
+  ('m_niv30',     'milestone', 'niveau',          30,  600, null,         'Niveau 30',             'Atteins le niveau 30 de combattant.', 44),
+  ('m_niv40',     'milestone', 'niveau',          40,  800, null,         'Niveau 40',             'Atteins le niveau 40 de combattant.', 45),
+  ('m_niv50',     'milestone', 'niveau',          50, 1500, null,         'Niveau 50',             'Atteins le niveau 50 de combattant.', 46)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -339,7 +356,10 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
   ('f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2),
   ('f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3),
-  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4)
+  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4),
+  -- Version 3.0 : les couleurs des deux Sections.
+  ('f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5),
+  ('f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -395,7 +415,7 @@ on conflict (id) do update set
 delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',
-  'f_azur','f_rose','f_or','f_prisme',
+  'f_azur','f_rose','f_or','f_prisme','f_toxique','f_deter',
   's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
   't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
   'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_orage','t_supporter');

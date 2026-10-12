@@ -35,6 +35,7 @@ MORCEAUX = [
     ('23_combats.sql', 'Version 3.0 : les Combats — Sections, decks, combats, defis, Guerre des Sections'),
     ('24_secretes_maitrise.sql', 'Version 3.0 : les Secretes'),
     ('25_choc.sql',    'Version 3.0 : l\'evenement « Le Choc des Sections »'),
+    ('26_niveaux.sql', 'Version 3.0 : l\'XP et le niveau de combattant'),
 ]
 
 entete = """-- =====================================================================

@@ -41,7 +41,7 @@ async function chargerChoc() {
   } catch (e) {
     chErreur = e.message || 'L\'événement n\'a pas pu être chargé.';
   }
-  if (tab === 'choc' && !ecranOccupe()) render();
+  if ((tab === 'choc' || tab === 'combats') && !ecranOccupe()) render();
 }
 
 /* ---------- Ce qui attend ---------- */

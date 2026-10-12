@@ -360,6 +360,8 @@ begin
                                'plafond', 5),
     'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites,
                                 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d),
+    -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
+    'xp', c.xp,
     'guerre', jsonb_build_object(
       'toxique', coalesce(g.toxique, 0), 'deter', coalesce(g.deter, 0),
       'moi', coalesce((select points from guerre_contrib where semaine = sem and user_id = p), 0),
@@ -499,7 +501,7 @@ create or replace function public.combat_fin(p_id text, p_gagne boolean, p_resum
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; o combats_ouverts; r jsonb; trop boolean;
         v_n int; pc pve_campagne; pd pve_difficultes; g_eclats int := 0; g_boosters int := 0; g_fragments int := 0;
-        g_points int := 0; carte text; msg text := ''; plafond boolean; autre text;
+        g_points int := 0; carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -523,15 +525,21 @@ begin
     if o.niveau >= 4 then perform bump_quests(p, 'victoires_dures', 1); end if;
     if o.niveau >= 5 and o.mode = 'infini' then perform bump_quests(p, 'legende', 1); end if;
   end if;
+  -- L'XP, sans limite par jour (26_niveaux.sql) : tout combat fini en
+  -- rapporte, sauf un combat trop court.
+  if not trop then
+    v_xp := gagner_xp(p, xp_combat(o.mode, o.niveau, coalesce(p_gagne, false),
+                                 coalesce((p_resume->>'vaincus')::int, 0), coalesce((p_resume->>'tours')::int, 0)));
+  end if;
 
   -- Le Raid et l'Epreuve paient en Insignes (25_choc.sql).
   if o.mode in ('raid', 'epreuve') then
     r := choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop);
-    return jsonb_build_object('etat', me(), 'recompense', r);
+    return jsonb_build_object('etat', me(), 'recompense', r || jsonb_build_object('xp', v_xp));
   end if;
 
   if not coalesce(p_gagne, false) then
-    msg := 'Pas de récompense pour une défaite — mais la quête « Sur le terrain » avance.';
+    msg := 'Pas d''Éclats pour une défaite, mais l''XP compte.';
   elsif trop then
     msg := 'Combat trop court pour être récompensé.';
   else
@@ -580,7 +588,7 @@ begin
 
   return jsonb_build_object('etat', me(), 'recompense', jsonb_build_object(
     'eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments, 'points', g_points,
-    'carte', carte, 'titre', null, 'message', msg));
+    'carte', carte, 'titre', null, 'message', msg, 'xp', v_xp));
 end $$;
 
 -- ===================================================== 7. les defis entre amis
@@ -686,7 +694,7 @@ end $$;
 create or replace function public.defi_fin(p_id text, p_gagnant int default null, p_tours int default 0) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); d defis; c combat_joueurs; moi int; gagne boolean;
-        g_eclats int := 0; g_points int := 0; msg text := ''; deja boolean;
+        g_eclats int := 0; g_points int := 0; msg text := ''; deja boolean; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -726,6 +734,7 @@ begin
         perform bump_quests(p, 'victoires', 1);
         g_points := marquer_points(p, 5);
       end if;
+      v_xp := gagner_xp(p, xp_combat('defi', 0, gagne, 0, coalesce(p_tours, 0)));
       if c.defis_rec < 3 then
         update combat_joueurs set defis_rec = defis_rec + 1 where user_id = p;
         g_eclats := case when gagne then 40 else 15 end;
@@ -736,7 +745,7 @@ begin
     end if;
   end if;
   return jsonb_build_object('etat', me(), 'recompense',
-    jsonb_build_object('eclats', g_eclats, 'points', g_points, 'message', msg));
+    jsonb_build_object('eclats', g_eclats, 'points', g_points, 'message', msg, 'xp', v_xp));
 end $$;
 
 -- ===================================================== 8. droits

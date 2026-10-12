@@ -1416,6 +1416,7 @@ const Table = (() => {
     sauver();
     fermerFocus();
     fermerSheet();
+    document.querySelectorAll('.ar-flot').forEach(x => x.remove());
     rendre();
     const E = T.E;
     const gagne = E.fin.gagnant === T.moi;

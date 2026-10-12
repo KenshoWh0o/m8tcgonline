@@ -22,7 +22,7 @@ const ESSENTIEL = [
   'js/opening.js', 'js/collection.js', 'js/viewer.js', 'js/trade.js', 'js/social.js',
   'js/quests.js', 'js/classement.js', 'js/tirages.js', 'js/partage.js', 'js/promos.js',
   'js/boite.js', 'js/shop.js', 'js/recyclage.js', 'js/combat/moteur.js', 'js/combat/effets.js',
-  'js/combat/decks.js', 'js/combat/ia.js', 'js/combat/campagne.js', 'js/combat/choc-data.js',
+  'js/combat/decks.js', 'js/combat/ia.js', 'js/combat/campagne.js', 'js/combat/choc-data.js', 'js/combat/niveaux.js',
   'js/combat/guides.js', 'js/combat/table.js', 'js/combat/atelier.js', 'js/combat/defis.js',
   'js/battle.js', 'js/profile.js', 'js/settings.js', 'js/bienvenue.js', 'js/cadeaux.js',
   'js/reflets.js', 'js/choc.js', 'js/pwa.js', 'js/lab.js', 'js/app.js',
