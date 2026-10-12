@@ -186,6 +186,7 @@ function essayerInvitationGardee() {
 }
 
 function vPorteAttente() {
+  if (typeof demoPorte === 'function') return demoPorte(); /* demo (tools/demo.py) */
   const code = codeInvitation();
   const connexion = Backend.dispo
     ? `<button class="linkbtn lockacces" data-act="porte-discord">${code ? 'Me connecter avec Discord' : 'J\'ai déjà un accès'}</button>`

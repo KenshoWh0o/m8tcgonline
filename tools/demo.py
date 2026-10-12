@@ -100,6 +100,15 @@ page = remplacer(page,
     'la balise de la bibliotheque Supabase dans index.html')
 ecrire('index.html', page)
 
+# --- l'ecran d'entree : celui de la demo, jamais l'annonce d'arret du vrai
+#     site. Deconnecte, on y revient d'un geste ; si la demo n'a pas demarre,
+#     il dit pourquoi et propose de repartir de zero (window.demoPorte,
+#     _demo/serveur.js). Sans ca, un echec au demarrage laissait la page sur
+#     « Merci », sans issue.
+ecrire('js/gate.js', remplacer(lire('js/gate.js'), r'function vPorteAttente\(\) \{',
+    lambda m: m.group(0) + "\n  if (typeof demoPorte === 'function') return demoPorte(); /* demo (tools/demo.py) */",
+    "vPorteAttente dans js/gate.js"))
+
 # --- le service worker garde aussi ces deux fichiers pour le hors reseau
 sw = lire('sw.js')
 sw = remplacer(sw, r"'js/app\.js',",

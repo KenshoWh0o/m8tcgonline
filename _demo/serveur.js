@@ -2075,6 +2075,7 @@
 
   /* ======================================================= le faux client */
   let pret = null;
+  let repartiUneFois = false;
   const ecouteurs = [];
 
   function charger() {
@@ -2086,18 +2087,38 @@
         }
         S = await kvGet(CLE);
         if (!S || S.v !== 1) { creerMonde(); await sauver(); }
-        /* Une démo commencée avant la version 1.5 : ce qui lui manque. */
-        S.tirages = S.tirages || [];
-        /* Version 2.1 : les exemplaires à garder. */
-        S.gardes = S.gardes || {};
-        S.favoris = S.favoris || {};
-        S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
-        chasseTerminee();
-        monde20();
-        monde30();
+        completer();
       })();
     }
     return pret;
+  }
+
+  /* Ce qui manque à une démo commencée dans une version précédente. */
+  function completer() {
+    /* Avant la version 1.5. */
+    S.tirages = S.tirages || [];
+    /* Version 2.1 : les exemplaires à garder. */
+    S.gardes = S.gardes || {};
+    S.favoris = S.favoris || {};
+    S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
+    chasseTerminee();
+    monde20();
+    monde30();
+  }
+
+  /* Une partie de démo qui ne se relit plus (une sauvegarde d'une version
+     précédente que cette version ne sait pas lire) : on la met de côté, on
+     repart d'un monde neuf, et on le dit. Sans ça, l'état du joueur échoue
+     au démarrage, et la page retombe sur l'écran d'accueil sans pouvoir en
+     sortir. */
+  async function repartir(detail) {
+    try { await kvSet(CLE + '-ancienne', S); } catch (e) { /* sans gravité */ }
+    creerMonde();
+    completer();
+    await sauver();
+    setTimeout(() => {
+      if (typeof toast === 'function') toast('Ta partie de démo n\'a pas pu être relue (' + detail + ') : elle repart de zéro.');
+    }, 2500);
   }
 
   /* Ce qui arrive des joueurs simulés est poussé comme le ferait le temps
@@ -2137,7 +2158,16 @@
       return { data: data === undefined ? null : JSON.parse(JSON.stringify(data)), error: null };
     } catch (e) {
       S = JSON.parse(avant);
-      if (!(e instanceof Refus)) console.error('[démo]', nom, e);
+      if (!(e instanceof Refus)) {
+        console.error('[démo]', nom, e);
+        /* L'état du joueur (me) ne se lit plus : on repart d'un monde neuf,
+           une fois, et on réessaie. */
+        if (nom === 'me' && !repartiUneFois) {
+          repartiUneFois = true;
+          await repartir((e && e.message) || String(e));
+          return appeler(nom, args);
+        }
+      }
       return { data: null, error: { message: e.message || 'Le serveur a refusé.' } };
     }
   }
@@ -2199,4 +2229,31 @@
   };
 
   window.supabase = { createClient: () => client };
+
+  /* L'écran d'entrée de la démo (tools/demo.py le substitue à celui du vrai
+     site, qui affiche l'annonce d'arrêt). On n'y arrive que déconnecté, ou
+     si la démo n'a pas démarré : alors on dit pourquoi, et on propose de
+     réessayer ou de repartir de zéro. */
+  window.demoPorte = () => {
+    const err = typeof Backend === 'object' && Backend.erreur;
+    const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    if (err) {
+      return `<span class="locktag refus">Démo</span>
+        <h1 class="locktitle">La démo n'a pas démarré</h1>
+        <div class="muted lockdit"><p>Ta partie de démo n'a pas pu être chargée. Réessaie ; si ça ne passe pas,
+          repars de zéro : rien n'est réel ici, et le vrai site n'est pas touché.</p>
+          <p class="small">Détail : ${esc(err)}</p></div>
+        <div class="lockentree">
+          <a class="btn" href="${esc(location.pathname)}?reinitialiser">Repartir de zéro</a>
+          <a class="btn ghost" href="${esc(location.pathname)}">Réessayer</a>
+        </div>`;
+    }
+    return `<span class="locktag">Démo</span>
+      <h1 class="locktitle">Tu es déconnecté</h1>
+      <div class="muted lockdit"><p>Rien n'est réel ici : touche « Entrer » pour reprendre ta partie de démo.</p></div>
+      <div class="lockentree">
+        <button class="btn" data-act="porte-discord">Entrer</button>
+        <a class="btn ghost" href="${esc(location.pathname)}?reinitialiser">Repartir de zéro</a>
+      </div>`;
+  };
 })();

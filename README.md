@@ -192,7 +192,7 @@ produit `_build/m8tcg-demo/` (ouvrir `index.html`) et `_build/m8tcg-demo.zip` à
 
 > **À garder synchronisé.** Les quêtes, la boutique, les taux de drop, `cfg()` et les règles des actions sont recopiés dans `_demo/serveur.js`. Quand ils changent dans `supabase/`, il faut les changer là aussi, puis relancer `tools/demo.py`. Le script s'arrête avec un message clair si `index.html` ou `sw.js` ont changé au point qu'il ne s'y retrouve plus.
 
-Pour repartir de zéro dans la démo : ajouter `?reinitialiser` à la fin de l'adresse.
+Pour repartir de zéro dans la démo : ajouter `?reinitialiser` à la fin de l'adresse. Une partie que la version en cours ne sait plus relire est mise de côté (`demo-serveur-ancienne`) et la démo repart d'elle-même d'un monde neuf, en le disant. Et si la démo ne démarre pas, son écran d'entrée (jamais l'annonce d'arrêt du vrai site) donne l'erreur, avec « Réessayer » et « Repartir de zéro » (`demoPorte`, `_demo/serveur.js`, branché par `tools/demo.py`).
 
 ## Composition d'un booster
 

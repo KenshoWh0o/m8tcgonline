@@ -68,6 +68,7 @@ Backend.init = async function () {
       console.warn('Serveur injoignable :', e);
       Backend.mode = 'local';
       Backend.panne = true;
+      Backend.erreur = (e && e.message) || String(e);
       authErr = 'Le serveur ne répond pas pour le moment. Réessaie dans un instant.';
       await Backend.loadLocal();
     }
