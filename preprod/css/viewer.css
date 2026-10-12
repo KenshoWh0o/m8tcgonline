@@ -23,6 +23,16 @@
   background:linear-gradient(115deg,transparent 15%,rgba(137,54,255,.5) 30%,rgba(57,184,255,.5) 45%,rgba(255,199,59,.5) 60%,rgba(223,109,232,.45) 75%,transparent 90%);
   background-size:320% 320%;background-position:var(--hx,50%) 50%}
 .vw-card.rR .vw-holo{opacity:.25}.vw-card.rE .vw-holo{opacity:.45}.vw-card.rL .vw-holo{opacity:.62}
+/* La Secrète, dans la visionneuse : sa feuille arc-en-ciel suit l'inclinaison,
+   sa lueur irisée l'entoure, et le reflet passe plus fort. */
+.vw-card.rS .cwrap{animation:none;filter:drop-shadow(0 0 10px rgba(255,255,255,.75)) drop-shadow(0 0 26px rgba(255,124,200,.6)) drop-shadow(0 0 44px rgba(127,216,255,.5)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.vw-card.rS .card.r-S::before{animation:none;opacity:.55;mix-blend-mode:normal;background-position:var(--hx,50%) var(--gy,50%);
+  /* En 3D, le mélange des couleurs ne passe plus : seules les paillettes
+     restent, sans le voile. */
+  -webkit-mask-image:radial-gradient(circle at 30% 30%,#000 0 .8px,transparent 1.3px),radial-gradient(circle at 70% 65%,#000 0 .6px,transparent 1.1px);
+  mask-image:radial-gradient(circle at 30% 30%,#000 0 .8px,transparent 1.3px),radial-gradient(circle at 70% 65%,#000 0 .6px,transparent 1.1px);
+  -webkit-mask-size:8px 8px,13px 13px;mask-size:8px 8px,13px 13px}
+.vw-card.rS .vw-holo{opacity:.28;background:conic-gradient(from 200deg at var(--gx,50%) var(--gy,40%),#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8);mix-blend-mode:normal}
 /* Une Reverse a déjà sa nacre : le reflet de la visionneuse, plus discret, suit l'inclinaison par-dessus. */
 .vw-card:has(.card.rev) .vw-holo{opacity:.3}
 .vw-shadow{position:relative;width:210px;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.7),transparent);margin-top:18px}
@@ -80,3 +90,12 @@ html.rm .vw-fav.pop svg{animation:none}
 .vw-mt-barre{display:block;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
 .vw-mt-barre i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#b8743c,#dfe6f2,#ffc73b,#b38cff)}
 .vw-maitrise small{font-size:11.5px;color:rgba(255,255,255,.55)}
+/* L'aperçu des quatre paliers de maîtrise. */
+.vw-mt-apercu{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;margin-top:6px}
+.vw-mt-ap{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px 6px;border:0;border-radius:12px;font:inherit;color:#fff;cursor:pointer;
+  background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.vw-mt-ap .mt-badge{position:relative;top:auto;right:auto;width:22px;container-type:normal;box-shadow:0 0 0 2px #120a1c}
+.vw-mt-ap span{font-size:11.5px;font-weight:800}
+.vw-mt-ap small{font-size:10px!important;color:rgba(255,255,255,.5)}
+.vw-mt-ap.eu{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.vw-mt-ap.on{background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 2px #fff}

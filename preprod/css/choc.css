@@ -5,7 +5,7 @@
    French Sorcerer, le boss du Raid. */
 
 .insigneico{width:1.1em;height:1.1em}
-.sac.prismes .insigneico + b{background:linear-gradient(90deg,#ff5bb0,#b38cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sac.prismes .insigneico + b{color:#ffd75e}
 
 /* ============ L'en-tête ============ */
 /* The French Sorcerer (#116) en fond : son illustration est cadrée sur le
@@ -198,3 +198,67 @@
 
 /* ============ Combats : un cosmétique d'événement ============ */
 .cb-cosm-prix.ev{font-size:9.5px;white-space:nowrap;background:linear-gradient(90deg,#ee0073,#8936ff);color:#fff}
+
+/* ============ L'accueil de l'événement (refonte) ============ */
+/* Le Raid : la grande carte, le Sorcier en fond. */
+.ch-raid{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:218px;
+  width:100%;padding:14px;border:0;border-radius:20px;font:inherit;color:#fff;text-align:left;cursor:pointer;background:#140820;
+  box-shadow:inset 0 0 0 1.5px rgba(236,143,255,.5),0 16px 40px rgba(137,54,255,.3);transition:transform .15s}
+.ch-raid:active{transform:scale(.99)}
+.ch-raid .cb-art::after{background:linear-gradient(180deg,rgba(30,8,50,.1) 15%,rgba(14,5,24,.94) 78%)}
+.ch-raid-haut{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;align-items:center}
+.ch-raid-haut small{padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
+  background:rgba(14,5,24,.72);box-shadow:inset 0 0 0 1px rgba(236,143,255,.4)}
+.ch-raid-t{display:flex;flex-direction:column;gap:8px}
+.ch-raid-t>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.ch-raid .ch-barre-tete span{color:rgba(255,255,255,.8)}
+.ch-raid-pied{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.85)}
+.ch-go{flex:none;padding:10px 18px;border-radius:13px;font-family:var(--display);font-style:italic;font-weight:900;font-size:15px;color:#fff;
+  background:linear-gradient(180deg,#f3a6ff,#8936ff);box-shadow:0 3px 0 #4b1590}
+.ch-terre{margin:2px 0 0;font-size:12px;line-height:1.4;color:#f2d9ff}
+.ch-barre.terre .ch-pv{box-shadow:inset 0 0 0 1px rgba(236,143,255,.6)}
+.ch-barre.terre .ch-pv>i{width:0!important}
+
+/* L'Épreuve et le Pass, côte à côte. */
+.ch-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ch-carte{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:0;border-radius:16px;font:inherit;
+  color:var(--text);text-align:left;cursor:pointer;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);min-width:0}
+.ch-carte:active{transform:scale(.98)}
+.ch-carte-ico{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;color:#fff;background:linear-gradient(135deg,#ee0073,#8936ff)}
+.ch-carte.pass .ch-carte-ico{background:linear-gradient(135deg,#ffc73b,#e0941d);color:#2a1405}
+.ch-carte-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.ch-carte-t{display:flex;flex-direction:column;min-width:0}
+.ch-carte-t small{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ch-carte-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:17px;line-height:1.1}
+.ch-carte-t b .muted{font-size:13px}
+.ch-carte-info{font-size:12px;font-weight:700;color:var(--subtle);line-height:1.3}
+.ch-pips{display:flex;gap:5px}
+.ch-pips i{width:22px;height:7px;border-radius:99px;background:var(--surface-3)}
+.ch-pips i.ok{background:var(--ok)}
+.ch-pips i.ko{background:#ff5d86}
+.ch-jauge{display:block;width:100%;height:7px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
+.ch-jauge i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffc73b,#ff5bb0)}
+.ch-carte .rf-pastille{position:absolute;top:10px;right:10px}
+
+/* Les quêtes du jour, sur l'accueil. */
+.ch-qj .rf-sous{margin-top:0}
+.ch-lien{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:8px;padding:10px;border:0;border-radius:12px;font:inherit;
+  font-size:13px;font-weight:800;color:var(--subtle);cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.ch-lien svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;transform:rotate(-90deg)}
+.ch-pied{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ch-pied .cb-rac-ico .insigneico{width:20px;height:20px}
+.ch-pied .cb-rac{flex-direction:row;align-items:center}
+.ch-guerre{width:100%}
+.rf-solde{border:0;font:inherit;color:inherit;cursor:pointer}
+.ch-solde-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:12px;font-weight:900;cursor:default;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch-solde-chip .insigneico{width:18px;height:18px}
+@media (min-width:760px){
+  .ch-raid{min-height:260px;padding:20px}
+  .ch-raid-t>b{font-size:30px}
+}
+.ch-tete{padding-bottom:18px}
+
+.ch-couleurs{display:block}
+.ch-couleurs .ess{vertical-align:-4px;margin:0 3px}
+.ch-carte-info .insigneico{width:13px;height:13px;vertical-align:-2px}

@@ -463,7 +463,15 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 
 **L'onglet Combats** (`js/battle.js`) : on choisit sa **Section** (Toxique ou Déter, les deux Starter Decks — sa Promo et son deck, prêté), puis la **campagne** (vingt combats en quatre actes contre l'autre Section ; la finir donne sa Promo), le **PvE infini** (cinq difficultés, cinq victoires récompensées par jour), les **défis** entre amis (en direct, chacun sur son écran : le serveur range les actions, chaque navigateur rejoue celles de l'autre), l'**atelier de decks** (`js/combat/atelier.js` ; codes de partage) et les **Guides** (`js/combat/guides.js`). Chaque victoire marque des points pour sa Section dans la **Guerre des Sections** de la semaine ; le lundi, ceux qui ont marqué reçoivent leur part (2 boosters et 200 Éclats dans la Section gagnante, un booster dans l'autre).
 
+**L'arène** (`js/combat/table.js`, `css/arene.css`) : le plateau en plein écran, le tapis du joueur dont c'est le tour. Toucher une carte la montre en grand au-dessus de son propre camp, qui reste visible : on y choisit la place d'un Joueur, le Joueur qui reçoit un Objet, ou l'attaque — les attaques possibles s'allument, la carte retourne à sa place et les cibles s'allument à leur tour. Sur le plateau : la Défense en écusson, les Essences en gemmes (éteintes quand elles sont engagées), les PV en dos de cartes, le signe de la sorte de carte (Joueur, Objet, Coach, Moment) dans la main.
+
+**L'XP et le niveau de combattant** (`js/combat/niveaux.js`, `supabase/26_niveaux.sql`) : chaque combat fini rapporte de l'XP, sans limite par jour ; chaque niveau paie 50 Éclats, certains paliers des boosters, des cadres (Arène bronze, argent, or, prisme) et des titres. Quêtes d'XP (du jour, de la semaine) et de niveau (saison). Le calcul est dans `docs/economie-3.0.md` (partie 2 bis).
+
+**L'accueil des Combats** tient en un écran : le niveau, une grande affiche (le Raid pendant l'événement, sinon le prochain combat de campagne), deux portes **Solo** (campagne, PvE infini) et **Versus** (défis), trois raccourcis (Decks, Missions — les quêtes de combat et de niveau —, Guide), et la Guerre des Sections en une ligne.
+
 **Les cosmétiques** : six tapis de jeu et deux sleeves en boutique (rayon Combats ; visuels adaptés des illustrations par `tools/cosmetiques.py`), plus ceux de l'événement (`tools/choc-visuels.py`). Les Essences Brillantes qu'on possède brillent en combat.
+
+**Les cadres de la 3.0** (`tools/cadres-30.py`) : Arène ×4 (niveaux), Toxique et Déter (boutique), Secrète et Maîtrise (quêtes), plus Choc et Foudre (événement). Le profil montre aussi ceux qu'on n'a pas, et où les gagner.
 
 **La maîtrise des cartes** (`js/maitrise.js`) : chaque exemplaire obtenu d'une carte — Reverse comprise, même s'il est recyclé ou échangé ensuite — la fait monter de palier : Bronze, Argent, Or, Prisme. Les seuils dépendent de la rareté. Le serveur compte les exemplaires dans `collection.total` (un déclencheur, `supabase/01_schema.sql`) ; les collections d'avant la 3.0 partent de ce qu'elles possèdent.
 

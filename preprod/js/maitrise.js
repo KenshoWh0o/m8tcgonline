@@ -51,11 +51,16 @@ function maitriseDe(c) {
   return { niveau, n, prochain: s[niveau] || null, seuils: s, nom: MAITRISE.noms[niveau] };
 }
 
-/* Une carte habillée de sa maîtrise : une classe de plus sur son enveloppe. */
-function avecMaitrise(html, c) {
+/* Une carte habillée de sa maîtrise : une classe de plus sur son enveloppe,
+   et un médaillon dans le coin, pour qu'on reconnaisse le palier d'un coup
+   d'œil — même en petit, dans la Collection. `niveau` force un palier
+   (l'aperçu de la visionneuse). */
+function avecMaitrise(html, c, niveau) {
   const m = maitriseDe(c);
-  if (!m || !m.niveau) return html;
-  return html.replace('class="cwrap"', `class="cwrap mt${m.niveau}" data-maitrise="${m.nom}"`);
+  const n = niveau != null ? niveau : m ? m.niveau : 0;
+  if (!n) return html;
+  const nom = MAITRISE.noms[n];
+  return html.replace('<div class="cwrap">', `<div class="cwrap mt${n}" data-maitrise="${nom}"><i class="mt-badge mt${n}" title="Maîtrise ${nom}" aria-label="Maîtrise ${nom}"></i>`);
 }
 
 /* La ligne de la visionneuse : le palier, et la jauge vers le suivant. */
@@ -64,9 +69,13 @@ function vMaitrise(c) {
   if (!m) return '';
   const de = m.niveau ? m.seuils[m.niveau - 1] : 0;
   const pct = m.prochain ? Math.round(100 * (m.n - de) / (m.prochain - de)) : 100;
+  /* L'aperçu : les quatre paliers, à essayer sur la carte elle-même. */
+  const apercu = [1, 2, 3, 4].map(k => `<button class="vw-mt-ap mt${k}${k <= m.niveau ? ' eu' : ''}" data-v="mt${k}" aria-label="Voir la carte en maîtrise ${MAITRISE.noms[k]}">
+      <i class="mt-badge mt${k}"></i><span>${MAITRISE.noms[k]}</span><small>${m.seuils[k - 1]} ex.</small></button>`).join('');
   return `<div class="vw-maitrise mt${m.niveau}">
     <span class="vw-mt-nom">${m.niveau ? `Maîtrise ${m.nom}` : 'Pas encore de maîtrise'}</span>
     <span class="vw-mt-barre"><i style="width:${Math.max(4, Math.min(100, pct))}%"></i></span>
     <small>${m.prochain ? `${m.n} / ${m.prochain} exemplaires obtenus pour ${MAITRISE.noms[m.niveau + 1]}` : `${m.n} exemplaires obtenus — maîtrise complète`}</small>
+    <div class="vw-mt-apercu" role="group" aria-label="Aperçu des paliers">${apercu}</div>
   </div>`;
 }

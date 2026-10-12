@@ -229,8 +229,13 @@ html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,
 .charge-S .scard.charging{animation-duration:.26s}
 .th-stage.charge-S.charging{background:radial-gradient(circle at 50% 45%,rgba(232,236,255,.3),rgba(127,216,255,.14) 40%,transparent 66%)}
 .th-stage.flash-S::after{background:radial-gradient(circle,#fff 0%,rgba(232,236,255,.95) 30%,rgba(255,124,200,.6) 55%,rgba(127,216,255,.4) 72%,transparent 88%);animation:flash 1s ease-out}
-.shock.rS{border-color:#e8ecff}
-.scard.hitcard.hS .cwrap{box-shadow:none;filter:drop-shadow(0 0 14px #e8ecff) drop-shadow(0 0 34px #7fd8ff)}
+.scard.hitcard.hS .cwrap{box-shadow:none;animation:s-revele 2.4s linear infinite;filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #ff7cc8) drop-shadow(0 0 60px #7fd8ff)}
+@keyframes s-revele{
+  0%,100%{filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #ff7cc8) drop-shadow(0 0 60px #7fd8ff)}
+  33%{filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #7fd8ff) drop-shadow(0 0 60px #ffe28a)}
+  66%{filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #ffe28a) drop-shadow(0 0 60px #b38cff)}}
+/* Le coup de tonnerre de la Secrète : un anneau irisé qui s'élargit. */
+.shock.rS{border-color:#fff;box-shadow:0 0 0 4px rgba(255,124,200,.6),0 0 0 9px rgba(127,216,255,.45),0 0 40px rgba(255,226,138,.6)}
 .op-rar.rS{color:#e8ecff}
 .op-rar.big.rS .slam{background:linear-gradient(180deg,#fff,#c9d6ff 45%,#ff9ad5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .rc-tag.rS{background:linear-gradient(90deg,#c9d6ff,#ffb3e0);color:#1a1230}

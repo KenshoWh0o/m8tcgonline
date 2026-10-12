@@ -338,14 +338,35 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
   border-top:1px dashed color-mix(in srgb,var(--tc) 60%,transparent);padding-top:2cqi}
 
 /* ============ Version 3.0 : les Secrètes ============ */
-/* Un reflet d'argent qui passe, plus froid que l'or des Légendaires. */
-.card.r-S::after{content:'';position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
-  background:linear-gradient(115deg,transparent 20%,rgba(232,236,255,.55) 34%,rgba(255,124,200,.3) 42%,rgba(127,216,255,.35) 50%,rgba(255,226,138,.3) 58%,transparent 70%);
-  background-size:260% 100%;background-repeat:no-repeat;animation:holo 3.6s ease-in-out infinite}
-.cwrap:has(.card.r-S){box-shadow:0 0 0 1px rgba(232,236,255,.6),0 0 18px rgba(201,214,255,.45)}
-.rS{color:#d8e0ff}
-.rarchip.rS{--rc:#d8e0ff}
-html.rm .card.r-S::after{animation:none}
+/* Le meilleur tirage du jeu doit se reconnaître de loin. Trois couches :
+   une feuille arc-en-ciel pailletée qui dérive sur toute la carte (::before,
+   en color-dodge, vue à travers un masque de paillettes), un éclat blanc qui
+   la traverse (::after), et autour, une lueur irisée qui change de couleur.
+   Dans la visionneuse, la feuille suit l'inclinaison au lieu de dériver. */
+.card.r-S{isolation:isolate}
+.card.r-S::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:color-dodge;opacity:.46;
+  background:repeating-linear-gradient(115deg,#ff7cc8 0%,#ffc73b 6%,#55e6a6 12%,#39b8ff 18%,#b38cff 24%,#ff7cc8 30%);
+  background-size:400% 400%;background-position:0% 50%;
+  -webkit-mask-image:radial-gradient(circle at 30% 30%,#000 0 .8px,transparent 1.3px),radial-gradient(circle at 70% 65%,#000 0 .6px,transparent 1.1px),linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.3));
+  -webkit-mask-size:8px 8px,13px 13px,100% 100%;
+  mask-image:radial-gradient(circle at 30% 30%,#000 0 .8px,transparent 1.3px),radial-gradient(circle at 70% 65%,#000 0 .6px,transparent 1.1px),linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.3));
+  mask-size:8px 8px,13px 13px,100% 100%;
+  animation:s-feuille 9s linear infinite}
+@keyframes s-feuille{to{background-position:100% 50%;-webkit-mask-position:8px 16px,-13px 13px,0 0;mask-position:8px 16px,-13px 13px,0 0}}
+.card.r-S::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.0) 38%,rgba(255,255,255,.75) 46%,rgba(255,240,250,.35) 50%,transparent 58%) no-repeat;
+  background-size:260% 100%;animation:holo 3.4s ease-in-out infinite}
+.cwrap:has(.card.r-S){position:relative;animation:s-lueur 6s linear infinite;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(255,124,200,.65),0 0 30px rgba(127,216,255,.4)}
+@keyframes s-lueur{
+  0%,100%{box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(255,124,200,.65),0 0 30px rgba(127,216,255,.4)}
+  33%{box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(127,216,255,.7),0 0 30px rgba(255,226,138,.45)}
+  66%{box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(255,226,138,.7),0 0 30px rgba(179,140,255,.5)}}
+/* Une Secrète pas encore révélée garde son mystère : la feuille, pas l'éclat. */
+.rS{color:#e8ecff}
+.rarchip.rS{--rc:#e8ecff;background:linear-gradient(90deg,rgba(255,124,200,.18),rgba(127,216,255,.18),rgba(255,226,138,.18))}
+html.rm .card.r-S::before,html.rm .card.r-S::after,html.rm .cwrap:has(.card.r-S){animation:none}
+@media (prefers-reduced-motion:reduce){.card.r-S::before,.card.r-S::after,.cwrap:has(.card.r-S){animation:none}}
 
 /* ============ Version 3.0 : la maîtrise ============ */
 /* Quatre paliers, du plus discret au plus vivant : un liseré de bronze, un
@@ -374,3 +395,21 @@ html.rm .cwrap.mt3::before,html.rm .cwrap.mt4::before,html.rm .cwrap.mt4::after{
 .ar-c.mt4{box-shadow:0 0 0 2px #e3c8ff,0 0 16px rgba(201,168,255,.6)}
 .ar-c.mt4::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:color-dodge;opacity:.35;
   background:conic-gradient(from var(--mt-a,0deg),#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8);animation:mt-tourne 4s linear infinite}
+
+/* Le médaillon de maîtrise, dans le coin haut droit de la carte : la
+   couleur du palier, et autant de points que de paliers. */
+.mt-badge{position:absolute;top:-5.5cqi;right:-5.5cqi;z-index:5;width:16cqi;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  box-shadow:0 0 0 1.4cqi #120a1c,0 1.5cqi 3cqi rgba(0,0,0,.5);
+  background:radial-gradient(circle at 50% 50%,#fff 0 9%,transparent 11%) 50% 50%/100% 100% no-repeat,var(--mtb)}
+.mt-badge.mt1{--mtb:radial-gradient(circle at 35% 30%,#ffd9b5,#c27a3f 55%,#6b3b14)}
+.mt-badge.mt2{--mtb:radial-gradient(circle at 35% 30%,#ffffff,#c9d1de 55%,#6f7889)}
+.mt-badge.mt3{--mtb:radial-gradient(circle at 35% 30%,#fff6c8,#f2c24a 55%,#9a620a)}
+.mt-badge.mt4{--mtb:conic-gradient(from 0deg,#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8)}
+/* Les paliers en points : 1 à 4, en arc sous le centre. */
+.mt-badge::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,#fff 0 7%,transparent 8%) 50% 72%/100% 100% no-repeat}
+.mt-badge.mt1::after{background:none}
+.mt-badge.mt2::after{background:radial-gradient(circle at 34% 66%,#fff 0 7%,transparent 8%),radial-gradient(circle at 66% 66%,#fff 0 7%,transparent 8%)}
+.mt-badge.mt3::after{background:radial-gradient(circle at 28% 62%,#fff 0 7%,transparent 8%),radial-gradient(circle at 50% 74%,#fff 0 7%,transparent 8%),radial-gradient(circle at 72% 62%,#fff 0 7%,transparent 8%)}
+.mt-badge.mt4::after{background:radial-gradient(circle,#fff 0 22%,transparent 24%)}
+.cwrap.mt1,.cwrap.mt2,.cwrap.mt3,.cwrap.mt4{overflow:visible}

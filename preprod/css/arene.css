@@ -212,7 +212,12 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-c.rev .ar-rev{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.35;
   background:linear-gradient(125deg,rgba(255,124,200,.4),rgba(127,216,255,.35),rgba(255,231,140,.35),rgba(179,140,255,.4));background-size:300% 300%;animation:ar-rev 6s ease-in-out infinite}
 @keyframes ar-rev{50%{background-position:100% 100%}}
-/* Une Secrète : un reflet d'argent et d'iris qui passe. */
+/* Une Secrète : des paillettes arc-en-ciel (sans mélange de couleurs : le
+   plateau est en 3D), et un reflet d'argent et d'iris qui passe. */
+.ar-c.secrete::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.6;
+  background:repeating-linear-gradient(115deg,#ff7cc8 0%,#ffc73b 6%,#55e6a6 12%,#39b8ff 18%,#b38cff 24%,#ff7cc8 30%) 0 50%/400% 400%;
+  -webkit-mask:radial-gradient(circle at 30% 30%,#000 0 .7px,transparent 1.2px) 0 0/7px 7px;mask:radial-gradient(circle at 30% 30%,#000 0 .7px,transparent 1.2px) 0 0/7px 7px;
+  animation:s-feuille 9s linear infinite}
 .ar-c.secrete::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.75;
   background:linear-gradient(115deg,transparent 22%,rgba(232,236,255,.55) 35%,rgba(255,124,200,.32) 43%,rgba(127,216,255,.36) 51%,rgba(255,226,138,.32) 59%,transparent 72%) no-repeat;
   background-size:260% 100%;animation:holo 3.6s ease-in-out infinite}
