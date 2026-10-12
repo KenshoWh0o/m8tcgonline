@@ -127,7 +127,7 @@ TETE_PREPROD = """<head>
 <style>
 .preprod-bandeau{position:fixed;top:env(safe-area-inset-top,0px);left:50%;transform:translateX(-50%);z-index:99999;
   pointer-events:none;font:800 10px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
-  padding:4px 10px 5px;border-radius:0 0 8px 8px;background:#ffc73b;color:#3a2600;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  padding:4px 10px 5px;border-radius:0 0 8px 8px;background:#2d2b3a;color:#e6e1ff;box-shadow:inset 0 0 0 1px rgba(179,166,255,.45),0 2px 8px rgba(0,0,0,.3)}
 </style>
 """
 

@@ -10,8 +10,8 @@ Ecrit :
   assets/combat/sleeves/s_choc.webp             Pass, palier 8
 
 Contrairement aux tapis de tools/cosmetiques.py, ceux-ci ne partent d'aucune
-illustration : ils sont dessines ici, aux couleurs des deux Sections (le rose
-Toxique, le mauve Deter). Les memes reperes que les autres tapis : bords
+illustration : ils sont dessines ici, aux couleurs des deux Sections (le vert
+Toxique, le violet Deter). Les memes reperes que les autres tapis : bords
 sombres, bande plus sombre au milieu, filet interieur. Necessite Pillow."""
 import math
 import os
@@ -21,10 +21,11 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'assets', 'combat')
 W, H = 720, 1280
-ROSE = (238, 0, 115)
-ROSE2 = (255, 154, 213)
-MAUVE = (137, 54, 255)
-MAUVE2 = (201, 168, 255)
+# Les couleurs des Sections (js/combat/campagne.js, SECTIONS).
+ROSE = (98, 216, 78)      # Toxique : vert
+ROSE2 = (183, 242, 154)
+MAUVE = (124, 58, 237)    # Deter : violet
+MAUVE2 = (196, 181, 253)
 NUIT = (10, 6, 16)
 OR = (255, 199, 59)
 
@@ -100,7 +101,7 @@ def ligne_brisee(rand, x0, x1, y, amp, pas):
 
 # ------------------------------------------------------------ L'Arene
 def arene():
-    """Le camp du haut au mauve Deter, celui du bas au rose Toxique, et entre
+    """Le camp du haut au violet Deter, celui du bas au vert Toxique, et entre
     les deux une faille d'energie. Au sol, les anneaux d'une arene, et deux
     projecteurs qui tombent du plafond."""
     rand = random.Random(30)
@@ -109,7 +110,7 @@ def arene():
     for y in range(H):
         t = y / (H - 1)
         haut = melange((40, 12, 84), (22, 8, 40), min(1, t * 2))
-        bas = melange((26, 6, 22), (70, 4, 40), max(0, t * 2 - 1))
+        bas = melange((8, 22, 12), (18, 58, 24), max(0, t * 2 - 1))
         c = haut if t < .5 else bas
         for x in range(W):
             px[x, y] = c
@@ -255,7 +256,7 @@ def orage():
 
 # ----------------------------------------------------------- la sleeve
 def sleeve():
-    """Le dos des cartes : coupe en diagonale, rose et mauve, un eclair dans
+    """Le dos des cartes : coupe en diagonale, violet et vert, un eclair dans
     la coupure, et l'ecusson du Choc au milieu."""
     w, h = 360, 498
     rand = random.Random(8)
@@ -267,7 +268,7 @@ def sleeve():
             if d > 0:
                 c = melange((80, 30, 170), (34, 10, 72), min(1, d * 1.6))
             else:
-                c = melange((150, 0, 72), (48, 4, 30), min(1, -d * 1.6))
+                c = melange((40, 120, 32), (10, 40, 14), min(1, -d * 1.6))
             px[x, y] = c + (255,)
     # La coupure.
     pts = []
@@ -275,10 +276,10 @@ def sleeve():
         t = i / 12
         pts.append((t * w + rand.uniform(-8, 8), t * h + rand.uniform(-8, 8)))
     halo = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(halo).line(pts, fill=(255, 150, 225, 255), width=12, joint='curve')
+    ImageDraw.Draw(halo).line(pts, fill=(220, 210, 255, 255), width=12, joint='curve')
     im = Image.alpha_composite(im, halo.filter(ImageFilter.GaussianBlur(9)))
     tr = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(tr).line(pts, fill=(255, 235, 250, 240), width=3, joint='curve')
+    ImageDraw.Draw(tr).line(pts, fill=(245, 242, 255, 240), width=3, joint='curve')
     im = Image.alpha_composite(im, tr)
     # L'ecusson.
     ec = Image.new('RGBA', (w, h), (0, 0, 0, 0))

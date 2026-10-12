@@ -11,9 +11,7 @@
        récompense à tous ceux qui l'ont frappé ;
      · l'Épreuve du jour : le même combat pour tout le monde — les mêmes deux
        decks imposés, la même donne, une règle du jour. Trois essais, le
-       meilleur compte, et un classement du jour ;
-     · la Guerre des Sections, doublée : chaque point compte double, et la
-       Section qui en marque le plus sur les trois semaines gagne un titre.
+       meilleur compte, et un classement du jour.
 
    Ce fichier est lu par la page et par le serveur de démo
    (_demo/serveur.js). Le serveur réel en a la copie dans
@@ -35,11 +33,10 @@ const CHOC = {
        rejouer, sans dégâts ni récompense. */
     tentatives: 3,
     /* Une tentative rapporte des Insignes par PV pris au boss, plus un
-       bonus s'il tombe ; une victoire marque aussi des points de Section. */
+       bonus s'il tombe. */
     parDegat: 3,
     bonusVictoire: 15,
     bonusDegats: 3,
-    points: 2,
     /* Pour pouvoir réclamer la récompense d'une phase, il faut avoir infligé
        au moins ce nombre de dégâts pendant l'événement. */
     minimum: 1,
@@ -75,10 +72,9 @@ const CHOC = {
   epreuve: {
     essais: 3,
     /* Chaque essai rapporte `participation` ; la première victoire du jour,
-       `victoire` et des points de Section. */
+       `victoire` en plus. */
     participation: 5,
     victoire: 25,
-    points: 2,
     ia: 3,
     /* Une règle par jour, à tour de rôle. `pv` et `ess` : [toi, l'adversaire]. */
     regles: [
@@ -90,14 +86,6 @@ const CHOC = {
       { id: 'marathon', nom: 'Marathon', texte: 'Sept PV chacun : une partie longue, où chaque carte compte.', pv: [7, 7], ess: [0, 0] },
       { id: 'classique', nom: 'Classique', texte: 'Les règles normales, rien de plus.', pv: [5, 5], ess: [0, 0] }
     ]
-  },
-
-  guerre: {
-    /* Pendant l'événement, les points de Section comptent double. */
-    multiplicateur: 2,
-    /* La Section qui marque le plus sur tout l'événement : un titre pour
-       chacun de ses membres qui a marqué au moins un point. */
-    titre: 't_choc'
   }
 };
 

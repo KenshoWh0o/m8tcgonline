@@ -1,35 +1,18 @@
 /* Structure générale : fond, en-tête, navigation, typo, boutons, fenêtres, notifications.
    Aucune couleur écrite en dur : tout vient des jetons de css/tokens.css.
 
-   Version 3.0 : la page est une scène éclairée (le fond de chaque écran
-   vient d'une illustration du jeu) sur laquelle flottent deux barres de verre
-   — l'en-tête et la barre des onglets. Le contenu défile dessous : le verre
-   n'a de sens que s'il a quelque chose à flouter. Les règles de matière sont
-   dans docs/design-3.0.md. */
+   Version 3.0 : un fond anthracite, des tuiles pleines posées dessus, et
+   deux barres de verre qui flottent — l'en-tête et la barre des onglets. Le
+   contenu défile dessous : le verre n'a de sens que s'il a quelque chose à
+   flouter. Les illustrations vivent dans les bandeaux des écrans, pas dans
+   le fond. Les règles sont dans docs/design-3.0.md. */
 
 /* ============ Fond ============ */
-/* Trois couches : la nuit (le fond plein), l'illustration de l'écran en
-   cours, floutée d'avance (assets/ambiance, tools/ambiances.py), et trois
-   lumières — violet, rose, cyan — qui lient le tout aux couleurs du jeu.
-   L'illustration s'efface vers le bas : le contenu se lit sur du sombre. */
+/* Un anthracite, et une lumière lavande très douce tout en haut : la page
+   a une profondeur sans rien voler aux illustrations. */
 .bgdeco{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:var(--bg)}
-.bgdeco::before{content:'';position:absolute;left:0;right:0;top:0;height:min(86vh,820px);
-  background:center 30%/cover no-repeat;opacity:.52;
-  -webkit-mask:linear-gradient(180deg,#000 22%,transparent);mask:linear-gradient(180deg,#000 22%,transparent)}
 .bgdeco::after{content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(70% 42% at 0% 0%,var(--violet-glow),transparent 72%),
-    radial-gradient(60% 36% at 100% 0%,rgba(255,80,165,.2),transparent 72%),
-    radial-gradient(90% 40% at 50% 112%,var(--cyan-glow),transparent 72%)}
-body[data-tab=boosters] .bgdeco::before{background-image:url(../assets/ambiance/boosters.webp)}
-body[data-tab=collection] .bgdeco::before{background-image:url(../assets/ambiance/collection.webp)}
-body[data-tab=combats] .bgdeco::before{background-image:url(../assets/ambiance/combats.webp)}
-body[data-tab=choc] .bgdeco::before{background-image:url(../assets/ambiance/choc.webp)}
-body[data-tab=quetes] .bgdeco::before{background-image:url(../assets/ambiance/quetes.webp)}
-body[data-tab=social] .bgdeco::before{background-image:url(../assets/ambiance/social.webp)}
-body[data-tab=boutique] .bgdeco::before{background-image:url(../assets/ambiance/boutique.webp)}
-body[data-tab=classement] .bgdeco::before{background-image:url(../assets/ambiance/classement.webp)}
-body[data-tab=profil] .bgdeco::before{background-image:url(../assets/ambiance/profil.webp)}
+  background:radial-gradient(90% 38% at 50% -6%,rgba(140,120,255,.14),transparent 72%)}
 
 /* `display` posé sur une classe l'emporterait sur la règle du navigateur : on tranche. */
 [hidden]{display:none!important}
@@ -42,12 +25,12 @@ body[data-tab=profil] .bgdeco::before{background-image:url(../assets/ambiance/pr
   justify-content:space-between;gap:10px;height:calc(var(--top-h) + env(safe-area-inset-top,0px));
   padding:env(safe-area-inset-top,0px) 14px 0}
 .top::before{content:'';position:absolute;inset:0 0 -26px;z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,rgba(10,7,31,.9),rgba(10,7,31,.6) 58%,rgba(10,7,31,0));
+  background:linear-gradient(180deg,rgba(18,17,25,.92),rgba(18,17,25,.62) 58%,rgba(18,17,25,0));
   -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   -webkit-mask:linear-gradient(180deg,#000 55%,transparent);mask:linear-gradient(180deg,#000 55%,transparent)}
 #brand{display:flex;align-items:center;user-select:none;cursor:pointer}
 #brand img{display:block;height:clamp(32px,9vw,38px);width:auto;
-  filter:drop-shadow(0 2px 12px rgba(255,80,165,.35))}
+  filter:drop-shadow(0 2px 10px rgba(0,0,0,.4))}
 
 main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
   padding:calc(var(--top-h) + env(safe-area-inset-top,0px) + 8px) 16px
@@ -138,7 +121,7 @@ a{color:var(--accent-soft)}
 .btn{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
   border:0;border-radius:999px;padding:15px 24px;font-family:var(--display);font-weight:800;
   font-size:16px;letter-spacing:.005em;text-transform:none;color:var(--on-accent);
-  background:var(--cta);text-shadow:0 1px 1px rgba(90,0,45,.3);
+  background:var(--cta);text-shadow:0 1px 1px rgba(30,16,90,.35);
   box-shadow:inset 0 1px 0 var(--gloss),inset 0 -1px 0 rgba(0,0,0,.16),0 10px 26px -8px var(--accent-glow);
   transition:transform .18s var(--spring),filter .15s,box-shadow .2s}
 .btn:hover:not(:disabled){filter:brightness(1.08)}
@@ -185,10 +168,10 @@ a.btn{text-decoration:none}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.14)}
 
 /* ============ Panneaux ============ */
-/* Le voile : la surface de contenu. Pas de flou — il y en a déjà sous les
-   barres — un clair transparent, un filet, et le reflet du bord haut. */
+/* La tuile : la surface de contenu. Pleine, un filet, un reflet en haut et
+   une ombre douce dessous — une carte posée sur la table. */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:2px 16px 18px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  padding:2px 16px 18px;margin-bottom:12px;box-shadow:var(--tuile)}
 .panel h2{margin-top:18px}
 .panel>h2:first-child{margin-top:16px}
 .empty{text-align:center;padding:56px 10px;color:var(--muted)}
@@ -219,8 +202,8 @@ summary{font-weight:700;cursor:pointer}
 .sheet h3{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
   margin:4px 0 10px;font-size:22px;letter-spacing:-.02em}
 .sheet .acts{display:flex;flex-direction:column;gap:10px;margin-top:18px}
-/* Dans une feuille, un voile de contenu se lit sur le verre : un peu plus clair. */
-.sheet .panel,.sheet details{background:rgba(255,255,255,.05)}
+/* Dans une feuille, une tuile se pose sur le verre : un peu plus claire, sans ombre. */
+.sheet .panel,.sheet details{background:var(--surface-2);box-shadow:none}
 
 /* ============ Notification passagère ============ */
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + var(--nav-h) + 22px);

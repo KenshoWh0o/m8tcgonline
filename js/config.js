@@ -214,7 +214,6 @@ const TITRES = {
   t_veteran:   { nom: 'Vétéran du Choc',           ton: 'EV', comment: 'Palier 19 du Pass du Choc' },
   t_maitre_choc:{ nom: 'Maître du Choc',           ton: 'EV', comment: 'Palier 29 du Pass du Choc' },
   t_supporter: { nom: 'Supporter du Choc',         ton: 'EV', comment: 'Boutique de l\'événement « Le Choc des Sections »' },
-  t_choc:      { nom: 'Vainqueur du Choc',         ton: 'L',  comment: 'Avoir marqué pour la Section gagnante du Choc des Sections' },
   /* Les niveaux de combattant (js/combat/niveaux.js). */
   t_bagarreur: { nom: 'Bagarreur',                 ton: 'C',  comment: 'Atteindre le niveau 5 de combattant' },
   t_veteran_arene:{ nom: 'Vétéran de l\'arène',    ton: 'R',  comment: 'Atteindre le niveau 20 de combattant' },
@@ -268,19 +267,18 @@ const FRAMES = {
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
   /* Version 3.0 : le Pass et le Raid du Choc des Sections. */
-  f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#ee0073', c2: '#8936ff' },
+  f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#62d84e', c2: '#7c3aed' },
   f_foudre: { nom: 'Foudre', fx: 'foudre', vente: false, c1: '#ec8fff', c2: '#6a2bd6' },
   /* Version 3.0 : les niveaux de combattant (js/combat/niveaux.js), les deux
-     Sections (Boutique), la première Secrète et la maîtrise Prisme (quêtes).
+     Sections (Boutique), et la première Secrète (quêtes).
      Dessinés par tools/cadres-30.py. */
   f_niv10:  { nom: 'Arène · Bronze', fx: 'niv10', vente: false, c1: '#d08a4c', c2: '#7a3f12' },
   f_niv20:  { nom: 'Arène · Argent', fx: 'niv20', vente: false, c1: '#c9d1de', c2: '#6f7889' },
   f_niv30:  { nom: 'Arène · Or', fx: 'niv30', vente: false, c1: '#f2c24a', c2: '#9a620a' },
   f_niv50:  { nom: 'Arène · Prisme', fx: 'niv50', vente: false, c1: '#b38cff', c2: '#39b8ff' },
-  f_toxique:{ nom: 'Toxique', fx: 'toxique', c1: '#ee0073', c2: '#ffd7f0' },
-  f_deter:  { nom: 'Déter', fx: 'deter', c1: '#8936ff', c2: '#e9dcff' },
-  f_secrete:{ nom: 'Secrète', fx: 'secrete', vente: false, c1: '#c9d6ff', c2: '#ffd0ec' },
-  f_maitrise:{ nom: 'Maîtrise', fx: 'maitrise', vente: false, c1: '#ff7cc8', c2: '#39b8ff' }
+  f_toxique:{ nom: 'Toxique', fx: 'toxique', c1: '#62d84e', c2: '#e3fbd6' },
+  f_deter:  { nom: 'Déter', fx: 'deter', c1: '#7c3aed', c2: '#ede4ff' },
+  f_secrete:{ nom: 'Secrète', fx: 'secrete', vente: false, c1: '#c9d6ff', c2: '#ffd0ec' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
@@ -290,10 +288,10 @@ const FRAMES = {
    Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
    avatarHTML dans js/ui.js). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg', ico: true, bg: '#8936ff' },
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg', ico: true, bg: '#5d4bd9' },
   back: { nom: 'Dos de carte', art: 'assets/card-back.webp', objet: true, pos: '50%' },
   pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp', objet: true, pos: '40%' },
-  set:  { nom: 'Extension', art: 'assets/extension-logo.svg', ico: true, bg: '#8936ff' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg', ico: true, bg: '#5d4bd9' },
   ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg', ico: true, bg: '#ee0073' }
 };
 

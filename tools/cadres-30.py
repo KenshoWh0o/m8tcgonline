@@ -10,7 +10,6 @@ Ecrit dans assets/cadres/ :
                                             en bronze, argent, or et prisme
   toxique.svg deter.svg                     les deux Sections (Boutique)
   secrete.svg                               la premiere Secrete (quete)
-  maitrise.svg                              la maitrise Prisme (quete)
 
 Meme gabarit que les autres cadres decores (css/reflets.css) : 128 x 128,
 l'avatar au centre sur un rayon de 50 ; l'anneau va de 51,5 a 57, et le
@@ -164,32 +163,9 @@ def secrete():
     ecrire('secrete', corps)
 
 
-# ------------------------------------------------------------ la maitrise
-def maitrise():
-    couleurs = ['#ff7cc8', '#ffc73b', '#55e6a6', '#39b8ff', '#b38cff']
-    style = ("<style>.ro{transform-origin:64px 64px;animation:ro 9s linear infinite}@keyframes ro{to{transform:rotate(360deg)}}"
-             ".di{transform-box:fill-box;transform-origin:center;animation:di 1.8s ease-in-out infinite alternate}"
-             "@keyframes di{from{transform:scale(.8)}to{transform:scale(1.1)}}" + RM + "</style>")
-    corps = style + "<g class='ro'>"
-    n = 30
-    for k in range(n):
-        a0, a1 = k * 360 / n, (k + 1) * 360 / n + .6
-        c = couleurs[k % len(couleurs)]
-        x0, y0 = pt(54.25, a0)
-        x1, y1 = pt(54.25, a1)
-        corps += f"<path d='M{x0:.2f} {y0:.2f}A54.25 54.25 0 0 1 {x1:.2f} {y1:.2f}' stroke='{c}' stroke-width='5.5' fill='none'/>"
-    corps += "</g>" + filets('#ffffff', '#2a0b63')
-    for a in (270, 0, 90, 180):
-        x, y = pt(54.25, a)
-        corps += (f"<path class='di' d='M{x:.1f} {y - 7:.1f}l5 7-5 7-5-7Z' fill='#fff' stroke='#2a0b63' stroke-width='.8'/>"
-                  f"<path d='M{x:.1f} {y - 7:.1f}l5 7h-10Z' fill='#e9dcff' opacity='.6'/>")
-    ecrire('maitrise', corps)
-
-
 if __name__ == '__main__':
     for cle, n in (('niv10', 10), ('niv20', 20), ('niv30', 30), ('niv50', 50)):
         arene(cle, n)
-    section('toxique', '#ee0073', '#7a003c', '#ffd7f0', 'gouttes')
-    section('deter', '#8936ff', '#3d1d70', '#e9dcff', 'chevrons')
+    section('toxique', '#62d84e', '#1f5a14', '#e3fbd6', 'gouttes')
+    section('deter', '#7c3aed', '#33106e', '#ede4ff', 'chevrons')
     secrete()
-    maitrise()

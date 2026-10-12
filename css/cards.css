@@ -319,7 +319,7 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
    visuel pas encore. Une composition typographique, aux couleurs de la carte. */
 .card.textuel{padding:6cqi 6cqi 5cqi;border:2.6cqi solid var(--tc);color:#fff;gap:3cqi;
   background:radial-gradient(ellipse 90% 60% at 50% 0%,color-mix(in srgb,var(--tc) 55%,transparent),transparent 70%),
-    linear-gradient(170deg,#221a44,#0e0a24 70%)}
+    linear-gradient(170deg,#23222e,#14131b 70%)}
 .card.textuel::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
   background:url('../assets/pack-star.svg') 50% 46%/58% no-repeat}
 .tx-tete{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:2cqi}
@@ -338,78 +338,43 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
   border-top:1px dashed color-mix(in srgb,var(--tc) 60%,transparent);padding-top:2cqi}
 
 /* ============ Version 3.0 : les Secrètes ============ */
-/* Le meilleur tirage du jeu doit se reconnaître de loin. Trois couches :
-   une feuille arc-en-ciel pailletée qui dérive sur toute la carte (::before,
-   en color-dodge, vue à travers un masque de paillettes), un éclat blanc qui
-   la traverse (::after), et autour, une lueur irisée qui change de couleur.
-   Dans la visionneuse, la feuille suit l'inclinaison au lieu de dériver. */
+/* Le meilleur tirage du jeu doit se reconnaître de loin, sans abîmer son
+   illustration. Trois couches :
+   - un reflet irisé (rose, or, menthe, ciel, lavande) qui traverse la carte
+     en diagonale puis se repose (::before, en « soft-light » : il colore la
+     lumière sans voiler l'image) ;
+   - huit éclats qui scintillent à des places fixes et irrégulières (::after,
+     et autant sur l'enveloppe, à contretemps) ;
+   - autour, une lueur lavande qui respire.
+   Il n'y a plus de trame de points : c'était une grille régulière, qui se
+   lisait comme une moustiquaire posée sur la carte, et un voile arc-en-ciel
+   qui délavait l'illustration. */
 .card.r-S{isolation:isolate}
-.card.r-S::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:color-dodge;opacity:.46;
-  background:repeating-linear-gradient(115deg,#ff7cc8 0%,#ffc73b 6%,#55e6a6 12%,#39b8ff 18%,#b38cff 24%,#ff7cc8 30%);
-  background-size:400% 400%;background-position:0% 50%;
-  -webkit-mask-image:radial-gradient(circle at 30% 30%,#000 0 .8px,transparent 1.3px),radial-gradient(circle at 70% 65%,#000 0 .6px,transparent 1.1px),linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.3));
-  -webkit-mask-size:8px 8px,13px 13px,100% 100%;
-  mask-image:radial-gradient(circle at 30% 30%,#000 0 .8px,transparent 1.3px),radial-gradient(circle at 70% 65%,#000 0 .6px,transparent 1.1px),linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.3));
-  mask-size:8px 8px,13px 13px,100% 100%;
-  animation:s-feuille 9s linear infinite}
-@keyframes s-feuille{to{background-position:100% 50%;-webkit-mask-position:8px 16px,-13px 13px,0 0;mask-position:8px 16px,-13px 13px,0 0}}
-.card.r-S::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
-  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.0) 38%,rgba(255,255,255,.75) 46%,rgba(255,240,250,.35) 50%,transparent 58%) no-repeat;
-  background-size:260% 100%;animation:holo 3.4s ease-in-out infinite}
-.cwrap:has(.card.r-S){position:relative;animation:s-lueur 6s linear infinite;
-  box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(255,124,200,.65),0 0 30px rgba(127,216,255,.4)}
-@keyframes s-lueur{
-  0%,100%{box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(255,124,200,.65),0 0 30px rgba(127,216,255,.4)}
-  33%{box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(127,216,255,.7),0 0 30px rgba(255,226,138,.45)}
-  66%{box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 0 14px 1px rgba(255,226,138,.7),0 0 30px rgba(179,140,255,.5)}}
+.card.r-S::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:soft-light;opacity:.95;
+  background:linear-gradient(115deg,transparent 22%,#ff9ad5 33%,#ffe08a 41%,#8ff0c8 49%,#8fd3ff 57%,#c3b2ff 65%,transparent 76%) no-repeat;
+  background-size:300% 100%;background-position:120% 0;animation:s-reflet 6s ease-in-out infinite}
+@keyframes s-reflet{0%{background-position:120% 0}65%,100%{background-position:-20% 0}}
+.card.r-S::after,.cwrap:has(.card.r-S)::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;
+  --e:max(.7px,.45cqi);--f:max(2.2px,1.5cqi);
+  background:
+    radial-gradient(circle at 17% 21%,#fff 0 var(--e),transparent var(--f)),
+    radial-gradient(circle at 76% 13%,#fff 0 var(--e),transparent var(--f)),
+    radial-gradient(circle at 88% 47%,#fff 0 var(--e),transparent var(--f)),
+    radial-gradient(circle at 29% 57%,#fff 0 var(--e),transparent var(--f)),
+    radial-gradient(circle at 63% 72%,#fff 0 var(--e),transparent var(--f)),
+    radial-gradient(circle at 11% 86%,#fff 0 var(--e),transparent var(--f)),
+    radial-gradient(circle at 53% 33%,#fff 0 var(--e),transparent var(--f)),
+    radial-gradient(circle at 91% 89%,#fff 0 var(--e),transparent var(--f));
+  filter:drop-shadow(0 0 2px rgba(255,255,255,.9));opacity:.15;animation:s-eclats 2.6s ease-in-out infinite}
+/* Le second jeu d'éclats, sur l'enveloppe : d'autres places, à contretemps. */
+.cwrap:has(.card.r-S)::after{z-index:3;transform:scale(-1,-1);animation-delay:-1.3s}
+@keyframes s-eclats{0%,100%{opacity:.12}50%{opacity:.95}}
+.cwrap:has(.card.r-S){position:relative;animation:s-lueur 4.5s ease-in-out infinite;
+  box-shadow:0 0 0 1px rgba(255,255,255,.22),0 0 14px rgba(179,166,255,.45),var(--sh-2)}
+@keyframes s-lueur{50%{box-shadow:0 0 0 1px rgba(255,255,255,.34),0 0 24px rgba(200,190,255,.7),var(--sh-2)}}
 /* Une Secrète pas encore révélée garde son mystère : la feuille, pas l'éclat. */
 .rS{color:#e8ecff}
-.rarchip.rS{--rc:#e8ecff;background:linear-gradient(90deg,rgba(255,124,200,.18),rgba(127,216,255,.18),rgba(255,226,138,.18))}
-html.rm .card.r-S::before,html.rm .card.r-S::after,html.rm .cwrap:has(.card.r-S){animation:none}
-@media (prefers-reduced-motion:reduce){.card.r-S::before,.card.r-S::after,.cwrap:has(.card.r-S){animation:none}}
+.rarchip.rS{--rc:#e8ecff;background:linear-gradient(90deg,rgba(255,154,213,.16),rgba(143,211,255,.16),rgba(195,178,255,.18))}
+html.rm .card.r-S::before,html.rm .card.r-S::after,html.rm .cwrap:has(.card.r-S),html.rm .cwrap:has(.card.r-S)::after{animation:none}
+@media (prefers-reduced-motion:reduce){.card.r-S::before,.card.r-S::after,.cwrap:has(.card.r-S),.cwrap:has(.card.r-S)::after{animation:none}}
 
-/* ============ Version 3.0 : la maîtrise ============ */
-/* Quatre paliers, du plus discret au plus vivant : un liseré de bronze, un
-   argent brossé, un or qui brille, un prisme qui tourne. Le cadre est posé
-   autour de l'enveloppe de la carte (.cwrap), jamais sur l'illustration. */
-.cwrap.mt1,.cwrap.mt2,.cwrap.mt3,.cwrap.mt4,.ar-c.mt1,.ar-c.mt2,.ar-c.mt3,.ar-c.mt4{position:relative;isolation:isolate}
-.cwrap.mt1{box-shadow:0 0 0 2px #b8743c,0 0 0 3px rgba(0,0,0,.35),var(--sh-2)}
-.cwrap.mt2{box-shadow:0 0 0 2px #dfe6f2,0 0 0 3.5px #7b8496,0 0 14px rgba(223,230,242,.35),var(--sh-2)}
-.cwrap.mt2::after,.cwrap.mt3::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;mix-blend-mode:soft-light;opacity:.55;
-  background:repeating-linear-gradient(115deg,rgba(255,255,255,.0) 0 3px,rgba(255,255,255,.25) 3px 4px)}
-.cwrap.mt3{box-shadow:0 0 0 2.5px #ffc73b,0 0 0 4px #8a5a00,0 0 20px rgba(255,199,59,.5),var(--sh-2)}
-.cwrap.mt3::before,.cwrap.mt4::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;mix-blend-mode:screen;
-  background:linear-gradient(110deg,transparent 30%,rgba(255,240,190,.6) 45%,transparent 60%) no-repeat;background-size:250% 100%;animation:mt-brille 3.4s ease-in-out infinite}
-.cwrap.mt4{box-shadow:0 0 22px rgba(201,168,255,.55),var(--sh-2)}
-.cwrap.mt4::after{content:"";position:absolute;inset:-3px;border-radius:calc(5.5cqi + 3px);z-index:-1;pointer-events:none;
-  background:conic-gradient(from var(--mt-a,0deg),#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8);animation:mt-tourne 4s linear infinite}
-.cwrap.mt4::before{background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.55) 40%,rgba(127,216,255,.4) 48%,rgba(255,124,200,.4) 56%,transparent 70%) no-repeat;background-size:250% 100%}
-@property --mt-a{syntax:'<angle>';inherits:false;initial-value:0deg}
-@keyframes mt-tourne{to{--mt-a:360deg}}
-@keyframes mt-brille{0%{background-position:130% 0}70%,100%{background-position:-130% 0}}
-html.rm .cwrap.mt3::before,html.rm .cwrap.mt4::before,html.rm .cwrap.mt4::after{animation:none}
-/* Dans l'arène : le même habit, en plus fin. */
-.ar-c.mt1{box-shadow:0 0 0 1.5px #b8743c}
-.ar-c.mt2{box-shadow:0 0 0 1.5px #dfe6f2,0 0 10px rgba(223,230,242,.3)}
-.ar-c.mt3{box-shadow:0 0 0 2px #ffc73b,0 0 14px rgba(255,199,59,.45)}
-.ar-c.mt4{box-shadow:0 0 0 2px #e3c8ff,0 0 16px rgba(201,168,255,.6)}
-.ar-c.mt4::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:color-dodge;opacity:.35;
-  background:conic-gradient(from var(--mt-a,0deg),#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8);animation:mt-tourne 4s linear infinite}
-
-/* Le médaillon de maîtrise, dans le coin haut droit de la carte : la
-   couleur du palier, et autant de points que de paliers. */
-.mt-badge{position:absolute;top:-5.5cqi;right:-5.5cqi;z-index:5;width:16cqi;aspect-ratio:1;border-radius:50%;pointer-events:none;
-  box-shadow:0 0 0 1.4cqi #120b29,0 1.5cqi 3cqi rgba(0,0,0,.5);
-  background:radial-gradient(circle at 50% 50%,#fff 0 9%,transparent 11%) 50% 50%/100% 100% no-repeat,var(--mtb)}
-.mt-badge.mt1{--mtb:radial-gradient(circle at 35% 30%,#ffd9b5,#c27a3f 55%,#6b3b14)}
-.mt-badge.mt2{--mtb:radial-gradient(circle at 35% 30%,#ffffff,#c9d1de 55%,#6f7889)}
-.mt-badge.mt3{--mtb:radial-gradient(circle at 35% 30%,#fff6c8,#f2c24a 55%,#9a620a)}
-.mt-badge.mt4{--mtb:conic-gradient(from 0deg,#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8)}
-/* Les paliers en points : 1 à 4, en arc sous le centre. */
-.mt-badge::after{content:"";position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle,#fff 0 7%,transparent 8%) 50% 72%/100% 100% no-repeat}
-.mt-badge.mt1::after{background:none}
-.mt-badge.mt2::after{background:radial-gradient(circle at 34% 66%,#fff 0 7%,transparent 8%),radial-gradient(circle at 66% 66%,#fff 0 7%,transparent 8%)}
-.mt-badge.mt3::after{background:radial-gradient(circle at 28% 62%,#fff 0 7%,transparent 8%),radial-gradient(circle at 50% 74%,#fff 0 7%,transparent 8%),radial-gradient(circle at 72% 62%,#fff 0 7%,transparent 8%)}
-.mt-badge.mt4::after{background:radial-gradient(circle,#fff 0 22%,transparent 24%)}
-.cwrap.mt1,.cwrap.mt2,.cwrap.mt3,.cwrap.mt4{overflow:visible}

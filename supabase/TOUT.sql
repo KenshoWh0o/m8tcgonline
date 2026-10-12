@@ -93,7 +93,7 @@ alter table public.cards add column if not exists promo boolean not null default
 -- du tirage classique — et `reverse` : c'est ce drapeau qui les rend
 -- echangeables, recyclables et fabricables, contrairement aux Promos.
 alter table public.cards add column if not exists reverse boolean not null default false;
--- Version 3.0 : les Secretes (24_secretes_maitrise.sql). Hors des 122 comme
+-- Version 3.0 : les Secretes (24_secretes.sql). Hors des 122 comme
 -- les Promos (`promo`), tirees a la place du hit une fois sur 133, et
 -- echangeables (`secrete`) — mais ni recyclables ni fabricables.
 alter table public.cards add column if not exists secrete boolean not null default false;
@@ -108,27 +108,11 @@ create table if not exists public.collection (
   primary key (user_id, card_id)
 );
 
--- Version 3.0 : la maitrise des cartes. `total` compte chaque exemplaire
--- jamais obtenu — booster, echange, recompense —, meme s'il repart ensuite
--- (recycle, echange). Tenu par un declencheur : aucune des fonctions qui
--- ajoutent une carte n'a a s'en soucier.
-alter table public.collection add column if not exists total integer not null default 0;
-
-create or replace function public.collection_total() returns trigger
-language plpgsql as $$
-begin
-  if tg_op = 'INSERT' then
-    new.total := greatest(coalesce(new.total, 0), new.qty);
-  else
-    new.total := greatest(old.total, old.qty) + greatest(new.qty - old.qty, 0);
-  end if;
-  return new;
-end $$;
+-- La maitrise des cartes du pre-build 3.0 a ete retiree : son compteur
+-- d'exemplaires obtenus disparait si une base de test l'a encore.
 drop trigger if exists collection_total on public.collection;
-create trigger collection_total before insert or update of qty on public.collection
-  for each row execute function public.collection_total();
--- Les collections d'avant la 3.0 : ce qu'on possede compte comme obtenu.
-update public.collection set total = qty where total < qty;
+drop function if exists public.collection_total();
+alter table public.collection drop column if exists total;
 
 -- --------------------------------------------------------------- quetes
 create table if not exists public.quests (
@@ -638,39 +622,9 @@ begin
     from quests q where q.metric like 'ex\_%'
   on conflict (user_id, quest_id, period_key)
     do update set progress = greatest(quest_progress.progress, excluded.progress);
-
-  -- Version 3.0 : le nombre de cartes qui ont atteint tel palier de maitrise
-  -- (« maitrise_3 » : Or). Une carte et sa Reverse progressent ensemble ; les
-  -- Secretes comptent, pas les Promos. Les seuils sont ceux de MAITRISE dans
-  -- js/maitrise.js.
-  insert into quest_progress (user_id, quest_id, period_key, progress)
-  select p, q.id, 'all',
-         (select count(*) from cards k
-            left join collection c on c.user_id = p and c.card_id = k.id
-            left join collection r on r.user_id = p and r.card_id = 'r' || substr(k.id, 2)
-           where (not k.promo or k.secrete) and not k.reverse
-             and seuil_maitrise(k.rar, substr(q.metric, 10)::int) is not null
-             and greatest(coalesce(c.total, 0), coalesce(c.qty, 0))
-               + greatest(coalesce(r.total, 0), coalesce(r.qty, 0))
-                 >= seuil_maitrise(k.rar, substr(q.metric, 10)::int))
-    from quests q where q.metric like 'maitrise\_%'
-  on conflict (user_id, quest_id, period_key)
-    do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;
 
--- Les exemplaires obtenus qu'il faut pour le palier `n` (1 a 4) de maitrise
--- d'une carte de rarete `r`. Doit rester egal a MAITRISE.seuils, js/maitrise.js.
-create or replace function public.seuil_maitrise(r text, n int) returns integer
-language sql immutable as $$
-  select (case r
-    when 'ES' then array[10, 30, 60, 120]
-    when 'C'  then array[5, 15, 30, 60]
-    when 'PC' then array[4, 10, 20, 40]
-    when 'R'  then array[3, 7, 15, 30]
-    when 'E'  then array[2, 4, 8, 15]
-    when 'L'  then array[2, 3, 5, 8]
-    when 'S'  then array[2, 3, 4, 5] end)[n];
-$$;
+drop function if exists public.seuil_maitrise(text, int);
 
 -- =====================================================================
 --  Droits de lecture
@@ -1026,7 +980,7 @@ language plpgsql volatile as $$
 declare out_id text; ord text[]; essai text;
 begin
   -- On vise la rarete demandee, puis on se rabat sur la plus proche si elle est vide.
-  -- Version 3.0 : une Secrete (24_secretes_maitrise.sql). Hors extension,
+  -- Version 3.0 : une Secrete (24_secretes.sql). Hors extension,
   -- donc `promo`, elle a son propre tirage ; sans Secrete au catalogue, on
   -- retombe sur une Legendaire.
   if r = 'S' then
@@ -1927,15 +1881,15 @@ delete from public.quests where id not in (
   'm_exR','m_exE','m_exL',
   'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev45','e_trade','e_illu7','e_packs70',
   'e_recycle','e_invite',
-  -- Version 3.0 : les combats, les Secretes, la maitrise ; et l'evenement du
+  -- Version 3.0 : les combats, les Secretes ; et l'evenement du
   -- Choc des Sections. Les oublier ici effacerait leur progression a chaque
   -- fois qu'on rejoue ce fichier (quest_progress suit la quete en cascade).
   'd_combat','d_victoire','d_vaincus','w_victoires','w_dur','w_defi',
-  'm_campagne','m_legende','m_cent','m_secrete','m_mt_or','m_mt_or10','m_mt_prisme',
+  'm_campagne','m_legende','m_cent','m_secrete',
   'd_xp','w_xp','m_combats50','m_vaincus100','m_defis10','m_dures25',
   'm_niv5','m_niv10','m_niv20','m_niv30','m_niv40','m_niv50',
   'c_visite','c_combats','c_raid','c_epreuve','c_vaincus','c_packs',
-  'c_deg100','c_raidv5','c_ep7','c_pts','c_vic30','c_dur5','c_legende','c_defis','c_deck','c_cosm',
+  'c_deg100','c_raidv5','c_ep7','c_ep15','c_vic30','c_dur5','c_legende','c_defis','c_deck','c_cosm',
   'c_packs60','c_trade','c_invite');
 
 -- ------------------------------------------------- l'evenement « Reflets »
@@ -1981,8 +1935,7 @@ on conflict (id) do update set
 --   defis            : un defi entre amis termine
 --   campagne         : un combat de campagne gagne pour la premiere fois
 --   legende          : l'IA battue en Legende (PvE infini)
---   rarity_S         : une Secrete sortie d'un booster (24_secretes_maitrise.sql)
---   maitrise_3/4     : des cartes a la maitrise Or / Prisme (24_secretes_maitrise.sql)
+--   rarity_S         : une Secrete sortie d'un booster (24_secretes.sql)
 --   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
 --   niveau           : le niveau de combattant atteint — un etat, pas un
 --                      compteur : gagner_xp le recopie (26_niveaux.sql)
@@ -1997,9 +1950,6 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_legende',   'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l''IA en Légende.', 31),
   ('m_cent',      'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 32),
   ('m_secrete',   'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
-  ('m_mt_or',     'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d''or',        'Amène une carte à la maîtrise Or.', 34),
-  ('m_mt_or10',   'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l''or',        'Amène 10 cartes à la maîtrise Or.', 35),
-  ('m_mt_prisme', 'milestone', 'maitrise_4',       1,  800, 'f_maitrise', 'Prisme',                'Amène une carte à la maîtrise Prisme.', 36),
   ('d_xp',        'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11),
   ('w_xp',        'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11),
   ('m_combats50', 'milestone', 'combats',         50,  300, null,         'Habitué de l''arène',   'Joue 50 combats.', 37),
@@ -2024,7 +1974,6 @@ on conflict (id) do update set
 -- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
 --   raid, raid_degats, raid_victoires : le Raid contre The French Sorcerer
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
---   points_section                    : les points marques pour sa Section
 --   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
   ('c_visite',  'ev_jour', 'ev_visite',          1, 10, null, 'Au rapport',          'Passe voir l''événement aujourd''hui.', 1, 'choc', 'prismes'),
@@ -2036,7 +1985,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'),
   ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'),
   ('c_ep7',     'ev',      'epreuve_victoires',  7, 80, null, 'Sept Épreuves',       'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'),
-  ('c_pts',     'ev',      'points_section',    80, 60, null, 'Pour la Section',     'Marque 80 points pour ta Section.', 4, 'choc', 'prismes'),
+  ('c_ep15',    'ev',      'epreuve',           15, 60, null, 'Quinze essais',       'Tente 15 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
   ('c_dur5',    'ev',      'victoires_dures',    5, 60, null, 'Sans trembler',       'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'),
   ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Bats l''IA en Légende, en PvE infini.', 7, 'choc', 'prismes'),
@@ -2044,7 +1993,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('c_deck',    'ev',      'deck',               1, 20, null, 'Mon deck à moi',      'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'),
   ('c_cosm',    'ev',      'cosm',               1, 20, null, 'À mes couleurs',      'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'),
   ('c_packs60', 'ev',      'packs',             60, 50, null, 'Soixante boosters',   'Ouvre 60 boosters pendant l''événement.', 11, 'choc', 'prismes'),
-  ('c_trade',   'ev',      'trades',             3, 30, null, 'Échanges de guerre',  'Conclus 3 échanges.', 12, 'choc', 'prismes'),
+  ('c_trade',   'ev',      'trades',             3, 30, null, 'Bonnes affaires',     'Conclus 3 échanges.', 12, 'choc', 'prismes'),
   ('c_invite',  'ev',      'invite',             1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 13, 'choc', 'prismes')
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
@@ -2458,11 +2407,7 @@ begin
     'gardes', coalesce((select jsonb_object_agg(card_id, n) from gardes where user_id = p), '{}'::jsonb),
     -- Version 2.1 : les cartes en favori, de la plus ancienne a la plus recente.
     'favoris', coalesce((select jsonb_agg(card_id order by le) from favoris where user_id = p), '[]'::jsonb),
-    -- Version 3.0 : les exemplaires obtenus de chaque carte, pour la maitrise
-    -- (collection.total, 01_schema.sql), et l'etat des Combats
-    -- (combat_etat, 23_combats.sql).
-    'obtenus', coalesce((select jsonb_object_agg(card_id, greatest(total, qty)) from collection
-                          where user_id = p and greatest(total, qty) > 0), '{}'::jsonb),
+    -- Version 3.0 : l'etat des Combats (combat_etat, 23_combats.sql).
     'combat', combat_etat(p),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
@@ -2527,6 +2472,9 @@ begin
     'reverses', rev, 'reverses_total', rev_total,
     'titre', o.titre, 'banniere', o.banniere, 'devise', o.devise,
     'vitrine', to_jsonb(o.vitrine),
+    -- Version 3.0 : son XP de combattant (26_niveaux.sql), pour le niveau
+    -- pose sur l'avatar ; la page le calcule, comme pour me().
+    'xp', coalesce((select x.xp from combat_joueurs x where x.user_id = o.id), 0),
     'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,
@@ -4411,7 +4359,7 @@ grant execute on function public.favori to authenticated;
 
 -- #####################################################################
 -- ###  23_combats.sql
--- ###  Version 3.0 : les Combats — Sections, decks, combats, defis, Guerre des Sections
+-- ###  Version 3.0 : les Combats — Sections, decks, combats, defis
 -- #####################################################################
 
 -- =====================================================================
@@ -4425,8 +4373,10 @@ grant execute on function public.favori to authenticated;
 --    2. l'ouverture et la cloture d'un combat contre l'IA, ce qu'il paie,
 --       le plafond du jour, la campagne ;
 --    3. les defis entre amis : le serveur range les actions dans l'ordre,
---       chaque navigateur rejoue celles de l'autre ;
---    4. la Guerre des Sections, semaine apres semaine.
+--       chaque navigateur rejoue celles de l'autre.
+--
+--  La Guerre des Sections du pre-build a ete retiree : ses tables et ses
+--  fonctions sont supprimees plus bas si une base de test les a encore.
 --
 --  Ce que le serveur ne peut pas verifier, et ce qu'il fait a la place :
 --  il ne rejoue pas une partie, donc il croit le navigateur sur son
@@ -4510,12 +4460,12 @@ on conflict (n) do update set niveau = excluded.niveau, eclats = excluded.eclats
 -- Reequilibre pour la 3.0 : docs/economie-3.0.md.
 create table if not exists public.pve_difficultes (
   niveau integer primary key check (niveau between 1 and 5),
-  eclats integer not null,
-  points integer not null
+  eclats integer not null
 );
-insert into public.pve_difficultes (niveau, eclats, points) values
-  (1, 10, 1), (2, 15, 2), (3, 25, 3), (4, 35, 4), (5, 50, 5)
-on conflict (niveau) do update set eclats = excluded.eclats, points = excluded.points;
+alter table public.pve_difficultes drop column if exists points;
+insert into public.pve_difficultes (niveau, eclats) values
+  (1, 10), (2, 15), (3, 25), (4, 35), (5, 50)
+on conflict (niveau) do update set eclats = excluded.eclats;
 
 -- Les deux Starter Decks (Decks.STARTERS, js/combat/decks.js). Ils sont
 -- pretes : un defi joue avec l'un d'eux n'exige pas d'en posseder les cartes.
@@ -4538,20 +4488,11 @@ insert into public.starters (section, card_id, n) values
   ('deter', 'c087', 1), ('deter', 'c088', 2), ('deter', 'c054', 2), ('deter', 'c055', 2),
   ('deter', 'c083', 2), ('deter', 'c082', 1), ('deter', 'c092', 2);
 
--- La Guerre des Sections : les points de la semaine (period_key('weekly')),
--- et ce que chacun a marque. `paye` : ce qu'il a recu a la fin de la semaine.
-create table if not exists public.guerre (
-  semaine text primary key,
-  toxique integer not null default 0,
-  deter   integer not null default 0
-);
-create table if not exists public.guerre_contrib (
-  semaine text not null,
-  user_id uuid not null references public.profiles on delete cascade,
-  points  integer not null default 0,
-  paye    jsonb,
-  primary key (semaine, user_id)
-);
+-- La Guerre des Sections du pre-build : retiree.
+drop function if exists public.marquer_points(uuid, int);
+drop function if exists public.guerre_passee(uuid);
+drop table if exists public.guerre_contrib;
+drop table if exists public.guerre;
 
 -- Les defis entre amis. Les decks sont au format du moteur ({ club: [ids],
 -- reserve: [couleurs] }) ; `actions` : la partie, coup par coup.
@@ -4586,11 +4527,9 @@ alter table public.combats_ouverts enable row level security;
 alter table public.pve_campagne    enable row level security;
 alter table public.pve_difficultes enable row level security;
 alter table public.starters        enable row level security;
-alter table public.guerre          enable row level security;
-alter table public.guerre_contrib  enable row level security;
 alter table public.defis           enable row level security;
 revoke all on public.combat_joueurs, public.decks, public.combats_ouverts, public.pve_campagne,
-  public.pve_difficultes, public.starters, public.guerre, public.guerre_contrib, public.defis
+  public.pve_difficultes, public.starters, public.defis
   from anon, authenticated;
 
 -- ============================================================ 2. outils
@@ -4708,62 +4647,11 @@ begin
   return deck_erreur(p, x->'cartes', x->'reserve', true, cartes_pretees(p));
 end $$;
 
--- ===================================================== 3. la Guerre des Sections
--- Les points d'une victoire, pour la Section du joueur. Pendant le Choc des
--- Sections (25_choc.sql), ils comptent double et s'ajoutent a la Guerre de
--- l'evenement. Renvoie les points vraiment marques.
-create or replace function public.marquer_points(p uuid, n int) returns integer
-language plpgsql security definer set search_path = public as $$
-declare sec text; sem text := period_key('weekly');
-begin
-  select section into sec from combat_joueurs where user_id = p;
-  if sec is null or coalesce(n, 0) <= 0 then return 0; end if;
-  if evenement_en_cours() = 'choc' then
-    n := n * choc_multiplicateur();
-    perform choc_points(p, sec, n);
-  end if;
-  insert into guerre (semaine) values (sem) on conflict (semaine) do nothing;
-  update guerre set toxique = toxique + case when sec = 'toxique' then n else 0 end,
-                    deter   = deter   + case when sec = 'deter'   then n else 0 end
-   where semaine = sem;
-  insert into guerre_contrib (semaine, user_id, points) values (sem, p, n)
-    on conflict (semaine, user_id) do update set points = guerre_contrib.points + n;
-  perform bump_quests(p, 'points_section', n);
-  return n;
-end $$;
-
--- La semaine passee : qui l'a emporte, et ce que le joueur en a recu. Le
--- prix se paie ici, une fois, a la premiere visite de la semaine suivante :
--- 2 boosters et 200 Eclats dans la Section gagnante, un booster dans l'autre,
--- pour qui a marque au moins un point. Une egalite ne paie personne.
-create or replace function public.guerre_passee(p uuid) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare sem text := to_char((now() at time zone 'Europe/Paris') - interval '7 days', 'IYYY"-W"IW');
-        g guerre; gc guerre_contrib; gagnante text; sec text; r jsonb;
-begin
-  select * into g from guerre where semaine = sem;
-  if not found or (g.toxique = 0 and g.deter = 0) then return null; end if;
-  gagnante := case when g.toxique > g.deter then 'toxique' when g.deter > g.toxique then 'deter' end;
-  select * into gc from guerre_contrib where semaine = sem and user_id = p for update;
-  r := gc.paye;
-  if gagnante is not null and found and gc.points > 0 and gc.paye is null then
-    select section into sec from combat_joueurs where user_id = p;
-    r := case when sec = gagnante then '{"boosters":2,"eclats":200}'::jsonb else '{"boosters":1,"eclats":0}'::jsonb end;
-    update guerre_contrib set paye = r where semaine = sem and user_id = p;
-    update profiles set boosters_bonus = boosters_bonus + (r->>'boosters')::int,
-                        shards = shards + (r->>'eclats')::int
-     where id = p;
-  end if;
-  return jsonb_build_object('semaine', sem, 'toxique', g.toxique, 'deter', g.deter,
-                            'gagnante', gagnante, 'recompense', r);
-end $$;
-
 -- ===================================================== 4. l'etat, dans me()
 create or replace function public.combat_etat(p uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare c combat_joueurs := combat_joueur(p); sem text := period_key('weekly'); g guerre;
+declare c combat_joueurs := combat_joueur(p);
 begin
-  select * into g from guerre where semaine = sem;
   return jsonb_build_object(
     'section', c.section,
     'decks', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'nom', d.nom, 'cartes', d.cartes,
@@ -4778,12 +4666,6 @@ begin
                                 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d),
     -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
     'xp', c.xp,
-    'guerre', jsonb_build_object(
-      'toxique', coalesce(g.toxique, 0), 'deter', coalesce(g.deter, 0),
-      'moi', coalesce((select points from guerre_contrib where semaine = sem and user_id = p), 0),
-      'fin', (date_trunc('week', now() at time zone 'Europe/Paris') + interval '7 days') at time zone 'Europe/Paris',
-      'prix', '2 boosters et 200 Éclats',
-      'passee', guerre_passee(p)),
     'defis', coalesce((
       select jsonb_agg(jsonb_build_object(
                'id', d.id, 'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id),
@@ -4917,7 +4799,7 @@ create or replace function public.combat_fin(p_id text, p_gagne boolean, p_resum
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; o combats_ouverts; r jsonb; trop boolean;
         v_n int; pc pve_campagne; pd pve_difficultes; g_eclats int := 0; g_boosters int := 0; g_fragments int := 0;
-        g_points int := 0; carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb;
+        carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -4966,7 +4848,7 @@ begin
         select * into pc from pve_campagne where n = v_n;
         update combat_joueurs set faits = array_append(faits, o.cle) where user_id = p;
         perform bump_quests(p, 'campagne', 1);
-        g_eclats := pc.eclats; g_boosters := pc.boosters; g_fragments := pc.fragments; g_points := 3;
+        g_eclats := pc.eclats; g_boosters := pc.boosters; g_fragments := pc.fragments;
         if cardinality(c.faits) + 1 >= 20 and not c.finie then
           update combat_joueurs set finie = true where user_id = p;
           autre := case c.section when 'toxique' then 'p04' else 'p03' end;
@@ -4976,7 +4858,6 @@ begin
           msg := 'Campagne terminée : la Promo de l''autre Section est à toi.';
         end if;
       else
-        g_points := 1;
         if plafond then
           update combat_joueurs set recompensees = recompensees + 1 where user_id = p;
           g_eclats := 10;
@@ -4986,7 +4867,6 @@ begin
       end if;
     else
       select * into pd from pve_difficultes where niveau = o.niveau;
-      g_points := pd.points;
       if plafond then
         update combat_joueurs set recompensees = recompensees + 1 where user_id = p;
         g_eclats := pd.eclats;
@@ -4997,13 +4877,12 @@ begin
     update profiles set shards = shards + g_eclats, boosters_bonus = boosters_bonus + g_boosters,
                         fragments = fragments + g_fragments
      where id = p;
-    g_points := marquer_points(p, g_points);
     perform sync_collection_quests(p);
     perform check_promos(p);
   end if;
 
   return jsonb_build_object('etat', me(), 'recompense', jsonb_build_object(
-    'eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments, 'points', g_points,
+    'eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments,
     'carte', carte, 'titre', null, 'message', msg, 'xp', v_xp));
 end $$;
 
@@ -5110,7 +4989,7 @@ end $$;
 create or replace function public.defi_fin(p_id text, p_gagnant int default null, p_tours int default 0) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); d defis; c combat_joueurs; moi int; gagne boolean;
-        g_eclats int := 0; g_points int := 0; msg text := ''; deja boolean; v_xp jsonb;
+        g_eclats int := 0; msg text := ''; deja boolean; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -5146,10 +5025,7 @@ begin
     if jsonb_array_length(d.actions) < 12 then
       msg := 'Défi trop court pour être récompensé.';
     else
-      if gagne then
-        perform bump_quests(p, 'victoires', 1);
-        g_points := marquer_points(p, 5);
-      end if;
+      if gagne then perform bump_quests(p, 'victoires', 1); end if;
       v_xp := gagner_xp(p, xp_combat('defi', 0, gagne, 0, coalesce(p_tours, 0)));
       if c.defis_rec < 3 then
         update combat_joueurs set defis_rec = defis_rec + 1 where user_id = p;
@@ -5161,13 +5037,13 @@ begin
     end if;
   end if;
   return jsonb_build_object('etat', me(), 'recompense',
-    jsonb_build_object('eclats', g_eclats, 'points', g_points, 'message', msg, 'xp', v_xp));
+    jsonb_build_object('eclats', g_eclats, 'message', msg, 'xp', v_xp));
 end $$;
 
 -- ===================================================== 8. droits
 revoke all on function public.jour_paris, public.combat_joueur, public.cle_copie, public.limite_copies,
   public.deck_erreur, public.deck_depuis_moteur, public.cartes_pretees, public.deck_defi_erreur,
-  public.marquer_points, public.guerre_passee, public.combat_etat, public.vue_defi
+  public.combat_etat, public.vue_defi
   from public, anon, authenticated;
 
 revoke all on function public.combat_section, public.combat_reglages, public.deck_sauver,
@@ -5179,22 +5055,20 @@ grant execute on function public.combat_section, public.combat_reglages, public.
 
 
 -- #####################################################################
--- ###  24_secretes_maitrise.sql
+-- ###  24_secretes.sql
 -- ###  Version 3.0 : les Secretes
 -- #####################################################################
 
 -- =====================================================================
---  Mate TCG Online — version 3.0 : les Secretes et la maitrise des cartes
+--  Mate TCG Online — version 3.0 : les Secretes
 --  A executer apres 23_combats.sql. Rejouable sans danger.
 --
 --  Ce fichier ne contient que le catalogue des Secretes. Le reste vit dans
 --  les fichiers qu'il touche, pour que TOUT.sql reste dans l'ordre :
---    · la colonne `cards.secrete`, le compteur `collection.total` et son
---      declencheur, les quetes de maitrise : 01_schema.sql ;
+--    · la colonne `cards.secrete` : 01_schema.sql ;
 --    · le tirage (Rare 79 %, Epique 16 %, Legendaire 4,25 %, Secrete
 --      0,75 %), pick_card('S'), l'echange d'une Secrete : 03_rpc.sql ;
---    · les quetes « Secret bien garde » et de maitrise : 04_seed.sql ;
---    · les exemplaires obtenus dans me() : 07_vitrine.sql ;
+--    · la quete « Secret bien garde » : 04_seed.sql ;
 --    · les doublons des amis : 21_reflets.sql ; les exemplaires a garder :
 --      22_garder.sql.
 --
@@ -5225,7 +5099,7 @@ on conflict (id) do update set
 
 -- =====================================================================
 --  Mate TCG Online — version 3.0 : l'evenement « Le Choc des Sections »
---  A executer apres 24_secretes_maitrise.sql. Rejouable sans danger.
+--  A executer apres 24_secretes.sql. Rejouable sans danger.
 --
 --  Trois semaines autour des Combats (23_combats.sql), avec ce qu'un
 --  evenement apporte deja depuis la 2.0 (21_reflets.sql) : une monnaie — les
@@ -5239,11 +5113,11 @@ on conflict (id) do update set
 --       tentatives par jour ;
 --    2. l'Epreuve du jour : le meme combat pour tout le monde (les decks et
 --       la regle se deduisent de la graine du jour, js/combat/choc-data.js).
---       Trois essais, le meilleur compte, un classement du jour ;
---    3. la Guerre de l'evenement : chaque point de Section compte double
---       (marquer_points, 23_combats.sql), et la Section qui en marque le plus
---       sur les trois semaines donne a ses membres le titre « Vainqueur du
---       Choc » — accorde dans le recap (evenement_recap, 21_reflets.sql).
+--       Trois essais, le meilleur compte, un classement du jour.
+--
+--  La Guerre de l'evenement (points de Section doubles) a ete retiree du
+--  pre-build : ses tables et ses fonctions sont supprimees plus bas si une
+--  base de test les a encore.
 --
 --  Les chiffres du Raid et de l'Epreuve sont aussi dans js/combat/choc-data.js
 --  (CHOC) : les deux doivent rester d'accord. L'equilibrage est explique
@@ -5334,16 +5208,11 @@ create table if not exists public.choc_epreuves (
   primary key (user_id, jour)
 );
 
--- La Guerre de l'evenement, sur toute sa duree.
-create table if not exists public.choc_guerre (
-  section text primary key check (section in ('toxique', 'deter')),
-  points  integer not null default 0
-);
-insert into public.choc_guerre (section) values ('toxique'), ('deter') on conflict do nothing;
-create table if not exists public.choc_contrib (
-  user_id uuid primary key references public.profiles on delete cascade,
-  points  integer not null default 0
-);
+-- La Guerre de l'evenement : retiree.
+drop function if exists public.choc_points(uuid, text, int);
+drop function if exists public.choc_multiplicateur();
+drop table if exists public.choc_guerre;
+drop table if exists public.choc_contrib;
 
 alter table public.choc_phases     enable row level security;
 alter table public.choc_raid       enable row level security;
@@ -5352,11 +5221,8 @@ alter table public.choc_joueurs    enable row level security;
 alter table public.choc_tentatives enable row level security;
 alter table public.choc_prises     enable row level security;
 alter table public.choc_epreuves   enable row level security;
-alter table public.choc_guerre     enable row level security;
-alter table public.choc_contrib    enable row level security;
 revoke all on public.choc_phases, public.choc_raid, public.choc_tombees, public.choc_joueurs,
-  public.choc_tentatives, public.choc_prises, public.choc_epreuves, public.choc_guerre,
-  public.choc_contrib from anon, authenticated;
+  public.choc_tentatives, public.choc_prises, public.choc_epreuves from anon, authenticated;
 
 -- ============================================================ 3. le Pass
 -- Trente paliers. Le calcul (docs/economie-3.0.md) : un joueur engage
@@ -5400,20 +5266,6 @@ on conflict (evenement, palier) do update set
   objet = excluded.objet, titre = excluded.titre;
 
 -- ============================================================ 4. outils
--- Les points comptent double pendant l'evenement (CHOC.guerre.multiplicateur).
-create or replace function public.choc_multiplicateur() returns integer
-language sql immutable as $$ select 2; $$;
-
--- Appele par marquer_points (23_combats.sql), avec les points deja doubles.
-create or replace function public.choc_points(p uuid, sec text, n int) returns void
-language plpgsql security definer set search_path = public as $$
-begin
-  if sec is null or coalesce(n, 0) <= 0 then return; end if;
-  update choc_guerre set points = points + n where section = sec;
-  insert into choc_contrib (user_id, points) values (p, n)
-    on conflict (user_id) do update set points = choc_contrib.points + n;
-end $$;
-
 -- La barre d'une phase, a l'echelle du serveur ; null pour le rappel.
 create or replace function public.choc_pv_phase(n int) returns integer
 language sql stable security definer set search_path = public as $$
@@ -5540,13 +5392,13 @@ end $$;
 
 create or replace function public.choc_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare ph choc_phases; d int; insignes int := 0; points int := 0; msg text := ''; tombee int;
+declare ph choc_phases; d int; insignes int := 0; msg text := ''; tombee int;
         e choc_epreuves; i int; score jsonb;
 begin
   if o.mode = 'raid' then
     perform bump_quests(p, 'raid', 1);
     if trop then
-      return jsonb_build_object('insignes', 0, 'degats', 0, 'points', 0, 'message', 'Combat trop court pour compter.');
+      return jsonb_build_object('insignes', 0, 'degats', 0, 'message', 'Combat trop court pour compter.');
     end if;
     select * into ph from choc_phases where n = least(coalesce(o.phase, 1), 6);
     d := least(ph.pv_boss + 1, greatest(0, coalesce((res->>'touches')::int, 0)));
@@ -5557,7 +5409,6 @@ begin
     if gagne then
       update choc_joueurs set victoires = victoires + 1 where user_id = p;
       perform bump_quests(p, 'raid_victoires', 1);
-      points := marquer_points(p, 2);
     end if;
     if tombee is not null then
       msg := 'La phase ' || tombee || ' est tombée ! Sa récompense t''attend dans le Raid.';
@@ -5565,7 +5416,7 @@ begin
       msg := 'Pas un PV de pris : il rira moins la prochaine fois.';
     end if;
     perform crediter_prismes(p, 'choc', insignes);
-    return jsonb_build_object('insignes', insignes, 'degats', d, 'points', points, 'message', msg);
+    return jsonb_build_object('insignes', insignes, 'degats', d, 'message', msg);
   end if;
 
   -- L'Epreuve du jour : le resultat remplace le premier essai encore ouvert.
@@ -5580,20 +5431,19 @@ begin
     update choc_epreuves set essais = jsonb_set(essais, array[i::text], score) where user_id = p and jour = o.jour;
   end if;
   if trop then
-    return jsonb_build_object('insignes', 0, 'points', 0, 'message', 'Combat trop court pour compter.');
+    return jsonb_build_object('insignes', 0, 'message', 'Combat trop court pour compter.');
   end if;
   insignes := 5;
   if gagne and not e.gagnee then
     update choc_epreuves set gagnee = true where user_id = p and jour = o.jour;
     insignes := insignes + 25;
-    points := marquer_points(p, 2);
     perform bump_quests(p, 'epreuve_victoires', 1);
     msg := 'Épreuve du jour gagnée !';
   elsif gagne then
     msg := 'Déjà gagnée aujourd''hui : ton meilleur score est gardé.';
   end if;
   perform crediter_prismes(p, 'choc', insignes);
-  return jsonb_build_object('insignes', insignes, 'points', points, 'message', msg);
+  return jsonb_build_object('insignes', insignes, 'message', msg);
 end $$;
 
 -- ===================================================== 6. l'etat de l'evenement
@@ -5648,12 +5498,7 @@ begin
                          where not coalesce((x->>'abandon')::boolean, false)
                          order by choc_score(x) desc limit 1) s
                   from choc_epreuves ce where ce.jour = j) b
-         where b.s is not null), '[]'::jsonb)),
-    'guerre', jsonb_build_object(
-      'toxique', (select points from choc_guerre where section = 'toxique'),
-      'deter', (select points from choc_guerre where section = 'deter'),
-      'moi', coalesce((select points from choc_contrib where user_id = p), 0),
-      'multiplicateur', choc_multiplicateur()));
+         where b.s is not null), '[]'::jsonb)));
 end $$;
 
 -- La recompense d'une phase tombee : une fois par joueur, pour qui a frappe
@@ -5680,34 +5525,20 @@ begin
 end $$;
 
 -- Ce que le recap de l'evenement ajoute (evenement_recap, 21_reflets.sql) :
--- le Raid, l'Epreuve, la Guerre — et le titre de la Section gagnante, pour
--- ses membres qui ont marque au moins un point. Une egalite ne le donne a
--- personne.
+-- le Raid et l'Epreuve.
 create or replace function public.choc_recap(p uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare t int; d int; gagnante text; sec text; titre boolean;
 begin
-  select points into t from choc_guerre where section = 'toxique';
-  select points into d from choc_guerre where section = 'deter';
-  gagnante := case when t > d then 'toxique' when d > t then 'deter' end;
-  select section into sec from combat_joueurs where user_id = p;
-  titre := gagnante is not null and sec = gagnante
-           and coalesce((select points from choc_contrib where user_id = p), 0) > 0;
-  if titre then
-    insert into inventory (user_id, item_id, qty) values (p, 't_choc', 1)
-      on conflict (user_id, item_id) do nothing;
-  end if;
   return jsonb_build_object(
     'degats', coalesce((select degats from choc_joueurs where user_id = p), 0),
     'raid_phases', (select count(*) from choc_tombees),
     'epreuves', (select count(*) from choc_epreuves where user_id = p and gagnee),
-    'guerre', jsonb_build_object('toxique', t, 'deter', d),
-    'section', sec, 'gagnante', gagnante, 'titre_gagne', titre);
+    'section', (select section from combat_joueurs where user_id = p));
 end $$;
 
 -- ============================================================ 7. droits
 revoke all on function public.choc_jour_ev, public.choc_avancer from public, anon, authenticated;
-revoke all on function public.choc_multiplicateur, public.choc_points, public.choc_pv_phase,
+revoke all on function public.choc_pv_phase,
   public.choc_graine, public.choc_score, public.choc_frapper, public.choc_debut, public.choc_fin,
   public.choc_joueur_vue, public.choc_recap from public, anon, authenticated;
 revoke all on function public.choc_etat, public.raid_reclamer from public, anon;
@@ -5718,7 +5549,7 @@ grant execute on function public.choc_etat, public.raid_reclamer to authenticate
 --
 --    insert into public.evenements (titre, texte, debut, fin, code) values (
 --      'Le Choc des Sections',
---      'La version 3.0 : le Raid contre The French Sorcerer, l''Épreuve du jour, et des points de Section qui comptent double.',
+--      'La version 3.0 : le Raid contre The French Sorcerer et l''Épreuve du jour.',
 --      '2026-11-02 18:00+01', '2026-11-23 18:00+01', 'choc');
 --
 --  (Les dates sont un exemple.) Un evenement sans `ticket_minutes` ne change

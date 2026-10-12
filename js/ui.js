@@ -184,6 +184,14 @@ function avatarHTML(a, frame, cls, photo) {
     style="${vars.join(';')}">${v.carte ? `<span class="ava-illu"><img src="${v.src}" alt=""></span>` : `<img src="${v.src}" alt="">`}${f.fx ? '<i class="fx-deco" aria-hidden="true"></i>' : ''}</span>`;
 }
 
+/* Version 3.0 : l'avatar, son niveau de combattant posé en bas à droite
+   (js/combat/niveaux.js). `xp` absent : l'avatar seul. */
+function avatarNiveau(html, xp) {
+  if (xp == null || typeof niveauDe !== 'function') return html;
+  const n = niveauDe(xp).niveau;
+  return `<span class="ava-nivw">${html}<i class="ava-niv tnum" title="Niveau ${n}" aria-label="Niveau ${n}">${n}</i></span>`;
+}
+
 /* ---------- Petits blocs répétés ---------- */
 const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 9.5 12 22 4 9.5Z" fill="currentColor" opacity=".9"/><path d="M12 2 4 9.5h16Z" fill="#fff" opacity=".35"/></svg>';
 

@@ -128,7 +128,7 @@ function montrerContenu(c, file) {
   });
   SFX.jouer('gagne');
   vibrer([30, 50, 30]);
-  if (!RM()) FX.sparkle({ n: 110, colors: ['#ffc73b', '#ff7cc8', '#b57aff', '#fff'], size: 3.6 });
+  if (!RM()) FX.sparkle({ n: 110, colors: ['#f5c451', '#ffdc85', '#b3a6ff', '#fff'], size: 3.6 });
 }
 
 function finCadeaux(c) {

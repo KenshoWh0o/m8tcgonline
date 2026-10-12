@@ -168,7 +168,7 @@ const GUIDES = (() => {
       resume: 'Campagne, PvE infini, défis entre amis.',
       html: () => `
         <h3>Les Sections</h3>
-        <p>En entrant dans les Combats, tu rejoins une <b>Section</b> : Toxique ou Déter, comme les deux Starter Decks. Tu reçois sa Promo et son Starter Deck. Chaque victoire, dans n'importe quel mode, rapporte des points à ta Section dans la <b>Guerre des Sections</b> de la semaine.</p>
+        <p>En entrant dans les Combats, tu rejoins une <b>Section</b> : Toxique ou Déter, comme les deux Starter Decks. Tu reçois sa Promo et son Starter Deck, et la campagne te fait affronter l'autre Section.</p>
         <h3>Campagne</h3>
         <p>Tu affrontes la Section adverse, de plus en plus fort. La finir te donne la Promo de l'autre Section. Elle se rejoue autant qu'on veut — pour le plaisir, la récompense est plus petite.</p>
         <h3>PvE infini</h3>

@@ -3,9 +3,10 @@
    Une page d'accueil courte, faite pour qu'on y lance un combat en deux
    gestes : en tête, son niveau de combattant ; puis la grande affiche du
    moment (le Raid pendant l'événement, sinon le prochain combat de
-   campagne) ; deux grandes portes, Solo (contre l'IA) et Versus (entre
-   amis) ; trois raccourcis, Decks, Missions et Guide ; et la Guerre des
-   Sections en une ligne. Chaque porte ouvre sa page, avec un retour vers
+   campagne) ; deux grandes tuiles, Solo (contre l'IA) et Versus (entre
+   amis) ; trois petites, Decks, Missions et Guide. Un bandeau illustré en
+   tête, en biais, comme les écrans de Pokémon TCG Pocket. Chaque tuile
+   ouvre sa page, avec un retour vers
    l'accueil. Le combat se joue dans l'arène, en plein écran
    (js/combat/table.js) ; l'atelier de decks a son fichier
    (js/combat/atelier.js).
@@ -40,7 +41,6 @@ function cbEtat() {
     jour: Object.assign({ recompensees: 0, plafond: PVE_PLAFOND }, c.jour || {}),
     stats: Object.assign({ victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0 }, c.stats || {}),
     xp: c.xp || 0,
-    guerre: c.guerre || null,
     defis: c.defis || []
   };
 }
@@ -138,7 +138,7 @@ function vChoixSection() {
     <div class="cb-choix-tete">
       <small>Version 3.0 · Pré-build</small>
       <h1>Choisis ta Section</h1>
-      <p class="muted">Deux Sections, comme les deux Starter Decks. Ta Section te donne sa Promo et son deck, et tu affronteras l'autre en campagne. Chaque victoire lui rapporte des points dans la Guerre des Sections.</p>
+      <p class="muted">Deux Sections, comme les deux Starter Decks. Ta Section te donne sa Promo et son deck, et tu affronteras l'autre en campagne.</p>
     </div>
     <div class="cb-secs">${carte('toxique', SECTIONS.toxique)}<span class="cb-vs">VS</span>${carte('deter', SECTIONS.deter)}</div>
     <p class="muted small cb-choix-pied">Ce choix est définitif. La Promo de l'autre Section se gagne en finissant la campagne.</p>
@@ -160,16 +160,29 @@ function choisirSection(id) {
 }
 
 /* ---------- L'accueil ---------- */
-/* L'illustration d'une carte, cadrée sur le haut, en fond d'une tuile. */
-const cbArt = id => {
-  const c = byId[id];
-  return c && c.img ? `<span class="cb-art" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
-};
 /* Les missions de combat à récupérer (js/quests.js). */
 const cbMissionsPretes = () => (save.quetes || []).filter(q => estMissionCombat(q) && questePrete(q)).length;
 
+/* Les icônes des tuiles de l'accueil : au trait, en deux tons (le fond
+   teinté, le trait clair ; css/combat.css). Versus : deux cartes qui se
+   font face, et l'éclair du duel entre elles. */
+const CB_ICO = {
+  solo: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="13" y="7" width="22" height="32" rx="4"/><path class="f" d="M24 15.5l2.6 5.4 5.9.7-4.4 4 1.2 5.9L24 28.6l-5.3 2.9 1.2-5.9-4.4-4 5.9-.7z"/></svg>',
+  versus: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="4.5" y="13" width="16" height="23" rx="3" transform="rotate(-14 12.5 24.5)"/><rect class="f" x="27.5" y="13" width="16" height="23" rx="3" transform="rotate(14 35.5 24.5)"/><path class="e" d="M26.5 6.5 19 22h5.2l-3.2 11.5L30 17.5h-5.4z"/></svg>',
+  decks: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="9" y="13" width="20" height="28" rx="3.5"/><path d="M15 9h17a3.5 3.5 0 0 1 3.5 3.5V34"/><path d="M21 5h12a6 6 0 0 1 6 6v18"/></svg>',
+  missions: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="10" y="8" width="28" height="33" rx="4"/><path d="M17 21.5l4 4 9-9M17 32h14"/></svg>',
+  guide: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M8 11.5c5.5-2 11-1.5 16 1.5v26c-5-3-10.5-3.5-16-1.5z"/><path class="f" d="M40 11.5c-5.5-2-11-1.5-16 1.5v26c5-3 10.5-3.5 16-1.5z"/></svg>'
+};
+
+/* L'illustration du bandeau : le boss du Raid pendant l'événement, sinon le
+   prochain rival de la campagne, sinon la Promo de l'autre Section. */
+function cbHeroArt(e, prochain) {
+  const id = evenementEnCours() === 'choc' ? CHOC.raid.boss : prochain ? prochain.rival : SECTIONS[autreSection(e.section)].promo;
+  const c = byId[id];
+  return c && c.img ? `<span class="cb-hero-art" aria-hidden="true" style="background-image:url('${h(c.img)}')"></span>` : '';
+}
+
 function vCbAccueil(e) {
-  const s = SECTIONS[e.section];
   const deck = cbDeckActif();
   const combats = combatsCampagne(e.section);
   const fait = new Set(e.campagne.faits);
@@ -178,102 +191,55 @@ function vCbAccueil(e) {
   const enCours = combatEnCours();
   const defis = e.defis.filter(d => d.pour_moi && d.statut === 'attente').length;
   const missions = cbMissionsPretes();
-  return `<header class="cb-haut">
-      <div class="cb-haut-t"><h1>Combats</h1><span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(s.court || s.nom)}</b></span></div>
-      ${vCbNiveau(e)}
-    </header>
+  const tuile = (v, ico, titre, sous, n) => `<button class="cb-tuile" data-cb="vue" data-v="${v}">
+      <span class="cb-tuile-ico">${CB_ICO[ico]}</span><b>${titre}</b><small>${sous}</small>${n ? `<i class="rf-pastille">${n}</i>` : ''}
+    </button>`;
+  const petit = (v, ico, titre, sous, n) => `<button class="cb-petit" data-cb="vue" data-v="${v}">
+      <span class="cb-petit-ico">${CB_ICO[ico]}</span><b>${titre}</b><small>${sous}</small>${n ? `<i class="rf-pastille">${n}</i>` : ''}
+    </button>`;
+  return `<section class="cb-hero">
+      ${cbHeroArt(e, prochain)}
+      <div class="cb-hero-haut"><span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(SECTIONS[e.section].court)}</b></span>${vCbNiveau(e)}</div>
+      <h1 class="cb-hero-titre">Combats</h1>
+    </section>
+    ${vCbAffiche(e, prochain)}
     ${enCours ? `<section class="cb-reprendre"><div><b>Un combat est en cours</b><p class="muted small">${h(enCours.meta && enCours.meta.titre || 'Combat')} — reprends-le où tu l'as laissé.</p></div>
       <div class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Reprendre</button><button class="btn tiny ghost" data-cb="oublier">Abandonner</button></div></section>` : ''}
-    ${vCbAffiche(e, prochain)}
-    <div class="cb-portes">
-      <button class="cb-porte solo" data-cb="vue" data-v="solo">
-        ${cbArt(prochain ? prochain.rival : SECTIONS[autreSection(e.section)].promo)}
-        <span class="cb-porte-t"><b>Solo</b><small>Contre l'IA</small></span>
-        <span class="cb-porte-info">${e.campagne.finie ? 'Campagne finie' : `Campagne ${fait.size}/20`} · ${reste ? `${reste} victoire${reste > 1 ? 's' : ''} payée${reste > 1 ? 's' : ''}` : 'XP à volonté'}</span>
-      </button>
-      <button class="cb-porte versus" data-cb="vue" data-v="versus">
-        <span class="cb-vsart" aria-hidden="true">${emblemeSection('toxique')}<b>VS</b>${emblemeSection('deter')}</span>
-        <span class="cb-porte-t"><b>Versus</b><small>Entre amis</small></span>
-        <span class="cb-porte-info">${defis ? `${defis} défi${defis > 1 ? 's' : ''} pour toi` : 'Défie un ami, en direct'}</span>
-        ${defis ? `<i class="rf-pastille">${defis}</i>` : ''}
-      </button>
+    <div class="cb-tuiles">
+      ${tuile('solo', 'solo', 'Solo', `${e.campagne.finie ? 'Campagne finie' : `Campagne ${fait.size}/20`} · ${reste ? `${reste} victoire${reste > 1 ? 's' : ''} payée${reste > 1 ? 's' : ''}` : 'XP à volonté'}`)}
+      ${tuile('versus', 'versus', 'Versus', defis ? `${defis} défi${defis > 1 ? 's' : ''} pour toi` : 'Défie un ami, en direct', defis)}
     </div>
-    <div class="cb-raccourcis">
-      <button class="cb-rac" data-cb="vue" data-v="decks">
-        <span class="cb-rac-art">${deck ? renderCard(byId[deck.couverture] || {}) : NAVICO.cards}</span>
-        <span class="cb-rac-t"><b>Decks</b><small>${deck ? h(deck.nom) : 'Aucun deck valide'}</small></span>
-      </button>
-      <button class="cb-rac" data-cb="vue" data-v="missions">
-        <span class="cb-rac-ico">${NAVICO.quest}</span>
-        <span class="cb-rac-t"><b>Missions</b><small>${missions ? `${missions} à récupérer` : 'Quêtes de combat'}</small></span>
-        ${missions ? `<i class="rf-pastille">${missions}</i>` : ''}
-      </button>
-      <button class="cb-rac" data-cb="vue" data-v="guides">
-        <span class="cb-rac-ico">${NAVICO.illu}</span>
-        <span class="cb-rac-t"><b>Guide</b><small>Les règles</small></span>
-      </button>
-    </div>
-    ${vGuerre(e)}`;
+    <div class="cb-petits">
+      ${petit('decks', 'decks', 'Decks', deck ? h(deck.nom) : 'Aucun deck valide')}
+      ${petit('missions', 'missions', 'Missions', missions ? `${missions} à récupérer` : 'Quêtes de combat', missions)}
+      ${petit('guides', 'guide', 'Guide', 'Les règles')}
+    </div>`;
 }
 
 /* La grande affiche : le Raid pendant le Choc des Sections, sinon le
    prochain combat de la campagne, sinon le PvE infini. */
 function vCbAffiche(e, prochain) {
+  const une = (attrs, sur, titre, sous, go, art) => `<button class="cb-une" ${attrs}>
+      ${art ? `<span class="cb-une-art">${renderCard(byId[art] || {})}</span>` : ''}
+      <span class="cb-une-t"><small>${sur}</small><b>${titre}</b><em>${sous}</em></span>
+      <span class="cb-une-go">${go}</span>
+    </button>`;
   if (evenementEnCours() === 'choc') {
     const r = typeof chEtat !== 'undefined' && chEtat ? chEtat.raid : null;
     const tr = r ? chTentativesRestantes() : null;
     const p = r ? chocPhase(Math.min(r.phase, 6)) : null;
-    return `<button class="cb-affiche ev" data-ch="vue" data-v="raid">
-      ${cbArt(CHOC.raid.boss)}
-      <span class="cb-affiche-t"><small>${h(CHOC.nom)} · Raid</small><b>${h(CHOC.raid.nom)}</b>
-        <em>${p ? `${r.phase > 5 ? h(p.nom) : `Phase ${r.phase} · ${h(p.nom)}`} · ${tr ? `${tr} tentative${tr > 1 ? 's' : ''}` : 'reviens demain'}` : 'Un boss pour tout le serveur'}</em></span>
-      <span class="cb-affiche-go">Affronter</span>
-    </button>`;
+    return une('data-ch="vue" data-v="raid"', `Raid · ${h(CHOC.nom)}`, h(CHOC.raid.nom),
+      p ? `${r.phase > 5 ? h(p.nom) : `Phase ${r.phase} · ${h(p.nom)}`} · ${tr ? `${tr} tentative${tr > 1 ? 's' : ''}` : 'reviens demain'}` : 'Un boss pour tout le serveur',
+      'Affronter');
   }
   if (prochain) {
     const k = byId[prochain.rival] || {};
-    return `<button class="cb-affiche" data-cb="combat" data-v="${prochain.id}">
-      ${cbArt(prochain.rival)}
-      <span class="cb-affiche-t"><small>Campagne · ${h(prochain.acte.nom)}</small><b>${h(k.nom || '')}</b>
-        <em>Combat ${prochain.n + 1}/20 · ${'★'.repeat(prochain.niveau)}</em></span>
-      <span class="cb-affiche-go">Combattre</span>
-    </button>`;
+    return une(`data-cb="combat" data-v="${prochain.id}"`, `Campagne · ${h(prochain.acte.nom)}`, h(k.nom || ''),
+      `Combat ${prochain.n + 1}/20 · ${'★'.repeat(prochain.niveau)}`, 'Combattre');
   }
   const n = cbChoix.infini || 3;
-  return `<button class="cb-affiche" data-cb="vue" data-v="infini">
-    ${cbArt(SECTIONS[autreSection(e.section)].promo)}
-    <span class="cb-affiche-t"><small>PvE infini</small><b>${h(DIFFICULTES[n - 1].nom)} ${'★'.repeat(n)}</b><em>Un deck adverse tiré au sort, à chaque fois</em></span>
-    <span class="cb-affiche-go">Jouer</span>
-  </button>`;
-}
-
-/* La Guerre des Sections, en une ligne ; le détail s'ouvre au toucher. */
-function vGuerre(e) {
-  const g = e.guerre || { toxique: 0, deter: 0, moi: 0 };
-  const t = g.toxique || 0, d = g.deter || 0, tot = t + d;
-  const pt = tot ? Math.round(100 * t / tot) : 50;
-  const x2 = evenementEnCours() === 'choc';
-  return `<button class="cb-guerre" data-cb="guerre">
-    <span class="cb-guerre-tete"><b>Guerre des Sections</b>${x2 ? `<i class="cb-x2">×${CHOC.guerre.multiplicateur}</i>` : ''}<small>ta part : ${fmtN(g.moi || 0)} pt${(g.moi || 0) > 1 ? 's' : ''}</small></span>
-    <span class="cb-guerre-barre" style="--pt:${pt}%">
-      <span class="t">${emblemeSection('toxique')}<b class="tnum">${fmtN(t)}</b></span>
-      <span class="d"><b class="tnum">${fmtN(d)}</b>${emblemeSection('deter')}</span>
-    </span>
-  </button>`;
-}
-function ouvrirGuerre() {
-  const g = cbEtat().guerre || { toxique: 0, deter: 0, moi: 0 };
-  const fin = g.fin ? srvTime(g.fin) : null;
-  openSheet({
-    title: 'Guerre des Sections',
-    body: `<div class="cb-guerre-fiche">
-      ${vGuerre(cbEtat())}
-      <p>${fin ? `Fin de la semaine ${h(jourHeure(fin, ''))}. ` : ''}Chaque victoire marque des points pour ta Section : la Section gagnante reçoit ${h(g.prix || '2 boosters et 200 Éclats')} lundi ; l'autre, un booster pour se consoler.${evenementEnCours() === 'choc' ? ` <b class="cb-x2t">Pendant le Choc des Sections, chaque point compte ×${CHOC.guerre.multiplicateur}.</b>` : ''}</p>
-      <p>Ta contribution cette semaine : <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>.</p>
-      ${g.passee && g.passee.gagnante ? `<p class="cb-passee">La semaine dernière, la <b>${h(SECTIONS[g.passee.gagnante].nom)}</b> l'a emporté (${fmtN(g.passee.toxique)} à ${fmtN(g.passee.deter)}).${g.passee.recompense ? ` Tu as reçu ${h(recompenseTexte(g.passee.recompense))}.` : ''}</p>` : ''}
-    </div>`,
-    actions: [{ label: 'Fermer', fn: closeSheet }]
-  });
+  return une('data-cb="vue" data-v="infini"', 'PvE infini', `${h(DIFFICULTES[n - 1].nom)} ${'★'.repeat(n)}`,
+    'Un deck adverse tiré au sort, à chaque fois', 'Jouer');
 }
 
 /* ---------- Solo : la campagne et le PvE infini ---------- */
@@ -416,7 +382,7 @@ function vCbInfini(e) {
   return `<p class="cb-intro">L'IA reçoit un deck tiré au sort, dans une ou deux couleurs. Plus c'est dur, plus ça rapporte — en Éclats (${e.jour.plafond} victoires par jour) comme en XP (sans limite).</p>
     <div class="cb-diffs">${DIFFICULTES.map(d => `<button class="cb-diff n${d.niveau}${n === d.niveau ? ' on' : ''}" data-cb="diff" data-v="${d.niveau}">
         <span class="cb-diff-et">${'★'.repeat(d.niveau)}</span><b>${h(d.nom)}</b><small>${h(d.texte)}</small>
-        <em>${reste ? `+${d.eclats} Éclats` : 'pour le plaisir'} · ${d.points} pt${d.points > 1 ? 's' : ''} de Section</em></button>`).join('')}</div>
+        <em>${reste ? `+${d.eclats} Éclats` : 'pour le plaisir'}</em></button>`).join('')}</div>
     ${vChoixDeck()}
     <button class="btn cb-lancer" data-cb="lancer-infini">Lancer le combat</button>`;
 }
@@ -442,11 +408,11 @@ function vCbDefis(e) {
         `<button class="btn tiny ghost" data-cb="defier" data-v="${h(a.pseudo)}">Défier</button>`)).join('')
         : `<p class="muted">Ajoute des amis depuis l'onglet Social pour les défier.</p><button class="btn ghost" data-tab="social">Aller dans Social</button>`}
     </section>
-    <p class="muted small">Un défi gagné rapporte ${DEFI_GAIN.victoire} Éclats et ${DEFI_GAIN.points} points de Section (${DEFI_GAIN.plafond} défis récompensés par jour).</p>`;
+    <p class="muted small">Un défi gagné rapporte ${DEFI_GAIN.victoire} Éclats, un défi perdu ${DEFI_GAIN.defaite} (${DEFI_GAIN.plafond} défis récompensés par jour).</p>`;
 }
 /* Rééquilibré pour la 3.0 (docs/economie-3.0.md) : un défi rapporte un
    peu plus qu'une victoire en Normal, puisqu'il faut un ami en face. */
-const DEFI_GAIN = { victoire: 40, defaite: 15, points: 5, plafond: 3 };
+const DEFI_GAIN = { victoire: 40, defaite: 15, plafond: 3 };
 
 /* ---------- Les decks et la personnalisation ---------- */
 function vCbDecks(e) {
@@ -660,7 +626,6 @@ function htmlRecompense(r) {
   if (g.eclats) l.push(`<span class="ar-recompense">${shardIco}+${fmtN(g.eclats)}</span>`);
   if (g.boosters) l.push(`<span class="ar-recompense"><img src="${ART.seal}" alt="">+${g.boosters}</span>`);
   if (g.fragments) l.push(`<span class="ar-recompense">${NAVICO.fragment}+${fmtN(g.fragments)}</span>`);
-  if (g.points) l.push(`<span class="ar-recompense">${emblemeSection(cbEtat().section)}+${g.points} pts</span>`);
   if (g.carte) l.push(`<span class="ar-recompense">${NAVICO.promo}${h((byId[g.carte] || {}).nom || g.carte)}</span>`);
   if (g.titre) l.push(`<span class="ar-recompense">Titre « ${h((TITRES[g.titre] || {}).nom || g.titre)} »</span>`);
   const msg = g.message ? `<p class="ar-consigne">${h(g.message)}</p>` : '';
@@ -722,7 +687,6 @@ function cbAction(k, el) {
     case 'vue': return allerCb(v);
     case 'solo': cbChoix.solo = v; return render();
     case 'niveau': return ouvrirNiveau();
-    case 'guerre': return ouvrirGuerre();
     case 'section': return choisirSection(v);
     case 'combat': return ouvrirCombatCampagne(v);
     case 'diff': cbChoix.infini = +v; return render();

@@ -227,7 +227,7 @@ function vCase(c) {
   /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
      de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${avecMaitrise(renderCard(c), c)}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c)}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);

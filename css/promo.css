@@ -9,7 +9,7 @@
   position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:clamp(10px,3vh,26px);
   padding:calc(20px + env(safe-area-inset-top,0px)) 18px calc(20px + env(safe-area-inset-bottom,0px));
-  background:radial-gradient(circle at 50% 42%,#24124a,#0a0720 62%,#04031a);
+  background:radial-gradient(circle at 50% 42%,#24203a,#0f0e15 62%,#08070c);
   overflow:hidden;text-align:center;animation:pr-fade .32s ease-out}
 @keyframes pr-fade{from{opacity:0}}
 

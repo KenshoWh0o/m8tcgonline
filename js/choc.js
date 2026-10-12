@@ -1,11 +1,16 @@
 /* Version 3.0 : l'événement « Le Choc des Sections ».
 
-   Une page d'accueil qui tient en un écran — le Raid, l'Épreuve du jour,
-   le Pass, les quêtes du jour, la Guerre — et une page pour chacun, avec
-   son retour (comme l'onglet Combats, js/battle.js). Le Raid et l'Épreuve
-   se jouent dans l'arène (js/combat/table.js), lancés par demarrer()
-   (js/battle.js) ; les règles et les chiffres de l'événement sont dans
-   js/combat/choc-data.js.
+   Bâti comme l'événement de la 2.0 (Reflets, js/reflets.js) : un en-tête
+   qui reste en place, des sous-onglets, et une page entière par rubrique —
+   Accueil, Raid, Épreuve, Quêtes, Pass, Boutique, Classement. L'accueil ne
+   montre que l'essentiel du jour et ce que la 3.0 apporte ; chaque
+   rubrique a la place de respirer dans sa propre page.
+
+   L'en-tête montre les deux Sections face à face ; l'illustration de The
+   French Sorcerer est réservée au Raid, pour ne pas répéter le même visuel
+   deux fois sur le même écran. Le Raid et l'Épreuve se jouent dans l'arène
+   (js/combat/table.js), lancés par demarrer() (js/battle.js) ; les règles
+   et les chiffres de l'événement sont dans js/combat/choc-data.js.
 
    Ce qui compte se décide côté serveur (supabase/25_choc.sql) : la barre
    commune du Raid, les tentatives du jour, la graine de l'Épreuve, les
@@ -13,7 +18,7 @@
 "use strict";
 
 /* evenement_etat (le solde, le Pass, le classement des Insignes) et
-   choc_etat (le Raid, l'Épreuve, la Guerre de l'événement). */
+   choc_etat (le Raid, l'Épreuve). */
 let chEv = null;
 let chEtat = null;
 let chErreur = '';
@@ -21,7 +26,16 @@ let chVue = 'accueil';
 let chPassPlace = false;
 let chClassement = 'raid';
 
-const CH_VUES = ['accueil', 'raid', 'epreuve', 'quetes', 'pass', 'boutique', 'classement'];
+const CH_ONGLETS = [
+  ['accueil', 'Accueil'],
+  ['raid', 'Raid'],
+  ['epreuve', 'Épreuve'],
+  ['quetes', 'Quêtes'],
+  ['pass', 'Pass'],
+  ['boutique', 'Boutique'],
+  ['classement', 'Classement']
+];
+const CH_VUES = CH_ONGLETS.map(x => x[0]);
 
 async function chargerChoc() {
   try {
@@ -77,24 +91,40 @@ function vChoc() {
     accueil: vChAccueil, raid: vChRaid, epreuve: vChEpreuve, quetes: vChQuetes,
     pass: vChPass, boutique: vChBoutique, classement: vChClassement
   }[chVue] || vChAccueil;
-  return `<div class="rf ch">${chVue === 'accueil' ? vChTete(srvTime(ev.fin)) : ''}<div class="rf-page">${corps()}</div></div>`;
+  return `<div class="rf ch">${vChTete(srvTime(ev.fin))}<div class="rf-page">${corps()}</div></div>`;
 }
 
-/* L'illustration de The French Sorcerer (#116), en fond de l'en-tête et
-   des bandeaux, cadrée sur son visage. */
+/* L'affiche de l'en-tête : les deux Starter Decks face à face, chacun sur
+   la couleur de sa Section. */
+function chAffiche() {
+  return `<span class="ch-affiche" aria-hidden="true">
+    <span class="ch-aff-sec toxique"><img src="${SECTIONS.toxique.boite}" alt=""></span>
+    <span class="ch-aff-vs">VS</span>
+    <span class="ch-aff-sec deter"><img src="${SECTIONS.deter.boite}" alt=""></span>
+  </span>`;
+}
+
+/* L'illustration de The French Sorcerer (#116) : le Raid, et le bandeau de
+   l'écran Boosters. Cadrée sur son visage. */
 function chArt() {
   const c = byId[CHOC.raid.boss];
   return c && c.img ? `<span class="rf-fond ch-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
 }
 
-/* L'en-tête de l'accueil : le Sorcier en fond, le nom, le temps qui reste
-   et le solde. */
+/* L'en-tête, sur toutes les pages : les deux Sections, le nom, le temps
+   qui reste, le solde, et les sous-onglets. */
 function vChTete(fin) {
+  const pastille = id => {
+    const n = id === 'quetes' ? chQuetesPretes() : id === 'pass' ? chPaliersPrets() : id === 'raid' ? chPhasesPretes() : 0;
+    if (n) return `<i class="rf-pastille">${n}</i>`;
+    const aJouer = (id === 'raid' && chTentativesRestantes() > 0) || (id === 'epreuve' && chEpreuveAJouer() && !chEtat.epreuve.gagnee);
+    return aJouer ? '<i class="rf-point" aria-label="À jouer"></i>' : '';
+  };
   return `<header class="rf-tete ch-tete">
-    ${chArt()}
+    ${chAffiche()}
     <div class="rf-tetehaut">
       <div class="rf-tetenom">
-        <small>Événement · 3 semaines</small>
+        <small>Événement · Version 3.0</small>
         <h1>Le Choc<span>des Sections</span></h1>
       </div>
       <div class="rf-tetechiffres">
@@ -102,14 +132,15 @@ function vChTete(fin) {
         <span class="rf-fin">${NAVICO.clock}<b data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</b></span>
       </div>
     </div>
+    <nav class="rf-onglets" role="tablist">
+      ${CH_ONGLETS.map(([id, nom]) => `<button class="${chVue === id ? 'on' : ''}" data-ch="vue" data-v="${id}" role="tab"
+        aria-selected="${chVue === id}">${nom}${pastille(id)}</button>`).join('')}
+    </nav>
   </header>`;
 }
 
-/* L'en-tête d'une page : le retour vers l'accueil de l'événement. */
-const chSousTete = (titre, sous, droite) => `<header class="cb-sous ch-sous">
-  <button class="cb-retour" data-ch="vue" data-v="accueil" aria-label="Retour à l'événement">${NAVICO.caret}</button>
-  <div class="cb-sous-t"><h1>${titre}</h1>${sous ? `<p>${sous}</p>` : ''}</div>${droite || ''}</header>`;
-const chSoldeChip = () => `<span class="rf-solde ch-solde-chip">${insigneIco}<b class="tnum">${fmtN(chEv.solde)}</b></span>`;
+/* Le titre d'une page, sous l'en-tête. */
+const chTitre = (titre, texte) => `<div class="rf-ptitre"><h2>${titre}</h2>${texte ? `<p>${texte}</p>` : ''}</div>`;
 
 /* Le calendrier du Raid : où en est la phase, et quand s'ouvre la suivante. */
 function chRaidCalendrier(r) {
@@ -143,69 +174,62 @@ function vChAccueil() {
   const r = chEtat.raid;
   const ep = chEtat.epreuve;
   const qj = (save.quetes || []).filter(q => q.evenement === 'choc' && q.scope === 'ev_jour');
+  const qFaites = qj.filter(q => q.progress >= q.goal).length;
   const piste = chEv.piste;
   const atteint = piste.filter(x => chEv.total >= x.seuil).length;
   const prochain = piste.find(x => chEv.total < x.seuil);
-  const avant = prochain ? (piste[prochain.palier - 2] || { seuil: 0 }).seuil : 0;
-  const pct = prochain ? Math.round((chEv.total - avant) / (prochain.seuil - avant) * 100) : 100;
   const regle = epreuveRegle();
   const tr = chTentativesRestantes();
   const er = ep.max - ep.essais.length;
   const phases = chPhasesPretes();
   const paliers = chPaliersPrets();
-  return `<button class="ch-raid" data-ch="vue" data-v="raid">
-      ${cbArt(CHOC.raid.boss)}
-      <span class="ch-raid-haut"><small>Raid · ${r.joueurs} joueur${r.joueurs > 1 ? 's' : ''} l'ont frappé</small>${phases ? `<i class="rf-pastille">${phases}</i>` : ''}</span>
-      <span class="ch-raid-t"><b>${h(CHOC.raid.nom)}</b>${vChBarre(r)}</span>
-      <span class="ch-raid-pied"><span>${tr ? `${tr} tentative${tr > 1 ? 's' : ''} aujourd'hui` : 'Plus de tentative : reviens demain'}</span><span class="ch-go">${tr ? 'Affronter' : 'Voir'}</span></span>
-    </button>
-    <div class="ch-duo">
-      <button class="ch-carte ep" data-ch="vue" data-v="epreuve">
-        <span class="ch-carte-ico">${NAVICO.epreuve}</span>
-        <span class="ch-carte-t"><small>Épreuve du jour</small><b>${h(regle.nom)}</b></span>
-        <span class="ch-pips">${Array.from({ length: ep.max }, (_, i) => { const x = ep.essais[i]; return `<i class="${x ? (x.gagne ? 'ok' : 'ko') : ''}"></i>`; }).join('')}</span>
-        <span class="ch-carte-info">${ep.gagnee ? 'Gagnée aujourd\'hui' : er ? `${er} essai${er > 1 ? 's' : ''} restant${er > 1 ? 's' : ''}` : 'Terminée'}</span>
-      </button>
-      <button class="ch-carte pass" data-ch="vue" data-v="pass">
-        <span class="ch-carte-ico">${NAVICO.trophy}</span>
-        <span class="ch-carte-t"><small>Pass</small><b>Palier ${atteint}<span class="muted">/${piste.length}</span></b></span>
-        <span class="ch-jauge"><i style="width:${pct}%"></i></span>
-        <span class="ch-carte-info">${paliers ? `${paliers} à récupérer` : prochain ? `${h(prochain.titre)} · encore ${fmtN(prochain.seuil - chEv.total)} ${insigneIco}` : 'Terminé'}</span>
-        ${paliers ? `<i class="rf-pastille">${paliers}</i>` : ''}
-      </button>
-    </div>
-    <section class="ch-qj">
-      <h3 class="rf-sous">Quêtes du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
-      <div class="questlist">${trierQuetes(qj.filter(q => !q.claimed)).map(q => vQuete(q)).join('') || '<p class="muted small">Toutes faites : reviens demain.</p>'}</div>
-      <button class="ch-lien" data-ch="vue" data-v="quetes">Toutes les quêtes de l'événement${chQuetesPretes() ? ` <i class="rf-pastille">${chQuetesPretes()}</i>` : ''}${NAVICO.caret}</button>
+  const qPretes = chQuetesPretes();
+  const tuile = (vue, ico, titre, valeur, sous, chaud) => `<button class="rf-tuile${chaud ? ' chaud' : ''}" data-ch="vue" data-v="${vue}">
+      <span class="rf-tuileico">${ico}</span>
+      <span class="rf-tuiletxt"><small>${titre}</small><b>${valeur}</b><span>${sous}</span></span>
+    </button>`;
+  return `<section class="rf-jour">
+      <h3 class="rf-sous">Aujourd'hui</h3>
+      <div class="rf-tuiles ch-tuiles">
+        ${tuile('raid', NAVICO.foudre, 'Le Raid', r.phase > CHOC.raid.phases.length ? 'La tempête revient' : `Phase ${r.phase} / ${CHOC.raid.phases.length}`,
+          phases ? `${phases} récompense${phases > 1 ? 's' : ''} à récupérer` : tr ? `${tr} tentative${tr > 1 ? 's' : ''} aujourd'hui` : 'Reviens demain', phases > 0 || tr > 0)}
+        ${tuile('epreuve', NAVICO.epreuve, 'Épreuve du jour', h(regle.nom),
+          ep.gagnee ? 'Gagnée aujourd\'hui' : er ? `${er} essai${er > 1 ? 's' : ''} restant${er > 1 ? 's' : ''}` : 'Terminée', er > 0 && !ep.gagnee)}
+        ${tuile('quetes', NAVICO.quest, 'Quêtes du jour', `${qFaites} / ${qj.length}`,
+          qPretes ? `${qPretes} à récupérer` : `Nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}`, qPretes > 0)}
+        ${tuile('pass', NAVICO.trophy, 'Pass', `Palier ${atteint} / ${piste.length}`,
+          paliers ? `${paliers} à récupérer` : prochain ? `Suivant dans ${fmtN(prochain.seuil - chEv.total)} ${CHOC.monnaie.nom}` : 'Terminé', paliers > 0)}
+      </div>
     </section>
-    ${vChGuerre(true)}
-    <div class="ch-pied">
-      <button class="cb-rac" data-ch="vue" data-v="boutique"><span class="cb-rac-ico">${insigneIco}</span><span class="cb-rac-t"><b>Boutique</b><small>${fmtN(chEv.solde)} ${CHOC.monnaie.nom}</small></span></button>
-      <button class="cb-rac" data-ch="vue" data-v="classement"><span class="cb-rac-ico">${NAVICO.trophy}</span><span class="cb-rac-t"><b>Classement</b><small>Raid, ${CHOC.monnaie.nom}, Sections</small></span></button>
-    </div>`;
+    ${vChNouveautes()}`;
 }
 
-/* La Guerre des Sections, sur tout l'événement. */
-function vChGuerre(court) {
-  const g = chEtat.guerre || { toxique: 0, deter: 0, moi: 0 };
-  const t = g.toxique || 0, d = g.deter || 0, tot = t + d;
-  const pt = tot ? Math.round(100 * t / tot) : 50;
-  const sec = cbEtat().section;
-  if (court) {
-    return `<button class="cb-guerre ch-guerre" data-ch="classement-sections">
-      <span class="cb-guerre-tete"><b>La Guerre du Choc</b><i class="cb-x2">×${CHOC.guerre.multiplicateur}</i><small>ta part : ${fmtN(g.moi || 0)} pt${(g.moi || 0) > 1 ? 's' : ''}</small></span>
-      <span class="cb-guerre-barre" style="--pt:${pt}%"><span class="t">${emblemeSection('toxique')}<b class="tnum">${fmtN(t)}</b></span><span class="d"><b class="tnum">${fmtN(d)}</b>${emblemeSection('deter')}</span></span>
-    </button>`;
-  }
-  return `<section class="cb-guerre ch-guerre">
-    <div class="cb-guerre-tete"><b>La Guerre du Choc</b><small>points ×${CHOC.guerre.multiplicateur} · jusqu'à la fin</small></div>
-    <div class="cb-guerre-barre" style="--pt:${pt}%">
-      <span class="t">${emblemeSection('toxique')}<b class="tnum">${fmtN(t)}</b></span>
-      <span class="d"><b class="tnum">${fmtN(d)}</b>${emblemeSection('deter')}</span>
+/* Ce que la 3.0 apporte : l'événement est aussi sa vitrine. */
+function vChNouveautes() {
+  const ligne = (cls, visuel, titre, texte, cta) => `<article class="rf-nv ${cls}">
+      <div class="rf-nvvisuel">${visuel}</div>
+      <div class="rf-nvtexte"><b>${titre}</b><p>${texte}</p>${cta}</div>
+    </article>`;
+  const sec = (secretes || [])[0];
+  const niv = niveauDe(cbEtat().xp || 0).niveau;
+  const tapis = TAPIS.t_orage || Object.values(TAPIS).find(t => t.img);
+  return `<section class="rf-nouveau">
+    <h3 class="rf-sous">Nouveau dans la 3.0</h3>
+    ${ligne('grand', `<div class="ch-nvboites"><img src="${SECTIONS.toxique.boite}" alt=""><img src="${SECTIONS.deter.boite}" alt=""></div>`,
+      'Les Combats',
+      'Choisis ta Section, construis ton deck, et entre dans l\'arène : une campagne, le PvE infini, et des défis entre amis.',
+      '<button class="btn tiny" data-tab="combats">Aux Combats</button>')}
+    <div class="rf-nvgrille">
+      ${ligne('', sec ? `<div class="rf-nvcarte ch-nvsecrete">${renderCard(sec)}</div>` : '',
+        'Les Secrètes', `${(secretes || []).length || 5} cartes au-delà des 122, une finition à part.`,
+        '<button class="btn tiny ghost" data-colvue="speciales" data-tab="collection">Les voir</button>')}
+      ${ligne('', `<div class="ch-nvniv"><b class="tnum">${niv}</b><small>niveau</small></div>`,
+        'Ton niveau', 'Chaque combat rapporte de l\'XP, et chaque niveau paie.',
+        '<button class="btn tiny ghost" data-tab="combats">Combattre</button>')}
+      ${ligne('', tapis ? `<img class="ch-art-tapis" src="${tapis.img.replace('.webp', '-mini.webp')}" alt="">` : '',
+        'Tapis et sleeves', 'Habille ton plateau et tes cartes.',
+        '<button class="btn tiny ghost" data-tab="boutique">Boutique</button>')}
     </div>
-    <p class="muted small">${sec ? `Pour la ${h(SECTIONS[sec].nom)}, tu as marqué <b>${fmtN(g.moi || 0)} point${(g.moi || 0) > 1 ? 's' : ''}</b>.` : 'Rejoins une Section dans Combats pour marquer des points.'}
-      À la fin, chaque membre de la Section gagnante qui a marqué reçoit le titre « ${h(TITRES[CHOC.guerre.titre].nom)} ».</p>
   </section>`;
 }
 
@@ -235,7 +259,7 @@ function vChRaid() {
     </li>`;
   }).join('');
   const sec = cbEtat().section;
-  return `${chSousTete('Le Raid', `${h(CHOC.raid.nom)} contre tout le serveur`, chSoldeChip())}
+  return `${chTitre('Le Raid', `${h(CHOC.raid.nom)}, contre tout le serveur. Chaque PV que tu lui prends entame sa barre commune.`)}
     <section class="ch-boss">
       <div class="ch-boss-carte">${renderCard(k)}</div>
       <div class="ch-boss-txt">
@@ -258,7 +282,7 @@ function vChRaid() {
       ${sec ? vChoixDeck() : ''}
       ${sec ? `<button class="btn cb-lancer ch-lancer" data-ch="raid-go" ${tr ? '' : 'disabled'}>${NAVICO.sword}${tr ? 'Affronter le Sorcier' : 'Plus de tentative aujourd\'hui'}</button>`
         : '<button class="btn cb-lancer" data-tab="combats">Choisis d\'abord ta Section</button>'}
-      <p class="muted small">Chaque PV que tu lui prends : un dégât sur la barre commune, et ${CHOC.raid.parDegat} ${CHOC.monnaie.nom}. S'il tombe : +${CHOC.raid.bonusDegats} dégâts, +${CHOC.raid.bonusVictoire} ${CHOC.monnaie.nom} et ${CHOC.raid.points * CHOC.guerre.multiplicateur} points de Section. Les tentatives reviennent chaque jour.</p>
+      <p class="muted small">Chaque PV que tu lui prends : un dégât sur la barre commune, et ${CHOC.raid.parDegat} ${CHOC.monnaie.nom}. S'il tombe : +${CHOC.raid.bonusDegats} dégâts et +${CHOC.raid.bonusVictoire} ${CHOC.monnaie.nom}. Les tentatives reviennent chaque jour.</p>
     </section>
     <section>
       <h3 class="rf-sous">Les cinq phases <small>· une à une, sur les trois semaines</small></h3>
@@ -304,7 +328,7 @@ async function reclamerPhase(n) {
     const cartes = (await Backend.raidReclamer(n)).map(id => byId[id]).filter(Boolean);
     chEtat = await Backend.chocEtat();
     SFX.jouer('gagne');
-    if (!RM()) FX.sparkle({ n: 90, colors: ['#ee0073', '#8936ff', '#ffc73b', '#fff'], size: 3.4 });
+    if (!RM()) FX.sparkle({ n: 90, colors: ['#62d84e', '#7c3aed', '#f5c451', '#fff'], size: 3.4 });
     const boosters = x.recompense.type === 'boosters';
     openSheet({
       title: `Phase ${n} tombée`,
@@ -352,8 +376,7 @@ function vChEpreuve() {
       <span class="ch-ep-deck-art">${renderCard(byId[d.couverture] || {})}</span>
       <span><small>${qui}</small><b>${h(d.nom)}</b><em>${Object.keys(d.reserve).filter(k => d.reserve[k]).map(k => essIcon(k)).join('')} Voir les ${Decks.total(d.cartes)} cartes</em></span>
     </button>`;
-  return `${chSousTete('L\'Épreuve du jour', 'Le même combat pour tout le monde', chSoldeChip())}
-    <p class="cb-intro">Les mêmes deux decks, la même donne pour tous. Trois essais, ton meilleur compte.</p>
+  return `${chTitre('L\'Épreuve du jour', 'Le même combat pour tout le monde : les mêmes deux decks, la même donne. Trois essais, ton meilleur compte.')}
     <section class="ch-ep-regle">
       <span class="ch-ep-ico">${NAVICO.epreuve}</span>
       <div><small>Règle du jour</small><b>${h(x.regle.nom)}</b><p>${h(x.regle.texte)}</p></div>
@@ -362,7 +385,7 @@ function vChEpreuve() {
     <section class="ch-ep-etat">
       <div class="ch-ep-pips">${pips}</div>
       <p><b>Ton meilleur :</b> ${h(texteScore(ep.meilleur))}</p>
-      <p class="muted small">Chaque essai : ${CHOC.epreuve.participation} ${CHOC.monnaie.nom}. Première victoire du jour : +${CHOC.epreuve.victoire} ${CHOC.monnaie.nom} et ${CHOC.epreuve.points * CHOC.guerre.multiplicateur} points de Section. La donne est la même à chaque essai : apprends-la.</p>
+      <p class="muted small">Chaque essai : ${CHOC.epreuve.participation} ${CHOC.monnaie.nom}. Première victoire du jour : +${CHOC.epreuve.victoire} ${CHOC.monnaie.nom}. La donne est la même à chaque essai : apprends-la.</p>
       ${sec ? `<button class="btn cb-lancer ch-lancer" data-ch="ep-go" ${restants ? '' : 'disabled'}>${restants ? `Tenter l'Épreuve · essai ${ep.essais.length + 1}/${ep.max}` : 'Épreuve terminée — nouvelle demain'}</button>`
         : '<button class="btn cb-lancer" data-tab="combats">Choisis d\'abord ta Section</button>'}
     </section>
@@ -402,7 +425,7 @@ async function lancerEpreuve() {
    ===================================================================== */
 function vChQuetes() {
   const qs = (save.quetes || []).filter(q => q.evenement === 'choc');
-  return `${chSousTete('Quêtes', `Elles paient en ${CHOC.monnaie.nom} et font avancer le Pass`, chSoldeChip())}
+  return `${chTitre('Quêtes', `Elles paient en ${CHOC.monnaie.nom}, et chaque ${CHOC.monnaie.un} gagné fait avancer le Pass.`)}
     <h3 class="rf-sous">Du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
     ${vListeQuetes(qs.filter(q => q.scope === 'ev_jour'))}
     <h3 class="rf-sous">De l'événement</h3>
@@ -445,7 +468,7 @@ function vChPass() {
       </div>
     </li>`;
   };
-  return `${chSousTete('Le Pass', `Trente paliers, en ${CHOC.monnaie.nom} gagnés`)}
+  return `${chTitre('Le Pass', `Trente paliers, en ${CHOC.monnaie.nom} gagnés.`)}
     <section class="rf-passtete">
       <div class="rf-passniv"><small>Palier</small><b class="tnum">${atteint}<span>/${piste.length}</span></b></div>
       <div class="rf-passjauge">
@@ -488,7 +511,7 @@ async function chReclamer(paliers) {
   occupe(false);
   if (!pris.length) return render();
   SFX.jouer('gagne');
-  if (!RM()) FX.sparkle({ n: 100, colors: ['#ee0073', '#8936ff', '#ffc73b', '#fff'], size: 3.4 });
+  if (!RM()) FX.sparkle({ n: 100, colors: ['#62d84e', '#7c3aed', '#f5c451', '#fff'], size: 3.4 });
   const ks = cartes.map(id => byId[id]).filter(Boolean);
   const boosters = pris.some(x => x.type === 'boosters');
   const cosm = pris.find(x => x.type === 'tapis' || x.type === 'sleeve');
@@ -532,7 +555,7 @@ function vChBoutique() {
         : `<button class="btn tiny ghost" data-shop="${h(it.id)}" ${chEv.solde < it.prix ? 'disabled' : ''}>${insigneIco}${fmtN(it.prix)}</button>`}
     </article>`;
   };
-  return `${chSousTete('Boutique', `En ${CHOC.monnaie.nom}, seulement pendant l'événement`, chSoldeChip())}
+  return `${chTitre('Boutique', `En ${CHOC.monnaie.nom}, seulement pendant l'événement.`)}
     ${items.length ? `<div class="rf-arts">${items.map(article).join('')}</div>` : '<p class="muted">Chargement de la boutique…</p>'}`;
 }
 
@@ -541,7 +564,7 @@ function vChBoutique() {
    ===================================================================== */
 function vChClassement() {
   const top = chEv.top || [];
-  const seg = [['raid', 'Raid'], ['insignes', CHOC.monnaie.nom], ['sections', 'Sections']]
+  const seg = [['raid', 'Raid'], ['insignes', CHOC.monnaie.nom]]
     .map(([id, nom]) => `<button class="${chClassement === id ? 'on' : ''}" data-ch="classement" data-v="${id}">${nom}</button>`).join('');
   let corps;
   if (chClassement === 'insignes') {
@@ -550,12 +573,10 @@ function vChClassement() {
         <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.titre && TITRES[j.titre] ? `<small class="titreligne t${TITRES[j.titre].ton}">${h(TITRES[j.titre].nom)}</small>` : ''}</span>
         <span class="rf-pts tnum">${insigneIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
       : `<p class="muted">Personne n'a encore gagné d'${CHOC.monnaie.nom} : à toi de commencer.</p>`;
-  } else if (chClassement === 'sections') {
-    corps = vChGuerre();
   } else {
     corps = vChTopRaid(10) || '<p class="muted">Personne n\'a encore frappé le Sorcier.</p>';
   }
-  return `${chSousTete('Classement', `Le Raid, les ${CHOC.monnaie.nom}, les Sections`)}
+  return `${chTitre('Classement', `Ceux qui frappent le plus fort, et ceux qui gagnent le plus d'${CHOC.monnaie.nom}.`)}
     <div class="segbar ch-seg">${seg}</div>${corps}`;
 }
 
@@ -606,7 +627,7 @@ function apercuRecapChoc() {
     jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), apercu: true,
     total: 2840, paliers: 24, paliers_max: 30, pris: 24, quetes: 58, rang: 6, joueurs: 41,
     degats: 214, raid_phases: 5, epreuves: 13,
-    guerre: { toxique: 18420, deter: 17975 }, section: cbEtat().section || 'toxique', gagnante: 'toxique', titre_gagne: true,
+    section: cbEtat().section || 'toxique',
     top: bots.map(([pseudo, section, total]) => ({ pseudo, section, total, avatar: 'star', frame: 'f_choc', photo: null, moi: false }))
   };
   chRecap = chRecapApercu;
@@ -618,7 +639,7 @@ function vChRecap() {
   const a = recapChoc();
   const reste = a && a.jusqua ? srvTime(a.jusqua) : 0;
   const tete = `<header class="rf-tete ch-tete rf-recap">
-    ${chArt()}
+    ${chAffiche()}
     <div class="rf-tetehaut">
       <div class="rf-tetenom"><small>Événement terminé · le récap</small><h1>Le Choc<span>des Sections</span></h1></div>
       <div class="rf-tetechiffres">${reste ? `<span class="rf-fin">${NAVICO.clock}<span>encore <b data-rebours="${reste}">${h(dureeCourte(reste - Date.now()))}</b></span></span>` : ''}</div>
@@ -628,19 +649,10 @@ function vChRecap() {
   if (!r) { chargerRecapChoc(); return `<div class="rf ch">${tete}<p class="muted boitecharge">Chargement du récap…</p></div>`; }
   const stat = (ico, val, lib, sous) => `<div class="rr-stat"><span class="rr-ico">${ico}</span>
     <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
-  const g = r.guerre || { toxique: 0, deter: 0 };
-  const gagnante = r.gagnante && SECTIONS[r.gagnante];
   const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
       <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
       <b>${h(j.pseudo)}</b><small>${insigneIco}${fmtN(j.total)}</small></li>`).join('');
   return `<div class="rf ch">${tete}<div class="rf-page">
-    ${gagnante ? `<section class="ch-vainqueur sec-${r.gagnante}" style="--sc:${gagnante.c};--sc2:${gagnante.c2}">
-      <img src="${gagnante.boite}" alt="">
-      <div><small>La Guerre du Choc</small><b>${h(gagnante.nom)} l'emporte</b>
-        <p class="tnum">${fmtN(g.toxique)} points pour Toxique · ${fmtN(g.deter)} pour Déter</p>
-        ${r.titre_gagne ? `<p class="ch-vainqueur-titre">Le titre « ${h(TITRES[CHOC.guerre.titre].nom)} » est à toi.</p>`
-          : r.section === r.gagnante ? '<p class="muted small">Il fallait avoir marqué au moins un point pour le titre.</p>' : '<p class="muted small">Ta Section s\'inclinera avec les honneurs.</p>'}</div>
-    </section>` : ''}
     <section class="rr-bilan">
       <h2>Ton bilan</h2>
       <div class="rr-stats">
@@ -655,8 +667,8 @@ function vChRecap() {
     <section class="rr-continue">
       <h2>Ce qui reste</h2>
       <div class="rr-cartes">
-        <button class="rr-lien" data-tab="combats"><span class="rr-ico">${NAVICO.sword}</span><b>Les Combats continuent</b><small>Campagne, PvE infini, défis : la Guerre des Sections repart chaque lundi.</small></button>
-        <button class="rr-lien" data-tab="collection"><span class="rr-ico">${NAVICO.cards}</span><b>La maîtrise des cartes</b><small>Chaque exemplaire obtenu fait monter ta carte de Bronze à Prisme.</small></button>
+        <button class="rr-lien" data-tab="combats"><span class="rr-ico">${NAVICO.sword}</span><b>Les Combats continuent</b><small>Campagne, PvE infini, défis entre amis.</small></button>
+        <button class="rr-lien" data-colvue="speciales" data-tab="collection"><span class="rr-ico">${NAVICO.promo}</span><b>Les Secrètes restent</b><small>Une chance dans chaque booster.</small></button>
       </div>
     </section>
   </div></div>`;
@@ -681,18 +693,16 @@ async function montrerRecapChoc() {
   if (a && !a.apercu) accueilNoter({ recap: a.fin });
   const r = chRecapApercu || await chargerRecapChoc();
   if (!r) return;
-  const gagnante = r.gagnante && SECTIONS[r.gagnante];
   openSheet({
     title: 'Le Choc des Sections, c\'est fini',
     body: `<div class="rr-pop">
-        <div class="rr-poptete">${chArt()}<b>${gagnante ? `${h(gagnante.nom)} l'emporte` : 'Merci d\'avoir joué'}</b><small>Trois semaines de combats — voici les tiens.</small></div>
+        <div class="rr-poptete">${chArt()}<b>Merci d'avoir joué</b><small>Trois semaines de combats — voici les tiens.</small></div>
         <div class="rr-popstats">
           <div><b class="tnum">${fmtN(r.total)}</b><small>${CHOC.monnaie.nom}</small></div>
           <div><b class="tnum">${r.paliers}/${r.paliers_max}</b><small>Pass</small></div>
           <div><b class="tnum">${fmtN(r.degats || 0)}</b><small>dégâts</small></div>
           ${r.rang ? `<div><b class="tnum">${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup></b><small>sur ${r.joueurs}</small></div>` : ''}
         </div>
-        ${r.titre_gagne ? `<p class="ch-vainqueur-titre">Titre « ${h(TITRES[CHOC.guerre.titre].nom)} » débloqué.</p>` : ''}
         <p class="muted small">Le récap complet reste trois jours dans l'onglet de l'événement.</p>
       </div>`,
     actions: [{ label: 'Voir le récap', primary: true, fn: () => { closeSheet(); aller('choc'); } },
@@ -714,7 +724,6 @@ function chAction(k, el) {
     case 'palier': return chReclamer([+v]);
     case 'pass-tout': return chReclamer(chEv.piste.filter(p => !p.pris && chEv.total >= p.seuil).map(p => p.palier));
     case 'classement': chClassement = v; return render();
-    case 'classement-sections': chClassement = 'sections'; return allerCh('classement');
     case 'recap-quitter': return quitterApercuRecapChoc();
   }
 }

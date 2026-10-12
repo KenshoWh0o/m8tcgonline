@@ -111,7 +111,7 @@ language plpgsql volatile as $$
 declare out_id text; ord text[]; essai text;
 begin
   -- On vise la rarete demandee, puis on se rabat sur la plus proche si elle est vide.
-  -- Version 3.0 : une Secrete (24_secretes_maitrise.sql). Hors extension,
+  -- Version 3.0 : une Secrete (24_secretes.sql). Hors extension,
   -- donc `promo`, elle a son propre tirage ; sans Secrete au catalogue, on
   -- retombe sur une Legendaire.
   if r = 'S' then

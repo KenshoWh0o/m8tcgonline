@@ -145,7 +145,7 @@ async function ouvrirFiche(pseudo) {
   openSheet({
     body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}${f.banniere ? ' banniere' : ''}">
       ${vBanniere(f.banniere)}
-      ${avatarHTML(f.avatar, f.frame, 'xl', f.photo)}
+      ${avatarNiveau(avatarHTML(f.avatar, f.frame, 'xl', f.photo), f.xp)}
       <div class="fichemeta">
         <b class="fichenom">${h(f.pseudo)}</b>
         ${vTitreLigne(f.titre)}

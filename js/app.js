@@ -333,7 +333,7 @@ function aller(id) {
     if (tab === 'boite') ouvrirBoite();
     if (tab === 'classement') chargerClassement();
     if (tab === 'tirages') chargerTirages();
-    /* Version 3.0 : les défis et la Guerre des Sections bougent sans nous. */
+    /* Version 3.0 : les défis bougent sans nous. */
     if (tab === 'combats') {
       /* L'affiche du Raid dit sa phase et les tentatives du jour. */
       if (evenementEnCours() === 'choc' && !chEtat) chargerChoc();

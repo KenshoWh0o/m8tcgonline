@@ -1,15 +1,13 @@
 -- =====================================================================
---  Mate TCG Online — version 3.0 : les Secretes et la maitrise des cartes
+--  Mate TCG Online — version 3.0 : les Secretes
 --  A executer apres 23_combats.sql. Rejouable sans danger.
 --
 --  Ce fichier ne contient que le catalogue des Secretes. Le reste vit dans
 --  les fichiers qu'il touche, pour que TOUT.sql reste dans l'ordre :
---    · la colonne `cards.secrete`, le compteur `collection.total` et son
---      declencheur, les quetes de maitrise : 01_schema.sql ;
+--    · la colonne `cards.secrete` : 01_schema.sql ;
 --    · le tirage (Rare 79 %, Epique 16 %, Legendaire 4,25 %, Secrete
 --      0,75 %), pick_card('S'), l'echange d'une Secrete : 03_rpc.sql ;
---    · les quetes « Secret bien garde » et de maitrise : 04_seed.sql ;
---    · les exemplaires obtenus dans me() : 07_vitrine.sql ;
+--    · la quete « Secret bien garde » : 04_seed.sql ;
 --    · les doublons des amis : 21_reflets.sql ; les exemplaires a garder :
 --      22_garder.sql.
 --

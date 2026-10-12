@@ -22,7 +22,7 @@
 .packstage{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
   perspective:1300px;padding:14px 0 0}
 .packglow{position:absolute;top:44%;left:50%;width:min(620px,124vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,var(--violet-glow),rgba(255,80,165,.12) 40%,transparent 64%)}
+  background:radial-gradient(circle,var(--violet-glow),rgba(140,120,255,.12) 40%,transparent 64%)}
 /* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
 .pack3d{position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
   transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
@@ -66,7 +66,7 @@
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);
   transition:box-shadow .3s,background .3s}
 /* Une alvéole pleine : un jeton de couleur, avec son reflet et son halo. */
-.resjeton.plein{background:linear-gradient(90deg,#a98bff,#ff7ac4);
+.resjeton.plein{background:linear-gradient(90deg,#a98bff,#b3a6ff);
   box-shadow:inset 0 1px 0 var(--gloss-soft),0 0 12px var(--violet-glow);
   animation:respop .34s cubic-bezier(.2,1.4,.4,1)}
 @keyframes respop{from{transform:scaleX(.5);opacity:.4}}
@@ -214,7 +214,7 @@
 .evban{position:relative;display:flex;align-items:center;gap:12px;width:100%;max-width:520px;flex:0 0 auto;margin:0 0 8px;
   padding:11px 12px 11px 14px;border:1px solid var(--line-2);border-top-color:var(--line-3);border-radius:var(--radius-lg);
   text-align:left;color:#fff;overflow:hidden;cursor:pointer;
-  background:radial-gradient(120% 170% at 100% 40%,rgba(124,77,255,.55) 0%,rgba(44,22,92,.6) 55%,rgba(16,10,40,.7) 100%);
+  background:radial-gradient(120% 170% at 100% 40%,rgba(140,120,255,.55) 0%,rgba(44,22,92,.6) 55%,rgba(16,10,40,.7) 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 26px -10px var(--violet-glow);transition:transform .18s var(--spring)}
 .evban:active{transform:scale(.98)}
 .evban::before{content:"";position:absolute;inset:0;pointer-events:none;translate:-100% 0;

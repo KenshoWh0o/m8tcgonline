@@ -9,8 +9,10 @@
 --    2. l'ouverture et la cloture d'un combat contre l'IA, ce qu'il paie,
 --       le plafond du jour, la campagne ;
 --    3. les defis entre amis : le serveur range les actions dans l'ordre,
---       chaque navigateur rejoue celles de l'autre ;
---    4. la Guerre des Sections, semaine apres semaine.
+--       chaque navigateur rejoue celles de l'autre.
+--
+--  La Guerre des Sections du pre-build a ete retiree : ses tables et ses
+--  fonctions sont supprimees plus bas si une base de test les a encore.
 --
 --  Ce que le serveur ne peut pas verifier, et ce qu'il fait a la place :
 --  il ne rejoue pas une partie, donc il croit le navigateur sur son
@@ -94,12 +96,12 @@ on conflict (n) do update set niveau = excluded.niveau, eclats = excluded.eclats
 -- Reequilibre pour la 3.0 : docs/economie-3.0.md.
 create table if not exists public.pve_difficultes (
   niveau integer primary key check (niveau between 1 and 5),
-  eclats integer not null,
-  points integer not null
+  eclats integer not null
 );
-insert into public.pve_difficultes (niveau, eclats, points) values
-  (1, 10, 1), (2, 15, 2), (3, 25, 3), (4, 35, 4), (5, 50, 5)
-on conflict (niveau) do update set eclats = excluded.eclats, points = excluded.points;
+alter table public.pve_difficultes drop column if exists points;
+insert into public.pve_difficultes (niveau, eclats) values
+  (1, 10), (2, 15), (3, 25), (4, 35), (5, 50)
+on conflict (niveau) do update set eclats = excluded.eclats;
 
 -- Les deux Starter Decks (Decks.STARTERS, js/combat/decks.js). Ils sont
 -- pretes : un defi joue avec l'un d'eux n'exige pas d'en posseder les cartes.
@@ -122,20 +124,11 @@ insert into public.starters (section, card_id, n) values
   ('deter', 'c087', 1), ('deter', 'c088', 2), ('deter', 'c054', 2), ('deter', 'c055', 2),
   ('deter', 'c083', 2), ('deter', 'c082', 1), ('deter', 'c092', 2);
 
--- La Guerre des Sections : les points de la semaine (period_key('weekly')),
--- et ce que chacun a marque. `paye` : ce qu'il a recu a la fin de la semaine.
-create table if not exists public.guerre (
-  semaine text primary key,
-  toxique integer not null default 0,
-  deter   integer not null default 0
-);
-create table if not exists public.guerre_contrib (
-  semaine text not null,
-  user_id uuid not null references public.profiles on delete cascade,
-  points  integer not null default 0,
-  paye    jsonb,
-  primary key (semaine, user_id)
-);
+-- La Guerre des Sections du pre-build : retiree.
+drop function if exists public.marquer_points(uuid, int);
+drop function if exists public.guerre_passee(uuid);
+drop table if exists public.guerre_contrib;
+drop table if exists public.guerre;
 
 -- Les defis entre amis. Les decks sont au format du moteur ({ club: [ids],
 -- reserve: [couleurs] }) ; `actions` : la partie, coup par coup.
@@ -170,11 +163,9 @@ alter table public.combats_ouverts enable row level security;
 alter table public.pve_campagne    enable row level security;
 alter table public.pve_difficultes enable row level security;
 alter table public.starters        enable row level security;
-alter table public.guerre          enable row level security;
-alter table public.guerre_contrib  enable row level security;
 alter table public.defis           enable row level security;
 revoke all on public.combat_joueurs, public.decks, public.combats_ouverts, public.pve_campagne,
-  public.pve_difficultes, public.starters, public.guerre, public.guerre_contrib, public.defis
+  public.pve_difficultes, public.starters, public.defis
   from anon, authenticated;
 
 -- ============================================================ 2. outils
@@ -292,62 +283,11 @@ begin
   return deck_erreur(p, x->'cartes', x->'reserve', true, cartes_pretees(p));
 end $$;
 
--- ===================================================== 3. la Guerre des Sections
--- Les points d'une victoire, pour la Section du joueur. Pendant le Choc des
--- Sections (25_choc.sql), ils comptent double et s'ajoutent a la Guerre de
--- l'evenement. Renvoie les points vraiment marques.
-create or replace function public.marquer_points(p uuid, n int) returns integer
-language plpgsql security definer set search_path = public as $$
-declare sec text; sem text := period_key('weekly');
-begin
-  select section into sec from combat_joueurs where user_id = p;
-  if sec is null or coalesce(n, 0) <= 0 then return 0; end if;
-  if evenement_en_cours() = 'choc' then
-    n := n * choc_multiplicateur();
-    perform choc_points(p, sec, n);
-  end if;
-  insert into guerre (semaine) values (sem) on conflict (semaine) do nothing;
-  update guerre set toxique = toxique + case when sec = 'toxique' then n else 0 end,
-                    deter   = deter   + case when sec = 'deter'   then n else 0 end
-   where semaine = sem;
-  insert into guerre_contrib (semaine, user_id, points) values (sem, p, n)
-    on conflict (semaine, user_id) do update set points = guerre_contrib.points + n;
-  perform bump_quests(p, 'points_section', n);
-  return n;
-end $$;
-
--- La semaine passee : qui l'a emporte, et ce que le joueur en a recu. Le
--- prix se paie ici, une fois, a la premiere visite de la semaine suivante :
--- 2 boosters et 200 Eclats dans la Section gagnante, un booster dans l'autre,
--- pour qui a marque au moins un point. Une egalite ne paie personne.
-create or replace function public.guerre_passee(p uuid) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare sem text := to_char((now() at time zone 'Europe/Paris') - interval '7 days', 'IYYY"-W"IW');
-        g guerre; gc guerre_contrib; gagnante text; sec text; r jsonb;
-begin
-  select * into g from guerre where semaine = sem;
-  if not found or (g.toxique = 0 and g.deter = 0) then return null; end if;
-  gagnante := case when g.toxique > g.deter then 'toxique' when g.deter > g.toxique then 'deter' end;
-  select * into gc from guerre_contrib where semaine = sem and user_id = p for update;
-  r := gc.paye;
-  if gagnante is not null and found and gc.points > 0 and gc.paye is null then
-    select section into sec from combat_joueurs where user_id = p;
-    r := case when sec = gagnante then '{"boosters":2,"eclats":200}'::jsonb else '{"boosters":1,"eclats":0}'::jsonb end;
-    update guerre_contrib set paye = r where semaine = sem and user_id = p;
-    update profiles set boosters_bonus = boosters_bonus + (r->>'boosters')::int,
-                        shards = shards + (r->>'eclats')::int
-     where id = p;
-  end if;
-  return jsonb_build_object('semaine', sem, 'toxique', g.toxique, 'deter', g.deter,
-                            'gagnante', gagnante, 'recompense', r);
-end $$;
-
 -- ===================================================== 4. l'etat, dans me()
 create or replace function public.combat_etat(p uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare c combat_joueurs := combat_joueur(p); sem text := period_key('weekly'); g guerre;
+declare c combat_joueurs := combat_joueur(p);
 begin
-  select * into g from guerre where semaine = sem;
   return jsonb_build_object(
     'section', c.section,
     'decks', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'nom', d.nom, 'cartes', d.cartes,
@@ -362,12 +302,6 @@ begin
                                 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d),
     -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
     'xp', c.xp,
-    'guerre', jsonb_build_object(
-      'toxique', coalesce(g.toxique, 0), 'deter', coalesce(g.deter, 0),
-      'moi', coalesce((select points from guerre_contrib where semaine = sem and user_id = p), 0),
-      'fin', (date_trunc('week', now() at time zone 'Europe/Paris') + interval '7 days') at time zone 'Europe/Paris',
-      'prix', '2 boosters et 200 Éclats',
-      'passee', guerre_passee(p)),
     'defis', coalesce((
       select jsonb_agg(jsonb_build_object(
                'id', d.id, 'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id),
@@ -501,7 +435,7 @@ create or replace function public.combat_fin(p_id text, p_gagne boolean, p_resum
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; o combats_ouverts; r jsonb; trop boolean;
         v_n int; pc pve_campagne; pd pve_difficultes; g_eclats int := 0; g_boosters int := 0; g_fragments int := 0;
-        g_points int := 0; carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb;
+        carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -550,7 +484,7 @@ begin
         select * into pc from pve_campagne where n = v_n;
         update combat_joueurs set faits = array_append(faits, o.cle) where user_id = p;
         perform bump_quests(p, 'campagne', 1);
-        g_eclats := pc.eclats; g_boosters := pc.boosters; g_fragments := pc.fragments; g_points := 3;
+        g_eclats := pc.eclats; g_boosters := pc.boosters; g_fragments := pc.fragments;
         if cardinality(c.faits) + 1 >= 20 and not c.finie then
           update combat_joueurs set finie = true where user_id = p;
           autre := case c.section when 'toxique' then 'p04' else 'p03' end;
@@ -560,7 +494,6 @@ begin
           msg := 'Campagne terminée : la Promo de l''autre Section est à toi.';
         end if;
       else
-        g_points := 1;
         if plafond then
           update combat_joueurs set recompensees = recompensees + 1 where user_id = p;
           g_eclats := 10;
@@ -570,7 +503,6 @@ begin
       end if;
     else
       select * into pd from pve_difficultes where niveau = o.niveau;
-      g_points := pd.points;
       if plafond then
         update combat_joueurs set recompensees = recompensees + 1 where user_id = p;
         g_eclats := pd.eclats;
@@ -581,13 +513,12 @@ begin
     update profiles set shards = shards + g_eclats, boosters_bonus = boosters_bonus + g_boosters,
                         fragments = fragments + g_fragments
      where id = p;
-    g_points := marquer_points(p, g_points);
     perform sync_collection_quests(p);
     perform check_promos(p);
   end if;
 
   return jsonb_build_object('etat', me(), 'recompense', jsonb_build_object(
-    'eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments, 'points', g_points,
+    'eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments,
     'carte', carte, 'titre', null, 'message', msg, 'xp', v_xp));
 end $$;
 
@@ -694,7 +625,7 @@ end $$;
 create or replace function public.defi_fin(p_id text, p_gagnant int default null, p_tours int default 0) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); d defis; c combat_joueurs; moi int; gagne boolean;
-        g_eclats int := 0; g_points int := 0; msg text := ''; deja boolean; v_xp jsonb;
+        g_eclats int := 0; msg text := ''; deja boolean; v_xp jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -730,10 +661,7 @@ begin
     if jsonb_array_length(d.actions) < 12 then
       msg := 'Défi trop court pour être récompensé.';
     else
-      if gagne then
-        perform bump_quests(p, 'victoires', 1);
-        g_points := marquer_points(p, 5);
-      end if;
+      if gagne then perform bump_quests(p, 'victoires', 1); end if;
       v_xp := gagner_xp(p, xp_combat('defi', 0, gagne, 0, coalesce(p_tours, 0)));
       if c.defis_rec < 3 then
         update combat_joueurs set defis_rec = defis_rec + 1 where user_id = p;
@@ -745,13 +673,13 @@ begin
     end if;
   end if;
   return jsonb_build_object('etat', me(), 'recompense',
-    jsonb_build_object('eclats', g_eclats, 'points', g_points, 'message', msg, 'xp', v_xp));
+    jsonb_build_object('eclats', g_eclats, 'message', msg, 'xp', v_xp));
 end $$;
 
 -- ===================================================== 8. droits
 revoke all on function public.jour_paris, public.combat_joueur, public.cle_copie, public.limite_copies,
   public.deck_erreur, public.deck_depuis_moteur, public.cartes_pretees, public.deck_defi_erreur,
-  public.marquer_points, public.guerre_passee, public.combat_etat, public.vue_defi
+  public.combat_etat, public.vue_defi
   from public, anon, authenticated;
 
 revoke all on function public.combat_section, public.combat_reglages, public.deck_sauver,

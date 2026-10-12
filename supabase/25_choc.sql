@@ -1,6 +1,6 @@
 -- =====================================================================
 --  Mate TCG Online — version 3.0 : l'evenement « Le Choc des Sections »
---  A executer apres 24_secretes_maitrise.sql. Rejouable sans danger.
+--  A executer apres 24_secretes.sql. Rejouable sans danger.
 --
 --  Trois semaines autour des Combats (23_combats.sql), avec ce qu'un
 --  evenement apporte deja depuis la 2.0 (21_reflets.sql) : une monnaie — les
@@ -14,11 +14,11 @@
 --       tentatives par jour ;
 --    2. l'Epreuve du jour : le meme combat pour tout le monde (les decks et
 --       la regle se deduisent de la graine du jour, js/combat/choc-data.js).
---       Trois essais, le meilleur compte, un classement du jour ;
---    3. la Guerre de l'evenement : chaque point de Section compte double
---       (marquer_points, 23_combats.sql), et la Section qui en marque le plus
---       sur les trois semaines donne a ses membres le titre « Vainqueur du
---       Choc » — accorde dans le recap (evenement_recap, 21_reflets.sql).
+--       Trois essais, le meilleur compte, un classement du jour.
+--
+--  La Guerre de l'evenement (points de Section doubles) a ete retiree du
+--  pre-build : ses tables et ses fonctions sont supprimees plus bas si une
+--  base de test les a encore.
 --
 --  Les chiffres du Raid et de l'Epreuve sont aussi dans js/combat/choc-data.js
 --  (CHOC) : les deux doivent rester d'accord. L'equilibrage est explique
@@ -109,16 +109,11 @@ create table if not exists public.choc_epreuves (
   primary key (user_id, jour)
 );
 
--- La Guerre de l'evenement, sur toute sa duree.
-create table if not exists public.choc_guerre (
-  section text primary key check (section in ('toxique', 'deter')),
-  points  integer not null default 0
-);
-insert into public.choc_guerre (section) values ('toxique'), ('deter') on conflict do nothing;
-create table if not exists public.choc_contrib (
-  user_id uuid primary key references public.profiles on delete cascade,
-  points  integer not null default 0
-);
+-- La Guerre de l'evenement : retiree.
+drop function if exists public.choc_points(uuid, text, int);
+drop function if exists public.choc_multiplicateur();
+drop table if exists public.choc_guerre;
+drop table if exists public.choc_contrib;
 
 alter table public.choc_phases     enable row level security;
 alter table public.choc_raid       enable row level security;
@@ -127,11 +122,8 @@ alter table public.choc_joueurs    enable row level security;
 alter table public.choc_tentatives enable row level security;
 alter table public.choc_prises     enable row level security;
 alter table public.choc_epreuves   enable row level security;
-alter table public.choc_guerre     enable row level security;
-alter table public.choc_contrib    enable row level security;
 revoke all on public.choc_phases, public.choc_raid, public.choc_tombees, public.choc_joueurs,
-  public.choc_tentatives, public.choc_prises, public.choc_epreuves, public.choc_guerre,
-  public.choc_contrib from anon, authenticated;
+  public.choc_tentatives, public.choc_prises, public.choc_epreuves from anon, authenticated;
 
 -- ============================================================ 3. le Pass
 -- Trente paliers. Le calcul (docs/economie-3.0.md) : un joueur engage
@@ -175,20 +167,6 @@ on conflict (evenement, palier) do update set
   objet = excluded.objet, titre = excluded.titre;
 
 -- ============================================================ 4. outils
--- Les points comptent double pendant l'evenement (CHOC.guerre.multiplicateur).
-create or replace function public.choc_multiplicateur() returns integer
-language sql immutable as $$ select 2; $$;
-
--- Appele par marquer_points (23_combats.sql), avec les points deja doubles.
-create or replace function public.choc_points(p uuid, sec text, n int) returns void
-language plpgsql security definer set search_path = public as $$
-begin
-  if sec is null or coalesce(n, 0) <= 0 then return; end if;
-  update choc_guerre set points = points + n where section = sec;
-  insert into choc_contrib (user_id, points) values (p, n)
-    on conflict (user_id) do update set points = choc_contrib.points + n;
-end $$;
-
 -- La barre d'une phase, a l'echelle du serveur ; null pour le rappel.
 create or replace function public.choc_pv_phase(n int) returns integer
 language sql stable security definer set search_path = public as $$
@@ -315,13 +293,13 @@ end $$;
 
 create or replace function public.choc_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare ph choc_phases; d int; insignes int := 0; points int := 0; msg text := ''; tombee int;
+declare ph choc_phases; d int; insignes int := 0; msg text := ''; tombee int;
         e choc_epreuves; i int; score jsonb;
 begin
   if o.mode = 'raid' then
     perform bump_quests(p, 'raid', 1);
     if trop then
-      return jsonb_build_object('insignes', 0, 'degats', 0, 'points', 0, 'message', 'Combat trop court pour compter.');
+      return jsonb_build_object('insignes', 0, 'degats', 0, 'message', 'Combat trop court pour compter.');
     end if;
     select * into ph from choc_phases where n = least(coalesce(o.phase, 1), 6);
     d := least(ph.pv_boss + 1, greatest(0, coalesce((res->>'touches')::int, 0)));
@@ -332,7 +310,6 @@ begin
     if gagne then
       update choc_joueurs set victoires = victoires + 1 where user_id = p;
       perform bump_quests(p, 'raid_victoires', 1);
-      points := marquer_points(p, 2);
     end if;
     if tombee is not null then
       msg := 'La phase ' || tombee || ' est tombée ! Sa récompense t''attend dans le Raid.';
@@ -340,7 +317,7 @@ begin
       msg := 'Pas un PV de pris : il rira moins la prochaine fois.';
     end if;
     perform crediter_prismes(p, 'choc', insignes);
-    return jsonb_build_object('insignes', insignes, 'degats', d, 'points', points, 'message', msg);
+    return jsonb_build_object('insignes', insignes, 'degats', d, 'message', msg);
   end if;
 
   -- L'Epreuve du jour : le resultat remplace le premier essai encore ouvert.
@@ -355,20 +332,19 @@ begin
     update choc_epreuves set essais = jsonb_set(essais, array[i::text], score) where user_id = p and jour = o.jour;
   end if;
   if trop then
-    return jsonb_build_object('insignes', 0, 'points', 0, 'message', 'Combat trop court pour compter.');
+    return jsonb_build_object('insignes', 0, 'message', 'Combat trop court pour compter.');
   end if;
   insignes := 5;
   if gagne and not e.gagnee then
     update choc_epreuves set gagnee = true where user_id = p and jour = o.jour;
     insignes := insignes + 25;
-    points := marquer_points(p, 2);
     perform bump_quests(p, 'epreuve_victoires', 1);
     msg := 'Épreuve du jour gagnée !';
   elsif gagne then
     msg := 'Déjà gagnée aujourd''hui : ton meilleur score est gardé.';
   end if;
   perform crediter_prismes(p, 'choc', insignes);
-  return jsonb_build_object('insignes', insignes, 'points', points, 'message', msg);
+  return jsonb_build_object('insignes', insignes, 'message', msg);
 end $$;
 
 -- ===================================================== 6. l'etat de l'evenement
@@ -423,12 +399,7 @@ begin
                          where not coalesce((x->>'abandon')::boolean, false)
                          order by choc_score(x) desc limit 1) s
                   from choc_epreuves ce where ce.jour = j) b
-         where b.s is not null), '[]'::jsonb)),
-    'guerre', jsonb_build_object(
-      'toxique', (select points from choc_guerre where section = 'toxique'),
-      'deter', (select points from choc_guerre where section = 'deter'),
-      'moi', coalesce((select points from choc_contrib where user_id = p), 0),
-      'multiplicateur', choc_multiplicateur()));
+         where b.s is not null), '[]'::jsonb)));
 end $$;
 
 -- La recompense d'une phase tombee : une fois par joueur, pour qui a frappe
@@ -455,34 +426,20 @@ begin
 end $$;
 
 -- Ce que le recap de l'evenement ajoute (evenement_recap, 21_reflets.sql) :
--- le Raid, l'Epreuve, la Guerre — et le titre de la Section gagnante, pour
--- ses membres qui ont marque au moins un point. Une egalite ne le donne a
--- personne.
+-- le Raid et l'Epreuve.
 create or replace function public.choc_recap(p uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare t int; d int; gagnante text; sec text; titre boolean;
 begin
-  select points into t from choc_guerre where section = 'toxique';
-  select points into d from choc_guerre where section = 'deter';
-  gagnante := case when t > d then 'toxique' when d > t then 'deter' end;
-  select section into sec from combat_joueurs where user_id = p;
-  titre := gagnante is not null and sec = gagnante
-           and coalesce((select points from choc_contrib where user_id = p), 0) > 0;
-  if titre then
-    insert into inventory (user_id, item_id, qty) values (p, 't_choc', 1)
-      on conflict (user_id, item_id) do nothing;
-  end if;
   return jsonb_build_object(
     'degats', coalesce((select degats from choc_joueurs where user_id = p), 0),
     'raid_phases', (select count(*) from choc_tombees),
     'epreuves', (select count(*) from choc_epreuves where user_id = p and gagnee),
-    'guerre', jsonb_build_object('toxique', t, 'deter', d),
-    'section', sec, 'gagnante', gagnante, 'titre_gagne', titre);
+    'section', (select section from combat_joueurs where user_id = p));
 end $$;
 
 -- ============================================================ 7. droits
 revoke all on function public.choc_jour_ev, public.choc_avancer from public, anon, authenticated;
-revoke all on function public.choc_multiplicateur, public.choc_points, public.choc_pv_phase,
+revoke all on function public.choc_pv_phase,
   public.choc_graine, public.choc_score, public.choc_frapper, public.choc_debut, public.choc_fin,
   public.choc_joueur_vue, public.choc_recap from public, anon, authenticated;
 revoke all on function public.choc_etat, public.raid_reclamer from public, anon;
@@ -493,7 +450,7 @@ grant execute on function public.choc_etat, public.raid_reclamer to authenticate
 --
 --    insert into public.evenements (titre, texte, debut, fin, code) values (
 --      'Le Choc des Sections',
---      'La version 3.0 : le Raid contre The French Sorcerer, l''Épreuve du jour, et des points de Section qui comptent double.',
+--      'La version 3.0 : le Raid contre The French Sorcerer et l''Épreuve du jour.',
 --      '2026-11-02 18:00+01', '2026-11-23 18:00+01', 'choc');
 --
 --  (Les dates sont un exemple.) Un evenement sans `ticket_minutes` ne change

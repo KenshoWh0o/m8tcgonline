@@ -17,7 +17,7 @@ function vProfil() {
 
   <section class="idcard${(save.succes || []).includes('unique') ? ' elu' : ''}${save.banniere ? ' banniere' : ''}">
     ${vBanniere(save.banniere)}
-    ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
+    ${avatarNiveau(avatarHTML(save.avatar, save.frame, 'xl', maPhoto()), cbEtat().xp)}
     <div class="idnom">
       <span class="idnomligne"><b>${h(save.pseudo)}</b></span>
       ${vTitreLigne(save.titre)}
@@ -106,7 +106,7 @@ const CADRE_SOURCE = {
   f_choc: 'Pass du Choc, palier 12', f_foudre: 'Raid, phase 5',
   f_niv10: 'Niveau 10 de combattant', f_niv20: 'Niveau 20 de combattant', f_niv30: 'Niveau 30 de combattant',
   f_niv50: 'Niveau 50 de combattant', f_toxique: 'Boutique', f_deter: 'Boutique',
-  f_secrete: 'Ta première Secrète', f_maitrise: 'Une carte en maîtrise Prisme'
+  f_secrete: 'Ta première Secrète'
 };
 
 /* Le titre sous un pseudo. */

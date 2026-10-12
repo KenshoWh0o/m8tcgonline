@@ -129,7 +129,7 @@ function grilleAtelier() {
     const lim = Decks.limite(c.id);
     const plein = totalCle >= lim || dans >= a || Decks.total(d.cartes) >= Combat.REGLE.CLUB;
     return `<div class="at-carte${dans ? ' dedans' : ''}${a ? '' : ' absente'}">
-      <button class="at-carte-c" data-cb="at-plus" data-v="${c.id}" ${plein ? 'aria-disabled="true"' : ''} aria-label="Ajouter ${h(c.nom)}">${a ? avecMaitrise(renderCard(c), c) : renderCard(c)}</button>
+      <button class="at-carte-c" data-cb="at-plus" data-v="${c.id}" ${plein ? 'aria-disabled="true"' : ''} aria-label="Ajouter ${h(c.nom)}">${renderCard(c)}</button>
       ${dans ? `<span class="at-n">${dans}</span><button class="at-moins" data-cb="at-moins" data-v="${c.id}" aria-label="Retirer">−</button>` : ''}
       <span class="at-info"><span class="at-poss">${a ? `${a} possédée${a > 1 ? 's' : ''}` : 'non possédée'}</span><button class="at-i" data-show="${c.id}" aria-label="Voir la carte">i</button></span>
     </div>`;

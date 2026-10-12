@@ -5,219 +5,227 @@ changé, les règles à suivre pour que ça reste cohérent, et d'où elles
 viennent. Les valeurs elles-mêmes vivent dans `css/tokens.css` : ce document
 explique, le fichier fait foi.
 
-## 1. Ce qui n'allait pas (audit de la 2.x)
+## 1. Ce qui n'allait pas
+
+### Dans la 2.x (audit d'avant la refonte)
 
 L'audit a été fait écran par écran, sur téléphone (390 × 844) et sur
-ordinateur (1386 × 900), avant la refonte.
+ordinateur (1386 × 900).
 
 - **Une appli web plus qu'un jeu.** Fond prune presque noir et uni, et des
-  rectangles sombres identiques partout (quêtes, boutique, échanges, boîte
-  de réception) : rien ne distinguait un écran d'un autre.
+  rectangles sombres identiques partout : rien ne distinguait un écran d'un
+  autre.
 - **Trop de couleurs actives.** Le violet pour les boutons, le rose pour la
   marque, l'or, le vert, un rose-violet pour l'événement, et dans l'arène
-  vert (places libres), rouge (cibles), or (jouable), bleu (défense), blanc
-  (sélection), rose (choix de cible). Une couleur ne voulait plus dire une
+  vert, rouge, or, bleu, blanc et rose. Une couleur ne voulait plus dire une
   chose.
-- **Peu d'illustrations hors du booster.** Le jeu a 127 illustrations ; les
-  écrans de menus n'en montraient presque aucune.
-- **Des barres plates.** En-tête et barre du bas collés aux bords, fond
-  plein, filet : la page s'arrêtait net dessous.
-- **Des boutons à rebord en majuscules.** Lourds, et le même violet que le
-  fond, donc peu contrastés en teinte.
+- **Peu d'illustrations hors du booster.**
+- **Des barres plates et des boutons lourds**, en majuscules, du même violet
+  que le fond.
+
+### Dans la première version de la refonte (pré-prod 3.0.0 à 3.0.2)
+
+Elle a été jugée « pas belle, pas harmonieuse ». À la relecture, ce
+jugement tient, pour des raisons qu'on peut nommer :
+
+- **Quatre teintes fortes qui se disputaient** : une nuit indigo, le rose
+  de l'action, l'or de l'arène, le corail de l'adversaire. Rose et corail
+  sont voisins sur le cercle chromatique sans être assez différents ; l'or
+  et le rose tiraient l'œil en même temps.
+- **Une couleur d'action qui changeait de lieu en lieu** : rose sur le site,
+  or dans l'arène.
+- **Des voiles translucides partout** : les blocs laissaient voir un fond
+  illustré, flouté, différent par onglet. Le résultat était brouillé, et
+  rien ne se posait vraiment.
 
 ## 2. Les principes
 
-1. **Le contenu d'abord, le chrome ensuite.** Les cartes et les illustrations
-   portent l'écran ; l'interface flotte au-dessus, en verre, et se fait
-   oublier.
-2. **Une couleur, un sens.** Une seule couleur d'action par écran. Choisir
-   (un onglet, un filtre) n'est pas agir : ça ne prend pas la couleur
-   d'action.
-3. **Chaque écran a sa lumière.** Une illustration du jeu, floutée, éclaire
-   le fond de chaque onglet.
-4. **Le verre a quelque chose à flouter.** Il n'existe que parce que la page
-   passe dessous. Pas de verre posé sur du vide, pas de verre sur du verre.
+1. **Le contenu d'abord.** Les cartes et les illustrations portent la
+   couleur de l'écran ; l'interface est un gris neutre qui ne se dispute pas
+   avec elles.
+2. **Des tuiles pleines.** Les blocs sont des aplats posés sur le fond par
+   une ombre douce, pas des voiles translucides.
+3. **Une couleur d'action, partout la même.** La lavande, sur le site comme
+   dans l'arène. Choisir (un onglet, un filtre) n'est pas agir : ça reste
+   blanc.
+4. **Le verre pour ce qui flotte, et seulement ça** : la barre des onglets,
+   l'en-tête, les feuilles.
 5. **Lisible d'abord.** Chaque couple texte/fond est vérifié (WCAG 2.2 :
    4,5:1 pour le texte courant, 3:1 pour les gros titres et les éléments
    graphiques). Le verre a un repli opaque.
 
-## 3. La palette
+## 3. La palette « Graphite et lavande »
 
-### Neutres : une nuit indigo
+Elle a été choisie parmi trois propositions présentées sur une même page de
+maquettes (l'accueil des Combats, une liste de quêtes, l'arène), par le
+responsable du projet.
+
+### Neutres : un graphite à peine violacé
 
 | Jeton | Valeur | Rôle |
 | --- | --- | --- |
-| `--bg` | `#0a071f` | Le fond de la page. Jamais de noir pur : un noir pur fait des trous, et le verre n'a rien à teinter. |
-| `--surface`, `-2`, `-3` | blanc à 4,5 %, 7,5 %, 11 % | Les voiles de contenu, du plus bas au plus haut. L'élévation se lit à la clarté, pas à l'ombre. |
-| `--bg-2` | nuit à 42 % | Le creux : jauge vide, rail de segments, alvéole. |
-| `--plate`, `-2`, `-3` | `#120b29` … `#231c40` | Les mêmes surfaces, opaques, pour ce qui se pose sur une image et doit la masquer. |
-| `--line`, `-2`, `-3` | blanc à 8,5 %, 15 %, 24 % | Les filets. Transparents : ils prennent la teinte de ce qu'ils bordent. |
-| `--text` / `--subtle` / `--muted` | `#f6f4ff` / `#c6c3e2` / `#9591b9` | Texte, secondaire, discret. `--muted` garde plus de 5:1 sur un voile : c'est le plancher. |
+| `--bg` | `#121119` | Le fond de la page. Pas de noir pur. |
+| `--surface`, `-2`, `-3` | `#1c1b25`, `#24232f`, `#2d2b3a` | Les tuiles, de la plus basse à la plus haute. L'élévation se lit à la clarté et à l'ombre `--tuile`. |
+| `--bg-2` | noir à 26 % | Le creux : jauge vide, rail de segments, alvéole. |
+| `--line`, `-2`, `-3` | blanc à 7 %, 12 %, 20 % | Les filets. |
+| `--text` / `--subtle` / `--muted` | `#f1f0f8` / `#c4c1d6` / `#9a97ae` | Texte, secondaire, discret. |
 
-### L'action : le rose M8
+### L'action : la lavande
 
-`--accent` `#e0378d`, `--accent-soft` `#ff7ac4`, `--cta` (le dégradé du bouton
-principal, `#f7509f` → `#c8207a`).
+`--accent` `#8a78f5`, `--accent-soft` `#b3a6ff`, `--cta` (le dégradé du
+bouton principal, `#8f7dfb` → `#5d4bd9`, texte blanc à 4,4:1 au milieu au
+moins).
 
-C'est le rose du logo. Il marque **ce qu'on peut faire** : le bouton
-principal, l'icône de l'onglet en cours, une pastille qui réclame
-l'attention, un lien. Il n'est jamais un fond de bloc ni un titre. Le blanc
-garde 4,3:1 au milieu du dégradé (4,8:1 en bas), avec une ombre de texte
-pour les bords clairs.
-
-Pourquoi le rose et plus le violet : sur un fond violet, un bouton violet ne
-se détache que par la clarté. Sur une nuit indigo, le rose se détache aussi
-par la teinte — c'est ce qui fait qu'on le trouve sans le chercher.
-
-### Les lumières : violet et cyan
-
-`--violet` `#9a73ff` et `--cyan` `#40d1f7`, les couleurs des visuels de
-l'extension. Elles éclairent les fonds (`.bgdeco`), les halos et les dégradés
-décoratifs. **Elles ne marquent jamais un état** : un élément violet n'est ni
-sélectionné ni cliquable pour autant.
+Elle marque **ce qu'on peut faire** : le bouton principal, l'onglet en
+cours, une carte jouable, une place libre, une attaque payable. Le décor
+(icônes au trait, lavis) en prend une version claire et pâle (`--deco-ink`
+`#c8bfff`, `--deco-wash`) : même famille, moins de force.
 
 ### L'or
 
-`--gold` `#ffbd34`. Les récompenses (paliers, cadeaux, Légendaires), et
-dans l'arène, ce qu'on peut jouer (voir § 8). Texte posé dessus : `--gold-ink`
-`#2a1700` (12:1).
+`--gold` `#f5c451` : **les récompenses et la rareté Légendaire, rien
+d'autre.**
 
 ### Les signaux
 
 | Jeton | Valeur | Sens |
 | --- | --- | --- |
-| `--ok` | `#41dca5` | Fait, réussi, gagné : une quête accomplie, une victoire. |
-| `--warn` | `#ffbd34` | Attention : une perte, une limite atteinte. |
-| `--danger` | `#ff6b5e` | Erreur, défaite, adversaire. Corail et non rose : le rose est pris par l'action, et une erreur ne doit pas ressembler à un bouton. |
+| `--ok` | `#4fd6a0` | Fait, réussi, gagné. |
+| `--danger` | `#ff6b6b` | Erreur, défaite ; dans l'arène, l'adversaire. |
+| `--brand` | `#ff5f7e` | Les pastilles rouges qui réclament l'attention (une quête à récupérer). |
+
+### Les Sections
+
+Toxique est **vert** (`#62d84e`), Déter est **violet** (`#7c3aed`). Ces
+couleurs ne servent qu'à dire une Section (emblème, cadre, affiche).
 
 ### Les raretés
 
-Inchangées (`--r-es` … `--r-pr`) : elles appartiennent aux cartes, pas à
-l'interface. On ne s'en sert que pour dire une rareté.
+Inchangées (`--r-es` … `--r-pr`) : elles appartiennent aux cartes.
 
 ## 4. Les matières
 
-Trois matières, pas une de plus.
-
 | Matière | Où | Recette |
 | --- | --- | --- |
-| **Verre** | Ce qui flotte au-dessus du contenu : barre du bas, rail, capsules de l'en-tête, toasts, notifications. | `--glass` (nuit à 50 %) + `backdrop-filter: blur(22px) saturate(170%)` + filet `--glass-line` plus clair en haut (`--glass-line-top`) + reflet `--glass-hi` + ombre `--sh-3/4`. |
-| **Verre couvrant** | Feuilles modales, tiroir du compte. | `--glass-strong` (dégradé nuit à 84–92 %) + `blur(32px) saturate(160%)`. Assez opaque pour lire, assez clair pour savoir d'où ça vient. |
-| **Voile** | Les blocs de contenu : panneaux, quêtes, offres, messages. | `--surface` + filet `--line` + reflet discret. **Sans flou** : ce sont des listes, et un flou par élément coûterait cher sur téléphone. |
+| **Tuile** | Les blocs de contenu : panneaux, quêtes, offres, tuiles de menu. | Un aplat `--surface` + l'ombre `--tuile` (un reflet en haut, une ombre dessous). |
+| **Verre** | Ce qui flotte : barre des onglets, rail, capsules de l'en-tête, toasts. | `--glass` + `backdrop-filter: blur(…) saturate(…)` + filet clair en haut. |
+| **Verre couvrant** | Feuilles, tiroir du compte. | `--glass-strong`, assez opaque pour lire. |
 
-Règles :
-
-- **Pas de verre sur du verre.** Dans une feuille, un bloc est un voile, pas
-  du verre.
-- **Trois ou quatre couches de verre par écran, au plus** (en-tête, barre du
-  bas, une feuille, un toast).
-- **On n'anime jamais le flou.** On anime l'opacité ou la transformation.
-- **Le flou s'écrit en dur.** Safari ignore une variable CSS dans
-  `-webkit-backdrop-filter` : chaque règle écrit les deux propriétés avec
-  leurs valeurs.
-- **Le repli.** Sans `backdrop-filter`, ou si le système demande moins de
-  transparence (`prefers-reduced-transparency`, encore peu pris en charge),
-  le verre devient l'aplat `--glass-solid` (css/base.css).
-- **Pas de réfraction SVG.** L'effet de lentille par filtre SVG ne marche que
-  dans Chromium : on ne s'en sert pas.
+Règles : pas de verre sur du verre ; on n'anime jamais le flou ; le flou
+s'écrit en dur (Safari ignore une variable dans `-webkit-backdrop-filter`) ;
+sans `backdrop-filter`, le verre devient l'aplat `--glass-solid`.
 
 ## 5. Typographie
 
 - **Archivo** (la typo du logo) pour les titres et les chiffres qui comptent.
-  L'**italique** est réservé au titre de page (`h1`) et aux noms mis en scène
-  (un boss, un événement, un nom de carte en fiche).
-- Les titres de section (`h2`) sont droits, sans trait de couleur.
-- **Figtree** pour tout le reste. Les étiquettes en petites capitales
-  (11 px, espacées) servent aux catégories, jamais aux phrases.
-- Les boutons sont en casse de phrase (« Ouvrir », pas « OUVRIR »).
+  L'**italique** est réservé aux grands titres et aux noms mis en scène.
+- **Figtree** pour tout le reste. Petites capitales espacées pour les
+  catégories, jamais pour les phrases.
+- Boutons en casse de phrase.
 
-## 6. Formes, rythme, profondeur, mouvement
+## 6. Formes, rythme, mouvement
 
-- **Rayons concentriques** : 30 (feuille, tiroir), 24 (panneau), 18 (bloc,
-  carte de menu), 12 (élément intérieur), 8 (puce). Un rayon intérieur vaut
-  le rayon extérieur moins la marge.
+- **Rayons** : 28, 22, 18, 12, 8 (`--radius-xl` … `--radius-xs`).
 - **Espacements** : 6 / 10 / 14 / 20 / 28 (`--gap-1` à `-5`).
-- **Ombres** teintées de la nuit (`--sh-1` à `-4`), jamais noires.
-- **Mouvement** : un ressort (`--spring`) pour ce qu'on touche — un bouton se
-  tasse à 97 % — et une courbe douce (`--ease`) pour ce qui entre.
-  `prefers-reduced-motion` et le réglage « Animations réduites » coupent
+- **Mouvement** : un ressort pour ce qu'on touche, une courbe douce pour ce
+  qui entre. `prefers-reduced-motion` et « Animations réduites » coupent
   tout.
 
-## 7. Les composants
+## 7. Le fond
 
-- **Bouton principal** (`.btn`) : capsule rose bombée, lueur rose dessous.
-  Un par écran.
-- **Bouton secondaire** (`.btn.ghost`) : verre clair, texte blanc.
-- **Puce de filtre, segment, onglet en cours** : verre plus clair et texte
-  blanc. Pas de rose : choisir n'est pas agir.
-- **Barre du bas** : capsule de verre flottante, décollée des bords de 12 px.
-  L'onglet en cours est une lentille plus claire qui glisse depuis l'onglet
-  quitté ; son icône prend le rose.
-- **En-tête** : sans fond. Logo à gauche, capsules de verre à droite ; dessous,
-  un bord qui floute et assombrit ce qui remonte.
-- **Ordinateur** : la barre du bas devient un rail à droite, la même capsule
-  debout.
+Un seul fond pour tous les onglets : le graphite, avec une lueur lavande en
+haut. Les illustrations floutées par onglet de la première version sont
+retirées (`assets/ambiance/`) : elles brouillaient les tuiles et changeaient
+la teinte de chaque écran.
 
-## 8. Les fonds d'ambiance
+## 8. Les écrans
 
-Chaque onglet a sa lumière : une illustration du jeu, floutée, assombrie et
-saturée d'avance par `tools/ambiances.py` (moins de 1,5 Ko par image),
-posée en haut de l'écran et effacée vers le bas. Le flou est calculé une
-fois, pas par le navigateur à chaque image.
-
-| Onglet | Illustration |
-| --- | --- |
-| Boosters | le booster de l'extension |
-| Collection | Kampai, Gotaga Dance, Champions du Monde, BrawksSaga |
-| Combats | The French Sorcerer (le boss du Raid) |
-| Le Choc | les deux sections, Déter et Toxique |
-| Quêtes | M8 Résilience |
-| Social | Grand Respect |
-| Boutique | La Luxueuse III |
-| Classement | Championnes d'Europe |
-| Profil | La Relève |
+- **Combats** : un grand bandeau illustré en diagonale, le titre en italique
+  penché, puis la carte « à la une » (le Raid), deux grandes tuiles (Solo,
+  Versus) et trois petites (Decks, Missions, Guide). Icônes au trait en deux
+  tons.
+- **Événement** : un en-tête (les deux Sections face à face), une rangée
+  d'onglets (Accueil, Raid, Épreuve, Quêtes, Pass, Boutique, Classement), et
+  sur l'Accueil quatre tuiles « Aujourd'hui » puis les nouveautés. Chaque
+  sous-page a un titre simple : plus de seconde bannière qui répète la
+  première.
+- **Profil, fiche** : le niveau de combattant est une pastille lavande en
+  bas à droite de l'avatar.
 
 ## 9. L'arène de combat
 
-L'arène est une scène à part : son fond est la nuit indigo, et **la couleur
-d'action y devient l'or**. Chaque couleur y a un sens, un seul :
-
 | Couleur | Sens | Exemples |
 | --- | --- | --- |
-| **Or** | Ce que tu peux faire maintenant. | Une carte jouable en main, une place libre où la poser, un Joueur prêt à attaquer, une attaque payable, « Fin du tour », « Continuer ». |
-| **Corail** | L'adversaire, ce qu'on vise ou ce qui menace. | Une cible d'attaque, une attaque adverse annoncée, le boss, des PV perdus. |
-| **Blanc** | Ce que tu as choisi. | La carte sélectionnée, la place visée. |
-| **Neutre** (verre, gris lavande) | Tout le reste. | Compteurs, piles, Défense, plateau. |
-| **Vert** | Réussi, et rien d'autre. | Une victoire, des PV rendus. |
+| **Lavande** | Ce que tu peux faire maintenant. | Une carte jouable, une place libre, un Joueur prêt, une attaque payable, « Fin du tour », la phase en cours. |
+| **Rouge** | L'adversaire. | Une cible, une attaque qui arrive, ses cartes jouées, le boss. |
+| **Blanc** | Ce que tu as choisi. | La carte sélectionnée, le défenseur. |
+| **Neutre** | Tout le reste. | Compteurs, piles, Défense, plateau. |
+| **Vert** | Réussi. | Une Défense qui monte, un défenseur qui tient. |
 
-Il n'y a plus de vert pour les places libres, de bleu pour la Défense, de
-rose pour le choix d'une cible : ces couleurs disaient la même chose (« tu
-peux ») ou ne disaient rien.
+La lecture du jeu :
 
-## 10. Sources
+- **Le rythme.** L'IA marque un temps entre deux actions (environ une
+  seconde), et chaque animation adverse dure assez pour être suivie. Le
+  réglage « Animations rapides » raccourcit tout.
+- **Les cartes de l'adversaire se lisent.** Un Moment, un Coach, un Objet
+  ou une Résilience joués par l'adversaire s'affichent en grand avec leur
+  effet écrit, le temps de le lire (plus longtemps si le texte est long) ;
+  toucher l'écran passe à la suite. Un Objet file ensuite sur le Joueur qui
+  le reçoit, entouré de rouge pendant qu'on le montre. Une attaque adverse
+  annonce son nom, sa cible et son effet.
+- **Tout ce qui a été joué reste consultable.** Les trois dernières cartes
+  jouées sont en vignettes au bout de la bande du milieu (liseré rouge pour
+  celles de l'adversaire) ; les toucher ouvre la liste de la partie, tour
+  par tour, et chaque carte s'ouvre en grand.
+- **Les Objets liés** se voient sur le Joueur (médaillons agrandis) et,
+  dans sa fiche, avec leur nom et leur effet.
+- **Un clic de moins.** Attaquer ne demande plus de confirmation « Passer en
+  phase de Combat ? » : le panneau des attaques le dit avant, en une ligne,
+  et la bande du milieu montre les deux phases du tour (Jeu › Combat).
 
-La refonte s'appuie sur ces références (consultées pendant la refonte ;
-les captures de jeux sont des observations d'interface, pas des documents
-officiels) :
+## 10. Les Secrètes
 
-- Apple, *Human Interface Guidelines*, pages « Materials » et « Color », et
-  les sessions WWDC 2025 « Meet Liquid Glass » et « Get to know the new
-  design system » : verre réservé à la couche de navigation qui flotte
-  au-dessus du contenu, pas de verre sur du verre, teinte réservée aux
-  actions principales, rayons concentriques.
-- Google, *Material Design 3*, guide du thème sombre : pas de noir pur,
-  élévation par la clarté de la surface, couleurs désaturées sur fond
-  sombre.
-- W3C, *WCAG 2.2*, critères 1.4.3 (contraste du texte) et 1.4.11 (contraste
-  des éléments non textuels).
-- MDN, `backdrop-filter` et `prefers-reduced-transparency` (prise en charge
-  partielle de cette dernière).
-- Observations de *Pokémon TCG Pocket* (cibles valides qui pulsent, zones
-  invalides éteintes, résolution automatique quand il n'y a qu'un choix) et
-  de *Marvel Snap* (le plateau d'abord, les informations classées par
-  importance, un code couleur réduit).
+Un reflet irisé (rose, or, menthe, ciel, lavande) traverse la carte en
+diagonale puis se repose, en « soft-light » : il colore la lumière sans
+voiler l'illustration. Huit éclats scintillent à des places fixes et
+irrégulières, et autant à contretemps. Autour, une lueur lavande. La trame de
+points de la première version (une grille régulière, qui se lisait comme une
+moustiquaire) et son voile arc-en-ciel sont retirés. Dans la visionneuse et
+sur le plateau, en 3D, les modes de mélange ne s'appliquent pas : le reflet
+y est posé en clair, plus léger, et l'enveloppe n'a plus de `filter`, qui
+rendait la carte floue.
+
+## 11. Sources
+
+Consultées pendant la refonte. Les captures de jeux sont des observations
+d'interface, pas des documents de conception officiels.
+
+- Captures d'écran de *Pokémon TCG Pocket* (DeNA / Creatures / The Pokémon
+  Company), recueil publié par eternia.fr,
+  <https://www.eternia.fr/fr/site/article/5352-pokemon-pocket-les-screenshots/>.
+  Observé : fonds neutres clairs ou sombres, tuiles pleines aux coins
+  arrondis, un grand titre en diagonale sur les écrans de mode, icônes au
+  trait, peu de couleurs d'interface, les cartes portant la couleur.
+- Pratt Institute, programme IxD, « Design Critique: Pokémon TCG Pocket
+  (Android App) », septembre 2025,
+  <https://ixd.prattsi.org/2025/09/design-critique-pokemon-tcg-pocket-android-app/>.
+  Une critique fondée sur les principes de Don Norman, consacrée surtout à
+  l'ouverture des boosters et au combat en solo.
+- Retours de joueurs de *Pokémon TCG Pocket* (forum r/PTCGP) : voir l'énergie
+  de l'adversaire, résoudre seul un effet quand il n'y a qu'un choix valide.
+  Ce sont des avis, pas des études.
+- L'historique des cartes jouées s'inspire de la colonne d'historique de
+  *Hearthstone* (Blizzard), citée de mémoire et non vérifiée pendant cette
+  refonte.
+- Apple, *Human Interface Guidelines* (« Materials », « Color ») et sessions
+  WWDC 2025 sur Liquid Glass : le verre réservé à la couche qui flotte, pas
+  de verre sur du verre.
+- Google, *Material Design 3*, thème sombre : pas de noir pur, élévation par
+  la clarté de la surface.
+- W3C, *WCAG 2.2*, critères 1.4.3 et 1.4.11.
 
 Ce que ce document ne prétend pas : il n'existe pas de mesure objective de ce
-qui est « beau ». Les contrastes sont mesurés ; le choix des teintes (rose,
-indigo, or) est un choix de direction artistique, justifié par la cohérence
-avec le logo et les visuels de l'extension, pas une vérité.
+qui est « beau ». Les contrastes sont mesurés. La palette est un choix de
+direction artistique, fait sur maquettes par le responsable du projet. Sa
+justification (un neutre qui laisse la couleur aux cartes, une seule teinte
+d'action) est un raisonnement de cohérence, pas une preuve.

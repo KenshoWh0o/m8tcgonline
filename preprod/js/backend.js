@@ -184,11 +184,8 @@ Backend.apply = function (etat) {
     /* Version 2.1 : entré grâce au code d'un autre, il n'invite pas à son tour. */
     filleul: p.filleul === true,
     /* Version 3.0 (supabase/23_combats.sql) : la Section, les decks, les
-       cosmétiques de combat, la campagne, les défis, la Guerre des Sections. */
-    combat: etat.combat || null,
-    /* Version 3.0 : les exemplaires obtenus de chaque carte, depuis toujours
-       — la maîtrise (js/maitrise.js). */
-    obtenus: etat.obtenus || null
+       cosmétiques de combat, la campagne, les défis. */
+    combat: etat.combat || null
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -587,7 +584,7 @@ Backend.combatFin = async function (id, gagne, resume) {
 };
 
 /* L'événement « Le Choc des Sections » (js/choc.js, supabase/25_choc.sql) :
-   le Raid, l'Épreuve du jour et la Guerre de l'événement. */
+   le Raid et l'Épreuve du jour. */
 Backend.chocEtat = () => Backend.rpc('choc_etat');
 Backend.raidReclamer = async function (phase) {
   const r = await Backend.rpc('raid_reclamer', { p_phase: phase });
