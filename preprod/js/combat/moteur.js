@@ -338,6 +338,15 @@ function* partie(E, reprise) {
 }
 
 function* miseEnPlace(E) {
+  /* Le boss du Raid : déjà sur le plateau au début, sans effet d'entrée.
+     `poses` : [[{ id, ligne }], …]. L'exemplaire est sorti du Club avant la
+     donne (sinon il pourrait finir en main ou en PV) ; s'il n'y est pas, il
+     est ajouté. */
+  const poses = [0, 1].map(i => ((E.init.poses || [])[i] || []).map(p => {
+    const P = E.j[i];
+    const k = P.club.findIndex(c => c.id === p.id);
+    return { ligne: p.ligne, c: k >= 0 ? P.club.splice(k, 1)[0] : nouvelleInst(E, p.id, i) };
+  }));
   for (const i of [0, 1]) {
     melanger(E, E.j[i].club);
     melanger(E, E.j[i].reserve);
@@ -364,6 +373,12 @@ function* miseEnPlace(E) {
     ev(E, { t: 'pv', j: i, n: P.pv.length });
     /* Campagne : un adversaire qui commence avec des Essences en jeu. */
     for (let k = 0; k < P.essDepart; k++) jouerReserve(E, i, false);
+    for (const { ligne, c } of poses[i]) {
+      if (P.lignes[ligne]) { P.club.push(c); continue; }
+      Object.assign(c, { j: i, eng: false, obj: [], tour: 0, shieldUse: false, nAtt: 0 });
+      P.lignes[ligne] = c;
+      ev(E, { t: 'deploie', j: i, u: c.u, id: c.id, ligne, eng: false, pose: true });
+    }
   }
 }
 

@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-10-11
+--   Assemble le 2026-10-12
 --
 -- =====================================================================
 
@@ -2005,19 +2005,19 @@ on conflict (id) do update set
 -- Ses quetes paient en Insignes (25_choc.sql ; la colonne `monnaie` dit
 -- « prismes » pour toute monnaie d'evenement). Du jour : 75 Insignes ; de
 -- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
---   raid, raid_degats, raid_victoires : le Raid du Marionnettiste
+--   raid, raid_degats, raid_victoires : le Raid contre The French Sorcerer
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
 --   points_section                    : les points marques pour sa Section
 --   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
   ('c_visite',  'ev_jour', 'ev_visite',          1, 10, null, 'Au rapport',          'Passe voir l''événement aujourd''hui.', 1, 'choc', 'prismes'),
   ('c_combats', 'ev_jour', 'combats',            2, 15, null, 'Deux combats',        'Joue 2 combats, contre l''IA ou un ami.', 2, 'choc', 'prismes'),
-  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Un coup de ciseaux',  'Attaque le Marionnettiste.', 3, 'choc', 'prismes'),
+  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Paratonnerre',        'Affronte The French Sorcerer.', 3, 'choc', 'prismes'),
   ('c_epreuve', 'ev_jour', 'epreuve',            1, 10, null, 'L''Épreuve du jour',  'Tente l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vaincus', 'ev_jour', 'vaincus',            6, 15, null, 'Six de chute',        'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'),
   ('c_packs',   'ev_jour', 'packs',              3, 10, null, 'Trois boosters',      'Ouvre 3 boosters aujourd''hui.', 6, 'choc', 'prismes'),
-  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Marionnettiste.', 1, 'choc', 'prismes'),
-  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Marionnettiste 5 fois.', 2, 'choc', 'prismes'),
+  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'),
+  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'),
   ('c_ep7',     'ev',      'epreuve_victoires',  7, 80, null, 'Sept Épreuves',       'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'),
   ('c_pts',     'ev',      'points_section',    80, 60, null, 'Pour la Section',     'Marque 80 points pour ta Section.', 4, 'choc', 'prismes'),
   ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
@@ -2105,7 +2105,7 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6),
   ('ch_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n''as pas encore.', 180, 'reverse_R', 1,   null, false, 3, 'prismes', 'choc', 3),
   ('ch_brillante', 'evenement', 'Une Essence Brillante', 'Une Essence Brillante que tu n''as pas encore.', 450, 'brillante', 1, null, false, 4, 'prismes', 'choc', 1),
-  ('t_theatre',    'evenement', 'Tapis « Le Théâtre »', 'La scène du Marionnettiste, sous tes cartes. Ne se vendra plus après l''événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
+  ('t_orage',      'evenement', 'Tapis « L''Orage »', 'Le ciel de The French Sorcerer, sous tes cartes. Ne se vendra plus après l''événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
   ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 250, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
@@ -2119,7 +2119,7 @@ delete from public.shop_items where id not in (
   'f_azur','f_rose','f_or','f_prisme',
   's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
   't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
-  'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_theatre','t_supporter');
+  'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_orage','t_supporter');
 
 
 -- #####################################################################
@@ -5203,10 +5203,11 @@ on conflict (id) do update set
 --  Insignes, rangees dans evt_comptes comme les Prismes —, des quetes
 --  (04_seed.sql), un Pass de trente paliers, une boutique (04_seed.sql) et un
 --  classement. En plus :
---    1. le Raid : Le Marionnettiste, un boss commun a tout le serveur. Chaque
---       PV qu'on lui prend en combat entame sa barre de vie. Cinq phases ;
---       chacune qui tombe ouvre une recompense a tous ceux qui l'ont frappe.
---       Trois tentatives par jour ;
+--    1. le Raid : The French Sorcerer, un boss commun a tout le serveur.
+--       Chaque PV qu'on lui prend en combat entame sa barre de vie. Cinq
+--       phases, qui s'ouvrent une a une au fil des trois semaines ; chacune
+--       qui tombe ouvre une recompense a tous ceux qui l'ont frappe. Trois
+--       tentatives par jour ;
 --    2. l'Epreuve du jour : le meme combat pour tout le monde (les decks et
 --       la regle se deduisent de la graine du jour, js/combat/choc-data.js).
 --       Trois essais, le meilleur compte, un classement du jour ;
@@ -5232,9 +5233,11 @@ alter table public.parametres add column if not exists raid_echelle numeric not 
   check (raid_echelle > 0);
 
 -- ============================================================ 2. tables
--- Les cinq phases (CHOC.raid.phases) : la barre commune, le combat, et la
--- recompense ouverte quand elle tombe. La phase 6, le rappel, n'a pas de
--- barre : il revient sans fin, et chaque degat compte toujours.
+-- Les cinq phases (CHOC.raid.phases) : la barre commune, le jour ou elle
+-- s'ouvre au plus tot (`ouvre`, 0 = le premier jour de l'evenement), le
+-- combat, et la recompense ouverte quand elle tombe. La phase 6, la tempete
+-- qui revient, n'a pas de barre : elle revient sans fin, et chaque degat
+-- compte toujours.
 create table if not exists public.choc_phases (
   n        integer primary key check (n between 1 and 6),
   nom      text not null,
@@ -5247,14 +5250,15 @@ create table if not exists public.choc_phases (
   objet    text,
   titre    text
 );
-insert into public.choc_phases (n, nom, pv, ia, pv_boss, ess, type, montant, objet, titre) values
-  (1, 'Les premiers fils',   400,  3, 6, 0, 'boosters',  2,   null,     '2 boosters'),
-  (2, 'L''entracte',         600,  3, 7, 1, 'fragments', 500, null,     '500 Fragments'),
-  (3, 'Les fils se tendent', 900,  4, 7, 1, 'boosters',  3,   null,     '3 boosters'),
-  (4, 'Le théâtre brûle',    1300, 4, 8, 2, 'brillante', 1,   null,     'Une Essence Brillante'),
-  (5, 'Le dernier fil',      1800, 5, 8, 2, 'cadre',     0,   'f_fils', 'Cadre « Fils d''or »'),
-  (6, 'Le rappel',           null, 5, 9, 2, null,        0,   null,     null)
-on conflict (n) do update set nom = excluded.nom, pv = excluded.pv, ia = excluded.ia,
+alter table public.choc_phases add column if not exists ouvre integer not null default 0;
+insert into public.choc_phases (n, nom, pv, ouvre, ia, pv_boss, ess, type, montant, objet, titre) values
+  (1, 'Premières étincelles', 400,  0,  3, 6, 0, 'boosters',  2,   null,       '2 boosters'),
+  (2, 'L''orage gronde',      600,  3,  3, 7, 1, 'fragments', 500, null,       '500 Fragments'),
+  (3, 'Foudre de Rage',       900,  7,  4, 7, 1, 'boosters',  3,   null,       '3 boosters'),
+  (4, 'Éclairs Vengeurs',     1300, 11, 4, 8, 2, 'brillante', 1,   null,       'Une Essence Brillante'),
+  (5, 'L''œil du cyclone',    1800, 15, 5, 8, 2, 'cadre',     0,   'f_foudre', 'Cadre « Foudre »'),
+  (6, 'La tempête revient',   null, 15, 5, 9, 2, null,        0,   null,       null)
+on conflict (n) do update set nom = excluded.nom, pv = excluded.pv, ouvre = excluded.ouvre, ia = excluded.ia,
   pv_boss = excluded.pv_boss, ess = excluded.ess, type = excluded.type, montant = excluded.montant,
   objet = excluded.objet, titre = excluded.titre;
 
@@ -5272,7 +5276,7 @@ create table if not exists public.choc_tombees (
   tombee_le timestamptz not null default now()
 );
 
--- Ce que chaque joueur a fait au Marionnettiste.
+-- Ce que chaque joueur a fait au Sorcier.
 create table if not exists public.choc_joueurs (
   user_id   uuid primary key references public.profiles on delete cascade,
   degats    integer not null default 0,
@@ -5409,26 +5413,68 @@ language sql immutable as $$
            + least(99, greatest(0, coalesce((s->>'pv')::int, 0))) end;
 $$;
 
+-- Le jour de l'evenement en cours (0 = le premier), a l'heure de Paris.
+create or replace function public.choc_jour_ev() returns integer
+language sql stable security definer set search_path = public as $$
+  select coalesce((select jour_paris() - (e.debut at time zone 'Europe/Paris')::date
+                     from evenements e where e.code = 'choc' and now() >= e.debut and now() < e.fin
+                    order by e.debut desc limit 1), 0);
+$$;
+
+-- Le Raid dure les trois semaines : une phase tombee ne laisse la place a la
+-- suivante que le jour ou celle-ci s'ouvre (choc_phases.ouvre). Entre les
+-- deux, le Sorcier reste a terre : on peut toujours l'affronter, au niveau
+-- de la phase tombee ; les degats comptent pour chacun (Insignes, quetes,
+-- classement), pas pour la barre suivante. Appelee a chaque lecture et a
+-- chaque coup : le jour venu, la phase suivante commence d'elle-meme.
+create or replace function public.choc_avancer() returns choc_raid
+language plpgsql security definer set search_path = public as $$
+declare r choc_raid; k int := choc_jour_ev();
+begin
+  select * into r from choc_raid where id = 1;
+  if r.phase > 5 or not exists (select 1 from choc_tombees where phase = r.phase)
+     or (select ouvre from choc_phases where n = r.phase + 1) > k then
+    return r;
+  end if;
+  select * into r from choc_raid where id = 1 for update;
+  while r.phase <= 5 and exists (select 1 from choc_tombees where phase = r.phase)
+        and (select ouvre from choc_phases where n = r.phase + 1) <= k loop
+    r.phase := r.phase + 1;
+    r.degats := 0;
+  end loop;
+  update choc_raid set phase = r.phase, degats = r.degats where id = 1;
+  return r;
+end $$;
+
 -- Des degats sur la barre commune : une phase tombe quand sa barre est
--- vide, et le surplus entame la suivante. Renvoie la derniere phase tombee.
+-- vide ; le surplus entame la suivante si elle est deja ouverte. Renvoie la
+-- phase qui vient de tomber.
 create or replace function public.choc_frapper(p uuid, d int) returns integer
 language plpgsql security definer set search_path = public as $$
-declare r choc_raid; tombee int; pv int;
+declare r choc_raid; tombee int; pv int; k int := choc_jour_ev();
 begin
   if coalesce(d, 0) <= 0 then return null; end if;
+  perform choc_avancer();
   select * into r from choc_raid where id = 1 for update;
   insert into choc_joueurs (user_id, degats) values (p, d)
     on conflict (user_id) do update set degats = choc_joueurs.degats + d;
-  r.degats := r.degats + d;
   r.total := r.total + d;
-  loop
-    pv := choc_pv_phase(r.phase);
-    exit when pv is null or r.degats < pv;
-    r.degats := r.degats - pv;
-    insert into choc_tombees (phase) values (r.phase) on conflict do nothing;
-    tombee := r.phase;
-    r.phase := r.phase + 1;
-  end loop;
+  -- A terre en attendant la phase suivante : la barre ne bouge plus.
+  if not exists (select 1 from choc_tombees where phase = r.phase) then
+    r.degats := r.degats + d;
+    loop
+      pv := choc_pv_phase(r.phase);
+      exit when pv is null or r.degats < pv;
+      insert into choc_tombees (phase) values (r.phase) on conflict do nothing;
+      tombee := r.phase;
+      if (select ouvre from choc_phases where n = r.phase + 1) > k then
+        r.degats := pv;
+        exit;
+      end if;
+      r.degats := r.degats - pv;
+      r.phase := r.phase + 1;
+    end loop;
+  end if;
   update choc_raid set phase = r.phase, degats = r.degats, total = r.total where id = 1;
   return tombee;
 end $$;
@@ -5441,9 +5487,9 @@ declare r choc_raid; ph choc_phases; v_t int; j date := jour_paris(); e choc_epr
 begin
   if evenement_en_cours() is distinct from 'choc' then raise exception 'L''événement est terminé.'; end if;
   if p_mode = 'raid' then
-    select * into r from choc_raid where id = 1;
+    r := choc_avancer();
     if p_cle is distinct from r.phase::text then
-      raise exception 'Le Marionnettiste a changé de phase : recharge la page du Raid.';
+      raise exception 'Le Sorcier a changé de phase : recharge la page du Raid.';
     end if;
     insert into choc_tentatives (user_id, jour, n) values (p, j, 0) on conflict do nothing;
     update choc_tentatives set n = n + 1 where user_id = p and jour = j and n < 3 returning choc_tentatives.n into v_t;
@@ -5541,15 +5587,16 @@ begin
   insert into quest_progress (user_id, quest_id, period_key, progress)
   select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite' and q.evenement = 'choc'
   on conflict (user_id, quest_id, period_key) do nothing;
-  select * into r from choc_raid where id = 1;
+  r := choc_avancer();
   select * into moi from choc_joueurs where user_id = p;
   select * into e from choc_epreuves where user_id = p and jour = j;
   return jsonb_build_object(
     'jour', j,
     'raid', jsonb_build_object(
       'phase', r.phase, 'degats', r.degats, 'pv', choc_pv_phase(r.phase), 'total', r.total,
+      'jour_ev', choc_jour_ev(),
       'joueurs', (select count(*) from choc_joueurs where degats > 0),
-      'phases', (select jsonb_agg(jsonb_build_object('n', ph.n, 'pv', choc_pv_phase(ph.n),
+      'phases', (select jsonb_agg(jsonb_build_object('n', ph.n, 'pv', choc_pv_phase(ph.n), 'ouvre', ph.ouvre,
                                                      'tombee', t.phase is not null, 'tombee_le', t.tombee_le) order by ph.n)
                    from choc_phases ph left join choc_tombees t on t.phase = ph.n where ph.n <= 5),
       'moi', jsonb_build_object('degats', coalesce(moi.degats, 0), 'victoires', coalesce(moi.victoires, 0),
@@ -5581,7 +5628,7 @@ begin
 end $$;
 
 -- La recompense d'une phase tombee : une fois par joueur, pour qui a frappe
--- le Marionnettiste au moins une fois pendant l'evenement.
+-- le Sorcier au moins une fois pendant l'evenement.
 create or replace function public.raid_reclamer(p_phase int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); ph choc_phases; cartes jsonb;
@@ -5595,7 +5642,7 @@ begin
     raise exception 'Cette phase n''est pas encore tombée.';
   end if;
   if coalesce((select degats from choc_joueurs where user_id = p), 0) < 1 then
-    raise exception 'Frappe d''abord le Marionnettiste.';
+    raise exception 'Frappe d''abord le Sorcier.';
   end if;
   insert into choc_prises (user_id, phase) values (p, p_phase) on conflict do nothing;
   if not found then raise exception 'Récompense déjà récupérée.'; end if;
@@ -5630,6 +5677,7 @@ begin
 end $$;
 
 -- ============================================================ 7. droits
+revoke all on function public.choc_jour_ev, public.choc_avancer from public, anon, authenticated;
 revoke all on function public.choc_multiplicateur, public.choc_points, public.choc_pv_phase,
   public.choc_graine, public.choc_score, public.choc_frapper, public.choc_debut, public.choc_fin,
   public.choc_joueur_vue, public.choc_recap from public, anon, authenticated;
@@ -5641,7 +5689,7 @@ grant execute on function public.choc_etat, public.raid_reclamer to authenticate
 --
 --    insert into public.evenements (titre, texte, debut, fin, code) values (
 --      'Le Choc des Sections',
---      'La version 3.0 : le Raid du Marionnettiste, l''Épreuve du jour, et des points de Section qui comptent double.',
+--      'La version 3.0 : le Raid contre The French Sorcerer, l''Épreuve du jour, et des points de Section qui comptent double.',
 --      '2026-11-02 18:00+01', '2026-11-23 18:00+01', 'choc');
 --
 --  (Les dates sont un exemple.) Un evenement sans `ticket_minutes` ne change

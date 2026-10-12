@@ -1,15 +1,15 @@
 /* Version 3.0 : l'événement « Le Choc des Sections » (js/choc.js).
    L'onglet reprend la charpente de Reflets (css/reflets.css : .rf-tete,
    .rf-onglets, .rf-pass, .rf-arts…) et la repeint aux couleurs des deux
-   Sections : le rose Toxique, le mauve Déter, et l'or des fils du
-   Marionnettiste. */
+   Sections : le rose Toxique, le mauve Déter, et la foudre mauve de The
+   French Sorcerer, le boss du Raid. */
 
 .insigneico{width:1.1em;height:1.1em}
 .sac.prismes .insigneico + b{background:linear-gradient(90deg,#ff5bb0,#b38cff);-webkit-background-clip:text;background-clip:text;color:transparent}
 
 /* ============ L'en-tête ============ */
-/* Le Marionnettiste (#121) en fond : son illustration est cadrée sur le
-   haut de la carte, où sont la croix et les fils. */
+/* The French Sorcerer (#116) en fond : son illustration est cadrée sur le
+   haut de la carte, sur son visage et ses éclairs. */
 .ch-tete{background:#170816}
 .ch-tete .rf-fond>i,.chban .rf-fond>i{--t:.3;--z:1.35;filter:saturate(1.1) brightness(.85)}
 .ch-tete::before{background:linear-gradient(110deg,transparent 25%,rgba(238,0,115,.75) 40%,rgba(255,215,94,.9) 48%,rgba(137,54,255,.75) 56%,transparent 72%) no-repeat;
@@ -175,7 +175,7 @@
 
 /* ============ Les cadres décorés de l'événement ============ */
 .ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg')}
-.ava.fx-fils .fx-deco{background-image:url('../assets/cadres/fils.svg')}
+.ava.fx-foudre .fx-deco{background-image:url('../assets/cadres/foudre.svg')}
 
 /* ============ Les nouveautés de la 3.0 ============ */
 .nvhero.v3{isolation:isolate;background:radial-gradient(90% 140% at 0% 30%,rgba(238,0,115,.55),transparent 60%),

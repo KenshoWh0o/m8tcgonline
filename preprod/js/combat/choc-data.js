@@ -4,10 +4,11 @@
    déjà depuis la 2.0 (une monnaie, des quêtes, un Pass, une boutique, un
    classement — supabase/21_reflets.sql) :
 
-     · le Raid : Le Marionnettiste, un boss commun à tous les joueurs. Chaque
-       PV qu'on lui prend en combat entame sa barre de vie, partagée par tout
-       le serveur. Cinq phases, de plus en plus dures ; chaque phase tombée
-       ouvre une récompense à tous ceux qui l'ont frappé ;
+     · le Raid : The French Sorcerer, un boss commun à tous les joueurs.
+       Chaque PV qu'on lui prend en combat entame sa barre de vie, partagée
+       par tout le serveur. Cinq phases, de plus en plus dures, qui s'ouvrent
+       une à une au fil des trois semaines ; chaque phase tombée ouvre une
+       récompense à tous ceux qui l'ont frappé ;
      · l'Épreuve du jour : le même combat pour tout le monde — les mêmes deux
        decks imposés, la même donne, une règle du jour. Trois essais, le
        meilleur compte, et un classement du jour ;
@@ -26,8 +27,10 @@ const CHOC = {
   monnaie: { nom: 'Insignes', un: 'Insigne' },
 
   raid: {
-    boss: 'c121',
-    nom: 'Le Marionnettiste',
+    /* The French Sorcerer (#116), Légendaire Mauve : ses éclairs renvoient
+       les Joueurs sur le Banc et frappent à 200. */
+    boss: 'c116',
+    nom: 'The French Sorcerer',
     /* Tentatives comptées par jour (heure de Paris). Au-delà, on peut
        rejouer, sans dégâts ni récompense. */
     tentatives: 3,
@@ -42,28 +45,31 @@ const CHOC = {
     minimum: 1,
     /* `pv` : la barre commune de la phase, en dégâts. Le serveur réel la
        multiplie par un réglage (parametres.raid_echelle) pour s'adapter au
-       nombre de joueurs. `ia`, `pvBoss`, `ess` : le combat lui-même. */
+       nombre de joueurs. `ouvre` : le jour de l'événement (0 = le premier)
+       où la phase peut commencer, au plus tôt — le Raid dure ainsi les
+       trois semaines, même si le serveur frappe fort. `ia`, `pvBoss`, `ess` :
+       le combat lui-même. */
     phases: [
-      { n: 1, nom: 'Les premiers fils', pv: 400, ia: 3, pvBoss: 6, ess: 0,
-        texte: 'Il teste ses pantins. Il ne s\'attend pas à ce que tu frappes fort.',
+      { n: 1, nom: 'Premières étincelles', pv: 400, ouvre: 0, ia: 3, pvBoss: 6, ess: 0,
+        texte: 'Il charge l\'air autour de lui. Frappe avant le premier éclair.',
         recompense: { type: 'boosters', montant: 2, titre: '2 boosters' } },
-      { n: 2, nom: 'L\'entracte', pv: 600, ia: 3, pvBoss: 7, ess: 1,
+      { n: 2, nom: 'L\'orage gronde', pv: 600, ouvre: 3, ia: 3, pvBoss: 7, ess: 1,
         texte: 'Il a compris. Une Essence d\'avance, et un PV de plus.',
         recompense: { type: 'fragments', montant: 500, titre: '500 Fragments' } },
-      { n: 3, nom: 'Les fils se tendent', pv: 900, ia: 4, pvBoss: 7, ess: 1,
-        texte: 'Il calcule, désormais. Et il se méfie de ta riposte.',
+      { n: 3, nom: 'Foudre de Rage', pv: 900, ouvre: 7, ia: 4, pvBoss: 7, ess: 1,
+        texte: 'Il renvoie tes Joueurs sur le Banc : garde des renforts en main.',
         recompense: { type: 'boosters', montant: 3, titre: '3 boosters' } },
-      { n: 4, nom: 'Le théâtre brûle', pv: 1300, ia: 4, pvBoss: 8, ess: 2,
-        texte: 'Deux Essences d\'avance. Les rideaux prennent feu.',
+      { n: 4, nom: 'Éclairs Vengeurs', pv: 1300, ouvre: 11, ia: 4, pvBoss: 8, ess: 2,
+        texte: 'Deux Essences d\'avance. Ses éclairs frappent à 200.',
         recompense: { type: 'brillante', montant: 1, titre: 'Une Essence Brillante' } },
-      { n: 5, nom: 'Le dernier fil', pv: 1800, ia: 5, pvBoss: 8, ess: 2,
-        texte: 'Il prévoit ta réponse. Coupe le dernier fil.',
-        recompense: { type: 'cadre', objet: 'f_fils', titre: 'Cadre « Fils d\'or »' } }
+      { n: 5, nom: 'L\'œil du cyclone', pv: 1800, ouvre: 15, ia: 5, pvBoss: 8, ess: 2,
+        texte: 'Le calme avant la dernière décharge. Il prévoit ta réponse.',
+        recompense: { type: 'cadre', objet: 'f_foudre', titre: 'Cadre « Foudre »' } }
     ],
-    /* Une fois les cinq phases tombées, il revient saluer : le rappel ne
+    /* Une fois les cinq phases tombées, la tempête revient : elle ne
        s'arrête plus, et chaque dégât rapporte toujours des Insignes. */
-    rappel: { n: 6, nom: 'Le rappel', ia: 5, pvBoss: 9, ess: 2,
-      texte: 'Il est tombé. Il revient saluer, encore et encore : chaque dégât compte toujours pour le classement.' }
+    rappel: { n: 6, nom: 'La tempête revient', ia: 5, pvBoss: 9, ess: 2,
+      texte: 'Il est tombé. La tempête revient, encore et encore : chaque dégât compte toujours pour le classement.' }
   },
 
   epreuve: {
@@ -95,12 +101,10 @@ const CHOC = {
   }
 };
 
-/* Les couleurs avec lesquelles le Marionnettiste tire ses fils, jour après
-   jour : deux couleurs, toujours une paire différente. */
-const CHOC_PAIRES = [
-  ['rose', 'orange'], ['mauve', 'bleue'], ['verte', 'violette'], ['azur', 'rose'],
-  ['orange', 'mauve'], ['bleue', 'verte'], ['violette', 'azur']
-];
+/* Le Sorcier joue Mauve (ses attaques en demandent deux), avec une
+   seconde couleur qui change chaque jour. */
+const CHOC_ALLIES = ['violette', 'azur', 'rose', 'jaune', 'bleue', 'orange', 'verte', 'jade'];
+const chocCouleurs = j => ['mauve', CHOC_ALLIES[chocMod(chocJourN(j), CHOC_ALLIES.length)]];
 
 /* Le numéro d'un jour ('2026-10-11' → nombre de jours depuis le 1er janvier
    2026). Le serveur réel fait le même calcul (choc_jour, 25_choc.sql). */
@@ -112,17 +116,24 @@ const chocMod = (n, m) => ((n % m) + m) % m;
 /* La phase du raid : celle en cours (1 à 5), ou le rappel (6). */
 const chocPhase = n => CHOC.raid.phases[n - 1] || CHOC.raid.rappel;
 
-/* Le deck du Marionnettiste, le jour `j`, à la phase `n` : un deck tiré au
-   sort dans les deux couleurs du jour, Le Marionnettiste toujours dedans. */
-function deckMarionnettiste(j, n) {
-  const couleurs = CHOC_PAIRES[chocMod(chocJourN(j), CHOC_PAIRES.length)];
+/* Le deck du Sorcier, le jour `j`, à la phase `n` : un deck tiré au sort
+   dans ses deux couleurs du jour, avec The French Sorcerer dedans — il
+   commence la partie déjà sur le plateau (`posesBoss`). */
+function deckSorcier(j, n) {
+  const couleurs = chocCouleurs(j);
   const r = aleaGraine(0x3c6ef372 ^ (chocJourN(j) * 31 + n));
   const p = chocPhase(n);
-  const d = Decks.aleatoire(r, { niveau: Math.min(5, p.ia + 1), couleurs, nom: 'Le Marionnettiste' });
-  imposerCarte(d, CHOC.raid.boss, couleurs[0], r);
+  const d = Decks.aleatoire(r, { niveau: Math.min(5, p.ia + 1), couleurs, nom: CHOC.raid.nom });
+  imposerCarte(d, CHOC.raid.boss, 'mauve', r);
   d.couverture = CHOC.raid.boss;
   return d;
 }
+/* Le Sorcier au milieu de ses trois lignes, dès le début. */
+const posesBoss = () => [[], [{ id: CHOC.raid.boss, ligne: 1 }]];
+
+/* La phase la plus avancée que le Raid peut atteindre le jour `k` de
+   l'événement (0 = le premier jour) : les phases s'ouvrent une à une. */
+const chocPhaseMax = k => CHOC.raid.phases.filter(p => p.ouvre <= k).length;
 
 /* L'Épreuve du jour `j` : sa règle, et les deux decks imposés. La graine
    du jour vient du serveur (choc_etat) ; tout le reste s'en déduit. */

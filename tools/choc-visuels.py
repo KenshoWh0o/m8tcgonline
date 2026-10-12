@@ -6,7 +6,7 @@
 
 Ecrit :
   assets/combat/tapis/t_arene.webp (+ -mini)    Pass, palier 20
-  assets/combat/tapis/t_theatre.webp (+ -mini)  boutique de l'evenement
+  assets/combat/tapis/t_orage.webp (+ -mini)    boutique de l'evenement
   assets/combat/sleeves/s_choc.webp             Pass, palier 8
 
 Contrairement aux tapis de tools/cosmetiques.py, ceux-ci ne partent d'aucune
@@ -174,80 +174,83 @@ def arene():
     enregistrer_tapis(finitions(im.convert('RGB')), 't_arene')
 
 
-# ----------------------------------------------------------- Le Theatre
-def theatre():
-    """La scene du Marionnettiste : des rideaux de velours sur les cotes, un
-    plancher, des fils d'or qui tombent des cintres, et la croix de bois du
-    marionnettiste tout en haut."""
-    rand = random.Random(121)
+# ----------------------------------------------------------- L'Orage
+def orage():
+    """Le ciel de The French Sorcerer : des nuages d'orage mauves qui
+    roulent en haut et en bas, une pluie fine en biais, et ses eclairs qui
+    tombent sur les bords du plateau. Le milieu reste calme et sombre, pour
+    les cartes."""
+    rand = random.Random(116)
     im = Image.new('RGB', (W, H), NUIT)
     px = im.load()
     for y in range(H):
         t = y / (H - 1)
-        c = melange((30, 10, 22), (16, 8, 14), abs(t - .5) * 2)
+        c = melange((34, 12, 58), (12, 6, 22), 1 - abs(t - .5) * 2)
         for x in range(W):
             px[x, y] = c
     im = im.convert('RGBA')
-    im = Image.alpha_composite(im, lueur((W, H), (W * .5, H * .62), (300, 380), OR, .26, 90))
-    # Le plancher, sur la moitie basse.
-    planc = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dp = ImageDraw.Draw(planc)
-    for k in range(-14, 15):
-        x0 = W / 2 + k * 40
-        x1 = W / 2 + k * 130
-        dp.line((x0, H * .52, x1, H + 20), fill=(255, 210, 150, 24), width=2)
-    y = H * .52
-    pas = 18
-    while y < H:
-        dp.line((0, y, W, y), fill=(255, 210, 150, 18), width=1)
-        pas *= 1.18
-        y += pas
-    im = Image.alpha_composite(im, planc)
-    # Les rideaux : des plis verticaux, rouge sombre, sur les deux bords.
-    rid = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dr = ImageDraw.Draw(rid)
-    for cote in (0, 1):
-        for i in range(9):
-            larg = 150 - i * 12
-            x = (i * 15) if cote == 0 else W - i * 15
-            for j in range(larg):
-                t = j / larg
-                ombre = .5 + .5 * math.cos(t * math.pi * 2 + i)
-                c = melange((60, 4, 22), (150, 16, 60), ombre * (1 - i / 10))
-                xx = x + j if cote == 0 else x - j
-                if 0 <= xx < W:
-                    dr.line((xx, 0, xx + (rand.uniform(-2, 2)), H), fill=c + (round(210 * (1 - t) ** .7 * (1 - i / 10)),))
-    im = Image.alpha_composite(im, rid.filter(ImageFilter.GaussianBlur(3)))
-    # Le lambrequin, en haut.
-    lam = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dl = ImageDraw.Draw(lam)
-    for k in range(10):
-        x0 = k * W / 10
-        dl.pieslice((x0 - 10, -60, x0 + W / 10 + 10, 110), 0, 180, fill=(110, 10, 44, 200))
-        dl.arc((x0 - 10, -60, x0 + W / 10 + 10, 110), 0, 180, fill=OR + (150,), width=3)
-    im = Image.alpha_composite(im, lam.filter(ImageFilter.GaussianBlur(1)))
-    # Les fils d'or, et la croix du marionnettiste.
-    fils = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    df = ImageDraw.Draw(fils)
-    cx, cy = W / 2, 120
-    df.rounded_rectangle((cx - 120, cy - 7, cx + 120, cy + 7), radius=6, fill=(120, 80, 40, 230))
-    df.rounded_rectangle((cx - 7, cy - 60, cx + 7, cy + 60), radius=6, fill=(120, 80, 40, 230))
-    attaches = [(cx - 112, cy), (cx + 112, cy), (cx, cy - 52), (cx, cy + 52), (cx - 60, cy), (cx + 60, cy)]
-    bouts = [(130, 640), (590, 640), (360, 360), (360, 900), (230, 1020), (490, 1020)]
-    for (x0, y0), (x1, y1) in zip(attaches, bouts):
-        df.line((x0, y0, x1, y1), fill=OR + (90,), width=2)
-        df.ellipse((x1 - 5, y1 - 5, x1 + 5, y1 + 5), fill=OR + (150,))
-    im = Image.alpha_composite(im, fils.filter(ImageFilter.GaussianBlur(4)))
-    im = Image.alpha_composite(im, fils)
-    # De la poussiere dans la lumiere.
-    pd = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    dd = ImageDraw.Draw(pd)
-    for _ in range(120):
-        x, y = rand.gauss(W / 2, 150), rand.uniform(H * .2, H * .95)
-        s = rand.uniform(.6, 2)
-        dd.ellipse((x - s, y - s, x + s, y + s), fill=(255, 225, 170, rand.randrange(40, 150)))
-    im = Image.alpha_composite(im, pd)
-    enregistrer_tapis(finitions(im.convert('RGB')), 't_theatre')
+    # Les nuages : des volutes floues, plus denses aux deux bords du plateau.
+    nu = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    dn = ImageDraw.Draw(nu)
+    for bord in (0, 1):
+        for _ in range(70):
+            x = rand.uniform(-80, W + 80)
+            y0 = rand.uniform(-40, 300)
+            y = y0 if bord == 0 else H - y0
+            r = rand.uniform(60, 150)
+            c = melange((90, 40, 150), (180, 110, 230), rand.random() * .6)
+            dn.ellipse((x - r, y - r * .6, x + r, y + r * .6), fill=c + (rand.randrange(18, 46),))
+    im = Image.alpha_composite(im, nu.filter(ImageFilter.GaussianBlur(26)))
+    im = Image.alpha_composite(im, lueur((W, H), (W * .5, H * .1), (360, 200), (236, 143, 255), .32, 80))
+    im = Image.alpha_composite(im, lueur((W, H), (W * .5, H * .9), (360, 200), (236, 143, 255), .26, 80))
+    # La pluie, fine et en biais.
+    pl = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    dp = ImageDraw.Draw(pl)
+    for _ in range(520):
+        x, y = rand.uniform(-100, W + 40), rand.uniform(0, H)
+        l = rand.uniform(14, 34)
+        dp.line((x, y, x + l * .32, y + l), fill=(220, 200, 255, rand.randrange(14, 46)), width=1)
+    im = Image.alpha_composite(im, pl)
+
+    # Les eclairs : un tronc qui tombe en zigzag, des branches qui s'en
+    # detachent ; un halo flou dessous, un trait blanc-mauve dessus.
+    def foudre(x, y, vers_y, sens, larg):
+        pts = [(x, y)]
+        while (y < vers_y) if sens > 0 else (y > vers_y):
+            x += rand.uniform(-34, 34)
+            y += sens * rand.uniform(26, 52)
+            pts.append((x, y))
+        return pts
+    halo = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    trait = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    dh, dt = ImageDraw.Draw(halo), ImageDraw.Draw(trait)
+    for (x0, y0, y1, sens) in ((110, -10, 420, 1), (620, -10, 360, 1), (150, H + 10, H - 380, -1), (590, H + 10, H - 430, -1)):
+        tronc = foudre(x0, y0, y1, sens, 4)
+        eclair(dh, tronc, (236, 143, 255, 255), 22)
+        eclair(dt, tronc, (250, 232, 255, 240), 4)
+        for _ in range(4):
+            i = rand.randrange(1, len(tronc) - 1)
+            x, y = tronc[i]
+            br = [(x, y)]
+            cote = rand.choice((-1, 1))
+            for _ in range(rand.randrange(2, 5)):
+                x += cote * rand.uniform(10, 34)
+                y += sens * rand.uniform(18, 36)
+                br.append((x, y))
+            eclair(dh, br, (201, 140, 255, 200), 10)
+            eclair(dt, br, (236, 200, 255, 170), 2)
+    im = Image.alpha_composite(im, halo.filter(ImageFilter.GaussianBlur(14)))
+    im = Image.alpha_composite(im, trait)
+    # Des escarbilles d'electricite.
+    et = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    de = ImageDraw.Draw(et)
+    for _ in range(110):
+        x = rand.uniform(0, W)
+        y = rand.choice((rand.uniform(0, H * .3), rand.uniform(H * .7, H)))
+        s = rand.uniform(.6, 2.2)
+        de.ellipse((x - s, y - s, x + s, y + s), fill=(240, 210, 255, rand.randrange(50, 190)))
+    im = Image.alpha_composite(im, et)
+    enregistrer_tapis(finitions(im.convert('RGB')), 't_orage')
 
 
 # ----------------------------------------------------------- la sleeve
@@ -319,5 +322,5 @@ def sleeve():
 
 if __name__ == '__main__':
     arene()
-    theatre()
+    orage()
     sleeve()

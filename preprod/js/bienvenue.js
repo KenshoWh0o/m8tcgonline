@@ -157,7 +157,7 @@ function montrerNouveautes30() {
         ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, une chance sur 133 par booster. La Légendaire passe à 4,25 %.`)}
         ${point('star', 'La maîtrise des cartes.', 'Chaque exemplaire obtenu fait monter une carte : Bronze, Argent, Or, Prisme. Tes doublons servent enfin à quelque chose.')}
         ${point('shop', 'Tapis et sleeves.', 'Six tapis de jeu et deux sleeves en boutique, et tes Essences Brillantes brillent en combat.')}
-        ${choc ? point('choc', 'Le Choc des Sections.', `Le Raid du Marionnettiste, l'Épreuve du jour, des points qui comptent double, un Pass de trente paliers — pendant trois semaines.`) : ''}
+        ${choc ? point('choc', 'Le Choc des Sections.', `Le Raid contre The French Sorcerer, l'Épreuve du jour, des points qui comptent double, un Pass de trente paliers — pendant trois semaines.`) : ''}
       </ol>`,
     actions: choc
       ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('choc'); } },

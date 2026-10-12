@@ -284,19 +284,19 @@ on conflict (id) do update set
 -- Ses quetes paient en Insignes (25_choc.sql ; la colonne `monnaie` dit
 -- « prismes » pour toute monnaie d'evenement). Du jour : 75 Insignes ; de
 -- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
---   raid, raid_degats, raid_victoires : le Raid du Marionnettiste
+--   raid, raid_degats, raid_victoires : le Raid contre The French Sorcerer
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
 --   points_section                    : les points marques pour sa Section
 --   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
   ('c_visite',  'ev_jour', 'ev_visite',          1, 10, null, 'Au rapport',          'Passe voir l''événement aujourd''hui.', 1, 'choc', 'prismes'),
   ('c_combats', 'ev_jour', 'combats',            2, 15, null, 'Deux combats',        'Joue 2 combats, contre l''IA ou un ami.', 2, 'choc', 'prismes'),
-  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Un coup de ciseaux',  'Attaque le Marionnettiste.', 3, 'choc', 'prismes'),
+  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Paratonnerre',        'Affronte The French Sorcerer.', 3, 'choc', 'prismes'),
   ('c_epreuve', 'ev_jour', 'epreuve',            1, 10, null, 'L''Épreuve du jour',  'Tente l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vaincus', 'ev_jour', 'vaincus',            6, 15, null, 'Six de chute',        'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'),
   ('c_packs',   'ev_jour', 'packs',              3, 10, null, 'Trois boosters',      'Ouvre 3 boosters aujourd''hui.', 6, 'choc', 'prismes'),
-  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Marionnettiste.', 1, 'choc', 'prismes'),
-  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Marionnettiste 5 fois.', 2, 'choc', 'prismes'),
+  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'),
+  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'),
   ('c_ep7',     'ev',      'epreuve_victoires',  7, 80, null, 'Sept Épreuves',       'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'),
   ('c_pts',     'ev',      'points_section',    80, 60, null, 'Pour la Section',     'Marque 80 points pour ta Section.', 4, 'choc', 'prismes'),
   ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
@@ -384,7 +384,7 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6),
   ('ch_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n''as pas encore.', 180, 'reverse_R', 1,   null, false, 3, 'prismes', 'choc', 3),
   ('ch_brillante', 'evenement', 'Une Essence Brillante', 'Une Essence Brillante que tu n''as pas encore.', 450, 'brillante', 1, null, false, 4, 'prismes', 'choc', 1),
-  ('t_theatre',    'evenement', 'Tapis « Le Théâtre »', 'La scène du Marionnettiste, sous tes cartes. Ne se vendra plus après l''événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
+  ('t_orage',      'evenement', 'Tapis « L''Orage »', 'Le ciel de The French Sorcerer, sous tes cartes. Ne se vendra plus après l''événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
   ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 250, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
@@ -398,4 +398,4 @@ delete from public.shop_items where id not in (
   'f_azur','f_rose','f_or','f_prisme',
   's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
   't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
-  'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_theatre','t_supporter');
+  'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_orage','t_supporter');

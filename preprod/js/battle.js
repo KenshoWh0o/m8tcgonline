@@ -491,7 +491,9 @@ async function demarrer(o) {
     noms: [save.pseudo, o.adversaire.nom], graine: ouv.graine,
     pv: [o.pvMoi || Combat.REGLE.PV, o.pv || Combat.REGLE.PV], essDepart: [o.essMoi || 0, o.ess || 0]
   };
-  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null };
+  /* Des cartes déjà en jeu au départ (le boss du Raid). */
+  if (o.poses) init.poses = o.poses;
+  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss };
   ouvrirArene({ init }, meta);
 }
 
@@ -504,7 +506,7 @@ function ouvrirArene(partie, meta) {
     joueurs: [joueurMoi(), meta.adversaire],
     cosm: [e.cosm, meta.cosmAdv || { tapis: 't_base', sleeve: 's_base' }],
     brillantes: [brillantesMoi(), []],
-    titre: meta.titre, sousTitre: meta.sousTitre,
+    titre: meta.titre, sousTitre: meta.sousTitre, boss: meta.boss,
     sauver: CLE_COMBAT, meta,
     surFin: (E, gagne) => finirCombat(meta, E, gagne),
     surQuitter: () => { render(); }
@@ -534,7 +536,7 @@ function htmlRecompense(r) {
   if (!r) return '';
   const g = r.recompense || {};
   const l = [];
-  if (g.degats) l.push(`<span class="ar-recompense">${NAVICO.fils}${fmtN(g.degats)} dégât${g.degats > 1 ? 's' : ''}</span>`);
+  if (g.degats) l.push(`<span class="ar-recompense">${NAVICO.foudre}${fmtN(g.degats)} dégât${g.degats > 1 ? 's' : ''}</span>`);
   if (g.insignes) l.push(`<span class="ar-recompense">${insigneIco}+${fmtN(g.insignes)}</span>`);
   if (g.eclats) l.push(`<span class="ar-recompense">${shardIco}+${fmtN(g.eclats)}</span>`);
   if (g.boosters) l.push(`<span class="ar-recompense"><img src="${ART.seal}" alt="">+${g.boosters}</span>`);

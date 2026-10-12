@@ -33,7 +33,7 @@ const QICO = {
   /* Version 3.0 : les combats, les Secrètes, la maîtrise, le Choc des Sections. */
   combats: 'sword', victoires: 'sword', vaincus: 'sword', victoires_dures: 'sword', defis: 'amis',
   campagne: 'trophy', legende: 'trophy', rarity_S: 'coin', maitrise_3: 'cards', maitrise_4: 'cards',
-  raid: 'fils', raid_degats: 'fils', raid_victoires: 'fils', epreuve: 'epreuve', epreuve_victoires: 'epreuve',
+  raid: 'foudre', raid_degats: 'foudre', raid_victoires: 'foudre', epreuve: 'epreuve', epreuve_victoires: 'epreuve',
   points_section: 'choc', deck: 'cards', cosm: 'user'
 };
 

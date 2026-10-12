@@ -250,14 +250,14 @@ test('les quarante rivaux de campagne ont un deck valide, avec leur carte', () =
 });
 
 console.log('Le Choc des Sections');
-test('le deck du Marionnettiste est valide et le contient, chaque jour et à chaque phase', () => {
+test('le deck du Sorcier est valide et le contient, chaque jour et à chaque phase', () => {
   for (let j = 0; j < 14; j++) {
     const jour = new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10);
     for (let n = 1; n <= 6; n++) {
-      const d = Choc.deckMarionnettiste(jour, n);
+      const d = Choc.deckSorcier(jour, n);
       egal(Decks.verifier(d), [], jour + ' phase ' + n);
-      vrai(d.cartes[Choc.CHOC.raid.boss] === 1, 'Le Marionnettiste manque');
-      egal(JSON.stringify(Choc.deckMarionnettiste(jour, n)), JSON.stringify(d), 'même jour, même deck');
+      vrai(d.cartes[Choc.CHOC.raid.boss] === 1, 'The French Sorcerer manque');
+      egal(JSON.stringify(Choc.deckSorcier(jour, n)), JSON.stringify(d), 'même jour, même deck');
     }
   }
 });
@@ -277,10 +277,32 @@ test('le score de l\'Épreuve : victoire, puis moins de tours, puis plus de PV',
   vrai(s({ gagne: true, tours: 8, pv: 3 }) > s({ gagne: true, tours: 8, pv: 2 }));
   vrai(s({ gagne: false, touches: 4, pv: 0 }) > s({ gagne: false, touches: 3, pv: 2 }));
 });
+test('le Sorcier commence sur le plateau, au milieu, jamais en main ni en PV', () => {
+  const boss = Choc.CHOC.raid.boss;
+  for (let g = 1; g <= 40; g++) {
+    const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 3))],
+      graine: g, pv: [5, 7], essDepart: [0, 1], poses: Choc.posesBoss() });
+    while (Combat.demande(E) && Combat.demande(E).but === 'mulligan') Combat.agir(E, { t: 'choix', v: 'oui' });
+    const P = E.j[1];
+    egal((P.lignes[1] || {}).id, boss, 'graine ' + g);
+    const ailleurs = ['main', 'pv', 'club', 'defausse'].reduce((n, z) => n + P[z].filter(c => c.id === boss).length, 0);
+    egal(ailleurs, 0, 'un seul Sorcier, graine ' + g);
+    egal(P.pv.length, 7);
+  }
+});
+test('les phases du Raid s\'ouvrent une à une sur les trois semaines', () => {
+  egal(Choc.chocPhaseMax(0), 1);
+  egal(Choc.chocPhaseMax(3), 2);
+  egal(Choc.chocPhaseMax(14), 4);
+  egal(Choc.chocPhaseMax(15), 5);
+  const o = Choc.CHOC.raid.phases.map(p => p.ouvre);
+  vrai(o.every((x, i) => !i || x > o[i - 1]), 'des ouvertures croissantes');
+  vrai(o[o.length - 1] <= 17, 'la dernière phase laisse au moins quatre jours');
+});
 test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme', () => {
   const p = Choc.chocPhase(5);
-  const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckMarionnettiste('2026-10-11', 5))],
-    graine: 77, pv: [5, p.pvBoss], essDepart: [0, p.ess] });
+  const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 5))],
+    graine: 77, pv: [5, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss() });
   egal(E.j[1].pvDepart, 8);
   let n = 0;
   while (Combat.demande(E) && n++ < 3000) {

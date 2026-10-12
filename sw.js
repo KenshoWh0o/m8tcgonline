@@ -15,7 +15,7 @@ const MEDIAS = VERSION + '-medias';
 const ESSENTIEL = [
   './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/base.css', 'css/cards.css',
   'css/booster.css', 'css/opening.css', 'css/viewer.css', 'css/lab.css', 'css/auth.css',
-  'css/hub.css', 'css/promo.css', 'css/reflets.css', 'css/combat.css', 'css/choc.css',
+  'css/hub.css', 'css/promo.css', 'css/reflets.css', 'css/combat.css', 'css/arene.css', 'css/choc.css',
   'js/config.js', 'js/supabase-config.js', 'js/utils.js', 'js/sfx.js', 'js/cards-data.js',
   'js/promos-data.js', 'js/cards.js', 'js/storage.js', 'js/render-card.js', 'js/maitrise.js',
   'js/ui.js', 'js/backend.js', 'js/gate.js', 'js/auth.js', 'js/fx.js', 'js/booster.js',
