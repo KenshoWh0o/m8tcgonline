@@ -529,12 +529,12 @@ Backend.combatSection = async function (section) {
   Backend.apply(await Backend.rpc('combat_section', { p_section: section }));
 };
 
-/* Le deck actif, le tapis, la sleeve, le jeton. */
+/* Le deck actif, le tapis, la sleeve. */
 Backend.combatReglages = async function (o) {
   if (Backend.mode !== 'cloud') {
     const c = combatLocal();
     if (o.deck_actif !== undefined) c.deck_actif = o.deck_actif;
-    c.cosm = Object.assign({}, c.cosm, Object.fromEntries(['tapis', 'sleeve', 'jeton'].filter(k => o[k]).map(k => [k, o[k]])));
+    c.cosm = Object.assign({}, c.cosm, Object.fromEntries(['tapis', 'sleeve'].filter(k => o[k]).map(k => [k, o[k]])));
     return persist();
   }
   Backend.apply(await Backend.rpc('combat_reglages', { p_reglages: o }));

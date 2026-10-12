@@ -165,16 +165,19 @@ const GUIDES = (() => {
     },
     {
       id: 'modes', titre: 'Les modes', ico: 'trophy',
-      resume: 'Campagne, PvE infini, défis entre amis.',
+      resume: 'Campagne, Arcade, Raid, Versus.',
       html: () => `
         <h3>Les Sections</h3>
         <p>En entrant dans les Combats, tu rejoins une <b>Section</b> : Toxique ou Déter, comme les deux Starter Decks. Tu reçois sa Promo et son Starter Deck, et la campagne te fait affronter l'autre Section.</p>
         <h3>Campagne</h3>
-        <p>Tu affrontes la Section adverse, de plus en plus fort. La finir te donne la Promo de l'autre Section. Elle se rejoue autant qu'on veut — pour le plaisir, la récompense est plus petite.</p>
-        <h3>PvE infini</h3>
-        <p>Choisis la difficulté : l'IA reçoit un deck tiré au sort. Plus c'est dur, plus ça rapporte — dans la limite d'un nombre de victoires récompensées par jour.</p>
-        <h3>Défis entre amis</h3>
-        <p>Pas de recherche d'adversaire : tu défies un de tes amis, il accepte, et vous jouez en direct.</p>`
+        <p>Vingt rivaux de la Section adverse, en quatre actes, de plus en plus forts. Chaque rival battu pour la première fois paie ; la finir te donne la Promo de l'autre Section. Elle se rejoue autant qu'on veut, pour une plus petite récompense.</p>
+        <h3>Arcade</h3>
+        <p>Choisis la difficulté, de 1 à 5 : l'IA reçoit un deck tiré au sort, différent à chaque partie. Plus c'est dur, plus ça rapporte.</p>
+        ${note('Contre l\'IA, les cinq premières victoires de la journée rapportent des Éclats (Arcade, et combats de campagne rejoués). L\'XP, elle, n\'a pas de limite.')}
+        <h3>Raid</h3>
+        <p>The French Sorcerer, un boss commun à tout le serveur. Chaque PV que tu lui prends entame sa barre ; quand elle est vide, tous ceux qui l'ont frappé ouvrent un coffre, et il revient plus fort. Trois tentatives par jour.</p>
+        <h3>Versus</h3>
+        <p>Pas de recherche d'adversaire : tu défies un de tes amis, il accepte, et vous jouez en direct, 60 secondes par tour. Les trois premiers défis de la journée rapportent des Éclats.</p>`
     },
     {
       id: 'maison', titre: 'Ce qui est « maison »', ico: 'flask',

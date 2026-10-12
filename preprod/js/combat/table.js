@@ -79,7 +79,7 @@ const Table = (() => {
        init (la partie à créer) ou E (une partie déjà en cours),
        moi: 0 | 1, ia: { niveau } (absent : adversaire humain),
        joueurs: [{ nom, avatar, frame, photo }, …],
-       cosm: [{ tapis, sleeve, jeton }, …], brillantes: [[couleurs], …],
+       cosm: [{ tapis, sleeve }, …], brillantes: [[couleurs], …],
        titre, sousTitre, boss (le CEO adverse est un boss),
        surFin(E, gagne) → html, surAction(a, E, deMoi) (PvP), surQuitter,
        sauver (clé de reprise), meta,
@@ -1694,7 +1694,4 @@ const SLEEVES = {
   s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.4', prix: 3000 },
   s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.4', prix: 2500 },
   s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.4', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
-};
-const JETONS = {
-  j_base: { nom: 'Jeton M8', img: 'assets/jeton-echange.webp?v=3.0.4', prix: 0 }
 };

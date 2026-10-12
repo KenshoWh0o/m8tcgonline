@@ -18,29 +18,38 @@
 .cb-embleme svg{width:14px;height:12px;fill:#fff}
 
 /* ---- L'accueil ----
-   Comme les écrans de Pokémon TCG Pocket : un bandeau illustré coupé en
-   biais, le titre en grand par-dessus, puis des tuiles pleines. Sur
-   téléphone, le bandeau passe sous l'en-tête de verre et touche les bords. */
-.cb-hero{position:relative;isolation:isolate;height:300px;overflow:hidden;
-  margin:calc(-1 * (var(--top-h) + env(safe-area-inset-top,0px) + 8px)) -16px 0;
-  clip-path:polygon(0 0,100% 0,100% 80%,0 100%)}
-.cb-hero-art{position:absolute;inset:0;z-index:-1;background:50% 30%/170% auto no-repeat;background-color:var(--plate)}
+   Un bandeau illustré, fondu dans la page : le chevalier du tapis « La
+   Luxueuse III », son casque et sa chaîne d'or. Sur téléphone, il passe sous
+   l'en-tête de verre et touche les bords. Le titre en bas à gauche, la
+   Section et le niveau en haut à droite : ils ne se croisent jamais. */
+.cb-hero{position:relative;isolation:isolate;height:318px;overflow:hidden;
+  margin:calc(-1 * (var(--top-h) + env(safe-area-inset-top,0px) + 8px)) -16px 0}
+.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg) url('../assets/combat/banniere-combats.webp') 50% 8%/cover no-repeat}
 .cb-hero::after{content:"";position:absolute;inset:0;z-index:-1;
-  background:linear-gradient(180deg,rgba(18,17,25,.55),rgba(18,17,25,0) 30%,rgba(18,17,25,0) 50%,rgba(93,75,217,.55) 100%)}
-.cb-hero-titre{position:absolute;left:18px;bottom:62px;margin:0;transform:rotate(-7deg);transform-origin:left bottom;
+  background:radial-gradient(90% 60% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
+    linear-gradient(180deg,rgba(18,17,25,.55),rgba(18,17,25,0) 30%,rgba(18,17,25,0) 50%,rgba(18,17,25,.7) 78%,var(--bg))}
+.cb-hero-titre{position:absolute;left:18px;bottom:62px;margin:0;transform:rotate(-6deg);transform-origin:left bottom;
   font-family:var(--display);font-stretch:116%;font-style:italic;font-weight:900;font-size:58px;letter-spacing:-.035em;line-height:1;color:#fff;
-  text-shadow:0 3px 0 rgba(0,0,0,.16),0 12px 32px rgba(0,0,0,.5)}
-.cb-hero-haut{position:absolute;right:14px;top:calc(var(--top-h) + env(safe-area-inset-top,0px) + 4px);display:flex;align-items:center;gap:8px}
-/* Le niveau : un médaillon lavande et sa barre d'XP, en verre sur l'image. */
-.cb-niv{display:inline-flex;align-items:center;gap:9px;padding:4px 12px 4px 4px;border:0;border-radius:999px;font:inherit;color:var(--text);cursor:pointer;
-  background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);
-  box-shadow:inset 0 0 0 1px var(--glass-line),inset 0 1px 0 rgba(255,255,255,.12);min-width:0;width:148px;flex:none}
+  text-shadow:0 2px 0 rgba(0,0,0,.25),0 0 30px rgba(138,120,245,.5),0 12px 32px rgba(0,0,0,.6)}
+.cb-hero-haut{position:absolute;right:14px;top:calc(var(--top-h) + env(safe-area-inset-top,0px) + 6px);display:flex;align-items:center;gap:8px}
+.cb-hero-haut .cb-badge{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+
+/* Le niveau en médaillon : l'anneau se remplit avec l'XP. */
+.cb-anneau{flex:none;display:grid;place-items:center;width:46px;height:46px;padding:0;border:0;border-radius:50%;cursor:pointer;
+  background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.18) 0);box-shadow:0 6px 16px rgba(0,0,0,.45)}
+.cb-anneau>span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;line-height:1;color:#fff;
+  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.cb-anneau small{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
+.cb-anneau b{font-family:var(--display);font-weight:900;font-size:15px}
+
+/* Les barres de niveau (Missions, fiche du niveau). */
+.cb-niv{display:inline-flex;align-items:center;gap:9px;padding:4px;border:0;border-radius:999px;font:inherit;color:var(--text);cursor:pointer;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);flex:none}
 .cb-niv-n{display:flex;flex-direction:column;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;line-height:1;color:#fff;
-  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 0 2px rgba(255,255,255,.12)}
+  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
 .cb-niv-n small{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
 .cb-niv-n b{font-family:var(--display);font-weight:900;font-size:15px}
-.cb-niv-t{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left}
-.cb-niv-t small{font-size:10.5px;font-weight:700;color:var(--subtle)}
+.cb-niv-t{display:none}
 .cb-niv-barre{display:block;height:6px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.35)}
 .cb-niv-barre i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
 .cb-niv-barre.grand{height:12px;margin:4px 0 8px}
@@ -51,39 +60,67 @@
 .cb-paliers b{flex:none;font-family:var(--display);font-style:italic;color:var(--accent-soft)}
 .cb-paliers span{font-size:13px;color:var(--subtle)}
 
+/* Les étoiles d'une difficulté : cinq places, pleines ou vides. */
+.etoiles{display:inline-flex;gap:1px;vertical-align:middle}
+.etoiles i{display:block;width:13px;height:13px}
+.etoiles svg{display:block;width:100%;height:100%;fill:rgba(255,255,255,.16)}
+.etoiles i.on svg{fill:var(--accent-soft);filter:drop-shadow(0 0 4px rgba(179,166,255,.45))}
+
 /* Ce qui se joue maintenant : une tuile pleine qui mord sur le bandeau. */
-.cb-une{position:relative;z-index:2;display:flex;align-items:center;gap:12px;width:100%;margin-top:-42px;padding:12px 12px 12px 14px;border:0;
+.cb-une{position:relative;z-index:2;display:flex;align-items:center;gap:12px;width:100%;margin-top:-46px;padding:12px 12px 12px 12px;border:0;
   border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);
-  box-shadow:inset 0 0 0 1px var(--line),var(--sh-3);transition:transform .18s var(--spring)}
-.cb-une:active{transform:scale(.98)}
-.cb-une-art{flex:0 0 46px;border-radius:5px;overflow:hidden;box-shadow:var(--sh-2)}
-.cb-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06),var(--sh-3);transition:transform .18s var(--spring)}
+button.cb-une:active{transform:scale(.98)}
+.cb-une-art{flex:none;width:52px;height:52px;border-radius:50%;background:var(--surface-3) var(--art) 50% 22%/250% auto no-repeat;
+  box-shadow:0 0 0 2px var(--accent-soft),0 0 18px var(--accent-glow)}
+.cb-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .cb-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-soft)}
 .cb-une-t b{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cb-une-t em{font-style:normal;font-size:12px;color:var(--muted)}
+.cb-une-t em{display:flex;align-items:center;gap:7px;font-style:normal;font-size:12px;color:var(--muted)}
 .cb-une-go{flex:none;padding:11px 18px;border-radius:999px;font-family:var(--display);font-weight:800;font-size:14px;color:#fff;
   background:var(--cta);text-shadow:0 1px 1px rgba(30,16,90,.35);box-shadow:inset 0 1px 0 var(--gloss),0 8px 20px -8px var(--accent-glow)}
+.cb-reprendre{cursor:default}
+.cb-reprendre-act{display:flex;flex-direction:column;gap:6px}
+.cb-reprendre-act .btn{width:auto;padding-inline:16px}
 
-/* Solo et Versus : deux grandes tuiles, une icône en deux tons. */
-.cb-tuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.cb-tuile,.cb-petit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:0;font:inherit;
-  color:var(--text);text-align:center;cursor:pointer;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);
-  transition:transform .18s var(--spring),background .15s}
-.cb-tuile{min-height:128px;padding:14px 10px;border-radius:var(--radius-lg)}
-.cb-tuile:active,.cb-petit:active{transform:scale(.96)}
-.cb-tuile:hover,.cb-petit:hover{background:var(--surface-2)}
-.cb-tuile b{font-family:var(--display);font-weight:800;font-size:16px}
-.cb-tuile small,.cb-petit small{font-size:11.5px;color:var(--muted);line-height:1.3}
-.cb-tuile-ico svg,.cb-petit-ico svg{display:block;fill:none;stroke:var(--deco-ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
-.cb-tuile-ico svg{width:50px;height:50px}
-.cb-tuile-ico svg .f,.cb-petit-ico svg .f{fill:var(--deco-wash)}
-.cb-tuile-ico svg .e{fill:var(--accent-soft);stroke:none}
+/* Solo et Versus : deux portes illustrées. Solo prend le prochain rival ;
+   Versus, les deux Promos des Sections, face à face. */
+.cb-portes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cb-porte{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  min-height:156px;padding:12px 14px 13px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);transition:transform .18s var(--spring)}
+.cb-porte:active{transform:scale(.97)}
+.cb-porte-art,.cb-porte-art.duo i{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 27%/240% auto no-repeat}
+.cb-porte-art.duo{background:none}
+.cb-porte-art.duo i:first-child{clip-path:polygon(0 0,61% 0,39% 100%,0 100%)}
+.cb-porte-art.duo i:last-child{clip-path:polygon(61% 0,100% 0,100% 100%,39% 100%)}
+.cb-porte-art.duo::after{content:"";position:absolute;left:50%;top:-12%;bottom:-12%;width:2px;margin-left:-1px;z-index:1;transform:rotate(16deg);
+  background:var(--accent-soft);box-shadow:0 0 14px 2px var(--accent)}
+.cb-porte::after{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(180deg,rgba(18,17,25,.05),rgba(18,17,25,.3) 38%,rgba(36,35,47,.97) 80%)}
+.cb-porte-ico{display:grid;place-items:center;width:42px;height:42px;margin-bottom:auto;border-radius:13px;
+  background:rgba(18,17,25,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.cb-porte-t{display:flex;flex-direction:column;gap:2px;min-width:0;max-width:100%}
+.cb-porte-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:23px;line-height:1;letter-spacing:-.01em}
+.cb-porte-t small{font-size:11.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-porte .rf-pastille{position:absolute;top:10px;right:10px}
+.cb-porte-ico svg,.cb-petit-ico svg,.cb-mode-ico svg{display:block;fill:none;stroke:var(--deco-ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.cb-porte-ico svg{width:30px;height:30px}
+.cb-porte-ico svg .f,.cb-petit-ico svg .f{fill:var(--deco-wash)}
+.cb-porte-ico svg .e,.cb-petit-ico svg .e{fill:var(--accent-soft);stroke:none}
+
+/* Decks, Missions, Guide : trois petites tuiles. */
 .cb-petits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.cb-petit{min-height:86px;padding:10px 6px;border-radius:var(--radius)}
+.cb-petit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:92px;padding:10px 6px;border:0;
+  border-radius:var(--radius);font:inherit;color:var(--text);text-align:center;cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .18s var(--spring),background .15s}
+.cb-petit:active{transform:scale(.96)}
+.cb-petit:hover,.cb-porte:hover{background-color:var(--surface-2)}
+.cb-petit-ico{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--surface-2)}
+.cb-petit-ico svg{width:26px;height:26px}
 .cb-petit b{font-size:13px;font-weight:800}
-.cb-petit small{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cb-petit-ico svg{width:28px;height:28px}
-.cb-tuile .rf-pastille,.cb-petit .rf-pastille{position:absolute;top:10px;right:10px}
+.cb-petit small{max-width:100%;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-petit .rf-pastille{position:absolute;top:8px;right:8px}
 
 /* Les pages : un retour, un titre. */
 .cb-sous{display:flex;align-items:center;gap:10px}
@@ -91,16 +128,43 @@
   border-radius:50%;cursor:pointer;color:var(--text);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.08)}
 .cb-retour svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;transform:rotate(90deg)}
 .cb-sous-t{flex:1;min-width:0}
-.cb-sous-t h1{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.05}
+.cb-sous-t h1{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;line-height:1.05}
 .cb-sous-t p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
-.cb-sous .cb-niv{min-width:0;width:auto;padding:4px}
-.cb-sous .cb-niv-t{display:none}
 .cb-intro{margin:0;font-size:13.5px;color:var(--subtle);line-height:1.45}
-.cb-jour-chip{display:flex;flex-direction:column;align-items:center;padding:5px 10px;border-radius:12px;line-height:1.1;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-jour-chip{display:flex;flex-direction:column;align-items:center;padding:5px 11px;border-radius:12px;line-height:1.1;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .cb-jour-chip b{font-family:var(--display);font-weight:900;font-size:15px}
 .cb-jour-chip small{font-size:10px;color:var(--muted);font-weight:700}
 .cb-mgroupe h3{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 8px;font-size:15px}
 .cb-mgroupe h3 small{font-size:12px;font-weight:700;color:var(--muted)}
+
+/* Les plafonds du jour (Solo, Arcade, Versus) : des pastilles, et la règle
+   écrite une fois. */
+.cb-jour{padding:12px 14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-jour-l{display:flex;align-items:center;gap:10px}
+.cb-jour-l>b{flex:1;font-size:13.5px}
+.cb-jour-l>span.tnum{font-family:var(--display);font-weight:900;font-size:15px}
+.cb-jour p{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.cb-pips{display:inline-flex;gap:4px}
+.cb-pips i{width:10px;height:10px;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+.cb-pips i.on{background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
+
+/* Solo : deux grandes affiches, une par mode. */
+.cb-mode{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;gap:12px;min-height:196px;padding:16px;border:0;
+  border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface-2);
+  box-shadow:inset 0 0 0 1px var(--line),var(--tuile);transition:transform .18s var(--spring)}
+.cb-mode:active{transform:scale(.98)}
+.cb-mode-art{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 20%/150% auto no-repeat}
+.cb-mode::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,0) 0,rgba(18,17,25,.35) 35%,rgba(24,23,33,.97) 78%)}
+.cb-mode.arcade::after{background:radial-gradient(70% 90% at 100% 0%,rgba(93,75,217,.4),transparent 70%),linear-gradient(180deg,rgba(18,17,25,0) 0,rgba(18,17,25,.35) 35%,rgba(24,23,33,.97) 78%)}
+.cb-mode-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cb-mode-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.cb-mode-t>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.05}
+.cb-mode-desc{font-size:12.5px;line-height:1.4;color:var(--subtle)}
+.cb-mode-prog{display:flex;align-items:center;gap:8px;margin-top:5px}
+.cb-mode-prog .cb-barre{flex:1;max-width:180px;margin:0;height:7px}
+.cb-mode-prog b{font-family:var(--display);font-weight:900;font-size:14px}
+.cb-mode-prog em{font-style:normal;font-size:12.5px;font-weight:800;color:var(--text)}
+.cb-mode .cb-une-go{align-self:flex-end}
 
 /* Choisir sa Section */
 .cb-choix{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:10px 0 24px}
@@ -126,89 +190,186 @@
 .cb-confirm{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .cb-confirm img{width:150px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
 
-/* Reprendre un combat */
-.cb-reprendre{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px;border-radius:var(--radius-lg);
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--accent-wash-2),var(--tuile)}
-.cb-reprendre p{margin:2px 0 0}
-.cb-reprendre-act{display:flex;gap:8px}
-.cb-reprendre-act .btn{width:auto;padding-inline:18px}
-
 .cb-barre{display:block;height:6px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin-top:6px}
 .cb-barre i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
 
 @media (max-width:560px){.cb-hero{margin-inline:-12px}}
-@media (max-width:380px){.cb-hero-titre{font-size:50px}.cb-niv{width:126px}.cb-hero-haut .cb-badge b{display:none}.cb-hero-haut .cb-badge{padding:4px}}
-/* Sur ordinateur, le bandeau est une grande carte arrondie dans la colonne. */
+@media (max-width:380px){
+  .cb-hero-titre{font-size:50px}.cb-hero-haut .cb-badge b{display:none}.cb-hero-haut .cb-badge{padding:4px}
+  .cb-porte-t b{font-size:20px}.cb-etape-t b{font-size:13px}
+}
+/* Sur ordinateur, le bandeau est une grande carte arrondie dans la colonne,
+   et les portes prennent de la hauteur. */
 @media (min-width:900px){
-  .cb-hero{height:300px;margin:0;border-radius:var(--radius-xl);clip-path:none}
-  .cb-hero-haut{top:14px}
-  .cb-hero-titre{font-size:68px;bottom:70px}
-  .cb-une{margin:-56px 18px 0;width:auto}
+  .cb-hero{height:350px;margin:0;border-radius:var(--radius-xl)}
+  .cb-hero-art{background-position:50% 16%}
+  .cb-hero-haut{top:16px;right:18px}
+  .cb-hero-titre{font-size:76px;bottom:80px;left:30px}
+  .cb-une{margin:-64px 20px 0;width:auto}
+  .cb-portes{gap:14px}
+  .cb-porte{min-height:210px;padding:16px 18px}
+  .cb-porte-art,.cb-porte-art.duo i{background-size:125% auto;background-position:50% 30%}
+  .cb-porte-t b{font-size:28px}
+  .cb-mode{min-height:230px;padding:22px}
+  .cb-acte-tete{padding-top:110px}
+  .cb-route{max-width:620px;margin-inline:auto}
 }
 
-/* La campagne */
-.cb-campagne-prog{display:flex;align-items:center;gap:10px}
-.cb-campagne-prog .cb-barre{flex:1;margin:0;height:8px}
-.cb-acte{padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06)}
-.cb-acte.fini{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 50%,var(--line))}
-.cb-acte-tete small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--sc2)}
-.cb-acte-tete b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:19px}
-.cb-acte-tete p{margin:2px 0 0}
-.cb-chemin{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
-.cb-chemin::before{content:"";position:absolute;left:10%;right:10%;top:30px;height:2px;background:repeating-linear-gradient(90deg,var(--line-3) 0 6px,transparent 6px 12px)}
-.cb-noeud{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;border:0;background:none;font:inherit;color:var(--text);cursor:pointer;text-align:center}
-.cb-noeud-art{position:relative;display:block;width:60px;height:60px;border-radius:50%;overflow:hidden;background:var(--surface-3);
-  box-shadow:0 0 0 3px var(--line-2),0 6px 14px rgba(0,0,0,.4)}
-.cb-noeud-art img{width:100%;height:auto;margin-top:-12%;transform:scale(1.5);transform-origin:50% 20%}
-/* Le prochain combat est ce qu'on peut faire : il prend le rose de l'action. */
-.cb-noeud.ouvert .cb-noeud-art{box-shadow:0 0 0 3px var(--accent-soft),0 0 22px var(--accent-glow);animation:ar-pouls 1.6s ease-in-out infinite}
-.cb-noeud.fait .cb-noeud-art{box-shadow:0 0 0 3px var(--ok)}
-.cb-noeud.ferme .cb-noeud-art img{filter:grayscale(1) brightness(.4)}
-.cb-noeud.ferme{cursor:default}
-.cb-noeud.boss .cb-noeud-art,.cb-noeud.final .cb-noeud-art{width:68px;height:68px;margin-top:-4px}
-.cb-noeud.final .cb-noeud-art{box-shadow:0 0 0 3px var(--gold),0 0 22px var(--gold-glow)}
-.cb-noeud b{font-size:11px;line-height:1.15;max-width:72px}
-.cb-noeud small{font-size:10px;color:var(--warn)}
+/* ---- La campagne ----
+   Les quatre actes en onglets ; l'acte choisi, sous un bandeau à l'image de
+   son boss ; ses cinq rivaux sur un chemin qui serpente. */
+.cb-actes-ong{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cb-acte-ong{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 9px;border:0;border-radius:var(--radius);font:inherit;color:var(--muted);cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-acte-ong small{font-size:11.5px;font-weight:800}
+.cb-acte-ong i{display:grid;place-items:center;height:18px;font-style:normal}
+.cb-acte-ong i b{font-family:var(--display);font-weight:900;font-size:13px;color:var(--text)}
+.cb-acte-ong svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.cb-acte-ong.fini i{color:var(--ok)}
+.cb-acte-ong.ferme{opacity:.6}
+.cb-acte-ong.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1.5px var(--accent-soft),0 8px 20px -10px var(--accent-glow)}
+.cb-acte{border-radius:var(--radius-xl);overflow:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-acte-tete{position:relative;isolation:isolate;padding:58px 16px 14px;
+  background:linear-gradient(180deg,rgba(28,27,37,0),rgba(28,27,37,.6) 45%,var(--surface)),var(--art) 50% 22%/130% auto no-repeat,var(--surface-3)}
+.cb-acte-tete small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--accent-soft)}
+.cb-acte-tete h2{margin:2px 0 4px;font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;line-height:1.05;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.cb-acte-tete p{margin:0;font-size:13px;line-height:1.4;color:var(--subtle)}
+.cb-route{position:relative;margin:4px 0 6px}
+.cb-route-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.cb-route-svg path{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round}
+.cb-route-svg .fond{stroke:var(--line-3);stroke-width:3;stroke-dasharray:2 9}
+.cb-route-svg .fait{stroke:var(--accent-soft);stroke-width:3.5;filter:drop-shadow(0 0 6px rgba(138,120,245,.6))}
+.cb-etape{position:absolute;left:0;right:0;top:calc(var(--y) - 40px);height:80px;padding:0;border:0;background:none;font:inherit;color:var(--text);cursor:pointer;text-align:left}
+.cb-etape.ferme{cursor:default}
+.cb-etape-art{position:absolute;left:var(--x);top:50%;translate:-50% -50%;display:block;width:66px;height:66px;border-radius:50%;overflow:hidden;
+  background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--line-2),0 8px 18px rgba(0,0,0,.45)}
+.cb-etape-art img{width:100%;height:auto;margin-top:-12%;transform:scale(1.5);transform-origin:50% 20%}
+.cb-etape.boss .cb-etape-art,.cb-etape.final .cb-etape-art{width:80px;height:80px}
+.cb-etape.fait .cb-etape-art{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--ok),0 8px 18px rgba(0,0,0,.45)}
+.cb-etape.ouvert .cb-etape-art{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent-soft),0 0 26px var(--accent-glow);animation:ar-pouls 1.6s ease-in-out infinite}
+.cb-etape.ferme .cb-etape-art img{filter:grayscale(1) brightness(.4)}
+.cb-etape-t{position:absolute;top:50%;translate:0 -50%;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cb-etape.lbl-d .cb-etape-t{left:calc(var(--x) + 50px);right:8px;align-items:flex-start}
+.cb-etape.lbl-g .cb-etape-t{right:calc(100% - var(--x) + 50px);left:8px;align-items:flex-end;text-align:right}
+.cb-etape.lbl-b .cb-etape-t{top:calc(50% + 50px);translate:0 0;left:0;right:0;align-items:center;text-align:center}
+.cb-etape-t small{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cb-etape.boss .cb-etape-t small,.cb-etape.final .cb-etape-t small{color:var(--accent-soft)}
+.cb-etape-t b{font-size:14px;font-weight:800;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cb-etape-t em{font-style:normal;font-size:11.5px;color:var(--subtle)}
+.cb-etape.fait .cb-etape-t em{color:var(--ok)}
+.cb-etape.ferme .cb-etape-t{opacity:.55}
 .cb-coche,.cb-cadenas{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,40,28,.45)}
 .cb-cadenas{background:rgba(18,17,25,.5)}
 .cb-coche svg,.cb-cadenas svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.cb-campagne-fin{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius);
-  background:linear-gradient(120deg,var(--gold-wash),transparent),var(--surface);box-shadow:inset 0 0 0 1px var(--gold-line)}
-.cb-campagne-fin>.cwrap{width:80px;flex:none}
+.cb-campagne-fin{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-lg);
+  background:linear-gradient(120deg,var(--gold-wash),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.cb-campagne-fin>.cwrap{width:78px;flex:none}
+.cb-campagne-fin small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--gold)}
+.cb-campagne-fin b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:18px}
 .cb-campagne-fin p{margin:3px 0 0}
+
+/* La fiche d'un rival */
 .cb-fiche{display:flex;gap:14px;align-items:flex-start}
 .cb-fiche-art{width:120px;flex:none}
 .cb-fiche-txt small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
 .cb-fiche-txt b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;margin:2px 0}
 .cb-fiche-txt p{margin:6px 0 0;font-size:13.5px}
-.cb-niv{color:var(--warn);font-weight:800}
-.cb-regle{color:#ffb4aa}
+.cb-fiche-diff{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--text)}
+.cb-fiche-diff .etoiles i{width:15px;height:15px}
+.cb-regle{color:var(--subtle)}
 .cb-gain{color:var(--subtle)}
-.cb-choixdeck{display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px;border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-choixdeck{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-fiche+.cb-choixdeck{margin-top:14px;background:var(--bg-2)}
 .cb-choixdeck-art{width:40px;flex:none}
 .cb-choixdeck>span:nth-child(2){flex:1;display:flex;flex-direction:column}
 .cb-choixdeck small{font-size:11px;color:var(--muted)}
+.cb-choixdeck .btn{width:auto;padding-inline:14px}
 .cb-decks-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .cb-deck-mini{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border:0;border-radius:var(--radius-sm);font:inherit;color:var(--text);cursor:pointer;
   background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.cb-deck-mini.on{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.8)}
+.cb-deck-mini.on{background:var(--surface-3);box-shadow:inset 0 0 0 2px var(--accent-soft)}
 .cb-deck-mini:disabled{opacity:.45;cursor:default}
 .cb-deck-mini>span{width:64px}
 .cb-deck-mini b{font-size:12px;text-align:center;line-height:1.2}
 .cb-deck-mini small{font-size:10.5px;color:var(--muted)}
 
-/* Le PvE infini */
-.cb-jour{margin:0;padding:10px 14px;border-radius:var(--radius-sm);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:13.5px}
-.cb-diffs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.cb-diff{display:flex;flex-direction:column;gap:4px;padding:12px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);text-align:left;cursor:pointer;
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06);transition:box-shadow .15s,transform .2s var(--spring),background .15s}
-.cb-diff.on{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.8),0 10px 24px -8px rgba(255,255,255,.2);transform:translateY(-2px)}
-.cb-diff-et{color:var(--warn);font-size:13px;letter-spacing:.1em}
-.cb-diff b{font-family:var(--display);font-style:italic;font-weight:900;font-size:18px}
-.cb-diff small{font-size:12px;color:var(--subtle);line-height:1.35}
-.cb-diff em{font-style:normal;font-size:11.5px;font-weight:800;color:var(--ok)}
-.cb-diff.n5 b{background:linear-gradient(90deg,var(--gold),#ff7a6b);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* ---- L'Arcade ----
+   La difficulté choisie en grand ; les cinq en rangée, à choisir. */
+.cb-arc{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:14px;padding:18px 16px 16px;border-radius:var(--radius-xl);
+  background:radial-gradient(90% 80% at 50% 0%,rgba(138,120,245,calc(.12 + var(--i,.3) * .1)),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-arc.n1{--i:0}.cb-arc.n2{--i:.5}.cb-arc.n3{--i:1}.cb-arc.n4{--i:1.6}.cb-arc.n5{--i:2.4}
+.cb-arc-tete{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.cb-arc-tete small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.cb-arc-tete>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:34px;line-height:1}
+.cb-arc-tete .etoiles i{width:22px;height:22px}
+.cb-arc-tete p{margin:2px 0 0;max-width:34ch;font-size:13px;line-height:1.4;color:var(--subtle)}
+.cb-arc-gains{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cb-arc-gains span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 6px;border-radius:var(--radius);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);text-align:center}
+.cb-arc-gains b{font-family:var(--display);font-weight:900;font-size:19px}
+.cb-arc-gains small{font-size:11px;color:var(--muted);line-height:1.25}
+.cb-arc-diffs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cb-arc-diffs button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px;border:0;border-radius:var(--radius);font:inherit;color:var(--muted);cursor:pointer;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);transition:transform .18s var(--spring)}
+.cb-arc-diffs button b{font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;line-height:1;color:var(--text)}
+.cb-arc-diffs button small{font-size:10px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cb-arc-diffs button.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 2px var(--accent-soft),0 8px 20px -8px var(--accent-glow);transform:translateY(-2px)}
 .cb-lancer{font-size:17px}
+
+/* ---- Le Raid ----
+   Sur l'accueil : une affiche, le boss à droite fondu dans le noir. Sa page :
+   le boss, sa barre, les coffres, et un seul bouton. */
+.rd-affiche{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;min-height:124px;padding:14px;border:0;
+  border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:#17151f;
+  box-shadow:inset 0 0 0 1px rgba(157,140,255,.26),var(--tuile);transition:transform .18s var(--spring)}
+.rd-affiche:active{transform:scale(.98)}
+.rd-affiche-art{position:absolute;top:0;bottom:0;right:0;width:68%;z-index:-2;background:50% 20%/170% auto no-repeat;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}
+.rd-affiche::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(70% 120% at 0% 50%,rgba(93,75,217,.4),transparent 70%)}
+.rd-affiche-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rd-affiche-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.rd-affiche-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.05;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+.rd-affiche-t em{font-style:normal;font-size:12px;color:var(--subtle)}
+.rd-affiche .rf-pastille{position:absolute;top:10px;right:10px}
+.rd-pv{display:block;height:10px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.rd-pv i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,#ff6b6b);box-shadow:0 0 12px rgba(255,107,107,.5)}
+.rd-pv.mini{max-width:170px;height:6px;margin:5px 0 3px}
+.rd{display:flex;flex-direction:column;gap:12px}
+.rd-hero{position:relative;isolation:isolate;overflow:hidden;min-height:230px;display:flex;align-items:flex-end;padding:16px;border-radius:var(--radius-xl);background:#17151f;
+  box-shadow:inset 0 0 0 1px rgba(157,140,255,.22)}
+.rd-hero-art{position:absolute;inset:0;z-index:-2;background:50% 30%/150% auto no-repeat}
+.rd-hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,0) 30%,rgba(23,21,31,.96) 92%)}
+.rd-hero-t{display:flex;flex-direction:column;gap:2px}
+.rd-hero-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.rd-hero-t h2{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:28px;line-height:1.05;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.rd-niv{align-self:flex-start;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(18,17,25,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.rd-niv b{font-family:var(--display);font-size:14px}
+.rd-barre{display:flex;flex-direction:column;gap:6px}
+.rd-barre .rd-pv{height:14px}
+.rd-pv-l{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.rd-pv-l b{font-family:var(--display);font-weight:900;font-size:18px}
+.rd-pv-l span{font-size:12.5px;color:var(--muted)}
+.rd-pv-l small{margin-left:auto;font-size:12px;color:var(--muted)}
+.rd-regle{margin:0;font-size:13px;line-height:1.45;color:var(--subtle)}
+.rd-coffres{display:flex;flex-direction:column;gap:8px}
+.rd-coffre{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius);background:linear-gradient(110deg,var(--gold-wash),transparent 70%),var(--surface);
+  box-shadow:inset 0 0 0 1px var(--gold-line)}
+.rd-coffre>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}
+.rd-coffre small{font-size:11px;color:var(--muted)}
+.rd-coffre .btn{width:auto;padding-inline:16px}
+.rd-coffre-ico{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:12px;background:var(--bg-2);color:var(--gold)}
+.rd-coffre-ico img{width:28px}
+.rd-coffre-ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2}
+.rd-gainico{background:linear-gradient(180deg,#8f7dfb,#5d4bd9)}
+.rd-go{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-go p{margin:0}
+.rd-combat{display:flex;flex-wrap:wrap;gap:6px}
+.rd-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-go .cb-choixdeck{background:var(--bg-2)}
+.rd-lancer{display:flex;align-items:center;gap:12px}
+.rd-lancer .btn{flex:1}
+.rd-pips{display:flex;gap:5px}
+.rd-pips i{width:12px;height:12px;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+.rd-pips i.on{background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
 
 /* Les défis */
 .cb-bloc{padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06)}
@@ -244,14 +405,14 @@
 .cb-cosm b{font-size:11px;text-align:center;line-height:1.15}
 .cb-cosm-img{position:relative;display:block;width:100%;border-radius:8px;overflow:hidden}
 .cb-cosm.tapis .cb-cosm-img{aspect-ratio:9/16}
-.cb-cosm.sleeve .cb-cosm-img,.cb-cosm.jeton .cb-cosm-img{aspect-ratio:63/88}
-.cb-cosm.jeton .cb-cosm-img{aspect-ratio:1;border-radius:50%}
+.cb-cosm.sleeve .cb-cosm-img{aspect-ratio:63/88}
 .cb-cosm-img img{width:100%;height:100%;object-fit:cover;display:block}
 .cb-tapis-base{display:block;width:100%;height:100%;background:url('../assets/pack-star.svg') center/40% no-repeat,radial-gradient(ellipse at 50% 50%,rgba(140,120,255,.4),transparent 70%),linear-gradient(180deg,var(--plate-2),var(--plate))}
 .cb-cosm.verrou .cb-cosm-img img,.cb-cosm.verrou .cb-tapis-base{filter:grayscale(.7) brightness(.55)}
 .cb-cosm-prix{position:absolute;left:50%;bottom:6px;translate:-50% 0;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
   font-style:normal;font-size:10.5px;font-weight:900;background:rgba(18,17,25,.85);white-space:nowrap}
 .cb-cosm-prix .shard{width:11px;height:11px;color:var(--brand-light)}
+.cb-cosm-prix.ev{max-width:94%;overflow:hidden;text-overflow:ellipsis;font-size:9.5px;background:rgba(93,75,217,.9)}
 .cb-brillantes{display:flex;flex-wrap:wrap;gap:6px}
 .cb-br{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);opacity:.4}
 .cb-br.eue{opacity:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 0 12px rgba(255,255,255,.35);
@@ -270,8 +431,13 @@
 .at{display:flex;flex-direction:column;gap:10px}
 /* La tête de l'atelier reste sous l'en-tête pendant qu'on fait défiler les
    cartes : une capsule de verre, comme le pied. Ce qu'elle contient n'est
-   pas du verre (pas de verre sur du verre). */
-.at-tete{position:sticky;top:calc(var(--top-h) + env(safe-area-inset-top,0px));z-index:5;display:flex;align-items:center;gap:6px;padding:6px;
+   pas du verre (pas de verre sur du verre).
+   Ce qui défile, c'est <main>, et sa marge intérieure tient déjà compte de
+   l'en-tête et de la barre du bas : les positions collantes se comptent
+   depuis cette marge (top:0, bottom négatif). Compter l'en-tête une seconde
+   fois posait la tête sur le message d'état, et le pied au milieu de
+   l'écran. */
+.at-tete{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:6px;
   border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
   -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:var(--glass-hi),var(--sh-3)}
 .at-retour{display:grid;place-items:center;width:40px;height:40px;flex:none;border:0;border-radius:50%;
@@ -283,8 +449,10 @@
 .at-compte{flex:none;padding:6px 12px;border-radius:999px;font-weight:800;background:rgba(255,255,255,.08)}
 .at-compte b{font-family:var(--display);font-size:17px}
 .at-compte.ok{box-shadow:inset 0 0 0 1.5px var(--ok);color:var(--ok)}
-.at-etat{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);background:var(--gold-wash);box-shadow:inset 0 0 0 1px var(--gold-line);font-size:13px}
+.at-etat{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--danger-line);font-size:13px}
+.at-etat>span{color:var(--danger)}
 .at-etat.ok{background:var(--ok-wash);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.at-etat.ok>span{color:var(--ok)}
 .at-etat p{margin:0}
 .at-etat>span{display:grid;place-items:center;width:24px;height:24px;flex:none}
 .at-etat svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2}
@@ -372,7 +540,7 @@
 .at-e button:disabled{opacity:.35;cursor:default}
 .at-e b{min-width:14px;text-align:center}
 .at-reserve>.btn{width:100%}
-.at-pied{position:sticky;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 10px);z-index:6;display:flex;gap:8px;padding:8px;margin-top:6px;
+.at-pied{position:sticky;bottom:-20px;z-index:6;display:flex;gap:8px;padding:8px;margin-top:6px;
   border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
   -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:var(--glass-hi),var(--sh-3)}
 .at-pied .btn:last-child{width:52px;flex:none;padding:0}
@@ -384,21 +552,39 @@
   .at-corps .at-cartes,.at-corps .at-deck{display:block!important}
   .at-corps .at-deck>*{display:flex}
   .at-corps .at-deck .at-groupe,.at-corps .at-deck .at-reserve{display:block!important}
-  .at-corps .at-deck{position:sticky;top:150px;max-height:calc(100vh - 170px);overflow:auto}
+  .at-corps .at-deck{position:sticky;top:76px;max-height:calc(100vh - 260px);overflow:auto}
 }
 
 /* ============ Les guides ============ */
+/* L'accueil du Guide : le prochain à lire en grand, avec l'anneau des guides
+   lus ; puis trois groupes, du plus simple au plus fin. */
+.gd-une{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border:0;border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:radial-gradient(90% 120% at 100% 0%,rgba(138,120,245,.28),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.gd-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.gd-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.gd-une-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
+.gd-une-t em{font-style:normal;font-size:12.5px;color:var(--subtle)}
+.gd-anneau{flex:none;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;
+  background:radial-gradient(closest-side,var(--surface) 78%,transparent 80%),conic-gradient(var(--accent-soft) var(--p),var(--surface-3) 0)}
+.gd-anneau b{font-family:var(--display);font-weight:900;font-size:15px}
+.gd-groupe h3{margin:4px 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .gd-liste{display:flex;flex-direction:column;gap:6px}
-.gd-entree{display:flex;align-items:center;gap:12px;padding:12px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);text-align:left;cursor:pointer;
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06)}
+.gd-entree{display:flex;align-items:center;gap:12px;padding:11px 12px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
 .gd-entree:hover{box-shadow:inset 0 0 0 1px var(--line-3)}
-.gd-entree>span:nth-of-type(3),.gd-entree>span:last-of-type:not(.gd-num):not(.gd-ico){flex:1;display:flex;flex-direction:column}
+.gd-entree-t,.gd-entree>span:last-of-type:not(.gd-num):not(.gd-ico){flex:1;min-width:0;display:flex;flex-direction:column}
 .gd-entree small{font-size:12px;color:var(--muted)}
 .gd-entree>svg{transform:rotate(-90deg);width:18px;height:18px;color:var(--muted);fill:none;stroke:currentColor;stroke-width:2}
+.gd-entree.lu .gd-ico{color:var(--muted);background:var(--surface-2)}
+.gd-lu{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;color:var(--ok);background:var(--ok-wash)}
+.gd-lu svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .gd-num{display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:50%;font-size:12px;font-weight:900;color:var(--muted);background:var(--bg-2)}
-.gd-ico{display:grid;place-items:center;width:36px;height:36px;flex:none;border-radius:var(--radius-sm);color:var(--deco-ink);background:var(--deco-wash)}
-.gd-ico svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gd-ico{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:var(--radius-sm);color:var(--deco-ink);background:var(--deco-wash)}
+.gd-ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .gd-ico svg.ico-star{fill:currentColor;stroke:none}
+.gd{display:flex;flex-direction:column;gap:12px}
+.gd-avance{display:block;height:5px;margin-top:6px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
+.gd-avance i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
 .gd-retour{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 4px;border:0;background:none;font:inherit;font-weight:800;color:var(--muted);cursor:pointer}
 .gd-retour svg{width:18px;height:18px;transform:rotate(90deg);fill:none;stroke:currentColor;stroke-width:2.2}
 .gd-page{padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06);line-height:1.55}
@@ -439,8 +625,13 @@
 .gd-ligne-milieu::before{content:"";position:absolute;left:10%;right:10%;top:50%;height:1px;background:rgba(255,255,255,.3)}
 .gd-ligne-milieu span{position:relative;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);background:var(--plate);padding:0 8px}
 .gd-schema p{margin:10px 0 0;font-size:12.5px!important}
-.gd-suite{display:flex;justify-content:space-between;gap:8px;margin-top:10px}
-.gd-suite .btn{width:auto;padding-inline:16px}
+.gd-suite{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gd-voisin{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.gd-voisin.prec{align-items:flex-start;text-align:left}
+.gd-voisin.suiv{grid-column:2;align-items:flex-end;text-align:right;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+.gd-voisin small{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.gd-voisin b{font-size:14px}
 .gd-surcouche{position:absolute;inset:0;z-index:35;display:flex;justify-content:center;background:rgba(8,7,12,.9);overflow:auto;padding:16px;animation:fadein .2s}
 .gd-surcouche-in{width:min(560px,100%);display:flex;flex-direction:column;gap:10px;padding-top:env(safe-area-inset-top,0px)}
 .gd-surcouche-in>header{display:flex;align-items:center;justify-content:space-between}

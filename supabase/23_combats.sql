@@ -30,7 +30,7 @@ create table if not exists public.combat_joueurs (
   user_id      uuid primary key references public.profiles on delete cascade,
   section      text check (section in ('toxique', 'deter')),
   deck_actif   text,
-  -- tapis, sleeve, jeton : identifiants d'inventaire (ou t_base, s_base, j_base)
+  -- tapis, sleeve : identifiants d'inventaire (ou t_base, s_base)
   cosm         jsonb not null default '{}'::jsonb,
   -- La campagne : les combats deja gagnes (cp01 … cp20), et si elle est finie.
   faits        text[] not null default '{}',
@@ -296,8 +296,11 @@ begin
     'deck_actif', c.deck_actif,
     'cosm', c.cosm,
     'campagne', jsonb_build_object('faits', to_jsonb(c.faits), 'finie', c.finie),
+    -- Les plafonds du jour : victoires payées contre l'IA, défis payés.
     'jour', jsonb_build_object('recompensees', case when c.jour = jour_paris() then c.recompensees else 0 end,
-                               'plafond', 5),
+                               'plafond', 5,
+                               'defis', case when c.defis_jour = jour_paris() then c.defis_rec else 0 end,
+                               'defis_plafond', 3),
     'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites,
                                 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d),
     -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
@@ -329,7 +332,7 @@ begin
   return me();
 end $$;
 
--- Le deck actif, le tapis, le sleeve, le jeton : on ne choisit que ce qu'on a.
+-- Le deck actif, le tapis, le sleeve : on ne choisit que ce qu'on a.
 create or replace function public.combat_reglages(p_reglages jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; k text; v text; base text;
@@ -340,14 +343,14 @@ begin
   if p_reglages ? 'deck_actif' then
     update combat_joueurs set deck_actif = left(p_reglages->>'deck_actif', 40) where user_id = p;
   end if;
-  foreach k in array array['tapis', 'sleeve', 'jeton'] loop
+  foreach k in array array['tapis', 'sleeve'] loop
     v := p_reglages->>k;
     continue when v is null;
-    base := case k when 'tapis' then 't_base' when 'sleeve' then 's_base' else 'j_base' end;
+    base := case k when 'tapis' then 't_base' else 's_base' end;
     if v <> base and not exists (select 1 from inventory where user_id = p and item_id = v and qty > 0) then
       raise exception 'Tu ne possèdes pas cet objet.';
     end if;
-    if k <> 'jeton' and (c.cosm->>k) is distinct from v then perform bump_quests(p, 'cosm', 1); end if;
+    if (c.cosm->>k) is distinct from v then perform bump_quests(p, 'cosm', 1); end if;
     update combat_joueurs set cosm = cosm || jsonb_build_object(k, v) where user_id = p;
   end loop;
   return me();

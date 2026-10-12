@@ -1581,7 +1581,8 @@
       section: c.section, decks: c.decks.map(d => Object.assign({}, d)), deck_actif: c.deck_actif,
       cosm: Object.assign({}, c.cosm),
       campagne: { faits: c.faits.slice(), finie: !!c.finie },
-      jour: { recompensees: c.jour === auj ? c.recompensees : 0, plafond: PVE_PLAFOND },
+      jour: { recompensees: c.jour === auj ? c.recompensees : 0, plafond: PVE_PLAFOND,
+        defis: c.defis_jour === auj ? c.defis_rec : 0, defis_plafond: DEFI_GAIN.plafond },
       stats: Object.assign({}, c.stats),
       xp: c.xp || 0,
       defis: (S.defis || []).filter(d => (d.de === p || d.pour === p) && ['attente', 'en_cours'].includes(d.statut)).map(d => {
@@ -1606,11 +1607,11 @@
     const c = cb(p);
     const r = p_reglages || {};
     if (r.deck_actif !== undefined) c.deck_actif = r.deck_actif;
-    for (const k of ['tapis', 'sleeve', 'jeton']) {
+    for (const k of ['tapis', 'sleeve']) {
       if (!r[k]) continue;
-      const base = { tapis: 't_base', sleeve: 's_base', jeton: 'j_base' }[k];
+      const base = { tapis: 't_base', sleeve: 's_base' }[k];
       if (r[k] !== base && !((invDe(p)[r[k]] || 0) > 0)) refuser('Tu ne possèdes pas cet objet.');
-      if (c.cosm[k] !== r[k] && k !== 'jeton') bump(p, 'cosm', 1);
+      if (c.cosm[k] !== r[k]) bump(p, 'cosm', 1);
       c.cosm[k] = r[k];
     }
     return me(p);

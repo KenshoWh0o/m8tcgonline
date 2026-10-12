@@ -82,7 +82,7 @@ function vChoc() {
   if (chErreur) return vide('Événement indisponible', chErreur);
   if (!chEv || !chEtat) return '<p class="muted boitecharge">Chargement de l\'événement…</p>';
   const corps = {
-    accueil: vChAccueil, raid: () => vRaid(false), epreuve: vChEpreuve, quetes: vChQuetes,
+    accueil: vChAccueil, raid: () => vRaid(), epreuve: vChEpreuve, quetes: vChQuetes,
     pass: vChPass, boutique: vChBoutique, classement: vChClassement
   }[chVue] || vChAccueil;
   return `<div class="rf ch">${vChTete(srvTime(ev.fin))}<div class="rf-page">${corps()}</div></div>`;

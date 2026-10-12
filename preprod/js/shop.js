@@ -139,11 +139,9 @@ function vRayon(id, items) {
       return `<section class="rayon"><h2>${h(sec.titre)}</h2>
         <p class="muted small">Tu es entré grâce à une invitation : les invitations sont réservées aux joueurs qui ne sont pas arrivés ainsi.</p></section>`;
     }
-    const cases = sec.avenir
-      ? vCosmetiquesAVenir()
-      : items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
+    const cases = items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
     if (!cases) return '';
-    return `<section class="rayon${sec.avenir ? ' avenir' : ''}">
+    return `<section class="rayon">
       <h2>${h(sec.titre)}</h2>
       <div class="offres">${cases}</div>
       ${sec.invitations ? vMesInvitations() : ''}
@@ -173,25 +171,6 @@ function vArticle(it, items) {
       : `<span class="ofprix">${dv.ico()}${fmtN(it.prix)}</span>`}
   </article>`;
 }
-
-/* Le rayon cosmétique n'a encore que des cadres. Plutôt que de laisser croire
-   qu'il n'y aura rien d'autre, on montre les cases à venir : elles disent ce
-   que le mode Combat apportera, et pourquoi garder ses Éclats. */
-const COSMETIQUES_A_VENIR = [
-  ['Protège-cartes', 'Le dos de tes cartes, en combat'],
-  ['Jetons de dégâts', 'Les marqueurs posés sur le terrain'],
-  ['Tapis de jeu', 'Le plateau sur lequel tu joues'],
-  ['Titres', 'Une mention sous ton pseudo']
-];
-
-/* Plus d'étiquette « Avec les combats » sur chaque case : c'est le titre de la
-   section, juste au-dessus. Le répéter quatre fois ne renseignait personne. */
-const vCosmetiquesAVenir = () => COSMETIQUES_A_VENIR.map(([nom, quoi]) =>
-  `<article class="offre oflock">
-    <span class="oflockico">${NAVICO.lock}</span>
-    <span class="ofnom">${h(nom)}</span>
-    <small>${h(quoi)}</small>
-  </article>`).join('');
 
 /* =====================================================================
    La fiche d'achat

@@ -35,8 +35,10 @@ const rdTentatives = () => (rdEtat ? Math.max(0, rdEtat.moi.max - rdEtat.moi.ten
 const rdCoffres = () => (rdEtat ? rdEtat.coffres.length : 0);
 const rdEvenement = () => evenementEnCours() === 'choc';
 
-/* La difficulté en étoiles : pleines et vides, sur cinq. */
-const etoiles = n => `<span class="etoiles" aria-label="${n} sur 5">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}">${ICON.star}</i>`).join('')}</span>`;
+/* La difficulté en étoiles : cinq places, pleines ou vides (Arcade,
+   campagne, Raid). */
+const ETOILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>';
+const etoiles = n => `<span class="etoiles" role="img" aria-label="${n} sur 5">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}">${ETOILE}</i>`).join('')}</span>`;
 
 /* La barre de vie commune. */
 function vRaidBarre(r) {
@@ -47,8 +49,9 @@ function vRaidBarre(r) {
   </div>`;
 }
 
-/* La page. `titre` : faux dans l'onglet de l'événement, qui a son en-tête. */
-function vRaid(titre) {
+/* La page (sous l'en-tête de l'onglet Combats, ou dans l'onglet de
+   l'événement) : le boss, sa barre, les coffres, et un seul bouton. */
+function vRaid() {
   if (Backend.mode !== 'cloud') return horsLigne('Le Raid');
   if (rdErreur) return vide('Raid indisponible', rdErreur);
   if (!rdEtat) { relireRaid(); return '<p class="muted boitecharge">Chargement du Raid…</p>'; }
@@ -69,28 +72,26 @@ function vRaid(titre) {
     <section class="rd-hero">
       ${k.img ? `<span class="rd-hero-art" style="background-image:url('${h(k.img)}')" aria-hidden="true"></span>` : ''}
       <div class="rd-hero-t">
-        ${titre !== false ? '<small>Raid · toute l\'année</small>' : ''}
+        <small>Raid · niveau ${r.niveau}</small>
         <h2>${h(RAID.nom)}</h2>
-        <span class="rd-niv">Niveau <b class="tnum">${r.niveau}</b></span>
       </div>
     </section>
     ${vRaidBarre(r)}
-    <p class="rd-regle">Tout le serveur le frappe. Quand sa barre est vide, chacun de ceux qui l'ont frappé ouvre un coffre, et il revient plus fort.</p>
+    <p class="rd-regle">Tout le serveur le frappe. Quand sa barre est vide, tous ceux qui l'ont frappé ouvrent un coffre, et il revient plus fort.</p>
     ${coffres ? `<section class="rd-coffres">${coffres}</section>` : ''}
     <section class="rd-go">
       <div class="rd-combat">
         <span class="rd-chip">IA ${etoiles(c.ia)}</span>
         <span class="rd-chip">${c.pvBoss} PV</span>
         ${c.ess ? `<span class="rd-chip">${c.ess} Essence${c.ess > 1 ? 's' : ''} d'avance</span>` : ''}
-        <span class="rd-chip">Déjà sur le plateau</span>
       </div>
       ${sec ? vChoixDeck() : ''}
       <div class="rd-lancer">
         <span class="rd-pips" aria-label="${tr} tentative${tr > 1 ? 's' : ''} sur ${r.moi.max}">${pips}</span>
-        ${sec ? `<button class="btn cb-lancer" data-rd="go" ${tr ? '' : 'disabled'}>${NAVICO.sword}${tr ? 'Affronter' : 'Reviens demain'}</button>`
+        ${sec ? `<button class="btn cb-lancer" data-rd="go" ${tr ? '' : 'disabled'}>${tr ? 'Affronter' : 'Reviens demain'}</button>`
           : '<button class="btn cb-lancer" data-tab="combats">Choisis d\'abord ta Section</button>'}
       </div>
-      <p class="muted small">Chaque PV pris : un dégât sur sa barre et ${gain}${ev ? ' (pendant l\'événement)' : ''}.</p>
+      <p class="muted small">Chaque PV que tu lui prends : un dégât sur sa barre, et ${gain}${ev ? ' pendant l\'événement' : ''}.</p>
     </section>
     ${vTopRaid(5)}
   </div>`;
