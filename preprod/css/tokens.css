@@ -1,17 +1,17 @@
 /* Jetons de design : couleurs, matières, typos, rythme, profondeur. Tout part d'ici.
 
-   Version 3.0 : la refonte visuelle. Le système complet — les règles d'usage
-   de chaque couleur et de chaque matière, et pourquoi — est décrit dans
-   docs/design-3.0.md. En bref :
+   Version 3.0 : la refonte visuelle, palette « Graphite et lavande »
+   (choisie sur maquettes, docs/design-3.0.md). En bref :
 
-   - Une nuit indigo, jamais un noir pur : les cartes y brillent, et le verre
-     a quelque chose à flouter.
-   - Une seule couleur d'action par écran. Le rose M8 sur tout le site ; l'or
-     dans l'arène de combat, où le corail désigne l'adversaire.
-   - Trois matières : le verre (les barres et ce qui flotte), le verre couvrant
-     (les feuilles, le tiroir), le voile (les blocs de contenu, sans flou).
-   - Le violet et le cyan ne sont plus des couleurs d'interface : ce sont des
-     lumières d'ambiance, dans les fonds et les halos.
+   - Un gris anthracite neutre, à peine violacé : il ne se dispute pas avec
+     les illustrations, qui portent toute la couleur de l'écran.
+   - Des tuiles pleines, posées sur le fond par une ombre douce — comme
+     Pokémon TCG Pocket —, et non des voiles translucides.
+   - Une seule couleur d'action, la lavande : le bouton principal, l'onglet
+     en cours, ce qu'on peut jouer en combat. Le rouge, pour l'adversaire.
+     Le blanc, pour ce qu'on a choisi.
+   - Le verre reste pour ce qui flotte : la barre des onglets, l'en-tête,
+     les feuilles.
 
    Aucune couleur n'est écrite en dur ailleurs quand un jeton existe : changer
    une teinte se fait ici. */
@@ -21,159 +21,131 @@
   box-sizing:border-box;
   color-scheme:dark;
 
-  /* --- Fonds : une nuit indigo. Le fond plein ne sert qu'à la page ; les
-     surfaces sont des voiles clairs posés dessus, pour que l'ambiance de
-     chaque écran (css/base.css, « Fond ») transparaisse sous le contenu. --- */
-  --bg:#0a071f;
-  /* Le creux : une jauge vide, un rail de segments, une alvéole. Un voile
-     sombre plutôt qu'un aplat : il creuse sans faire de trou noir. */
-  --bg-2:rgba(3,2,14,.42);
-  --surface:rgba(255,255,255,.045);
-  --surface-2:rgba(255,255,255,.075);
-  --surface-3:rgba(255,255,255,.11);
-  /* Les mêmes, opaques : pour ce qui se pose sur une image (une pastille de
-     quantité, le dos d'une carte) et doit la masquer. */
-  --plate:#120b29;
-  --plate-2:#1a1234;
-  --plate-3:#231c40;
-  /* Le voile posé sous les barres flottantes, et celui qui assombrit la page
-     derrière une fenêtre. */
-  --veil:rgba(10,7,31,.72);
-  --veil-2:rgba(10,7,31,.88);
-  --scrim:rgba(4,2,16,.62);
+  /* --- Fonds et tuiles : un gris anthracite. L'élévation se lit à la
+     clarté de la tuile et à son ombre. --- */
+  --bg:#121119;
+  /* Le creux : une jauge vide, un rail de segments, une alvéole. */
+  --bg-2:rgba(0,0,0,.26);
+  --surface:#1c1b25;
+  --surface-2:#24232f;
+  --surface-3:#2d2b3a;
+  /* Les mêmes, pour ce qui se pose sur une image et doit la masquer. */
+  --plate:#16151e;
+  --plate-2:#1c1b25;
+  --plate-3:#2a2837;
+  --veil:rgba(18,17,25,.74);
+  --veil-2:rgba(18,17,25,.92);
+  --scrim:rgba(8,7,12,.66);
 
-  /* Des filets clairs et transparents : ils prennent la teinte de ce qu'ils
-     bordent, verre, voile ou illustration. */
-  --line:rgba(255,255,255,.085);
-  --line-2:rgba(255,255,255,.15);
-  --line-3:rgba(255,255,255,.24);
+  --line:rgba(255,255,255,.07);
+  --line-2:rgba(255,255,255,.12);
+  --line-3:rgba(255,255,255,.2);
 
-  /* --- Texte : blanc lavande, puis deux gris bleutés. `--muted` garde 5:1
-     sur un voile (calculé), c'est le plancher de lisibilité. --- */
-  --text:#f6f4ff;
-  --subtle:#c6c3e2;
-  --muted:#9591b9;
-  /* Ce qui se pose sur un aplat de la couleur d'action. */
+  /* --- Texte --- */
+  --text:#f1f0f8;
+  --subtle:#c4c1d6;
+  --muted:#9a97ae;
   --on-accent:#fff;
 
-  /* --- Marque et action : le rose M8, celui du logo. C'est la couleur de ce
-     qu'on peut faire — le bouton principal, l'onglet en cours, une pastille
-     qui réclame l'attention. Jamais un fond de bloc, jamais un titre. --- */
-  --brand:#ff4fa3;
-  --brand-light:#ffd0ea;
-  --brand-deep:#8a1a5c;
-  --brand-ink:#1d0717;
-  --accent:#e0378d;
-  /* Le rose lisible sur fond sombre : icônes, liens, chiffres actifs. */
-  --accent-soft:#ff7ac4;
-  --accent-deep:#9c1560;
-  --accent-wash:rgba(255,95,171,.13);
-  --accent-wash-2:rgba(255,95,171,.24);
-  --accent-glow:rgba(255,80,165,.42);
-  /* Le dégradé du bouton principal. Le blanc y garde 4,3:1 au milieu. */
-  --cta:linear-gradient(180deg,#f7509f,#c8207a);
+  /* --- L'action : la lavande. Le bouton principal (un par écran), l'onglet
+     en cours, ce qu'on peut jouer. Le dégradé du bouton garde au moins 4,4:1
+     avec le blanc au milieu. --- */
+  --accent:#8a78f5;
+  --accent-soft:#b3a6ff;
+  --accent-deep:#5d4bd9;
+  --accent-wash:rgba(157,140,255,.12);
+  --accent-wash-2:rgba(157,140,255,.22);
+  --accent-glow:rgba(140,120,255,.45);
+  --cta:linear-gradient(180deg,#8f7dfb,#5d4bd9);
+  /* La marque (le rose du logo) ne sert plus qu'au logo. Les pastilles qui
+     réclament l'attention sont rouges, comme partout. */
+  --brand:#ff5f7e;
+  --brand-light:#e6e1ff;
+  --brand-deep:#5d4bd9;
+  --brand-ink:#16122b;
 
-  /* --- Lumières d'ambiance : le violet et le cyan des visuels de
-     l'extension. Ils éclairent les fonds, les halos et les illustrations ;
-     ils ne marquent jamais un état. --- */
-  --violet:#9a73ff;
-  --violet-glow:rgba(124,77,255,.38);
-  --cyan:#40d1f7;
-  --cyan-glow:rgba(64,209,247,.28);
-  /* Le décor : la tuile d'une icône, un lavis de bandeau. Violet clair,
-     pour qu'une icône décorative ne passe pas pour un bouton rose. */
-  --deco-wash:rgba(154,115,255,.15);
-  --deco-ink:#c3adff;
-  /* Une progression : du violet de l'ambiance au rose de l'action. */
-  --progress:linear-gradient(90deg,#8a63ff,#ff6fb5);
+  /* Le décor : les icônes au trait, les lavis. La même lavande, en clair. */
+  --violet:#9d8cff;
+  --violet-glow:rgba(140,120,255,.3);
+  --cyan:#9d8cff;
+  --cyan-glow:rgba(140,120,255,.18);
+  --deco-wash:rgba(157,140,255,.13);
+  --deco-ink:#c8bfff;
+  --progress:linear-gradient(90deg,#7a68ec,#b3a6ff);
 
-  /* --- Or : les récompenses, et dans l'arène, ce qu'on peut jouer. --- */
-  --gold:#ffbd34;
-  --gold-light:#ffd65e;
-  --gold-deep:#b17100;
-  --gold-ink:#2a1700;
-  --gold-wash:rgba(255,189,52,.15);
-  --gold-line:rgba(255,189,52,.5);
-  --gold-glow:rgba(255,189,52,.45);
+  /* --- L'or : les récompenses et la rareté Légendaire, rien d'autre. --- */
+  --gold:#f5c451;
+  --gold-light:#ffdc85;
+  --gold-deep:#a7791a;
+  --gold-ink:#2a1d00;
+  --gold-wash:rgba(245,196,81,.13);
+  --gold-line:rgba(245,196,81,.45);
+  --gold-glow:rgba(245,196,81,.4);
 
-  /* --- Signaux. Le danger est corail, plus rose : le rose est pris par
-     l'action, et une erreur ne doit pas ressembler à un bouton. --- */
-  --ok:#41dca5;
-  --ok-deep:#00a878;
-  --ok-wash:rgba(65,220,165,.14);
-  --ok-line:rgba(65,220,165,.42);
-  --warn:#ffbd34;
-  --danger:#ff6b5e;
-  --danger-wash:rgba(255,107,94,.13);
-  --danger-line:rgba(255,107,94,.45);
+  /* --- Signaux --- */
+  --ok:#4fd6a0;
+  --ok-deep:#1ea87a;
+  --ok-wash:rgba(79,214,160,.13);
+  --ok-line:rgba(79,214,160,.4);
+  --warn:#f5c451;
+  --danger:#ff6b6b;
+  --danger-wash:rgba(255,107,107,.12);
+  --danger-line:rgba(255,107,107,.42);
 
-  /* --- Raretés : elles appartiennent aux cartes, pas à l'interface. --- */
+  /* --- Raretés : elles appartiennent aux cartes. --- */
   --r-es:#90b2a5;
   --r-c:#a29dbb;
   --r-pc:#7bd6b4;
-  --r-r:#39b8ff;
-  --r-e:#a879ff;
-  --r-l:#ffc73b;
-  --r-pr:#ff5bb0;
+  --r-r:#5aa9ff;
+  --r-e:#a98bff;
+  --r-l:#f5c451;
+  --r-pr:#ff7eb6;
 
-  /* --- Matières : le verre ---
-     Le verre est réservé à ce qui flotte au-dessus du contenu : la barre du
-     bas, l'en-tête, les feuilles, les boutons posés sur une image. Le flou
-     lui-même s'écrit dans les règles (Safari ignore une variable dans
-     `-webkit-backdrop-filter`) : blur(22px) saturate(170%) pour le verre,
-     blur(32px) saturate(160%) pour le verre couvrant. */
-  --glass:rgba(34,26,70,.5);
-  --glass-strong:linear-gradient(180deg,rgba(40,31,82,.84),rgba(18,13,44,.92));
-  --glass-line:rgba(255,255,255,.14);
-  --glass-line-top:rgba(255,255,255,.3);
-  /* Le reflet du bord haut : c'est lui qui dit « verre » plus que le flou. */
-  --glass-hi:inset 0 1px 0 rgba(255,255,255,.2);
-  /* Repli quand le flou n'existe pas ou que la transparence est réduite. */
-  --glass-solid:rgba(22,17,48,.96);
+  /* --- Le verre : ce qui flotte (barre des onglets, en-tête, feuilles).
+     Le flou s'écrit en dur dans les règles (Safari ignore une variable dans
+     `-webkit-backdrop-filter`). --- */
+  --glass:rgba(30,29,40,.74);
+  --glass-strong:linear-gradient(180deg,rgba(38,37,50,.95),rgba(24,23,32,.97));
+  --glass-line:rgba(255,255,255,.1);
+  --glass-line-top:rgba(255,255,255,.2);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.12);
+  --glass-solid:rgba(26,25,34,.97);
 
-  /* --- Profondeur : quatre niveaux, teintés de la nuit, jamais noirs --- */
-  --sh-1:0 1px 2px rgba(3,1,14,.4);
-  --sh-2:0 4px 14px rgba(3,1,14,.42);
-  --sh-3:0 12px 30px rgba(3,1,14,.5);
-  --sh-4:0 24px 60px rgba(3,1,14,.62);
-  /* Ancien rebord des boutons pressables (version 2) : gardé pour les
-     quelques reliefs qui s'en servent encore. */
-  --sh-press:#07051a;
-  /* Le reflet haut qui donne du relief aux surfaces bombées. */
-  --gloss:rgba(255,255,255,.42);
-  --gloss-soft:rgba(255,255,255,.18);
-  /* Le survol : un voile clair. */
-  --hover:rgba(255,255,255,.06);
-  --hover-2:rgba(255,255,255,.1);
+  /* --- Profondeur : des ombres douces, comme des cartes posées --- */
+  --sh-1:0 1px 2px rgba(0,0,0,.3);
+  --sh-2:0 4px 14px rgba(0,0,0,.32);
+  --sh-3:0 12px 30px rgba(0,0,0,.4);
+  --sh-4:0 24px 60px rgba(0,0,0,.5);
+  --sh-press:#0b0a10;
+  --gloss:rgba(255,255,255,.34);
+  --gloss-soft:rgba(255,255,255,.14);
+  --hover:rgba(255,255,255,.05);
+  --hover-2:rgba(255,255,255,.09);
+  /* La tuile : un reflet en haut, une ombre dessous. */
+  --tuile:inset 0 1px 0 rgba(255,255,255,.05),0 6px 18px rgba(0,0,0,.24);
 
-  /* --- Typo : Archivo pour les titres (la typo du logo), Figtree pour tout
-     le reste. L'italique est réservé aux titres de page et aux noms propres
-     mis en scène (un boss, un événement). --- */
+  /* --- Typo : Archivo pour les titres (la typo du logo), Figtree pour le
+     reste. L'italique est réservé aux grands titres et aux noms mis en
+     scène. --- */
   --display:'Archivo','Arial Black',system-ui,sans-serif;
   --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
 
-  /* --- Rayons concentriques : un bloc arrondi à 24 px contient des éléments
-     à 18, qui contiennent des éléments à 12. Le rayon intérieur est le rayon
-     extérieur moins la marge. --- */
+  /* --- Rayons concentriques --- */
   --radius-xs:8px;
   --radius-sm:12px;
   --radius:18px;
-  --radius-lg:24px;
-  --radius-xl:30px;
+  --radius-lg:22px;
+  --radius-xl:28px;
 
-  /* --- Rythme vertical : les marges entre blocs sortent d'ici --- */
   --gap-1:6px;
   --gap-2:10px;
   --gap-3:14px;
   --gap-4:20px;
   --gap-5:28px;
 
-  /* --- Mouvement : un ressort pour ce qu'on touche, une courbe douce pour
-     ce qui entre. On anime l'opacité et la transformation, jamais le flou. --- */
   --spring:cubic-bezier(.2,1.25,.4,1);
   --ease:cubic-bezier(.2,.8,.2,1);
 
-  /* --- Les barres flottantes : leur hauteur décide des marges du contenu --- */
   --top-h:58px;
   --nav-h:66px;
 }
@@ -219,11 +191,11 @@ img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:n
 #theater,#viewer,.promoscene{
   color-scheme:dark;
 
-  --bg:#07051a;
-  --bg-2:#0e0a24;
-  --surface:#161130;
-  --surface-2:#1f193d;
-  --surface-3:#29224a;
+  --bg:#0c0b11;
+  --bg-2:#121119;
+  --surface:#1a1923;
+  --surface-2:#22212c;
+  --surface-3:#2b2a37;
   --line:rgba(255,255,255,.1);
   --line-2:rgba(255,255,255,.17);
   --line-3:rgba(255,255,255,.26);

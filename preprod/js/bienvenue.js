@@ -151,13 +151,12 @@ function montrerNouveautes30() {
         </div>
       </div>
       <ol class="bvpoints nvpoints">
-        ${point('star', 'Un nouveau visage.', 'Tout le site est redessiné : des barres de verre qui flottent sur la page, chaque écran éclairé par une illustration du jeu, et une seule couleur pour ce qu\'on peut faire — le rose sur le site, l\'or dans l\'arène.')}
-        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt combats, le PvE infini) et Versus en direct contre tes amis, dans une arène en plein écran.')}
+        ${point('star', 'Un nouveau visage.', 'Tout le site est redessiné, en graphite et lavande : des tuiles pleines, les illustrations du jeu en grand, et une seule couleur pour ce qu\'on peut faire, la lavande, partout, arène comprise. Les Secrètes ont un nouveau reflet.')}
+        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt combats, le PvE infini) et Versus en direct contre tes amis, dans une arène en plein écran. Chaque carte de l\'adversaire s\'affiche en grand avec son effet, et toutes les cartes jouées restent consultables.')}
         ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
         ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
         ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, une chance sur 133 par booster, et une finition à part. La Légendaire passe à 4,25 %.`)}
-        ${point('star', 'La maîtrise des cartes.', 'Chaque exemplaire obtenu fait monter une carte : Bronze, Argent, Or, Prisme — un médaillon et un cadre sur la carte. La visionneuse montre chaque palier.')}
-        ${point('user', 'Dix nouveaux cadres.', 'Arène (niveaux 10 à 50), Toxique et Déter, Secrète, Maîtrise, et ceux de l\'événement. Ton profil montre où gagner chacun.')}
+        ${point('user', 'Neuf nouveaux cadres.', 'Arène (niveaux 10 à 50), Toxique et Déter, Secrète, et ceux de l\'événement. Ton profil montre où gagner chacun.')}
         ${point('shop', 'Tapis et sleeves.', 'Des tapis de jeu et des sleeves en boutique ; en combat, c\'est le tapis de celui qui joue qui s\'affiche.')}
         ${choc ? point('choc', 'Le Choc des Sections.', `Le Raid contre The French Sorcerer, l'Épreuve du jour, des points qui comptent double, un Pass de trente paliers — pendant trois semaines.`) : ''}
       </ol>`,

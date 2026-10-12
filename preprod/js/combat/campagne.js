@@ -13,7 +13,7 @@
 
 const SECTIONS = {
   toxique: {
-    id: 'toxique', nom: 'Section Toxique', court: 'Toxique', c: '#ee0073', c2: '#ff9ad5',
+    id: 'toxique', nom: 'Section Toxique', court: 'Toxique', c: '#62d84e', c2: '#b7f29a',
     promo: 'p03', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp',
     /* Les couleurs de ses adversaires de campagne, quand on affronte cette
        Section. */
@@ -21,7 +21,7 @@ const SECTIONS = {
     devise: 'Engager l\'adversaire, et frapper ce qui est à terre.'
   },
   deter: {
-    id: 'deter', nom: 'Section Déter', court: 'Déter', c: '#8936ff', c2: '#c9a8ff',
+    id: 'deter', nom: 'Section Déter', court: 'Déter', c: '#7c3aed', c2: '#c4b5fd',
     promo: 'p04', starter: 'deter', boite: 'assets/combat/sections/deter.webp',
     couleurs: ['mauve', 'violette', 'bleue', 'azur'],
     devise: 'Des Joueurs qui reviennent toujours, et des coups qui pèsent.'
@@ -77,11 +77,11 @@ const RECOMPENSE_REJOUER = { eclats: 10 };
    en Légende 250 — de quoi compter, sans doubler les revenus d'un joueur. */
 const PVE_PLAFOND = 5;
 const DIFFICULTES = [
-  { niveau: 1, nom: 'Débutant', eclats: 10, points: 1, texte: 'Elle apprend encore. Elle joue un coup sur deux au hasard.' },
-  { niveau: 2, nom: 'Facile', eclats: 15, points: 2, texte: 'Des règles simples, sans calcul.' },
-  { niveau: 3, nom: 'Normal', eclats: 25, points: 3, texte: 'Elle essaie ses coups avant de jouer.' },
-  { niveau: 4, nom: 'Difficile', eclats: 35, points: 4, texte: 'Elle calcule, et se méfie de ta riposte.' },
-  { niveau: 5, nom: 'Légende', eclats: 50, points: 5, texte: 'Elle prévoit ta réponse, avec un deck de Légendaires.' }
+  { niveau: 1, nom: 'Débutant', eclats: 10, texte: 'Elle apprend encore. Elle joue un coup sur deux au hasard.' },
+  { niveau: 2, nom: 'Facile', eclats: 15, texte: 'Des règles simples, sans calcul.' },
+  { niveau: 3, nom: 'Normal', eclats: 25, texte: 'Elle essaie ses coups avant de jouer.' },
+  { niveau: 4, nom: 'Difficile', eclats: 35, texte: 'Elle calcule, et se méfie de ta riposte.' },
+  { niveau: 5, nom: 'Légende', eclats: 50, texte: 'Elle prévoit ta réponse, avec un deck de Légendaires.' }
 ];
 
 /* Les combats de la campagne, pour qui joue `section`. */

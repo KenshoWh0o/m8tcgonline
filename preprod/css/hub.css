@@ -483,6 +483,14 @@
 .ava.md{width:56px;height:56px}
 .ava.lg{width:48px;height:48px}
 .ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--violet-glow)}
+/* Version 3.0 : le niveau de combattant, une pastille lavande en bas à
+   droite de l'avatar (profil, fiche). Son liseré reprend le fond de la
+   tuile, pour la détacher du cadre. */
+.ava-nivw{position:relative;display:inline-grid;flex:none}
+.ava-niv{position:absolute;right:-5px;bottom:-4px;z-index:4;display:grid;place-items:center;min-width:27px;height:27px;padding:0 6px;border-radius:999px;
+  font-family:var(--display);font-style:normal;font-weight:900;font-size:13px;line-height:1;color:#fff;
+  background:var(--cta);box-shadow:0 0 0 2.5px var(--surface),0 3px 8px rgba(0,0,0,.45)}
+.sheet .ava-niv{box-shadow:0 0 0 2.5px var(--surface-2),0 3px 8px rgba(0,0,0,.45)}
 /* Les cadres à texture (Prisme, Sceau, et ceux de la version 2.0) sont dans
    css/reflets.css, « Les cadres d'avatar à texture ». */
 .avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
@@ -629,7 +637,7 @@
 .podium .clrang{height:28px;line-height:28px;border-radius:99px;color:#1a1205}
 /* Teintes fixes et claires, chiffre sombre : lisibles dans les deux thèmes
    (les jetons --r-l et --r-r foncent en thème clair). */
-.p1 .clrang{background:#ffc73b}
+.p1 .clrang{background:var(--gold)}
 .p2 .clrang{background:#c79bff}
 .p3 .clrang{background:#39b8ff}
 .clnom{flex:1;min-width:0;font-weight:800;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1268,8 +1276,8 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .badge.on.tC .sucico{background:var(--surface-3);color:var(--text)}
 .badge.on.tR .sucico{background:#39b8ff;color:#06263a}
 .badge.on.tE .sucico{background:#a95cf2;color:#fff}
-.badge.on.tL .sucico{background:#ffc73b;color:#3a2600}
-.badge.on.tUN .sucico{background:conic-gradient(#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
+.badge.on.tL .sucico{background:var(--gold);color:var(--gold-ink)}
+.badge.on.tUN .sucico{background:conic-gradient(#ff5bb0,var(--gold),#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
 .suctxt{min-width:0;display:flex;flex-direction:column}
 .suctxt b{font-size:13px;font-weight:800;line-height:1.2}
 .suctxt small{font-size:11px;color:var(--muted);line-height:1.3}
@@ -1288,7 +1296,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .nvcarte{position:relative;flex:0 0 34%;max-width:150px;rotate:-6deg}
 .nvtexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .nvkicker{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
-  background:#ffc73b;color:#3a2600;padding:3px 9px;border-radius:999px}
+  background:var(--gold);color:var(--gold-ink);padding:3px 9px;border-radius:999px}
 .nvhero.trouvee .nvkicker{background:rgba(255,255,255,.2);color:#fff}
 .nvtexte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
 .nvtexte small{font-size:12.5px;line-height:1.4;opacity:.88}
@@ -1300,10 +1308,10 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .nvpoints{margin-top:12px}
 
 /* ============ Mes tirages ============ */
-.rardot.rBR{background:linear-gradient(135deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff)}
+.rardot.rBR{background:linear-gradient(135deg,#ff5bb0,var(--gold),#55e6a6,#39b8ff)}
 .tirliste h2{margin-top:18px}
 .tirage{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:9px}
-.tirage.god{border-color:#ffc73b}
+.tirage.god{border-color:var(--gold)}
 .tirtete{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .tirtete>span{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13.5px}
 .tirtete .btn{display:inline-flex;align-items:center;gap:6px}
@@ -1319,7 +1327,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   background:radial-gradient(120% 150% at 22% 40%,#6a23c4 0%,#2c0f4d 52%,#140a20 100%)}
 .unvitrine.mienne{margin-top:var(--gap-3);
   background:radial-gradient(120% 150% at 22% 40%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
-  box-shadow:0 0 0 1.5px #ffc73b,0 10px 34px rgba(255,140,200,.3)}
+  box-shadow:0 0 0 1.5px var(--gold),0 10px 34px rgba(255,140,200,.3)}
 .unrayons{position:absolute;left:24%;top:50%;width:520px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.4;pointer-events:none;
   background:repeating-conic-gradient(from 0deg,rgba(236,143,255,.55) 0 6deg,transparent 6deg 18deg);
   -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
@@ -1333,9 +1341,9 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .untexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
 .unkicker{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
   padding:3px 9px;border-radius:999px;background:#ec8fff;color:#3a0640}
-.unvitrine.mienne .unkicker{background:#ffc73b;color:#3a2600}
+.unvitrine.mienne .unkicker{background:var(--gold);color:var(--gold-ink)}
 .unvitrine.trouvee .unkicker{background:rgba(255,255,255,.2);color:#fff}
-.unvitrine.bientot .unkicker{background:#ffc73b;color:#3a2600}
+.unvitrine.bientot .unkicker{background:var(--gold);color:var(--gold-ink)}
 .unnom{font-family:var(--display);font-style:italic;font-weight:900;font-size:23px;line-height:1.08}
 .unserie{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.6)}
 .untexte p{margin:3px 0 0;font-size:13px;line-height:1.45;color:rgba(255,255,255,.88)}
@@ -1379,7 +1387,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .cdliste li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);text-align:left;
   background:rgba(255,255,255,.1);animation:cdsort .5s cubic-bezier(.3,1.4,.5,1) both}
 .cdliste li:nth-child(2){animation-delay:.08s}.cdliste li:nth-child(3){animation-delay:.16s}.cdliste li:nth-child(4){animation-delay:.24s}
-.cdliste b{font-family:var(--display);font-weight:900;font-size:19px;color:#ffc73b}
+.cdliste b{font-family:var(--display);font-weight:900;font-size:19px;color:var(--gold)}
 .cdliste span:last-child{font-size:13.5px;color:rgba(255,255,255,.88)}
 .cdnote{margin:4px 0 0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.65)}
 .cdico{flex:0 0 26px;height:26px;display:grid;place-items:center}
@@ -1393,7 +1401,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
    déborde, comme celui qui le porte. */
 .ava.unique{overflow:visible;box-shadow:0 0 14px rgba(236,143,255,.55);animation:elu-halo 3s ease-in-out infinite}
 .ava.unique::before{content:"";position:absolute;inset:-3.5px;border-radius:50%;z-index:1;pointer-events:none;
-  background:conic-gradient(from 0deg,#ffc73b,#ff7cc8,#ec8fff,#7fd8ff,#fff6d6,#ffc73b);
+  background:conic-gradient(from 0deg,var(--gold),#ff7cc8,#ec8fff,#7fd8ff,#fff6d6,var(--gold));
   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
   mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
   animation:elu-tourne 4s linear infinite}
@@ -1409,13 +1417,13 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 @keyframes elu-etoile{0%,100%{scale:.7;opacity:.6;rotate:0deg}50%{scale:1.1;opacity:1;rotate:45deg}}
 
 /* Sa carte d'identité et sa fiche prennent un liseré doré. */
-.idcard.elu{box-shadow:0 0 0 1.5px #ffc73b,0 8px 26px rgba(236,143,255,.25)}
+.idcard.elu{box-shadow:0 0 0 1.5px var(--gold),0 8px 26px rgba(236,143,255,.25)}
 
 /* L'écrin : la carte, des rayons dorés, et ce qu'elle a d'unique. */
 .elu-ecrin{position:relative;display:flex;align-items:center;gap:14px;width:100%;margin:0 0 var(--gap-4);padding:14px 16px;
   border:0;border-radius:var(--radius);overflow:hidden;isolation:isolate;text-align:left;color:#fff;cursor:pointer;
   background:radial-gradient(120% 160% at 15% 50%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
-  box-shadow:0 0 0 1.5px #ffc73b,0 10px 30px rgba(255,140,200,.28)}
+  box-shadow:0 0 0 1.5px var(--gold),0 10px 30px rgba(255,140,200,.28)}
 .elu-rayons{position:absolute;left:14%;top:50%;width:360px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.5;pointer-events:none;
   background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.7) 0 6deg,transparent 6deg 18deg);
   -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
@@ -1423,7 +1431,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .elu-carte{flex:0 0 74px;rotate:-5deg;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))}
 .elu-texte{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
 .elu-kick{display:inline-flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:800;
-  letter-spacing:.08em;text-transform:uppercase;padding:3px 9px 3px 7px;border-radius:999px;background:#ffc73b;color:#3a2600}
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 9px 3px 7px;border-radius:999px;background:var(--gold);color:var(--gold-ink)}
 .elu-kick svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round}
 .elu-texte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
 .elu-texte small{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.85)}

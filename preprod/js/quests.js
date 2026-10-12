@@ -30,11 +30,11 @@ const QICO = {
   brill_ALL: 'promo', illu: 'illu', ev_visite: 'reflets', invite: 'amis', titre: 'user', perso: 'user',
   /* Version 2.1 : plusieurs exemplaires d'une même carte. */
   ex_R: 'cards', ex_E: 'cards', ex_L: 'coin',
-  /* Version 3.0 : les combats, les Secrètes, la maîtrise, le Choc des Sections. */
+  /* Version 3.0 : les combats, les Secrètes, le Choc des Sections. */
   combats: 'sword', victoires: 'sword', vaincus: 'sword', victoires_dures: 'sword', defis: 'amis',
-  campagne: 'trophy', legende: 'trophy', rarity_S: 'coin', maitrise_3: 'cards', maitrise_4: 'cards',
+  campagne: 'trophy', legende: 'trophy', rarity_S: 'coin',
   raid: 'foudre', raid_degats: 'foudre', raid_victoires: 'foudre', epreuve: 'epreuve', epreuve_victoires: 'epreuve',
-  points_section: 'choc', deck: 'cards', cosm: 'user',
+  deck: 'cards', cosm: 'user',
   /* L'XP et le niveau de combattant (js/combat/niveaux.js). */
   xp: 'niveau', niveau: 'niveau'
 };
@@ -42,7 +42,7 @@ const QICO = {
 /* Les quêtes qui parlent de combat : la page Missions de l'onglet Combats
    les réunit, et les quêtes de saison en font un thème. */
 const METRIQUES_COMBAT = ['combats', 'victoires', 'vaincus', 'victoires_dures', 'defis', 'campagne', 'legende',
-  'xp', 'niveau', 'points_section', 'raid', 'raid_degats', 'raid_victoires', 'epreuve', 'epreuve_victoires'];
+  'xp', 'niveau', 'raid', 'raid_degats', 'raid_victoires', 'epreuve', 'epreuve_victoires'];
 const estMissionCombat = q => METRIQUES_COMBAT.includes(q.metric);
 
 /* ---------- Comptages ---------- */

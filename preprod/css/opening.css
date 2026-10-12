@@ -2,7 +2,7 @@
 /* ============ Théâtre (ouverture plein écran) ============ */
 #theater{position:fixed;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;color:#fff;
   padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
-  background:radial-gradient(90% 52% at 50% 30%,rgba(124,77,255,.24) 0%,transparent 68%),linear-gradient(180deg,#110c2c,#05041a)}
+  background:radial-gradient(90% 52% at 50% 30%,rgba(140,120,255,.24) 0%,transparent 68%),linear-gradient(180deg,#17161f,#0a090e)}
 #theater[hidden]{display:none}
 #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
 .th-stage{position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -238,6 +238,6 @@ html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,
 .shock.rS{border-color:#fff;box-shadow:0 0 0 4px rgba(255,124,200,.6),0 0 0 9px rgba(127,216,255,.45),0 0 40px rgba(255,226,138,.6)}
 .op-rar.rS{color:#e8ecff}
 .op-rar.big.rS .slam{background:linear-gradient(180deg,#fff,#c9d6ff 45%,#ff9ad5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.rc-tag.rS{background:linear-gradient(90deg,#c9d6ff,#ffb3e0);color:#1a1230}
+.rc-tag.rS{background:linear-gradient(90deg,#ffd0ea,#e6e1ff 50%,#c9ecff);color:#1a1230}
 .scard.final.rS{--fc:rgba(232,236,255,1)}
 .rc-hero.rS{--hc:rgba(232,236,255,.6)}

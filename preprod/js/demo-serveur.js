@@ -142,9 +142,6 @@
     ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l\'IA en Légende.', 21],
     ['m_cent',     'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 22],
     ['m_secrete',  'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
-    ['m_mt_or',    'milestone', 'maitrise_3',       1,  300, null,         'Maîtrise d\'or',         'Amène une carte à la maîtrise Or.', 24],
-    ['m_mt_or10',  'milestone', 'maitrise_3',      10, 1500, null,         'Dix fois l\'or',         'Amène 10 cartes à la maîtrise Or.', 25],
-    ['m_mt_prisme','milestone', 'maitrise_4',       1,  800, 'f_maitrise', 'Prisme',                'Amène une carte à la maîtrise Prisme.', 26],
     /* L'XP et le niveau de combattant (26_niveaux.sql). */
     ['d_xp',       'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11],
     ['w_xp',       'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11],
@@ -196,7 +193,7 @@
     ['c_deg100',  'ev',      'raid_degats',     100, 80, null, 'Cent dégâts',          'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'],
     ['c_raidv5',  'ev',      'raid_victoires',    5, 60, null, 'Cinq fois à terre',    'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'],
     ['c_ep7',     'ev',      'epreuve_victoires', 7, 80, null, 'Sept Épreuves',        'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'],
-    ['c_pts',     'ev',      'points_section',   80, 60, null, 'Pour la Section',      'Marque 80 points pour ta Section.', 4, 'choc', 'prismes'],
+    ['c_ep15',    'ev',      'epreuve',          15, 60, null, 'Quinze essais',        'Tente 15 fois l\'Épreuve du jour.', 4, 'choc', 'prismes'],
     ['c_vic30',   'ev',      'victoires',        30, 60, null, 'Trente victoires',     'Gagne 30 combats pendant l\'événement.', 5, 'choc', 'prismes'],
     ['c_dur5',    'ev',      'victoires_dures',   5, 60, null, 'Sans trembler',        'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'],
     ['c_legende', 'ev',      'legende',           1, 50, null, 'Tombeur de Légende',   'Bats l\'IA en Légende, en PvE infini.', 7, 'choc', 'prismes'],
@@ -204,7 +201,7 @@
     ['c_deck',    'ev',      'deck',              1, 20, null, 'Mon deck à moi',       'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'],
     ['c_cosm',    'ev',      'cosm',              1, 20, null, 'À mes couleurs',       'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'],
     ['c_packs60', 'ev',      'packs',            60, 50, null, 'Soixante boosters',    'Ouvre 60 boosters pendant l\'événement.', 11, 'choc', 'prismes'],
-    ['c_trade',   'ev',      'trades',            3, 30, null, 'Échanges de guerre',   'Conclus 3 échanges.', 12, 'choc', 'prismes'],
+    ['c_trade',   'ev',      'trades',            3, 30, null, 'Bonnes affaires',      'Conclus 3 échanges.', 12, 'choc', 'prismes'],
     ['c_invite',  'ev',      'invite',            1, 50, null, 'Un ami de plus',       'Un ami entre dans le jeu avec ton invitation.', 13, 'choc', 'prismes']
   ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie]) =>
     ({ id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement: evenement || null, monnaie: monnaie || 'eclats' }));
@@ -318,12 +315,8 @@
   }
 
   /* ------------------------------------------------------------ outils SQL */
-  /* Version 3.0 : chaque exemplaire gagné compte pour la maîtrise
-     (collection.total, 24_secretes_maitrise.sql), même s'il repart ensuite. */
-  const obtDe = uid => { S.obt = S.obt || {}; return (S.obt[uid] = S.obt[uid] || Object.assign({}, colDe(uid))); };
   const ajouter = (uid, cid, n) => {
     const c = colDe(uid);
-    if (n > 0) { const o = obtDe(uid); o[cid] = Math.max(o[cid] || 0, c[cid] || 0) + n; }
     c[cid] = (c[cid] || 0) + n;
   };
   const possede = (uid, cid) => (colDe(uid)[cid] || 0) > 0;
@@ -387,20 +380,8 @@
     const valeur = q => q.metric === 'collection_pct' ? pct
       : extension().filter(k => k.rar === q.metric.slice(4) && (c[k.id] || 0) > 0).length;
     const etat = q => q.metric === 'collection_pct' || q.metric.startsWith('set_')
-      || q.metric.startsWith('rset_') || q.metric === 'brill_ALL' || q.metric.startsWith('ex_')
-      || q.metric.startsWith('maitrise_');
-    /* Version 3.0 : les cartes à tel palier de maîtrise (24_secretes_maitrise.sql). */
-    const maitrises = niv => {
-      const o = obtDe(p);
-      return extension().concat(secretes).filter(k => {
-        const s = MAITRISE.seuils[k.rar];
-        if (!s) return false;
-        const n = (o[k.id] || 0) + (o['r' + k.id.slice(1)] || 0);
-        return n >= s[niv - 1];
-      }).length;
-    };
-    const valeur2 = q => q.metric.startsWith('maitrise_') ? maitrises(+q.metric.slice(9))
-      : q.metric.startsWith('ex_')
+      || q.metric.startsWith('rset_') || q.metric === 'brill_ALL' || q.metric.startsWith('ex_');
+    const valeur2 = q => q.metric.startsWith('ex_')
         ? Math.max(0, ...extension().filter(k => k.rar === q.metric.slice(3)).map(k => c[k.id] || 0))
       : q.metric === 'rset_ALL' ? reverses.filter(k => (c[k.id] || 0) > 0).length
       : q.metric.startsWith('rset_') ? reverses.filter(k => k.rar === q.metric.slice(5) && (c[k.id] || 0) > 0).length
@@ -516,14 +497,6 @@
       gardes: Object.assign({}, (S.gardes || {})[p] || {}),
       favoris: ((S.favoris || {})[p] || []).slice(),
       combat: combatEtat(p),
-      obtenus: (() => {
-        const o = obtDe(p), c = colDe(p), r = {};
-        for (const id of new Set(Object.keys(o).concat(Object.keys(c)))) {
-          const n = Math.max(o[id] || 0, c[id] || 0);
-          if (n > 0) r[id] = n;
-        }
-        return r;
-      })(),
       inv: garde(invDe(p)),
       quetes: QUETES.filter(q => (!q.evenement || q.evenement === evenementEnCours()) && !(q.metric === 'invite' && estFilleul(p)))
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
@@ -1065,6 +1038,7 @@
       reverses: reverses.filter(k => (c[k.id] || 0) > 0).length, reverses_total: reverses.length,
       titre: o.titre || null, banniere: o.banniere || null, devise: o.devise || null,
       vitrine: o.vitrine.slice(),
+      xp: (S.cb && S.cb[o.id] && S.cb[o.id].xp) || 0,
       succes: succesDe(o.id),
       ami, moi: o.id === moi,
       col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null,
@@ -1438,7 +1412,7 @@
     const t = now();
     const debut = t - 4 * 86400000;
     S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: debut + 21 * 86400000,
-      texte: 'La version 3.0 : le Raid contre The French Sorcerer, l\'Épreuve du jour, et des points de Section qui comptent double.' };
+      texte: 'La version 3.0 : le Raid contre The French Sorcerer et l\'Épreuve du jour.' };
     [['b_lumen', 'toxique', 24], ['b_mira', 'toxique', 15], ['b_kairo', 'deter', 9], ['b_nova', 'deter', 30]]
       .forEach(([id, sec, d]) => {
         if (!S.profils[id]) return;
@@ -1447,8 +1421,6 @@
         frapperRaid(id, d * 2);
         ch.raid.joueurs[id].victoires = Math.floor(d / 8);
         S.evt.comptes[id + '|choc'] = { solde: d * 2, total: d * 4 + 30 };
-        ch.guerre[sec] += d * 2;
-        ch.guerre.contrib[id] = d * 2;
       });
   }
 
@@ -1553,7 +1525,7 @@
       change = true;
     });
 
-    /* Version 3.0 : les défis et la Guerre des Sections. */
+    /* Version 3.0 : les défis. */
     if (vivreCombats(t)) change = true;
 
     /* Kairo demande à devenir ton ami, une fois. */
@@ -1578,7 +1550,7 @@
 
   /* ================================== version 3.0, 23_combats.sql */
   /* Les combats : la Section, les decks, les cosmétiques, les récompenses
-     d'un combat contre l'IA, les défis entre amis, la Guerre des Sections.
+     d'un combat contre l'IA, les défis entre amis.
      Les tables de récompenses viennent de la page (js/combat/campagne.js),
      comme la table SQL en est la copie. */
   const SEC_PROMO = { toxique: 'p03', deter: 'p04' };
@@ -1588,57 +1560,9 @@
     return (S.cb[p] = S.cb[p] || { section: null, decks: [], deck_actif: null, cosm: {}, faits: [], finie: false,
       jour: null, recompensees: 0, stats: { victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0 }, ouverts: {}, defis_jour: null, defis_rec: 0 });
   };
-  const guerre = () => {
-    const sem = semaineParis(now());
-    if (!S.guerre || S.guerre.semaine !== sem) {
-      const ancien = S.guerre;
-      S.guerre = { semaine: sem, toxique: 0, deter: 0, contrib: {} };
-      if (ancien && (ancien.toxique || ancien.deter)) S.guerrePassee = Object.assign(ancien, { payes: {} });
-    }
-    return S.guerre;
-  };
-  /* guerre_prix, 23_combats.sql : la semaine finie paie ceux qui ont
-     marqué — 2 boosters et 200 Éclats pour la Section gagnante, un booster
-     pour l'autre. Une fois, à la première visite de la semaine suivante. */
-  function guerrePassee(p) {
-    guerre();
-    const a = S.guerrePassee;
-    if (!a || a.toxique === a.deter) return a ? { semaine: a.semaine, toxique: a.toxique, deter: a.deter, gagnante: null, recompense: null } : null;
-    const gagnante = a.toxique > a.deter ? 'toxique' : 'deter';
-    a.payes = a.payes || {};
-    let recompense = a.payes[p] || null;
-    if (!recompense && (a.contrib[p] || 0) > 0) {
-      recompense = cb(p).section === gagnante ? { boosters: 2, eclats: 200 } : { boosters: 1, eclats: 0 };
-      a.payes[p] = recompense;
-      const pr = profil(p);
-      pr.boosters_bonus = (pr.boosters_bonus || 0) + recompense.boosters;
-      pr.shards += recompense.eclats;
-    }
-    return { semaine: a.semaine, toxique: a.toxique, deter: a.deter, gagnante, recompense };
-  }
-  /* Les points d'une victoire. Pendant le Choc des Sections, ils comptent
-     double, et s'ajoutent aussi à la Guerre de l'événement. Renvoie les
-     points vraiment marqués. */
-  function marquerPoints(p, n) {
-    const c = cb(p);
-    if (!c.section || !(n > 0)) return 0;
-    if (evenementEnCours() === 'choc') {
-      n *= CHOC.guerre.multiplicateur;
-      const gc = chocDe().guerre;
-      gc[c.section] += n;
-      gc.contrib[p] = (gc.contrib[p] || 0) + n;
-    }
-    const g = guerre();
-    g[c.section] += n;
-    g.contrib[p] = (g.contrib[p] || 0) + n;
-    bump(p, 'points_section', n);
-    return n;
-  }
   function combatEtat(p) {
     const c = cb(p);
     const auj = jourParis(now());
-    const g = guerre();
-    const lundi = debutSemaine(now()) + 7 * 86400000;
     return {
       section: c.section, decks: c.decks.map(d => Object.assign({}, d)), deck_actif: c.deck_actif,
       cosm: Object.assign({}, c.cosm),
@@ -1646,7 +1570,6 @@
       jour: { recompensees: c.jour === auj ? c.recompensees : 0, plafond: PVE_PLAFOND },
       stats: Object.assign({}, c.stats),
       xp: c.xp || 0,
-      guerre: { toxique: g.toxique, deter: g.deter, moi: g.contrib[p] || 0, fin: iso(lundi), prix: '2 boosters et 200 Éclats', passee: guerrePassee(p) },
       defis: (S.defis || []).filter(d => (d.de === p || d.pour === p) && ['attente', 'en_cours'].includes(d.statut)).map(d => {
         const o = profil(d.de === p ? d.pour : d.de);
         return { id: d.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null,
@@ -1782,7 +1705,7 @@
     delete c.ouverts[p_id];
     const auj = jourParis(now());
     if (c.jour !== auj) { c.jour = auj; c.recompensees = 0; }
-    const r = { eclats: 0, boosters: 0, fragments: 0, points: 0, carte: null, titre: null, message: '' };
+    const r = { eclats: 0, boosters: 0, fragments: 0, carte: null, titre: null, message: '' };
     const res = p_resume || {};
     const trop = now() - o.debut < CB_MIN_MS;
     bump(p, 'combats', 1);
@@ -1810,7 +1733,6 @@
         r.eclats = f.recompense.eclats || 0;
         r.boosters = f.recompense.boosters || 0;
         r.fragments = f.recompense.fragments || 0;
-        r.points = 3;
         if (c.faits.length >= l.length && !c.finie) {
           c.finie = true;
           const autre = c.section === 'toxique' ? 'deter' : 'toxique';
@@ -1819,20 +1741,17 @@
           r.message = 'Campagne terminée : la Promo de l\'autre Section est à toi.';
         }
       } else {
-        r.points = 1;
         if (plafond()) { c.recompensees++; r.eclats = RECOMPENSE_REJOUER.eclats; }
         else r.message = 'Victoires récompensées du jour atteintes : celle-ci est pour le plaisir.';
       }
     } else {
       const d = DIFFICULTES[o.niveau - 1];
-      r.points = d.points;
       if (plafond()) { c.recompensees++; r.eclats = d.eclats; }
       else r.message = 'Victoires récompensées du jour atteintes : celle-ci est pour le plaisir.';
     }
     pr.shards += r.eclats;
     pr.boosters_bonus = (pr.boosters_bonus || 0) + r.boosters;
     pr.fragments = (pr.fragments || 0) + r.fragments;
-    r.points = marquerPoints(p, r.points);
     syncCollection(p);
     checkPromos(p);
     return { etat: me(p), recompense: r };
@@ -1920,7 +1839,7 @@
     if (d.statut === 'en_cours') d.statut = 'fini';
     const moi = d.de === p ? 0 : 1;
     const c = cb(p);
-    const r = { eclats: 0, points: 0, message: '' };
+    const r = { eclats: 0, message: '' };
     d.payes = d.payes || {};
     if (!d.payes[p]) {
       d.payes[p] = true;
@@ -1930,7 +1849,7 @@
       c.stats[gagne ? 'pvp_v' : 'pvp_d']++;
       bump(p, 'defis', 1);
       bump(p, 'combats', 1);
-      if (gagne) { bump(p, 'victoires', 1); r.points = marquerPoints(p, DEFI_GAIN.points); }
+      if (gagne) bump(p, 'victoires', 1);
       r.xp = gagnerXp(p, xpCombat('defi', 0, gagne, 0, E.tour));
       if (c.defis_rec < DEFI_GAIN.plafond) { c.defis_rec++; r.eclats = gagne ? DEFI_GAIN.victoire : DEFI_GAIN.defaite; profil(p).shards += r.eclats; }
       else r.message = 'Défis récompensés du jour atteints.';
@@ -1940,12 +1859,11 @@
 
   /* ================================== version 3.0, 25_choc.sql */
   /* Le Choc des Sections : le Raid (une barre de vie commune, cinq phases),
-     l'Épreuve du jour (la même graine pour tous), la Guerre de l'événement.
+     l'Épreuve du jour (la même graine pour tous).
      Les chiffres viennent de la page (js/combat/choc-data.js). */
   const chocDe = () => (S.choc = S.choc || {
     raid: { phase: 1, degats: 0, total: 0, tombees: {}, joueurs: {} },
-    tentatives: {}, prises: {}, epreuves: {}, gagnees: {},
-    guerre: { toxique: 0, deter: 0, contrib: {} }
+    tentatives: {}, prises: {}, epreuves: {}, gagnees: {}
   });
   /* La barre d'une phase : celle de choc-data.js, à l'échelle du serveur
      (peu de joueurs dans la démo : _demo/reglages.js). */
@@ -2016,7 +1934,6 @@
       if (gagne) {
         ch.raid.joueurs[p].victoires++;
         bump(p, 'raid_victoires', 1);
-        r.points = marquerPoints(p, CHOC.raid.points);
       }
       if (tombee) r.message = `La phase ${tombee} est tombée ! Sa récompense t'attend dans le Raid.`;
       else if (!d) r.message = 'Pas un PV de pris : il rira moins la prochaine fois.';
@@ -2032,7 +1949,6 @@
       if (gagne && !ch.gagnees[k]) {
         ch.gagnees[k] = true;
         r.insignes += CHOC.epreuve.victoire;
-        r.points = marquerPoints(p, CHOC.epreuve.points);
         bump(p, 'epreuve_victoires', 1);
         r.message = 'Épreuve du jour gagnée !';
       } else if (gagne) r.message = 'Déjà gagnée aujourd\'hui : ton meilleur score est gardé.';
@@ -2071,8 +1987,7 @@
         top: Object.entries(r.joueurs).filter(([, x]) => x.degats > 0).sort((a, b) => b[1].degats - a[1].degats).slice(0, 10)
           .map(([id, x]) => joueurVue(id, { degats: x.degats, moi: id === p }))
       },
-      epreuve: { graine: graineEpreuve(auj), essais, max: CHOC.epreuve.essais, meilleur, gagnee: !!ch.gagnees[p + '|' + auj], top: topEp },
-      guerre: { toxique: ch.guerre.toxique, deter: ch.guerre.deter, moi: ch.guerre.contrib[p] || 0, multiplicateur: CHOC.guerre.multiplicateur }
+      epreuve: { graine: graineEpreuve(auj), essais, max: CHOC.epreuve.essais, meilleur, gagnee: !!ch.gagnees[p + '|' + auj], top: topEp }
     };
   };
 
@@ -2090,26 +2005,20 @@
     return { cartes, etat: me(p) };
   };
 
-  /* Ce que le récap du Choc ajoute à celui d'un événement : le Raid,
-     l'Épreuve, la Section gagnante — et son titre, accordé ici, à la
-     première lecture du récap. */
+  /* Ce que le récap du Choc ajoute à celui d'un événement : le Raid et
+     l'Épreuve. */
   function recapChoc(p) {
     const ch = chocDe();
-    const g = ch.guerre;
-    const gagnante = g.toxique === g.deter ? null : g.toxique > g.deter ? 'toxique' : 'deter';
-    const section = cb(p).section;
-    const titre = !!(gagnante && section === gagnante && (g.contrib[p] || 0) > 0);
-    if (titre) { const inv = invDe(p); if (!(CHOC.guerre.titre in inv)) inv[CHOC.guerre.titre] = 1; }
     return {
       degats: ((ch.raid.joueurs[p] || {}).degats) || 0,
       raid_phases: Object.keys(ch.raid.tombees).length,
       epreuves: Object.keys(ch.gagnees).filter(k => k.startsWith(p + '|')).length,
-      guerre: { toxique: g.toxique, deter: g.deter }, section, gagnante, titre_gagne: titre
+      section: cb(p).section
     };
   }
 
   /* La vie des combats : les amis simulés acceptent tes défis, t'en lancent
-     parfois, et les deux Sections marquent des points. */
+     parfois. */
   function vivreCombats(t) {
     let change = false;
     defisDe().forEach(d => {
@@ -2121,14 +2030,6 @@
         change = true;
       }
     });
-    const g = guerre();
-    S.guerreTic = S.guerreTic || t;
-    if (t - S.guerreTic > 45000) {
-      S.guerreTic = t;
-      g.toxique += Math.floor(Math.random() * 4);
-      g.deter += Math.floor(Math.random() * 4);
-      change = true;
-    }
     /* Pendant le Choc, les joueurs simulés frappent le Sorcier,
        tentent l'Épreuve, et gagnent des Insignes. */
     if (evenementEnCours() === 'choc') {
@@ -2147,8 +2048,6 @@
           const cpt = (S.evt.comptes[k] = S.evt.comptes[k] || { solde: 0, total: 0 });
           const n = d * CHOC.raid.parDegat + (gagne ? CHOC.raid.bonusVictoire : 0) + entre(5, 25);
           cpt.solde += n; cpt.total += n;
-          const sec = cb(bot.id).section;
-          if (sec && gagne) { ch.guerre[sec] += 4; ch.guerre.contrib[bot.id] = (ch.guerre.contrib[bot.id] || 0) + 4; }
           const auj = jourParis(t);
           const ek = bot.id + '|' + auj;
           if (!(ch.epreuves[ek] || []).length && Math.random() < 0.5) {
