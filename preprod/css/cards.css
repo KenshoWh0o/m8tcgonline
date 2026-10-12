@@ -321,7 +321,7 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
   background:radial-gradient(ellipse 90% 60% at 50% 0%,color-mix(in srgb,var(--tc) 55%,transparent),transparent 70%),
     linear-gradient(170deg,#23222e,#14131b 70%)}
 .card.textuel::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
-  background:url('../assets/pack-star.svg?v=3.0.4') 50% 46%/58% no-repeat}
+  background:url('../assets/pack-star.svg?v=3.0.5') 50% 46%/58% no-repeat}
 .tx-tete{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:2cqi}
 .tx-tete b{font-family:var(--display);font-style:italic;font-weight:900;font-size:10.5cqi;line-height:1}
 .tx-tete i{font-style:normal;font-size:5.5cqi;opacity:.7}

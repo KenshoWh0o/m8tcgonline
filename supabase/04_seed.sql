@@ -259,7 +259,7 @@ on conflict (id) do update set
 --   vaincus          : des Joueurs adverses vaincus
 --   defis            : un defi entre amis termine
 --   campagne         : un combat de campagne gagne pour la premiere fois
---   legende          : l'IA battue en Legende (PvE infini)
+--   legende          : l'IA battue en Legende (Arcade)
 --   rarity_S         : une Secrete sortie d'un booster (24_secretes.sql)
 --   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
 --   niveau           : le niveau de combattant atteint — un etat, pas un
@@ -313,7 +313,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('c_ep15',    'ev',      'epreuve',           15, 60, null, 'Quinze essais',       'Tente 15 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
   ('c_dur5',    'ev',      'victoires_dures',    5, 60, null, 'Sans trembler',       'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'),
-  ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Bats l''IA en Légende, en PvE infini.', 7, 'choc', 'prismes'),
+  ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Bats l''IA en Légende, en Arcade.', 7, 'choc', 'prismes'),
   ('c_defis',   'ev',      'defis',              5, 50, null, 'Entre amis',          'Joue 5 défis contre des amis.', 8, 'choc', 'prismes'),
   ('c_deck',    'ev',      'deck',               1, 20, null, 'Mon deck à moi',      'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'),
   ('c_cosm',    'ev',      'cosm',               1, 20, null, 'À mes couleurs',      'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'),

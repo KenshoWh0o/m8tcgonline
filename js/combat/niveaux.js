@@ -14,7 +14,7 @@
 "use strict";
 
 const NIVEAUX = {
-  /* L'XP d'un combat contre l'IA (campagne, PvE infini, Raid, Épreuve),
+  /* L'XP d'un combat contre l'IA (campagne, Arcade, Raid, Épreuve),
      multipliée selon la difficulté (1 à 5 étoiles), plus un peu par Joueur
      adverse vaincu. Un défi entre amis a ses propres montants. Un combat de
      moins de 20 secondes ne rapporte rien ; une défaite, seulement si la

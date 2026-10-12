@@ -70,7 +70,8 @@ const RECOMPENSES_CAMPAGNE = [
    dans la limite des victoires récompensées du jour (PVE_PLAFOND). */
 const RECOMPENSE_REJOUER = { eclats: 10 };
 
-/* Le PvE infini : la difficulté choisie, ce que rapporte une victoire.
+/* L'Arcade (l'ancien « PvE infini » ; mode 'infini' côté serveur) : la
+   difficulté choisie, ce que rapporte une victoire.
    Au plus PVE_PLAFOND victoires récompensées par jour, tous modes PvE
    confondus (campagne rejouée comprise). Valeurs rééquilibrées pour la 3.0
    (docs/economie-3.0.md) : cinq victoires en Normal rapportent 125 Éclats,

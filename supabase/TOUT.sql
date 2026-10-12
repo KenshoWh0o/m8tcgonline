@@ -1950,7 +1950,7 @@ on conflict (id) do update set
 --   vaincus          : des Joueurs adverses vaincus
 --   defis            : un defi entre amis termine
 --   campagne         : un combat de campagne gagne pour la premiere fois
---   legende          : l'IA battue en Legende (PvE infini)
+--   legende          : l'IA battue en Legende (Arcade)
 --   rarity_S         : une Secrete sortie d'un booster (24_secretes.sql)
 --   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
 --   niveau           : le niveau de combattant atteint — un etat, pas un
@@ -2004,7 +2004,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('c_ep15',    'ev',      'epreuve',           15, 60, null, 'Quinze essais',       'Tente 15 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
   ('c_dur5',    'ev',      'victoires_dures',    5, 60, null, 'Sans trembler',       'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'),
-  ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Bats l''IA en Légende, en PvE infini.', 7, 'choc', 'prismes'),
+  ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Bats l''IA en Légende, en Arcade.', 7, 'choc', 'prismes'),
   ('c_defis',   'ev',      'defis',              5, 50, null, 'Entre amis',          'Joue 5 défis contre des amis.', 8, 'choc', 'prismes'),
   ('c_deck',    'ev',      'deck',               1, 20, null, 'Mon deck à moi',      'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'),
   ('c_cosm',    'ev',      'cosm',               1, 20, null, 'À mes couleurs',      'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'),
@@ -2086,12 +2086,11 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('t_peche',      'tapis',  'Tapis « Vanyabubu »', 'L''illustration de la carte « Vanyabubu », sous tes cartes.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
   ('s_sorcier',    'sleeve', 'Sleeve « 6W26L »', 'Le dos de tes cartes : la Secrète 6W26L, en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
   ('s_argent',     'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
-  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      90, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 8),
-  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6),
-  ('ch_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n''as pas encore.', 180, 'reverse_R', 1,   null, false, 3, 'prismes', 'choc', 3),
-  ('ch_brillante', 'evenement', 'Une Essence Brillante', 'Une Essence Brillante que tu n''as pas encore.', 450, 'brillante', 1, null, false, 4, 'prismes', 'choc', 1),
-  ('t_orage',      'evenement', 'Tapis « L''Orage »', 'Le ciel de The French Sorcerer, sous tes cartes. Ne se vendra plus après l''événement.', 700, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
-  ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 250, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null)
+  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10),
+  ('ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l''unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3),
+  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8),
+  ('t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L''illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l''événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null),
+  ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -2104,7 +2103,7 @@ delete from public.shop_items where id not in (
   'f_azur','f_rose','f_or','f_prisme','f_toxique','f_deter',
   's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
   't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
-  'ch_boosters','ch_fragments','ch_reverse','ch_brillante','t_orage','t_supporter');
+  'ch_boosters','ch_boosters5','ch_fragments','t_orage','t_supporter');
 
 
 -- #####################################################################
@@ -4410,7 +4409,7 @@ create table if not exists public.combat_joueurs (
   user_id      uuid primary key references public.profiles on delete cascade,
   section      text check (section in ('toxique', 'deter')),
   deck_actif   text,
-  -- tapis, sleeve, jeton : identifiants d'inventaire (ou t_base, s_base, j_base)
+  -- tapis, sleeve : identifiants d'inventaire (ou t_base, s_base)
   cosm         jsonb not null default '{}'::jsonb,
   -- La campagne : les combats deja gagnes (cp01 … cp20), et si elle est finie.
   faits        text[] not null default '{}',
@@ -4472,7 +4471,7 @@ insert into public.pve_campagne (n, niveau, eclats, boosters, fragments) values
 on conflict (n) do update set niveau = excluded.niveau, eclats = excluded.eclats,
   boosters = excluded.boosters, fragments = excluded.fragments;
 
--- Le PvE infini : ce que paie une victoire, selon la difficulte (DIFFICULTES).
+-- L'Arcade (mode 'infini') : ce que paie une victoire, selon la difficulte (DIFFICULTES).
 -- Reequilibre pour la 3.0 : docs/economie-3.0.md.
 create table if not exists public.pve_difficultes (
   niveau integer primary key check (niveau between 1 and 5),
@@ -4676,8 +4675,11 @@ begin
     'deck_actif', c.deck_actif,
     'cosm', c.cosm,
     'campagne', jsonb_build_object('faits', to_jsonb(c.faits), 'finie', c.finie),
+    -- Les plafonds du jour : victoires payées contre l'IA, défis payés.
     'jour', jsonb_build_object('recompensees', case when c.jour = jour_paris() then c.recompensees else 0 end,
-                               'plafond', 5),
+                               'plafond', 5,
+                               'defis', case when c.defis_jour = jour_paris() then c.defis_rec else 0 end,
+                               'defis_plafond', 3),
     'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites,
                                 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d),
     -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
@@ -4709,7 +4711,7 @@ begin
   return me();
 end $$;
 
--- Le deck actif, le tapis, le sleeve, le jeton : on ne choisit que ce qu'on a.
+-- Le deck actif, le tapis, le sleeve : on ne choisit que ce qu'on a.
 create or replace function public.combat_reglages(p_reglages jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; k text; v text; base text;
@@ -4720,14 +4722,14 @@ begin
   if p_reglages ? 'deck_actif' then
     update combat_joueurs set deck_actif = left(p_reglages->>'deck_actif', 40) where user_id = p;
   end if;
-  foreach k in array array['tapis', 'sleeve', 'jeton'] loop
+  foreach k in array array['tapis', 'sleeve'] loop
     v := p_reglages->>k;
     continue when v is null;
-    base := case k when 'tapis' then 't_base' when 'sleeve' then 's_base' else 'j_base' end;
+    base := case k when 'tapis' then 't_base' else 's_base' end;
     if v <> base and not exists (select 1 from inventory where user_id = p and item_id = v and qty > 0) then
       raise exception 'Tu ne possèdes pas cet objet.';
     end if;
-    if k <> 'jeton' and (c.cosm->>k) is distinct from v then perform bump_quests(p, 'cosm', 1); end if;
+    if (c.cosm->>k) is distinct from v then perform bump_quests(p, 'cosm', 1); end if;
     update combat_joueurs set cosm = cosm || jsonb_build_object(k, v) where user_id = p;
   end loop;
   return me();
@@ -5198,17 +5200,17 @@ insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, ti
   ('choc', 17, 1600, 'fragments',  600, null,           '600 Fragments'),
   ('choc', 18, 1740, 'boosters',    4, null,            '4 boosters'),
   ('choc', 19, 1880, 'titre',       0, 't_veteran',     'Titre « Vétéran du Choc »'),
-  ('choc', 20, 2020, 'tapis',       0, 't_arene',       'Tapis « L''Arène »'),
+  ('choc', 20, 2020, 'reverse_R',   1, null,            'Une Reverse Rare'),
   ('choc', 21, 2160, 'eclats',    500, null,            '500 Éclats'),
   ('choc', 22, 2300, 'reverse_R',   2, null,            'Deux Reverses Rares'),
   ('choc', 23, 2440, 'boosters',    4, null,            '4 boosters'),
   ('choc', 24, 2580, 'fragments',  800, null,           '800 Fragments'),
-  ('choc', 25, 2720, 'brillante',   1, null,            'Une Essence Brillante'),
+  ('choc', 25, 2720, 'fragments',  700, null,           '700 Fragments'),
   ('choc', 26, 2860, 'eclats',    600, null,            '600 Éclats'),
   ('choc', 27, 3000, 'boosters',    5, null,            '5 boosters'),
   ('choc', 28, 3150, 'fragments', 1000, null,           '1 000 Fragments'),
   ('choc', 29, 3300, 'titre',       0, 't_maitre_choc', 'Titre « Maître du Choc »'),
-  ('choc', 30, 3500, 'legendaire',  1, null,            'Une Légendaire que tu n''as pas')
+  ('choc', 30, 3500, 'tapis',       0, 't_arene',       'Tapis « Le Choc des Sections »')
 on conflict (evenement, palier) do update set
   seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
   objet = excluded.objet, titre = excluded.titre;
@@ -5681,7 +5683,8 @@ begin
                                           victoires = choc_joueurs.victoires + excluded.victoires;
     return jsonb_build_object('insignes', gain, 'degats', d, 'message', msg);
   end if;
-  gain := d * 4 + case when gagne then 20 else 0 end;
+  -- Hors evenement, en Eclats (RAID.parDegatEclats, RAID.victoireEclats).
+  gain := d * 2 + case when gagne then 15 else 0 end;
   update profiles set shards = shards + gain where id = p;
   return jsonb_build_object('eclats', gain, 'degats', d, 'message', msg);
 end $$;

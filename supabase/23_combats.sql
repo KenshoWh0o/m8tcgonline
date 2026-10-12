@@ -92,7 +92,7 @@ insert into public.pve_campagne (n, niveau, eclats, boosters, fragments) values
 on conflict (n) do update set niveau = excluded.niveau, eclats = excluded.eclats,
   boosters = excluded.boosters, fragments = excluded.fragments;
 
--- Le PvE infini : ce que paie une victoire, selon la difficulte (DIFFICULTES).
+-- L'Arcade (mode 'infini') : ce que paie une victoire, selon la difficulte (DIFFICULTES).
 -- Reequilibre pour la 3.0 : docs/economie-3.0.md.
 create table if not exists public.pve_difficultes (
   niveau integer primary key check (niveau between 1 and 5),

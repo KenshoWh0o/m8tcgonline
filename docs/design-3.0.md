@@ -140,15 +140,29 @@ la teinte de chaque écran.
 
 ## 8. Les écrans
 
-- **Combats** : un grand bandeau illustré en diagonale, le titre en italique
-  penché, puis la carte « à la une » (le Raid), deux grandes tuiles (Solo,
-  Versus) et trois petites (Decks, Missions, Guide). Icônes au trait en deux
-  tons.
-- **Événement** : un en-tête (les deux Sections face à face), une rangée
-  d'onglets (Accueil, Raid, Épreuve, Quêtes, Pass, Boutique, Classement), et
-  sur l'Accueil quatre tuiles « Aujourd'hui » puis les nouveautés. Chaque
-  sous-page a un titre simple : plus de seconde bannière qui répète la
-  première.
+- **Combats** : un bandeau illustré fondu dans la page (le chevalier du
+  tapis « La Luxueuse III », son casque et sa chaîne d'or), le titre en
+  italique penché en bas à gauche, la Section et le niveau en anneau en haut
+  à droite : ils ne se croisent plus. Puis l'affiche du prochain combat, deux
+  **portes illustrées** (Solo sur l'illustration du prochain rival, Versus
+  sur les deux Sections coupées en biais), l'affiche du Raid (le boss à
+  droite, fondu dans le noir), trois petites tuiles. L'icône de Solo est un
+  cavalier d'échecs : la pièce qu'on joue seul contre la machine.
+- **Solo** : deux grandes affiches, Campagne et Arcade, puis la règle des
+  Éclats du jour écrite une fois, avec des pastilles. **Campagne** : les
+  actes en onglets ; l'acte choisi sous un bandeau à l'image de son boss ;
+  ses cinq rivaux sur un chemin qui serpente et s'éclaire à mesure qu'on
+  gagne. **Arcade** : la difficulté en grand, ce qu'elle rapporte, les cinq
+  au choix.
+- **La difficulté** se lit en **cinq places d'étoiles**, pleines (lavande)
+  ou vides : plus de pastille or (l'or reste aux récompenses).
+- **Événement** : un en-tête où les deux Sections se font face —
+  Squeezie le Toxique à gauche, teinté vert, sous le titre ; Gotaga Pose à
+  droite, teinté violet —, une coupe lumineuse en biais entre les deux et le
+  VS dessus ; une rangée d'onglets (Accueil, Raid, Épreuve, Quêtes, Pass,
+  Boutique, Classement). Sur l'Accueil, quatre tuiles « Aujourd'hui », puis
+  les nouveautés : les Combats en grand, six tuiles illustrées. Le Pass
+  montre d'abord ses trois exclusifs.
 - **Profil, fiche** : le niveau de combattant est une pastille lavande en
   bas à droite de l'avatar.
 
@@ -182,6 +196,18 @@ La lecture du jeu :
 - **Un clic de moins.** Attaquer ne demande plus de confirmation « Passer en
   phase de Combat ? » : le panneau des attaques le dit avant, en une ligne,
   et la bande du milieu montre les deux phases du tour (Jeu › Combat).
+- **Rien n'interrompt une animation.** Pendant qu'une action se joue, la
+  page ne se redessine pas : toucher une carte ou ouvrir le menu reste
+  possible (en lecture seule), et le combat continue derrière.
+- **Ce qui touche une carte se lit sur elle.** La Défense est une pastille
+  sobre (plus d'écusson ni de grand chiffre qui déborde) ; une marque
+  lavande (bonus) ou rouge (malus) signale un effet en cours, et la fiche
+  de la carte les écrit en clair (« En ce moment »). Plus de signe de sorte
+  de carte : le joueur la reconnaît à son illustration.
+- **Un défi a un chrono.** 60 secondes par tour entre amis ; le compte
+  s'affiche dans la barre de celui qui joue. Passé le temps, le tour se
+  termine ; une décision attendue en dehors de son tour (défendre, choisir
+  une carte) a 20 secondes, puis se fait toute seule.
 
 ## 10. Les Secrètes
 
