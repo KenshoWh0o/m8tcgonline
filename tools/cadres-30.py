@@ -110,34 +110,83 @@ def arene(cle, n):
 
 
 # ------------------------------------------------------------ les Sections
-ETOILE = "M0-6.2 1.6-2 6-1.9 2.5.8 3.7 5 0 2.6-3.7 5-2.5.8-6-1.9-1.6-2Z"
+# Leurs couleurs sont celles des boites des Starter Decks : un vert toxique,
+# fume et luisant, pour Toxique ; un violet electrique, zebre d'eclairs,
+# pour Deter. Un anneau epais et lumineux, un ecusson en haut, et ce qui
+# fait la Section : le poison qui bout et qui coule, la foudre qui crepite.
+
+def halo(p, c):
+    """Une lueur douce derriere l'anneau."""
+    return (f"<defs><filter id='{p}-h' x='-20%' y='-20%' width='140%' height='140%'><feGaussianBlur stdDeviation='2.6'/></filter></defs>"
+            f"<circle cx='64' cy='64' r='55' fill='none' stroke='{c}' stroke-width='7' opacity='.55' filter='url(#{p}-h)'/>")
 
 
-def section(cle, c, fonce, clair, motif):
-    p = cle
+def toxique():
+    p = 'tx'
+    neon, mid, fonce, clair = '#86ff5e', '#38c23c', '#0c4a1c', '#e2ffd4'
+    defs = (f"<defs><linearGradient id='{p}-a' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='{clair}'/>"
+            f"<stop offset='.28' stop-color='{neon}'/><stop offset='.7' stop-color='{mid}'/><stop offset='1' stop-color='{fonce}'/></linearGradient>"
+            f"<radialGradient id='{p}-b' cx='.35' cy='.3' r='.75'><stop offset='0' stop-color='#ffffff'/><stop offset='.35' stop-color='{neon}'/>"
+            f"<stop offset='1' stop-color='{mid}'/></radialGradient>"
+            f"<linearGradient id='{p}-e' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#1d6e2c'/><stop offset='1' stop-color='{fonce}'/></linearGradient></defs>")
+    style = ("<style>.bu{transform-box:fill-box;transform-origin:center;animation:bu 2.8s ease-in infinite}"
+             ".bu2{animation-delay:-.9s}.bu3{animation-delay:-1.8s}"
+             "@keyframes bu{0%{transform:translateY(0) scale(.6);opacity:0}25%{opacity:1}100%{transform:translateY(-8px) scale(1.1);opacity:0}}"
+             ".gt{animation:gt 2.4s ease-in infinite}.gt2{animation-delay:-.8s}.gt3{animation-delay:-1.6s}"
+             "@keyframes gt{0%,45%{transform:translateY(0);opacity:1}100%{transform:translateY(10px);opacity:0}}" + RM + "</style>")
+    corps = defs + style + halo(p, neon)
+    corps += anneau(f'url(#{p}-a)') + filets(clair, fonce)
+    # Le poison qui bout : des bulles sur l'anneau, dont certaines s'echappent.
+    for a, r, cls in ((205, 3.4, ''), (225, 2.2, 'bu'), (250, 2.8, ''), (290, 2.4, 'bu bu2'), (315, 3.2, ''), (335, 2.1, 'bu bu3'),
+                      (160, 2.6, ''), (20, 2.4, ''), (40, 1.8, 'bu bu2')):
+        x, y = pt(54.3, a)
+        corps += (f"<circle class='{cls}' cx='{x:.1f}' cy='{y:.1f}' r='{r}' fill='url(#{p}-b)' stroke='{fonce}' stroke-width='.5'/>"
+                  f"<circle cx='{x - r * .35:.1f}' cy='{y - r * .35:.1f}' r='{r * .28:.2f}' fill='#fff' opacity='.8'/>")
+    # Et qui coule : trois coulures sous l'anneau, une goutte qui tombe.
+    for a, h, cls in ((112, 9, 'gt'), (90, 13, 'gt gt2'), (70, 8, 'gt gt3')):
+        x, y = pt(56.5, a)
+        corps += (f"<path d='M{x - 3.2:.1f} {y - 2:.1f}c0 {h * .5:.1f} 1.2 {h:.1f} 3.2 {h:.1f}s3.2-{h * .5:.1f} 3.2-{h:.1f}Z' fill='url(#{p}-a)' stroke='{fonce}' stroke-width='.5'/>"
+                  f"<path d='M{x - 1.2:.1f} {y:.1f}v{h * .55:.1f}' stroke='#fff' stroke-width='.8' stroke-linecap='round' opacity='.7'/>"
+                  f"<circle class='{cls}' cx='{x:.1f}' cy='{y + h + 3.4:.1f}' r='1.8' fill='{neon}' stroke='{fonce}' stroke-width='.4'/>")
+    # L'ecusson : un hexagone, une goutte.
+    corps += (f"<path d='M64 -1.5 73.5 4v11L64 20.5 54.5 15V4Z' fill='url(#{p}-e)' stroke='{neon}' stroke-width='1.4' stroke-linejoin='round'/>"
+              f"<path d='M64 3.6c2.9 4.4 4.4 6.6 4.4 8.6a4.4 4.4 0 0 1-8.8 0c0-2 1.5-4.2 4.4-8.6Z' fill='url(#{p}-b)'/>"
+              f"<path d='M62.4 10.6a2 2 0 0 0 1.6 3' stroke='#fff' stroke-width='.9' fill='none' stroke-linecap='round'/>")
+    ecrire('toxique', corps)
+
+
+def deter():
+    p = 'dt'
+    elec, mid, fonce, clair = '#b79bff', '#7c3aed', '#25095f', '#f1ebff'
     defs = (f"<defs><linearGradient id='{p}-a' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='{clair}'/>"
-            f"<stop offset='.5' stop-color='{c}'/><stop offset='1' stop-color='{fonce}'/></linearGradient>"
-            f"<radialGradient id='{p}-e' cx='.35' cy='.3' r='.8'><stop offset='0' stop-color='{clair}'/><stop offset='1' stop-color='{c}'/></radialGradient></defs>")
-    if motif == 'gouttes':
-        style = ("<style>.gt{animation:gt 2.6s ease-in infinite}.gt2{animation-delay:-.9s}.gt3{animation-delay:-1.7s}"
-                 "@keyframes gt{0%,40%{transform:translateY(0);opacity:1}100%{transform:translateY(9px);opacity:0}}" + RM + "</style>")
-        deco = ''
-        for k, (a, cls) in enumerate(((110, 'gt'), (90, 'gt gt2'), (70, 'gt gt3'))):
-            x, y = pt(57, a)
-            deco += (f"<path d='M{x:.1f} {y - 1:.1f}c2.2 3.6 3.4 5.4 3.4 7.2a3.4 3.4 0 0 1-6.8 0c0-1.8 1.2-3.6 3.4-7.2Z' fill='{c}' stroke='{fonce}' stroke-width='.6'/>"
-                     f"<circle class='{cls}' cx='{x:.1f}' cy='{y + 11:.1f}' r='1.6' fill='{c}'/>")
-    else:
-        style = ("<style>.ai{animation:ai 2.2s ease-in-out infinite alternate}@keyframes ai{from{opacity:.55}to{opacity:1}}" + RM + "</style>")
-        deco = ''
-        for cote in (-1, 1):
-            for k in range(2):
-                x = 64 + cote * (57.5 + k * 4.6)
-                deco += (f"<path class='ai' d='M{x:.1f} {53 + k * 2:.1f}l{cote * 5:.1f} {11 - k * 2}-{cote * 5:.1f} {11 - k * 2}' fill='none' stroke='{clair if k == 0 else c}' "
-                         f"stroke-width='{3 - k * .7:.1f}' stroke-linecap='round' stroke-linejoin='round' opacity='{1 - k * .25:.2f}'/>")
-    corps = defs + style + anneau(f'url(#{p}-a)') + filets(clair, fonce) + deco
-    corps += (f"<circle cx='64' cy='7.5' r='8.5' fill='url(#{p}-e)' stroke='{fonce}' stroke-width='1'/>"
-              f"<path d='{ETOILE}' transform='translate(64 8) scale(1.05)' fill='#fff'/>")
-    ecrire(cle, corps)
+            f"<stop offset='.3' stop-color='{elec}'/><stop offset='.68' stop-color='{mid}'/><stop offset='1' stop-color='{fonce}'/></linearGradient>"
+            f"<linearGradient id='{p}-e' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#5a26c9'/><stop offset='1' stop-color='{fonce}'/></linearGradient></defs>")
+    style = ("<style>.ec{animation:ec 1.9s steps(1) infinite}.ec2{animation-delay:-.6s}.ec3{animation-delay:-1.2s}"
+             "@keyframes ec{0%,62%{opacity:1}64%{opacity:.15}68%{opacity:1}72%{opacity:.3}76%,100%{opacity:1}}"
+             ".et{transform-box:fill-box;transform-origin:center;animation:et 1.6s ease-in-out infinite alternate}.et2{animation-delay:-.8s}"
+             "@keyframes et{from{opacity:.25;transform:scale(.6)}to{opacity:1;transform:scale(1)}}" + RM + "</style>")
+    corps = defs + style + halo(p, elec)
+    corps += anneau(f'url(#{p}-a)') + filets(clair, fonce)
+    # La foudre : trois eclairs qui traversent l'anneau et crepitent.
+    def eclair(a, l, cls):
+        x, y = pt(54.3, a)
+        ox, oy = pt(54.3 + l, a)
+        ix, iy = pt(54.3 - l * .55, a)
+        nx, ny = -(oy - iy), (ox - ix)
+        n = math.hypot(nx, ny) or 1
+        nx, ny = nx / n * 3.2, ny / n * 3.2
+        pts = [(ix, iy), (x + nx, y + ny), (x - nx * .4, y - ny * .4), (ox, oy)]
+        d = 'M' + ' L'.join(f'{px:.1f} {py:.1f}' for px, py in pts)
+        return (f"<path class='{cls}' d='{d}' fill='none' stroke='{elec}' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' opacity='.55'/>"
+                f"<path class='{cls}' d='{d}' fill='none' stroke='#ffffff' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/>")
+    corps += eclair(200, 9, 'ec') + eclair(338, 10, 'ec ec2') + eclair(128, 8, 'ec ec3')
+    for a, cls in ((230, 'et'), (305, 'et et2'), (95, 'et'), (165, 'et et2')):
+        x, y = pt(60.5, a)
+        corps += f"<circle class='{cls}' cx='{x:.1f}' cy='{y:.1f}' r='1.5' fill='#fff'/>"
+    # L'ecusson : un blason, un double chevron qui monte.
+    corps += (f"<path d='M54 -1h20v11.5c0 6-4.4 9.6-10 11.8-5.6-2.2-10-5.8-10-11.8Z' fill='url(#{p}-e)' stroke='{elec}' stroke-width='1.4' stroke-linejoin='round'/>"
+              f"<path d='M58.5 10.5 64 5.5l5.5 5M58.5 15.5 64 10.5l5.5 5' fill='none' stroke='#fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>")
+    ecrire('deter', corps)
 
 
 # ------------------------------------------------------------ la Secrete
@@ -166,6 +215,6 @@ def secrete():
 if __name__ == '__main__':
     for cle, n in (('niv10', 10), ('niv20', 20), ('niv30', 30), ('niv50', 50)):
         arene(cle, n)
-    section('toxique', '#62d84e', '#1f5a14', '#e3fbd6', 'gouttes')
-    section('deter', '#7c3aed', '#33106e', '#ede4ff', 'chevrons')
+    toxique()
+    deter()
     secrete()

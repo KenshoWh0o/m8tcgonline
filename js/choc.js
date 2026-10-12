@@ -8,17 +8,18 @@
 
    L'en-tête montre les deux Sections face à face ; l'illustration de The
    French Sorcerer est réservée au Raid, pour ne pas répéter le même visuel
-   deux fois sur le même écran. Le Raid et l'Épreuve se jouent dans l'arène
-   (js/combat/table.js), lancés par demarrer() (js/battle.js) ; les règles
-   et les chiffres de l'événement sont dans js/combat/choc-data.js.
+   deux fois sur le même écran. Le Raid reste toute l'année (js/raid.js) :
+   l'onglet de l'événement en montre la page, et pendant l'événement il paie
+   en Insignes. L'Épreuve se joue dans l'arène (js/combat/table.js), lancée
+   par demarrer() (js/battle.js) ; les règles et les chiffres sont dans
+   js/combat/choc-data.js.
 
-   Ce qui compte se décide côté serveur (supabase/25_choc.sql) : la barre
-   commune du Raid, les tentatives du jour, la graine de l'Épreuve, les
-   Insignes. */
+   Ce qui compte se décide côté serveur (supabase/25_choc.sql) : la graine
+   de l'Épreuve, les Insignes. */
 "use strict";
 
 /* evenement_etat (le solde, le Pass, le classement des Insignes) et
-   choc_etat (le Raid, l'Épreuve). */
+   choc_etat (l'Épreuve). Le Raid a son état à lui (rdEtat, js/raid.js). */
 let chEv = null;
 let chEtat = null;
 let chErreur = '';
@@ -55,19 +56,12 @@ async function chargerChoc() {
 const chQuetesPretes = () => (save.quetes || [])
   .filter(x => x.evenement === 'choc' && x.progress >= x.goal && !x.claimed).length;
 const chPaliersPrets = () => chEv ? chEv.piste.filter(x => !x.pris && chEv.total >= x.seuil).length : 0;
-/* Les récompenses de phase du Raid qu'on peut réclamer. */
-function chPhasesPretes() {
-  const r = chEtat && chEtat.raid;
-  if (!r || (r.moi.degats || 0) < CHOC.raid.minimum) return 0;
-  return r.phases.filter(p => p.tombee && !r.prises.includes(p.n)).length;
-}
-const chTentativesRestantes = () => (chEtat ? Math.max(0, chEtat.raid.moi.max - chEtat.raid.moi.tentatives) : 0);
 const chEpreuveAJouer = () => !!(chEtat && chEtat.epreuve.essais.length < chEtat.epreuve.max);
 
 /* La pastille de l'onglet, dans le tiroir et le rail. */
 function chocPastille() {
   if (evenementEnCours() !== 'choc') return 0;
-  return chQuetesPretes() + chPaliersPrets() + chPhasesPretes();
+  return chQuetesPretes() + chPaliersPrets();
 }
 
 function allerCh(vue) {
@@ -88,7 +82,7 @@ function vChoc() {
   if (chErreur) return vide('Événement indisponible', chErreur);
   if (!chEv || !chEtat) return '<p class="muted boitecharge">Chargement de l\'événement…</p>';
   const corps = {
-    accueil: vChAccueil, raid: vChRaid, epreuve: vChEpreuve, quetes: vChQuetes,
+    accueil: vChAccueil, raid: () => vRaid(false), epreuve: vChEpreuve, quetes: vChQuetes,
     pass: vChPass, boutique: vChBoutique, classement: vChClassement
   }[chVue] || vChAccueil;
   return `<div class="rf ch">${vChTete(srvTime(ev.fin))}<div class="rf-page">${corps()}</div></div>`;
@@ -107,7 +101,7 @@ function chAffiche() {
 /* L'illustration de The French Sorcerer (#116) : le Raid, et le bandeau de
    l'écran Boosters. Cadrée sur son visage. */
 function chArt() {
-  const c = byId[CHOC.raid.boss];
+  const c = byId[RAID.boss];
   return c && c.img ? `<span class="rf-fond ch-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
 }
 
@@ -115,9 +109,9 @@ function chArt() {
    qui reste, le solde, et les sous-onglets. */
 function vChTete(fin) {
   const pastille = id => {
-    const n = id === 'quetes' ? chQuetesPretes() : id === 'pass' ? chPaliersPrets() : id === 'raid' ? chPhasesPretes() : 0;
+    const n = id === 'quetes' ? chQuetesPretes() : id === 'pass' ? chPaliersPrets() : id === 'raid' ? rdCoffres() : 0;
     if (n) return `<i class="rf-pastille">${n}</i>`;
-    const aJouer = (id === 'raid' && chTentativesRestantes() > 0) || (id === 'epreuve' && chEpreuveAJouer() && !chEtat.epreuve.gagnee);
+    const aJouer = (id === 'raid' && rdTentatives() > 0) || (id === 'epreuve' && chEpreuveAJouer() && !chEtat.epreuve.gagnee);
     return aJouer ? '<i class="rf-point" aria-label="À jouer"></i>' : '';
   };
   return `<header class="rf-tete ch-tete">
@@ -142,36 +136,11 @@ function vChTete(fin) {
 /* Le titre d'une page, sous l'en-tête. */
 const chTitre = (titre, texte) => `<div class="rf-ptitre"><h2>${titre}</h2>${texte ? `<p>${texte}</p>` : ''}</div>`;
 
-/* Le calendrier du Raid : où en est la phase, et quand s'ouvre la suivante. */
-function chRaidCalendrier(r) {
-  const n = r.phase;
-  const ph = (r.phases || []).find(x => x.n === n);
-  const aTerre = n <= CHOC.raid.phases.length && ph && ph.tombee;
-  const suivante = CHOC.raid.phases[n];
-  const dans = suivante ? Math.max(0, suivante.ouvre - (r.jour_ev || 0)) : 0;
-  return { aTerre, suivante, dans };
-}
-const chDans = j => (j <= 0 ? 'aujourd\'hui' : j === 1 ? 'demain' : `dans ${j} jours`);
-
-/* La barre de vie commune du Sorcier. */
-function vChBarre(r, grand) {
-  const p = chocPhase(r.phase);
-  const rappel = r.phase > CHOC.raid.phases.length;
-  const cal = chRaidCalendrier(r);
-  const reste = rappel ? 1 : Math.max(0, 1 - r.degats / r.pv);
-  return `<div class="ch-barre${grand ? ' grand' : ''}${rappel ? ' rappel' : ''}${cal.aTerre ? ' terre' : ''}">
-    <div class="ch-barre-tete"><b>${rappel ? h(p.nom) : `Phase ${r.phase}/${CHOC.raid.phases.length} · ${h(p.nom)}`}</b>
-      <span class="tnum">${rappel ? `${fmtN(r.total)} dégâts en tout` : cal.aTerre ? 'À terre' : `${fmtN(Math.max(0, r.pv - r.degats))} / ${fmtN(r.pv)} PV`}</span></div>
-    <div class="ch-pv"><i style="width:${Math.round(reste * 1000) / 10}%"></i></div>
-    ${cal.aTerre && cal.suivante ? `<p class="ch-terre">Le Sorcier est à terre. La phase ${cal.suivante.n}, « ${h(cal.suivante.nom)} », s'ouvre ${chDans(cal.dans)} — en attendant, tes coups comptent pour toi (${CHOC.monnaie.nom}, quêtes, classement).</p>` : ''}
-  </div>`;
-}
-
 /* =====================================================================
    Accueil
    ===================================================================== */
 function vChAccueil() {
-  const r = chEtat.raid;
+  const r = rdEtat;
   const ep = chEtat.epreuve;
   const qj = (save.quetes || []).filter(q => q.evenement === 'choc' && q.scope === 'ev_jour');
   const qFaites = qj.filter(q => q.progress >= q.goal).length;
@@ -179,9 +148,9 @@ function vChAccueil() {
   const atteint = piste.filter(x => chEv.total >= x.seuil).length;
   const prochain = piste.find(x => chEv.total < x.seuil);
   const regle = epreuveRegle();
-  const tr = chTentativesRestantes();
+  const tr = rdTentatives();
   const er = ep.max - ep.essais.length;
-  const phases = chPhasesPretes();
+  const coffres = rdCoffres();
   const paliers = chPaliersPrets();
   const qPretes = chQuetesPretes();
   const tuile = (vue, ico, titre, valeur, sous, chaud) => `<button class="rf-tuile${chaud ? ' chaud' : ''}" data-ch="vue" data-v="${vue}">
@@ -191,8 +160,8 @@ function vChAccueil() {
   return `<section class="rf-jour">
       <h3 class="rf-sous">Aujourd'hui</h3>
       <div class="rf-tuiles ch-tuiles">
-        ${tuile('raid', NAVICO.foudre, 'Le Raid', r.phase > CHOC.raid.phases.length ? 'La tempête revient' : `Phase ${r.phase} / ${CHOC.raid.phases.length}`,
-          phases ? `${phases} récompense${phases > 1 ? 's' : ''} à récupérer` : tr ? `${tr} tentative${tr > 1 ? 's' : ''} aujourd'hui` : 'Reviens demain', phases > 0 || tr > 0)}
+        ${tuile('raid', NAVICO.foudre, 'Le Raid', r ? `Niveau ${r.niveau}` : '…',
+          coffres ? `${coffres} coffre${coffres > 1 ? 's' : ''} à ouvrir` : tr ? `${tr} tentative${tr > 1 ? 's' : ''} aujourd'hui` : 'Reviens demain', coffres > 0 || tr > 0)}
         ${tuile('epreuve', NAVICO.epreuve, 'Épreuve du jour', h(regle.nom),
           ep.gagnee ? 'Gagnée aujourd\'hui' : er ? `${er} essai${er > 1 ? 's' : ''} restant${er > 1 ? 's' : ''}` : 'Terminée', er > 0 && !ep.gagnee)}
         ${tuile('quetes', NAVICO.quest, 'Quêtes du jour', `${qFaites} / ${qj.length}`,
@@ -231,124 +200,6 @@ function vChNouveautes() {
         '<button class="btn tiny ghost" data-tab="boutique">Boutique</button>')}
     </div>
   </section>`;
-}
-
-/* =====================================================================
-   Le Raid
-   ===================================================================== */
-function vChRaid() {
-  const r = chEtat.raid;
-  const p = chocPhase(r.phase);
-  const couleurs = chocCouleurs(chEtat.jour);
-  const tr = chTentativesRestantes();
-  const k = byId[CHOC.raid.boss] || {};
-  const assez = (r.moi.degats || 0) >= CHOC.raid.minimum;
-  const phases = CHOC.raid.phases.map(x => {
-    const s = r.phases.find(y => y.n === x.n) || {};
-    const pris = r.prises.includes(x.n);
-    const etat = s.tombee ? (pris ? 'pris' : 'tombee') : x.n === r.phase ? 'cours' : 'loin';
-    const ouvre = Math.max(0, x.ouvre - (r.jour_ev || 0));
-    return `<li class="ch-ph ${etat}">
-      <span class="ch-ph-n">${s.tombee ? NAVICO.check : x.n}</span>
-      <div class="ch-ph-txt"><b>${h(x.nom)}</b><small>${etat === 'loin' && ouvre ? `s'ouvre ${chDans(ouvre)} · ` : ''}${fmtN(s.pv || x.pv)} PV pour le serveur · IA ${'★'.repeat(x.ia)}, ${x.pvBoss} PV${x.ess ? `, ${x.ess} Essence${x.ess > 1 ? 's' : ''} d'avance` : ''}</small></div>
-      <span class="ch-ph-gain"><span class="rf-palico">${chIco(Object.assign({ type: x.recompense.type, objet: x.recompense.objet }, x.recompense))}</span>
-        ${pris ? '<span class="rf-paletat">Récupéré</span>'
-          : s.tombee && assez ? `<button class="btn tiny" data-ch="phase" data-v="${x.n}" data-snd="piece">Récupérer</button>`
-          : s.tombee ? '<span class="rf-paletat">Frappe-le d\'abord</span>'
-          : `<small>${h(x.recompense.titre)}</small>`}</span>
-    </li>`;
-  }).join('');
-  const sec = cbEtat().section;
-  return `${chTitre('Le Raid', `${h(CHOC.raid.nom)}, contre tout le serveur. Chaque PV que tu lui prends entame sa barre commune.`)}
-    <section class="ch-boss">
-      <div class="ch-boss-carte">${renderCard(k)}</div>
-      <div class="ch-boss-txt">
-        ${vChBarre(r, true)}
-        <p class="ch-boss-dit">${h(p.texte)}</p>
-        <p class="ch-couleurs">Aujourd'hui, il joue ${couleurs.map(c => `${essIcon(c)}<b>${h(COLORS[c].nom)}</b>`).join(' et ')}, avec du Neutre. Il commence la partie déjà sur le plateau.</p>
-        <ul class="ch-regles">
-          <li>IA ${h(DIFFICULTES[p.ia - 1].nom)} ${'★'.repeat(p.ia)}</li>
-          <li>${p.pvBoss} PV</li>
-          ${p.ess ? `<li>${p.ess} Essence${p.ess > 1 ? 's' : ''} en jeu au départ</li>` : ''}
-        </ul>
-      </div>
-    </section>
-    <section class="ch-attaque">
-      <div class="ch-moi">
-        <div><b class="tnum">${fmtN(r.moi.degats)}</b><small>dégâts infligés</small></div>
-        <div><b class="tnum">${r.moi.victoires}</b><small>fois vaincu</small></div>
-        <div><b class="tnum">${tr}<small>/${r.moi.max}</small></b><small>tentatives du jour</small></div>
-      </div>
-      ${sec ? vChoixDeck() : ''}
-      ${sec ? `<button class="btn cb-lancer ch-lancer" data-ch="raid-go" ${tr ? '' : 'disabled'}>${NAVICO.sword}${tr ? 'Affronter le Sorcier' : 'Plus de tentative aujourd\'hui'}</button>`
-        : '<button class="btn cb-lancer" data-tab="combats">Choisis d\'abord ta Section</button>'}
-      <p class="muted small">Chaque PV que tu lui prends : un dégât sur la barre commune, et ${CHOC.raid.parDegat} ${CHOC.monnaie.nom}. S'il tombe : +${CHOC.raid.bonusDegats} dégâts et +${CHOC.raid.bonusVictoire} ${CHOC.monnaie.nom}. Les tentatives reviennent chaque jour.</p>
-    </section>
-    <section>
-      <h3 class="rf-sous">Les cinq phases <small>· une à une, sur les trois semaines</small></h3>
-      <ol class="ch-phases">${phases}</ol>
-      ${r.phase > CHOC.raid.phases.length ? `<p class="ch-rappel">${h(CHOC.raid.rappel.texte)}</p>` : ''}
-      <p class="muted small">Pour réclamer une phase tombée, il faut avoir infligé au moins ${CHOC.raid.minimum} dégât${CHOC.raid.minimum > 1 ? 's' : ''} au Sorcier pendant l'événement — peu importe quand.</p>
-    </section>
-    ${vChTopRaid(5)}`;
-}
-
-/* Le classement des dégâts du Raid. */
-function vChTopRaid(n) {
-  const top = (chEtat.raid.top || []).slice(0, n || 10);
-  if (!top.length) return '';
-  return `<section><h3 class="rf-sous">Ceux qui frappent le plus</h3>
-    <ol class="rf-top">${top.map((j, i) => `<li class="${j.moi ? 'moi' : ''}">
-      <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
-      <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.section ? `<small class="ch-sec">${emblemeSection(j.section)}${h(SECTIONS[j.section].court)}</small>` : ''}</span>
-      <span class="rf-pts tnum">${fmtN(j.degats)}<small class="muted">&nbsp;dégâts</small></span></li>`).join('')}</ol></section>`;
-}
-
-async function lancerRaid() {
-  if (!chEtat) return;
-  const r = chEtat.raid;
-  if (!chTentativesRestantes()) return toast('Plus de tentative aujourd\'hui : reviens demain.');
-  const deck = cbDeckActif();
-  if (!deck) return toast('Il te faut un deck valide (Combats, onglet Decks).');
-  const p = chocPhase(r.phase);
-  await demarrer({
-    mode: 'raid', cle: String(r.phase), niveau: p.ia, deck,
-    deckIA: deckSorcier(chEtat.jour, r.phase), poses: posesBoss(), boss: true,
-    adversaire: { nom: CHOC.raid.nom, avatar: 'card:' + CHOC.raid.boss, frame: 'f_foudre' },
-    pv: p.pvBoss, ess: p.ess,
-    cosmAdv: { tapis: 't_orage', sleeve: 's_base' },
-    titre: `Raid · ${r.phase > CHOC.raid.phases.length ? 'Le rappel' : `Phase ${r.phase}`}`, sousTitre: p.nom
-  });
-}
-
-async function reclamerPhase(n) {
-  const x = CHOC.raid.phases.find(p => p.n === n);
-  occupe(true);
-  try {
-    const cartes = (await Backend.raidReclamer(n)).map(id => byId[id]).filter(Boolean);
-    chEtat = await Backend.chocEtat();
-    SFX.jouer('gagne');
-    if (!RM()) FX.sparkle({ n: 90, colors: ['#62d84e', '#7c3aed', '#f5c451', '#fff'], size: 3.4 });
-    const boosters = x.recompense.type === 'boosters';
-    openSheet({
-      title: `Phase ${n} tombée`,
-      body: `<div class="rf-gain">
-          ${cartes.length ? `<div class="rf-gaincartes">${cartes.map(c => `<button data-show="${c.id}">${renderCard(c)}</button>`).join('')}</div>`
-            : `<span class="rf-gainico ch-gainico">${chIco(x.recompense, 'md')}</span>`}
-          <b>${h(x.recompense.titre)}</b>
-          <p class="muted small">Tout le serveur a fait tomber « ${h(x.nom)} ». Ta part du butin est sur ton compte.</p>
-        </div>`,
-      actions: boosters
-        ? [{ label: 'Ouvrir maintenant', primary: true, fn: () => { closeSheet(); aller('boosters'); setTimeout(() => openBooster({ bonus: true }), 350); } },
-           { label: 'Plus tard', fn: () => { closeSheet(); render(); } }]
-        : [{ label: 'Super', primary: true, fn: () => { closeSheet(); render(); } }]
-    });
-  } catch (e) {
-    toast(e.message || 'La récompense n\'a pas pu être récupérée.');
-    SFX.jouer('erreur');
-  } finally {
-    occupe(false);
-  }
 }
 
 /* =====================================================================
@@ -391,7 +242,7 @@ function vChEpreuve() {
     </section>
     ${(ep.top || []).length ? `<section><h3 class="rf-sous">Classement du jour</h3>
       <ol class="rf-top">${ep.top.map((j, i) => `<li class="${j.moi ? 'moi' : ''}">
-        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
+        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo, j.xp)}
         <span class="rf-joueur"><b>${h(j.pseudo)}</b><small class="muted">${h(texteScore(j))}</small></span></li>`).join('')}</ol></section>` : ''}`;
 }
 
@@ -427,9 +278,9 @@ function vChQuetes() {
   const qs = (save.quetes || []).filter(q => q.evenement === 'choc');
   return `${chTitre('Quêtes', `Elles paient en ${CHOC.monnaie.nom}, et chaque ${CHOC.monnaie.un} gagné fait avancer le Pass.`)}
     <h3 class="rf-sous">Du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
-    ${vListeQuetes(qs.filter(q => q.scope === 'ev_jour'))}
+    ${vListeQuetes(qs.filter(q => q.scope === 'ev_jour'), 'choc-jour')}
     <h3 class="rf-sous">De l'événement</h3>
-    ${vListeQuetes(qs.filter(q => q.scope === 'ev'))}`;
+    ${vListeQuetes(qs.filter(q => q.scope === 'ev'), 'choc-ev')}`;
 }
 
 /* =====================================================================
@@ -569,12 +420,12 @@ function vChClassement() {
   let corps;
   if (chClassement === 'insignes') {
     corps = top.length ? `<ol class="rf-top">${top.map((j, i) => `<li class="${j.moi ? 'moi' : ''}">
-        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
+        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo, j.xp)}
         <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.titre && TITRES[j.titre] ? `<small class="titreligne t${TITRES[j.titre].ton}">${h(TITRES[j.titre].nom)}</small>` : ''}</span>
         <span class="rf-pts tnum">${insigneIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
       : `<p class="muted">Personne n'a encore gagné d'${CHOC.monnaie.nom} : à toi de commencer.</p>`;
   } else {
-    corps = vChTopRaid(10) || '<p class="muted">Personne n\'a encore frappé le Sorcier.</p>';
+    corps = vTopRaid(10) || '<p class="muted">Personne n\'a encore frappé le Sorcier.</p>';
   }
   return `${chTitre('Classement', `Ceux qui frappent le plus fort, et ceux qui gagnent le plus d'${CHOC.monnaie.nom}.`)}
     <div class="segbar ch-seg">${seg}</div>${corps}`;
@@ -587,10 +438,9 @@ function vBandeauChoc(lieu) {
   const ev = save.evenement;
   const fin = ev ? srvTime(ev.fin) : Date.now();
   const n = chocPastille();
-  const vers = lieu === 'boutique' ? 'boutique' : lieu === 'combats' ? 'raid' : 'accueil';
-  const r = chEtat && chEtat.raid;
+  const vers = lieu === 'boutique' ? 'boutique' : 'accueil';
   const sous = lieu === 'boutique' ? `En ${CHOC.monnaie.nom}, pendant l'événement`
-    : r ? `Raid · ${r.phase > CHOC.raid.phases.length ? 'le rappel' : `phase ${r.phase}/${CHOC.raid.phases.length}`}` : 'Le Raid est ouvert';
+    : 'L\'Épreuve du jour, et le Raid en Insignes';
   return `<button class="rfban chban${lieu ? ' ' + lieu : ''}" data-ch="vue" data-v="${vers}" aria-label="Ouvrir l'événement Le Choc des Sections">
     ${chArt()}
     <span class="rfban-txt">
@@ -626,7 +476,7 @@ function apercuRecapChoc() {
     code: 'choc', titre: CHOC.nom, debut: new Date(t - 21 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
     jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), apercu: true,
     total: 2840, paliers: 24, paliers_max: 30, pris: 24, quetes: 58, rang: 6, joueurs: 41,
-    degats: 214, raid_phases: 5, epreuves: 13,
+    degats: 214, raid_niveaux: 6, epreuves: 13,
     section: cbEtat().section || 'toxique',
     top: bots.map(([pseudo, section, total]) => ({ pseudo, section, total, avatar: 'star', frame: 'f_choc', photo: null, moi: false }))
   };
@@ -650,7 +500,7 @@ function vChRecap() {
   const stat = (ico, val, lib, sous) => `<div class="rr-stat"><span class="rr-ico">${ico}</span>
     <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
   const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
-      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
+      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo, j.xp)}
       <b>${h(j.pseudo)}</b><small>${insigneIco}${fmtN(j.total)}</small></li>`).join('');
   return `<div class="rf ch">${tete}<div class="rf-page">
     <section class="rr-bilan">
@@ -658,7 +508,7 @@ function vChRecap() {
       <div class="rr-stats">
         ${stat(insigneIco, fmtN(r.total), CHOC.monnaie.nom + ' gagnés', r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup> sur ${r.joueurs}` : '')}
         ${stat(NAVICO.trophy, `${r.paliers}<small>/${r.paliers_max}</small>`, 'paliers du Pass', r.paliers >= r.paliers_max ? 'Pass terminé' : '')}
-        ${stat(NAVICO.foudre, fmtN(r.degats || 0), 'dégâts au Sorcier', `${r.raid_phases || 0}/5 phases tombées`)}
+        ${stat(NAVICO.foudre, fmtN(r.degats || 0), 'dégâts au Sorcier', `${r.raid_niveaux || 0} niveau${(r.raid_niveaux || 0) > 1 ? 'x' : ''} tombé${(r.raid_niveaux || 0) > 1 ? 's' : ''}`)}
         ${stat(NAVICO.epreuve, r.epreuves || 0, 'Épreuves gagnées', '')}
         ${stat(NAVICO.quest, r.quetes, 'quêtes accomplies', '')}
       </div>
@@ -667,7 +517,8 @@ function vChRecap() {
     <section class="rr-continue">
       <h2>Ce qui reste</h2>
       <div class="rr-cartes">
-        <button class="rr-lien" data-tab="combats"><span class="rr-ico">${NAVICO.sword}</span><b>Les Combats continuent</b><small>Campagne, PvE infini, défis entre amis.</small></button>
+        <button class="rr-lien" data-cb="vue" data-v="raid"><span class="rr-ico">${NAVICO.foudre}</span><b>Le Raid continue</b><small>Le même boss, toute l'année, payé en Éclats.</small></button>
+        <button class="rr-lien" data-tab="combats"><span class="rr-ico">${NAVICO.sword}</span><b>Les Combats continuent</b><small>Campagne, Arcade, défis entre amis.</small></button>
         <button class="rr-lien" data-colvue="speciales" data-tab="collection"><span class="rr-ico">${NAVICO.promo}</span><b>Les Secrètes restent</b><small>Une chance dans chaque booster.</small></button>
       </div>
     </section>
@@ -717,8 +568,6 @@ function chAction(k, el) {
   const v = el.dataset.v;
   switch (k) {
     case 'vue': return allerCh(v);
-    case 'raid-go': return lancerRaid();
-    case 'phase': return reclamerPhase(+v);
     case 'ep-go': return lancerEpreuve();
     case 'ep-deck': return voirDeckEpreuve(v);
     case 'palier': return chReclamer([+v]);

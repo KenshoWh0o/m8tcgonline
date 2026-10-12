@@ -49,9 +49,12 @@ const estMissionCombat = q => METRIQUES_COMBAT.includes(q.metric);
 const questesDe = scope => (save.quetes || []).filter(q => q.scope === scope);
 const questePrete = q => !q.claimed && q.progress >= q.goal;
 
-/* Nombre de récompenses à encaisser : sert la pastille de la barre du bas. */
+/* Nombre de récompenses à encaisser : sert la pastille de la barre du bas.
+   Les seules quêtes de l'onglet : celles d'un événement ont leur pastille
+   sur l'onglet de l'événement, pas ici. */
+const SCOPES_ONGLET = SCOPES.map(s => s.id);
 function questesPretes() {
-  return (save.quetes || []).filter(questePrete).length;
+  return (save.quetes || []).filter(q => SCOPES_ONGLET.includes(q.scope) && questePrete(q)).length;
 }
 
 const questesPretesDe = scope => questesDe(scope).filter(questePrete).length;
@@ -229,11 +232,11 @@ function trierQuetes(l) {
   return l.slice().sort((a, b) => rangQuete(a) - rangQuete(b)
     || b.progress / b.goal - a.progress / a.goal || (a.ordre || 0) - (b.ordre || 0));
 }
-function vListeQuetes(liste) {
+function vListeQuetes(liste, cle) {
   const l = trierQuetes(liste);
   const faites = l.filter(q => q.claimed);
   return `<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
-    ${faites.length ? `<details class="qfaites"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
+    ${faites.length ? `<details class="qfaites" data-garde="qfaites-${cle || 'liste'}"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
       <div class="questlist">${faites.map(q => vQuete(q)).join('')}</div></details>` : ''}`;
 }
 
@@ -277,11 +280,11 @@ function vJalons(liste) {
        ou si c'est le premier ; sinon, le choix du joueur tient jusqu'au
        rechargement. */
     const ouvert = qThemes[nom] != null ? qThemes[nom] : pretes > 0 || nom === JALON_THEMES[0][0];
-    return `<details class="qgroupe" data-qtheme="${nom}"${ouvert ? ' open' : ''}>
+    return `<details class="qgroupe" data-qtheme="${nom}" data-garde="qtheme-${nom}"${ouvert ? ' open' : ''}>
       <summary><b>${nom}</b><small>${l.length}</small>${pretes ? `<i class="pastille">${pretes}</i>` : ''}<span class="qchev">${NAVICO.caret}</span></summary>
       <div class="questlist">${l.map(q => vQuete(q, apres(q.id))).join('')}</div></details>`;
   }).join('');
-  return blocs + (faites.length ? `<details class="qfaites"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
+  return blocs + (faites.length ? `<details class="qfaites" data-garde="qfaites-jalons"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
     <div class="questlist">${trierQuetes(faites).map(q => vQuete(q)).join('')}</div></details>` : '');
 }
 

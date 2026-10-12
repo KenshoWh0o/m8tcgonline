@@ -585,10 +585,13 @@ Backend.combatFin = async function (id, gagne, resume) {
 };
 
 /* L'événement « Le Choc des Sections » (js/choc.js, supabase/25_choc.sql) :
-   le Raid et l'Épreuve du jour. */
+   l'Épreuve du jour. */
 Backend.chocEtat = () => Backend.rpc('choc_etat');
-Backend.raidReclamer = async function (phase) {
-  const r = await Backend.rpc('raid_reclamer', { p_phase: phase });
+/* Le Raid, toute l'année (js/raid.js, supabase/27_raid.sql) : l'état du
+   boss, et le coffre d'un niveau tombé. */
+Backend.raidEtat = () => Backend.rpc('raid_etat');
+Backend.raidReclamer = async function (niveau) {
+  const r = await Backend.rpc('raid_reclamer', { p_niveau: niveau });
   Backend.apply(r.etat);
   return r.cartes || [];
 };

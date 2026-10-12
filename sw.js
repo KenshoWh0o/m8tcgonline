@@ -25,7 +25,7 @@ const ESSENTIEL = [
   'js/combat/decks.js', 'js/combat/ia.js', 'js/combat/campagne.js', 'js/combat/choc-data.js',
   'js/combat/niveaux.js', 'js/combat/guides.js', 'js/combat/table.js', 'js/combat/atelier.js',
   'js/combat/defis.js', 'js/battle.js', 'js/profile.js', 'js/settings.js', 'js/bienvenue.js',
-  'js/cadeaux.js', 'js/reflets.js', 'js/choc.js', 'js/pwa.js', 'js/lab.js', 'js/app.js',
+  'js/cadeaux.js', 'js/reflets.js', 'js/choc.js', 'js/raid.js', 'js/pwa.js', 'js/lab.js', 'js/app.js',
   'assets/logo-m8.webp', 'assets/card-back.webp', 'assets/pack-star.svg',
   'assets/star-pink.svg', 'assets/extension-logo.svg', 'assets/1st-edition.svg',
   'assets/icon-192.png', 'assets/apple-touch-icon.png', 'assets/favicon.svg'

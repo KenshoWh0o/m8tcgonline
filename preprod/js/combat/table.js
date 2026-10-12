@@ -52,15 +52,15 @@ const Table = (() => {
   const coulDe = k => (COLORS[k.col] || COLORS.neutre);
 
   /* ---------- Une carte ---------- */
-  /* `o.type` : le signe de sa sorte dans le coin (la main, les listes). */
-  function htmlCarte(id, o) {
-    o = o || {};
+  /* Une carte : son illustration, et ses reflets (Reverse, Légendaire,
+     Secrète). Pas de signe de sa sorte dans le coin : l'illustration dit
+     déjà ce qu'elle est. */
+  function htmlCarte(id) {
     const c = carte(id);
     const img = c.img
       ? `<img src="${c.img}" alt="" draggable="false" decoding="async">`
       : `<div class="ar-texte r-${c.rar}" style="--tc:${tcol(c)}"><b>${h(c.nom)}</b><small>${h(c.provisoire ? 'Promo provisoire' : (RAR[c.rar] || {}).nom || '')}</small>${c.def != null ? `<em>Déf ${c.def}</em>` : ''}${(c.atks || []).map(a => `<span>${coutHTML(a.cout)} ${h(a.nom)} <i>${a.degats == null ? '' : a.degats}</i></span>`).join('')}</div>`;
-    const t = o.type && TYPES[c.cat] ? `<i class="ar-type t-${c.cat}" title="${TYPES[c.cat].nom}">${TYPES[c.cat].ico}</i>` : '';
-    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' ? ' holo' : ''}${c.rar === 'S' ? ' secrete' : ''}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}${t}</div>`;
+    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' ? ' holo' : ''}${c.rar === 'S' ? ' secrete' : ''}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}</div>`;
   }
   const dos = j => `<div class="ar-c dos"><img src="${sleeveDe(j)}" alt="" draggable="false"></div>`;
 
@@ -82,7 +82,8 @@ const Table = (() => {
        cosm: [{ tapis, sleeve, jeton }, …], brillantes: [[couleurs], …],
        titre, sousTitre, boss (le CEO adverse est un boss),
        surFin(E, gagne) → html, surAction(a, E, deMoi) (PvP), surQuitter,
-       sauver (clé de reprise), meta } */
+       sauver (clé de reprise), meta,
+       minuteur (secondes par tour : un défi entre amis) } */
   function ouvrir(o) {
     fermer(true);
     const E = o.E || Combat.creer(o.init);
@@ -105,6 +106,7 @@ const Table = (() => {
     el.innerHTML = squelette();
     brancher();
     rendre();
+    if (o.minuteur) lancerChrono();
     SFX.jouer('ouvre');
     (async () => {
       if (!reprise) await pileOuFace();
@@ -116,6 +118,7 @@ const Table = (() => {
   function fermer(silence) {
     if (!T) return;
     T.ferme = true;
+    clearInterval(T.chronoTic);
     const el = T.el;
     el.hidden = true;
     el.innerHTML = '';
@@ -133,6 +136,7 @@ const Table = (() => {
     <header class="ar-barre lui">
       <button class="ar-bouton" data-ar="menu" aria-label="Menu du combat">${NAVICO.menu}</button>
       <div class="ar-ceo lui" data-cible="ceo"></div>
+      <span class="ar-chrono lui" hidden></span>
       <div class="ar-mainadv"></div>
     </header>
     <div class="ar-scene">
@@ -145,6 +149,7 @@ const Table = (() => {
     </div>
     <footer class="ar-barre moi">
       <div class="ar-ceo moi"></div>
+      <span class="ar-chrono moi" hidden></span>
       <button class="ar-fin" data-ar="fin">Fin du tour</button>
     </footer>
     <div class="ar-main"></div>
@@ -155,8 +160,13 @@ const Table = (() => {
   }
 
   /* ---------- Le rendu ---------- */
-  function rendre() {
+  /* Pendant une animation, le moteur est déjà à l'état final : redessiner le
+     plateau à ce moment (une carte qu'on ouvre, le menu qu'on referme)
+     sautait à la fin et coupait l'animation en cours. Seuls les gestes de
+     l'animation redessinent (`force`) ; le reste attend sa fin. */
+  function rendre(force) {
     if (!T) return;
+    if (T.anim && !force) { T.aRendre = true; return; }
     const E = T.E, m = T.moi, l = adv(m);
     const d = Combat.demande(E);
     const monTour = E.actif === m && !E.fin;
@@ -230,7 +240,7 @@ const Table = (() => {
     /* Avant la mise en place (main de départ), les PV ne sont pas encore posés. */
     const pose = T.E.tour > 0 || pv > 0;
     const backs = Array.from({ length: pv }, (_, i) => `<i style="--i:${i}"></i>`).join('');
-    return `<span class="ar-ava${actif ? ' actif' : ''}">${avatarHTML(inf.avatar || 'star', inf.frame || 'default', 'md', inf.photo || null)}</span>
+    return `<span class="ar-ava${actif ? ' actif' : ''}">${avatarHTML(inf.avatar || 'star', inf.frame || 'default', 'md', inf.photo || null, inf.xp)}</span>
       <span class="ar-qui"><b>${h(P.nom)}</b>
         ${pose ? `<span class="ar-pvs${pv <= 1 ? ' bas' : ''}" aria-label="${pv} PV" style="--dos:url('${abs(sleeveDe(j))}')"><span class="ar-pvdos">${backs}</span><em>${pv}</em><small>PV</small></span>` : ''}</span>`;
   }
@@ -304,7 +314,8 @@ const Table = (() => {
     const def = Combat.defense(E, c);
     const bonus = def - (k.def || 0);
     x.querySelector('.ar-def').className = 'ar-def' + (bonus > 0 ? ' plus' : bonus < 0 ? ' moins' : '');
-    x.querySelector('.ar-def').innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 2.5 20 6v5.6c0 4.6-3.3 8.4-8 9.9-4.7-1.5-8-5.3-8-9.9V6Z"/></svg><b>${def}</b>`;
+    x.querySelector('.ar-def').innerHTML = `${MARQUES.Garde}<b>${def}</b>`;
+    x.querySelector('.ar-def').setAttribute('aria-label', `Défense ${def}`);
     const ids = c.obj.map(o => o.u).join(',');
     const objs = x.querySelector('.ar-objs');
     if (objs.dataset.k !== ids) {
@@ -315,6 +326,12 @@ const Table = (() => {
     for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) mk.push(`<i class="ar-mk mk-${O_.sansAccent(m)}" title="${m}">${MARQUES[m]}</i>`);
     if (Combat.shieldActif(E, c)) mk.push(`<i class="ar-mk mk-shield" title="Shield">${MARQUES.Shield}</i>`);
     if (E.temp.some(t => t.type === 'pasAttaque' && t.cible === c.u)) mk.push('<i class="ar-mk mk-bloque" title="Ne peut pas attaquer ce tour">⊘</i>');
+    /* Un effet du tour (Défense, attaques) : une flèche, vers le haut ou le bas. */
+    const tmp = E.temp.filter(t => (t.type === 'def' || t.type === 'atk') && (t.cible != null ? t.cible === c.u : t.camp === c.j));
+    if (tmp.length) {
+      const haut = tmp.reduce((a, t) => a + Math.sign(t.val), 0) >= 0;
+      mk.push(`<i class="ar-mk mk-${haut ? 'buff' : 'debuff'}" title="Un effet du tour : touche la carte pour le lire">${haut ? '▲' : '▼'}</i>`);
+    }
     x.querySelector('.ar-marques').innerHTML = mk.join('');
   }
   const O_ = Combat.O;
@@ -342,7 +359,7 @@ const Table = (() => {
           b.className = 'ar-m';
           b.dataset.mu = c.u;
           b.setAttribute('aria-label', carte(c.id).nom || '');
-          b.innerHTML = htmlCarte(c.id, { type: true });
+          b.innerHTML = htmlCarte(c.id);
         }
         avant.delete(c.u);
         b.style.setProperty('--i', i);
@@ -380,6 +397,70 @@ const Table = (() => {
     T.consigne = txt || null;
     qs('.ar-annuler').hidden = !annulable;
     rendreMilieu(Combat.demande(T.E), T.E.actif === T.moi);
+  }
+
+  /* ---------- Le temps de jeu (défis entre amis) ---------- */
+  /* Soixante secondes par tour, vingt pour une décision prise pendant le
+     tour de l'autre (défendre, une Résilience…). Le temps des animations ne
+     compte pas. Écoulé, le jeu joue pour soi : il finit le tour, ou fait le
+     choix le plus simple. Chacun le voit pour les deux : un adversaire qui
+     traîne le voit filer, et s'il ne joue plus du tout (son appli fermée),
+     on le dit. */
+  const CHRONO_DECISION = 20;
+  function lancerChrono() {
+    let avant = Date.now();
+    T.chronoTic = setInterval(() => {
+      if (!T || T.ferme) return;
+      const t = Date.now(), dt = t - avant;
+      avant = t;
+      majChrono(dt);
+    }, 250);
+  }
+  function majChrono(dt) {
+    const E = T.E, d = Combat.demande(E);
+    const el = { moi: qs('.ar-chrono.moi'), lui: qs('.ar-chrono.lui') };
+    if (!d || E.fin) {
+      el.moi.hidden = el.lui.hidden = true;
+      T.chrono = null;
+      return;
+    }
+    const cle = d.type === 'tour' ? `t${E.tour}|${d.qui}` : `d${E.journal.length}|${d.qui}`;
+    if (!T.chrono || T.chrono.cle !== cle) {
+      /* Une décision au milieu de son propre tour (cibler, choisir une carte)
+         prend sur le temps du tour. */
+      const memeTour = T.chrono && T.chrono.tour === E.tour && T.chrono.qui === d.qui && E.actif === d.qui;
+      const total = (d.type === 'tour' || memeTour ? T.o.minuteur : CHRONO_DECISION) * 1000;
+      T.chrono = { cle, qui: d.qui, tour: E.tour, total, reste: memeTour ? T.chrono.reste : total };
+    }
+    const c = T.chrono;
+    if (!T.occupe) c.reste -= dt;
+    const s = Math.max(0, Math.ceil(c.reste / 1000));
+    const lui = c.qui !== T.moi;
+    const z = el[lui ? 'lui' : 'moi'], autre = el[lui ? 'moi' : 'lui'];
+    autre.hidden = true;
+    z.hidden = false;
+    const absent = lui && c.reste < -20000;
+    z.className = 'ar-chrono ' + (lui ? 'lui' : 'moi') + (s <= 10 ? ' presse' : '') + (absent ? ' absent' : '');
+    z.style.setProperty('--p', Math.max(0, c.reste / c.total));
+    z.innerHTML = absent ? '<b>Ne répond plus</b>' : `<b class="tnum">${s}</b>`;
+    z.setAttribute('aria-label', absent ? 'Ton adversaire ne répond plus' : `${s} secondes`);
+    if (!lui && c.reste <= 0 && !T.occupe && !T.chronoJoue) tempsEcoule(d);
+  }
+  async function tempsEcoule(d) {
+    T.chronoJoue = true;
+    try {
+      const a = d.type === 'tour'
+        ? Combat.optionsTour(T.E).find(x => x.t === 'finTour') || IA.choisir(T.E, { niveau: 1 })
+        : IA.choisir(T.E, { niveau: 1 });
+      toast(d.type === 'tour' ? 'Temps écoulé : fin du tour.' : 'Temps écoulé : choix automatique.');
+      T.cible = null;
+      consigne(null);
+      fermerFocus();
+      fermerSheet();
+      await jouer(a);
+    } finally {
+      if (T) T.chronoJoue = false;
+    }
   }
 
   /* ---------- Les cartes jouées ---------- */
@@ -502,7 +583,17 @@ const Table = (() => {
       if (!e.target.closest('.ar-f-carte,.ar-f-panneau')) fermerFocus();
       return;
     }
-    if (T.occupe) return;
+    /* Pendant une animation, on peut toujours lire une carte : le combat
+       continue dessous. Le médaillon d'un Objet ouvre l'Objet, pas son Joueur. */
+    if (T.occupe) {
+      const ob = e.target.closest('.ar-obj');
+      if (ob) return ouvrirFocus({ id: ob.dataset.id });
+      const jo = e.target.closest('.ar-j');
+      if (jo) return ouvrirFocus({ u: +jo.dataset.u });
+      const mo = e.target.closest('.ar-m');
+      if (mo) return ouvrirFocus({ main: true, u: +mo.dataset.mu });
+      return;
+    }
     const d = Combat.demande(T.E);
     const aMoi = d && d.qui === T.moi && !T.E.fin;
 
@@ -540,10 +631,10 @@ const Table = (() => {
 
     const m = e.target.closest('.ar-m');
     if (m) return ouvrirFocus({ main: true, u: +m.dataset.mu });
-    const j = e.target.closest('.ar-j');
-    if (j) return ouvrirFocus({ u: +j.dataset.u });
     const o = e.target.closest('.ar-obj');
     if (o) return ouvrirFocus({ id: o.dataset.id });
+    const j = e.target.closest('.ar-j');
+    if (j) return ouvrirFocus({ u: +j.dataset.u });
   }
 
   /* ---------- La carte en grand ---------- */
@@ -566,18 +657,20 @@ const Table = (() => {
     SFX.jouer('carte');
 
     let corps = '';
+    const surPlateau = inst && !f.main;
     if (f.main && aMoi) corps = panneauMain(inst, k);
-    else if (inst && !f.main && k.cat === 'joueur' && inst.j === T.moi && aMoi) corps = panneauAttaques(inst, k);
-    else if (inst && k.cat === 'joueur') corps = panneauLecture(inst, k);
-    else if (f.main) corps = '<p class="ar-f-aide">Ce n\'est pas ton tour.</p>';
-    /* Un Joueur qui n'est plus sur le plateau (la liste des cartes jouées) :
-       ses attaques telles qu'imprimées. */
+    else if (surPlateau && k.cat === 'joueur' && inst.j === T.moi && aMoi) corps = panneauAttaques(inst, k);
+    else if (surPlateau && k.cat === 'joueur') corps = panneauLecture(inst, k);
+    /* Un Joueur hors du plateau (dans la main, dans la liste des cartes
+       jouées) : ses attaques telles qu'imprimées. Il n'a ni Objets ni effets :
+       on ne les calcule pas. */
     else if (k.cat === 'joueur') corps = `<p class="ar-f-def"><span class="ar-f-defv">${MARQUES.Garde}<b>${k.def}</b></span></p><div class="ar-atqs">${(k.atks || []).map(a => `<div class="ar-atq lu">${coutHTML(a.cout)}<span class="ar-atq-t"><b>${h(a.nom)}</b>${a.effet ? `<small>${h(a.effet)}</small>` : ''}</span><em>${a.degats == null ? '' : a.degats}</em></div>`).join('')}</div>`;
+    if (f.main && !aMoi && !T.occupe && k.cat !== 'joueur' && !(k.fx || []).length) corps += '<p class="ar-f-aide">Ce n\'est pas ton tour.</p>';
     /* Un Objet, un Coach, un Moment : son effet, lisible tout de suite. */
     if (k.cat !== 'joueur' && (k.fx || []).length) corps = `<div class="ar-f-fx">${k.fx.map(t => `<p>${h(t)}</p>`).join('')}</div>` + corps;
     /* Les Objets liés à un Joueur : chacun avec son effet, et on peut
        l'ouvrir en grand. */
-    if (inst && !f.main && inst.obj && inst.obj.length) corps += panneauObjets(inst);
+    if (surPlateau && inst.obj && inst.obj.length) corps += panneauObjets(inst);
     const lire = k.cat === 'joueur' || k.res || k.provisoire;
 
     const z = qs('.ar-focus');
@@ -643,14 +736,14 @@ const Table = (() => {
     /* Attaquer ouvre la phase de Combat : s'il reste à déployer ou à lier,
        on le dit ici, une fois, plutôt que de demander confirmation. */
     const ferme = opts.length && T.E.phase === 'jeu' && Combat.optionsTour(T.E).some(a => a.t === 'deployer' || a.t === 'lier');
-    return `${defLigne(c, k)}<div class="ar-atqs">${lignes || '<p class="ar-f-aide">Aucune attaque.</p>'}</div>${ferme ? '<p class="ar-f-note">Attaquer ouvre la phase de Combat : plus de Joueur à déployer ni d\'Objet à lier ce tour.</p>' : ''}`;
+    return `${defLigne(c, k)}<div class="ar-atqs">${lignes || '<p class="ar-f-aide">Aucune attaque.</p>'}</div>${ferme ? '<p class="ar-f-note">Attaquer ouvre la phase de Combat : plus de Joueur à déployer ni d\'Objet à lier ce tour.</p>' : ''}${panneauEffets(c, k)}`;
   }
   function panneauLecture(c, k) {
     const lignes = k.atks.map((a, i) => {
       const inf = Combat.infoAttaque(T.E, c, i);
       return `<div class="ar-atq lu">${coutHTML(inf.cout)}<span class="ar-atq-t"><b>${h(a.nom)}</b>${a.effet ? `<small>${h(a.effet)}</small>` : ''}</span><em>${a.degats == null ? '' : inf.val}</em></div>`;
     }).join('');
-    return `${defLigne(c, k)}<div class="ar-atqs">${lignes}</div>`;
+    return `${defLigne(c, k)}<div class="ar-atqs">${lignes}</div>${panneauEffets(c, k)}`;
   }
   function panneauObjets(c) {
     return `<div class="ar-f-objs"><p class="ar-f-objs-t">Objets liés</p>${c.obj.map(o => {
@@ -658,6 +751,47 @@ const Table = (() => {
       return `<button class="ar-f-obj" data-ar="voir-carte" data-id="${o.id}"><i style="background-image:url('${abs(k.img || '')}')"></i><span><b>${h(k.nom || '')}</b>${(k.fx || []).length ? `<small>${h(k.fx.join(' '))}</small>` : ''}</span></button>`;
     }).join('')}</div>`;
   }
+  /* Ce qui agit sur un Joueur en ce moment, en toutes lettres : sa Défense
+     et ses attaques modifiées (Objets, coéquipiers, effets du tour), ses
+     mots-clés et ce qu'ils font, ce qui lui est interdit. Les pastilles du
+     plateau ne disent que « il y a quelque chose » : c'est ici qu'on le lit. */
+  const MOTS_CLES = {
+    Provocation: 'l\'attaquant face à lui doit le viser.',
+    Garde: 'il peut défendre n\'importe quelle ligne.',
+    Shield: 'il ignore la première attaque qu\'il subit.',
+    Riposte: 'vaincu, il peut contre-attaquer celui qui l\'a vaincu.',
+    Légion: 'vaincu, il peut revenir en main contre une carte défaussée.'
+  };
+  function effetsEnCours(c, k) {
+    const E = T.E, l = [];
+    const duree = t => (t.jusqua > E.tour ? 'jusqu\'au tour suivant' : 'ce tour');
+    const signe = v => (v > 0 ? '+' : '−') + Math.abs(v);
+    const def = Combat.defense(E, c), d0 = k.def || 0;
+    if (def !== d0) l.push({ s: def > d0 ? 'plus' : 'moins', t: `Défense ${signe(def - d0)} : ${def} au lieu de ${d0}` });
+    const a0 = (k.atks || []).findIndex(a => a.degats != null);
+    if (a0 >= 0) {
+      const b = Combat.infoAttaque(E, c, a0).val - k.atks[a0].degats;
+      if (b) l.push({ s: b > 0 ? 'plus' : 'moins', t: `Attaques ${signe(b)} de dégâts` });
+    }
+    for (const t of E.temp) {
+      const vise = t.cible != null ? t.cible === c.u : t.camp === c.j && (t.type === 'def' || t.type === 'atk');
+      if (!vise) continue;
+      if (t.type === 'def') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} Défense ${duree(t)}` });
+      else if (t.type === 'atk') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} aux attaques ${duree(t)}` });
+      else if (t.type === 'pasAttaque') l.push({ s: 'moins', t: `Ne peut pas attaquer ${duree(t)}` });
+      else if (t.type === 'pasDefenseFace') l.push({ s: 'plus', t: `Le Joueur d'en face ne peut pas défendre contre lui ${duree(t)}` });
+      else if (t.type === 'kw') l.push({ s: 'plus', t: `Gagne ${t.kw} ${duree(t)}` });
+    }
+    for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) l.push({ s: 'kw', t: `<b>${m}</b> : ${MOTS_CLES[m]}` });
+    if (Combat.shieldActif(E, c)) l.push({ s: 'kw', t: `<b>Shield</b> : ${MOTS_CLES.Shield}` });
+    return l;
+  }
+  function panneauEffets(c, k) {
+    const l = effetsEnCours(c, k);
+    if (!l.length) return '';
+    return `<div class="ar-f-effets"><p class="ar-f-objs-t">En ce moment</p>${l.map(x => `<p class="ar-eff ${x.s}">${x.t}</p>`).join('')}</div>`;
+  }
+
   function defLigne(c, k) {
     const def = Combat.defense(T.E, c);
     const etat = [c.eng ? 'engagé' : 'prêt', c.obj.length ? `${c.obj.length} Objet${c.obj.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
@@ -957,7 +1091,7 @@ const Table = (() => {
   function decisionMulligan(d) {
     const main = T.E.j[T.moi].main;
     ouvrirSheet(`<p class="ar-s-titre">Ta main de départ</p>
-      <div class="ar-mulligan">${main.map((c, i) => `<span style="--i:${i}">${htmlCarte(c.id, { type: true })}</span>`).join('')}</div>
+      <div class="ar-mulligan">${main.map((c, i) => `<span style="--i:${i}">${htmlCarte(c.id)}</span>`).join('')}</div>
       <p class="ar-s-texte">Tu peux la garder, ou la remélanger une fois pour en piocher une autre.</p>
       <div class="ar-s-act"><button class="ar-b or" data-ar="opt" data-v="oui">Garder</button><button class="ar-b ghost" data-ar="opt" data-v="non">Changer de main</button></div>`, 'decision mulligan centre');
   }
@@ -982,7 +1116,7 @@ const Table = (() => {
     else if (d.cartes && d.cartes.length) {
       haut = `<div class="ar-liste">${d.cartes.map(c => {
         const opt = d.options.find(o => o.v === c.u);
-        return `<button class="ar-lc${opt ? '' : ' grise'}" ${opt ? `data-ar="opt" data-v="${c.u}"` : 'disabled'}>${htmlCarte(c.id, { type: true })}</button>`;
+        return `<button class="ar-lc${opt ? '' : ' grise'}" ${opt ? `data-ar="opt" data-v="${c.u}"` : 'disabled'}>${htmlCarte(c.id)}</button>`;
       }).join('')}</div>`;
     }
     const surPlateau = d.options.some(o => o.u) && !(d.cartes && d.cartes.length) && d.zone !== 'liste';
@@ -1009,7 +1143,7 @@ const Table = (() => {
     }).filter(Boolean);
     ouvrirSheet(`<p class="ar-s-titre">${h(d.titre)}</p>${d.texte ? `<p class="ar-s-texte">${h(d.texte)}</p>` : ''}
       <p class="ar-s-aide">${d.min === d.max ? `Choisis ${d.min} carte${d.min > 1 ? 's' : ''}.` : `De ${d.min} à ${d.max} cartes.`}</p>
-      <div class="ar-liste">${liste.map(c => `<button class="ar-lc" data-ar="multi" data-u="${c.u}">${htmlCarte(c.id, { type: true })}<i class="ar-coche-c"></i></button>`).join('')}</div>
+      <div class="ar-liste">${liste.map(c => `<button class="ar-lc" data-ar="multi" data-u="${c.u}">${htmlCarte(c.id)}<i class="ar-coche-c"></i></button>`).join('')}</div>
       <div class="ar-s-act"><button class="ar-b or" data-ar="multi-ok" ${d.min > 0 ? 'disabled' : ''}>Valider</button></div>`, 'decision cartes');
   }
   function basculerMulti(u) {
@@ -1045,7 +1179,7 @@ const Table = (() => {
     const l = quoi === 'banc' ? P.banc : P.defausse;
     ouvrirSheet(`<p class="ar-s-titre">${quoi === 'banc' ? 'Banc' : 'Défausse'}${j === T.moi ? '' : ` de ${h(nomCEO(j))}`} · ${l.length}</p>
       ${quoi === 'banc' ? '<p class="ar-s-texte">Ces cartes reviennent dans la main au début du tour de leur propriétaire.</p>' : ''}
-      <div class="ar-liste grille">${l.slice().reverse().map(c => `<span class="ar-lc">${htmlCarte(c.id, { type: true })}</span>`).join('') || '<p class="ar-s-texte">Vide.</p>'}</div>
+      <div class="ar-liste grille">${l.slice().reverse().map(c => `<span class="ar-lc">${htmlCarte(c.id)}</span>`).join('') || '<p class="ar-s-texte">Vide.</p>'}</div>
       <div class="ar-s-act"><button class="ar-b ghost" data-ar="annuler">Fermer</button></div>`, 'pile');
   }
 
@@ -1137,12 +1271,18 @@ const Table = (() => {
      on anime : on montre ce qui s'est passé, dans l'ordre, puis le plateau
      est redessiné à son état final. */
   async function animer(evs) {
-    for (const e of evs) {
-      if (!T) return;
-      const f = ANIM[e.t];
-      journaliser(e);
-      historiser(e);
-      if (f) await f(e);
+    const moi = T;
+    T.anim = true;
+    try {
+      for (const e of evs) {
+        if (!T || T !== moi) return;
+        const f = ANIM[e.t];
+        journaliser(e);
+        historiser(e);
+        if (f) await f(e);
+      }
+    } finally {
+      moi.anim = false;
     }
     if (!T) return;
     ticker(null);
@@ -1266,32 +1406,32 @@ const Table = (() => {
   const ANIM = {
     async tour(e) {
       consigne(null);
-      rendre();
+      rendre(true);
       if (e.j === T.moi) { SFX.jouer('notif'); await bandeau('À toi de jouer', 'moi', 1000); }
       else await bandeau(`Tour de ${h(nomCEO(e.j))}`, 'lui', 1000);
     },
     async pioche(e) {
-      if (e.j !== T.moi) { rendre(); return; }
+      if (e.j !== T.moi) { rendre(true); return; }
       const de = qs('.ar-camp.moi .ar-pile.club');
       SFX.jouer('carte');
       await vol(null, rect(de), rect(qs('.ar-main')), { dos: T.moi, ms: 360, w: 60, s1: 1.2, arc: 30 });
-      rendre();
+      rendre(true);
     },
     async essence(e) {
-      rendre();
+      rendre(true);
       const x = T.el.querySelector(`.ar-gem[data-e="${e.u}"]`);
       if (x) { x.classList.add('arrive'); SFX.jouer('piece'); }
       await attendre(260);
     },
     async deploie(e) {
-      if (e.pose) { rendre(); return; }
+      if (e.pose) { rendre(true); return; }
       const place = qs(`.ar-camp.${cote(e.j)} .ar-place[data-ligne="${e.ligne}"]`);
       if (T.sauteVol !== e.u) {
         const de = e.j === T.moi ? (qs(`.ar-m[data-mu="${e.u}"]`) || qs('.ar-main')) : qs('.ar-mainadv');
         SFX.jouer('carte');
         await vol(e.id, rect(de), rect(place), { ms: e.j === T.moi ? 440 : 600, w: rect(place) ? rect(place).width : 92, s0: 0.8, arc: 40 });
       }
-      rendre();
+      rendre(true);
       const x = elU(e.u);
       if (x) { x.classList.add('pose'); eclats(x, [coulDe(carte(e.id)).c, '#fff'], 16); }
       SFX.jouer('retourne');
@@ -1308,7 +1448,7 @@ const Table = (() => {
       if (e.j === T.moi) rendreMain();
       const k = carte(e.id);
       await montrer(e.id, `${e.j === T.moi ? 'Tu joues' : `${h(nomCEO(e.j))} joue`} ${k.cat === 'coach' ? 'le Coach' : 'le Moment'} <b>${h(k.nom)}</b>`, e.j, e.j === T.moi ? T.montreDepuis : rect(qs('.ar-mainadv')));
-      rendre();
+      rendre(true);
     },
     /* Un Objet de l'adversaire : montré en grand avec son effet et le
        Joueur qui le reçoit, puis il file sur ce Joueur. Le sien, posé
@@ -1326,7 +1466,7 @@ const Table = (() => {
         SFX.jouer('carte');
         await vol(e.id, rect(de), rect(vers), { ms: 400, s1: 0.4, arc: 30 });
       }
-      rendre();
+      rendre(true);
       const x = elU(e.cible);
       if (x) { x.classList.add('brille'); setTimeout(() => x && x.classList.remove('brille'), 900); }
       eclats(x, ['#c8bfff', '#fff'], 14);
@@ -1334,7 +1474,7 @@ const Table = (() => {
       await attendre(e.j === T.moi ? 220 : 520);
     },
     async attaque(e) {
-      rendre();
+      rendre(true);
       const x = elU(e.u);
       if (x) x.classList.add('assaut');
       SFX.jouer('woosh');
@@ -1388,7 +1528,7 @@ const Table = (() => {
       SFX.jouer('craque');
       flottant(x, 'Vaincu', 'mort');
       await attendre(850);
-      rendre();
+      rendre(true);
     },
     async touche(e) {
       const x = elCEO(e.j);
@@ -1402,12 +1542,12 @@ const Table = (() => {
       const de = elCEO(e.j).querySelector('.ar-pvdos i:last-child') || elCEO(e.j);
       const vers = e.j === T.moi ? qs('.ar-main') : qs('.ar-mainadv');
       await vol(e.id, rect(de), rect(vers), { dos: e.j === T.moi ? false : e.j, ms: 480, w: 60, s0: 0.5, arc: 30 });
-      rendre();
+      rendre(true);
     },
-    async pvDefausse(e) { flottant(elCEO(e.j), 'PV détruit', 'mort'); rendre(); await attendre(380); },
+    async pvDefausse(e) { flottant(elCEO(e.j), 'PV détruit', 'mort'); rendre(true); await attendre(380); },
     async resilience(e) {
       await montrer(e.id, `Résilience · ${e.j === T.moi ? 'tu joues' : `${h(nomCEO(e.j))} joue`} <b>${h(carte(e.id).nom)}</b>`, e.j, null, { texte: carte(e.id).res || '' });
-      rendre();
+      rendre(true);
     },
     async riposte(e) {
       ticker(`<b>Riposte</b> · ${h(carte(e.id).nom)} · ${e.val}`);
@@ -1420,14 +1560,14 @@ const Table = (() => {
       if (x) x.classList.add('banc');
       flottant(x || elCEO(e.j), 'Au Banc', 'info');
       await attendre(420);
-      rendre();
+      rendre(true);
     },
     async enMain(e) {
       const x = elU(e.u);
       if (x) x.classList.add('banc');
       flottant(x || elCEO(e.j), 'Retour en main', 'info');
       await attendre(400);
-      rendre();
+      rendre(true);
     },
     async engage(e) { const x = elU(e.u); if (x) x.classList.add('eng'); },
     async desengage(e) { const x = elU(e.u); if (x) x.classList.remove('eng'); await attendre(180); },
@@ -1436,16 +1576,16 @@ const Table = (() => {
     async revelePV(e) { await montrerLot(e.cartes, `PV de ${h(nomCEO(e.j))}`); },
     async finCombatForce() { await bandeau('Fin de la phase de Combat', 'lui', 760); },
     async fin() { await attendre(300); },
-    async mulligan(e) { if (e.j !== T.moi) flottant(elCEO(e.j), 'Change de main', 'info'); rendre(); },
+    async mulligan(e) { if (e.j !== T.moi) flottant(elCEO(e.j), 'Change de main', 'info'); rendre(true); },
     async clubVide(e) { await bandeau(`Club vide : ${h(nomCEO(e.j))} pioche dans ses PV`, 'lui', 900); },
-    async echangePlaces() { rendre(); await attendre(260); },
+    async echangePlaces() { rendre(true); await attendre(260); },
     async defausse(e) { if (e.j === T.moi) rendreMain(); },
     async bonus(e) { flottant(elU(e.u), '+' + e.val, 'plus'); await attendre(260); },
     async gagneMotCle(e) { flottant(elU(e.u), e.kw, 'info'); await attendre(260); },
     async annule(e) { flottant(elU(e.u), 'Attaque annulée', 'info'); await attendre(380); },
     async attaquePerdue() {},
-    async essRendue() { rendre(); },
-    async retourBanc() { rendre(); }
+    async essRendue() { rendre(true); },
+    async retourBanc() { rendre(true); }
   };
 
   /* Retrouver l'id d'une instance, même partie du plateau. */
@@ -1468,7 +1608,7 @@ const Table = (() => {
     if (!cartes || !cartes.length) return;
     const z = document.createElement('div');
     z.className = 'ar-montre lot entre';
-    z.innerHTML = `<div class="ar-lot">${cartes.map(c => htmlCarte(c.id, { type: true })).join('')}</div><p>${legende}</p>`;
+    z.innerHTML = `<div class="ar-lot">${cartes.map(c => htmlCarte(c.id)).join('')}</div><p>${legende}</p>`;
     T.el.appendChild(z);
     await attendre(1500 + cartes.length * 120);
     z.classList.add('part');
@@ -1538,23 +1678,23 @@ const Table = (() => {
    `img` absent : le tapis de base, dessiné par la page (css/arene.css). */
 const TAPIS = {
   t_base:      { nom: 'Nuit M8', img: null, prix: 0 },
-  t_chateau:   { nom: 'Le Château', img: 'assets/combat/tapis/t_chateau.webp', prix: 4000 },
-  t_reverie:   { nom: 'Rêverie', img: 'assets/combat/tapis/t_reverie.webp', prix: 4000 },
-  t_chevalier: { nom: 'Le Chevalier', img: 'assets/combat/tapis/t_chevalier.webp', prix: 5000 },
-  t_veste:     { nom: 'Veste Rose', img: 'assets/combat/tapis/t_veste.webp', prix: 4000 },
-  t_pilote:    { nom: 'Petit Pilote', img: 'assets/combat/tapis/t_pilote.webp', prix: 4000 },
-  t_peche:     { nom: 'Grosse Prise', img: 'assets/combat/tapis/t_peche.webp', prix: 4000 },
+  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=3.0.4', prix: 4000 },
+  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=3.0.4', prix: 4000 },
+  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=3.0.4', prix: 5000 },
+  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=3.0.4', prix: 4000 },
+  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=3.0.4', prix: 4000 },
+  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.4', prix: 4000 },
   /* L'événement « Le Choc des Sections » : ni en vente, ni en Éclats.
      `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
-  t_arene:     { nom: 'L\'Arène', img: 'assets/combat/tapis/t_arene.webp', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
-  t_orage:     { nom: 'L\'Orage', img: 'assets/combat/tapis/t_orage.webp', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
+  t_arene:     { nom: 'L\'Arène', img: 'assets/combat/tapis/t_arene.webp?v=3.0.4', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
+  t_orage:     { nom: 'L\'Orage', img: 'assets/combat/tapis/t_orage.webp?v=3.0.4', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
 };
 const SLEEVES = {
-  s_base:    { nom: 'Classique', img: 'assets/card-back.webp', prix: 0 },
-  s_sorcier: { nom: 'Le Sorcier', img: 'assets/combat/sleeves/s_sorcier.webp', prix: 3000 },
-  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp', prix: 2500 },
-  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
+  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.4', prix: 0 },
+  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.4', prix: 3000 },
+  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.4', prix: 2500 },
+  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.4', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
 };
 const JETONS = {
-  j_base: { nom: 'Jeton M8', img: 'assets/jeton-echange.webp', prix: 0 }
+  j_base: { nom: 'Jeton M8', img: 'assets/jeton-echange.webp?v=3.0.4', prix: 0 }
 };

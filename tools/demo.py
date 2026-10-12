@@ -160,6 +160,21 @@ if PREPROD:
     # Installee sur l'ecran d'accueil, elle ne se confond pas avec le vrai jeu.
     ecrire('manifest.webmanifest', remplacer(lire('manifest.webmanifest'), r'"name": "[^"]*",\s*"short_name": "[^"]*"',
         lambda m: '"name": "Mate TCG Pré-prod",\n  "short_name": "TCG Pré-prod"', 'les noms du manifeste'))
+    # Les images de assets/ portent la version. Le service worker du vrai
+    # site couvre aussi /preprod/ et sert les images depuis son cache sans
+    # jamais les redemander (sw.js, « estMedia ») : une image retouchee sous
+    # le meme nom restait l'ancienne chez qui avait deja visite le site.
+    # Les cartes (cards/) ne changent pas : elles gardent leur adresse.
+    marque = re.compile(r"((?<![\w/.-])(?:\.\./)?assets/[\w./-]+\.(?:svg|webp|png|jpe?g|avif|gif))(?![?\w])")
+    for dossier, _, fichiers in os.walk(OUT):
+        for f in fichiers:
+            if not re.search(r'\.(css|js|html)$', f) or f.startswith('demo-illu'):
+                continue
+            chemin = os.path.join(dossier, f)
+            texte = open(chemin, encoding='utf-8').read()
+            nouveau = marque.sub(lambda m: m.group(1) + '?v=' + v, texte)
+            if nouveau != texte:
+                open(chemin, 'w', encoding='utf-8').write(nouveau)
     os.remove(os.path.join(OUT, 'sw.js'))
     os.remove(os.path.join(OUT, 'LISEZMOI.txt'))
     # Le joueur de la pre-prod est administrateur : le Labo sert a tout tester.

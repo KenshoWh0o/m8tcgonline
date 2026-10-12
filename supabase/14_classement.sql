@@ -64,14 +64,14 @@ begin
       'classes', (select count(*) from classes),
       'top', coalesce((
         select jsonb_agg(jsonb_build_object(
-                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
+                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'xp', xp_de(c.id), 'titre', c.titre,
                  'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', c.id = moi)
                order by c.n)
           from classes c where c.n <= 50), '[]'::jsonb),
       -- Sa propre ligne, meme hors des cinquante premiers : on veut savoir ou
       -- l'on en est, pas seulement qui est devant.
       'moi', (select jsonb_build_object(
-                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
+                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'xp', xp_de(c.id), 'titre', c.titre,
                 'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', true)
                 from classes c where c.id = moi))
   );

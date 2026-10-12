@@ -1,73 +1,55 @@
-/* L'événement de la version 3.0 : « Le Choc des Sections ».
+/* L'événement de la version 3.0, « Le Choc des Sections », et le Raid.
 
-   Trois semaines autour des Combats, en plus de ce qu'un événement apporte
-   déjà depuis la 2.0 (une monnaie, des quêtes, un Pass, une boutique, un
-   classement — supabase/21_reflets.sql) :
+   Le Raid (RAID) reste toute l'année, dans l'onglet Combats : The French
+   Sorcerer, un boss commun à tout le serveur. Une seule barre de vie :
+   chaque PV qu'on lui prend en combat l'entame. Quand elle est vide, le
+   niveau tombe — chacun de ceux qui l'ont frappé à ce niveau a un coffre —
+   et le boss revient au niveau suivant, plus fort. Trois tentatives par
+   jour. Pendant le Choc, il paie en Insignes ; le reste du temps, en Éclats.
 
-     · le Raid : The French Sorcerer, un boss commun à tous les joueurs.
-       Chaque PV qu'on lui prend en combat entame sa barre de vie, partagée
-       par tout le serveur. Cinq phases, de plus en plus dures, qui s'ouvrent
-       une à une au fil des trois semaines ; chaque phase tombée ouvre une
-       récompense à tous ceux qui l'ont frappé ;
-     · l'Épreuve du jour : le même combat pour tout le monde — les mêmes deux
-       decks imposés, la même donne, une règle du jour. Trois essais, le
-       meilleur compte, et un classement du jour.
+   L'événement (CHOC) ajoute l'Épreuve du jour : le même combat pour tout le
+   monde — les mêmes deux decks imposés, la même donne, une règle du jour.
+   Trois essais, le meilleur compte, et un classement du jour.
 
    Ce fichier est lu par la page et par le serveur de démo
    (_demo/serveur.js). Le serveur réel en a la copie dans
-   supabase/25_choc.sql : les deux doivent rester d'accord. */
+   supabase/25_choc.sql et 27_raid.sql : ils doivent rester d'accord. */
 "use strict";
+
+const RAID = {
+  /* The French Sorcerer (#116), Légendaire Mauve : ses éclairs renvoient
+     les Joueurs sur le Banc et frappent à 200. */
+  boss: 'c116',
+  nom: 'The French Sorcerer',
+  tentatives: 3,
+  /* La barre d'un niveau, en dégâts. Le serveur réel la multiplie par un
+     réglage (parametres.raid_echelle) pour s'adapter au nombre de joueurs. */
+  pv: n => 300 + 150 * (Math.max(1, n) - 1),
+  /* Le combat d'un niveau : l'IA, les PV du boss, ses Essences d'avance. */
+  combat: n => {
+    const k = Math.ceil(Math.max(1, n) / 2);
+    return { ia: Math.min(5, 2 + k), pvBoss: Math.min(9, 5 + k), ess: Math.min(2, Math.floor((Math.max(1, n) - 1) / 2)) };
+  },
+  /* Ce que rapporte un combat : par PV pris, et s'il tombe (+ bonusDegats
+     sur la barre). Pendant le Choc, en Insignes ; sinon, en Éclats. */
+  parDegat: 3, victoire: 15, bonusDegats: 3,
+  parDegatEclats: 4, victoireEclats: 20,
+  /* Le coffre d'un niveau tombé, à tour de rôle. */
+  coffres: [
+    { type: 'boosters', montant: 2, titre: '2 boosters' },
+    { type: 'fragments', montant: 300, titre: '300 Fragments' },
+    { type: 'boosters', montant: 3, titre: '3 boosters' },
+    { type: 'eclats', montant: 400, titre: '400 Éclats' }
+  ]
+};
+const raidCombat = n => RAID.combat(n || 1);
+const raidCoffre = n => RAID.coffres[(Math.max(1, n) - 1) % RAID.coffres.length];
 
 const CHOC = {
   code: 'choc',
   nom: 'Le Choc des Sections',
   /* La monnaie de l'événement (evt_comptes, comme les Prismes de Reflets). */
   monnaie: { nom: 'Insignes', un: 'Insigne' },
-
-  raid: {
-    /* The French Sorcerer (#116), Légendaire Mauve : ses éclairs renvoient
-       les Joueurs sur le Banc et frappent à 200. */
-    boss: 'c116',
-    nom: 'The French Sorcerer',
-    /* Tentatives comptées par jour (heure de Paris). Au-delà, on peut
-       rejouer, sans dégâts ni récompense. */
-    tentatives: 3,
-    /* Une tentative rapporte des Insignes par PV pris au boss, plus un
-       bonus s'il tombe. */
-    parDegat: 3,
-    bonusVictoire: 15,
-    bonusDegats: 3,
-    /* Pour pouvoir réclamer la récompense d'une phase, il faut avoir infligé
-       au moins ce nombre de dégâts pendant l'événement. */
-    minimum: 1,
-    /* `pv` : la barre commune de la phase, en dégâts. Le serveur réel la
-       multiplie par un réglage (parametres.raid_echelle) pour s'adapter au
-       nombre de joueurs. `ouvre` : le jour de l'événement (0 = le premier)
-       où la phase peut commencer, au plus tôt — le Raid dure ainsi les
-       trois semaines, même si le serveur frappe fort. `ia`, `pvBoss`, `ess` :
-       le combat lui-même. */
-    phases: [
-      { n: 1, nom: 'Premières étincelles', pv: 400, ouvre: 0, ia: 3, pvBoss: 6, ess: 0,
-        texte: 'Il charge l\'air autour de lui. Frappe avant le premier éclair.',
-        recompense: { type: 'boosters', montant: 2, titre: '2 boosters' } },
-      { n: 2, nom: 'L\'orage gronde', pv: 600, ouvre: 3, ia: 3, pvBoss: 7, ess: 1,
-        texte: 'Il a compris. Une Essence d\'avance, et un PV de plus.',
-        recompense: { type: 'fragments', montant: 500, titre: '500 Fragments' } },
-      { n: 3, nom: 'Foudre de Rage', pv: 900, ouvre: 7, ia: 4, pvBoss: 7, ess: 1,
-        texte: 'Il renvoie tes Joueurs sur le Banc : garde des renforts en main.',
-        recompense: { type: 'boosters', montant: 3, titre: '3 boosters' } },
-      { n: 4, nom: 'Éclairs Vengeurs', pv: 1300, ouvre: 11, ia: 4, pvBoss: 8, ess: 2,
-        texte: 'Deux Essences d\'avance. Ses éclairs frappent à 200.',
-        recompense: { type: 'brillante', montant: 1, titre: 'Une Essence Brillante' } },
-      { n: 5, nom: 'L\'œil du cyclone', pv: 1800, ouvre: 15, ia: 5, pvBoss: 8, ess: 2,
-        texte: 'Le calme avant la dernière décharge. Il prévoit ta réponse.',
-        recompense: { type: 'cadre', objet: 'f_foudre', titre: 'Cadre « Foudre »' } }
-    ],
-    /* Une fois les cinq phases tombées, la tempête revient : elle ne
-       s'arrête plus, et chaque dégât rapporte toujours des Insignes. */
-    rappel: { n: 6, nom: 'La tempête revient', ia: 5, pvBoss: 9, ess: 2,
-      texte: 'Il est tombé. La tempête revient, encore et encore : chaque dégât compte toujours pour le classement.' }
-  },
 
   epreuve: {
     essais: 3,
@@ -101,27 +83,19 @@ function chocJourN(j) {
 }
 const chocMod = (n, m) => ((n % m) + m) % m;
 
-/* La phase du raid : celle en cours (1 à 5), ou le rappel (6). */
-const chocPhase = n => CHOC.raid.phases[n - 1] || CHOC.raid.rappel;
-
-/* Le deck du Sorcier, le jour `j`, à la phase `n` : un deck tiré au sort
+/* Le deck du Sorcier, le jour `j`, au niveau `n` : un deck tiré au sort
    dans ses deux couleurs du jour, avec The French Sorcerer dedans — il
    commence la partie déjà sur le plateau (`posesBoss`). */
 function deckSorcier(j, n) {
   const couleurs = chocCouleurs(j);
   const r = aleaGraine(0x3c6ef372 ^ (chocJourN(j) * 31 + n));
-  const p = chocPhase(n);
-  const d = Decks.aleatoire(r, { niveau: Math.min(5, p.ia + 1), couleurs, nom: CHOC.raid.nom });
-  imposerCarte(d, CHOC.raid.boss, 'mauve', r);
-  d.couverture = CHOC.raid.boss;
+  const d = Decks.aleatoire(r, { niveau: Math.min(5, raidCombat(n).ia + 1), couleurs, nom: RAID.nom });
+  imposerCarte(d, RAID.boss, 'mauve', r);
+  d.couverture = RAID.boss;
   return d;
 }
 /* Le Sorcier au milieu de ses trois lignes, dès le début. */
-const posesBoss = () => [[], [{ id: CHOC.raid.boss, ligne: 1 }]];
-
-/* La phase la plus avancée que le Raid peut atteindre le jour `k` de
-   l'événement (0 = le premier jour) : les phases s'ouvrent une à une. */
-const chocPhaseMax = k => CHOC.raid.phases.filter(p => p.ouvre <= k).length;
+const posesBoss = () => [[], [{ id: RAID.boss, ligne: 1 }]];
 
 /* L'Épreuve du jour `j` : sa règle, et les deux decks imposés. La graine
    du jour vient du serveur (choc_etat) ; tout le reste s'en déduit. */

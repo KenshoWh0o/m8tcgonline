@@ -177,7 +177,7 @@ const CB_ICO = {
 /* L'illustration du bandeau : le boss du Raid pendant l'événement, sinon le
    prochain rival de la campagne, sinon la Promo de l'autre Section. */
 function cbHeroArt(e, prochain) {
-  const id = evenementEnCours() === 'choc' ? CHOC.raid.boss : prochain ? prochain.rival : SECTIONS[autreSection(e.section)].promo;
+  const id = prochain ? prochain.rival : SECTIONS[autreSection(e.section)].promo;
   const c = byId[id];
   return c && c.img ? `<span class="cb-hero-art" aria-hidden="true" style="background-image:url('${h(c.img)}')"></span>` : '';
 }
@@ -224,14 +224,6 @@ function vCbAffiche(e, prochain) {
       <span class="cb-une-t"><small>${sur}</small><b>${titre}</b><em>${sous}</em></span>
       <span class="cb-une-go">${go}</span>
     </button>`;
-  if (evenementEnCours() === 'choc') {
-    const r = typeof chEtat !== 'undefined' && chEtat ? chEtat.raid : null;
-    const tr = r ? chTentativesRestantes() : null;
-    const p = r ? chocPhase(Math.min(r.phase, 6)) : null;
-    return une('data-ch="vue" data-v="raid"', `Raid · ${h(CHOC.nom)}`, h(CHOC.raid.nom),
-      p ? `${r.phase > 5 ? h(p.nom) : `Phase ${r.phase} · ${h(p.nom)}`} · ${tr ? `${tr} tentative${tr > 1 ? 's' : ''}` : 'reviens demain'}` : 'Un boss pour tout le serveur',
-      'Affronter');
-  }
   if (prochain) {
     const k = byId[prochain.rival] || {};
     return une(`data-cb="combat" data-v="${prochain.id}"`, `Campagne · ${h(prochain.acte.nom)}`, h(k.nom || ''),
@@ -395,7 +387,7 @@ function vCbDefis(e) {
   const recus = e.defis.filter(d => d.pour_moi && d.statut === 'attente');
   const envoyes = e.defis.filter(d => !d.pour_moi && d.statut === 'attente');
   const enCours = e.defis.filter(d => d.statut === 'en_cours');
-  const ligne = (d, act) => `<div class="cb-defi">${avatarHTML(d.avatar, d.frame, 'sm', d.photo)}<span><b>${h(d.pseudo)}</b><small>${h(d.texte || '')}</small></span>${act}</div>`;
+  const ligne = (d, act) => `<div class="cb-defi">${avatarHTML(d.avatar, d.frame, 'sm', d.photo, d.xp)}<span><b>${h(d.pseudo)}</b><small>${h(d.texte || '')}</small></span>${act}</div>`;
   return `${tete}<p class="cb-intro">Pas de recherche d'adversaire : défie un ami. Il accepte, et vous jouez en direct, chacun sur son écran.</p>
     ${recus.length ? `<section class="cb-bloc"><h3>Pour toi</h3>${recus.map(d => ligne(Object.assign({ texte: 'te défie' }, d),
       `<span class="cb-defi-act"><button class="btn tiny" data-cb="defi-ok" data-v="${d.id}">Accepter</button><button class="btn tiny ghost" data-cb="defi-non" data-v="${d.id}">Refuser</button></span>`)).join('')}</section>` : ''}
@@ -524,7 +516,7 @@ function ouvrirGuidesSurcouche() {
 
 /* ---------- Lancer un combat ---------- */
 function joueurMoi() {
-  return { nom: save.pseudo, avatar: save.avatar, frame: save.frame, photo: maPhoto() };
+  return { nom: save.pseudo, avatar: save.avatar, frame: save.frame, photo: maPhoto(), xp: monXp() };
 }
 function brillantesMoi() {
   return Combat.COULEURS.filter((k, i) => (save.col || {})['b' + String(i + 1).padStart(3, '0')] > 0);

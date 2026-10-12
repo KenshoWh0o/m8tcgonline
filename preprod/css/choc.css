@@ -166,16 +166,16 @@
 .ch-vainqueur-titre{font-weight:800;color:var(--gold)}
 
 /* ============ Les cadres décorés de l'événement ============ */
-.ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg')}
-.ava.fx-foudre .fx-deco{background-image:url('../assets/cadres/foudre.svg')}
+.ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg?v=3.0.4')}
+.ava.fx-foudre .fx-deco{background-image:url('../assets/cadres/foudre.svg?v=3.0.4')}
 /* Les autres cadres de la 3.0 (tools/cadres-30.py). */
-.ava.fx-niv10 .fx-deco{background-image:url('../assets/cadres/niv10.svg')}
-.ava.fx-niv20 .fx-deco{background-image:url('../assets/cadres/niv20.svg')}
-.ava.fx-niv30 .fx-deco{background-image:url('../assets/cadres/niv30.svg')}
-.ava.fx-niv50 .fx-deco{background-image:url('../assets/cadres/niv50.svg')}
-.ava.fx-toxique .fx-deco{background-image:url('../assets/cadres/toxique.svg')}
-.ava.fx-deter .fx-deco{background-image:url('../assets/cadres/deter.svg')}
-.ava.fx-secrete .fx-deco{background-image:url('../assets/cadres/secrete.svg')}
+.ava.fx-niv10 .fx-deco{background-image:url('../assets/cadres/niv10.svg?v=3.0.4')}
+.ava.fx-niv20 .fx-deco{background-image:url('../assets/cadres/niv20.svg?v=3.0.4')}
+.ava.fx-niv30 .fx-deco{background-image:url('../assets/cadres/niv30.svg?v=3.0.4')}
+.ava.fx-niv50 .fx-deco{background-image:url('../assets/cadres/niv50.svg?v=3.0.4')}
+.ava.fx-toxique .fx-deco{background-image:url('../assets/cadres/toxique.svg?v=3.0.4')}
+.ava.fx-deter .fx-deco{background-image:url('../assets/cadres/deter.svg?v=3.0.4')}
+.ava.fx-secrete .fx-deco{background-image:url('../assets/cadres/secrete.svg?v=3.0.4')}
 
 /* ============ Les nouveautés de la 3.0 ============ */
 .nvhero.v3{isolation:isolate;background:radial-gradient(90% 140% at 0% 30%,rgba(98,216,78,.4),transparent 60%),

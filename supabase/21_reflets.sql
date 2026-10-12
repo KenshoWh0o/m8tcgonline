@@ -248,7 +248,7 @@ begin
         from evt_piste pa where pa.evenement = ev), '[]'::jsonb),
     'top', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'xp', xp_de(pr.id), 'titre', pr.titre,
                'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = ev and total > 0
@@ -302,7 +302,7 @@ begin
     'joueurs', nb,
     'top', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'xp', xp_de(pr.id), 'titre', pr.titre,
                'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = e.code and total > 0
@@ -469,7 +469,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object('carte', x.id, 'amis', x.amis) order by x.n desc, x.id)
       from (select k.id, count(*) as n,
-                   jsonb_agg(jsonb_build_object('pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+                   jsonb_agg(jsonb_build_object('pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
                                                 'photo', photo_discord(o.id), 'n', c.qty)
                              order by c.qty desc, lower(o.pseudo)) as amis
               from friendships f

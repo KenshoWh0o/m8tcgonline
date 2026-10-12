@@ -542,6 +542,22 @@ $$;
 -- parcourir les photos par identifiant.
 revoke all on function public.photo_discord from public, anon, authenticated;
 
+-- Version 3.0 : l'XP de combattant d'un joueur (26_niveaux.sql), pour le
+-- niveau pose sur son avatar partout ou son cadre s'affiche (amis, boite,
+-- classements, defis, evenement, fiche). La page calcule le niveau, comme
+-- pour me(). La table des combats vient plus loin (23_combats.sql) : tant
+-- qu'elle n'existe pas, c'est 0. Rouage interne, comme photo_discord.
+create or replace function public.xp_de(p uuid) returns integer
+language plpgsql stable security definer set search_path = public as $$
+declare v int;
+begin
+  select x.xp into v from combat_joueurs x where x.user_id = p;
+  return coalesce(v, 0);
+exception when undefined_table or undefined_column then
+  return 0;
+end $$;
+revoke all on function public.xp_de(uuid) from public, anon, authenticated;
+
 create or replace function public.period_key(sc text) returns text
 language sql stable as $$
   select case sc
@@ -1510,7 +1526,7 @@ begin
   -- Un compte qui n'a pas acces au jeu (01_schema.sql) n'est pas trouvable.
   if not found or not (beta_ouverte() or est_invite(r.id)) then return 'null'::jsonb; end if;
   return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
-    'frame', r.frame, 'photo', photo_discord(r.id));
+    'frame', r.frame, 'xp', xp_de(r.id), 'photo', photo_discord(r.id));
 end $$;
 
 -- =====================================================================
@@ -2062,13 +2078,13 @@ on conflict (id) do update set
 -- le tapis et le sleeve de base sont a tout le monde, sans achat.
 -- Et la boutique du Choc des Sections (25_choc.sql), en Insignes.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
-  ('t_chateau',    'tapis',  'Tapis « Le Château »',   'Le château et ses feux d''artifice, sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
-  ('t_reverie',    'tapis',  'Tapis « Rêverie »',      'La montagne violette, et les visages dans les nuages.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
-  ('t_chevalier',  'tapis',  'Tapis « Le Chevalier »', 'Le chevalier en armure, médaillon M8 au cou.',          5000, 'cosmetique', 1, null, true, 3, 'eclats', null, null),
-  ('t_veste',      'tapis',  'Tapis « Veste Rose »',   'La veste rose et ses éclats.',                           4000, 'cosmetique', 1, null, true, 4, 'eclats', null, null),
-  ('t_pilote',     'tapis',  'Tapis « Petit Pilote »', 'Une voiture téléguidée lancée à pleine vitesse.',        4000, 'cosmetique', 1, null, true, 5, 'eclats', null, null),
-  ('t_peche',      'tapis',  'Tapis « Grosse Prise »', 'Une partie de pêche qui tourne mal pour le requin.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
-  ('s_sorcier',    'sleeve', 'Sleeve « Le Sorcier »',  'Le dos de tes cartes : le sorcier en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('t_chateau',    'tapis',  'Tapis « Champions du Monde »', 'L''illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('t_reverie',    'tapis',  'Tapis « La Relève »', 'L''illustration de la carte « La Relève », sous tes cartes.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
+  ('t_chevalier',  'tapis',  'Tapis « La Luxueuse III »', 'L''illustration de la carte « La Luxueuse III », sous tes cartes.',          5000, 'cosmetique', 1, null, true, 3, 'eclats', null, null),
+  ('t_veste',      'tapis',  'Tapis « Marteen Supreme »', 'L''illustration de la carte « Marteen Supreme », sous tes cartes.',                           4000, 'cosmetique', 1, null, true, 4, 'eclats', null, null),
+  ('t_pilote',     'tapis',  'Tapis « Baby Driver »', 'L''illustration de la carte « Baby Driver », sous tes cartes.',        4000, 'cosmetique', 1, null, true, 5, 'eclats', null, null),
+  ('t_peche',      'tapis',  'Tapis « Vanyabubu »', 'L''illustration de la carte « Vanyabubu », sous tes cartes.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
+  ('s_sorcier',    'sleeve', 'Sleeve « 6W26L »', 'Le dos de tes cartes : la Secrète 6W26L, en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
   ('s_argent',     'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
   ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      90, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 8),
   ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6),
@@ -2211,7 +2227,7 @@ begin
   perform garde_beta();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
-        'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+        'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
         'photo', photo_discord(o.id),
         'is_admin', o.is_admin, 'streak', o.streak,
         'lien', case when f.accepte then 'ami'
@@ -2474,7 +2490,7 @@ begin
     'vitrine', to_jsonb(o.vitrine),
     -- Version 3.0 : son XP de combattant (26_niveaux.sql), pour le niveau
     -- pose sur l'avatar ; la page le calcule, comme pour me().
-    'xp', coalesce((select x.xp from combat_joueurs x where x.user_id = o.id), 0),
+    'xp', xp_de(o.id),
     'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,
@@ -2605,7 +2621,7 @@ begin
       select jsonb_agg(jsonb_build_object(
           'id', 'n' || n.id, 'type', n.type, 'quand', n.created_at,
           'ref', n.ref, 'data', n.data,
-          'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+          'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
           'photo', photo_discord(o.id),
           'en_attente', case n.type
             when 'ami_demande' then exists (
@@ -2989,14 +3005,14 @@ begin
       'classes', (select count(*) from classes),
       'top', coalesce((
         select jsonb_agg(jsonb_build_object(
-                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
+                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'xp', xp_de(c.id), 'titre', c.titre,
                  'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', c.id = moi)
                order by c.n)
           from classes c where c.n <= 50), '[]'::jsonb),
       -- Sa propre ligne, meme hors des cinquante premiers : on veut savoir ou
       -- l'on en est, pas seulement qui est devant.
       'moi', (select jsonb_build_object(
-                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
+                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'xp', xp_de(c.id), 'titre', c.titre,
                 'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', true)
                 from classes c where c.id = moi))
   );
@@ -3686,7 +3702,7 @@ begin
         from evt_piste pa where pa.evenement = ev), '[]'::jsonb),
     'top', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'xp', xp_de(pr.id), 'titre', pr.titre,
                'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = ev and total > 0
@@ -3740,7 +3756,7 @@ begin
     'joueurs', nb,
     'top', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'xp', xp_de(pr.id), 'titre', pr.titre,
                'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = e.code and total > 0
@@ -3907,7 +3923,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object('carte', x.id, 'amis', x.amis) order by x.n desc, x.id)
       from (select k.id, count(*) as n,
-                   jsonb_agg(jsonb_build_object('pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+                   jsonb_agg(jsonb_build_object('pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
                                                 'photo', photo_discord(o.id), 'n', c.qty)
                              order by c.qty desc, lower(o.pseudo)) as amis
               from friendships f
@@ -4668,7 +4684,7 @@ begin
     'xp', c.xp,
     'defis', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'id', d.id, 'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id),
+               'id', d.id, 'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id), 'photo', photo_discord(o.id),
                'pour_moi', d.pour = p, 'statut', d.statut,
                'vu', case when d.de = p then d.vu_de else d.vu_pour end) order by d.cree)
         from defis d join profiles o on o.id = case when d.de = p then d.pour else d.de end
@@ -4756,8 +4772,9 @@ begin
 end $$;
 
 -- ===================================================== 6. un combat contre l'IA
--- combat_debut : le serveur ouvre le combat et tire la graine. Le Raid et
--- l'Epreuve du jour (25_choc.sql) fixent eux-memes niveau, phase et graine.
+-- combat_debut : le serveur ouvre le combat et tire la graine. Le Raid
+-- (27_raid.sql) et l'Epreuve du jour (25_choc.sql) fixent eux-memes le
+-- niveau de l'IA, le niveau du boss (`phase`) et la graine.
 create or replace function public.combat_debut(p_mode text, p_cle text, p_niveau int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; v_n int; niv int := p_niveau; ph int; gr bigint; x jsonb;
@@ -4779,7 +4796,7 @@ begin
   elsif p_mode = 'infini' then
     if p_niveau is null or p_niveau not between 1 and 5 then raise exception 'Difficulté inconnue.'; end if;
   else
-    x := choc_debut(p, p_mode, p_cle);
+    x := case when p_mode = 'raid' then raid_debut(p, p_cle) else choc_debut(p, p_mode, p_cle) end;
     niv := (x->>'niveau')::int; ph := (x->>'phase')::int; gr := (x->>'graine')::bigint;
   end if;
   -- Un seul combat ouvert a la fois : le precedent compte comme perdu.
@@ -4830,9 +4847,12 @@ begin
                                  coalesce((p_resume->>'vaincus')::int, 0), coalesce((p_resume->>'tours')::int, 0)));
   end if;
 
-  -- Le Raid et l'Epreuve paient en Insignes (25_choc.sql).
+  -- Le Raid (27_raid.sql : Insignes pendant le Choc, Eclats sinon) et
+  -- l'Epreuve du jour (25_choc.sql, en Insignes).
   if o.mode in ('raid', 'epreuve') then
-    r := choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop);
+    r := case when o.mode = 'raid'
+              then raid_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop)
+              else choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop) end;
     return jsonb_build_object('etat', me(), 'recompense', r || jsonb_build_object('xp', v_xp));
   end if;
 
@@ -4902,7 +4922,7 @@ begin
     'actions', coalesce((select jsonb_agg(x order by i) from jsonb_array_elements(d.actions) with ordinality t(x, i)
                           where i > coalesce(depuis, 0)), '[]'::jsonb),
     'adversaire', jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
-                                     'photo', photo_discord(o.id),
+                                     'xp', xp_de(o.id), 'photo', photo_discord(o.id),
                                      'cosm', coalesce((select cosm from combat_joueurs where user_id = o.id), '{}'::jsonb)));
 end $$;
 
@@ -5105,99 +5125,33 @@ on conflict (id) do update set
 --  evenement apporte deja depuis la 2.0 (21_reflets.sql) : une monnaie — les
 --  Insignes, rangees dans evt_comptes comme les Prismes —, des quetes
 --  (04_seed.sql), un Pass de trente paliers, une boutique (04_seed.sql) et un
---  classement. En plus :
---    1. le Raid : The French Sorcerer, un boss commun a tout le serveur.
---       Chaque PV qu'on lui prend en combat entame sa barre de vie. Cinq
---       phases, qui s'ouvrent une a une au fil des trois semaines ; chacune
---       qui tombe ouvre une recompense a tous ceux qui l'ont frappe. Trois
---       tentatives par jour ;
---    2. l'Epreuve du jour : le meme combat pour tout le monde (les decks et
---       la regle se deduisent de la graine du jour, js/combat/choc-data.js).
---       Trois essais, le meilleur compte, un classement du jour.
+--  classement. En plus, l'Epreuve du jour : le meme combat pour tout le
+--  monde (les decks et la regle se deduisent de la graine du jour,
+--  js/combat/choc-data.js). Trois essais, le meilleur compte, un classement
+--  du jour.
+--
+--  Le Raid (27_raid.sql) reste toute l'annee ; pendant l'evenement, il paie
+--  en Insignes, et ce qu'on y fait compte pour le recap (choc_joueurs).
 --
 --  La Guerre de l'evenement (points de Section doubles) a ete retiree du
 --  pre-build : ses tables et ses fonctions sont supprimees plus bas si une
 --  base de test les a encore.
 --
---  Les chiffres du Raid et de l'Epreuve sont aussi dans js/combat/choc-data.js
+--  Les chiffres de l'Epreuve sont aussi dans js/combat/choc-data.js
 --  (CHOC) : les deux doivent rester d'accord. L'equilibrage est explique
 --  dans docs/economie-3.0.md.
 --
 --  L'evenement ne s'ouvre pas tout seul : voir tout en bas de ce fichier.
 -- =====================================================================
 
--- ============================================================ 1. reglages
--- La barre de vie du Raid depend du nombre de joueurs, que personne ne
--- connait d'avance : `raid_echelle` multiplie celle de chaque phase. Une
--- regle simple : le nombre de joueurs actifs attendus, divise par 15. Se
--- regle pendant l'evenement, sans rien redeployer :
---   update public.parametres set raid_echelle = 0.5 where id = 1;
-alter table public.parametres add column if not exists raid_echelle numeric not null default 1
-  check (raid_echelle > 0);
-
--- ============================================================ 2. tables
--- Les cinq phases (CHOC.raid.phases) : la barre commune, le jour ou elle
--- s'ouvre au plus tot (`ouvre`, 0 = le premier jour de l'evenement), le
--- combat, et la recompense ouverte quand elle tombe. La phase 6, la tempete
--- qui revient, n'a pas de barre : elle revient sans fin, et chaque degat
--- compte toujours.
-create table if not exists public.choc_phases (
-  n        integer primary key check (n between 1 and 6),
-  nom      text not null,
-  pv       integer,
-  ia       integer not null,
-  pv_boss  integer not null,
-  ess      integer not null default 0,
-  type     text,
-  montant  integer not null default 0,
-  objet    text,
-  titre    text
-);
-alter table public.choc_phases add column if not exists ouvre integer not null default 0;
-insert into public.choc_phases (n, nom, pv, ouvre, ia, pv_boss, ess, type, montant, objet, titre) values
-  (1, 'Premières étincelles', 400,  0,  3, 6, 0, 'boosters',  2,   null,       '2 boosters'),
-  (2, 'L''orage gronde',      600,  3,  3, 7, 1, 'fragments', 500, null,       '500 Fragments'),
-  (3, 'Foudre de Rage',       900,  7,  4, 7, 1, 'boosters',  3,   null,       '3 boosters'),
-  (4, 'Éclairs Vengeurs',     1300, 11, 4, 8, 2, 'brillante', 1,   null,       'Une Essence Brillante'),
-  (5, 'L''œil du cyclone',    1800, 15, 5, 8, 2, 'cadre',     0,   'f_foudre', 'Cadre « Foudre »'),
-  (6, 'La tempête revient',   null, 15, 5, 9, 2, null,        0,   null,       null)
-on conflict (n) do update set nom = excluded.nom, pv = excluded.pv, ouvre = excluded.ouvre, ia = excluded.ia,
-  pv_boss = excluded.pv_boss, ess = excluded.ess, type = excluded.type, montant = excluded.montant,
-  objet = excluded.objet, titre = excluded.titre;
-
--- La barre commune : une seule ligne.
-create table if not exists public.choc_raid (
-  id     integer primary key check (id = 1),
-  phase  integer not null default 1,
-  degats integer not null default 0,   -- dans la phase en cours
-  total  integer not null default 0
-);
-insert into public.choc_raid (id) values (1) on conflict (id) do nothing;
-
-create table if not exists public.choc_tombees (
-  phase     integer primary key,
-  tombee_le timestamptz not null default now()
-);
-
--- Ce que chaque joueur a fait au Sorcier.
+-- ============================================================ 1. tables
+-- Ce que chaque joueur a fait au boss du Raid pendant l'evenement (le
+-- recap) : raid_fin (27_raid.sql) le tient a jour.
 create table if not exists public.choc_joueurs (
   user_id   uuid primary key references public.profiles on delete cascade,
   degats    integer not null default 0,
   victoires integer not null default 0
 );
-create table if not exists public.choc_tentatives (
-  user_id uuid not null references public.profiles on delete cascade,
-  jour    date not null,
-  n       integer not null default 0,
-  primary key (user_id, jour)
-);
-create table if not exists public.choc_prises (
-  user_id uuid not null references public.profiles on delete cascade,
-  phase   integer not null,
-  pris_le timestamptz not null default now(),
-  primary key (user_id, phase)
-);
-
 -- L'Epreuve du jour : les essais d'un joueur, un jour donne
 -- ([{ gagne, tours, pv, touches }]), et si sa premiere victoire est payee.
 create table if not exists public.choc_epreuves (
@@ -5214,15 +5168,9 @@ drop function if exists public.choc_multiplicateur();
 drop table if exists public.choc_guerre;
 drop table if exists public.choc_contrib;
 
-alter table public.choc_phases     enable row level security;
-alter table public.choc_raid       enable row level security;
-alter table public.choc_tombees    enable row level security;
 alter table public.choc_joueurs    enable row level security;
-alter table public.choc_tentatives enable row level security;
-alter table public.choc_prises     enable row level security;
 alter table public.choc_epreuves   enable row level security;
-revoke all on public.choc_phases, public.choc_raid, public.choc_tombees, public.choc_joueurs,
-  public.choc_tentatives, public.choc_prises, public.choc_epreuves from anon, authenticated;
+revoke all on public.choc_joueurs, public.choc_epreuves from anon, authenticated;
 
 -- ============================================================ 3. le Pass
 -- Trente paliers. Le calcul (docs/economie-3.0.md) : un joueur engage
@@ -5266,14 +5214,6 @@ on conflict (evenement, palier) do update set
   objet = excluded.objet, titre = excluded.titre;
 
 -- ============================================================ 4. outils
--- La barre d'une phase, a l'echelle du serveur ; null pour le rappel.
-create or replace function public.choc_pv_phase(n int) returns integer
-language sql stable security definer set search_path = public as $$
-  select case when ph.pv is null then null
-              else greatest(20, round(ph.pv * (select raid_echelle from parametres where id = 1))::int) end
-    from choc_phases ph where ph.n = least(choc_pv_phase.n, 6);
-$$;
-
 -- La graine de l'Epreuve : la meme pour tout le monde un jour donne, et
 -- impossible a deviner d'avance (le sel de parametres, 21_reflets.sql).
 create or replace function public.choc_graine(j date) returns bigint
@@ -5294,91 +5234,17 @@ language sql immutable as $$
            + least(99, greatest(0, coalesce((s->>'pv')::int, 0))) end;
 $$;
 
--- Le jour de l'evenement en cours (0 = le premier), a l'heure de Paris.
-create or replace function public.choc_jour_ev() returns integer
-language sql stable security definer set search_path = public as $$
-  select coalesce((select jour_paris() - (e.debut at time zone 'Europe/Paris')::date
-                     from evenements e where e.code = 'choc' and now() >= e.debut and now() < e.fin
-                    order by e.debut desc limit 1), 0);
-$$;
-
--- Le Raid dure les trois semaines : une phase tombee ne laisse la place a la
--- suivante que le jour ou celle-ci s'ouvre (choc_phases.ouvre). Entre les
--- deux, le Sorcier reste a terre : on peut toujours l'affronter, au niveau
--- de la phase tombee ; les degats comptent pour chacun (Insignes, quetes,
--- classement), pas pour la barre suivante. Appelee a chaque lecture et a
--- chaque coup : le jour venu, la phase suivante commence d'elle-meme.
-create or replace function public.choc_avancer() returns choc_raid
-language plpgsql security definer set search_path = public as $$
-declare r choc_raid; k int := choc_jour_ev();
-begin
-  select * into r from choc_raid where id = 1;
-  if r.phase > 5 or not exists (select 1 from choc_tombees where phase = r.phase)
-     or (select ouvre from choc_phases where n = r.phase + 1) > k then
-    return r;
-  end if;
-  select * into r from choc_raid where id = 1 for update;
-  while r.phase <= 5 and exists (select 1 from choc_tombees where phase = r.phase)
-        and (select ouvre from choc_phases where n = r.phase + 1) <= k loop
-    r.phase := r.phase + 1;
-    r.degats := 0;
-  end loop;
-  update choc_raid set phase = r.phase, degats = r.degats where id = 1;
-  return r;
-end $$;
-
--- Des degats sur la barre commune : une phase tombe quand sa barre est
--- vide ; le surplus entame la suivante si elle est deja ouverte. Renvoie la
--- phase qui vient de tomber.
-create or replace function public.choc_frapper(p uuid, d int) returns integer
-language plpgsql security definer set search_path = public as $$
-declare r choc_raid; tombee int; pv int; k int := choc_jour_ev();
-begin
-  if coalesce(d, 0) <= 0 then return null; end if;
-  perform choc_avancer();
-  select * into r from choc_raid where id = 1 for update;
-  insert into choc_joueurs (user_id, degats) values (p, d)
-    on conflict (user_id) do update set degats = choc_joueurs.degats + d;
-  r.total := r.total + d;
-  -- A terre en attendant la phase suivante : la barre ne bouge plus.
-  if not exists (select 1 from choc_tombees where phase = r.phase) then
-    r.degats := r.degats + d;
-    loop
-      pv := choc_pv_phase(r.phase);
-      exit when pv is null or r.degats < pv;
-      insert into choc_tombees (phase) values (r.phase) on conflict do nothing;
-      tombee := r.phase;
-      if (select ouvre from choc_phases where n = r.phase + 1) > k then
-        r.degats := pv;
-        exit;
-      end if;
-      r.degats := r.degats - pv;
-      r.phase := r.phase + 1;
-    end loop;
-  end if;
-  update choc_raid set phase = r.phase, degats = r.degats, total = r.total where id = 1;
-  return tombee;
-end $$;
+-- L'ancien Raid a phases et calendrier : retire (27_raid.sql).
+drop function if exists public.choc_jour_ev();
 
 -- ===================================================== 5. ouvrir, clore
 -- Appeles par combat_debut et combat_fin (23_combats.sql).
 create or replace function public.choc_debut(p uuid, p_mode text, p_cle text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare r choc_raid; ph choc_phases; v_t int; j date := jour_paris(); e choc_epreuves;
+declare j date := jour_paris(); e choc_epreuves;
 begin
   if evenement_en_cours() is distinct from 'choc' then raise exception 'L''événement est terminé.'; end if;
-  if p_mode = 'raid' then
-    r := choc_avancer();
-    if p_cle is distinct from r.phase::text then
-      raise exception 'Le Sorcier a changé de phase : recharge la page du Raid.';
-    end if;
-    insert into choc_tentatives (user_id, jour, n) values (p, j, 0) on conflict do nothing;
-    update choc_tentatives set n = n + 1 where user_id = p and jour = j and n < 3 returning choc_tentatives.n into v_t;
-    if v_t is null then raise exception 'Plus de tentative aujourd''hui : reviens demain.'; end if;
-    select * into ph from choc_phases where choc_phases.n = least(r.phase, 6);
-    return jsonb_build_object('niveau', ph.ia, 'phase', r.phase,
-                              'graine', floor(random() * 4294967295)::bigint + 1);
-  end if;
+  if p_mode <> 'epreuve' then raise exception 'Mode inconnu.'; end if;
   -- L'Epreuve : l'essai compte des l'ouverture — en abandonner un ne le
   -- rend pas. Il est note perdu jusqu'a ce que le resultat arrive.
   if p_cle is distinct from j::text then raise exception 'L''Épreuve a changé : recharge la page.'; end if;
@@ -5392,33 +5258,8 @@ end $$;
 
 create or replace function public.choc_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare ph choc_phases; d int; insignes int := 0; msg text := ''; tombee int;
-        e choc_epreuves; i int; score jsonb;
+declare insignes int := 0; msg text := ''; e choc_epreuves; i int; score jsonb;
 begin
-  if o.mode = 'raid' then
-    perform bump_quests(p, 'raid', 1);
-    if trop then
-      return jsonb_build_object('insignes', 0, 'degats', 0, 'message', 'Combat trop court pour compter.');
-    end if;
-    select * into ph from choc_phases where n = least(coalesce(o.phase, 1), 6);
-    d := least(ph.pv_boss + 1, greatest(0, coalesce((res->>'touches')::int, 0)));
-    if gagne then d := ph.pv_boss + 1 + 3; end if;
-    insignes := d * 3 + case when gagne then 15 else 0 end;
-    tombee := choc_frapper(p, d);
-    perform bump_quests(p, 'raid_degats', d);
-    if gagne then
-      update choc_joueurs set victoires = victoires + 1 where user_id = p;
-      perform bump_quests(p, 'raid_victoires', 1);
-    end if;
-    if tombee is not null then
-      msg := 'La phase ' || tombee || ' est tombée ! Sa récompense t''attend dans le Raid.';
-    elsif d = 0 then
-      msg := 'Pas un PV de pris : il rira moins la prochaine fois.';
-    end if;
-    perform crediter_prismes(p, 'choc', insignes);
-    return jsonb_build_object('insignes', insignes, 'degats', d, 'message', msg);
-  end if;
-
   -- L'Epreuve du jour : le resultat remplace le premier essai encore ouvert.
   perform bump_quests(p, 'epreuve', 1);
   select * into e from choc_epreuves where user_id = p and jour = o.jour for update;
@@ -5450,14 +5291,14 @@ end $$;
 create or replace function public.choc_joueur_vue(id uuid) returns jsonb
 language sql stable security definer set search_path = public as $$
   select jsonb_build_object('pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
-                            'photo', photo_discord(pr.id),
+                            'xp', xp_de(pr.id), 'photo', photo_discord(pr.id),
                             'section', (select section from combat_joueurs where user_id = pr.id))
     from profiles pr where pr.id = choc_joueur_vue.id;
 $$;
 
 create or replace function public.choc_etat() returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); j date := jour_paris(); r choc_raid; moi choc_joueurs; e choc_epreuves;
+declare p uuid := auth.uid(); j date := jour_paris(); e choc_epreuves;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -5466,25 +5307,9 @@ begin
   insert into quest_progress (user_id, quest_id, period_key, progress)
   select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite' and q.evenement = 'choc'
   on conflict (user_id, quest_id, period_key) do nothing;
-  r := choc_avancer();
-  select * into moi from choc_joueurs where user_id = p;
   select * into e from choc_epreuves where user_id = p and jour = j;
   return jsonb_build_object(
     'jour', j,
-    'raid', jsonb_build_object(
-      'phase', r.phase, 'degats', r.degats, 'pv', choc_pv_phase(r.phase), 'total', r.total,
-      'jour_ev', choc_jour_ev(),
-      'joueurs', (select count(*) from choc_joueurs where degats > 0),
-      'phases', (select jsonb_agg(jsonb_build_object('n', ph.n, 'pv', choc_pv_phase(ph.n), 'ouvre', ph.ouvre,
-                                                     'tombee', t.phase is not null, 'tombee_le', t.tombee_le) order by ph.n)
-                   from choc_phases ph left join choc_tombees t on t.phase = ph.n where ph.n <= 5),
-      'moi', jsonb_build_object('degats', coalesce(moi.degats, 0), 'victoires', coalesce(moi.victoires, 0),
-                                'tentatives', coalesce((select n from choc_tentatives where user_id = p and jour = j), 0),
-                                'max', 3),
-      'prises', coalesce((select jsonb_agg(phase order by phase) from choc_prises where user_id = p), '[]'::jsonb),
-      'top', coalesce((select jsonb_agg(choc_joueur_vue(x.user_id) || jsonb_build_object('degats', x.degats, 'moi', x.user_id = p)
-                                        order by x.degats desc)
-                         from (select * from choc_joueurs where degats > 0 order by degats desc limit 10) x), '[]'::jsonb)),
     'epreuve', jsonb_build_object(
       'graine', choc_graine(j),
       'essais', coalesce(e.essais, '[]'::jsonb),
@@ -5501,48 +5326,25 @@ begin
          where b.s is not null), '[]'::jsonb)));
 end $$;
 
--- La recompense d'une phase tombee : une fois par joueur, pour qui a frappe
--- le Sorcier au moins une fois pendant l'evenement.
-create or replace function public.raid_reclamer(p_phase int) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); ph choc_phases; cartes jsonb;
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  if evenement_en_cours() is distinct from 'choc' then raise exception 'L''événement est terminé.'; end if;
-  select * into ph from choc_phases where n = p_phase and n <= 5;
-  if not found then raise exception 'Phase inconnue.'; end if;
-  if not exists (select 1 from choc_tombees where phase = p_phase) then
-    raise exception 'Cette phase n''est pas encore tombée.';
-  end if;
-  if coalesce((select degats from choc_joueurs where user_id = p), 0) < 1 then
-    raise exception 'Frappe d''abord le Sorcier.';
-  end if;
-  insert into choc_prises (user_id, phase) values (p, p_phase) on conflict do nothing;
-  if not found then raise exception 'Récompense déjà récupérée.'; end if;
-  cartes := accorder(p, ph.type, ph.montant, ph.objet);
-  return jsonb_build_object('cartes', cartes, 'etat', me());
-end $$;
-
 -- Ce que le recap de l'evenement ajoute (evenement_recap, 21_reflets.sql) :
--- le Raid et l'Epreuve.
+-- le Raid pendant l'evenement, et l'Epreuve.
 create or replace function public.choc_recap(p uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
   return jsonb_build_object(
     'degats', coalesce((select degats from choc_joueurs where user_id = p), 0),
-    'raid_phases', (select count(*) from choc_tombees),
+    'raid_niveaux', (select count(*) from raid_tombes t
+                      where exists (select 1 from evenements e where e.code = 'choc'
+                                     and t.tombe_le >= e.debut and t.tombe_le < e.fin)),
     'epreuves', (select count(*) from choc_epreuves where user_id = p and gagnee),
     'section', (select section from combat_joueurs where user_id = p));
 end $$;
 
 -- ============================================================ 7. droits
-revoke all on function public.choc_jour_ev, public.choc_avancer from public, anon, authenticated;
-revoke all on function public.choc_pv_phase,
-  public.choc_graine, public.choc_score, public.choc_frapper, public.choc_debut, public.choc_fin,
+revoke all on function public.choc_graine, public.choc_score, public.choc_debut, public.choc_fin,
   public.choc_joueur_vue, public.choc_recap from public, anon, authenticated;
-revoke all on function public.choc_etat, public.raid_reclamer from public, anon;
-grant execute on function public.choc_etat, public.raid_reclamer to authenticated;
+revoke all on function public.choc_etat from public, anon;
+grant execute on function public.choc_etat to authenticated;
 
 -- =====================================================================
 --  Ouvrir l'evenement — a la main, le jour venu, dans le SQL Editor :
@@ -5673,6 +5475,272 @@ end $$;
 
 revoke all on function public.xp_requis, public.niveau_de, public.xp_combat, public.gagner_xp
   from public, anon, authenticated;
+
+
+-- #####################################################################
+-- ###  27_raid.sql
+-- ###  Version 3.0 : le Raid, un boss commun toute l'annee
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0 : le Raid
+--  A executer apres 26_niveaux.sql. Rejouable sans danger.
+--
+--  Un boss commun a tout le serveur, toute l'annee : The French Sorcerer.
+--  Une seule barre de vie : chaque PV qu'un joueur lui prend en combat
+--  l'entame. Quand elle est vide, le niveau tombe — chacun de ceux qui l'ont
+--  frappe a ce niveau peut ouvrir un coffre — et le boss revient au niveau
+--  suivant, plus fort. Trois tentatives par jour.
+--
+--  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
+--  Insignes ; le reste du temps, en Eclats.
+--
+--  Il remplace le Raid a cinq phases et calendrier des pre-builds 3.0.0 a
+--  3.0.4 : ses tables et fonctions sont supprimees plus bas.
+--
+--  Les chiffres sont aussi dans js/combat/choc-data.js (RAID) : les deux
+--  doivent rester d'accord.
+-- =====================================================================
+
+-- ============================================================ 1. reglage
+-- La barre depend du nombre de joueurs, que personne ne connait d'avance :
+-- `raid_echelle` la multiplie. Se regle sans rien redeployer :
+--   update public.parametres set raid_echelle = 0.5 where id = 1;
+alter table public.parametres add column if not exists raid_echelle numeric not null default 1
+  check (raid_echelle > 0);
+
+-- ============================================================ 2. tables
+-- L'etat du boss : une seule ligne.
+create table if not exists public.raid_etat (
+  id     integer primary key check (id = 1),
+  niveau integer not null default 1,
+  degats integer not null default 0,   -- dans le niveau en cours
+  total  bigint  not null default 0
+);
+insert into public.raid_etat (id) values (1) on conflict (id) do nothing;
+
+create table if not exists public.raid_tombes (
+  niveau   integer primary key,
+  tombe_le timestamptz not null default now()
+);
+-- Ce que chaque joueur a fait au boss, depuis toujours (le classement).
+create table if not exists public.raid_joueurs (
+  user_id   uuid primary key references public.profiles on delete cascade,
+  degats    integer not null default 0,
+  victoires integer not null default 0
+);
+-- Qui a frappe quel niveau : c'est ce qui ouvre son coffre.
+create table if not exists public.raid_frappes (
+  user_id uuid not null references public.profiles on delete cascade,
+  niveau  integer not null,
+  degats  integer not null default 0,
+  primary key (user_id, niveau)
+);
+create table if not exists public.raid_coffres (
+  user_id uuid not null references public.profiles on delete cascade,
+  niveau  integer not null,
+  pris_le timestamptz not null default now(),
+  primary key (user_id, niveau)
+);
+create table if not exists public.raid_tentatives (
+  user_id uuid not null references public.profiles on delete cascade,
+  jour    date not null,
+  n       integer not null default 0,
+  primary key (user_id, jour)
+);
+
+-- L'ancien Raid a phases : retire.
+drop function if exists public.raid_reclamer(int);
+drop function if exists public.choc_avancer();
+drop function if exists public.choc_frapper(uuid, int);
+drop function if exists public.choc_pv_phase(int);
+drop table if exists public.choc_phases;
+drop table if exists public.choc_raid;
+drop table if exists public.choc_tombees;
+drop table if exists public.choc_tentatives;
+drop table if exists public.choc_prises;
+
+alter table public.raid_etat       enable row level security;
+alter table public.raid_tombes     enable row level security;
+alter table public.raid_joueurs    enable row level security;
+alter table public.raid_frappes    enable row level security;
+alter table public.raid_coffres    enable row level security;
+alter table public.raid_tentatives enable row level security;
+revoke all on public.raid_etat, public.raid_tombes, public.raid_joueurs, public.raid_frappes,
+  public.raid_coffres, public.raid_tentatives from anon, authenticated;
+
+-- ============================================================ 3. les regles
+-- La barre d'un niveau (RAID.pv), a l'echelle du serveur.
+create or replace function public.raid_pv(n int) returns integer
+language sql stable security definer set search_path = public as $$
+  select greatest(20, round((300 + 150 * (greatest(n, 1) - 1))
+                            * (select raid_echelle from parametres where id = 1))::int);
+$$;
+
+-- Le combat d'un niveau (RAID.combat) : l'IA, les PV du boss, ses Essences
+-- d'avance.
+create or replace function public.raid_combat(n int) returns jsonb
+language sql immutable as $$
+  select jsonb_build_object(
+    'ia',      least(5, 2 + ceil(greatest(n, 1) / 2.0)::int),
+    'pv_boss', least(9, 5 + ceil(greatest(n, 1) / 2.0)::int),
+    'ess',     least(2, (greatest(n, 1) - 1) / 2));
+$$;
+
+-- Le coffre d'un niveau tombe (RAID.coffres), a tour de role.
+create or replace function public.raid_coffre(n int) returns jsonb
+language sql immutable as $$
+  select (array[
+    '{"type": "boosters",  "montant": 2,   "titre": "2 boosters"}',
+    '{"type": "fragments", "montant": 300, "titre": "300 Fragments"}',
+    '{"type": "boosters",  "montant": 3,   "titre": "3 boosters"}',
+    '{"type": "eclats",    "montant": 400, "titre": "400 Éclats"}'
+  ]::jsonb[])[((greatest(n, 1) - 1) % 4) + 1];
+$$;
+
+-- Des degats sur la barre commune. Le surplus entame le niveau suivant, et
+-- compte pour celui qui l'a donne. Renvoie le dernier niveau tombe.
+create or replace function public.raid_frapper(p uuid, d int) returns integer
+language plpgsql security definer set search_path = public as $$
+declare r raid_etat; pv int; reste int := d; part int; tombe int;
+begin
+  if coalesce(d, 0) <= 0 then return null; end if;
+  select * into r from raid_etat where id = 1 for update;
+  insert into raid_joueurs (user_id, degats) values (p, d)
+    on conflict (user_id) do update set degats = raid_joueurs.degats + d;
+  r.total := r.total + d;
+  loop
+    pv := raid_pv(r.niveau);
+    part := least(reste, pv - r.degats);
+    insert into raid_frappes (user_id, niveau, degats) values (p, r.niveau, part)
+      on conflict (user_id, niveau) do update set degats = raid_frappes.degats + part;
+    r.degats := r.degats + part;
+    reste := reste - part;
+    exit when r.degats < pv;
+    insert into raid_tombes (niveau) values (r.niveau) on conflict do nothing;
+    tombe := r.niveau;
+    r.niveau := r.niveau + 1;
+    r.degats := 0;
+    exit when reste <= 0;
+  end loop;
+  update raid_etat set niveau = r.niveau, degats = r.degats, total = r.total where id = 1;
+  return tombe;
+end $$;
+
+-- ===================================================== 4. ouvrir, clore
+-- Appeles par combat_debut et combat_fin (23_combats.sql). `p_cle` : le
+-- niveau que la page a affiche — s'il a change entre-temps, on recharge.
+create or replace function public.raid_debut(p uuid, p_cle text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r raid_etat; v_t int; j date := jour_paris(); c jsonb;
+begin
+  select * into r from raid_etat where id = 1;
+  if p_cle is distinct from r.niveau::text then
+    raise exception 'Le boss a changé de niveau : recharge le Raid.';
+  end if;
+  insert into raid_tentatives (user_id, jour, n) values (p, j, 0) on conflict do nothing;
+  update raid_tentatives set n = n + 1 where user_id = p and jour = j and n < 3
+  returning raid_tentatives.n into v_t;
+  if v_t is null then raise exception 'Plus de tentative aujourd''hui : reviens demain.'; end if;
+  c := raid_combat(r.niveau);
+  return jsonb_build_object('niveau', (c->>'ia')::int, 'phase', r.niveau,
+                            'graine', floor(random() * 4294967295)::bigint + 1);
+end $$;
+
+-- Les degats : les PV pris au boss (plafonnes a ses PV + 1), ou tous et 3
+-- de plus s'il tombe. Pendant le Choc : 3 Insignes par degat, +15 s'il
+-- tombe. Sinon : 4 Eclats par degat, +20.
+create or replace function public.raid_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare c jsonb; pb int; d int; gain int; msg text := ''; tombe int;
+begin
+  perform bump_quests(p, 'raid', 1);
+  if trop then
+    return jsonb_build_object('degats', 0, 'message', 'Combat trop court pour compter.');
+  end if;
+  c := raid_combat(coalesce(o.phase, 1));
+  pb := (c->>'pv_boss')::int;
+  d := least(pb + 1, greatest(0, coalesce((res->>'touches')::int, 0)));
+  if gagne then d := pb + 1 + 3; end if;
+  tombe := raid_frapper(p, d);
+  perform bump_quests(p, 'raid_degats', d);
+  if gagne then
+    update raid_joueurs set victoires = victoires + 1 where user_id = p;
+    perform bump_quests(p, 'raid_victoires', 1);
+  end if;
+  if tombe is not null then
+    msg := 'Le boss est tombé ! Ton coffre t''attend dans le Raid.';
+  elsif d = 0 then
+    msg := 'Pas un PV de pris : il rira moins la prochaine fois.';
+  end if;
+  if evenement_en_cours() = 'choc' then
+    gain := d * 3 + case when gagne then 15 else 0 end;
+    perform crediter_prismes(p, 'choc', gain);
+    insert into choc_joueurs (user_id, degats, victoires) values (p, d, case when gagne then 1 else 0 end)
+      on conflict (user_id) do update set degats = choc_joueurs.degats + d,
+                                          victoires = choc_joueurs.victoires + excluded.victoires;
+    return jsonb_build_object('insignes', gain, 'degats', d, 'message', msg);
+  end if;
+  gain := d * 4 + case when gagne then 20 else 0 end;
+  update profiles set shards = shards + gain where id = p;
+  return jsonb_build_object('eclats', gain, 'degats', d, 'message', msg);
+end $$;
+
+-- ===================================================== 5. ce que voit la page
+create or replace function public.raid_etat() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); j date := jour_paris(); r raid_etat; moi raid_joueurs;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into r from raid_etat where id = 1;
+  select * into moi from raid_joueurs where user_id = p;
+  return jsonb_build_object(
+    'jour', j, 'niveau', r.niveau, 'degats', r.degats, 'pv', raid_pv(r.niveau), 'total', r.total,
+    'joueurs', (select count(*) from raid_frappes where niveau = r.niveau and degats > 0),
+    'evenement', evenement_en_cours() is not distinct from 'choc',
+    'moi', jsonb_build_object(
+      'degats', coalesce(moi.degats, 0), 'victoires', coalesce(moi.victoires, 0),
+      'niveau', coalesce((select degats from raid_frappes where user_id = p and niveau = r.niveau), 0),
+      'tentatives', coalesce((select n from raid_tentatives where user_id = p and jour = j), 0),
+      'max', 3),
+    -- Les coffres a ouvrir : les niveaux tombes qu'on a frappes.
+    'coffres', coalesce((
+      select jsonb_agg(jsonb_build_object('niveau', t.niveau) || raid_coffre(t.niveau) order by t.niveau)
+        from raid_tombes t
+        join raid_frappes f on f.niveau = t.niveau and f.user_id = p and f.degats > 0
+       where not exists (select 1 from raid_coffres c where c.user_id = p and c.niveau = t.niveau)), '[]'::jsonb),
+    'top', coalesce((
+      select jsonb_agg(choc_joueur_vue(x.user_id) || jsonb_build_object('degats', x.degats, 'moi', x.user_id = p)
+                       order by x.degats desc)
+        from (select * from raid_joueurs where degats > 0 order by degats desc limit 10) x), '[]'::jsonb));
+end $$;
+
+-- Le coffre d'un niveau tombe : une fois, pour qui l'a frappe.
+create or replace function public.raid_reclamer(p_niveau int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); c jsonb; cartes jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if not exists (select 1 from raid_tombes where niveau = p_niveau) then
+    raise exception 'Ce niveau n''est pas encore tombé.';
+  end if;
+  if coalesce((select degats from raid_frappes where user_id = p and niveau = p_niveau), 0) < 1 then
+    raise exception 'Tu n''as pas frappé le boss à ce niveau.';
+  end if;
+  insert into raid_coffres (user_id, niveau) values (p, p_niveau) on conflict do nothing;
+  if not found then raise exception 'Coffre déjà ouvert.'; end if;
+  c := raid_coffre(p_niveau);
+  cartes := accorder(p, c->>'type', (c->>'montant')::int, null);
+  return jsonb_build_object('cartes', cartes, 'etat', me());
+end $$;
+
+-- ============================================================ 6. droits
+revoke all on function public.raid_pv, public.raid_combat, public.raid_coffre, public.raid_frapper,
+  public.raid_debut, public.raid_fin from public, anon, authenticated;
+revoke all on function public.raid_etat, public.raid_reclamer from public, anon;
+grant execute on function public.raid_etat, public.raid_reclamer to authenticated;
 
 
 -- =====================================================================

@@ -222,13 +222,13 @@
     ['f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5],
     ['f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6],
     /* Version 3.0 (23_combats.sql) : les tapis de jeu et les sleeves. */
-    ['t_chateau',   'tapis',  'Tapis « Le Château »',   'Le château et ses feux d\'artifice, sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1],
-    ['t_reverie',   'tapis',  'Tapis « Rêverie »',      'La montagne violette, et les visages dans les nuages.', 4000, 'cosmetique', 1, null, true, 2],
-    ['t_chevalier', 'tapis',  'Tapis « Le Chevalier »', 'Le chevalier en armure, médaillon M8 au cou.',          5000, 'cosmetique', 1, null, true, 3],
-    ['t_veste',     'tapis',  'Tapis « Veste Rose »',   'La veste rose et ses éclats.',                           4000, 'cosmetique', 1, null, true, 4],
-    ['t_pilote',    'tapis',  'Tapis « Petit Pilote »', 'Une voiture téléguidée lancée à pleine vitesse.',        4000, 'cosmetique', 1, null, true, 5],
-    ['t_peche',     'tapis',  'Tapis « Grosse Prise »', 'Une partie de pêche qui tourne mal pour le requin.',     4000, 'cosmetique', 1, null, true, 6],
-    ['s_sorcier',   'sleeve', 'Sleeve « Le Sorcier »',  'Le dos de tes cartes : le sorcier en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1],
+    ['t_chateau',   'tapis',  'Tapis « Champions du Monde »', 'L\'illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1],
+    ['t_reverie',   'tapis',  'Tapis « La Relève »', 'L\'illustration de la carte « La Relève », sous tes cartes.', 4000, 'cosmetique', 1, null, true, 2],
+    ['t_chevalier', 'tapis',  'Tapis « La Luxueuse III »', 'L\'illustration de la carte « La Luxueuse III », sous tes cartes.',          5000, 'cosmetique', 1, null, true, 3],
+    ['t_veste',     'tapis',  'Tapis « Marteen Supreme »', 'L\'illustration de la carte « Marteen Supreme », sous tes cartes.',                           4000, 'cosmetique', 1, null, true, 4],
+    ['t_pilote',    'tapis',  'Tapis « Baby Driver »', 'L\'illustration de la carte « Baby Driver », sous tes cartes.',        4000, 'cosmetique', 1, null, true, 5],
+    ['t_peche',     'tapis',  'Tapis « Vanyabubu »', 'L\'illustration de la carte « Vanyabubu », sous tes cartes.',     4000, 'cosmetique', 1, null, true, 6],
+    ['s_sorcier',   'sleeve', 'Sleeve « 6W26L »', 'Le dos de tes cartes : la Secrète 6W26L, en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1],
     ['s_argent',    'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2],
     /* Version 2.0 : l'invitation (Fragments) et la boutique de l'événement (Prismes). */
     ['s_invite',     'invitation', 'Invitation', 'Un code pour faire entrer un ami. Il reçoit 10 boosters et 1 000 Éclats de bienvenue.', 2000, 'invitation', 1, null, false, 1, 'eclats', null, 3],
@@ -462,7 +462,7 @@
     const ordre = { daily: 0, ev: 1, ev_jour: 2, milestone: 3, weekly: 4 };     /* `order by q.scope` : ordre alphabétique */
     return {
       profil: {
-        id: pr.id, pseudo: pr.pseudo, avatar: pr.avatar, frame: pr.frame,
+        id: pr.id, pseudo: pr.pseudo, avatar: pr.avatar, frame: pr.frame, xp: xpDe(pr.id),
         is_admin: pr.is_admin, shards: pr.shards, tickets: pr.tickets,
         last_tick: iso(pr.last_tick), trade_free_at: iso(pr.trade_free_at),
         packs_opened: pr.packs_opened, trades_done: pr.trades_done,
@@ -934,7 +934,7 @@
 
   RPC.find_player = (p, { p_pseudo }) => {
     const r = parPseudo(p_pseudo);
-    return r ? { pseudo: r.pseudo, avatar: r.avatar, frame: r.frame, photo: null } : null;
+    return r ? { pseudo: r.pseudo, avatar: r.avatar, frame: r.frame, xp: xpDe(r.id), photo: null } : null;
   };
 
   /* ------------------------------------------------ amis, 06_social.sql */
@@ -945,7 +945,7 @@
       .map(f => {
         const o = profil(f.a === moi ? f.b : f.a);
         return {
-          pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null,
+          pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null,
           is_admin: o.is_admin, streak: o.streak,
           lien: f.accepte ? 'ami' : f.demandeur === moi ? 'envoyee' : 'recue',
           depuis: iso(f.resolved_at || f.created_at),
@@ -1014,7 +1014,7 @@
       Object.entries(colDe(o.id)).forEach(([id, n]) => {
         const k = carte(id);
         if (!k || n <= gardeDe(o.id, id) || (mien[id] || 0) > 0 || k.cat === 'essence' || (k.promo && !k.rev)) return;
-        (parCarte[id] = parCarte[id] || []).push({ pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null, n });
+        (parCarte[id] = parCarte[id] || []).push({ pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null, n });
       });
     });
     return Object.entries(parCarte)
@@ -1029,7 +1029,7 @@
     const ami = o.id === moi || !!(paire(moi, o.id) || {}).accepte;
     const c = colDe(o.id);
     return {
-      pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null,
+      pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null,
       is_admin: o.is_admin, streak: o.streak,
       packs_opened: o.packs_opened, trades_done: o.trades_done,
       membre_depuis: iso(o.created_at),
@@ -1038,7 +1038,7 @@
       reverses: reverses.filter(k => (c[k.id] || 0) > 0).length, reverses_total: reverses.length,
       titre: o.titre || null, banniere: o.banniere || null, devise: o.devise || null,
       vitrine: o.vitrine.slice(),
-      xp: (S.cb && S.cb[o.id] && S.cb[o.id].xp) || 0,
+      xp: xpDe(o.id),
       succes: succesDe(o.id),
       ami, moi: o.id === moi,
       col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null,
@@ -1104,7 +1104,7 @@
         const f = n.type === 'ami_demande' ? paire(p, n.acteur) : null;
         return {
           id: 'n' + n.id, type: n.type, quand: iso(n.created_at), ref: n.ref, data: n.data,
-          pseudo: o && o.pseudo, avatar: o && o.avatar, frame: o && o.frame, photo: null,
+          pseudo: o && o.pseudo, avatar: o && o.avatar, frame: o && o.frame, xp: o ? xpDe(o.id) : 0, photo: null,
           en_attente: n.type === 'ami_demande' ? !!(f && !f.accepte && f.demandeur === n.acteur)
             : n.type === 'echange_recu' ? !!(t && t.status === 'pending') : false,
           statut: n.type === 'echange_recu' && t ? t.status : null
@@ -1134,7 +1134,7 @@
       .filter(x => x.valeur > 0)
       .sort((a, b) => b.valeur - a.valeur || a.pr.pseudo.toLowerCase().localeCompare(b.pr.pseudo.toLowerCase()));
     const ligne = x => ({ rang: 1 + l.filter(y => y.valeur > x.valeur).length, pseudo: x.pr.pseudo,
-      avatar: x.pr.avatar, frame: x.pr.frame, titre: x.pr.titre || null, photo: null, valeur: x.valeur, moi: x.pr.id === moi });
+      avatar: x.pr.avatar, frame: x.pr.frame, xp: xpDe(x.pr.id), titre: x.pr.titre || null, photo: null, valeur: x.valeur, moi: x.pr.id === moi });
     const m = l.find(x => x.pr.id === moi);
     return { critere: p_critere, classes: l.length, top: l.slice(0, 50).map(ligne), moi: m ? ligne(m) : null };
   };
@@ -1231,7 +1231,7 @@
   RPC.admin_joueurs = p => {
     estAdmin(p);
     return Object.values(S.profils).map(o => ({
-      id: o.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, inscrit: iso(o.created_at || now()),
+      id: o.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), inscrit: iso(o.created_at || now()),
       boosters: o.packs_opened || 0, eclats: o.shards,
       cartes: Object.entries(colDe(o.id)).filter(([id, n]) => n > 0 && carte(id) && !carte(id).promo).length,
       cadeaux: (S.cadeaux || []).filter(c => c.user_id === o.id).length,
@@ -1253,7 +1253,7 @@
       .filter(([k, v]) => k.endsWith('|' + ev) && v.total > 0)
       .map(([k, v]) => ({ id: k.split('|')[0], total: v.total }))
       .sort((a, b) => b.total - a.total).slice(0, 10)
-      .map(x => { const o = profil(x.id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame,
+      .map(x => { const o = profil(x.id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id),
         titre: o.titre || null, photo: null, total: x.total, moi: x.id === p }; });
     return { code: ev, solde: c.solde, total: c.total,
       piste: pisteDe(ev).map(pa => Object.assign({}, pa, { pris: prises.includes(pa.palier) })), top };
@@ -1288,7 +1288,7 @@
       reverses: reverses.filter(k => (col[k.id] || 0) > 0).length, reverses_max: reverses.length,
       quetes: QUETES.filter(q => q.evenement === e.code && (S.qp[cleQp(p, q)] || {}).claimed).length,
       rang: c.total > 0 ? tous.filter(x => x.total > c.total).length + 1 : null, joueurs: tous.length,
-      top: tous.slice(0, 3).map(x => { const o = profil(x.id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame,
+      top: tous.slice(0, 3).map(x => { const o = profil(x.id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id),
         titre: o.titre || null, photo: null, total: x.total, moi: x.id === p }; })
     });
   };
@@ -1403,12 +1403,10 @@
 
   /* La version 3.0 : « Le Choc des Sections » prend la suite de Reflets,
      pour trois semaines. Dans la démo, il a commencé quatre jours avant la
-     première visite en 3.0 : la première phase du Raid est tombée, la
-     deuxième (ouverte au 4e jour) est entamée. Les joueurs simulés ont
-     rejoint une Section. */
+     première visite en 3.0. Les joueurs simulés ont rejoint une Section. */
   function monde30() {
     if (S.choc) return;
-    const ch = chocDe();
+    chocDe();
     const t = now();
     const debut = t - 4 * 86400000;
     S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: debut + 21 * 86400000,
@@ -1418,10 +1416,19 @@
         if (!S.profils[id]) return;
         const c = cb(id);
         if (!c.section) { c.section = sec; ajouter(id, SEC_PROMO[sec], 1); }
-        frapperRaid(id, d * 2);
-        ch.raid.joueurs[id].victoires = Math.floor(d / 8);
         S.evt.comptes[id + '|choc'] = { solde: d * 2, total: d * 4 + 30 };
       });
+  }
+  /* Le Raid permanent (27_raid.sql) : à la première visite, les joueurs
+     simulés l'ont déjà frappé — le premier niveau est tombé. */
+  function mondeRaid() {
+    if (S.raid) return;
+    const r = raidDe();
+    [['b_lumen', 24], ['b_mira', 15], ['b_kairo', 9], ['b_nova', 30]].forEach(([id, d]) => {
+      if (!S.profils[id]) return;
+      frapperRaid(id, d * 2);
+      r.joueurs[id].victoires = Math.floor(d / 8);
+    });
   }
 
   function creerMonde() {
@@ -1555,6 +1562,14 @@
      comme la table SQL en est la copie. */
   const SEC_PROMO = { toxique: 'p03', deter: 'p04' };
   const CB_MIN_MS = 20000;
+  /* L'XP de combattant d'un joueur (xp_de, 01_schema.sql), pour le niveau
+     posé sur son avatar. Les joueurs simulés en ont selon leur ancienneté. */
+  const xpDe = id => {
+    const c = S.cb && S.cb[id];
+    if (c && c.xp) return c.xp;
+    const o = S.profils && S.profils[id];
+    return o && o.bot ? Math.round((now() - (o.created_at || now())) / 86400000) * 140 : 0;
+  };
   const cb = p => {
     S.cb = S.cb || {};
     return (S.cb[p] = S.cb[p] || { section: null, decks: [], deck_actif: null, cosm: {}, faits: [], finie: false,
@@ -1572,7 +1587,7 @@
       xp: c.xp || 0,
       defis: (S.defis || []).filter(d => (d.de === p || d.pour === p) && ['attente', 'en_cours'].includes(d.statut)).map(d => {
         const o = profil(d.de === p ? d.pour : d.de);
-        return { id: d.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null,
+        return { id: d.id, pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null,
           pour_moi: d.pour === p, statut: d.statut, vu: d.de === p ? !!d.vu_de : !!d.vu_pour };
       })
     };
@@ -1636,25 +1651,24 @@
     /* Version 3.0 : le Raid et l'Épreuve du jour (25_choc.sql). */
     let niveau = p_niveau, phase = null, graine = Math.floor(Math.random() * 4294967295) + 1;
     const auj = jourParis(now());
-    if (p_mode === 'raid' || p_mode === 'epreuve') {
+    if (p_mode === 'raid') {
+      /* Le Raid (27_raid.sql) : toute l'année, trois tentatives par jour. */
+      const r = raidDe();
+      const k = p + '|' + auj;
+      if (String(r.niveau) !== String(p_cle)) refuser('Le boss a changé de niveau : recharge le Raid.');
+      if ((r.tentatives[k] || 0) >= RAID.tentatives) refuser('Plus de tentative aujourd\'hui : reviens demain.');
+      r.tentatives[k] = (r.tentatives[k] || 0) + 1;
+      phase = r.niveau;
+      niveau = raidCombat(phase).ia;
+    } else if (p_mode === 'epreuve') {
       if (evenementEnCours() !== 'choc') refuser('L\'événement est terminé.');
       const ch = chocDe();
-      if (p_mode === 'raid') {
-        const k = p + '|' + auj;
-        if ((ch.tentatives[k] || 0) >= CHOC.raid.tentatives) refuser('Plus de tentative aujourd\'hui : reviens demain.');
-        avancerRaid();
-        if (String(ch.raid.phase) !== String(p_cle)) refuser('Le Sorcier a changé de phase : recharge la page du Raid.');
-        ch.tentatives[k] = (ch.tentatives[k] || 0) + 1;
-        phase = ch.raid.phase;
-        niveau = chocPhase(phase).ia;
-      } else {
-        if (p_cle !== auj) refuser('L\'Épreuve a changé : recharge la page.');
-        const l = (ch.epreuves[p + '|' + auj] = ch.epreuves[p + '|' + auj] || []);
-        if (l.length >= CHOC.epreuve.essais) refuser('Épreuve terminée : une nouvelle demain.');
-        l.push({ gagne: false, tours: 0, pv: 0, touches: 0, abandon: true });
-        niveau = CHOC.epreuve.ia;
-        graine = graineEpreuve(auj);
-      }
+      if (p_cle !== auj) refuser('L\'Épreuve a changé : recharge la page.');
+      const l = (ch.epreuves[p + '|' + auj] = ch.epreuves[p + '|' + auj] || []);
+      if (l.length >= CHOC.epreuve.essais) refuser('Épreuve terminée : une nouvelle demain.');
+      l.push({ gagne: false, tours: 0, pv: 0, touches: 0, abandon: true });
+      niveau = CHOC.epreuve.ia;
+      graine = graineEpreuve(auj);
     } else if (p_mode === 'campagne') {
       const l = combatsCampagne(c.section);
       const f = l.find(x => x.id === p_cle);
@@ -1710,7 +1724,8 @@
     const trop = now() - o.debut < CB_MIN_MS;
     bump(p, 'combats', 1);
     if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
-    if (o.mode === 'raid' || o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
+    if (o.mode === 'raid') return finRaid(p, c, o, !!p_gagne, res, trop, r);
+    if (o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
     if (!p_gagne) {
       c.stats.defaites++;
       r.message = 'Pas d\'Éclats pour une défaite, mais l\'XP compte.';
@@ -1766,7 +1781,7 @@
       id: d.id, statut: d.statut, moi,
       init: d.statut === 'attente' ? null : { decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine },
       actions: (d.actions || []).slice(depuis || 0),
-      adversaire: { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null, cosm: (cb(o.id).cosm || {}) }
+      adversaire: { nom: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null, cosm: (cb(o.id).cosm || {}) }
     };
   };
   function deckBot() {
@@ -1858,62 +1873,112 @@
   };
 
   /* ================================== version 3.0, 25_choc.sql */
-  /* Le Choc des Sections : le Raid (une barre de vie commune, cinq phases),
-     l'Épreuve du jour (la même graine pour tous).
-     Les chiffres viennent de la page (js/combat/choc-data.js). */
-  const chocDe = () => (S.choc = S.choc || {
-    raid: { phase: 1, degats: 0, total: 0, tombees: {}, joueurs: {} },
-    tentatives: {}, prises: {}, epreuves: {}, gagnees: {}
-  });
-  /* La barre d'une phase : celle de choc-data.js, à l'échelle du serveur
-     (peu de joueurs dans la démo : _demo/reglages.js). */
-  const pvPhase = n => {
-    const x = CHOC.raid.phases[n - 1];
-    return x ? Math.max(20, Math.round(x.pv * (D.raid_echelle || 1))) : null;
+  /* Le Choc des Sections : l'Épreuve du jour (la même graine pour tous), et
+     ce que le Raid y ajoute (des Insignes, le récap). Les chiffres viennent
+     de la page (js/combat/choc-data.js). */
+  const chocDe = () => {
+    const c = (S.choc = S.choc || {});
+    c.epreuves = c.epreuves || {};
+    c.gagnees = c.gagnees || {};
+    /* Ce que chacun a fait au boss du Raid pendant l'événement (le récap). */
+    c.joueurs = c.joueurs || {};
+    return c;
   };
   /* La graine de l'Épreuve : la même pour tout le monde, un jour donné. */
   const graineEpreuve = j => (hacher('choc-epreuve:' + j) % 4294967295) + 1;
 
-  /* Le jour de l'événement (0 = le premier), à l'heure de Paris. */
-  const jourEv = () => {
-    const e = S.evenement;
-    if (!e || e.code !== 'choc') return 0;
-    return Math.max(0, Math.round((Date.parse(jourParis(now()) + 'T12:00:00Z') - Date.parse(jourParis(e.debut) + 'T12:00:00Z')) / 86400000));
-  };
-  const ouvre = n => (CHOC.raid.phases[n - 1] || CHOC.raid.phases[CHOC.raid.phases.length - 1]).ouvre;
-  /* Le Raid dure les trois semaines (choc_avancer, 25_choc.sql) : une phase
-     tombée ne laisse la place à la suivante que le jour où celle-ci s'ouvre.
-     Entre les deux, le Sorcier reste à terre. */
-  function avancerRaid() {
-    const r = chocDe().raid;
-    while (r.phase <= CHOC.raid.phases.length && r.tombees[r.phase] && ouvre(r.phase + 1) <= jourEv()) {
-      r.phase++;
-      r.degats = 0;
-    }
-    return r;
-  }
+  /* ================================== version 3.0, 27_raid.sql */
+  /* Le Raid : un boss commun à tout le serveur, toute l'année. Une barre de
+     vie par niveau ; quand elle est vide, le niveau tombe — chacun de ceux
+     qui l'ont frappé a un coffre — et le boss revient, plus fort. */
+  const raidDe = () => (S.raid = S.raid || { niveau: 1, degats: 0, total: 0, tombes: {}, joueurs: {}, frappes: {}, coffres: {}, tentatives: {} });
+  /* La barre d'un niveau, à l'échelle du serveur (peu de joueurs dans la
+     démo : _demo/reglages.js). */
+  const pvRaid = n => Math.max(20, Math.round(RAID.pv(n) * (D.raid_echelle || 1)));
 
-  /* Des dégâts sur la barre commune : une phase tombe quand sa barre est
-     vide ; le surplus entame la suivante si elle est déjà ouverte. Renvoie
-     la phase qui vient de tomber. */
+  /* Des dégâts sur la barre commune ; le surplus entame le niveau suivant.
+     Renvoie le dernier niveau tombé. */
   function frapperRaid(p, d) {
-    const r = avancerRaid();
-    let tombee = null;
+    const r = raidDe();
     if (!(d > 0)) return null;
     const j = (r.joueurs[p] = r.joueurs[p] || { degats: 0, victoires: 0 });
     j.degats += d;
     r.total += d;
-    if (r.tombees[r.phase]) return null;
-    r.degats += d;
-    while (r.phase <= CHOC.raid.phases.length && r.degats >= pvPhase(r.phase)) {
-      r.tombees[r.phase] = now();
-      tombee = r.phase;
-      if (ouvre(r.phase + 1) > jourEv()) { r.degats = pvPhase(r.phase); break; }
-      r.degats -= pvPhase(r.phase);
-      r.phase++;
+    let reste = d, tombe = null;
+    while (reste > 0) {
+      const pv = pvRaid(r.niveau);
+      const part = Math.min(reste, pv - r.degats);
+      const k = p + '|' + r.niveau;
+      r.frappes[k] = (r.frappes[k] || 0) + part;
+      r.degats += part;
+      reste -= part;
+      if (r.degats < pv) break;
+      r.tombes[r.niveau] = now();
+      tombe = r.niveau;
+      r.niveau++;
+      r.degats = 0;
     }
-    return tombee;
+    return tombe;
   }
+
+  /* raid_fin : pendant le Choc, des Insignes ; le reste du temps, des Éclats. */
+  function finRaid(p, c, o, gagne, res, trop, r) {
+    if (gagne) { c.stats.victoires++; bump(p, 'victoires', 1); bump(p, 'vaincus', Math.min(20, Math.max(0, +res.vaincus || 0))); }
+    else c.stats.defaites++;
+    if (o.niveau >= 4 && gagne) bump(p, 'victoires_dures', 1);
+    bump(p, 'raid', 1);
+    if (trop) { r.message = 'Combat trop court pour compter.'; return { etat: me(p), recompense: r }; }
+    const pvBoss = raidCombat(o.phase).pvBoss;
+    let d = Math.max(0, Math.min(pvBoss + 1, Math.floor(+res.touches || 0)));
+    if (gagne) d = pvBoss + 1 + RAID.bonusDegats;
+    r.degats = d;
+    const tombe = frapperRaid(p, d);
+    bump(p, 'raid_degats', d);
+    if (gagne) { raidDe().joueurs[p].victoires++; bump(p, 'raid_victoires', 1); }
+    if (tombe) r.message = 'Le boss est tombé ! Ton coffre t\'attend dans le Raid.';
+    else if (!d) r.message = 'Pas un PV de pris : il rira moins la prochaine fois.';
+    if (evenementEnCours() === 'choc') {
+      r.insignes = d * RAID.parDegat + (gagne ? RAID.victoire : 0);
+      const cj = (chocDe().joueurs[p] = chocDe().joueurs[p] || { degats: 0, victoires: 0 });
+      cj.degats += d;
+      if (gagne) cj.victoires++;
+      crediterPrismes(p, r.insignes);
+    } else {
+      r.eclats = d * RAID.parDegatEclats + (gagne ? RAID.victoireEclats : 0);
+      profil(p).shards += r.eclats;
+    }
+    return { etat: me(p), recompense: r };
+  }
+
+  RPC.raid_etat = p => {
+    const r = raidDe();
+    const auj = jourParis(now());
+    const moi = r.joueurs[p] || { degats: 0, victoires: 0 };
+    return {
+      jour: auj, niveau: r.niveau, degats: r.degats, pv: pvRaid(r.niveau), total: r.total,
+      joueurs: Object.keys(r.frappes).filter(k => k.endsWith('|' + r.niveau) && r.frappes[k] > 0).length,
+      evenement: evenementEnCours() === 'choc',
+      moi: { degats: moi.degats, victoires: moi.victoires, niveau: r.frappes[p + '|' + r.niveau] || 0,
+        tentatives: r.tentatives[p + '|' + auj] || 0, max: RAID.tentatives },
+      coffres: Object.keys(r.tombes).map(Number).sort((a, b) => a - b)
+        .filter(n => (r.frappes[p + '|' + n] || 0) > 0 && !r.coffres[p + '|' + n])
+        .map(n => Object.assign({ niveau: n }, raidCoffre(n))),
+      top: Object.entries(r.joueurs).filter(([, x]) => x.degats > 0).sort((a, b) => b[1].degats - a[1].degats).slice(0, 10)
+        .map(([id, x]) => joueurVue(id, { degats: x.degats, moi: id === p }))
+    };
+  };
+
+  RPC.raid_reclamer = (p, { p_niveau }) => {
+    const r = raidDe();
+    const n = +p_niveau;
+    if (!r.tombes[n]) refuser('Ce niveau n\'est pas encore tombé.');
+    if (!((r.frappes[p + '|' + n] || 0) > 0)) refuser('Tu n\'as pas frappé le boss à ce niveau.');
+    if (r.coffres[p + '|' + n]) refuser('Coffre déjà ouvert.');
+    r.coffres[p + '|' + n] = now();
+    const x = raidCoffre(n);
+    const cartes = accorder(p, x.type, x.montant || 0, null);
+    return { cartes, etat: me(p) };
+  };
 
   function finChoc(p, c, o, gagne, res, trop, r) {
     const ch = chocDe();
@@ -1921,43 +1986,25 @@
     else c.stats.defaites++;
     if (o.niveau >= 4 && gagne) bump(p, 'victoires_dures', 1);
     r.insignes = 0;
-    if (o.mode === 'raid') {
-      bump(p, 'raid', 1);
-      if (trop) { r.message = 'Combat trop court pour compter.'; return { etat: me(p), recompense: r }; }
-      const pvBoss = chocPhase(o.phase).pvBoss;
-      let d = Math.max(0, Math.min(pvBoss + 1, Math.floor(+res.touches || 0)));
-      if (gagne) d = pvBoss + 1 + CHOC.raid.bonusDegats;
-      r.degats = d;
-      r.insignes = d * CHOC.raid.parDegat + (gagne ? CHOC.raid.bonusVictoire : 0);
-      const tombee = frapperRaid(p, d);
-      bump(p, 'raid_degats', d);
-      if (gagne) {
-        ch.raid.joueurs[p].victoires++;
-        bump(p, 'raid_victoires', 1);
-      }
-      if (tombee) r.message = `La phase ${tombee} est tombée ! Sa récompense t'attend dans le Raid.`;
-      else if (!d) r.message = 'Pas un PV de pris : il rira moins la prochaine fois.';
-    } else {
-      bump(p, 'epreuve', 1);
-      const l = ch.epreuves[p + '|' + o.jour] || [];
-      const i = l.findIndex(x => x.abandon);
-      const score = { gagne, tours: +res.tours || 0, pv: +res.pv || 0, touches: +res.touches || 0 };
-      if (i >= 0) l[i] = score;
-      if (trop) { r.message = 'Combat trop court pour compter.'; return { etat: me(p), recompense: r }; }
-      r.insignes = CHOC.epreuve.participation;
-      const k = p + '|' + o.jour;
-      if (gagne && !ch.gagnees[k]) {
-        ch.gagnees[k] = true;
-        r.insignes += CHOC.epreuve.victoire;
-        bump(p, 'epreuve_victoires', 1);
-        r.message = 'Épreuve du jour gagnée !';
-      } else if (gagne) r.message = 'Déjà gagnée aujourd\'hui : ton meilleur score est gardé.';
-    }
+    bump(p, 'epreuve', 1);
+    const l = ch.epreuves[p + '|' + o.jour] || [];
+    const i = l.findIndex(x => x.abandon);
+    const score = { gagne, tours: +res.tours || 0, pv: +res.pv || 0, touches: +res.touches || 0 };
+    if (i >= 0) l[i] = score;
+    if (trop) { r.message = 'Combat trop court pour compter.'; return { etat: me(p), recompense: r }; }
+    r.insignes = CHOC.epreuve.participation;
+    const k = p + '|' + o.jour;
+    if (gagne && !ch.gagnees[k]) {
+      ch.gagnees[k] = true;
+      r.insignes += CHOC.epreuve.victoire;
+      bump(p, 'epreuve_victoires', 1);
+      r.message = 'Épreuve du jour gagnée !';
+    } else if (gagne) r.message = 'Déjà gagnée aujourd\'hui : ton meilleur score est gardé.';
     crediterPrismes(p, r.insignes);
     return { etat: me(p), recompense: r };
   }
 
-  const joueurVue = (id, x) => { const o = profil(id); return Object.assign({ pseudo: o.pseudo, avatar: o.avatar, frame: o.frame,
+  const joueurVue = (id, x) => { const o = profil(id); return Object.assign({ pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id),
     titre: o.titre || null, photo: null, moi: false, section: cb(id).section }, x); };
 
   RPC.choc_etat = p => {
@@ -1968,8 +2015,6 @@
       const k = cleQp(p, q);
       if (!S.qp[k]) S.qp[k] = { progress: 1, claimed: false };
     });
-    const r = avancerRaid();
-    const moi = r.joueurs[p] || { degats: 0, victoires: 0 };
     const essais = (ch.epreuves[p + '|' + auj] || []).map(x => Object.assign({}, x));
     const meilleur = essais.slice().sort((a, b) => scoreEpreuve(b) - scoreEpreuve(a))[0] || null;
     const topEp = Object.entries(ch.epreuves).filter(([k]) => k.endsWith('|' + auj))
@@ -1978,40 +2023,18 @@
       .map(x => joueurVue(x.id, Object.assign({}, x.s, { moi: x.id === p })));
     return {
       jour: auj,
-      raid: {
-        phase: r.phase, degats: r.degats, pv: pvPhase(r.phase), total: r.total, jour_ev: jourEv(),
-        joueurs: Object.values(r.joueurs).filter(x => x.degats > 0).length,
-        phases: CHOC.raid.phases.map(x => ({ n: x.n, pv: pvPhase(x.n), ouvre: x.ouvre, tombee: !!r.tombees[x.n], tombee_le: r.tombees[x.n] ? iso(r.tombees[x.n]) : null })),
-        moi: { degats: moi.degats, victoires: moi.victoires, tentatives: ch.tentatives[p + '|' + auj] || 0, max: CHOC.raid.tentatives },
-        prises: (ch.prises[p] || []).slice(),
-        top: Object.entries(r.joueurs).filter(([, x]) => x.degats > 0).sort((a, b) => b[1].degats - a[1].degats).slice(0, 10)
-          .map(([id, x]) => joueurVue(id, { degats: x.degats, moi: id === p }))
-      },
       epreuve: { graine: graineEpreuve(auj), essais, max: CHOC.epreuve.essais, meilleur, gagnee: !!ch.gagnees[p + '|' + auj], top: topEp }
     };
-  };
-
-  RPC.raid_reclamer = (p, { p_phase }) => {
-    if (evenementEnCours() !== 'choc') refuser('L\'événement est terminé.');
-    const ch = chocDe();
-    const x = CHOC.raid.phases.find(y => y.n === p_phase);
-    if (!x) refuser('Phase inconnue.');
-    if (!ch.raid.tombees[x.n]) refuser('Cette phase n\'est pas encore tombée.');
-    if (((ch.raid.joueurs[p] || {}).degats || 0) < CHOC.raid.minimum) refuser('Frappe d\'abord le Sorcier.');
-    const l = (ch.prises[p] = ch.prises[p] || []);
-    if (l.includes(x.n)) refuser('Récompense déjà récupérée.');
-    l.push(x.n);
-    const cartes = accorder(p, x.recompense.type, x.recompense.montant || 0, x.recompense.objet || null);
-    return { cartes, etat: me(p) };
   };
 
   /* Ce que le récap du Choc ajoute à celui d'un événement : le Raid et
      l'Épreuve. */
   function recapChoc(p) {
     const ch = chocDe();
+    const e = S.evenement || {};
     return {
-      degats: ((ch.raid.joueurs[p] || {}).degats) || 0,
-      raid_phases: Object.keys(ch.raid.tombees).length,
+      degats: ((ch.joueurs[p] || {}).degats) || 0,
+      raid_niveaux: Object.values(raidDe().tombes).filter(t => t >= (e.debut || 0) && t < (e.fin || Infinity)).length,
       epreuves: Object.keys(ch.gagnees).filter(k => k.startsWith(p + '|')).length,
       section: cb(p).section
     };
@@ -2030,23 +2053,23 @@
         change = true;
       }
     });
-    /* Pendant le Choc, les joueurs simulés frappent le Sorcier,
-       tentent l'Épreuve, et gagnent des Insignes. */
-    if (evenementEnCours() === 'choc') {
-      const ch = chocDe();
-      S.raidTic = S.raidTic || t;
-      if (t - S.raidTic > 30000) {
-        S.raidTic = t;
-        const bot = choix(BOTS);
-        if (S.profils[bot.id]) {
-          const gagne = Math.random() < 0.35;
-          const pvBoss = chocPhase(ch.raid.phase).pvBoss;
-          const d = gagne ? pvBoss + 1 + CHOC.raid.bonusDegats : entre(2, pvBoss);
-          frapperRaid(bot.id, d);
-          if (gagne) ch.raid.joueurs[bot.id].victoires++;
+    /* Les joueurs simulés frappent le boss du Raid, toute l'année ; pendant
+       le Choc, ils tentent aussi l'Épreuve et gagnent des Insignes. */
+    S.raidTic = S.raidTic || t;
+    if (t - S.raidTic > 30000) {
+      S.raidTic = t;
+      const bot = choix(BOTS);
+      if (S.profils[bot.id]) {
+        const gagne = Math.random() < 0.35;
+        const pvBoss = raidCombat(raidDe().niveau).pvBoss;
+        const d = gagne ? pvBoss + 1 + RAID.bonusDegats : entre(2, pvBoss);
+        frapperRaid(bot.id, d);
+        if (gagne) raidDe().joueurs[bot.id].victoires++;
+        if (evenementEnCours() === 'choc') {
+          const ch = chocDe();
           const k = bot.id + '|choc';
           const cpt = (S.evt.comptes[k] = S.evt.comptes[k] || { solde: 0, total: 0 });
-          const n = d * CHOC.raid.parDegat + (gagne ? CHOC.raid.bonusVictoire : 0) + entre(5, 25);
+          const n = d * RAID.parDegat + (gagne ? RAID.victoire : 0) + entre(5, 25);
           cpt.solde += n; cpt.total += n;
           const auj = jourParis(t);
           const ek = bot.id + '|' + auj;
@@ -2054,8 +2077,8 @@
             const g2 = Math.random() < 0.6;
             ch.epreuves[ek] = [{ gagne: g2, tours: entre(6, 16), pv: g2 ? entre(1, 5) : 0, touches: g2 ? 6 : entre(1, 4) }];
           }
-          change = true;
         }
+        change = true;
       }
     }
     /* Un ami simulé te défie, une fois, après quelques minutes. */
@@ -2105,6 +2128,7 @@
     chasseTerminee();
     monde20();
     monde30();
+    mondeRaid();
   }
 
   /* Une partie de démo qui ne se relit plus (une sauvegarde d'une version

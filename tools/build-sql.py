@@ -36,6 +36,7 @@ MORCEAUX = [
     ('24_secretes.sql', 'Version 3.0 : les Secretes'),
     ('25_choc.sql',    'Version 3.0 : l\'evenement « Le Choc des Sections »'),
     ('26_niveaux.sql', 'Version 3.0 : l\'XP et le niveau de combattant'),
+    ('27_raid.sql', 'Version 3.0 : le Raid, un boss commun toute l\'annee'),
 ]
 
 entete = """-- =====================================================================

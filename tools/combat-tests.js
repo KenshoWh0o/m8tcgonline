@@ -250,13 +250,13 @@ test('les quarante rivaux de campagne ont un deck valide, avec leur carte', () =
 });
 
 console.log('Le Choc des Sections');
-test('le deck du Sorcier est valide et le contient, chaque jour et à chaque phase', () => {
+test('le deck du Sorcier est valide et le contient, chaque jour et à chaque niveau', () => {
   for (let j = 0; j < 14; j++) {
     const jour = new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10);
     for (let n = 1; n <= 6; n++) {
       const d = Choc.deckSorcier(jour, n);
-      egal(Decks.verifier(d), [], jour + ' phase ' + n);
-      vrai(d.cartes[Choc.CHOC.raid.boss] === 1, 'The French Sorcerer manque');
+      egal(Decks.verifier(d), [], jour + ' niveau ' + n);
+      vrai(d.cartes[Choc.RAID.boss] === 1, 'The French Sorcerer manque');
       egal(JSON.stringify(Choc.deckSorcier(jour, n)), JSON.stringify(d), 'même jour, même deck');
     }
   }
@@ -278,7 +278,7 @@ test('le score de l\'Épreuve : victoire, puis moins de tours, puis plus de PV',
   vrai(s({ gagne: false, touches: 4, pv: 0 }) > s({ gagne: false, touches: 3, pv: 2 }));
 });
 test('le Sorcier commence sur le plateau, au milieu, jamais en main ni en PV', () => {
-  const boss = Choc.CHOC.raid.boss;
+  const boss = Choc.RAID.boss;
   for (let g = 1; g <= 40; g++) {
     const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 3))],
       graine: g, pv: [5, 7], essDepart: [0, 1], poses: Choc.posesBoss() });
@@ -290,17 +290,21 @@ test('le Sorcier commence sur le plateau, au milieu, jamais en main ni en PV', (
     egal(P.pv.length, 7);
   }
 });
-test('les phases du Raid s\'ouvrent une à une sur les trois semaines', () => {
-  egal(Choc.chocPhaseMax(0), 1);
-  egal(Choc.chocPhaseMax(3), 2);
-  egal(Choc.chocPhaseMax(14), 4);
-  egal(Choc.chocPhaseMax(15), 5);
-  const o = Choc.CHOC.raid.phases.map(p => p.ouvre);
-  vrai(o.every((x, i) => !i || x > o[i - 1]), 'des ouvertures croissantes');
-  vrai(o[o.length - 1] <= 17, 'la dernière phase laisse au moins quatre jours');
+test('le Raid monte en niveau : barre plus longue, boss plus dur, coffres à tour de rôle', () => {
+  egal(Choc.RAID.pv(1), 300);
+  vrai(Choc.RAID.pv(2) > Choc.RAID.pv(1), 'la barre s\'allonge');
+  let avant = Choc.raidCombat(1);
+  for (let n = 2; n <= 12; n++) {
+    const c = Choc.raidCombat(n);
+    vrai(c.ia >= avant.ia && c.pvBoss >= avant.pvBoss && c.ess >= avant.ess, 'jamais plus facile, niveau ' + n);
+    vrai(c.ia <= 5 && c.pvBoss <= 9 && c.ess <= 2, 'des plafonds, niveau ' + n);
+    avant = c;
+  }
+  egal(Choc.raidCoffre(1).type, 'boosters');
+  egal(Choc.raidCoffre(5).type, Choc.raidCoffre(1).type, 'les coffres tournent');
 });
 test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme', () => {
-  const p = Choc.chocPhase(5);
+  const p = Choc.raidCombat(5);
   const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 5))],
     graine: 77, pv: [5, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss() });
   egal(E.j[1].pvDepart, 8);

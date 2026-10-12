@@ -247,7 +247,7 @@
 .cb-cosm.sleeve .cb-cosm-img,.cb-cosm.jeton .cb-cosm-img{aspect-ratio:63/88}
 .cb-cosm.jeton .cb-cosm-img{aspect-ratio:1;border-radius:50%}
 .cb-cosm-img img{width:100%;height:100%;object-fit:cover;display:block}
-.cb-tapis-base{display:block;width:100%;height:100%;background:url('../assets/pack-star.svg') center/40% no-repeat,radial-gradient(ellipse at 50% 50%,rgba(140,120,255,.4),transparent 70%),linear-gradient(180deg,var(--plate-2),var(--plate))}
+.cb-tapis-base{display:block;width:100%;height:100%;background:url('../assets/pack-star.svg?v=3.0.4') center/40% no-repeat,radial-gradient(ellipse at 50% 50%,rgba(140,120,255,.4),transparent 70%),linear-gradient(180deg,var(--plate-2),var(--plate))}
 .cb-cosm.verrou .cb-cosm-img img,.cb-cosm.verrou .cb-tapis-base{filter:grayscale(.7) brightness(.55)}
 .cb-cosm-prix{position:absolute;left:50%;bottom:6px;translate:-50% 0;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
   font-style:normal;font-size:10.5px;font-weight:900;background:rgba(18,17,25,.85);white-space:nowrap}

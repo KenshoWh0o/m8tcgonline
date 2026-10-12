@@ -387,13 +387,13 @@ on conflict (id) do update set
 -- le tapis et le sleeve de base sont a tout le monde, sans achat.
 -- Et la boutique du Choc des Sections (25_choc.sql), en Insignes.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
-  ('t_chateau',    'tapis',  'Tapis « Le Château »',   'Le château et ses feux d''artifice, sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
-  ('t_reverie',    'tapis',  'Tapis « Rêverie »',      'La montagne violette, et les visages dans les nuages.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
-  ('t_chevalier',  'tapis',  'Tapis « Le Chevalier »', 'Le chevalier en armure, médaillon M8 au cou.',          5000, 'cosmetique', 1, null, true, 3, 'eclats', null, null),
-  ('t_veste',      'tapis',  'Tapis « Veste Rose »',   'La veste rose et ses éclats.',                           4000, 'cosmetique', 1, null, true, 4, 'eclats', null, null),
-  ('t_pilote',     'tapis',  'Tapis « Petit Pilote »', 'Une voiture téléguidée lancée à pleine vitesse.',        4000, 'cosmetique', 1, null, true, 5, 'eclats', null, null),
-  ('t_peche',      'tapis',  'Tapis « Grosse Prise »', 'Une partie de pêche qui tourne mal pour le requin.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
-  ('s_sorcier',    'sleeve', 'Sleeve « Le Sorcier »',  'Le dos de tes cartes : le sorcier en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('t_chateau',    'tapis',  'Tapis « Champions du Monde »', 'L''illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('t_reverie',    'tapis',  'Tapis « La Relève »', 'L''illustration de la carte « La Relève », sous tes cartes.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
+  ('t_chevalier',  'tapis',  'Tapis « La Luxueuse III »', 'L''illustration de la carte « La Luxueuse III », sous tes cartes.',          5000, 'cosmetique', 1, null, true, 3, 'eclats', null, null),
+  ('t_veste',      'tapis',  'Tapis « Marteen Supreme »', 'L''illustration de la carte « Marteen Supreme », sous tes cartes.',                           4000, 'cosmetique', 1, null, true, 4, 'eclats', null, null),
+  ('t_pilote',     'tapis',  'Tapis « Baby Driver »', 'L''illustration de la carte « Baby Driver », sous tes cartes.',        4000, 'cosmetique', 1, null, true, 5, 'eclats', null, null),
+  ('t_peche',      'tapis',  'Tapis « Vanyabubu »', 'L''illustration de la carte « Vanyabubu », sous tes cartes.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
+  ('s_sorcier',    'sleeve', 'Sleeve « 6W26L »', 'Le dos de tes cartes : la Secrète 6W26L, en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
   ('s_argent',     'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
   ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      90, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 8),
   ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 80, 'fragments', 500, null, false, 2, 'prismes', 'choc', 6),

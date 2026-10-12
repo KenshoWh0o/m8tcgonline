@@ -104,7 +104,7 @@ begin
       select jsonb_agg(jsonb_build_object(
           'id', 'n' || n.id, 'type', n.type, 'quand', n.created_at,
           'ref', n.ref, 'data', n.data,
-          'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+          'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
           'photo', photo_discord(o.id),
           'en_attente', case n.type
             when 'ami_demande' then exists (

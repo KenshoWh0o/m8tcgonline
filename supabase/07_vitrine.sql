@@ -187,7 +187,7 @@ begin
     'vitrine', to_jsonb(o.vitrine),
     -- Version 3.0 : son XP de combattant (26_niveaux.sql), pour le niveau
     -- pose sur l'avatar ; la page le calcule, comme pour me().
-    'xp', coalesce((select x.xp from combat_joueurs x where x.user_id = o.id), 0),
+    'xp', xp_de(o.id),
     'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,

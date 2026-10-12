@@ -304,7 +304,7 @@ begin
     'xp', c.xp,
     'defis', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'id', d.id, 'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id),
+               'id', d.id, 'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id), 'photo', photo_discord(o.id),
                'pour_moi', d.pour = p, 'statut', d.statut,
                'vu', case when d.de = p then d.vu_de else d.vu_pour end) order by d.cree)
         from defis d join profiles o on o.id = case when d.de = p then d.pour else d.de end
@@ -392,8 +392,9 @@ begin
 end $$;
 
 -- ===================================================== 6. un combat contre l'IA
--- combat_debut : le serveur ouvre le combat et tire la graine. Le Raid et
--- l'Epreuve du jour (25_choc.sql) fixent eux-memes niveau, phase et graine.
+-- combat_debut : le serveur ouvre le combat et tire la graine. Le Raid
+-- (27_raid.sql) et l'Epreuve du jour (25_choc.sql) fixent eux-memes le
+-- niveau de l'IA, le niveau du boss (`phase`) et la graine.
 create or replace function public.combat_debut(p_mode text, p_cle text, p_niveau int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; v_n int; niv int := p_niveau; ph int; gr bigint; x jsonb;
@@ -415,7 +416,7 @@ begin
   elsif p_mode = 'infini' then
     if p_niveau is null or p_niveau not between 1 and 5 then raise exception 'Difficulté inconnue.'; end if;
   else
-    x := choc_debut(p, p_mode, p_cle);
+    x := case when p_mode = 'raid' then raid_debut(p, p_cle) else choc_debut(p, p_mode, p_cle) end;
     niv := (x->>'niveau')::int; ph := (x->>'phase')::int; gr := (x->>'graine')::bigint;
   end if;
   -- Un seul combat ouvert a la fois : le precedent compte comme perdu.
@@ -466,9 +467,12 @@ begin
                                  coalesce((p_resume->>'vaincus')::int, 0), coalesce((p_resume->>'tours')::int, 0)));
   end if;
 
-  -- Le Raid et l'Epreuve paient en Insignes (25_choc.sql).
+  -- Le Raid (27_raid.sql : Insignes pendant le Choc, Eclats sinon) et
+  -- l'Epreuve du jour (25_choc.sql, en Insignes).
   if o.mode in ('raid', 'epreuve') then
-    r := choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop);
+    r := case when o.mode = 'raid'
+              then raid_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop)
+              else choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop) end;
     return jsonb_build_object('etat', me(), 'recompense', r || jsonb_build_object('xp', v_xp));
   end if;
 
@@ -538,7 +542,7 @@ begin
     'actions', coalesce((select jsonb_agg(x order by i) from jsonb_array_elements(d.actions) with ordinality t(x, i)
                           where i > coalesce(depuis, 0)), '[]'::jsonb),
     'adversaire', jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
-                                     'photo', photo_discord(o.id),
+                                     'xp', xp_de(o.id), 'photo', photo_discord(o.id),
                                      'cosm', coalesce((select cosm from combat_joueurs where user_id = o.id), '{}'::jsonb)));
 end $$;
 

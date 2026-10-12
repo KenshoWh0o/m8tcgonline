@@ -113,7 +113,7 @@ begin
   perform garde_beta();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
-        'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+        'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
         'photo', photo_discord(o.id),
         'is_admin', o.is_admin, 'streak', o.streak,
         'lien', case when f.accepte then 'ami'

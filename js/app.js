@@ -56,9 +56,11 @@ function header() {
      il n'y a pas de tiroir, donc pas de chevron (voir css/hub.css). */
   const av = $('#moi');
   if (av) {
-    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm', maPhoto())
+    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm', maPhoto(), monXp())
       + '<i class="moicaret" aria-hidden="true">' + NAVICO.caret + '</i>';
-    av.classList.toggle('alerte', pastilleTiroir() > 0);
+    /* Sur ordinateur, il n'y a pas de tiroir : le rail montre déjà chaque
+       pastille, l'avatar n'a rien à signaler. */
+    av.classList.toggle('alerte', !surOrdi() && pastilleTiroir() > 0);
     av.setAttribute('aria-label', surOrdi() ? 'Mon profil' : 'Menu du compte');
     av.setAttribute('aria-expanded', String(tiroirOuvert));
   }
@@ -108,8 +110,8 @@ function pastilleOnglet(id) {
   if (id === 'choc') return chocPastille();
   if (id === 'illu') return illuData && !illuData.fini ? 1 : 0;
   if (id === 'social') return socNotifs();
-  /* Version 3.0 : un défi qui attend une réponse. */
-  if (id === 'combats') return ((save.combat || {}).defis || []).filter(d => d.pour_moi && d.statut === 'attente').length;
+  /* Version 3.0 : un défi qui attend une réponse, un coffre du Raid à ouvrir. */
+  if (id === 'combats') return ((save.combat || {}).defis || []).filter(d => d.pour_moi && d.statut === 'attente').length + rdCoffres();
   return 0;
 }
 
@@ -151,7 +153,7 @@ function vTiroir() {
   return `<div class="tiroir-bg" data-tiroir="fermer"></div>
   <nav class="tiroir-panneau" aria-label="Menu du compte">
     <header class="tiroir-id">
-      ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
+      ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto(), monXp())}
       <div><b>${h(save.pseudo)}</b><p class="muted small">${h(sousTitre)}</p></div>
       <button class="tiroir-x" data-tiroir="fermer" aria-label="Fermer">✕</button>
     </header>
@@ -269,16 +271,25 @@ function render() {
   majBoutonInstall();
 
   tab = ongletValide(tab);
-  /* Le fond d'ambiance suit l'onglet (css/base.css, « Fond »). */
-  document.body.dataset.tab = tab;
+  /* L'onglet en cours, pour les styles. Pas `data-tab` : c'est l'attribut des
+     liens vers un onglet (clicPage), et posé sur <body> il faisait de chaque
+     clic dans la page un « retour à l'onglet » — page redessinée, remontée
+     en haut, champ de saisie qui perd la main. */
+  document.body.dataset.onglet = tab;
   const vue = VUES[tab] || VUES.boosters;
   const m = $('#main');
   /* Remplacer le contenu remet le défilement à zéro. Sur le même onglet, la
      position de lecture appartient au joueur : un rafraîchissement de fond ne
      doit pas le renvoyer en haut de ses 122 cases. */
   const haut = m.className === 'tab-' + tab ? m.scrollTop : 0;
+  /* Pareil pour un bloc qu'on a déplié ou replié (`data-garde`) : la page se
+     redessine souvent (une quête qui avance, un ami qui répond), et le bloc
+     revenait à son état de départ sous le doigt. */
+  const gardes = {};
+  if (haut || m.className === 'tab-' + tab) m.querySelectorAll('details[data-garde]').forEach(d => { gardes[d.dataset.garde] = d.open; });
   m.className = 'tab-' + tab;
   m.innerHTML = vue();
+  m.querySelectorAll('details[data-garde]').forEach(d => { if (d.dataset.garde in gardes) d.open = gardes[d.dataset.garde]; });
   if (haut) m.scrollTop = haut;
 
   if (tab === 'boosters') bindPack();
@@ -325,6 +336,7 @@ function aller(id) {
     else if (tab === 'choc') {
       chPassPlace = false;
       chargerChoc();
+      relireRaid();
       if (!Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     }
     /* Le recyclage met de côté les cartes promises dans un échange : il lui
@@ -335,8 +347,8 @@ function aller(id) {
     if (tab === 'tirages') chargerTirages();
     /* Version 3.0 : les défis bougent sans nous. */
     if (tab === 'combats') {
-      /* L'affiche du Raid dit sa phase et les tentatives du jour. */
-      if (evenementEnCours() === 'choc' && !chEtat) chargerChoc();
+      /* L'affiche du Raid dit son niveau et les tentatives du jour. */
+      relireRaid();
       Backend.pull().then(() => { if (tab === 'combats' && !enTrainDEcrire()) render(); }).catch(() => {});
       if (!Backend.amis.length) Backend.loadAmis().then(() => { if (tab === 'combats' && cbVue === 'versus') render(); }).catch(() => {});
     }
@@ -353,7 +365,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd]');
   if (!el) return;
   const d = el.dataset;
 
@@ -362,6 +374,8 @@ async function clicPage(e) {
   if (d.cb) return cbAction(d.cb, el);
   /* Version 3.0 : l'événement « Le Choc des Sections » (js/choc.js). */
   if (d.ch) return chAction(d.ch, el);
+  /* Version 3.0 : le Raid (js/raid.js). */
+  if (d.rd) return raidAction(d.rd, el);
   if (d.apercu) return labMontrerApercu(d.apercu);
   /* Version 2.0 */
   if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
@@ -447,6 +461,8 @@ async function clicPage(e) {
       colFilter = essFilter = rarFilter = 'all';
       colPossedees = colObjectifs = colFavoris = false;
       return render();
+    /* Une Secrète qu'on n'a pas : elle ne se fabrique pas, on dit d'où elle vient. */
+    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle sort d\'un booster, une fois sur 133, ou s\'échange contre une autre Secrète.');
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();
     case 'porte-code': return porteCode();
@@ -674,6 +690,7 @@ addEventListener('visibilitychange', () => {
   Backend.pull().then(() => majDiscrete(true)).catch(() => {});
   releverBoite();
   relireCadeaux();
+  chargerIllu();
 });
 
 /* Ce qui arrive des autres joueurs — demandes d'ami, d'échange, réponses — et
@@ -741,6 +758,9 @@ function visiteDuJourFaite() {
       demarrerBoite();
       /* Un cadeau qui attend (js/cadeaux.js) : il s'ouvre quand l'écran est calme. */
       relireCadeaux();
+      /* Devine l'illu : sa pastille dit qu'une grille attend, avant même
+         qu'on ouvre l'onglet. */
+      chargerIllu();
     } catch (e) {
       toast(e.message || 'Le serveur a répondu de travers.');
     }

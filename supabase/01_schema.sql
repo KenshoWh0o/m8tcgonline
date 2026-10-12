@@ -518,6 +518,22 @@ $$;
 -- parcourir les photos par identifiant.
 revoke all on function public.photo_discord from public, anon, authenticated;
 
+-- Version 3.0 : l'XP de combattant d'un joueur (26_niveaux.sql), pour le
+-- niveau pose sur son avatar partout ou son cadre s'affiche (amis, boite,
+-- classements, defis, evenement, fiche). La page calcule le niveau, comme
+-- pour me(). La table des combats vient plus loin (23_combats.sql) : tant
+-- qu'elle n'existe pas, c'est 0. Rouage interne, comme photo_discord.
+create or replace function public.xp_de(p uuid) returns integer
+language plpgsql stable security definer set search_path = public as $$
+declare v int;
+begin
+  select x.xp into v from combat_joueurs x where x.user_id = p;
+  return coalesce(v, 0);
+exception when undefined_table or undefined_column then
+  return 0;
+end $$;
+revoke all on function public.xp_de(uuid) from public, anon, authenticated;
+
 create or replace function public.period_key(sc text) returns text
 language sql stable as $$
   select case sc

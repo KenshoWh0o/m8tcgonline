@@ -641,7 +641,7 @@ begin
   -- Un compte qui n'a pas acces au jeu (01_schema.sql) n'est pas trouvable.
   if not found or not (beta_ouverte() or est_invite(r.id)) then return 'null'::jsonb; end if;
   return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
-    'frame', r.frame, 'photo', photo_discord(r.id));
+    'frame', r.frame, 'xp', xp_de(r.id), 'photo', photo_discord(r.id));
 end $$;
 
 -- =====================================================================

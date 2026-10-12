@@ -90,7 +90,9 @@ function ouvrirDefi(d) {
     joueurs: d.moi === 0 ? [joueurMoi(), adv] : [adv, joueurMoi()],
     cosm: d.moi === 0 ? [e.cosm, adv.cosm || {}] : [adv.cosm || {}, e.cosm],
     brillantes: d.moi === 0 ? [brillantesMoi(), adv.brillantes || []] : [adv.brillantes || [], brillantesMoi()],
-    titre: `Défi · ${adv.nom || ''}`, sousTitre: 'Entre amis',
+    titre: `Défi · ${adv.nom || ''}`, sousTitre: 'Entre amis · 60 secondes par tour',
+    /* Soixante secondes par tour : pas d'attente sans fin (js/combat/table.js). */
+    minuteur: 60,
     surAction: (a, E2, deMoi) => {
       if (!deMoi || !defiActif) return;
       const n = defiActif.n++;
