@@ -41,7 +41,7 @@ function vAmis() {
 
   const ligne = (a, actions) => `<article class="amiligne">
     <button class="amiid" data-fiche="${h(a.pseudo)}">
-      ${avatarHTML(a.avatar, a.frame, 'sm', a.photo)}
+      ${avatarHTML(a.avatar, a.frame, 'sm', a.photo, a.xp)}
       <span class="aminom"><b>${h(a.pseudo)}</b>${a.is_admin ? '<i class="qtag ok">admin</i>' : ''}
         <small class="muted">${a.lien === 'ami'
           ? (a.echanges ? a.echanges + ' échange' + (a.echanges > 1 ? 's' : '') + ' en cours' : 'Voir le profil')
@@ -145,7 +145,7 @@ async function ouvrirFiche(pseudo) {
   openSheet({
     body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}${f.banniere ? ' banniere' : ''}">
       ${vBanniere(f.banniere)}
-      ${avatarNiveau(avatarHTML(f.avatar, f.frame, 'xl', f.photo), f.xp)}
+      ${avatarHTML(f.avatar, f.frame, 'xl', f.photo, f.xp)}
       <div class="fichemeta">
         <b class="fichenom">${h(f.pseudo)}</b>
         ${vTitreLigne(f.titre)}

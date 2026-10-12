@@ -197,9 +197,9 @@ function vRfQuetes() {
   const ev = qs.filter(q => q.scope === 'ev');
   return `${rfTitre('Quêtes', `Elles paient en ${PRISMES.nom}, et chaque ${PRISMES.un} gagné fait avancer le Pass.`)}
     <h3 class="rf-sous">Du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
-    ${vListeQuetes(jour)}
+    ${vListeQuetes(jour, 'rf-jour')}
     <h3 class="rf-sous">De l'événement</h3>
-    ${vListeQuetes(ev)}`;
+    ${vListeQuetes(ev, 'rf-ev')}`;
 }
 
 /* =====================================================================
@@ -371,7 +371,7 @@ function vRfClassement() {
   const top = rfData.top || [];
   return `${rfTitre('Classement', `Ceux qui ont gagné le plus de ${PRISMES.nom} depuis le début de l'événement.`)}
     ${top.length ? `<ol class="rf-top">${top.map((j, i) => `<li class="${j.moi ? 'moi' : ''}">
-        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
+        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo, j.xp)}
         <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.titre && TITRES[j.titre] ? `<small class="titreligne t${TITRES[j.titre].ton}">${h(TITRES[j.titre].nom)}</small>` : ''}</span>
         <span class="rf-pts tnum">${prismeIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
       : '<p class="muted">Personne n\'a encore gagné de Prismes : à toi de commencer.</p>'}`;
@@ -483,7 +483,7 @@ async function illuProposer(id) {
     illuCherche = '';
     if (illuData.trouve) {
       SFX.jouer('gagne');
-      if (!RM()) FX.sparkle({ n: 110, colors: ['#55e6a6', '#ff7cc8', '#b38cff', '#fff'], size: 3.4 });
+      if (!RM()) FX.sparkle({ n: 110, colors: ['#4fd6a0', '#b3a6ff', '#c8bfff', '#fff'], size: 3.4 });
     } else SFX.jouer(illuData.fini ? 'erreur' : 'carte');
     try { rfData = await Backend.evenementEtat(); } catch (e) { /* l'ancien suffit */ }
     render();
@@ -515,6 +515,8 @@ function illuPartager() {
 async function chargerIllu() {
   try { illuData = await Backend.illuEtat(); } catch (e) { /* l'écran le dira */ }
   if (tab === 'illu' || tab === 'reflets') render();
+  /* Ailleurs, seule la pastille de l'onglet change. */
+  else if (typeof majDiscrete === 'function') majDiscrete(false);
 }
 
 function vIlluPage() {
@@ -575,7 +577,7 @@ function vRfRecap() {
     <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
   const pct = r.reverses_max ? Math.round(r.reverses / r.reverses_max * 100) : 0;
   const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
-      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
+      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo, j.xp)}
       <b>${h(j.pseudo)}</b><small>${prismeIco}${fmtN(j.total)}</small></li>`).join('');
 
   return `<div class="rf">${tete}<div class="rf-page">

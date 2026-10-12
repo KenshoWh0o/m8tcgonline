@@ -529,12 +529,12 @@ Backend.combatSection = async function (section) {
   Backend.apply(await Backend.rpc('combat_section', { p_section: section }));
 };
 
-/* Le deck actif, le tapis, la sleeve, le jeton. */
+/* Le deck actif, le tapis, la sleeve. */
 Backend.combatReglages = async function (o) {
   if (Backend.mode !== 'cloud') {
     const c = combatLocal();
     if (o.deck_actif !== undefined) c.deck_actif = o.deck_actif;
-    c.cosm = Object.assign({}, c.cosm, Object.fromEntries(['tapis', 'sleeve', 'jeton'].filter(k => o[k]).map(k => [k, o[k]])));
+    c.cosm = Object.assign({}, c.cosm, Object.fromEntries(['tapis', 'sleeve'].filter(k => o[k]).map(k => [k, o[k]])));
     return persist();
   }
   Backend.apply(await Backend.rpc('combat_reglages', { p_reglages: o }));
@@ -585,10 +585,13 @@ Backend.combatFin = async function (id, gagne, resume) {
 };
 
 /* L'événement « Le Choc des Sections » (js/choc.js, supabase/25_choc.sql) :
-   le Raid et l'Épreuve du jour. */
+   l'Épreuve du jour. */
 Backend.chocEtat = () => Backend.rpc('choc_etat');
-Backend.raidReclamer = async function (phase) {
-  const r = await Backend.rpc('raid_reclamer', { p_phase: phase });
+/* Le Raid, toute l'année (js/raid.js, supabase/27_raid.sql) : l'état du
+   boss, et le coffre d'un niveau tombé. */
+Backend.raidEtat = () => Backend.rpc('raid_etat');
+Backend.raidReclamer = async function (niveau) {
+  const r = await Backend.rpc('raid_reclamer', { p_niveau: niveau });
   Backend.apply(r.etat);
   return r.cartes || [];
 };

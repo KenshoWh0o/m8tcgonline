@@ -171,7 +171,10 @@ function avatarInfo(a, photo) {
    c'est `maPhoto()` ; pour quelqu'un d'autre, c'est le champ `photo` renvoyé
    par le serveur. Ne rien passer dessine l'étoile — jamais le visage d'un
    autre. */
-function avatarHTML(a, frame, cls, photo) {
+/* `xp` (version 3.0) : l'XP de combattant du joueur. Donné, son niveau se
+   pose en pastille en bas à droite, partout où son cadre s'affiche ; absent
+   (un aperçu de cadre, un sélecteur), l'avatar seul. */
+function avatarHTML(a, frame, cls, photo, xp) {
   const f = FRAMES[frame] || FRAMES.default;
   const v = avatarInfo(a, photo);
   const mode = v.ico ? ' ico' : v.carte ? ' objet carte' : v.objet ? ' objet' : '';
@@ -180,17 +183,20 @@ function avatarHTML(a, frame, cls, photo) {
   const vars = [`--f1:${f.c1}`, `--f2:${f.c2}`];
   if (v.bg) vars.push('--ab:' + v.bg);
   if (v.pos) vars.push('--apos:' + v.pos);
-  return `<span class="ava ${cls || ''}${anim}${mode}"
+  const html = `<span class="ava ${cls || ''}${anim}${mode}"
     style="${vars.join(';')}">${v.carte ? `<span class="ava-illu"><img src="${v.src}" alt=""></span>` : `<img src="${v.src}" alt="">`}${f.fx ? '<i class="fx-deco" aria-hidden="true"></i>' : ''}</span>`;
+  return xp == null ? html : avatarNiveau(html, xp, cls);
 }
 
 /* Version 3.0 : l'avatar, son niveau de combattant posé en bas à droite
    (js/combat/niveaux.js). `xp` absent : l'avatar seul. */
-function avatarNiveau(html, xp) {
+function avatarNiveau(html, xp, cls) {
   if (xp == null || typeof niveauDe !== 'function') return html;
   const n = niveauDe(xp).niveau;
-  return `<span class="ava-nivw">${html}<i class="ava-niv tnum" title="Niveau ${n}" aria-label="Niveau ${n}">${n}</i></span>`;
+  return `<span class="ava-nivw ${cls || ''}">${html}<i class="ava-niv tnum" title="Niveau ${n}" aria-label="Niveau ${n}">${n}</i></span>`;
 }
+/* L'XP du joueur lui-même : son niveau suit son avatar comme celui des autres. */
+const monXp = () => (typeof cbEtat === 'function' ? cbEtat().xp : null);
 
 /* ---------- Petits blocs répétés ---------- */
 const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 9.5 12 22 4 9.5Z" fill="currentColor" opacity=".9"/><path d="M12 2 4 9.5h16Z" fill="#fff" opacity=".35"/></svg>';

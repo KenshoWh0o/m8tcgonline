@@ -119,7 +119,7 @@ function notifBoite(x) {
   el.setAttribute('role', 'status');
   el.innerHTML = `<span class="qnav">${x.type === 'annonce'
       ? `<span class="qnico">${NAVICO.annonce}</span>`
-      : avatarHTML(x.avatar, x.frame, 'sm', x.photo)}</span>
+      : avatarHTML(x.avatar, x.frame, 'sm', x.photo, x.xp)}</span>
     <span class="qntxt"><b>${texte}</b><small>${h(sous)}</small></span>`;
   pile.appendChild(el);
 
@@ -304,7 +304,7 @@ function vMessage(x) {
 
   return `<article class="bmsg${neuf ? ' neuf' : ''}">
     <button class="bava" data-fiche="${h(x.pseudo || '')}" aria-label="Profil de ${h(x.pseudo || '')}">
-      ${avatarHTML(x.avatar, x.frame, 'sm', x.photo)}</button>
+      ${avatarHTML(x.avatar, x.frame, 'sm', x.photo, x.xp)}</button>
     <div class="bcorps">
       <p class="btxt">${texte}</p>
       <time>${ilya(x.quand)}</time>

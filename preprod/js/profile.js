@@ -17,7 +17,7 @@ function vProfil() {
 
   <section class="idcard${(save.succes || []).includes('unique') ? ' elu' : ''}${save.banniere ? ' banniere' : ''}">
     ${vBanniere(save.banniere)}
-    ${avatarNiveau(avatarHTML(save.avatar, save.frame, 'xl', maPhoto()), cbEtat().xp)}
+    ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto(), monXp())}
     <div class="idnom">
       <span class="idnomligne"><b>${h(save.pseudo)}</b></span>
       ${vTitreLigne(save.titre)}
@@ -133,7 +133,7 @@ function vPerso() {
       ${Object.keys(TITRES).filter(k => miens.includes(k)).map(k =>
         `<button class="titrechoix${save.titre === k ? ' on' : ''}" data-titre="${k}"><span class="titreligne t${TITRES[k].ton}">${h(TITRES[k].nom)}</span></button>`).join('')}
     </div>
-    ${Object.keys(TITRES).some(k => !miens.includes(k) && k !== 't_admin') ? `<details class="titresverrou">
+    ${Object.keys(TITRES).some(k => !miens.includes(k) && k !== 't_admin') ? `<details class="titresverrou" data-garde="titresverrou">
       <summary>${Object.keys(TITRES).filter(k => !miens.includes(k) && k !== 't_admin').length} titres à débloquer</summary>
       <ul>${Object.keys(TITRES).filter(k => !miens.includes(k) && k !== 't_admin').map(k =>
         `<li><span class="titreligne t${TITRES[k].ton}">${h(TITRES[k].nom)}</span><small>${h(TITRES[k].comment)}</small></li>`).join('')}</ul>

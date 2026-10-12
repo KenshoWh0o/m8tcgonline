@@ -62,7 +62,7 @@ function vClassement() {
   const ligne = j => `<button class="clligne${j.moi ? ' moi' : ''}${j.rang <= 3 ? ' podium p' + j.rang : ''}"
       data-fiche="${h(j.pseudo)}" aria-label="${h(j.pseudo)}, ${j.rang}e">
     <span class="clrang tnum">${j.rang}</span>
-    ${avatarHTML(j.avatar, j.frame, 'sm', j.moi ? maPhoto() : j.photo)}
+    ${avatarHTML(j.avatar, j.frame, 'sm', j.moi ? maPhoto() : j.photo, j.moi ? monXp() : j.xp)}
     <span class="clnom">${h(j.pseudo)}${j.moi ? ' <i class="qtag">toi</i>' : ''}${vTitreLigne(j.titre)}</span>
     <span class="clval tnum">${def.val(j.valeur)}</span>
   </button>`;

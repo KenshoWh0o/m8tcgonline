@@ -102,6 +102,21 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-mainadv small{font-size:11px;font-weight:700;color:rgba(255,255,255,.6)}
 .ar-mainadv:has(.ar-dos-pile:empty) .ar-dos-pile{display:none}
 
+/* Le temps de jeu d'un défi : un anneau qui se vide autour du nombre de
+   secondes. Rouge sous les dix dernières. */
+.ar-chrono{flex:none;position:relative;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
+  background:conic-gradient(var(--ar-act) calc(var(--p,1) * 360deg),rgba(255,255,255,.1) 0);transition:background .25s linear}
+.ar-chrono[hidden]{display:none}
+.ar-chrono::before{content:"";position:absolute;inset:3px;border-radius:50%;background:#16151e}
+.ar-chrono b{position:relative;font-family:var(--display);font-weight:900;font-size:14px}
+.ar-chrono.lui{background:conic-gradient(var(--ar-adv2) calc(var(--p,1) * 360deg),rgba(255,255,255,.1) 0)}
+.ar-chrono.presse{background:conic-gradient(var(--ar-adv) calc(var(--p,1) * 360deg),rgba(255,255,255,.1) 0);animation:ar-presse .9s ease-in-out infinite}
+.ar-chrono.presse b{color:var(--ar-adv2)}
+@keyframes ar-presse{50%{transform:scale(1.08)}}
+.ar-chrono.absent{width:auto;height:auto;padding:6px 10px;border-radius:999px;background:rgba(255,107,107,.16);animation:none}
+.ar-chrono.absent::before{content:none}
+.ar-chrono.absent b{font-family:var(--body);font-size:11.5px;font-weight:800;color:var(--ar-adv2)}
+
 /* La fin du tour. */
 /* La fin du tour : la capsule d'or, le bouton principal de l'arène. Hors de
    ton tour, elle redevient du verre. */
@@ -148,7 +163,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-place{position:relative;container-type:inline-size;aspect-ratio:63/88;border-radius:6.5cqi;
   background:rgba(8,7,12,.32);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.08);transition:background .2s,box-shadow .2s}
 .ar-place::before{content:"";position:absolute;inset:36%;border-radius:50%;opacity:.1;pointer-events:none;filter:grayscale(1) brightness(1.8);
-  background:url('../assets/pack-star.svg') center/contain no-repeat}
+  background:url('../assets/pack-star.svg?v=3.0.5') center/contain no-repeat}
 .ar-place:has(.ar-j)::before{display:none}
 /* Une place libre pour le Joueur qu'on tient : ce qu'on peut faire, donc l'or. */
 .ar-place.cible{cursor:pointer;background:rgba(157,140,255,.12);box-shadow:inset 0 0 0 2px var(--ar-act),0 0 0 4px rgba(157,140,255,.14),0 0 26px rgba(157,140,255,.35);
@@ -273,13 +288,6 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-texte span i{margin-left:auto;font-style:normal;font-weight:900}
 .ar-texte .ar-couts img{width:7cqi;height:7cqi}
 
-/* Le signe de la sorte de carte (main, listes) : à gauche, sur l'illustration,
-   là où l'éventail de la main le laisse voir et où il ne cache ni le nom ni la couleur.
-   Neutre : la forme de l'icône suffit à distinguer les quatre sortes, et la
-   main n'a pas à porter quatre couleurs de plus que l'or de ce qui est jouable. */
-.ar-type{position:absolute;left:4%;top:9.5%;z-index:3;display:grid;place-items:center;width:25%;aspect-ratio:1;border-radius:50%;
-  background:rgba(18,17,25,.86);box-shadow:0 0 0 1.5px rgba(255,255,255,.85),0 2px 5px rgba(0,0,0,.55)}
-.ar-type svg{width:62%;height:62%;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .t-joueur{--tc:var(--t-joueur)}.t-objet{--tc:var(--t-objet)}.t-coach{--tc:var(--t-coach)}.t-moment{--tc:var(--t-moment)}
 
 .ar-couts{display:inline-flex;align-items:center;gap:1px;vertical-align:-3px}
@@ -324,14 +332,17 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-j.bulle-shield::after{animation:ar-bulle .6s ease-out}
 @keyframes ar-bulle{40%{box-shadow:0 0 0 6px rgba(232,236,255,.55),0 0 40px rgba(232,236,255,.8)}}
 
-/* La Défense : un écusson neutre, en bas à droite. Seul le chiffre change de
-   couleur quand elle bouge : vert si elle monte, corail si elle baisse. */
-.ar-def{position:absolute;right:-8cqi;bottom:-6cqi;z-index:3;display:grid;place-items:center;width:36cqi;aspect-ratio:1;pointer-events:none}
-.ar-def svg{position:absolute;inset:0;width:100%;height:100%;fill:#1e1d28;stroke:rgba(255,255,255,.85);stroke-width:1.5;stroke-linejoin:round;
-  filter:drop-shadow(0 1.5px 2px rgba(0,0,0,.7))}
-.ar-def b{position:relative;margin-top:-1.5cqi;font-family:var(--display);font-weight:900;font-size:14.5cqi;line-height:1;
-  font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-shadow:0 1px 0 rgba(0,0,0,.55)}
+/* La Défense : une pastille sobre, à cheval sur le bas de la carte —
+   l'écusson et son gros chiffre débordaient de la carte. Le chiffre passe
+   au vert quand elle monte, au rouge quand elle baisse. */
+.ar-def{position:absolute;left:50%;bottom:-5cqi;z-index:3;translate:-50% 0;display:flex;align-items:center;gap:1.8cqi;
+  height:max(17px,16cqi);padding:0 max(7px,5cqi) 0 max(5px,3.6cqi);border-radius:999px;pointer-events:none;white-space:nowrap;
+  background:rgba(18,17,25,.94);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),0 2px 6px rgba(0,0,0,.55)}
+.ar-def svg{width:max(10px,9cqi);height:max(10px,9cqi);fill:none;stroke:rgba(255,255,255,.62);stroke-width:2.2;stroke-linejoin:round}
+.ar-def b{font-family:var(--display);font-weight:800;font-size:max(10.5px,10cqi);line-height:1;font-variant-numeric:tabular-nums;color:#fff}
+.ar-def.plus{box-shadow:inset 0 0 0 1px rgba(79,214,160,.65),0 2px 6px rgba(0,0,0,.55)}
 .ar-def.plus b{color:#8ff0c8}
+.ar-def.moins{box-shadow:inset 0 0 0 1px rgba(255,107,107,.65),0 2px 6px rgba(0,0,0,.55)}
 .ar-def.moins b{color:var(--ar-adv2)}
 
 /* Les mots-clés et états : des pastilles, en haut à droite. */
@@ -342,6 +353,8 @@ body.en-arene .preprod-bandeau{display:none}
 /* Les mots-clés sont neutres : la forme de l'icône les distingue. Seul
    « bloqué », un état subi, prend le corail. */
 .mk-provocation,.mk-garde,.mk-shield,.mk-riposte,.mk-legion{color:#fff}.mk-bloque{color:var(--ar-adv)}
+/* Un effet du tour : vert s'il aide, rouge s'il gêne. Le détail est dans la carte. */
+.mk-buff{color:#8ff0c8;font-size:10cqi}.mk-debuff{color:var(--ar-adv2);font-size:10cqi}
 
 /* Les Objets liés : des médaillons, sur le bord gauche du Joueur. */
 .ar-objs{position:absolute;left:-8cqi;top:5cqi;z-index:3;display:flex;flex-direction:column;gap:2cqi}
@@ -419,12 +432,19 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-atq .ar-couts{flex:none;max-width:76px;flex-wrap:wrap}
 .ar-atq .ar-cout{width:18px;height:18px}
 .ar-atq-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ar-atq-t b{font-size:14px;font-weight:800;line-height:1.2}
+.ar-atq-t b{font-size:14px;font-weight:800;line-height:1.2;overflow-wrap:anywhere;hyphens:auto}
 .ar-atq-t small{font-size:11.5px;line-height:1.3;color:rgba(255,255,255,.72)}
 .ar-atq-t .ar-raison{color:var(--ar-adv2)}
 .ar-atq em{flex:none;display:flex;flex-direction:column;align-items:flex-end;font-style:normal;font-family:var(--display);font-weight:900;font-size:22px;line-height:1}
 .ar-atq em s{font-family:var(--body);font-size:11.5px;font-weight:700;color:rgba(255,255,255,.45)}
 .ar-atq em:empty{display:none}
+/* Sur téléphone, le panneau est étroit (à côté de la carte en grand) : le
+   nom d'une attaque passait sous ses dégâts (« Ascension120 »). */
+@media (max-width:520px){
+  .ar-atq{gap:8px;padding:9px 10px}
+  .ar-atq-t b{font-size:13px}
+  .ar-atq em{font-size:18px}
+}
 .ar-f-jouer{height:50px;border-radius:999px;border:0;cursor:pointer;font-family:var(--display);font-weight:800;font-size:16px;
   color:#fff!important;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);text-shadow:0 1px 1px rgba(30,16,90,.35);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 24px -8px var(--ar-act-lueur);transition:transform .18s cubic-bezier(.2,1.25,.4,1)}
@@ -435,6 +455,13 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-f-fx p{margin:0 0 6px}.ar-f-fx p:last-child{margin:0}
 .ar-f-note{margin:0;padding:8px 11px;border-radius:12px;font-size:12px;line-height:1.35;color:rgba(255,255,255,.72);background:rgba(157,140,255,.08);box-shadow:inset 0 0 0 1px rgba(157,140,255,.25)}
 .ar-f-objs{display:flex;flex-direction:column;gap:6px}
+.ar-f-effets{display:flex;flex-direction:column;gap:4px}
+.ar-eff{margin:0;padding:6px 10px 6px 26px;position:relative;border-radius:10px;font-size:12.5px;line-height:1.35;color:rgba(255,255,255,.85);background:rgba(255,255,255,.04)}
+.ar-eff::before{content:"•";position:absolute;left:10px;top:5px;font-weight:900;color:rgba(255,255,255,.5)}
+.ar-eff.plus::before{content:"▲";font-size:9px;top:8px;color:#8ff0c8}
+.ar-eff.moins::before{content:"▼";font-size:9px;top:8px;color:var(--ar-adv2)}
+.ar-eff.kw::before{content:"◆";font-size:9px;top:8px;color:var(--ar-act2)}
+.ar-eff b{color:#fff}
 .ar-f-objs-t{margin:2px 0 0;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55)}
 .ar-f-obj{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px 7px 7px;border:0;border-radius:14px;cursor:pointer;text-align:left;
   background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}

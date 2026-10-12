@@ -152,13 +152,14 @@ function montrerNouveautes30() {
       </div>
       <ol class="bvpoints nvpoints">
         ${point('star', 'Un nouveau visage.', 'Tout le site est redessiné, en graphite et lavande : des tuiles pleines, les illustrations du jeu en grand, et une seule couleur pour ce qu\'on peut faire, la lavande, partout, arène comprise. Les Secrètes ont un nouveau reflet.')}
-        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt combats, le PvE infini) et Versus en direct contre tes amis, dans une arène en plein écran. Chaque carte de l\'adversaire s\'affiche en grand avec son effet, et toutes les cartes jouées restent consultables.')}
+        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt rivaux, et l\'Arcade, cinq difficultés) et Versus en direct contre tes amis, 60 secondes par tour, dans une arène en plein écran. Chaque carte de l\'adversaire s\'affiche en grand avec son effet, et toutes les cartes jouées restent consultables.')}
+        ${point('foudre', 'Le Raid, toute l\'année.', 'The French Sorcerer, un boss pour tout le serveur. Quand sa barre tombe, chacun de ceux qui l\'ont frappé ouvre un coffre, et il revient plus fort.')}
         ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
         ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
         ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, une chance sur 133 par booster, et une finition à part. La Légendaire passe à 4,25 %.`)}
         ${point('user', 'Neuf nouveaux cadres.', 'Arène (niveaux 10 à 50), Toxique et Déter, Secrète, et ceux de l\'événement. Ton profil montre où gagner chacun.')}
         ${point('shop', 'Tapis et sleeves.', 'Des tapis de jeu et des sleeves en boutique ; en combat, c\'est le tapis de celui qui joue qui s\'affiche.')}
-        ${choc ? point('choc', 'Le Choc des Sections.', `Le Raid contre The French Sorcerer, l'Épreuve du jour, des points qui comptent double, un Pass de trente paliers — pendant trois semaines.`) : ''}
+        ${choc ? point('choc', 'Le Choc des Sections.', `L'Épreuve du jour, le Raid payé en Insignes, un Pass de trente paliers et ses trois exclusifs — pendant trois semaines.`) : ''}
       </ol>`,
     actions: choc
       ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('choc'); } },

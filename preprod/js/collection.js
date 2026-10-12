@@ -264,7 +264,9 @@ function vGarde(c, n) {
    pas encore révélée ; sinon, un emplacement vide marqué d'un « ? ». */
 function cellulesSecretes() {
   return secretes.map(c => (save.col[c.id] > 0 ? vCase(c)
-    : caseVide('#' + String(c.num).padStart(3, '0'), 'secretcell'))).join('');
+    : caseVide('#' + String(c.num).padStart(3, '0'), 'secretcell')
+      .replace('<div class="gcell secretcell"', '<button class="gcell secretcell" data-act="col-secrete" aria-label="Secrète, à trouver dans un booster"')
+      .replace(/<\/div>\s*$/, '</button>'))).join('');
 }
 
 /* ---------- Les Promos ---------- */
