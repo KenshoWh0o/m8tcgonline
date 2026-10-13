@@ -92,25 +92,66 @@ body=(f"<path d='{ring_path(49,52.5)}' fill='url(#sc-o)' fill-rule='evenodd' str
 files['sceau']=svg(body,defs)
 
 # ---------------------------------------------------------------- Maître
-# La direction artistique de Tout Commence Ici : un anneau rose pailleté, et
-# l'étoile du logo — un disque rose incliné, l'étoile blanche en filé — qui
-# file autour, une traînée derrière elle.
-defs=("<linearGradient id='ma-r' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ff8ad0'/><stop offset='.5' stop-color='#ee0073'/><stop offset='1' stop-color='#b3005a'/></linearGradient>"
-      "<linearGradient id='ma-d' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ff9ad5'/><stop offset='1' stop-color='#d4006a'/></linearGradient>"
-      "<linearGradient id='ma-t' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#ff4fb4' stop-opacity='0'/><stop offset='1' stop-color='#ffd6ef' stop-opacity='.95'/></linearGradient>")
-dots=''.join(f"<circle cx='{f(pt(52,a)[0])}' cy='{f(pt(52,a)[1])}' r='{.9 if i%3 else 1.3}' fill='#fff' opacity='{.95 if i%3==0 else .6}'/>" for i,a in enumerate(range(0,360,12)))
-trail_p0=pt(57,-148); trail_p1=pt(57,-62)
-body=(f"<path d='{ring_path(48.5,55.5)}' fill='url(#ma-r)' fill-rule='evenodd'/>"
-      f"<circle cx='64' cy='64' r='48.6' fill='none' stroke='#fff' stroke-width='.8' opacity='.8'/>{dots}"
-      f"<path d='M{f(trail_p0[0])} {f(trail_p0[1])}A57 57 0 0 1 {f(trail_p1[0])} {f(trail_p1[1])}' fill='none' stroke='url(#ma-t)' stroke-width='5' stroke-linecap='round'/>"
-      "<g transform='translate(92 20)'><g class='mst'>"
-      "<ellipse cx='0' cy='2' rx='14' ry='8.5' transform='rotate(-18)' fill='url(#ma-d)' stroke='#fff' stroke-width='1.2'/>"
-      f"<polygon points='{star5(1,-1,11,4.6,-80)}' fill='#fff' stroke='#c2005e' stroke-width='.6'/>"
-      "<path d='M-16 4 -6 1M-17 9 -7 5' stroke='#fff' stroke-width='1.6' stroke-linecap='round' opacity='.9'/></g></g>"
-      "<style>.mst{transform-box:fill-box;transform-origin:center;animation:mst 2.8s ease-in-out infinite alternate}"
-      "@keyframes mst{from{transform:rotate(-8deg) scale(.95)}to{transform:rotate(6deg) scale(1.06)}}</style>"
-      + twinkle(star4(*pt(60,150),3.4,'#ffd6ef'),2.4,.5)+twinkle(star4(*pt(59,30),2.8),2.9,1.2)+twinkle(star4(*pt(61,-160),2.4),2.2,1.8))
-files['maitre']=svg(body,defs)
+# Les couleurs de Tout Commence Ici (la Promo du set complet) : rose poudré,
+# lilas, pervenche, et le crème de ses lumières. Une étoile filante fait le
+# tour de l'avatar : sa traînée part de presque rien, s'épaissit et
+# s'éclaire jusqu'à la tête, qui brille. L'anneau lui-même est à peine là,
+# fondu : c'est l'étoile qui dessine le cadre. Elle tourne lentement (CSS :
+# arrêtée si le système demande moins d'animations).
+def melange(c1, c2, t):
+    a=[int(c1[i:i+2],16) for i in (1,3,5)]; b=[int(c2[i:i+2],16) for i in (1,3,5)]
+    return '#'+''.join(f"{round(a[k]+(b[k]-a[k])*t):02x}" for k in range(3))
+def degrade(stops, t):
+    for i in range(len(stops)-1):
+        if t<=stops[i+1][0]:
+            u=(t-stops[i][0])/(stops[i+1][0]-stops[i][0]); return melange(stops[i][1],stops[i+1][1],u)
+    return stops[-1][1]
+TCI=[(0,'#5d63c9'),(.35,'#8f86e6'),(.65,'#d9a3e6'),(.88,'#f6b8de'),(1,'#fff3fb')]
+# Une traînée effilée, d'un seul tenant : n tronçons pleins, bord à bord,
+# chacun avec son dégradé (couleur et transparence) le long de sa corde. Des
+# traits superposés laissaient voir des grains là où ils se recouvraient.
+GRAD=[]
+def trainee(r, a0, a1, n, w0, w1, op0, op1, stops, cle):
+    s=''
+    larg=lambda t: w0+(w1-w0)*t**1.5
+    alpha=lambda t: op0+(op1-op0)*t**1.25
+    for i in range(n):
+        t0=i/n; t1=(i+1)/n
+        sous=[t0+(t1-t0)*k/6 for k in range(7)]
+        ext=[pt(r+larg(t)/2,a0+(a1-a0)*t) for t in sous]
+        intr=[pt(r-larg(t)/2,a0+(a1-a0)*t) for t in reversed(sous)]
+        gid=f"{cle}{i}"
+        xa,ya=pt(r,a0+(a1-a0)*t0); xb,yb=pt(r,a0+(a1-a0)*t1)
+        GRAD.append(f"<linearGradient id='{gid}' gradientUnits='userSpaceOnUse' x1='{f(xa)}' y1='{f(ya)}' x2='{f(xb)}' y2='{f(yb)}'>"
+                    f"<stop offset='0' stop-color='{degrade(stops,t0)}' stop-opacity='{f(alpha(t0))}'/>"
+                    f"<stop offset='1' stop-color='{degrade(stops,t1)}' stop-opacity='{f(alpha(t1))}'/></linearGradient>")
+        s+=f"<polygon points='{P(*(ext+intr))}' fill='url(#{gid})'/>"
+    return s
+hx,hy=pt(53,-42)
+defs=("<radialGradient id='ma-l'><stop offset='0' stop-color='#fff'/><stop offset='.35' stop-color='#ffe3f4'/><stop offset='1' stop-color='#f6b8de' stop-opacity='0'/></radialGradient>"
+      "<linearGradient id='ma-a' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='#5d63c9'/><stop offset='.5' stop-color='#b49be6'/><stop offset='1' stop-color='#f6b8de'/></linearGradient>"
+      "<filter id='ma-f' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='1.4'/></filter>")
+body=(# L'anneau, fondu.
+      f"<path d='{ring_path(50,55.5)}' fill='url(#ma-a)' fill-rule='evenodd' opacity='.28'/>"
+      "<circle cx='64' cy='64' r='50' fill='none' stroke='#fff3fb' stroke-width='.6' opacity='.35'/>"
+      "<g class='cm'>"
+      # La lueur de la traînée, floue, puis la traînée nette, et deux fils plus fins.
+      f"<g filter='url(#ma-f)' opacity='.75'>{trainee(53,-300,-42,16,.5,8,0,.9,TCI,'mg')}</g>"
+      + trainee(53,-300,-42,30,.2,4.8,0,1,TCI,'mt')
+      + trainee(58,-205,-46,10,.1,1.5,0,.85,TCI,'mx')
+      + trainee(48.6,-235,-50,10,.1,1.2,0,.7,TCI,'mi')
+      # La tête : un halo, un cœur blanc, un éclat à quatre branches.
+      + f"<circle cx='{f(hx)}' cy='{f(hy)}' r='11' fill='url(#ma-l)' opacity='.9'/>"
+      + f"<g transform='rotate(-12 {f(hx)} {f(hy)})'>{star4(hx,hy,9,'#fff')}</g>"
+      + f"<circle cx='{f(hx)}' cy='{f(hy)}' r='2.6' fill='#fff'/>"
+      + "".join(f"<circle cx='{f(pt(rr,aa)[0])}' cy='{f(pt(rr,aa)[1])}' r='{f(rs)}' fill='#fff3fb' opacity='{op}'/>"
+                for rr,aa,rs,op in ((56,-70,.9,.9),(50,-95,.7,.7),(57.5,-125,.6,.55),(51,-160,.5,.4)))
+      + "</g>"
+      "<style>.cm{transform-origin:64px 64px;animation:cm 18s linear infinite}@keyframes cm{to{transform:rotate(360deg)}}"
+      "@media (prefers-reduced-motion:reduce){.cm{animation:none}}</style>"
+      # Quelques étoiles qui scintillent autour, fixes.
+      + twinkle(star4(*pt(61,150),3.2,'#f6b8de'),2.4,.5)+twinkle(star4(*pt(60,62),2.6,'#fff3fb'),2.9,1.2)+twinkle(star4(*pt(62,-170),2.2,'#d9a3e6'),2.2,1.8))
+files['maitre']=svg(body,defs+''.join(GRAD))
 
 # ---------------------------------------------------------------- Reflet
 # L'anneau en nacre irisée qui tourne doucement, et trois Reverses en

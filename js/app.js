@@ -625,6 +625,7 @@ addEventListener('visibilitychange', () => {
   Backend.pull().then(() => majDiscrete(true)).catch(() => {});
   releverBoite();
   relireCadeaux();
+  chargerIllu();
 });
 
 /* Ce qui arrive des autres joueurs — demandes d'ami, d'échange, réponses — et
@@ -689,6 +690,10 @@ function visiteDuJourFaite() {
       demarrerBoite();
       /* Un cadeau qui attend (js/cadeaux.js) : il s'ouvre quand l'écran est calme. */
       relireCadeaux();
+      /* Devine l'illu : sa pastille dit qu'une grille attend, avant même
+         qu'on ouvre l'onglet (elle n'apparaissait qu'après une visite de
+         l'événement). */
+      chargerIllu();
     } catch (e) {
       toast(e.message || 'Le serveur a répondu de travers.');
     }

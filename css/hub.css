@@ -125,7 +125,9 @@
 .hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;width:auto;height:auto;overflow:visible}
 
 /* Le chevron qui dit « ça se déplie ». Il tourne quand le tiroir est ouvert. */
-.moicaret{position:absolute;right:-3px;bottom:-3px;display:grid;place-items:center;width:17px;height:17px;
+/* Au-dessus des cadres décorés : leur décor déborde de l'avatar et la
+   recouvrait. */
+.moicaret{position:absolute;right:-4px;bottom:-4px;z-index:3;display:grid;place-items:center;width:17px;height:17px;
   border-radius:50%;background:var(--surface-2);color:var(--subtle);
   box-shadow:0 0 0 2px var(--bg),var(--sh-1);transition:transform .24s,color .15s}
 .moicaret svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.6;
