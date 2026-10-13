@@ -401,6 +401,8 @@ const NAVICO = {
      Raid (l'éclair de The French Sorcerer), l'Épreuve du jour (un
      calendrier coché). */
   choc: '<svg viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.6v6.2c0 4.4-3.1 7.6-7.5 9.4-4.4-1.8-7.5-5-7.5-9.4V5.6Z"/><path d="M13 6.5 9.5 12.5h3l-1.5 5 4-6.5h-3Z"/></svg>',
+  /* Les règles, le Guide : un livre ouvert. */
+  livre: '<svg viewBox="0 0 24 24"><path d="M3.5 5.6c2.9-1.1 5.8-.9 8.5.8v13.2c-2.7-1.7-5.6-1.9-8.5-.8Z"/><path d="M20.5 5.6c-2.9-1.1-5.8-.9-8.5.8v13.2c2.7-1.7 5.6-1.9 8.5-.8Z"/></svg>',
   foudre: '<svg viewBox="0 0 24 24"><path d="M13.5 2.5 5.5 13.5h5.6l-1.6 8 8.5-11.4h-5.7Z"/></svg>',
   /* Le niveau de combattant : trois chevrons de grade. */
   niveau: '<svg viewBox="0 0 24 24"><path d="m5 11.5 7-5 7 5"/><path d="m5 16.5 7-5 7 5"/><path d="m5 21.5 7-5 7 5" opacity=".55"/></svg>',

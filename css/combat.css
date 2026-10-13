@@ -2,7 +2,7 @@
    L'arène elle-même a sa feuille : css/arene.css. */
 
 /* ============ L'onglet Combats ============ */
-.cb{display:flex;flex-direction:column;gap:14px;--sc:#9d8cff;--sc2:#c8bfff}
+.cb{display:flex;flex-direction:column;gap:12px;--sc:#9d8cff;--sc2:#c8bfff}
 .cb-page{display:flex;flex-direction:column;gap:14px;min-height:50vh}
 .champ{width:100%;font:inherit;font-size:16px;padding:12px 14px;border-radius:var(--radius-sm);border:0;color:var(--text);
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
@@ -22,13 +22,14 @@
    Luxueuse III », son casque et sa chaîne d'or. Sur téléphone, il passe sous
    l'en-tête de verre et touche les bords. Le titre en bas à gauche, la
    Section et le niveau en haut à droite : ils ne se croisent jamais. */
-.cb-hero{position:relative;isolation:isolate;height:318px;overflow:hidden;
+.cb-hero{position:relative;isolation:isolate;height:252px;overflow:hidden;
   margin:calc(-1 * (var(--top-h) + env(safe-area-inset-top,0px) + 8px)) -16px 0}
-.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg) url('../assets/combat/banniere-combats.webp') 50% 8%/cover no-repeat}
+/* Cadré sur le médaillon d'or de son plastron, pas sur le casque. */
+.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg) url('../assets/combat/banniere-combats.webp') 55% 100%/165% auto no-repeat}
 .cb-hero::after{content:"";position:absolute;inset:0;z-index:-1;
   background:radial-gradient(90% 60% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
     linear-gradient(180deg,rgba(18,17,25,.55),rgba(18,17,25,0) 30%,rgba(18,17,25,0) 50%,rgba(18,17,25,.7) 78%,var(--bg))}
-.cb-hero-titre{position:absolute;left:18px;bottom:62px;margin:0;transform:rotate(-6deg);transform-origin:left bottom;
+.cb-hero-titre{position:absolute;left:18px;bottom:58px;margin:0;transform:rotate(-6deg);transform-origin:left bottom;
   font-family:var(--display);font-stretch:116%;font-style:italic;font-weight:900;font-size:58px;letter-spacing:-.035em;line-height:1;color:#fff;
   text-shadow:0 2px 0 rgba(0,0,0,.25),0 0 30px rgba(138,120,245,.5),0 12px 32px rgba(0,0,0,.6)}
 .cb-hero-haut{position:absolute;right:14px;top:calc(var(--top-h) + env(safe-area-inset-top,0px) + 6px);display:flex;align-items:center;gap:8px}
@@ -88,10 +89,10 @@ button.cb-une:active{transform:scale(.98)}
    Versus, les deux Promos des Sections, face à face. */
 .cb-portes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cb-porte{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
-  min-height:156px;padding:12px 14px 13px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  min-height:138px;padding:12px 14px 13px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
   background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);transition:transform .18s var(--spring)}
 .cb-porte:active{transform:scale(.97)}
-.cb-porte-art,.cb-porte-art.duo i{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 27%/240% auto no-repeat}
+.cb-porte-art,.cb-porte-art.duo i{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 22%/210% auto no-repeat}
 .cb-porte-art.duo{background:none}
 .cb-porte-art.duo i:first-child{clip-path:polygon(0 0,61% 0,39% 100%,0 100%)}
 .cb-porte-art.duo i:last-child{clip-path:polygon(61% 0,100% 0,100% 100%,39% 100%)}
@@ -112,12 +113,12 @@ button.cb-une:active{transform:scale(.98)}
 
 /* Decks, Missions, Guide : trois petites tuiles. */
 .cb-petits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.cb-petit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:92px;padding:10px 6px;border:0;
+.cb-petit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;padding:9px 6px;border:0;
   border-radius:var(--radius);font:inherit;color:var(--text);text-align:center;cursor:pointer;
   background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .18s var(--spring),background .15s}
 .cb-petit:active{transform:scale(.96)}
 .cb-petit:hover,.cb-porte:hover{background-color:var(--surface-2)}
-.cb-petit-ico{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--surface-2)}
+.cb-petit-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--surface-2)}
 .cb-petit-ico svg{width:26px;height:26px}
 .cb-petit b{font-size:13px;font-weight:800}
 .cb-petit small{max-width:100%;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -200,11 +201,18 @@ button.cb-une:active{transform:scale(.98)}
   .cb-porte-t b{font-size:20px}.cb-etape-t b{font-size:13px}
   .cb-une{gap:10px}.cb-une-art{width:44px;height:44px}.cb-une-go{padding:10px 14px;font-size:13px}
 }
+/* Un écran bas (moins de 720 px) : tout se resserre pour tenir sans défiler. */
+@media (max-height:720px) and (max-width:899px){
+  .cb-hero{height:216px}.cb-hero-titre{font-size:48px;bottom:56px}
+  .cb-porte{min-height:116px}.cb-petit{min-height:70px}.cb-petit small{display:none}
+  .rd-affiche{min-height:104px;padding:11px 12px}
+}
 /* Sur ordinateur, le bandeau est une grande carte arrondie dans la colonne,
    et les portes prennent de la hauteur. */
 @media (min-width:900px){
-  .cb-hero{height:350px;margin:0;border-radius:var(--radius-xl)}
-  .cb-hero-art{background-position:50% 16%}
+  .cb-hero{height:330px;margin:0;border-radius:var(--radius-xl)}
+  .cb-hero-art{background-size:cover;background-position:50% 93%}
+  .cb-hero+.rd-affiche,.cb-hero+.cb-une{margin:-64px 20px 0;width:auto}
   .cb-hero-haut{top:16px;right:18px}
   .cb-hero-titre{font-size:76px;bottom:80px;left:30px}
   .cb-une{margin:-64px 20px 0;width:auto}
@@ -214,7 +222,6 @@ button.cb-une:active{transform:scale(.98)}
   .cb-porte-t b{font-size:28px}
   .cb-mode{min-height:230px;padding:22px}
   .cb-acte-tete{padding-top:110px}
-  .cb-route{max-width:620px;margin-inline:auto}
 }
 
 /* ---- La campagne ----
@@ -261,6 +268,13 @@ button.cb-une:active{transform:scale(.98)}
 .cb-etape.fait .cb-etape-t em{color:var(--ok)}
 .cb-etape.ferme .cb-etape-t{opacity:.55}
 .cb-coche,.cb-cadenas{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,40,28,.45)}
+/* Un rival pas encore débloqué : une silhouette, un point d'interrogation. */
+.cb-mystere{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-family:var(--display);font-weight:900;font-size:26px;color:var(--muted);
+  background:radial-gradient(circle at 50% 38%,var(--surface-3) 0 22%,transparent 23%),radial-gradient(ellipse 60% 40% at 50% 100%,var(--surface-3) 0 98%,transparent 100%),var(--surface-2)}
+.cb-acte-tete.ferme{background:linear-gradient(180deg,rgba(28,27,37,0),var(--surface)),repeating-linear-gradient(135deg,var(--surface-2) 0 10px,var(--surface-3) 10px 20px)}
+/* Sur ordinateur, le chemin est centré dans l'acte (cette règle vient après
+   celle de .cb-route, qu'elle doit l'emporter). */
+@media (min-width:900px){.cb-acte .cb-route{max-width:620px;margin:8px auto 12px}}
 .cb-cadenas{background:rgba(18,17,25,.5)}
 .cb-coche svg,.cb-cadenas svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .cb-campagne-fin{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-lg);
@@ -320,10 +334,13 @@ button.cb-une:active{transform:scale(.98)}
 /* ---- Le Raid ----
    Sur l'accueil : une affiche, le boss à droite fondu dans le noir. Sa page :
    le boss, sa barre, les coffres, et un seul bouton. */
-.rd-affiche{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;min-height:124px;padding:14px;border:0;
+.rd-affiche{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;min-height:118px;padding:14px;border:0;
   border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:#17151f;
   box-shadow:inset 0 0 0 1px rgba(157,140,255,.26),var(--tuile);transition:transform .18s var(--spring)}
 .rd-affiche:active{transform:scale(.98)}
+/* À la une de l'accueil, elle mord sur le bandeau. */
+.cb-hero+.rd-affiche,.cb-hero+.cb-une{z-index:2;margin-top:-50px;box-shadow:inset 0 0 0 1px rgba(157,140,255,.3),var(--sh-3)}
+.rd-affiche-ph{font-size:12px;font-weight:800;color:var(--text)}
 .rd-affiche-art{position:absolute;top:0;bottom:0;right:0;width:68%;z-index:-2;background:50% 20%/170% auto no-repeat;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}
 .rd-affiche::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(70% 120% at 0% 50%,rgba(93,75,217,.4),transparent 70%)}
@@ -343,6 +360,52 @@ button.cb-une:active{transform:scale(.98)}
 .rd-hero-t{display:flex;flex-direction:column;gap:2px}
 .rd-hero-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
 .rd-hero-t h2{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:28px;line-height:1.05;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.rd-etat{align-self:flex-start;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(18,17,25,.72);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+/* La piste des six phases : un tronçon par phase, qui se remplit avec les
+   dégâts du serveur ; sous chacun, son numéro et son coffre commun. */
+.rd-piste,.rd-perso{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-piste-tete{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.rd-piste-tete b{font-size:15px}
+.rd-piste-tete span{font-family:var(--display);font-weight:900;font-size:14px}
+.rd-piste-tete small{font-family:var(--body);font-weight:700;font-size:11.5px;color:var(--muted)}
+.rd-phases{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.rd-ph{display:flex;flex-direction:column;align-items:center;gap:5px}
+.rd-ph-barre{display:block;width:100%;height:10px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.rd-ph-barre i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,#ff6b6b)}
+.rd-ph.tombee .rd-ph-barre i{background:var(--ok)}
+.rd-ph.encours .rd-ph-barre{box-shadow:inset 0 0 0 1px rgba(255,107,107,.5),0 0 10px rgba(255,107,107,.35)}
+.rd-ph-n{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:11.5px;font-weight:900;color:var(--muted);background:var(--surface-2)}
+.rd-ph-n svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.rd-ph.tombee .rd-ph-n{color:var(--ok);background:var(--ok-wash)}
+.rd-ph.encours .rd-ph-n{color:#fff;background:#d94b5c}
+.rd-ph-coffre{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;color:var(--gold);background:var(--bg-2)}
+.rd-ph-coffre img{width:18px}
+.rd-ph-coffre svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+.rd-ph.loin .rd-ph-coffre{opacity:.5}
+.rd-piste-l{margin:0;font-size:12.5px;line-height:1.45;color:var(--subtle)}
+.rd-go-tete{display:flex;flex-direction:column;gap:7px}
+.rd-go-tete b{font-size:15px}
+.rd-chip.rouge{color:#ffb4aa;box-shadow:inset 0 0 0 1px var(--danger-line)}
+/* Les paliers personnels : une barre, trois coffres posés dessus. */
+.rd-perso-barre{position:relative;height:10px;margin:8px 12px 30px;border-radius:99px;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.rd-perso-barre>i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
+.rd-perso-pal{position:absolute;top:50%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;gap:3px}
+.rd-perso-pal>i{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;color:var(--muted);background:var(--surface-2);box-shadow:0 0 0 3px var(--surface)}
+.rd-perso-pal>i img{width:18px}
+.rd-perso-pal>i svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2}
+.rd-perso-pal small{position:absolute;top:32px;font-size:10.5px;font-weight:800;color:var(--muted)}
+.rd-perso-pal.ok>i{color:var(--gold);background:var(--gold-wash);box-shadow:0 0 0 3px var(--surface),0 0 0 4px var(--gold-line)}
+.rd-perso-pal.pris>i{color:var(--ok);background:var(--ok-wash)}
+.rd-aide{padding:12px 14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-aide summary{cursor:pointer;font-weight:800;font-size:14px}
+.rd-aide ol{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+.rd-aide li{font-size:13px;line-height:1.45;color:var(--subtle)}
+.rd-aide li b{color:var(--text)}
+.rd-top-tete{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.rd-top-tete h3{margin:0}
+.rd-top-seg{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-top-seg button{padding:5px 11px;border:0;border-radius:999px;font:inherit;font-size:12px;font-weight:800;color:var(--muted);background:none;cursor:pointer}
+.rd-top-seg button.on{color:var(--text);background:var(--surface-3)}
 .rd-niv{align-self:flex-start;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(18,17,25,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
 .rd-niv b{font-family:var(--display);font-size:14px}
 .rd-barre{display:flex;flex-direction:column;gap:6px}

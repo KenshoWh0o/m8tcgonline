@@ -2,71 +2,46 @@
 --  Mate TCG Online — version 3.0 : le Raid
 --  A executer apres 26_niveaux.sql. Rejouable sans danger.
 --
---  Un boss commun a tout le serveur, toute l'annee : The French Sorcerer.
---  Une seule barre de vie : chaque PV qu'un joueur lui prend en combat
---  l'entame. Quand elle est vide, le niveau tombe — chacun de ceux qui l'ont
---  frappe a ce niveau peut ouvrir un coffre — et le boss revient au niveau
---  suivant, plus fort. Trois tentatives par jour.
+--  The French Sorcerer, un boss commun a tout le serveur, par saisons de
+--  deux semaines. Chaque saison, six phases : chaque PV qu'un joueur lui
+--  prend en combat s'ajoute aux degats de tout le serveur, et chaque palier
+--  de degats atteint abat une phase — tous ceux qui ont combattu dans la
+--  saison ouvrent alors son coffre commun. En plus, trois paliers
+--  personnels (les degats de chacun). Les six phases abattues (si le
+--  serveur y arrive), le mode Infini : un palier par joueur, qui monte a
+--  chaque victoire, pour le classement. Trois tentatives par jour. La
+--  saison suivante, tout recommence.
 --
 --  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
 --  Insignes ; le reste du temps, en Eclats.
 --
---  Il remplace le Raid a cinq phases et calendrier des pre-builds 3.0.0 a
---  3.0.4 : ses tables et fonctions sont supprimees plus bas.
+--  Il remplace le Raid par niveaux de la pre-build 3.0.5 (et le Raid a
+--  phases de calendrier d'avant) : leurs tables et fonctions sont
+--  supprimees plus bas.
 --
 --  Les chiffres sont aussi dans js/combat/choc-data.js (RAID) : les deux
 --  doivent rester d'accord.
 -- =====================================================================
 
 -- ============================================================ 1. reglage
--- La barre depend du nombre de joueurs, que personne ne connait d'avance :
--- `raid_echelle` la multiplie. Se regle sans rien redeployer :
+-- Les paliers sont calcules pour une dizaine de joueurs. `raid_echelle` les
+-- multiplie, sans rien redeployer :
 --   update public.parametres set raid_echelle = 0.5 where id = 1;
 alter table public.parametres add column if not exists raid_echelle numeric not null default 1
   check (raid_echelle > 0);
 
 -- ============================================================ 2. tables
--- L'etat du boss : une seule ligne.
-create table if not exists public.raid_etat (
-  id     integer primary key check (id = 1),
-  niveau integer not null default 1,
-  degats integer not null default 0,   -- dans le niveau en cours
-  total  bigint  not null default 0
-);
-insert into public.raid_etat (id) values (1) on conflict (id) do nothing;
-
-create table if not exists public.raid_tombes (
-  niveau   integer primary key,
-  tombe_le timestamptz not null default now()
-);
--- Ce que chaque joueur a fait au boss, depuis toujours (le classement).
-create table if not exists public.raid_joueurs (
-  user_id   uuid primary key references public.profiles on delete cascade,
-  degats    integer not null default 0,
-  victoires integer not null default 0
-);
--- Qui a frappe quel niveau : c'est ce qui ouvre son coffre.
-create table if not exists public.raid_frappes (
-  user_id uuid not null references public.profiles on delete cascade,
-  niveau  integer not null,
-  degats  integer not null default 0,
-  primary key (user_id, niveau)
-);
-create table if not exists public.raid_coffres (
-  user_id uuid not null references public.profiles on delete cascade,
-  niveau  integer not null,
-  pris_le timestamptz not null default now(),
-  primary key (user_id, niveau)
-);
-create table if not exists public.raid_tentatives (
-  user_id uuid not null references public.profiles on delete cascade,
-  jour    date not null,
-  n       integer not null default 0,
-  primary key (user_id, jour)
-);
-
--- L'ancien Raid a phases : retire.
+-- Les anciens Raids : retires.
 drop function if exists public.raid_reclamer(int);
+drop function if exists public.raid_frapper(uuid, int);
+drop function if exists public.raid_pv(int);
+drop function if exists public.raid_combat(int);
+drop function if exists public.raid_coffre(int);
+drop table if exists public.raid_etat;
+drop table if exists public.raid_tombes;
+drop table if exists public.raid_joueurs;
+drop table if exists public.raid_frappes;
+drop table if exists public.raid_coffres;
 drop function if exists public.choc_avancer();
 drop function if exists public.choc_frapper(uuid, int);
 drop function if exists public.choc_pv_phase(int);
@@ -76,119 +51,194 @@ drop table if exists public.choc_tombees;
 drop table if exists public.choc_tentatives;
 drop table if exists public.choc_prises;
 
-alter table public.raid_etat       enable row level security;
-alter table public.raid_tombes     enable row level security;
-alter table public.raid_joueurs    enable row level security;
-alter table public.raid_frappes    enable row level security;
-alter table public.raid_coffres    enable row level security;
-alter table public.raid_tentatives enable row level security;
-revoke all on public.raid_etat, public.raid_tombes, public.raid_joueurs, public.raid_frappes,
-  public.raid_coffres, public.raid_tentatives from anon, authenticated;
+-- Les degats de tout le serveur, par saison.
+create table if not exists public.raid_saisons (
+  n      integer primary key,
+  degats integer not null default 0
+);
+-- Les phases abattues, et quand (pour le recap de l'evenement). Ce qui
+-- ouvre un coffre, c'est le seuil depasse (raid_phase).
+create table if not exists public.raid_tombees (
+  saison    integer not null,
+  phase     integer not null,
+  tombee_le timestamptz not null default now(),
+  primary key (saison, phase)
+);
+-- Ce que chaque joueur a fait dans une saison. `infini` : le dernier palier
+-- Infini battu.
+create table if not exists public.raid_participants (
+  saison        integer not null,
+  user_id       uuid not null references public.profiles on delete cascade,
+  combats       integer not null default 0,
+  degats        integer not null default 0,
+  victoires     integer not null default 0,
+  infini        integer not null default 0,
+  infini_le     timestamptz,
+  primary key (saison, user_id)
+);
+-- Les coffres ouverts : communs (une phase) ou personnels (un palier).
+create table if not exists public.raid_pris (
+  saison  integer not null,
+  user_id uuid not null references public.profiles on delete cascade,
+  quoi    text not null check (quoi in ('commun', 'perso')),
+  n       integer not null,
+  pris_le timestamptz not null default now(),
+  primary key (saison, user_id, quoi, n)
+);
+create table if not exists public.raid_tentatives (
+  user_id uuid not null references public.profiles on delete cascade,
+  jour    date not null,
+  n       integer not null default 0,
+  primary key (user_id, jour)
+);
+
+alter table public.raid_saisons      enable row level security;
+alter table public.raid_tombees      enable row level security;
+alter table public.raid_participants enable row level security;
+alter table public.raid_pris         enable row level security;
+alter table public.raid_tentatives   enable row level security;
+revoke all on public.raid_saisons, public.raid_tombees, public.raid_participants, public.raid_pris,
+  public.raid_tentatives from anon, authenticated;
 
 -- ============================================================ 3. les regles
--- La barre d'un niveau (RAID.pv), a l'echelle du serveur.
-create or replace function public.raid_pv(n int) returns integer
+-- La saison d'un jour : la premiere a commence le lundi 12 octobre 2026
+-- (RAID.saison).
+create or replace function public.raid_saison(j date) returns integer
+language sql immutable as $$
+  select floor((j - date '2026-10-12') / 14.0)::int + 1;
+$$;
+create or replace function public.raid_saison_debut(n int) returns date
+language sql immutable as $$
+  select date '2026-10-12' + (n - 1) * 14;
+$$;
+
+-- Les six phases (RAID.phases) : le seuil de degats, le combat, le coffre.
+create or replace function public.raid_phases() returns jsonb
+language sql immutable as $$
+  select '[
+    {"seuil": 120,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",  "montant": 2,   "titre": "2 boosters"}},
+    {"seuil": 300,  "ia": 3, "pv": 6, "ess": 0, "commun": {"type": "fragments", "montant": 300, "titre": "300 Fragments"}},
+    {"seuil": 550,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "boosters",  "montant": 3,   "titre": "3 boosters"}},
+    {"seuil": 850,  "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "eclats",    "montant": 500, "titre": "500 Éclats"}},
+    {"seuil": 1200, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "boosters",  "montant": 4,   "titre": "4 boosters"}},
+    {"seuil": 1600, "ia": 5, "pv": 9, "ess": 2, "commun": {"type": "boosters",  "montant": 5,   "titre": "5 boosters"}}
+  ]'::jsonb;
+$$;
+-- Les paliers personnels (RAID.perso).
+create or replace function public.raid_perso() returns jsonb
+language sql immutable as $$
+  select '[
+    {"seuil": 30,  "type": "boosters",  "montant": 1,   "titre": "1 booster"},
+    {"seuil": 80,  "type": "fragments", "montant": 300, "titre": "300 Fragments"},
+    {"seuil": 150, "type": "boosters",  "montant": 2,   "titre": "2 boosters"}
+  ]'::jsonb;
+$$;
+
+-- Le seuil d'une phase, a l'echelle du serveur.
+create or replace function public.raid_seuil(k int) returns integer
 language sql stable security definer set search_path = public as $$
-  select greatest(20, round((300 + 150 * (greatest(n, 1) - 1))
+  select greatest(10, round(((raid_phases()->(k - 1))->>'seuil')::int
                             * (select raid_echelle from parametres where id = 1))::int);
 $$;
 
--- Le combat d'un niveau (RAID.combat) : l'IA, les PV du boss, ses Essences
--- d'avance.
-create or replace function public.raid_combat(n int) returns jsonb
-language sql immutable as $$
-  select jsonb_build_object(
-    'ia',      least(5, 2 + ceil(greatest(n, 1) / 2.0)::int),
-    'pv_boss', least(9, 5 + ceil(greatest(n, 1) / 2.0)::int),
-    'ess',     least(2, (greatest(n, 1) - 1) / 2));
-$$;
-
--- Le coffre d'un niveau tombe (RAID.coffres), a tour de role.
-create or replace function public.raid_coffre(n int) returns jsonb
-language sql immutable as $$
-  select (array[
-    '{"type": "boosters",  "montant": 2,   "titre": "2 boosters"}',
-    '{"type": "fragments", "montant": 300, "titre": "300 Fragments"}',
-    '{"type": "boosters",  "montant": 3,   "titre": "3 boosters"}',
-    '{"type": "eclats",    "montant": 400, "titre": "400 Éclats"}'
-  ]::jsonb[])[((greatest(n, 1) - 1) % 4) + 1];
-$$;
-
--- Des degats sur la barre commune. Le surplus entame le niveau suivant, et
--- compte pour celui qui l'a donne. Renvoie le dernier niveau tombe.
-create or replace function public.raid_frapper(p uuid, d int) returns integer
-language plpgsql security definer set search_path = public as $$
-declare r raid_etat; pv int; reste int := d; part int; tombe int;
+-- La phase en cours d'une saison : la premiere dont le seuil n'est pas
+-- atteint ; 7 si les six sont abattues (le mode Infini).
+create or replace function public.raid_phase(s int) returns integer
+language plpgsql stable security definer set search_path = public as $$
+declare d int := coalesce((select degats from raid_saisons where n = s), 0); k int := 1;
 begin
-  if coalesce(d, 0) <= 0 then return null; end if;
-  select * into r from raid_etat where id = 1 for update;
-  insert into raid_joueurs (user_id, degats) values (p, d)
-    on conflict (user_id) do update set degats = raid_joueurs.degats + d;
-  r.total := r.total + d;
-  loop
-    pv := raid_pv(r.niveau);
-    part := least(reste, pv - r.degats);
-    insert into raid_frappes (user_id, niveau, degats) values (p, r.niveau, part)
-      on conflict (user_id, niveau) do update set degats = raid_frappes.degats + part;
-    r.degats := r.degats + part;
-    reste := reste - part;
-    exit when r.degats < pv;
-    insert into raid_tombes (niveau) values (r.niveau) on conflict do nothing;
-    tombe := r.niveau;
-    r.niveau := r.niveau + 1;
-    r.degats := 0;
-    exit when reste <= 0;
-  end loop;
-  update raid_etat set niveau = r.niveau, degats = r.degats, total = r.total where id = 1;
-  return tombe;
+  while k <= 6 and d >= raid_seuil(k) loop k := k + 1; end loop;
+  return k;
+end $$;
+
+-- Le combat d'une cle : 'p3' (la phase 3) ou 'i5' (l'Infini, palier 5).
+-- RAID.infini : le boss a plus de PV et d'Essences, puis c'est le joueur
+-- qui a moins de PV.
+create or replace function public.raid_combat(p_cle text) returns jsonb
+language plpgsql immutable as $$
+declare n int := greatest(1, coalesce(nullif(substr(p_cle, 2), '')::int, 1)); ph jsonb;
+begin
+  if left(p_cle, 1) = 'i' then
+    return jsonb_build_object('infini', true, 'n', n, 'ia', 5, 'pv_boss', least(12, 9 + n),
+                              'ess', least(3, 2 + n / 3), 'pv_moi', greatest(2, 5 - greatest(0, n - 3) / 2));
+  end if;
+  ph := raid_phases()->(least(n, 6) - 1);
+  return jsonb_build_object('infini', false, 'n', n, 'ia', (ph->>'ia')::int, 'pv_boss', (ph->>'pv')::int,
+                            'ess', (ph->>'ess')::int, 'pv_moi', 5);
 end $$;
 
 -- ===================================================== 4. ouvrir, clore
--- Appeles par combat_debut et combat_fin (23_combats.sql). `p_cle` : le
--- niveau que la page a affiche — s'il a change entre-temps, on recharge.
+-- Appeles par combat_debut et combat_fin (23_combats.sql). `p_cle` : ce que
+-- la page a affiche (la phase, ou le palier Infini) — s'il a change
+-- entre-temps, on recharge.
 create or replace function public.raid_debut(p uuid, p_cle text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare r raid_etat; v_t int; j date := jour_paris(); c jsonb;
+declare j date := jour_paris(); s int := raid_saison(jour_paris()); ph int; attendu text; v_t int; c jsonb;
 begin
-  select * into r from raid_etat where id = 1;
-  if p_cle is distinct from r.niveau::text then
-    raise exception 'Le boss a changé de niveau : recharge le Raid.';
+  insert into raid_saisons (n) values (s) on conflict do nothing;
+  ph := raid_phase(s);
+  attendu := case when ph <= 6 then 'p' || ph
+                  else 'i' || (coalesce((select infini from raid_participants where saison = s and user_id = p), 0) + 1) end;
+  if p_cle is distinct from attendu then
+    raise exception 'Le Raid a changé : recharge la page.';
   end if;
   insert into raid_tentatives (user_id, jour, n) values (p, j, 0) on conflict do nothing;
   update raid_tentatives set n = n + 1 where user_id = p and jour = j and n < 3
   returning raid_tentatives.n into v_t;
   if v_t is null then raise exception 'Plus de tentative aujourd''hui : reviens demain.'; end if;
-  c := raid_combat(r.niveau);
-  return jsonb_build_object('niveau', (c->>'ia')::int, 'phase', r.niveau,
+  insert into raid_participants (saison, user_id) values (s, p) on conflict do nothing;
+  update raid_participants set combats = combats + 1 where saison = s and user_id = p;
+  c := raid_combat(attendu);
+  return jsonb_build_object('niveau', (c->>'ia')::int, 'phase', case when ph <= 6 then ph end,
                             'graine', floor(random() * 4294967295)::bigint + 1);
 end $$;
 
 -- Les degats : les PV pris au boss (plafonnes a ses PV + 1), ou tous et 3
--- de plus s'il tombe. Pendant le Choc : 3 Insignes par degat, +15 s'il
--- tombe. Sinon : 4 Eclats par degat, +20.
+-- de plus s'il tombe. En phase, ils s'ajoutent a ceux du serveur (et
+-- peuvent abattre une ou plusieurs phases) ; dans l'Infini, une victoire
+-- fait monter son palier. Pendant le Choc : 3 Insignes par degat, +15 s'il
+-- tombe. Sinon : 2 Eclats par degat, +15.
 create or replace function public.raid_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare c jsonb; pb int; d int; gain int; msg text := ''; tombe int;
+declare s int := raid_saison(jour_paris()); c jsonb; pb int; d int; gain int; msg text := '';
+        avant int; apres int; k int; est_infini boolean;
 begin
   perform bump_quests(p, 'raid', 1);
   if trop then
     return jsonb_build_object('degats', 0, 'message', 'Combat trop court pour compter.');
   end if;
-  c := raid_combat(coalesce(o.phase, 1));
+  c := raid_combat(o.cle);
+  est_infini := (c->>'infini')::boolean;
   pb := (c->>'pv_boss')::int;
   d := least(pb + 1, greatest(0, coalesce((res->>'touches')::int, 0)));
   if gagne then d := pb + 1 + 3; end if;
-  tombe := raid_frapper(p, d);
+  insert into raid_saisons (n) values (s) on conflict do nothing;
+  insert into raid_participants (saison, user_id) values (s, p) on conflict do nothing;
+  update raid_participants set degats = degats + d, victoires = victoires + case when gagne then 1 else 0 end
+   where saison = s and user_id = p;
+  if est_infini then
+    if gagne then
+      update raid_participants set infini = greatest(raid_participants.infini, (c->>'n')::int), infini_le = now()
+       where saison = s and user_id = p;
+      msg := 'Palier Infini ' || (c->>'n') || ' battu : le suivant t''attend.';
+    end if;
+  else
+    avant := raid_phase(s);
+    update raid_saisons set degats = degats + d where n = s;
+    apres := raid_phase(s);
+    k := avant;
+    while k < apres and k <= 6 loop
+      insert into raid_tombees (saison, phase) values (s, k) on conflict do nothing;
+      k := k + 1;
+    end loop;
+    if apres > avant then
+      msg := case when apres > 6 then 'Les six phases sont abattues : le mode Infini est ouvert !'
+                  else 'Phase ' || (apres - 1) || ' abattue : un coffre commun pour tous ceux qui ont combattu.' end;
+    end if;
+  end if;
+  if d = 0 and msg = '' then msg := 'Pas un PV de pris : il rira moins la prochaine fois.'; end if;
   perform bump_quests(p, 'raid_degats', d);
-  if gagne then
-    update raid_joueurs set victoires = victoires + 1 where user_id = p;
-    perform bump_quests(p, 'raid_victoires', 1);
-  end if;
-  if tombe is not null then
-    msg := 'Le boss est tombé ! Ton coffre t''attend dans le Raid.';
-  elsif d = 0 then
-    msg := 'Pas un PV de pris : il rira moins la prochaine fois.';
-  end if;
+  if gagne then perform bump_quests(p, 'raid_victoires', 1); end if;
   if evenement_en_cours() = 'choc' then
     gain := d * 3 + case when gagne then 15 else 0 end;
     perform crediter_prismes(p, 'choc', gain);
@@ -197,64 +247,99 @@ begin
                                           victoires = choc_joueurs.victoires + excluded.victoires;
     return jsonb_build_object('insignes', gain, 'degats', d, 'message', msg);
   end if;
-  -- Hors evenement, en Eclats (RAID.parDegatEclats, RAID.victoireEclats).
   gain := d * 2 + case when gagne then 15 else 0 end;
   update profiles set shards = shards + gain where id = p;
   return jsonb_build_object('eclats', gain, 'degats', d, 'message', msg);
 end $$;
 
 -- ===================================================== 5. ce que voit la page
-create or replace function public.raid_etat() returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); j date := jour_paris(); r raid_etat; moi raid_joueurs;
+-- Une saison vue par un joueur : les phases (abattues, coffre pris ou pas),
+-- ses paliers personnels.
+create or replace function public.raid_vue_saison(p uuid, s int) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare moi raid_participants; d int := coalesce((select degats from raid_saisons where n = s), 0);
 begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  select * into r from raid_etat where id = 1;
-  select * into moi from raid_joueurs where user_id = p;
+  select * into moi from raid_participants where saison = s and user_id = p;
   return jsonb_build_object(
-    'jour', j, 'niveau', r.niveau, 'degats', r.degats, 'pv', raid_pv(r.niveau), 'total', r.total,
-    'joueurs', (select count(*) from raid_frappes where niveau = r.niveau and degats > 0),
-    'evenement', evenement_en_cours() is not distinct from 'choc',
+    'n', s, 'debut', raid_saison_debut(s), 'fin', raid_saison_debut(s + 1), 'degats', d,
+    'phase', raid_phase(s),
+    'phases', (select jsonb_agg(x.ph || jsonb_build_object(
+                 'n', x.k, 'seuil', raid_seuil(x.k::int),
+                 -- Abattue : les degats du serveur ont passe son seuil (meme si
+                 -- raid_echelle a baisse entre-temps).
+                 'tombee', d >= raid_seuil(x.k::int),
+                 'pris', exists (select 1 from raid_pris r where r.saison = s and r.user_id = p and r.quoi = 'commun' and r.n = x.k))
+               order by x.k)
+               from jsonb_array_elements(raid_phases()) with ordinality as x(ph, k)),
     'moi', jsonb_build_object(
-      'degats', coalesce(moi.degats, 0), 'victoires', coalesce(moi.victoires, 0),
-      'niveau', coalesce((select degats from raid_frappes where user_id = p and niveau = r.niveau), 0),
-      'tentatives', coalesce((select n from raid_tentatives where user_id = p and jour = j), 0),
-      'max', 3),
-    -- Les coffres a ouvrir : les niveaux tombes qu'on a frappes.
-    'coffres', coalesce((
-      select jsonb_agg(jsonb_build_object('niveau', t.niveau) || raid_coffre(t.niveau) order by t.niveau)
-        from raid_tombes t
-        join raid_frappes f on f.niveau = t.niveau and f.user_id = p and f.degats > 0
-       where not exists (select 1 from raid_coffres c where c.user_id = p and c.niveau = t.niveau)), '[]'::jsonb),
-    'top', coalesce((
-      select jsonb_agg(choc_joueur_vue(x.user_id) || jsonb_build_object('degats', x.degats, 'moi', x.user_id = p)
-                       order by x.degats desc)
-        from (select * from raid_joueurs where degats > 0 order by degats desc limit 10) x), '[]'::jsonb));
+      'participe', moi.user_id is not null, 'combats', coalesce(moi.combats, 0),
+      'degats', coalesce(moi.degats, 0), 'victoires', coalesce(moi.victoires, 0), 'infini', coalesce(moi.infini, 0),
+      'perso', (select jsonb_agg(x.pa || jsonb_build_object(
+                   'n', x.k, 'pris', exists (select 1 from raid_pris r where r.saison = s and r.user_id = p and r.quoi = 'perso' and r.n = x.k))
+                 order by x.k)
+                 from jsonb_array_elements(raid_perso()) with ordinality as x(pa, k))));
 end $$;
 
--- Le coffre d'un niveau tombe : une fois, pour qui l'a frappe.
-create or replace function public.raid_reclamer(p_niveau int) returns jsonb
+create or replace function public.raid_etat() returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); c jsonb; cartes jsonb;
+declare p uuid := auth.uid(); j date := jour_paris(); s int := raid_saison(jour_paris()); v jsonb; prec jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if not exists (select 1 from raid_tombes where niveau = p_niveau) then
-    raise exception 'Ce niveau n''est pas encore tombé.';
+  v := raid_vue_saison(p, s);
+  -- La saison d'avant, si on y a laisse des coffres : ils s'ouvrent encore.
+  prec := raid_vue_saison(p, s - 1);
+  return v || jsonb_build_object(
+    'jour', j,
+    'joueurs', (select count(*) from raid_participants where saison = s and combats > 0),
+    'evenement', evenement_en_cours() is not distinct from 'choc',
+    'tentatives', coalesce((select n from raid_tentatives where user_id = p and jour = j), 0),
+    'max', 3,
+    'precedente', case when (prec->'moi'->>'participe')::boolean then prec end,
+    'top', coalesce((
+      select jsonb_agg(choc_joueur_vue(x.user_id) || jsonb_build_object('degats', x.degats, 'infini', x.infini, 'moi', x.user_id = p)
+                       order by x.degats desc)
+        from (select * from raid_participants where saison = s and degats > 0 order by degats desc limit 10) x), '[]'::jsonb),
+    'top_infini', coalesce((
+      select jsonb_agg(choc_joueur_vue(x.user_id) || jsonb_build_object('infini', x.infini, 'moi', x.user_id = p)
+                       order by x.infini desc, x.infini_le)
+        from (select * from raid_participants where saison = s and infini > 0 order by infini desc, infini_le limit 10) x), '[]'::jsonb));
+end $$;
+
+-- Un coffre : commun (une phase abattue, pour qui a combattu dans la
+-- saison) ou personnel (un palier de ses degats). La saison en cours ou la
+-- precedente.
+create or replace function public.raid_reclamer(p_saison int, p_quoi text, p_n int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); s int := raid_saison(jour_paris()); moi raid_participants; c jsonb; cartes jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if p_saison is null or p_saison not in (s, s - 1) then raise exception 'Cette saison est terminée.'; end if;
+  select * into moi from raid_participants where saison = p_saison and user_id = p;
+  if moi.user_id is null or moi.combats < 1 then raise exception 'Tu n''as pas combattu dans cette saison.'; end if;
+  if p_quoi = 'commun' then
+    if p_n is null or p_n not between 1 and 6 then raise exception 'Phase inconnue.'; end if;
+    if raid_phase(p_saison) <= p_n then
+      raise exception 'Cette phase n''est pas encore abattue.';
+    end if;
+    c := (raid_phases()->(p_n - 1))->'commun';
+  elsif p_quoi = 'perso' then
+    if p_n is null or p_n not between 1 and 3 then raise exception 'Palier inconnu.'; end if;
+    c := raid_perso()->(p_n - 1);
+    if moi.degats < (c->>'seuil')::int then raise exception 'Palier pas encore atteint.'; end if;
+  else
+    raise exception 'Coffre inconnu.';
   end if;
-  if coalesce((select degats from raid_frappes where user_id = p and niveau = p_niveau), 0) < 1 then
-    raise exception 'Tu n''as pas frappé le boss à ce niveau.';
-  end if;
-  insert into raid_coffres (user_id, niveau) values (p, p_niveau) on conflict do nothing;
+  insert into raid_pris (saison, user_id, quoi, n) values (p_saison, p, p_quoi, p_n) on conflict do nothing;
   if not found then raise exception 'Coffre déjà ouvert.'; end if;
-  c := raid_coffre(p_niveau);
   cartes := accorder(p, c->>'type', (c->>'montant')::int, null);
   return jsonb_build_object('cartes', cartes, 'etat', me());
 end $$;
 
 -- ============================================================ 6. droits
-revoke all on function public.raid_pv, public.raid_combat, public.raid_coffre, public.raid_frapper,
-  public.raid_debut, public.raid_fin from public, anon, authenticated;
+revoke all on function public.raid_saison, public.raid_saison_debut, public.raid_phases, public.raid_perso,
+  public.raid_seuil, public.raid_phase, public.raid_combat, public.raid_debut, public.raid_fin,
+  public.raid_vue_saison from public, anon, authenticated;
 revoke all on function public.raid_etat, public.raid_reclamer from public, anon;
 grant execute on function public.raid_etat, public.raid_reclamer to authenticated;

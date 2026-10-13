@@ -587,11 +587,11 @@ Backend.combatFin = async function (id, gagne, resume) {
 /* L'événement « Le Choc des Sections » (js/choc.js, supabase/25_choc.sql) :
    l'Épreuve du jour. */
 Backend.chocEtat = () => Backend.rpc('choc_etat');
-/* Le Raid, toute l'année (js/raid.js, supabase/27_raid.sql) : l'état du
-   boss, et le coffre d'un niveau tombé. */
+/* Le Raid (js/raid.js, supabase/27_raid.sql) : l'état de la saison, et un
+   coffre (commun : une phase abattue ; personnel : un palier de dégâts). */
 Backend.raidEtat = () => Backend.rpc('raid_etat');
-Backend.raidReclamer = async function (niveau) {
-  const r = await Backend.rpc('raid_reclamer', { p_niveau: niveau });
+Backend.raidReclamer = async function (saison, quoi, n) {
+  const r = await Backend.rpc('raid_reclamer', { p_saison: saison, p_quoi: quoi, p_n: n });
   Backend.apply(r.etat);
   return r.cartes || [];
 };

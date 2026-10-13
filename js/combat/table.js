@@ -1202,7 +1202,7 @@ const Table = (() => {
       <div class="ar-menu">
         <button class="ar-mi" data-ar="journal">${NAVICO.quest}<span>Journal du combat</span></button>
         <button class="ar-mi${T.rapide ? ' on' : ''}" data-ar="vitesse">${NAVICO.rotate}<span>Animations rapides</span><i>${T.rapide ? 'oui' : 'non'}</i></button>
-        <button class="ar-mi" data-ar="regles">${NAVICO.illu}<span>Les règles</span></button>
+        <button class="ar-mi" data-ar="regles">${NAVICO.livre}<span>Les règles</span></button>
         ${fini ? `<button class="ar-mi" data-ar="quitter">${NAVICO.check}<span>Quitter</span></button>` : `<button class="ar-mi danger" data-ar="abandon">${NAVICO.lock}<span>Abandonner</span></button>`}
       </div>
       <div class="ar-s-act"><button class="ar-b ghost" data-ar="annuler">Reprendre</button></div>`, 'menu');

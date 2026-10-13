@@ -1420,13 +1420,18 @@
   }
   /* Le Raid permanent (27_raid.sql) : à la première visite, les joueurs
      simulés l'ont déjà frappé — le premier niveau est tombé. */
+  /* La saison en cours, déjà entamée par les joueurs simulés : deux phases
+     abattues, la troisième en route. */
   function mondeRaid() {
-    if (S.raid) return;
-    const r = raidDe();
-    [['b_lumen', 24], ['b_mira', 15], ['b_kairo', 9], ['b_nova', 30]].forEach(([id, d]) => {
+    if (S.raid && S.raid.niveau == null) return;
+    const sa = saisonDemo();
+    [['b_lumen', 30], ['b_mira', 22], ['b_kairo', 14], ['b_nova', 36]].forEach(([id, d]) => {
       if (!S.profils[id]) return;
-      frapperRaid(id, d * 2);
-      r.joueurs[id].victoires = Math.floor(d / 8);
+      const x = partDe(sa, id);
+      x.combats += Math.ceil(d / 6);
+      x.degats += d;
+      x.victoires += Math.floor(d / 12);
+      frapperRaid(sa, d);
     });
   }
 
@@ -1652,14 +1657,19 @@
     let niveau = p_niveau, phase = null, graine = Math.floor(Math.random() * 4294967295) + 1;
     const auj = jourParis(now());
     if (p_mode === 'raid') {
-      /* Le Raid (27_raid.sql) : toute l'année, trois tentatives par jour. */
+      /* Le Raid (27_raid.sql) : la phase en cours, ou son palier Infini ;
+         trois tentatives par jour. */
       const r = raidDe();
+      const sa = saisonDemo();
+      const ph = phaseDemo(sa);
+      const attendu = ph <= RAID.phases.length ? 'p' + ph : 'i' + ((partDe(sa, p).infini || 0) + 1);
+      if (String(p_cle) !== attendu) refuser('Le Raid a changé : recharge la page.');
       const k = p + '|' + auj;
-      if (String(r.niveau) !== String(p_cle)) refuser('Le boss a changé de niveau : recharge le Raid.');
       if ((r.tentatives[k] || 0) >= RAID.tentatives) refuser('Plus de tentative aujourd\'hui : reviens demain.');
       r.tentatives[k] = (r.tentatives[k] || 0) + 1;
-      phase = r.niveau;
-      niveau = raidCombat(phase).ia;
+      partDe(sa, p).combats++;
+      phase = ph <= RAID.phases.length ? ph : null;
+      niveau = raidCombat(attendu).ia;
     } else if (p_mode === 'epreuve') {
       if (evenementEnCours() !== 'choc') refuser('L\'événement est terminé.');
       const ch = chocDe();
@@ -1888,37 +1898,36 @@
   const graineEpreuve = j => (hacher('choc-epreuve:' + j) % 4294967295) + 1;
 
   /* ================================== version 3.0, 27_raid.sql */
-  /* Le Raid : un boss commun à tout le serveur, toute l'année. Une barre de
-     vie par niveau ; quand elle est vide, le niveau tombe — chacun de ceux
-     qui l'ont frappé a un coffre — et le boss revient, plus fort. */
-  const raidDe = () => (S.raid = S.raid || { niveau: 1, degats: 0, total: 0, tombes: {}, joueurs: {}, frappes: {}, coffres: {}, tentatives: {} });
-  /* La barre d'un niveau, à l'échelle du serveur (peu de joueurs dans la
-     démo : _demo/reglages.js). */
-  const pvRaid = n => Math.max(20, Math.round(RAID.pv(n) * (D.raid_echelle || 1)));
+  /* Le Raid (27_raid.sql) : par saisons de deux semaines, six phases
+     abattues par les dégâts de tout le serveur, un coffre commun par phase
+     pour ceux qui ont combattu dans la saison, des paliers personnels, puis
+     le mode Infini. */
+  const raidDe = () => {
+    /* L'ancien Raid par niveaux (pré-build 3.0.5) : on repart de zéro. */
+    if (S.raid && S.raid.niveau != null) S.raid = null;
+    return (S.raid = S.raid || { saisons: {}, tombees: {}, part: {}, pris: {}, tentatives: {} });
+  };
+  const saisonDemo = () => raidSaison(jourParis(now())).n;
+  /* Les paliers, à l'échelle du serveur (peu de joueurs dans la démo :
+     _demo/reglages.js). */
+  const seuilDemo = k => Math.max(10, Math.round(RAID.phases[k - 1].seuil * (D.raid_echelle || 1)));
+  const degatsSaison = sa => (raidDe().saisons[sa] || 0);
+  function phaseDemo(sa) {
+    let k = 1;
+    while (k <= RAID.phases.length && degatsSaison(sa) >= seuilDemo(k)) k++;
+    return k;
+  }
+  const partDe = (sa, p) => (raidDe().part[sa + '|' + p] = raidDe().part[sa + '|' + p]
+    || { combats: 0, degats: 0, victoires: 0, infini: 0, infini_le: 0 });
 
-  /* Des dégâts sur la barre commune ; le surplus entame le niveau suivant.
-     Renvoie le dernier niveau tombé. */
-  function frapperRaid(p, d) {
+  /* Des dégâts sur la saison : renvoie la phase avant et après. */
+  function frapperRaid(sa, d) {
     const r = raidDe();
-    if (!(d > 0)) return null;
-    const j = (r.joueurs[p] = r.joueurs[p] || { degats: 0, victoires: 0 });
-    j.degats += d;
-    r.total += d;
-    let reste = d, tombe = null;
-    while (reste > 0) {
-      const pv = pvRaid(r.niveau);
-      const part = Math.min(reste, pv - r.degats);
-      const k = p + '|' + r.niveau;
-      r.frappes[k] = (r.frappes[k] || 0) + part;
-      r.degats += part;
-      reste -= part;
-      if (r.degats < pv) break;
-      r.tombes[r.niveau] = now();
-      tombe = r.niveau;
-      r.niveau++;
-      r.degats = 0;
-    }
-    return tombe;
+    const avant = phaseDemo(sa);
+    r.saisons[sa] = degatsSaison(sa) + d;
+    const apres = phaseDemo(sa);
+    for (let k = avant; k < apres && k <= RAID.phases.length; k++) r.tombees[sa + '|' + k] = now();
+    return { avant, apres };
   }
 
   /* raid_fin : pendant le Choc, des Insignes ; le reste du temps, des Éclats. */
@@ -1928,15 +1937,31 @@
     if (o.niveau >= 4 && gagne) bump(p, 'victoires_dures', 1);
     bump(p, 'raid', 1);
     if (trop) { r.message = 'Combat trop court pour compter.'; return { etat: me(p), recompense: r }; }
-    const pvBoss = raidCombat(o.phase).pvBoss;
-    let d = Math.max(0, Math.min(pvBoss + 1, Math.floor(+res.touches || 0)));
-    if (gagne) d = pvBoss + 1 + RAID.bonusDegats;
+    const x = raidCombat(o.cle);
+    let d = Math.max(0, Math.min(x.pvBoss + 1, Math.floor(+res.touches || 0)));
+    if (gagne) d = x.pvBoss + 1 + RAID.bonusDegats;
     r.degats = d;
-    const tombe = frapperRaid(p, d);
+    const sa = saisonDemo();
+    const moi = partDe(sa, p);
+    moi.degats += d;
+    if (gagne) moi.victoires++;
+    r.message = '';
+    if (x.infini) {
+      if (gagne) {
+        moi.infini = Math.max(moi.infini, x.n);
+        moi.infini_le = now();
+        r.message = `Palier Infini ${x.n} battu : le suivant t'attend.`;
+      }
+    } else {
+      const { avant, apres } = frapperRaid(sa, d);
+      if (apres > avant) {
+        r.message = apres > RAID.phases.length ? 'Les six phases sont abattues : le mode Infini est ouvert !'
+          : `Phase ${apres - 1} abattue : un coffre commun pour tous ceux qui ont combattu.`;
+      }
+    }
+    if (!d && !r.message) r.message = 'Pas un PV de pris : il rira moins la prochaine fois.';
     bump(p, 'raid_degats', d);
-    if (gagne) { raidDe().joueurs[p].victoires++; bump(p, 'raid_victoires', 1); }
-    if (tombe) r.message = 'Le boss est tombé ! Ton coffre t\'attend dans le Raid.';
-    else if (!d) r.message = 'Pas un PV de pris : il rira moins la prochaine fois.';
+    if (gagne) bump(p, 'raid_victoires', 1);
     if (evenementEnCours() === 'choc') {
       r.insignes = d * RAID.parDegat + (gagne ? RAID.victoire : 0);
       const cj = (chocDe().joueurs[p] = chocDe().joueurs[p] || { degats: 0, victoires: 0 });
@@ -1950,33 +1975,63 @@
     return { etat: me(p), recompense: r };
   }
 
+  /* Une saison vue par un joueur (raid_vue_saison). */
+  function vueSaison(p, sa) {
+    const r = raidDe();
+    const x = r.part[sa + '|' + p];
+    const s0 = raidSaison(RAID.saison.depart);
+    const debut = new Date(Date.parse(RAID.saison.depart + 'T12:00:00Z') + (sa - s0.n) * RAID.saison.jours * 86400000).toISOString().slice(0, 10);
+    const fin = new Date(Date.parse(debut + 'T12:00:00Z') + RAID.saison.jours * 86400000).toISOString().slice(0, 10);
+    const moi = x || { combats: 0, degats: 0, victoires: 0, infini: 0 };
+    return {
+      n: sa, debut, fin, degats: degatsSaison(sa), phase: phaseDemo(sa),
+      phases: RAID.phases.map((ph, i) => Object.assign({}, ph, {
+        n: i + 1, seuil: seuilDemo(i + 1), tombee: degatsSaison(sa) >= seuilDemo(i + 1), pris: !!r.pris[sa + '|' + p + '|commun|' + (i + 1)] })),
+      moi: { participe: !!x, combats: moi.combats, degats: moi.degats, victoires: moi.victoires, infini: moi.infini,
+        perso: RAID.perso.map((pa, i) => Object.assign({}, pa, { n: i + 1, pris: !!r.pris[sa + '|' + p + '|perso|' + (i + 1)] })) }
+    };
+  }
+
   RPC.raid_etat = p => {
     const r = raidDe();
     const auj = jourParis(now());
-    const moi = r.joueurs[p] || { degats: 0, victoires: 0 };
-    return {
-      jour: auj, niveau: r.niveau, degats: r.degats, pv: pvRaid(r.niveau), total: r.total,
-      joueurs: Object.keys(r.frappes).filter(k => k.endsWith('|' + r.niveau) && r.frappes[k] > 0).length,
+    const sa = saisonDemo();
+    const prec = vueSaison(p, sa - 1);
+    const parts = Object.entries(r.part).filter(([k]) => k.startsWith(sa + '|')).map(([k, x]) => [k.split('|')[1], x]);
+    return Object.assign(vueSaison(p, sa), {
+      jour: auj,
+      joueurs: parts.filter(([, x]) => x.combats > 0).length,
       evenement: evenementEnCours() === 'choc',
-      moi: { degats: moi.degats, victoires: moi.victoires, niveau: r.frappes[p + '|' + r.niveau] || 0,
-        tentatives: r.tentatives[p + '|' + auj] || 0, max: RAID.tentatives },
-      coffres: Object.keys(r.tombes).map(Number).sort((a, b) => a - b)
-        .filter(n => (r.frappes[p + '|' + n] || 0) > 0 && !r.coffres[p + '|' + n])
-        .map(n => Object.assign({ niveau: n }, raidCoffre(n))),
-      top: Object.entries(r.joueurs).filter(([, x]) => x.degats > 0).sort((a, b) => b[1].degats - a[1].degats).slice(0, 10)
-        .map(([id, x]) => joueurVue(id, { degats: x.degats, moi: id === p }))
-    };
+      tentatives: r.tentatives[p + '|' + auj] || 0, max: RAID.tentatives,
+      precedente: prec.moi.participe ? prec : null,
+      top: parts.filter(([, x]) => x.degats > 0).sort((a, b) => b[1].degats - a[1].degats).slice(0, 10)
+        .map(([id, x]) => joueurVue(id, { degats: x.degats, infini: x.infini, moi: id === p })),
+      top_infini: parts.filter(([, x]) => x.infini > 0).sort((a, b) => b[1].infini - a[1].infini || a[1].infini_le - b[1].infini_le).slice(0, 10)
+        .map(([id, x]) => joueurVue(id, { infini: x.infini, moi: id === p }))
+    });
   };
 
-  RPC.raid_reclamer = (p, { p_niveau }) => {
+  RPC.raid_reclamer = (p, { p_saison, p_quoi, p_n }) => {
     const r = raidDe();
-    const n = +p_niveau;
-    if (!r.tombes[n]) refuser('Ce niveau n\'est pas encore tombé.');
-    if (!((r.frappes[p + '|' + n] || 0) > 0)) refuser('Tu n\'as pas frappé le boss à ce niveau.');
-    if (r.coffres[p + '|' + n]) refuser('Coffre déjà ouvert.');
-    r.coffres[p + '|' + n] = now();
-    const x = raidCoffre(n);
-    const cartes = accorder(p, x.type, x.montant || 0, null);
+    const sa = saisonDemo();
+    const s = +p_saison, n = +p_n;
+    if (s !== sa && s !== sa - 1) refuser('Cette saison est terminée.');
+    const x = r.part[s + '|' + p];
+    if (!x || x.combats < 1) refuser('Tu n\'as pas combattu dans cette saison.');
+    let c;
+    if (p_quoi === 'commun') {
+      if (!(n >= 1 && n <= RAID.phases.length)) refuser('Phase inconnue.');
+      if (phaseDemo(s) <= n) refuser('Cette phase n\'est pas encore abattue.');
+      c = RAID.phases[n - 1].commun;
+    } else if (p_quoi === 'perso') {
+      if (!(n >= 1 && n <= RAID.perso.length)) refuser('Palier inconnu.');
+      c = RAID.perso[n - 1];
+      if (x.degats < c.seuil) refuser('Palier pas encore atteint.');
+    } else refuser('Coffre inconnu.');
+    const k = s + '|' + p + '|' + p_quoi + '|' + n;
+    if (r.pris[k]) refuser('Coffre déjà ouvert.');
+    r.pris[k] = now();
+    const cartes = accorder(p, c.type, c.montant || 0, null);
     return { cartes, etat: me(p) };
   };
 
@@ -2034,7 +2089,7 @@
     const e = S.evenement || {};
     return {
       degats: ((ch.joueurs[p] || {}).degats) || 0,
-      raid_niveaux: Object.values(raidDe().tombes).filter(t => t >= (e.debut || 0) && t < (e.fin || Infinity)).length,
+      raid_phases: Object.values(raidDe().tombees).filter(t => t >= (e.debut || 0) && t < (e.fin || Infinity)).length,
       epreuves: Object.keys(ch.gagnees).filter(k => k.startsWith(p + '|')).length,
       section: cb(p).section
     };
@@ -2060,11 +2115,16 @@
       S.raidTic = t;
       const bot = choix(BOTS);
       if (S.profils[bot.id]) {
-        const gagne = Math.random() < 0.35;
-        const pvBoss = raidCombat(raidDe().niveau).pvBoss;
-        const d = gagne ? pvBoss + 1 + RAID.bonusDegats : entre(2, pvBoss);
-        frapperRaid(bot.id, d);
-        if (gagne) raidDe().joueurs[bot.id].victoires++;
+        const sa = saisonDemo();
+        const ph = phaseDemo(sa);
+        const part = partDe(sa, bot.id);
+        const x = raidCombat(ph <= RAID.phases.length ? 'p' + ph : 'i' + (part.infini + 1));
+        const gagne = Math.random() < (x.infini ? 0.25 : 0.35);
+        const d = gagne ? x.pvBoss + 1 + RAID.bonusDegats : entre(2, x.pvBoss);
+        part.combats++;
+        part.degats += d;
+        if (gagne) part.victoires++;
+        if (x.infini) { if (gagne) { part.infini = x.n; part.infini_le = t; } } else frapperRaid(sa, d);
         if (evenementEnCours() === 'choc') {
           const ch = chocDe();
           const k = bot.id + '|choc';

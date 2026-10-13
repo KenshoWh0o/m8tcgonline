@@ -1,11 +1,11 @@
 /* L'onglet Combats (version 3.0).
 
-   Une page d'accueil courte, faite pour qu'on y lance un combat en deux
-   gestes : un bandeau illustré (le chevalier du tapis « La Luxueuse III »),
-   la Section et le niveau ; l'affiche du prochain combat de campagne ; deux
-   grandes portes illustrées, Solo (contre l'IA) et Versus (entre amis) ;
-   l'affiche du Raid, qui reste toute l'année (js/raid.js) ; trois petites
-   tuiles, Decks, Missions et Guide. Solo mène à deux modes bien distincts :
+   Une page d'accueil qui tient dans l'écran, sans défiler : un bandeau
+   illustré (le chevalier du tapis « La Luxueuse III », centré sur son
+   médaillon), la Section et le niveau ; à la une, le Raid (js/raid.js) ;
+   deux portes illustrées, Solo (contre l'IA, sur « 99% Faith ») et Versus
+   (entre amis, sur « Marteen Supreme ») ; trois petites tuiles, Decks,
+   Missions et Guide. Solo mène à deux modes bien distincts :
    la Campagne (vingt rivaux sur un chemin, acte par acte) et l'Arcade (un
    adversaire tiré au sort, cinq difficultés). Chaque page a un retour vers
    la précédente. Le combat se joue dans l'arène, en plein écran
@@ -185,9 +185,9 @@ const CB_ICO = {
   guide: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M8 11.5c5.5-2 11-1.5 16 1.5v26c-5-3-10.5-3.5-16-1.5z"/><path class="f" d="M40 11.5c-5.5-2-11-1.5-16 1.5v26c5-3 10.5-3.5 16-1.5z"/></svg>'
 };
 
-/* Le visage d'une Section : le rival de sa finale de campagne (les Promos
-   P03 et P04 n'ont pas encore d'illustration). */
-const visageSection = id => { const l = RIVAUX[id]; return (l.find(r => r[2] === 'final') || l[l.length - 1])[0]; };
+/* Les illustrations des portes : Solo sur « 99% Faith » (#068), l'Arcade
+   sur « Monster » (#102), Versus sur « Marteen Supreme » (#023). */
+const COUV = { solo: 'c068', arcade: 'c102', versus: 'c023' };
 
 /* Le fond d'une porte : l'illustration d'une carte (sa partie haute).
    L'adresse est absolue : dans une variable CSS, une adresse relative se
@@ -196,13 +196,11 @@ const cbArt = id => { const c = byId[id]; return c && c.img ? ` style="--art:url
 
 function vCbAccueil(e) {
   const deck = cbDeckActif();
-  const combats = combatsCampagne(e.section);
   const fait = new Set(e.campagne.faits);
-  const prochain = combats.find(f => !fait.has(f.id));
   const enCours = combatEnCours();
   const defis = e.defis.filter(d => d.pour_moi && d.statut === 'attente').length;
   const missions = cbMissionsPretes();
-  const autre = autreSection(e.section);
+  if (!rdEtat) relireRaid();
   const petit = (v, ico, titre, sous, n) => `<button class="cb-petit" data-cb="vue" data-v="${v}">
       <span class="cb-petit-ico">${CB_ICO[ico]}</span><b>${titre}</b><small>${sous}</small>${n ? `<i class="rf-pastille">${n}</i>` : ''}
     </button>`;
@@ -213,43 +211,25 @@ function vCbAccueil(e) {
     </section>
     ${enCours ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat en cours</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Reprends-le où tu l'as laissé.</em></span>
       <span class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Reprendre</button><button class="btn tiny ghost" data-cb="oublier">Abandonner</button></span></section>`
-      : vCbAffiche(e, prochain)}
+      : vRaidAffiche()}
     <div class="cb-portes">
       <button class="cb-porte solo" data-cb="vue" data-v="solo">
-        <span class="cb-porte-art"${cbArt(prochain ? prochain.rival : SECTIONS[autre].promo)}></span>
+        <span class="cb-porte-art"${cbArt(COUV.solo)}></span>
         <span class="cb-porte-ico">${CB_ICO.solo}</span>
         <span class="cb-porte-t"><b>Solo</b><small>${e.campagne.finie ? 'Campagne finie' : `Campagne ${fait.size}/20`} · Arcade</small></span>
       </button>
       <button class="cb-porte versus" data-cb="vue" data-v="versus">
-        <span class="cb-porte-art duo"><i${cbArt(visageSection(e.section))}></i><i${cbArt(visageSection(autre))}></i></span>
+        <span class="cb-porte-art"${cbArt(COUV.versus)}></span>
         <span class="cb-porte-ico">${CB_ICO.versus}</span>
         <span class="cb-porte-t"><b>Versus</b><small>${defis ? `${defis} défi${defis > 1 ? 's' : ''} pour toi` : 'Entre amis, en direct'}</small></span>
         ${defis ? `<i class="rf-pastille">${defis}</i>` : ''}
       </button>
     </div>
-    ${vRaidAffiche()}
     <div class="cb-petits">
       ${petit('decks', 'decks', 'Decks', deck ? h(deck.nom) : 'Aucun deck valide')}
       ${petit('missions', 'missions', 'Missions', missions ? `${missions} à récupérer` : 'Quêtes de combat', missions)}
       ${petit('guides', 'guide', 'Guide', 'Apprendre à jouer')}
     </div>`;
-}
-
-/* L'affiche : le prochain combat de la campagne ; campagne finie, l'Arcade. */
-function vCbAffiche(e, prochain) {
-  const une = (attrs, sur, titre, sous, go, art) => `<button class="cb-une" ${attrs}>
-      ${art ? `<span class="cb-une-art"${cbArt(art)}></span>` : ''}
-      <span class="cb-une-t"><small>${sur}</small><b>${titre}</b><em>${sous}</em></span>
-      <span class="cb-une-go">${go}</span>
-    </button>`;
-  if (prochain) {
-    const k = byId[prochain.rival] || {};
-    return une(`data-cb="combat" data-v="${prochain.id}"`, `Campagne · Acte ${ACTES.indexOf(prochain.acte) + 1}`, h(k.nom || ''),
-      `${etoiles(prochain.niveau)}<span>Combat ${prochain.n + 1}/20</span>`, 'Combattre', prochain.rival);
-  }
-  const n = cbChoix.infini || 3;
-  return une('data-cb="vue" data-v="arcade"', 'Arcade', h(DIFFICULTES[n - 1].nom),
-    `${etoiles(n)}<span>Un adversaire au hasard</span>`, 'Jouer', SECTIONS[autreSection(e.section)].promo);
 }
 
 /* ---------- Solo : deux modes, deux portes ---------- */
@@ -272,10 +252,10 @@ function vCbSolo(e) {
       <span class="cb-une-go">${e.campagne.finie ? 'Revoir' : fait.size ? 'Continuer' : 'Commencer'}</span>
     </button>
     <button class="cb-mode arcade" data-cb="vue" data-v="arcade">
-      <span class="cb-mode-art"${cbArt(RAID.boss)}></span>
+      <span class="cb-mode-art"${cbArt(COUV.arcade)}></span>
       <span class="cb-mode-t">
         <small>Arcade</small>
-        <b>Un adversaire au hasard</b>
+        <b>De Débutant à Légende</b>
         <span class="cb-mode-desc">Cinq difficultés, un deck adverse tiré au sort à chaque partie. Rejoue autant que tu veux.</span>
         <span class="cb-mode-prog">${etoiles(n)}<em>${h(DIFFICULTES[n - 1].nom)}</em></span>
       </span>
@@ -338,6 +318,9 @@ function vCbCampagne(e) {
   const a = ACTES[ia];
   const fs = combats.filter(f => f.acte.id === a.id);
   const boss = fs.find(f => f.rang) || fs[fs.length - 1];
+  /* Un acte pas encore ouvert ne se dévoile pas : ni son boss en bandeau,
+     ni ses rivaux (vRoute). */
+  const acteFerme = !ouvert(fs[0]);
   const onglets = ACTES.map((x, i) => {
     const l = combats.filter(f => f.acte.id === x.id);
     const n = l.filter(f => fait.has(f.id)).length;
@@ -349,8 +332,9 @@ function vCbCampagne(e) {
   return `${cbSousTete('Campagne', `${h(moi.court)} contre ${h(adverse.court)}`, `<span class="cb-jour-chip"><b class="tnum">${fait.size}/20</b><small>gagnés</small></span>`)}
     <nav class="cb-actes-ong">${onglets}</nav>
     <section class="cb-acte">
-      <header class="cb-acte-tete"${cbArt(boss.rival)}>
-        <small>Acte ${ia + 1}${ia === ACTES.length - 1 ? ' · le dernier' : ''}</small><h2>${h(a.nom)}</h2><p>${h(a.texte)}</p>
+      <header class="cb-acte-tete${acteFerme ? ' ferme' : ''}"${acteFerme ? '' : cbArt(boss.rival)}>
+        <small>Acte ${ia + 1}${ia === ACTES.length - 1 ? ' · le dernier' : ''}${acteFerme ? ' · verrouillé' : ''}</small><h2>${h(a.nom)}</h2>
+        <p>${acteFerme ? 'Finis l\'acte précédent pour découvrir ses rivaux.' : h(a.texte)}</p>
       </header>
       ${vRoute(fs, fait, ouvert)}
     </section>
@@ -378,10 +362,13 @@ function vRoute(fs, fait, ouvert) {
       const etat = fait.has(f.id) ? 'fait' : ouvert(f) ? 'ouvert' : 'ferme';
       const [x, y] = pts[i];
       const cote = x < 50 ? 'd' : x > 50 ? 'g' : 'b';
-      return `<button class="cb-etape ${etat}${f.rang ? ' ' + f.rang : ''} lbl-${cote}" style="--x:${x}%;--y:${y}px" data-cb="combat" data-v="${f.id}" ${etat === 'ferme' ? 'aria-disabled="true"' : ''}>
-        <span class="cb-etape-art">${k.img ? `<img src="${k.img}" alt="" loading="lazy">` : ''}${etat === 'fait' ? `<i class="cb-coche">${NAVICO.check}</i>` : etat === 'ferme' ? `<i class="cb-cadenas">${NAVICO.lock}</i>` : ''}</span>
-        <span class="cb-etape-t"><small>${f.rang === 'final' ? 'La finale' : f.rang ? 'Boss de l\'acte' : `Combat ${f.n + 1}`}</small><b>${h(k.nom || '?')}</b>
-          ${etoiles(f.niveau)}<em>${etat === 'fait' ? 'Gagné' : etat === 'ferme' ? 'Verrouillé' : recompenseTexte(f.recompense)}</em></span>
+      /* Un rival qu'on n'a pas encore débloqué reste une silhouette : ni son
+         nom, ni son illustration. */
+      const cache = etat === 'ferme';
+      return `<button class="cb-etape ${etat}${f.rang ? ' ' + f.rang : ''} lbl-${cote}" style="--x:${x}%;--y:${y}px" data-cb="combat" data-v="${f.id}" ${cache ? 'aria-disabled="true"' : ''}>
+        <span class="cb-etape-art">${k.img && !cache ? `<img src="${k.img}" alt="" loading="lazy">` : ''}${etat === 'fait' ? `<i class="cb-coche">${NAVICO.check}</i>` : cache ? '<i class="cb-mystere">?</i>' : ''}</span>
+        <span class="cb-etape-t"><small>${f.rang === 'final' ? 'La finale' : f.rang ? 'Boss de l\'acte' : `Combat ${f.n + 1}`}</small><b>${cache ? '???' : h(k.nom || '?')}</b>
+          ${etoiles(f.niveau)}<em>${etat === 'fait' ? 'Gagné' : cache ? 'Verrouillé' : recompenseTexte(f.recompense)}</em></span>
       </button>`;
     }).join('')}
   </div>`;
@@ -457,7 +444,7 @@ function vCbArcade(e) {
   const d = DIFFICULTES[n - 1];
   const reste = Math.max(0, e.jour.plafond - e.jour.recompensees);
   const xp = Math.round(NIVEAUX.victoire * NIVEAUX.facteur[n]);
-  return `${cbSousTete('Arcade', 'Un adversaire tiré au sort, à chaque partie')}
+  return `${cbSousTete('Arcade', 'Cinq difficultés, un deck adverse tiré au sort')}
     <section class="cb-arc n${n}">
       <div class="cb-arc-tete">
         <small>Difficulté</small><b>${h(d.nom)}</b>${etoiles(n)}
@@ -476,7 +463,7 @@ function vCbArcade(e) {
 }
 
 /* ---------- Le Raid ---------- */
-const vCbRaid = () => cbSousTete('Raid', 'Un boss pour tout le serveur, toute l\'année') + vRaid();
+const vCbRaid = () => cbSousTete('Raid', `${rdEtat ? `Saison ${rdEtat.n} · ` : ''}un boss pour tout le serveur`) + vRaid();
 
 /* ---------- Les défis entre amis ---------- */
 function vCbDefis(e) {

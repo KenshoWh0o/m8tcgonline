@@ -9,7 +9,7 @@
    L'en-tête montre les deux Sections face à face : Squeezie le Toxique
    (#012) et Gotaga Pose (#060), fondus l'un dans l'autre et coupés en biais ;
    l'illustration de The French Sorcerer est réservée au Raid, pour ne pas
-   répéter le même visuel deux fois sur le même écran. Le Raid reste toute l'année (js/raid.js) :
+   répéter le même visuel deux fois sur le même écran. Le Raid a sa page (js/raid.js) :
    l'onglet de l'événement en montre la page, et pendant l'événement il paie
    en Insignes. L'Épreuve se joue dans l'arène (js/combat/table.js), lancée
    par demarrer() (js/battle.js) ; les règles et les chiffres sont dans
@@ -163,7 +163,7 @@ function vChAccueil() {
   return `<section class="rf-jour">
       <h3 class="rf-sous">Aujourd'hui</h3>
       <div class="rf-tuiles ch-tuiles">
-        ${tuile('raid', NAVICO.foudre, 'Le Raid', r ? `Niveau ${r.niveau}` : '…',
+        ${tuile('raid', NAVICO.foudre, 'Le Raid', r ? (rdInfini(r) ? 'Mode Infini' : `Phase ${r.phase} sur ${RAID.phases.length}`) : '…',
           coffres ? `${coffres} coffre${coffres > 1 ? 's' : ''} à ouvrir` : tr ? `${tr} tentative${tr > 1 ? 's' : ''} aujourd'hui` : 'Reviens demain', coffres > 0 || tr > 0)}
         ${tuile('epreuve', NAVICO.epreuve, 'Épreuve du jour', h(regle.nom),
           ep.gagnee ? 'Gagnée aujourd\'hui' : er ? `${er} essai${er > 1 ? 's' : ''} restant${er > 1 ? 's' : ''}` : 'Terminée', er > 0 && !ep.gagnee)}
@@ -197,12 +197,12 @@ function vChNouveautes() {
       <span class="cb-une-go">Jouer</span>
     </button>
     <div class="ch-nv-grille">
-      ${tuile('data-cb="vue" data-v="raid"', fond((byId[RAID.boss] || {}).img), 'Le Raid', 'Un boss pour tout le serveur, toute l\'année.', 'raid')}
+      ${tuile('data-cb="vue" data-v="raid"', fond((byId[RAID.boss] || {}).img), 'Le Raid', 'Un boss pour tout le serveur, par saisons de deux semaines.', 'raid')}
       ${tuile('data-colvue="speciales" data-tab="collection"', fond(sec && sec.img), 'Les Secrètes', `${(secretes || []).length || 5} cartes au-delà des 122, une finition à part.`, 'secrete')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', fond(TAPIS.t_veste.img.replace('.webp', '-mini.webp')), 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
       ${tuile('data-cb="vue" data-v="decks"', fond(deck && (byId[deck.couverture] || {}).img), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
-      ${tuile('data-cb="vue" data-v="guides"', `<span class="ch-nv-ico">${NAVICO.quest}</span>`, 'Le Guide', 'Les règles du combat, en dix pages courtes.', 'guide')}
+      ${tuile('data-cb="vue" data-v="guides"', `<span class="ch-nv-ico">${NAVICO.livre}</span>`, 'Le Guide', 'Les règles du combat, en dix pages courtes.', 'guide')}
     </div>
   </section>`;
 }
@@ -496,7 +496,7 @@ function apercuRecapChoc() {
     code: 'choc', titre: CHOC.nom, debut: new Date(t - 21 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
     jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), apercu: true,
     total: 2840, paliers: 24, paliers_max: 30, pris: 24, quetes: 58, rang: 6, joueurs: 41,
-    degats: 214, raid_niveaux: 6, epreuves: 13,
+    degats: 214, raid_phases: 5, epreuves: 13,
     section: cbEtat().section || 'toxique',
     top: bots.map(([pseudo, section, total]) => ({ pseudo, section, total, avatar: 'star', frame: 'f_choc', photo: null, moi: false }))
   };
@@ -528,7 +528,7 @@ function vChRecap() {
       <div class="rr-stats">
         ${stat(insigneIco, fmtN(r.total), CHOC.monnaie.nom + ' gagnés', r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup> sur ${r.joueurs}` : '')}
         ${stat(NAVICO.trophy, `${r.paliers}<small>/${r.paliers_max}</small>`, 'paliers du Pass', r.paliers >= r.paliers_max ? 'Pass terminé' : '')}
-        ${stat(NAVICO.foudre, fmtN(r.degats || 0), 'dégâts au Sorcier', `${r.raid_niveaux || 0} niveau${(r.raid_niveaux || 0) > 1 ? 'x' : ''} tombé${(r.raid_niveaux || 0) > 1 ? 's' : ''}`)}
+        ${stat(NAVICO.foudre, fmtN(r.degats || 0), 'dégâts au Sorcier', `${r.raid_phases || 0} phase${(r.raid_phases || 0) > 1 ? 's' : ''} abattue${(r.raid_phases || 0) > 1 ? 's' : ''}`)}
         ${stat(NAVICO.epreuve, r.epreuves || 0, 'Épreuves gagnées', '')}
         ${stat(NAVICO.quest, r.quetes, 'quêtes accomplies', '')}
       </div>
@@ -537,7 +537,7 @@ function vChRecap() {
     <section class="rr-continue">
       <h2>Ce qui reste</h2>
       <div class="rr-cartes">
-        <button class="rr-lien" data-cb="vue" data-v="raid"><span class="rr-ico">${NAVICO.foudre}</span><b>Le Raid continue</b><small>Le même boss, toute l'année, payé en Éclats.</small></button>
+        <button class="rr-lien" data-cb="vue" data-v="raid"><span class="rr-ico">${NAVICO.foudre}</span><b>Le Raid continue</b><small>Une nouvelle saison toutes les deux semaines, payée en Éclats.</small></button>
         <button class="rr-lien" data-tab="combats"><span class="rr-ico">${NAVICO.sword}</span><b>Les Combats continuent</b><small>Campagne, Arcade, défis entre amis.</small></button>
         <button class="rr-lien" data-colvue="speciales" data-tab="collection"><span class="rr-ico">${NAVICO.promo}</span><b>Les Secrètes restent</b><small>Une chance dans chaque booster.</small></button>
       </div>

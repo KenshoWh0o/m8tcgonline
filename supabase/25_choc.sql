@@ -214,9 +214,10 @@ language plpgsql security definer set search_path = public as $$
 begin
   return jsonb_build_object(
     'degats', coalesce((select degats from choc_joueurs where user_id = p), 0),
-    'raid_niveaux', (select count(*) from raid_tombes t
-                      where exists (select 1 from evenements e where e.code = 'choc'
-                                     and t.tombe_le >= e.debut and t.tombe_le < e.fin)),
+    -- Les phases du Raid abattues pendant l'evenement (27_raid.sql).
+    'raid_phases', (select count(*) from raid_tombees t
+                     where exists (select 1 from evenements e where e.code = 'choc'
+                                    and t.tombee_le >= e.debut and t.tombee_le < e.fin)),
     'epreuves', (select count(*) from choc_epreuves where user_id = p and gagnee),
     'section', (select section from combat_joueurs where user_id = p));
 end $$;

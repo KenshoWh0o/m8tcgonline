@@ -250,14 +250,14 @@ test('les quarante rivaux de campagne ont un deck valide, avec leur carte', () =
 });
 
 console.log('Le Choc des Sections');
-test('le deck du Sorcier est valide et le contient, chaque jour et à chaque niveau', () => {
+test('le deck du Sorcier est valide et le contient, chaque jour, à chaque phase et en Infini', () => {
   for (let j = 0; j < 14; j++) {
     const jour = new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10);
-    for (let n = 1; n <= 6; n++) {
-      const d = Choc.deckSorcier(jour, n);
-      egal(Decks.verifier(d), [], jour + ' niveau ' + n);
+    for (const cle of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'i1', 'i4', 'i9']) {
+      const d = Choc.deckSorcier(jour, cle);
+      egal(Decks.verifier(d), [], jour + ' ' + cle);
       vrai(d.cartes[Choc.RAID.boss] === 1, 'The French Sorcerer manque');
-      egal(JSON.stringify(Choc.deckSorcier(jour, n)), JSON.stringify(d), 'même jour, même deck');
+      egal(JSON.stringify(Choc.deckSorcier(jour, cle)), JSON.stringify(d), 'même jour, même deck');
     }
   }
 });
@@ -280,7 +280,7 @@ test('le score de l\'Épreuve : victoire, puis moins de tours, puis plus de PV',
 test('le Sorcier commence sur le plateau, au milieu, jamais en main ni en PV', () => {
   const boss = Choc.RAID.boss;
   for (let g = 1; g <= 40; g++) {
-    const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 3))],
+    const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 'p3'))],
       graine: g, pv: [5, 7], essDepart: [0, 1], poses: Choc.posesBoss() });
     while (Combat.demande(E) && Combat.demande(E).but === 'mulligan') Combat.agir(E, { t: 'choix', v: 'oui' });
     const P = E.j[1];
@@ -290,22 +290,35 @@ test('le Sorcier commence sur le plateau, au milieu, jamais en main ni en PV', (
     egal(P.pv.length, 7);
   }
 });
-test('le Raid monte en niveau : barre plus longue, boss plus dur, coffres à tour de rôle', () => {
-  egal(Choc.RAID.pv(1), 300);
-  vrai(Choc.RAID.pv(2) > Choc.RAID.pv(1), 'la barre s\'allonge');
-  let avant = Choc.raidCombat(1);
-  for (let n = 2; n <= 12; n++) {
-    const c = Choc.raidCombat(n);
-    vrai(c.ia >= avant.ia && c.pvBoss >= avant.pvBoss && c.ess >= avant.ess, 'jamais plus facile, niveau ' + n);
-    vrai(c.ia <= 5 && c.pvBoss <= 9 && c.ess <= 2, 'des plafonds, niveau ' + n);
+test('le Raid : des phases de plus en plus dures, des paliers croissants, un Infini qui se durcit', () => {
+  const ph = Choc.RAID.phases;
+  egal(ph.length, 6);
+  for (let k = 1; k < ph.length; k++) vrai(ph[k].seuil > ph[k - 1].seuil, 'les paliers montent, phase ' + (k + 1));
+  let avant = Choc.raidCombat('p1');
+  for (let k = 2; k <= 6; k++) {
+    const c = Choc.raidCombat('p' + k);
+    vrai(c.ia >= avant.ia && c.pvBoss >= avant.pvBoss && c.ess >= avant.ess, 'jamais plus facile, phase ' + k);
     avant = c;
   }
-  egal(Choc.raidCoffre(1).type, 'boosters');
-  egal(Choc.raidCoffre(5).type, Choc.raidCoffre(1).type, 'les coffres tournent');
+  let pi = Choc.raidCombat('i1');
+  vrai(pi.infini && pi.pvBoss >= Choc.raidCombat('p6').pvBoss, 'l\'Infini part de la dernière phase');
+  for (let n = 2; n <= 20; n++) {
+    const c = Choc.raidCombat('i' + n);
+    vrai(c.pvBoss >= pi.pvBoss && c.ess >= pi.ess && c.pvMoi <= pi.pvMoi, 'jamais plus facile, Infini ' + n);
+    vrai(c.pvBoss <= 12 && c.ess <= 3 && c.pvMoi >= 2, 'des plafonds, Infini ' + n);
+    pi = c;
+  }
+  const p = Choc.RAID.perso;
+  for (let k = 1; k < p.length; k++) vrai(p[k].seuil > p[k - 1].seuil, 'paliers personnels croissants');
+});
+test('les saisons du Raid durent deux semaines, sans trou ni chevauchement', () => {
+  const a = Choc.raidSaison('2026-10-12'), b = Choc.raidSaison('2026-10-25'), c = Choc.raidSaison('2026-10-26');
+  egal(a.n, 1); egal(b.n, 1); egal(c.n, 2);
+  egal(a.debut, '2026-10-12'); egal(a.fin, '2026-10-26'); egal(c.debut, a.fin);
 });
 test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme', () => {
-  const p = Choc.raidCombat(5);
-  const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 5))],
+  const p = Choc.raidCombat('p5');
+  const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 'p5'))],
     graine: 77, pv: [5, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss() });
   egal(E.j[1].pvDepart, 8);
   let n = 0;
