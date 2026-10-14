@@ -29,6 +29,8 @@ function vProfil() {
   </section>
   ${vElu(save.succes, true)}
 
+  ${vFetiche(save.fetiche && mesEx(save.fetiche) > 0 ? save.fetiche : null, null, { moi: true, edit: true })}
+
   ${vPerso()}
 
   <section class="panel vitpanel">
@@ -254,7 +256,7 @@ function vVitrine(liste, modifiable) {
     const c = v[i] ? byId[v[i]] : null;
     if (c) {
       cases.push(`<div class="vit rempli">
-        <button class="vitcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
+        <button class="vitcarte" data-show="${c.id}" data-snd="carte">${renderCard(c, modifiable && maitrisable(c) ? { m: niveauMaitrise(c) } : null)}</button>
         ${modifiable ? `<button class="vitx" data-vit-off="${c.id}" aria-label="Retirer">✕</button>` : ''}
         <span class="vitnom">${nomH(c)}</span></div>`);
     } else if (modifiable) {

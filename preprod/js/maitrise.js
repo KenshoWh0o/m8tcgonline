@@ -88,7 +88,7 @@ function maitriseEnveloppe(c, n, calme) {
   const k = carteMaitrise(c);
   return {
     cls: ` mz mz-${n}${calme ? ' mz-calme' : ''}`,
-    style: `;--mc:${tcol(k)}`,
+    style: `--mc:${tcol(k)}`,
     dedans: `<i class="mz-l" aria-hidden="true"></i>${n >= 5 ? '<i class="mz-h" aria-hidden="true"></i>' : ''}`,
     autour: `${n >= 3 ? '<i class="mz-a" aria-hidden="true"></i>' : ''}${n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : ''}${n >= 5 ? `<i class="mz-c" aria-hidden="true">${COURONNE}</i>` : ''}`
   };
@@ -169,7 +169,7 @@ function apercuMaitriseVw() {
   if (!cout) return;
   VW.apercu = VW.apercu ? 0 : cout.n;
   const carteEl = document.querySelector('#vwc');
-  if (carteEl) carteEl.innerHTML = renderCard(c, { m: VW.apercu || niveauMaitrise(c) }) + '<div class="vw-holo"></div><div class="vw-glare"></div>';
+  if (carteEl) carteEl.innerHTML = vCarteVw(c);
   const b = document.querySelector('#viewer [data-v="mz-apercu"]');
   if (b) b.textContent = VW.apercu ? 'Revenir au niveau actuel' : `Voir le niveau ${CHIFFRES_ROMAINS[cout.n]} sur la carte`;
 }
@@ -177,24 +177,29 @@ function apercuMaitriseVw() {
 /* ---------- La carte fétiche ---------- */
 /* Une carte qu'on possède, mise en scène en haut de son profil : en grand,
    sous un projecteur aux couleurs de son Essence, avec sa maîtrise. Les
-   autres la voient sur la fiche du joueur (player_profile). */
-function vFetiche(id, niveau, moi) {
+   autres la voient sur la fiche du joueur (player_profile, fetiche_de).
+   `o.moi` : c'est la sienne (« Ma carte fétiche ») ; `o.edit` : sur son
+   propre profil, avec de quoi la changer, et une invitation tant qu'il n'y
+   en a pas. */
+function vFetiche(id, niveau, o) {
+  o = o || {};
   const c = id && byId[id];
   if (!c) {
-    return moi ? `<section class="fet vide"><div class="fet-vide">${NAVICO.star}<b>Ta carte fétiche</b>
-        <small>Celle que tu veux montrer en premier : touche une carte de ta Collection, puis « Carte fétiche ».</small>
+    return o.edit ? `<section class="fet vide"><div class="fet-vide">${NAVICO.star}<b>Ta carte fétiche</b>
+        <small>Celle que tu veux montrer en premier, en grand, sous son projecteur. Touche une carte de ta Collection, puis « Gérer ».</small>
         <button class="btn tiny" data-tab="collection">Choisir dans la Collection</button></div></section>` : '';
   }
-  const n = niveau == null ? niveauMaitrise(c) : niveau;
+  const n = niveau == null ? (maitrisable(c) ? niveauMaitrise(c) : 0) : niveau;
   const R = RAR[c.rar] || RAR.C;
-  return `<section class="fet" style="--fc:${tcol(carteMaitrise(c))}">
-    <span class="fet-fond" aria-hidden="true"></span><span class="fet-rayons" aria-hidden="true"></span>
-    <button class="fet-carte" data-show="${c.id}" aria-label="Voir ${h(c.nom)}">${renderCard(c, { m: n })}</button>
+  return `<section class="fet${n ? ' fet-mz' + n : ''}" style="--fc:${tcol(carteMaitrise(c))}">
+    <span class="fet-fond" aria-hidden="true"></span><span class="fet-rayons" aria-hidden="true"></span><span class="fet-faisceau" aria-hidden="true"></span>
+    <button class="fet-carte" data-show="${c.id}" data-snd="carte" aria-label="Voir ${h(c.nom)}">${renderCard(c, { m: n })}<i class="fet-sol" aria-hidden="true"></i></button>
     <div class="fet-t">
-      <small>${moi ? 'Ma carte fétiche' : 'Sa carte fétiche'}</small>
+      <small>${o.moi ? 'Ma carte fétiche' : 'Sa carte fétiche'}</small>
       <b>${h(c.nom)}</b>
-      <span class="fet-tags"><span class="rc-tag r${c.rar}">${R.nom}</span>${n ? `<span class="fet-mz">${insigneMaitrise(n)} Maîtrise · ${MAITRISE.noms[n - 1]}</span>` : ''}</span>
-      ${moi ? '<button class="linkbtn" data-tab="collection">Changer</button>' : ''}
+      <span class="fet-tags"><span class="rc-tag r${c.rar}">${R.nom}</span>${c.rev ? '<span class="rc-tag rev">Reverse</span>' : ''}</span>
+      ${n ? `<span class="fet-mz">${insigneMaitrise(n)}<span>Maîtrise · <b>${MAITRISE.noms[n - 1]}</b></span></span>` : ''}
+      ${o.edit ? '<button class="linkbtn fet-changer" data-tab="collection">Changer</button>' : ''}
     </div>
   </section>`;
 }

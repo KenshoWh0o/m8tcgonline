@@ -163,7 +163,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-place{position:relative;container-type:inline-size;aspect-ratio:63/88;border-radius:6.5cqi;
   background:rgba(8,7,12,.32);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.08);transition:background .2s,box-shadow .2s}
 .ar-place::before{content:"";position:absolute;inset:36%;border-radius:50%;opacity:.1;pointer-events:none;filter:grayscale(1) brightness(1.8);
-  background:url('../assets/pack-star.svg?v=3.0.6') center/contain no-repeat}
+  background:url('../assets/pack-star.svg?v=3.0.7') center/contain no-repeat}
 .ar-place:has(.ar-j)::before{display:none}
 /* Une place libre pour le Joueur qu'on tient : ce qu'on peut faire, donc l'or. */
 .ar-place.cible{cursor:pointer;background:rgba(157,140,255,.12);box-shadow:inset 0 0 0 2px var(--ar-act),0 0 0 4px rgba(157,140,255,.14),0 0 26px rgba(157,140,255,.35);
@@ -767,6 +767,9 @@ html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-atq.ok,html.rm .ar-c
 .ar-tuto{position:absolute;left:0;right:0;top:calc(6px + env(safe-area-inset-top,0px));z-index:30;display:flex;justify-content:center;padding:0 10px;pointer-events:none}
 .ar-tuto[hidden]{display:none}
 .ar-tuto.bas,#arene:has(.ar-focus:not([hidden])) .ar-tuto:not(.bloque){top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+/* La carte agrandie s'arrête au-dessus de la bulle (--tuto-h, sa hauteur) :
+   ses attaques et son bouton « Jouer » restent visibles. */
+#arene:has(.ar-tuto:not([hidden]):not(.bloque)) .ar-focus:not(.haut){padding-bottom:calc(14px + var(--tuto-h,0px))}
 .ar-tuto-in{width:min(100%,430px);padding:12px 14px 13px;border-radius:20px;color:#fff;
   background:linear-gradient(180deg,rgba(48,42,82,.97),rgba(30,27,46,.98));
   box-shadow:inset 0 0 0 1.5px rgba(179,166,255,.6),0 14px 34px rgba(0,0,0,.55);animation:ar-monte .3s ease}

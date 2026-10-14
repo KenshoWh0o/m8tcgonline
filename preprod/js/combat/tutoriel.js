@@ -165,8 +165,9 @@ const ETAPES = [
     texte: () => 'Tes deux Joueurs ont attaqué : ils sont <b>engagés</b>, personne ne peut défendre. Ton CEO est <b>touché</b> : son premier PV, <b>Mur Salvateur</b>, part dans ta main. Il a une <b>Résilience</b> : un effet que tu peux jouer <b>tout de suite, gratuitement</b>, quand la carte sort de tes PV. Joue-la.',
     attend: a => a.t === 'choix' && a.v === 'oui', vise: () => ['[data-ar="opt"][data-v="oui"]'] },
   { quand: (E, d) => d && d.but === 'buffDef', titre: 'Garde', pos: 'haut',
-    texte: () => 'Choisis un de tes Joueurs : il gagne <b>Garde</b> jusqu\'à la fin du tour — il peut alors défendre <b>n\'importe quelle ligne</b>, pas seulement la sienne.',
-    attend: a => a.t === 'choix' },
+    texte: () => 'Touche un de tes Joueurs (ils s\'allument) : il gagne <b>Garde</b> jusqu\'à la fin du tour — il peut alors défendre <b>n\'importe quelle ligne</b>, pas seulement la sienne.',
+    attend: a => a.t === 'choix',
+    vise: E => { const d = Combat.demande(E); return ((d && d.options) || []).filter(o => o.u).map(o => `.ar-j[data-u="${o.u}"]`); } },
   { info: true, quand: (E, d) => tourDe(E, d, 5), titre: 'À toi de jouer',
     texte: E => `Le Rival a <b>${E.j[1].pv.length} PV</b> : touche son CEO jusqu'à ce qu'il n'en ait plus, puis une dernière fois. À retenir : <b>un Joueur</b> et <b>un Coach</b> par tour ; les Essences ne paient que les attaques ; <b>Attaque contre Défense</b> ; un Joueur <b>debout</b> peut défendre. Les bulles reviendront quand il se passera quelque chose de nouveau.`,
     alors: () => { tuto.libre = true; } }
@@ -234,12 +235,16 @@ function tutoBulle(s, E, extra) {
       ${s.info || s.remarque ? '<button class="ar-b or" data-tuto="ok">Compris</button>' : ''}
     </div>`;
   b.hidden = false;
+  /* La place qu'elle prend en bas : la carte agrandie s'y arrête (version
+     3.0.7) — sur un petit écran, la bulle cachait l'attaque à toucher. */
+  T.el.style.setProperty('--tuto-h', s.info || s.remarque ? '0px' : `${b.firstElementChild.offsetHeight + 16}px`);
   return b;
 }
 function tutoCacher() {
   const T = Table.etat;
   const b = T && T.el.querySelector('.ar-tuto');
   if (b) { b.hidden = true; b.innerHTML = ''; }
+  if (T) T.el.style.setProperty('--tuto-h', '0px');
 }
 /* Une bulle à lire : la partie attend « Compris ». */
 function tutoLire(s, E, extra) {

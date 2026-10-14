@@ -498,6 +498,7 @@
       gardes: Object.assign({}, (S.gardes || {})[p] || {}),
       favoris: ((S.favoris || {})[p] || []).slice(),
       combat: combatEtat(p),
+      maitrise: maitriseEtat(p),
       inv: garde(invDe(p)),
       quetes: QUETES.filter(q => (!q.evenement || q.evenement === evenementEnCours()) && !(q.metric === 'invite' && estFilleul(p)))
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
@@ -1040,6 +1041,7 @@
       titre: o.titre || null, banniere: o.banniere || null, devise: o.devise || null,
       vitrine: o.vitrine.slice(),
       xp: xpDe(o.id),
+      fetiche: feticheDe(o.id),
       succes: succesDe(o.id),
       ami, moi: o.id === moi,
       col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null,
@@ -1090,6 +1092,53 @@
       propre.push(c);
     });
     profil(p).vitrine = propre;
+    return me(p);
+  };
+
+  /* ============================== version 3.0.7, 28_maitrise.sql */
+  /* La maîtrise des cartes : cinq niveaux, payés en Fragments et en
+     exemplaires EN TROP (au-delà de la limite de deck, de ce qu'on garde et
+     des échanges en attente) ; chaque exemplaire qui manque se remplace par
+     son prix de fabrication. Les montants sont ceux du serveur. */
+  const MZ_FRAGMENTS = [300, 700, 1500, 3000, 6000];
+  const MZ_COPIES = { C: [1, 1, 2, 2, 3], PC: [1, 1, 2, 2, 3], R: [0, 1, 1, 2, 2], E: [0, 1, 1, 1, 1], L: [0, 0, 1, 0, 1], S: [0, 0, 0, 0, 0] };
+  /* maitrise_carte : la carte qui porte la maîtrise (une Reverse : sa carte
+     classique), si elle se maîtrise ; null sinon. */
+  function maitriseCarte(id) {
+    const k = carte(/^r\d/.test(id || '') ? 'c' + id.slice(1) : id);
+    return k && !k.rev && k.cat !== 'essence' && (!k.promo || k.secrete) && MZ_COPIES[k.rar] ? k : null;
+  }
+  const mzDe = p => (S.maitrises[p] = S.maitrises[p] || {});
+  const maitriseEtat = p => ({ niveaux: Object.assign({}, mzDe(p)), fetiche: profil(p).fetiche || null });
+  function feticheDe(u) {
+    const f = profil(u).fetiche;
+    if (!f || !possede(u, f)) return null;
+    const k = maitriseCarte(f);
+    return { carte: f, niveau: (k && mzDe(u)[k.id]) || 0 };
+  }
+  RPC.maitriser = (p, { p_carte }) => {
+    const k = maitriseCarte(p_carte);
+    if (!k) refuser(carte(p_carte) ? 'Cette carte ne se maîtrise pas.' : 'Carte inconnue.');
+    const possedees = colDe(p)[k.id] || 0;
+    if (possedees < 1) refuser('Il faut posséder la carte pour la maîtriser.');
+    const n = (mzDe(p)[k.id] || 0) + 1;
+    if (n > 5) refuser('Cette carte est déjà au niveau maximum.');
+    const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === k.id && t.status === 'pending').length;
+    const limite = ['L', 'S', 'UN', 'PR'].includes(k.rar) ? 1 : 2;
+    const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
+    const copies = MZ_COPIES[k.rar][n - 1];
+    const pris = Math.min(copies, dispo);
+    const total = MZ_FRAGMENTS[n - 1] + (copies - pris) * (cfg('fabrication_' + k.rar) || 0);
+    const pr = profil(p);
+    if ((pr.fragments || 0) < total) refuser(`Pas assez de Fragments : il en faut ${total}.`);
+    pr.fragments -= total;
+    if (pris) ajouter(p, k.id, -pris);
+    mzDe(p)[k.id] = n;
+    return me(p);
+  };
+  RPC.set_fetiche = (p, { p_carte }) => {
+    if (p_carte != null && !possede(p, p_carte)) refuser('Tu ne possèdes pas cette carte.');
+    profil(p).fetiche = p_carte || null;
     return me(p);
   };
 
@@ -2191,6 +2240,8 @@
     /* Version 2.1 : les exemplaires à garder. */
     S.gardes = S.gardes || {};
     S.favoris = S.favoris || {};
+    /* Version 3.0.7 : la maîtrise des cartes. */
+    S.maitrises = S.maitrises || {};
     S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
     chasseTerminee();
     monde20();

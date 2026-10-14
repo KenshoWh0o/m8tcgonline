@@ -122,6 +122,9 @@ begin
     'favoris', coalesce((select jsonb_agg(card_id order by le) from favoris where user_id = p), '[]'::jsonb),
     -- Version 3.0 : l'etat des Combats (combat_etat, 23_combats.sql).
     'combat', combat_etat(p),
+    -- Version 3.0.7 : les cartes maitrisees et la carte fetiche
+    -- (maitrise_etat, 28_maitrise.sql).
+    'maitrise', maitrise_etat(p),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
     'quetes', coalesce((
@@ -188,6 +191,9 @@ begin
     -- Version 3.0 : son XP de combattant (26_niveaux.sql), pour le niveau
     -- pose sur l'avatar ; la page le calcule, comme pour me().
     'xp', xp_de(o.id),
+    -- Version 3.0.7 : sa carte fetiche et sa maitrise (fetiche_de,
+    -- 28_maitrise.sql) ; rien s'il n'en a pas, ou plus.
+    'fetiche', fetiche_de(o.id),
     'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,

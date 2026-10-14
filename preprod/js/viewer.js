@@ -18,14 +18,19 @@ function openViewer(c, qui) {
   const R = RAR[c.rar] || RAR.C;
   const v = $('#viewer');
   v.dataset.id = c.id;
+  /* Version 3.0.7 : sous la carte, un mini-menu à trois pages qu'on fait
+     glisser du doigt (ou qu'on touche) — Infos, Maîtrise, Gérer. La page
+     choisie reste d'une carte à l'autre. */
+  const ong = (VW && VW.ong) || vwOngletRetenu;
 
   v.innerHTML = `<div class="vw-bg" data-v="close"></div><button class="vw-close" data-v="close" aria-label="Fermer">✕</button>${vFavVw(c)}
-  <div class="vw-stage"><div class="vw-card r${c.rar}" id="vwc">${renderCard(c)}<div class="vw-holo"></div><div class="vw-glare"></div></div></div>
+  <div class="vw-stage"><div class="vw-card r${c.rar}" id="vwc">${vCarteVw(c)}</div></div>
   <div class="vw-shadow" id="vwsh"></div>
   <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span>${c.rev ? '<span class="rc-tag rev">Reverse</span>' : ''}<span class="vw-col">${essIcon(c.col)}${colOf(c).nom}</span><span class="vw-num">${c.promo ? h(c.code) : '#' + String(c.num || 0).padStart(3, '0')}</span><span class="vw-own${n ? '' : ' zero'}">${n ? `Tu en as ${n}` : 'Tu ne l\'as pas'}</span>${lui != null ? `<span class="vw-own autre">${h(qui)} en a ${lui}</span>` : ''}</div></div>
-  <div class="vw-gardebox">${vGardeVw(c)}</div>
-  ${c.promo ? `<p class="vw-promo">${h(promoSousTitre(c))}${c.illustrateur ? ' · Illustration : ' + h(c.illustrateur) : ''}</p>` : ''}
-  ${c.secrete ? `<p class="vw-promo">Secrète ${h(c.code)} — hors des ${cards.length}, ${c.cachee ? 'pas encore révélée' : 'Illustration : ' + h(c.illustrateur || '?')}. Elle s'échange, mais ne se recycle ni ne se fabrique.</p>` : ''}
+  <section class="vw-fiche" aria-label="Fiche de la carte">
+    <div class="vw-ongs" role="tablist">${VW_ONGLETS.map(([k, nom], i) => `<button role="tab" data-v="ong" data-o="${k}" aria-selected="${k === ong}"${k === ong ? ' class="on"' : ''}>${nom}${k === 'maitrise' ? `<span class="vw-ong-mz">${insigneMaitrise(maitrisable(c) ? niveauMaitrise(c) : 0)}</span>` : ''}</button>`).join('')}<i class="vw-ong-barre" style="--i:${Math.max(0, VW_ONGLETS.findIndex(x => x[0] === ong))}"></i></div>
+    <div class="vw-pages">${VW_ONGLETS.map(([k]) => `<div class="vw-page" role="tabpanel" data-p="${k}">${vPageVw(k, c)}</div>`).join('')}</div>
+  </section>
   <p class="vw-hint">Fais glisser la carte pour la faire pivoter</p>`;
   v.hidden = false;
 
@@ -33,8 +38,9 @@ function openViewer(c, qui) {
   const sh = $('#vwsh');
   const st = { rx: 0, ry: 0, drag: false, x0: 0, y0: 0, r0x: 0, r0y: 0, vx: 0, vy: 0, lx: 0, ly: 0,
     grx: 0, gry: 0, t: performance.now() };
-  VW = { st, alive: true, c };
+  VW = { st, alive: true, c, ong, apercu: 0 };
   const me = VW;
+  brancherPagesVw(ong);
 
   /* L'inclinaison de l'appareil fait tourner la carte, comme à l'ouverture d'un
      booster. Branché ici, c'est-à-dire pendant la pression qui ouvre la
@@ -72,8 +78,8 @@ function openViewer(c, qui) {
     if (!st.drag) {
       /* Au repos, la carte oscille doucement. L'inclinaison de l'appareil
          s'ajoute à ce balancement : elle le déplace, elle ne le remplace pas. */
-      const idleY = st.gry + (RM() ? 0 : Math.sin(now / 1500) * 7);
-      const idleX = st.grx + (RM() ? 0 : Math.sin(now / 2100) * 4);
+      const idleY = st.gry + (vwCalme() ? 0 : Math.sin(now / 1500) * 7);
+      const idleX = st.grx + (vwCalme() ? 0 : Math.sin(now / 2100) * 4);
       st.vy *= .9;
       st.vx *= .9;
       st.ry += st.vy;
@@ -89,6 +95,142 @@ function openViewer(c, qui) {
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
+}
+
+/* ---------- La fiche : Infos, Maîtrise, Gérer (version 3.0.7) ---------- */
+const vwTous = s => [...document.querySelectorAll(s)];
+/* Les mouvements réduits : ceux du système, ou le réglage du jeu. */
+const vwCalme = () => RM() || document.documentElement.classList.contains('rm');
+const VW_ONGLETS = [['infos', 'Infos'], ['maitrise', 'Maîtrise'], ['gerer', 'Gérer']];
+let vwOngletRetenu = 'infos';
+
+/* La carte de la visionneuse, avec sa maîtrise (ou l'aperçu du niveau
+   suivant, le temps de le regarder). */
+function vCarteVw(c) {
+  const m = VW && VW.c === c && VW.apercu ? VW.apercu : maitrisable(c) ? niveauMaitrise(c) : 0;
+  return renderCard(c, { m }) + '<div class="vw-holo"></div><div class="vw-glare"></div>';
+}
+
+function vPageVw(k, c) {
+  if (k === 'infos') return vInfosVw(c);
+  if (k === 'maitrise') return `<div class="mz-fiche">${vMaitriseFiche(c)}</div>`;
+  return vGererVw(c);
+}
+
+/* Ce que la carte fait en combat, dans le style de la carte agrandie de
+   l'arène : la Défense, les attaques (coût, nom, effet, dégâts), le mot-clé
+   et les talents, la Résilience ; le texte d'un Objet, d'un Moment, d'un
+   Coach. */
+const VW_TYPE = { joueur: 'Joueur', objet: 'Objet', moment: 'Moment', coach: 'Coach', essence: 'Essence' };
+const VW_COACH = { objet: 'Lié à un Joueur, il le renforce tant qu\'il reste en jeu (3 au plus par Joueur).',
+  moment: 'Un effet, à jouer autant que tu veux pendant ton tour.', coach: 'Un effet, un seul Coach par tour.',
+  essence: 'Elle paie les attaques. Une Réserve compte dix Essences.' };
+function vInfosVw(c) {
+  const cout = x => (typeof Table !== 'undefined' && Table.coutHTML ? Table.coutHTML(x || {}) : '');
+  const l = [];
+  if (c.cachee) l.push('<p class="vw-i-texte">Cette Secrète n\'est pas encore révélée.</p>');
+  else if (c.cat === 'joueur') {
+    l.push(`<div class="vw-i-tete"><span class="ar-f-defv" aria-label="Défense ${c.def}">${VW_DEF}<small>Déf</small><b>${c.def != null ? c.def : '?'}</b></span><span class="vw-i-type">Joueur${c.sous ? ' · ' + h(c.sous) : ''}</span></div>`);
+    l.push(`<div class="ar-f-atqs">${(c.atks || []).map(a => `<div class="ar-f-atq lu">${cout(a.cout)}<span class="ar-f-at"><b>${h(a.nom)}</b>${a.effet ? `<small>${h(a.effet)}</small>` : ''}</span>${a.degats == null ? '' : `<em>${a.degats}</em>`}</div>`).join('')}</div>`);
+    const puces = [];
+    if (c.kw) puces.push(`<span class="ar-puce kw"><b>${h(c.kw.nom)}</b> ${h(c.kw.texte)}</span>`);
+    (c.talents || []).forEach(t => puces.push(`<span class="ar-puce kw"><b>${h(t.nom)}</b> ${h(t.texte)}</span>`));
+    if (puces.length) l.push(`<div class="vw-i-puces">${puces.join('')}</div>`);
+  } else {
+    l.push(`<div class="vw-i-tete"><span class="vw-i-type">${VW_TYPE[c.cat] || ''}</span></div>`);
+    if ((c.fx || []).length) l.push(`<div class="vw-i-texte">${c.fx.map(t => `<p>${h(t)}</p>`).join('')}</div>`);
+    if (VW_COACH[c.cat]) l.push(`<p class="vw-i-aide">${VW_COACH[c.cat]}</p>`);
+  }
+  if (c.res) l.push(`<p class="vw-i-res"><b>Résilience</b> ${h(c.res)}<small>Jouée gratuitement quand la carte sort de tes PV.</small></p>`);
+  if (c.promo) l.push(`<p class="vw-promo">${h(promoSousTitre(c))}${c.illustrateur ? ' · Illustration : ' + h(c.illustrateur) : ''}</p>`);
+  if (c.secrete) l.push(`<p class="vw-promo">Secrète ${h(c.code)} — hors des ${cards.length}, ${c.cachee ? 'pas encore révélée' : 'Illustration : ' + h(c.illustrateur || '?')}. Elle s'échange, mais ne se recycle ni ne se fabrique.</p>`);
+  return l.join('');
+}
+const VW_DEF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7Z"/></svg>';
+
+/* Gérer : le cœur, combien en garder, la carte fétiche. */
+function vGererVw(c) {
+  const fav = estFavori(c);
+  const fet = (save.fetiche || null) === c.id;
+  const possede = mesEx(c.id) > 0;
+  const enLigne = Backend.mode === 'cloud';
+  return `<div class="vw-g">
+    <div class="vw-g-ligne"><span><b>Favori</b><small>Retrouve-la avec le filtre « Mes favoris » de la Collection.</small></span>
+      <button class="vw-g-fav${fav ? ' on' : ''}" data-v="fav" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${NAVICO.coeur}</button></div>
+    ${enLigne && !c.promo && possede ? `<div class="vw-g-ligne col"><span><b>À garder</b><small>Le recyclage et la maîtrise ne touchent jamais à ces exemplaires.</small></span><div class="vw-gardebox">${vGardeVw(c)}</div></div>` : ''}
+    <div class="vw-g-ligne"><span><b>Carte fétiche</b><small>${fet ? 'C\'est elle qu\'on voit en premier sur ton profil.' : 'Mise en scène en haut de ton profil, et sur ta fiche de joueur.'}</small></span>
+      ${!enLigne ? '<small class="vw-g-non">En ligne</small>' : possede || fet
+        ? `<button class="btn tiny${fet ? ' ghost' : ''}" data-v="fetiche">${fet ? 'Retirer' : 'Choisir'}</button>`
+        : '<small class="vw-g-non">Pas dans ta collection</small>'}</div>
+  </div>`;
+}
+
+/* Les pages glissent en scroll-snap : l'onglet suit le doigt, et toucher un
+   onglet fait glisser jusqu'à sa page. */
+function brancherPagesVw(ong) {
+  const pages = $('#viewer .vw-pages');
+  if (!pages) return;
+  const i0 = Math.max(0, VW_ONGLETS.findIndex(x => x[0] === ong));
+  pages.scrollLeft = i0 * pages.clientWidth;
+  hauteurPagesVw();
+  let raf = 0;
+  pages.addEventListener('scroll', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const i = Math.round(pages.scrollLeft / Math.max(1, pages.clientWidth));
+      majOngletVw(VW_ONGLETS[Math.max(0, Math.min(VW_ONGLETS.length - 1, i))][0]);
+    });
+  }, { passive: true });
+}
+function majOngletVw(k) {
+  if (!VW) return;
+  VW.ong = vwOngletRetenu = k;
+  const i = VW_ONGLETS.findIndex(x => x[0] === k);
+  vwTous('#viewer .vw-ongs [data-o]').forEach(b => { const on = b.dataset.o === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  const barre = $('#viewer .vw-ong-barre');
+  if (barre) barre.style.setProperty('--i', i);
+  hauteurPagesVw();
+}
+/* Les pages n'ont pas la même hauteur : le cadre prend celle de la page
+   montrée, sans quoi Infos laissait sous elle le vide de la page Maîtrise. */
+function hauteurPagesVw() {
+  const pages = $('#viewer .vw-pages');
+  const i = Math.max(0, VW_ONGLETS.findIndex(x => x[0] === (VW && VW.ong)));
+  const p = pages && pages.children[i];
+  if (p) pages.style.height = p.scrollHeight + 'px';
+}
+function allerOngletVw(k) {
+  const pages = $('#viewer .vw-pages');
+  const i = VW_ONGLETS.findIndex(x => x[0] === k);
+  if (!pages || i < 0) return;
+  SFX.jouer('tap');
+  majOngletVw(k);
+  pages.scrollTo({ left: i * pages.clientWidth, behavior: vwCalme() ? 'auto' : 'smooth' });
+}
+
+/* Après une maîtrise, un choix de carte fétiche : la carte et les pages se
+   redessinent en place. `eclair` : un éclair traverse la carte — elle vient
+   de changer d'allure sous les yeux. */
+function rafraichirFicheVw(eclair) {
+  if (!VW) return;
+  const c = VW.c;
+  VW.apercu = 0;
+  const el = $('#vwc');
+  if (el) {
+    el.innerHTML = vCarteVw(c);
+    if (eclair && !vwCalme()) { el.classList.remove('vw-eclair'); void el.offsetWidth; el.classList.add('vw-eclair'); }
+  }
+  for (const [k] of VW_ONGLETS) {
+    if (k === 'infos') continue;
+    const p = $(`#viewer .vw-page[data-p="${k}"]`);
+    if (p) p.innerHTML = vPageVw(k, c);
+  }
+  hauteurPagesVw();
+  const ins = $('#viewer .vw-ong-mz');
+  if (ins) ins.innerHTML = insigneMaitrise(maitrisable(c) ? niveauMaitrise(c) : 0);
+  const own = $('#viewer .vw-own:not(.autre)');
+  const n = save.col[c.id] || 0;
+  if (own) { own.classList.toggle('zero', !n); own.textContent = n ? `Tu en as ${n}` : 'Tu ne l\'as pas'; }
 }
 
 /* ---------- Combien j'en garde (version 2.1) ---------- */
@@ -119,18 +261,15 @@ async function basculerFavoriVw() {
   const c = VW && VW.c;
   if (!c) return;
   const on = !estFavori(c);
-  const maj = () => {
-    const b = $('#viewer .vw-fav');
-    if (!b) return;
+  const maj = () => vwTous('#viewer [data-v="fav"]').forEach(b => {
     b.classList.toggle('on', estFavori(c));
     b.setAttribute('aria-pressed', estFavori(c));
     b.setAttribute('aria-label', estFavori(c) ? 'Retirer des favoris' : 'Ajouter aux favoris');
-  };
+  });
   /* Tout de suite à l'écran ; le serveur suit. */
   save.favoris = on ? (save.favoris || []).concat(c.id) : (save.favoris || []).filter(id => id !== c.id);
   maj();
-  const b = $('#viewer .vw-fav');
-  if (b && on) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+  if (on) vwTous('#viewer [data-v="fav"]').forEach(b => { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
   SFX.jouer(on ? 'tap' : 'retour');
   if (on) vibrer(12);
   try {
@@ -185,6 +324,11 @@ function closeViewer() {
 $('#viewer').addEventListener('click', e => {
   if (e.target.closest('[data-v="close"]')) return closeViewer();
   if (e.target.closest('[data-v="fav"]')) return basculerFavoriVw();
+  const o = e.target.closest('[data-v="ong"]');
+  if (o) return allerOngletVw(o.dataset.o);
+  if (e.target.closest('[data-v="maitriser"]')) return maitriserVw();
+  if (e.target.closest('[data-v="mz-apercu"]')) return apercuMaitriseVw();
+  if (e.target.closest('[data-v="fetiche"]')) return choisirFeticheVw();
   const g = e.target.closest('[data-v^="g"]');
   if (g) changerGardeVw(g.dataset.v === 'g+' ? 1 : g.dataset.v === 'g-' ? -1 : 0);
 });

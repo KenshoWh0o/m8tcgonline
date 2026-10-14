@@ -156,6 +156,7 @@ async function ouvrirFiche(pseudo) {
       </div>
     </div>
     ${vElu(f.succes, f.moi)}
+    ${f.fetiche ? vFetiche(f.fetiche.carte, f.fetiche.niveau, { moi: f.moi }) : ''}
     ${(f.vitrine || []).length ? vVitrine(f.vitrine, false) : ''}
     <div class="stats">
       <div class="stat"><b>${f.possede} / ${f.total}</b><span>collection (${pct} %)</span></div>

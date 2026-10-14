@@ -37,6 +37,7 @@ MORCEAUX = [
     ('25_choc.sql',    'Version 3.0 : l\'evenement « Le Choc des Sections »'),
     ('26_niveaux.sql', 'Version 3.0 : l\'XP et le niveau de combattant'),
     ('27_raid.sql', 'Version 3.0 : le Raid, un boss commun par saisons de deux semaines'),
+    ('28_maitrise.sql', 'Version 3.0.7 : la maitrise des cartes, et la carte fetiche'),
 ]
 
 entete = """-- =====================================================================

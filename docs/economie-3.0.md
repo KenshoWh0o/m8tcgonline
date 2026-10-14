@@ -201,9 +201,47 @@ D'où les trois repères du bilan (`Decks.bilan`) : 16 Joueurs au moins, une Ré
 
 **[mesuré]** Les niveaux bas sont bien plus solides qu'avant, et l'échelle monte à chaque marche (le niveau au-dessus gagne 86 %, 54 %, 56 % et 68 % des parties). **[mesuré]** Les marches Facile → Normal et Normal → Difficile restent courtes, dans la marge d'erreur : à deck égal, ces trois niveaux jouent presque aussi bien ; la difficulté de l'Arcade et de la campagne vient aussi du deck adverse, dont les raretés montent avec le niveau. Le seul levier qui a montré un gain est le nombre d'essais par coup (porté à 3 et 4 pour les niveaux 4 et 5) ; la méfiance envers la riposte n'en a montré aucun. **[inconnu]** La force perçue par un humain : à mesurer avec les taux de victoire réels après l'ouverture.
 
+## 3 ter. La maîtrise des cartes (version 3.0.7)
+
+Le rôle : donner un usage durable aux Fragments une fois la collection complète. Les règles sont dans l'en-tête de `supabase/28_maitrise.sql` (le serveur décide) et de `js/maitrise.js` (l'affichage) ; les deux portent les mêmes montants.
+
+### Valeurs retenues [fait] `maitrise_fragments`, `maitrise_copies`, `supabase/28_maitrise.sql`
+
+| Niveau | Nom | Fragments | Exemplaires en trop pris : Commune et Peu commune / Rare / Épique / Légendaire / Secrète |
+|---|---|---|---|
+| I | Éclat | 300 | 1 / 0 / 0 / 0 / 0 |
+| II | Gravure | 700 | 1 / 1 / 1 / 0 / 0 |
+| III | Aura | 1 500 | 2 / 1 / 1 / 1 / 0 |
+| IV | Arène | 3 000 | 2 / 2 / 1 / 0 / 0 |
+| V | Légende | 6 000 | 3 / 2 / 1 / 1 / 0 |
+
+- Seuls les exemplaires **en trop** sont pris : au-delà de la limite de deck (2 ; 1 pour une Légendaire ou une Secrète, `limite_copies`), au-delà de ce que le joueur garde (`garde_de`), hors des échanges en attente. Un deck n'est donc jamais privé d'une carte par la maîtrise.
+- Chaque exemplaire qui manque est remplacé par son **prix de fabrication** en Fragments (`cfg('fabrication_…')` : 40, 100, 400, 2 000, 8 000). La maîtrise n'est jamais bloquée par la chance.
+- La Reverse partage la maîtrise de sa carte ; ni les Essences, ni les Promos (sauf les Secrètes), ni l'Unique.
+
+### Ce que coûte une carte jusqu'à la Légende [calcul]
+
+| Rareté | Exemplaires en trop pris en tout | Coût sans aucun exemplaire en trop | Coût avec tous les exemplaires en trop |
+|---|---|---|---|
+| Commune | 9 | 11 860 Fragments | 11 500 Fragments |
+| Peu commune | 9 | 12 400 | 11 500 |
+| Rare | 6 | 13 900 | 11 500 |
+| Épique | 4 | 19 500 | 11 500 |
+| Légendaire | 2 | 27 500 | 11 500 |
+| Secrète | 0 | 11 500 | 11 500 |
+
+- **[calcul]** Un exemplaire en trop vaut bien plus dans la maîtrise qu'au recyclage : une Commune rapporte 2 Fragments recyclée, mais en économise 40 dans une maîtrise ; une Légendaire, 250 contre 8 000. Le recyclage reste utile pour fabriquer les cartes qui manquent ; une fois la collection complète, la maîtrise devient le meilleur usage des doublons.
+- **[calcul]** Les sources de Fragments connues de la 3.0 : 2 800 une fois (campagne), 3 750 pendant le Choc (Pass), 600 par saison de Raid pour qui la finit (coffres et palier), 500 au niveau 25. Une seule carte en Légende (11 500) demande donc l'équivalent de plusieurs saisons : c'est voulu, la maîtrise est un objectif de long terme.
+- **[hypothèse]** Combien de cartes un joueur actif maîtrisera par mois : impossible à dire sans mesurer le recyclage réel après l'ouverture (`maitrises_journal` garde chaque niveau payé : Fragments et exemplaires).
+
+### La carte fétiche [fait] `profiles.fetiche`, `set_fetiche`, `fetiche_de`
+
+Gratuite : une carte possédée, mise en scène en haut du profil et sur la fiche publique (avec sa maîtrise). Échangée ou perdue, elle disparaît de la fiche (`fetiche_de` revérifie la possession).
+
 ## 4. Ce qui reste ouvert
 
 1. Le rythme réel de jeu des combats : à mesurer après l'ouverture (voir l'introduction). Il fixe aussi la vitesse de montée en niveau (partie 2 bis).
 2. La valeur de `raid_echelle` au lancement : elle dépend du nombre de joueurs, et décide de la fréquence des coffres du Raid.
 3. Le prix des cosmétiques de combat (4 000 à 5 000 Éclats par tapis) est une proposition. Rien ne permet encore de dire s'il est trop haut ou trop bas.
-4. Les règles du jeu elles-mêmes sont reconstituées (`docs/regles-3.0.md`). Si les vraies règles changent la durée d'une partie, le rythme des gains change avec elle.
+4. Les montants de la maîtrise (partie 3 ter) sont une proposition, sans mesure : à revoir avec `maitrises_journal` après l'ouverture.
+5. Les règles du jeu elles-mêmes sont reconstituées (`docs/regles-3.0.md`). Si les vraies règles changent la durée d'une partie, le rythme des gains change avec elle.

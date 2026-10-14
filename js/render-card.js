@@ -17,15 +17,19 @@
 let logoAbs = '';
 const logoAbsolu = () => logoAbs || (logoAbs = new URL(ART.set, document.baseURI).href);
 
-function renderCard(c) {
+/* `o` (version 3.0.7) : `m`, le niveau de maîtrise à montrer (0 : aucun) ;
+   `calme`, sans animation — pour une grille de cent cartes (js/maitrise.js,
+   css/maitrise.css). Rien n'est deviné : qui veut la maîtrise la demande. */
+function renderCard(c, o) {
   if (!c) return '';
 
   if (c.img) {
+    const m = o && o.m && typeof maitriseEnveloppe === 'function' ? maitriseEnveloppe(c, o.m, o.calme) : null;
     /* Une Reverse (version 2.0) : la carte, un reflet sur tout ce qui n'est
        pas l'illustration, et le logo Tout Commence Ici frappé en holographique. */
-    return `<div class="cwrap"><div class="card img-card r-${c.rar}${c.rev ? ' rev' : ''}" style="--tc:${tcol(c)}">
+    return `<div class="cwrap${m ? m.cls : ''}"${m ? ` style="${m.style}"` : ''}><div class="card img-card r-${c.rar}${c.rev ? ' rev' : ''}" style="--tc:${tcol(c)}">
       <img src="${c.img}" alt="${h(c.nom)}" loading="lazy" decoding="async">${c.rev
-        ? `<i class="revtampon" aria-hidden="true" style="--logo:url('${logoAbsolu()}')"><i></i></i><i class="revlueur" aria-hidden="true"></i>` : ''}</div></div>`;
+        ? `<i class="revtampon" aria-hidden="true" style="--logo:url('${logoAbsolu()}')"><i></i></i><i class="revlueur" aria-hidden="true"></i>` : ''}${m ? m.dedans : ''}</div>${m ? m.autour : ''}</div>`;
   }
 
   /* Version 3.0 : une carte dont le visuel n'est pas encore connu (les

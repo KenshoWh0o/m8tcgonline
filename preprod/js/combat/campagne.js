@@ -14,7 +14,7 @@
 const SECTIONS = {
   toxique: {
     id: 'toxique', nom: 'Section Toxique', court: 'Toxique', c: '#62d84e', c2: '#b7f29a',
-    promo: 'p03', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp?v=3.0.6',
+    promo: 'p03', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp?v=3.0.7',
     /* Les couleurs de ses adversaires de campagne, quand on affronte cette
        Section. */
     couleurs: ['rose', 'orange', 'verte', 'jaune'],
@@ -22,7 +22,7 @@ const SECTIONS = {
   },
   deter: {
     id: 'deter', nom: 'Section Déter', court: 'Déter', c: '#7c3aed', c2: '#c4b5fd',
-    promo: 'p04', starter: 'deter', boite: 'assets/combat/sections/deter.webp?v=3.0.6',
+    promo: 'p04', starter: 'deter', boite: 'assets/combat/sections/deter.webp?v=3.0.7',
     couleurs: ['mauve', 'violette', 'bleue', 'azur'],
     devise: 'Des Joueurs qui reviennent toujours, et des coups qui pèsent.'
   }

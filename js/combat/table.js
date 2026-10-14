@@ -61,12 +61,20 @@ const Table = (() => {
   /* Une carte : son illustration, et ses reflets (Reverse, Légendaire,
      Secrète). Pas de signe de sa sorte dans le coin : l'illustration dit
      déjà ce qu'elle est. */
-  function htmlCarte(id) {
+  /* Version 3.0.7 : la maîtrise de ses propres cartes (js/maitrise.js) —
+     `m`, son niveau, ou 0. Celle de l'adversaire ne se voit pas : on ne la
+     connaît pas. La lumière, la gravure et l'holographique vont dans la
+     carte ; le halo, la bordure et la couronne autour du Joueur posé. */
+  const mzDe = (id, j) => (j === T.moi && typeof maitrisable === 'function' && byId[id] && maitrisable(byId[id]) ? niveauMaitrise(byId[id]) : 0);
+  const mzCouleur = id => tcol(carteMaitrise(byId[id]));
+  const mzAutour = (id, m) => (m >= 3 ? `<i class="mz-a" aria-hidden="true"></i>${m >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : ''}${m >= 5 ? `<i class="mz-c" aria-hidden="true">${COURONNE}</i>` : ''}` : '');
+  function htmlCarte(id, m) {
     const c = carte(id);
+    const mz = m ? ` mz mz-${m}" style="--mc:${mzCouleur(id)}` : '';
     const img = c.img
       ? `<img src="${c.img}" alt="" draggable="false" decoding="async">`
       : `<div class="ar-texte r-${c.rar}" style="--tc:${tcol(c)}"><b>${h(c.nom)}</b><small>${h(c.provisoire ? 'Promo provisoire' : (RAR[c.rar] || {}).nom || '')}</small>${c.def != null ? `<em>Déf ${c.def}</em>` : ''}${(c.atks || []).map(a => `<span>${coutHTML(a.cout)} ${h(a.nom)} <i>${a.degats == null ? '' : a.degats}</i></span>`).join('')}</div>`;
-    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' ? ' holo' : ''}${c.rar === 'S' ? ' secrete' : ''}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}</div>`;
+    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' ? ' holo' : ''}${c.rar === 'S' ? ' secrete' : ''}${mz}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}${m ? `<i class="mz-l" aria-hidden="true"></i>${m >= 5 ? '<i class="mz-h" aria-hidden="true"></i>' : ''}` : ''}</div>`;
   }
   const dos = j => `<div class="ar-c dos"><img src="${sleeveDe(j)}" alt="" draggable="false"></div>`;
 
@@ -275,9 +283,11 @@ const Table = (() => {
       if (!x) {
         if (actuel) actuel.remove();
         x = document.createElement('div');
-        x.className = 'ar-j';
+        const m = mzDe(c.id, j);
+        x.className = 'ar-j' + (m ? ` mz-j mz-${m}` : '');
         x.dataset.u = c.u;
-        x.innerHTML = `${htmlCarte(c.id)}<span class="ar-objs"></span><span class="ar-def"></span><span class="ar-marques"></span><span class="ar-engage" aria-hidden="true">Engagé</span>`;
+        if (m) x.style.setProperty('--mc', mzCouleur(c.id));
+        x.innerHTML = `${mzAutour(c.id, m)}${htmlCarte(c.id, m)}<span class="ar-objs"></span><span class="ar-def"></span><span class="ar-marques"></span><span class="ar-engage" aria-hidden="true">Engagé</span>`;
         place.appendChild(x);
       }
       majJoueur(x, c);
@@ -394,7 +404,7 @@ const Table = (() => {
           b.className = 'ar-m';
           b.dataset.mu = c.u;
           b.setAttribute('aria-label', carte(c.id).nom || '');
-          b.innerHTML = htmlCarte(c.id);
+          b.innerHTML = htmlCarte(c.id, mzDe(c.id, T.moi));
         }
         avant.delete(c.u);
         b.style.setProperty('--i', i);
@@ -762,12 +772,14 @@ const Table = (() => {
     z.style.bottom = garde ? `${Math.max(0, a.bottom - r.top + 4)}px` : '0px';
     z.className = 'ar-focus' + (garde ? ' haut' : '');
     z.innerHTML = `<div class="ar-f-in" style="--bas:${place}px">
-      <div class="ar-fc">${htmlCarte(id)}</div>
+      <div class="ar-fc">${htmlCarte(id, f.u != null && (f.main || ownerOf(f.u) === T.moi) ? mzDe(id, T.moi) : 0)}</div>
       <div class="ar-f-bas">${bas}</div>
       <button class="ar-bouton ar-f-x" data-ar="fermer-focus" aria-label="Fermer">✕</button>
     </div>`;
     z.hidden = false;
     if (f.main) rendre();
+    /* Le tutoriel allume aussi ce qui est sous la carte (son attaque). */
+    else if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
   }
 
   /* La ligne d'état d'un Joueur en jeu : sa Défense réelle, prêt ou engagé,
@@ -1481,6 +1493,26 @@ const Table = (() => {
     ], { duration: 320, easing: 'ease-out' });
   }
 
+  /* L'entrée d'une carte maîtrisée : un éclat de sa couleur (niveau 4) ;
+     au niveau 5, une onde de choc part d'elle et traverse le plateau. */
+  async function entreeMaitrisee(x, id, m) {
+    const mc = mzCouleur(id);
+    x.classList.remove('mz-entree'); void x.offsetWidth; x.classList.add('mz-entree');
+    setTimeout(() => x && x.classList.remove('mz-entree'), 1100);
+    eclats(x, ['#fff', mc, mc, '#fff6c8'], m >= 5 ? 46 : 30);
+    SFX.jouer(m >= 5 ? 'legend' : 'rare');
+    if (m >= 5 && !RM()) {
+      const r = rect(x), sc = rect(qs('.ar-scene'));
+      const o = document.createElement('i');
+      o.className = 'mz-onde';
+      o.style.cssText = `left:${r.left - sc.left + r.width / 2}px;top:${r.top - sc.top + r.height / 2}px;--mc:${mc}`;
+      qs('.ar-scene').appendChild(o);
+      setTimeout(() => o.remove(), 1200);
+      secousse(6);
+    }
+    await attendre(m >= 5 ? 700 : 420);
+  }
+
   function eclats(x, couleurs, n) {
     if (!x || typeof FX === 'undefined') return;
     const r = rect(x);
@@ -1597,6 +1629,10 @@ const Table = (() => {
       rendre(true);
       const x = elU(e.u);
       if (x) { x.classList.add('pose'); eclats(x, [coulDe(carte(e.id)).c, '#fff'], 16); }
+      /* Version 3.0.7 : une carte maîtrisée entre dans un éclat (niveau 4),
+         et une Légende dans une onde de choc (niveau 5). */
+      const m = mzDe(e.id, e.j);
+      if (x && m >= 4) await entreeMaitrisee(x, e.id, m);
       SFX.jouer('retourne');
       /* Le Joueur adverse se nomme en arrivant. */
       if (e.j !== T.moi) flottant(x, carte(e.id).nom || '', 'info');
@@ -1675,7 +1711,14 @@ const Table = (() => {
       SFX.jouer('dechire');
       secousse(e.cible === 'ceo' ? 7 : 4);
       if (e.val != null && e.cible !== 'ceo') flottant(c, String(e.val), 'degats');
-      eclats(c, ['#fff', '#ff6b6b', '#ffb3b3'], 22);
+      /* Version 3.0.7 : les coups d'une carte maîtrisée (niveau 4 et plus)
+         brillent de la couleur de son Essence. */
+      const idA = trouverId(e.u), mA = idA ? mzDe(idA, ownerOf(e.u)) : 0;
+      if (mA >= 4) {
+        const mc = mzCouleur(idA);
+        eclats(c, ['#fff', mc, mc, '#fff6c8'], 34);
+        if (c && !RM()) c.animate([{ filter: `drop-shadow(0 0 0 ${mc})` }, { filter: `drop-shadow(0 0 14px ${mc}) brightness(1.5)`, offset: .3 }, { filter: 'none' }], { duration: 520 * vitesse() });
+      } else eclats(c, ['#fff', '#ff6b6b', '#ffb3b3'], 22);
       await attendre(420);
     },
     async repousse(e) {

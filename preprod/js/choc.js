@@ -203,6 +203,7 @@ function vChNouveautes() {
     ${vChSecretes()}
     ${vChRefonte()}
     <div class="ch-nv-grille">
+      ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Tes Fragments font briller une carte, en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
       ${tuile('data-cb="vue" data-v="raid"', illuCadre(RAID.boss, RAID_VISAGE[0], RAID_VISAGE[1], 1.2), 'Le Raid', 'Un boss pour tout le serveur, par saisons de deux semaines.', 'raid')}
       ${tuile('data-tab="profil"', avatarHTML(save.avatar, 'f_secrete', 'ch-nv-ava'), 'Le cadre Secrète', 'Le plus rare du jeu : il revient à qui trouve sa première Secrète.', 'cadres')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
