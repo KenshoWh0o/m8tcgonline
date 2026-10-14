@@ -363,13 +363,13 @@
 .ava.xl.fx{box-shadow:0 0 22px var(--violet-glow)}
 .fx-deco{position:absolute;inset:-14%;z-index:2;pointer-events:none;background:center/contain no-repeat;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
-.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=3.0.5')}
-.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=3.0.5')}
-.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=3.0.5')}
-.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=3.0.5')}
-.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=3.0.5')}
-.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=3.0.5')}
-.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=3.0.5')}
+.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=3.0.6')}
+.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=3.0.6')}
+.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=3.0.6')}
+.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=3.0.6')}
+.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=3.0.6')}
+.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=3.0.6')}
+.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=3.0.6')}
 
 /* ============ Boutique : invitations, limites ============ */
 .ofbadge.limite{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}

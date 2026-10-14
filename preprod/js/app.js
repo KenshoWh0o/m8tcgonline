@@ -51,17 +51,26 @@ function header() {
   if (ec) ec.querySelector('b').textContent = fmtN(save.shards);
 
   /* Sur mobile, l'avatar ouvre le tiroir du compte — mais rien ne le disait :
-     une photo ronde ressemble à une décoration, pas à un bouton. Le chevron
-     posé dessus est le signe universel du panneau qui se déplie. Sur ordinateur
-     il n'y a pas de tiroir, donc pas de chevron (voir css/hub.css). */
+     une photo ronde ressemble à une décoration, pas à un bouton. Une flèche
+     et la pastille du niveau posées dessus en faisaient trop. Le bouton est
+     donc une pilule : les trois traits du menu, puis l'avatar dans un fin
+     anneau qui se remplit avec l'XP du niveau en cours (le chiffre est dans
+     le tiroir). Sur ordinateur il n'y a pas de tiroir : l'avatar seul, avec
+     son niveau (voir css/hub.css). */
   const av = $('#moi');
   if (av) {
-    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm', maPhoto(), monXp())
-      + '<i class="moicaret" aria-hidden="true">' + NAVICO.caret + '</i>';
+    const ordi = surOrdi();
+    const n = typeof niveauDe === 'function' ? niveauDe(monXp() || 0) : null;
+    const p = n ? Math.round(100 * n.dans / n.requis) : 0;
+    av.innerHTML = ordi
+      ? avatarHTML(save.avatar, save.frame, 'sm', maPhoto(), monXp())
+      : `<span class="moi-menu" aria-hidden="true">${NAVICO.menu}</span>`
+        + `<span class="moi-anneau" style="--p:${p}%" title="${n ? `Niveau ${n.niveau}` : ''}">${avatarHTML(save.avatar, save.frame, 'sm', maPhoto())}</span>`;
+    av.classList.toggle('pilule', !ordi);
     /* Sur ordinateur, il n'y a pas de tiroir : le rail montre déjà chaque
        pastille, l'avatar n'a rien à signaler. */
     av.classList.toggle('alerte', !surOrdi() && pastilleTiroir() > 0);
-    av.setAttribute('aria-label', surOrdi() ? 'Mon profil' : 'Menu du compte');
+    av.setAttribute('aria-label', ordi ? 'Mon profil' : `Menu du compte${n ? ` · niveau ${n.niveau}` : ''}`);
     av.setAttribute('aria-expanded', String(tiroirOuvert));
   }
 
@@ -286,16 +295,33 @@ function render() {
      redessine souvent (une quête qui avance, un ami qui répond), et le bloc
      revenait à son état de départ sous le doigt. */
   const gardes = {};
-  if (haut || m.className === 'tab-' + tab) m.querySelectorAll('details[data-garde]').forEach(d => { gardes[d.dataset.garde] = d.open; });
+  /* Et ce qui défile à l'intérieur de la page (`data-defil`) : une rangée
+     de filtres qu'on a fait glisser, la colonne du deck dans l'atelier.
+     Redessinée à chaque geste, elle revenait au début sous le doigt. */
+  const defils = {};
+  if (haut || m.className === 'tab-' + tab) {
+    m.querySelectorAll('details[data-garde]').forEach(d => { gardes[d.dataset.garde] = d.open; });
+    m.querySelectorAll('[data-defil]').forEach(x => { defils[x.dataset.defil] = [x.scrollTop, x.scrollLeft]; });
+  }
   m.className = 'tab-' + tab;
   m.innerHTML = vue();
   m.querySelectorAll('details[data-garde]').forEach(d => { if (d.dataset.garde in gardes) d.open = gardes[d.dataset.garde]; });
+  m.querySelectorAll('[data-defil]').forEach(x => { const p = defils[x.dataset.defil]; if (p) { x.scrollTop = p[0]; x.scrollLeft = p[1]; } });
+  /* Un onglet choisi tout au bout de la rangée reste en vue. */
+  m.querySelectorAll('[role="tablist"][data-defil]').forEach(n => {
+    const on = n.querySelector('.on');
+    if (!on || n.scrollWidth <= n.clientWidth) return;
+    const a = on.offsetLeft - n.offsetLeft, b = a + on.offsetWidth;
+    if (a < n.scrollLeft) n.scrollLeft = Math.max(0, a - 24);
+    else if (b > n.scrollLeft + n.clientWidth) n.scrollLeft = b - n.clientWidth + 24;
+  });
   if (haut) m.scrollTop = haut;
 
   if (tab === 'boosters') bindPack();
   if (tab === 'reflets') placerPass();
   if (tab === 'choc') placerPassChoc();
   if (tab === 'combats' && cbVue === 'atelier') bindAtelier();
+  if (tab === 'combats' && cbVue === 'guides' && !cbGuide) bindGuide();
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
@@ -365,7 +391,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes]');
   if (!el) return;
   const d = el.dataset;
 
@@ -378,6 +404,10 @@ async function clicPage(e) {
   if (d.rd) return raidAction(d.rd, el);
   if (d.apercu) return labMontrerApercu(d.apercu);
   /* Version 2.0 */
+  if (d.succes) {
+    const x = SUCCES.find(y => y.id === d.succes);
+    return x && toast(`${x.nom} — ${x.dit}${(save.succes || []).includes(x.id) ? ' Obtenu.' : ''}`);
+  }
   if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
   if (d.palier) return reclamerPalier(+d.palier);
   if (d.illu) return illuProposer(d.illu);
@@ -461,8 +491,9 @@ async function clicPage(e) {
       colFilter = essFilter = rarFilter = 'all';
       colPossedees = colObjectifs = colFavoris = false;
       return render();
-    /* Une Secrète qu'on n'a pas : elle ne se fabrique pas, on dit d'où elle vient. */
-    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle sort d\'un booster, une fois sur 133, ou s\'échange contre une autre Secrète.');
+    /* Une Secrète qu'on n'a pas : elle ne se fabrique pas, on dit d'où elle
+       vient — mais pas son taux. */
+    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle se cache dans les boosters (à quelle fréquence ? c\'est un secret), ou s\'échange contre une autre Secrète.');
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();
     case 'porte-code': return porteCode();
@@ -510,6 +541,18 @@ async function clicPage(e) {
     case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
     case 't-v2-nouveautes': return montrerNouveautes21();
     case 't-v3-nouveautes': return montrerNouveautes30();
+    case 't-v3-camp': cbLabo = { section: el.dataset.v }; cbChoix.acte = 0; aller('combats'); cbVue = 'campagne'; cbChoix.acte = 0; return render();
+    case 't-v3-recompenses': return openSheet({ title: 'Toutes les récompenses', body: laboRecompenses(), actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
+    case 't-v3-niveau': return ouvrirNiveau();
+    case 't-v3-bon-deck': return Decks.STARTERS ? (cbVue = 'decks', ouvrirBilan('starter-toxique')) : null;
+    case 't-v3-fin': {
+      /* Une victoire en Légende qui fait passer deux niveaux, telle que l'écran
+         de fin de l'arène la montre. */
+      const total = [1, 2, 3, 4, 5, 6, 7, 8, 9].reduce((a, n) => a + xpRequis(n), 0) + 40;
+      const x = { gagne: Math.round(xpRequis(9) + xpRequis(8) / 2), total, paliers: [recompenseNiveau(9), recompenseNiveau(10)] };
+      return openSheet({ title: 'Victoire · aperçu', body: `<div class="ar-fin-apercu">${htmlRecompense({ recompense: { xp: x, eclats: 50, boosters: 2, fragments: 300 } })}</div>`,
+        actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
+    }
     case 't-v2-palier': {
       const x = { palier: 7, type: 'reverse_R', titre: 'Une Reverse Rare' };
       return montrerPalier(7, x, reverses.filter(c => c.rar === 'R').slice(0, 1));

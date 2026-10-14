@@ -1,11 +1,11 @@
 /* L'onglet Combats (version 3.0).
 
-   Une page d'accueil courte, faite pour qu'on y lance un combat en deux
-   gestes : un bandeau illustré (le chevalier du tapis « La Luxueuse III »),
-   la Section et le niveau ; l'affiche du prochain combat de campagne ; deux
-   grandes portes illustrées, Solo (contre l'IA) et Versus (entre amis) ;
-   l'affiche du Raid, qui reste toute l'année (js/raid.js) ; trois petites
-   tuiles, Decks, Missions et Guide. Solo mène à deux modes bien distincts :
+   Une page d'accueil qui tient dans l'écran, sans défiler : un bandeau
+   illustré (le chevalier du tapis « La Luxueuse III », centré sur son
+   médaillon), la Section et le niveau ; à la une, le Raid (js/raid.js) ;
+   deux portes illustrées, Solo (contre l'IA, sur « 99% Faith ») et Versus
+   (entre amis, sur « Marteen Supreme ») ; trois petites tuiles, Decks,
+   Missions et Guide. Solo mène à deux modes bien distincts :
    la Campagne (vingt rivaux sur un chemin, acte par acte) et l'Arcade (un
    adversaire tiré au sort, cinq difficultés). Chaque page a un retour vers
    la précédente. Le combat se joue dans l'arène, en plein écran
@@ -69,6 +69,7 @@ const deckValide = d => !Decks.verifier(d, d.starter ? null : save.col).length;
 /* ---------- La navigation ---------- */
 function allerCb(vue) {
   vue = CB_ALIAS[vue] || vue;
+  if (vue !== 'campagne') cbLabo = null;
   cbVue = CB_VUES.includes(vue) ? vue : 'accueil';
   if (cbVue === 'campagne') cbChoix.acte = null;
   if (tab !== 'combats') return aller('combats');
@@ -152,7 +153,7 @@ function vChoixSection() {
     </div>
     <div class="cb-secs">${carte('toxique', SECTIONS.toxique)}<span class="cb-vs">VS</span>${carte('deter', SECTIONS.deter)}</div>
     <p class="muted small cb-choix-pied">Ce choix est définitif. La Promo de l'autre Section se gagne en finissant la campagne.</p>
-    <button class="btn ghost" data-cb="vue" data-v="guides">Lire les règles d'abord</button>
+    <button class="btn ghost" data-cb="vue" data-v="guides">Apprendre d'abord (tutoriel, glossaire)</button>
   </div>`;
 }
 
@@ -163,8 +164,21 @@ function choisirSection(id) {
     body: `<div class="cb-confirm sec-${id}"><img src="${s.boite}" alt=""><p class="muted">${h(s.devise)}</p>
       <p>Tu reçois la Promo <b>${h((byId[s.promo] || {}).nom || s.promo)}</b> et le Starter Deck. Ce choix est définitif.</p></div>`,
     actions: [
-      { label: 'Rejoindre', primary: true, fn: () => { closeSheet(); agir(() => Backend.combatSection(id), `Bienvenue dans la ${s.nom} !`).then(ok => { if (ok) { cbVue = 'accueil'; render(); } }); } },
+      { label: 'Rejoindre', primary: true, fn: () => { closeSheet(); agir(() => Backend.combatSection(id), `Bienvenue dans la ${s.nom} !`).then(ok => { if (ok) { cbVue = 'accueil'; render(); proposerTutoriel(); } }); } },
       { label: 'Annuler', fn: closeSheet }
+    ]
+  });
+}
+
+/* Juste après avoir rejoint une Section : apprendre en jouant ? */
+function proposerTutoriel() {
+  if (typeof tutoFait !== 'function' || tutoFait()) return;
+  openSheet({
+    title: 'Apprendre en jouant ?',
+    body: '<p>Une partie guidée, bulle après bulle : déployer, attaquer, défendre, les PV, la Résilience, les mots-clés. Quelques minutes, et 200 Éclats la première fois. Elle se rejoue quand tu veux, depuis le Guide.</p>',
+    actions: [
+      { label: 'Lancer le tutoriel', primary: true, fn: () => { closeSheet(); lancerTutoriel(); } },
+      { label: 'Plus tard', fn: closeSheet }
     ]
   });
 }
@@ -185,9 +199,9 @@ const CB_ICO = {
   guide: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M8 11.5c5.5-2 11-1.5 16 1.5v26c-5-3-10.5-3.5-16-1.5z"/><path class="f" d="M40 11.5c-5.5-2-11-1.5-16 1.5v26c5-3 10.5-3.5 16-1.5z"/></svg>'
 };
 
-/* Le visage d'une Section : le rival de sa finale de campagne (les Promos
-   P03 et P04 n'ont pas encore d'illustration). */
-const visageSection = id => { const l = RIVAUX[id]; return (l.find(r => r[2] === 'final') || l[l.length - 1])[0]; };
+/* Les illustrations des portes : Solo sur « 99% Faith » (#068), l'Arcade
+   sur « Monster » (#102), Versus sur « Marteen Supreme » (#023). */
+const COUV = { solo: 'c068', arcade: 'c102', versus: 'c023' };
 
 /* Le fond d'une porte : l'illustration d'une carte (sa partie haute).
    L'adresse est absolue : dans une variable CSS, une adresse relative se
@@ -196,13 +210,11 @@ const cbArt = id => { const c = byId[id]; return c && c.img ? ` style="--art:url
 
 function vCbAccueil(e) {
   const deck = cbDeckActif();
-  const combats = combatsCampagne(e.section);
   const fait = new Set(e.campagne.faits);
-  const prochain = combats.find(f => !fait.has(f.id));
   const enCours = combatEnCours();
   const defis = e.defis.filter(d => d.pour_moi && d.statut === 'attente').length;
   const missions = cbMissionsPretes();
-  const autre = autreSection(e.section);
+  if (!rdEtat) relireRaid();
   const petit = (v, ico, titre, sous, n) => `<button class="cb-petit" data-cb="vue" data-v="${v}">
       <span class="cb-petit-ico">${CB_ICO[ico]}</span><b>${titre}</b><small>${sous}</small>${n ? `<i class="rf-pastille">${n}</i>` : ''}
     </button>`;
@@ -213,43 +225,25 @@ function vCbAccueil(e) {
     </section>
     ${enCours ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat en cours</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Reprends-le où tu l'as laissé.</em></span>
       <span class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Reprendre</button><button class="btn tiny ghost" data-cb="oublier">Abandonner</button></span></section>`
-      : vCbAffiche(e, prochain)}
+      : vRaidAffiche()}
     <div class="cb-portes">
       <button class="cb-porte solo" data-cb="vue" data-v="solo">
-        <span class="cb-porte-art"${cbArt(prochain ? prochain.rival : SECTIONS[autre].promo)}></span>
+        <span class="cb-porte-art"${cbArt(COUV.solo)}></span>
         <span class="cb-porte-ico">${CB_ICO.solo}</span>
         <span class="cb-porte-t"><b>Solo</b><small>${e.campagne.finie ? 'Campagne finie' : `Campagne ${fait.size}/20`} · Arcade</small></span>
       </button>
       <button class="cb-porte versus" data-cb="vue" data-v="versus">
-        <span class="cb-porte-art duo"><i${cbArt(visageSection(e.section))}></i><i${cbArt(visageSection(autre))}></i></span>
+        <span class="cb-porte-art"${cbArt(COUV.versus)}></span>
         <span class="cb-porte-ico">${CB_ICO.versus}</span>
         <span class="cb-porte-t"><b>Versus</b><small>${defis ? `${defis} défi${defis > 1 ? 's' : ''} pour toi` : 'Entre amis, en direct'}</small></span>
         ${defis ? `<i class="rf-pastille">${defis}</i>` : ''}
       </button>
     </div>
-    ${vRaidAffiche()}
     <div class="cb-petits">
       ${petit('decks', 'decks', 'Decks', deck ? h(deck.nom) : 'Aucun deck valide')}
       ${petit('missions', 'missions', 'Missions', missions ? `${missions} à récupérer` : 'Quêtes de combat', missions)}
-      ${petit('guides', 'guide', 'Guide', 'Apprendre à jouer')}
+      ${typeof tutoFait === 'function' && !tutoFait() ? petit('guides', 'guide', 'Guide', 'Le tutoriel t\'attend', 'Nouveau') : petit('guides', 'guide', 'Guide', 'Tutoriel et glossaire')}
     </div>`;
-}
-
-/* L'affiche : le prochain combat de la campagne ; campagne finie, l'Arcade. */
-function vCbAffiche(e, prochain) {
-  const une = (attrs, sur, titre, sous, go, art) => `<button class="cb-une" ${attrs}>
-      ${art ? `<span class="cb-une-art"${cbArt(art)}></span>` : ''}
-      <span class="cb-une-t"><small>${sur}</small><b>${titre}</b><em>${sous}</em></span>
-      <span class="cb-une-go">${go}</span>
-    </button>`;
-  if (prochain) {
-    const k = byId[prochain.rival] || {};
-    return une(`data-cb="combat" data-v="${prochain.id}"`, `Campagne · Acte ${ACTES.indexOf(prochain.acte) + 1}`, h(k.nom || ''),
-      `${etoiles(prochain.niveau)}<span>Combat ${prochain.n + 1}/20</span>`, 'Combattre', prochain.rival);
-  }
-  const n = cbChoix.infini || 3;
-  return une('data-cb="vue" data-v="arcade"', 'Arcade', h(DIFFICULTES[n - 1].nom),
-    `${etoiles(n)}<span>Un adversaire au hasard</span>`, 'Jouer', SECTIONS[autreSection(e.section)].promo);
 }
 
 /* ---------- Solo : deux modes, deux portes ---------- */
@@ -272,10 +266,10 @@ function vCbSolo(e) {
       <span class="cb-une-go">${e.campagne.finie ? 'Revoir' : fait.size ? 'Continuer' : 'Commencer'}</span>
     </button>
     <button class="cb-mode arcade" data-cb="vue" data-v="arcade">
-      <span class="cb-mode-art"${cbArt(RAID.boss)}></span>
+      <span class="cb-mode-art"${cbArt(COUV.arcade)}></span>
       <span class="cb-mode-t">
         <small>Arcade</small>
-        <b>Un adversaire au hasard</b>
+        <b>De Débutant à Légende</b>
         <span class="cb-mode-desc">Cinq difficultés, un deck adverse tiré au sort à chaque partie. Rejoue autant que tu veux.</span>
         <span class="cb-mode-prog">${etoiles(n)}<em>${h(DIFFICULTES[n - 1].nom)}</em></span>
       </span>
@@ -328,16 +322,23 @@ function vCbMissions(e) {
 /* ---------- La campagne ---------- */
 /* Un acte à la fois, choisi en haut ; ses cinq rivaux sur un chemin qui
    serpente, du premier au boss. Le chemin s'éclaire à mesure qu'on gagne. */
+/* Le Labo (js/lab.js) peut montrer la campagne d'une Section, toute
+   dévoilée et en lecture seule : `cbLabo = { section }`. */
+let cbLabo = null;
 function vCbCampagne(e) {
-  const combats = combatsCampagne(e.section);
-  const fait = new Set(e.campagne.faits);
-  const ouvert = f => f.n === 0 || fait.has(combats[f.n - 1].id) || fait.has(f.id);
-  const moi = SECTIONS[e.section], adverse = SECTIONS[autreSection(e.section)];
+  const section = cbLabo ? cbLabo.section : e.section;
+  const combats = combatsCampagne(section);
+  const fait = new Set(cbLabo ? [] : e.campagne.faits);
+  const ouvert = cbLabo ? () => true : f => f.n === 0 || fait.has(combats[f.n - 1].id) || fait.has(f.id);
+  const moi = SECTIONS[section], adverse = SECTIONS[autreSection(section)];
   const prochain = combats.find(f => !fait.has(f.id));
   const ia = cbChoix.acte != null ? cbChoix.acte : prochain ? ACTES.indexOf(prochain.acte) : ACTES.length - 1;
   const a = ACTES[ia];
   const fs = combats.filter(f => f.acte.id === a.id);
   const boss = fs.find(f => f.rang) || fs[fs.length - 1];
+  /* Un acte pas encore ouvert ne se dévoile pas : ni son boss en bandeau,
+     ni ses rivaux (vRoute). */
+  const acteFerme = !ouvert(fs[0]);
   const onglets = ACTES.map((x, i) => {
     const l = combats.filter(f => f.acte.id === x.id);
     const n = l.filter(f => fait.has(f.id)).length;
@@ -346,11 +347,14 @@ function vCbCampagne(e) {
       <small>Acte ${i + 1}</small><i>${n === l.length ? NAVICO.check : ferme ? NAVICO.lock : `<b class="tnum">${n}/${l.length}</b>`}</i></button>`;
   }).join('');
   const promo = byId[adverse.promo] || {};
+  const labo = cbLabo ? `<p class="cb-labo">Labo · la campagne de la ${h(moi.nom)}, toute dévoilée. Touche un rival pour voir sa carte ; rien ne se joue d'ici.
+      <button class="btn tiny ghost" data-cb="labo-fin">Quitter</button></p>` : '';
   return `${cbSousTete('Campagne', `${h(moi.court)} contre ${h(adverse.court)}`, `<span class="cb-jour-chip"><b class="tnum">${fait.size}/20</b><small>gagnés</small></span>`)}
-    <nav class="cb-actes-ong">${onglets}</nav>
+    ${labo}<nav class="cb-actes-ong">${onglets}</nav>
     <section class="cb-acte">
-      <header class="cb-acte-tete"${cbArt(boss.rival)}>
-        <small>Acte ${ia + 1}${ia === ACTES.length - 1 ? ' · le dernier' : ''}</small><h2>${h(a.nom)}</h2><p>${h(a.texte)}</p>
+      <header class="cb-acte-tete${acteFerme ? ' ferme' : ''}"${acteFerme ? '' : cbArt(boss.rival)}>
+        <small>Acte ${ia + 1}${ia === ACTES.length - 1 ? ' · le dernier' : ''}${acteFerme ? ' · verrouillé' : ''}</small><h2>${h(a.nom)}</h2>
+        <p>${acteFerme ? 'Finis l\'acte précédent pour découvrir ses rivaux.' : h(a.texte)}</p>
       </header>
       ${vRoute(fs, fait, ouvert)}
     </section>
@@ -378,10 +382,14 @@ function vRoute(fs, fait, ouvert) {
       const etat = fait.has(f.id) ? 'fait' : ouvert(f) ? 'ouvert' : 'ferme';
       const [x, y] = pts[i];
       const cote = x < 50 ? 'd' : x > 50 ? 'g' : 'b';
-      return `<button class="cb-etape ${etat}${f.rang ? ' ' + f.rang : ''} lbl-${cote}" style="--x:${x}%;--y:${y}px" data-cb="combat" data-v="${f.id}" ${etat === 'ferme' ? 'aria-disabled="true"' : ''}>
-        <span class="cb-etape-art">${k.img ? `<img src="${k.img}" alt="" loading="lazy">` : ''}${etat === 'fait' ? `<i class="cb-coche">${NAVICO.check}</i>` : etat === 'ferme' ? `<i class="cb-cadenas">${NAVICO.lock}</i>` : ''}</span>
-        <span class="cb-etape-t"><small>${f.rang === 'final' ? 'La finale' : f.rang ? 'Boss de l\'acte' : `Combat ${f.n + 1}`}</small><b>${h(k.nom || '?')}</b>
-          ${etoiles(f.niveau)}<em>${etat === 'fait' ? 'Gagné' : etat === 'ferme' ? 'Verrouillé' : recompenseTexte(f.recompense)}</em></span>
+      /* Un rival qu'on n'a pas encore débloqué reste une silhouette : ni son
+         nom, ni son illustration. */
+      const cache = etat === 'ferme';
+      const geste = cbLabo ? `data-show="${f.rival}"` : `data-cb="combat" data-v="${f.id}"`;
+      return `<button class="cb-etape ${etat}${f.rang ? ' ' + f.rang : ''} lbl-${cote}" style="--x:${x}%;--y:${y}px" ${geste} ${cache ? 'aria-disabled="true"' : ''}>
+        <span class="cb-etape-art">${k.img && !cache ? `<img src="${k.img}" alt="" loading="lazy">` : ''}${etat === 'fait' ? `<i class="cb-coche">${NAVICO.check}</i>` : cache ? '<i class="cb-mystere">?</i>' : ''}</span>
+        <span class="cb-etape-t"><small>${f.rang === 'final' ? 'La finale' : f.rang ? 'Boss de l\'acte' : `Combat ${f.n + 1}`}</small><b>${cache ? '???' : h(k.nom || '?')}</b>
+          ${etoiles(f.niveau)}<em>${etat === 'fait' ? 'Gagné' : cache ? 'Verrouillé' : recompenseTexte(f.recompense)}${cbLabo && f.regle ? ` · ${f.regle.pv ? `${f.regle.pv} PV` : ''}${f.regle.pv && f.regle.ess ? ', ' : ''}${f.regle.ess ? `+${f.regle.ess} Essence` : ''}` : ''}</em></span>
       </button>`;
     }).join('')}
   </div>`;
@@ -457,7 +465,7 @@ function vCbArcade(e) {
   const d = DIFFICULTES[n - 1];
   const reste = Math.max(0, e.jour.plafond - e.jour.recompensees);
   const xp = Math.round(NIVEAUX.victoire * NIVEAUX.facteur[n]);
-  return `${cbSousTete('Arcade', 'Un adversaire tiré au sort, à chaque partie')}
+  return `${cbSousTete('Arcade', 'Cinq difficultés, un deck adverse tiré au sort')}
     <section class="cb-arc n${n}">
       <div class="cb-arc-tete">
         <small>Difficulté</small><b>${h(d.nom)}</b>${etoiles(n)}
@@ -476,7 +484,7 @@ function vCbArcade(e) {
 }
 
 /* ---------- Le Raid ---------- */
-const vCbRaid = () => cbSousTete('Raid', 'Un boss pour tout le serveur, toute l\'année') + vRaid();
+const vCbRaid = () => cbSousTete('Raid', `${rdEtat ? `Saison ${rdEtat.n} · ` : ''}un boss pour tout le serveur`) + vRaid();
 
 /* ---------- Les défis entre amis ---------- */
 function vCbDefis(e) {
@@ -512,28 +520,86 @@ function vCbDefis(e) {
 const DEFI_GAIN = { victoire: 40, defaite: 15, plafond: 3 };
 
 /* ---------- Les decks et la personnalisation ---------- */
+/* Deux volets : les decks, et l'apparence (tapis, sleeves, Essences
+   Brillantes). Le deck actif en tête, en grand, avec sa note ; les autres
+   en lignes ; et ce qui fait un bon deck, à portée de main. */
+let cbDecksVue = 'decks';
+const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" aria-label="${n} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 function vCbDecks(e) {
+  const seg = `<div class="dk-seg" role="tablist">
+      <button class="${cbDecksVue === 'decks' ? 'on' : ''}" data-cb="decks-vue" data-v="decks" role="tab">Mes decks</button>
+      <button class="${cbDecksVue === 'apparence' ? 'on' : ''}" data-cb="decks-vue" data-v="apparence" role="tab">Apparence</button>
+    </div>`;
+  if (cbDecksVue === 'apparence') return `${cbSousTete('Decks', 'Tapis, sleeves et Essences Brillantes')}${seg}${vPersonnaliser(e)}`;
   const l = cbDecks();
   const actif = cbDeckActif();
+  const essences = d => Object.keys(d.reserve || {}).filter(k => d.reserve[k]).map(k => `${essIcon(k)}<i>${d.reserve[k]}</i>`).join('');
+  const bouton = d => d.starter
+    ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>`
+    : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`;
+  let une = '';
+  if (actif) {
+    const b = Decks.bilan(actif);
+    une = `<section class="dk-actif">
+      <span class="dk-actif-art"${cbArt(actif.couverture)}></span>
+      <div class="dk-actif-t"><small>Ton deck actif</small><b>${h(actif.nom)}</b>
+        <button class="dk-note" data-cb="bilan" data-v="${h(actif.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span>${NAVICO.caret}</button>
+        <span class="cb-deck-ess">${essences(actif)}</span></div>
+      <div class="dk-actif-act">${bouton(actif)}<button class="btn tiny ghost" data-cb="voir-deck" data-v="${h(actif.id)}">Voir</button></div>
+    </section>`;
+  }
+  const autres = l.filter(d => !actif || d.id !== actif.id);
   const ligne = d => {
     const err = Decks.verifier(d, d.starter ? null : save.col);
-    const n = Decks.total(d.cartes);
-    return `<div class="cb-deck${actif && actif.id === d.id ? ' actif' : ''}">
-      <button class="cb-deck-art" data-cb="${d.starter ? 'voir-deck' : 'editer'}" data-v="${h(d.id)}">${renderCard(byId[d.couverture] || {})}</button>
-      <div class="cb-deck-txt"><b>${h(d.nom)}</b>
-        <small>${d.starter ? 'Starter Deck · prêté' : err.length ? `<span class="cb-ko">${h(err[0])}</span>` : `${n} cartes · prêt`}</small>
-        <span class="cb-deck-ess">${Object.keys(d.reserve || {}).filter(k => d.reserve[k]).map(k => `${essIcon(k)}<i>${d.reserve[k]}</i>`).join('')}</span></div>
-      <div class="cb-deck-act">
-        ${actif && actif.id === d.id ? '<span class="cb-actif">Actif</span>' : `<button class="btn tiny ghost" data-cb="activer" data-v="${h(d.id)}" ${err.length ? 'disabled' : ''}>Utiliser</button>`}
-        ${d.starter ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>` : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`}
-      </div></div>`;
+    const b = Decks.bilan(d);
+    return `<div class="dk-ligne">
+      <button class="dk-ligne-art" data-cb="${d.starter ? 'voir-deck' : 'editer'}" data-v="${h(d.id)}"${cbArt(d.couverture)} aria-label="${d.starter ? 'Voir' : 'Modifier'} ${h(d.nom)}"></button>
+      <div class="dk-ligne-t"><b>${h(d.nom)}</b>
+        <small>${d.starter ? 'Starter Deck · prêté' : err.length ? `<span class="cb-ko">${h(err[0])}</span>` : 'Prêt à jouer'}</small>
+        ${err.length ? '' : `<button class="dk-note petit" data-cb="bilan" data-v="${h(d.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span></button>`}</div>
+      <div class="dk-ligne-act">
+        <button class="btn tiny" data-cb="activer" data-v="${h(d.id)}" ${err.length ? 'disabled' : ''}>Utiliser</button>
+        ${bouton(d)}</div>
+    </div>`;
   };
-  return `${cbSousTete('Decks', `${Combat.REGLE.CLUB} cartes et ${Combat.REGLE.RESERVE} Essences`)}
-    <div class="cb-decks">${l.map(ligne).join('')}
-      <button class="cb-deck nouveau" data-cb="nouveau-deck"><span>+</span><b>Nouveau deck</b></button>
-      <button class="cb-deck nouveau" data-cb="importer-deck"><span>${NAVICO.partage}</span><b>Importer un code</b></button>
+  return `${cbSousTete('Decks', `${Combat.REGLE.CLUB} cartes et ${Combat.REGLE.RESERVE} Essences`)}${seg}
+    ${une}
+    <div class="dk-boutons">
+      <button class="dk-nouveau" data-cb="nouveau-deck"><span>+</span>Nouveau deck</button>
+      <button class="dk-nouveau" data-cb="importer-deck"><span>${NAVICO.partage}</span>Importer un code</button>
     </div>
-    ${vPersonnaliser(e)}`;
+    ${autres.length ? `<h3 class="dk-sous">Tes autres decks</h3><div class="dk-liste">${autres.map(ligne).join('')}</div>` : ''}
+    ${vBonDeck()}`;
+}
+
+/* Ce qui fait un bon deck : les trois repères de Decks.bilan, expliqués
+   avec ce qu'ils valent, et le chemin le plus court pour en construire un. */
+function vBonDeck() {
+  const B = Decks.BON;
+  const point = (t, x) => `<li><b>${t}</b><span>${x}</span></li>`;
+  return `<details class="dk-bon" data-garde="bon-deck">
+    <summary><span class="dk-bon-ico">${GD_ICO.deck}</span><span><b>Qu'est-ce qu'un bon deck ?</b><small>Trois repères, mesurés en faisant jouer l'IA</small></span>${NAVICO.caret}</summary>
+    <ol class="dk-bon-l">
+      ${point(`${B.joueurs} Joueurs au moins.`, 'Ce sont eux qui attaquent et qui tiennent tes lignes. Avec 8, un deck gagne 3 parties sur 10 ; avec 12, un peu plus de 4 ; à partir de 16, la moitié ou plus — et en mettre davantage ne fait pas de mal.')}
+      ${point('Une Réserve accordée à tes attaques.', 'Si tes attaques demandent du Rose, mets du Rose : une Réserve d\'une autre couleur fait perdre environ 8 parties sur 100. « Réserve auto », dans l\'atelier, la règle pour toi.')}
+      ${point('Des attaques qui partent tôt.', 'Tu ne poses qu\'une Essence par tour. Des Joueurs qui attaquent tous pour 2 Essences ou moins ont gagné 59 parties sur 100 : vise au moins la moitié.')}
+    </ol>
+    <p class="muted small">Ce qui n'a pas changé le résultat, mesuré de la même façon : jouer une, deux ou trois couleurs, ou le nombre d'Objets et de Moments. Le plus court chemin : pars d'un Starter Deck (« Dupliquer »), remplace ses cartes par tes meilleures, et laisse l'atelier régler la Réserve. Un repère tenu, une étoile.</p>
+  </details>`;
+}
+
+/* Le bilan d'un deck, repère par repère. */
+function ouvrirBilan(id) {
+  const d = cbVue === 'atelier' && atelier ? atelier.deck : cbDecks().find(x => x.id === id);
+  if (!d) return;
+  const b = Decks.bilan(d);
+  openSheet({
+    title: `${d.nom} · ${b.nom}`,
+    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${b.note} repère${b.note > 1 ? 's' : ''} tenu${b.note > 1 ? 's' : ''} sur ${b.sur}</span></div>
+      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}"><i>${x.ok ? NAVICO.check : '!'}</i>
+        <span><b>${x.titre}</b><small>${h(x.dit)} ${h(x.pourquoi)}</small></span></li>`).join('')}</ul>`,
+    actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
+  });
 }
 
 function vPersonnaliser(e) {
@@ -551,10 +617,10 @@ function vPersonnaliser(e) {
         : `<img src="${x.img}" alt="" loading="lazy">`}${a ? '' : verrou}</span>
       <b>${h(x.nom)}</b></button>`;
   };
-  return `<section class="cb-bloc cb-perso"><h3>Personnaliser</h3>
+  return `<section class="cb-bloc cb-perso">
     <p class="muted small">Tapis de jeu et sleeves s'achètent dans la Boutique. Les Essences Brillantes que tu possèdes brillent en combat.</p>
-    <h4>Tapis de jeu</h4><div class="cb-cosms tapis">${Object.keys(TAPIS).map(id => tuile('tapis', id, TAPIS[id], e.cosm.tapis === id)).join('')}</div>
-    <h4>Sleeves</h4><div class="cb-cosms sleeve">${Object.keys(SLEEVES).map(id => tuile('sleeve', id, SLEEVES[id], e.cosm.sleeve === id)).join('')}</div>
+    <h4>Tapis de jeu</h4><div class="cb-cosms tapis" data-defil="cosm-tapis">${Object.keys(TAPIS).map(id => tuile('tapis', id, TAPIS[id], e.cosm.tapis === id)).join('')}</div>
+    <h4>Sleeves</h4><div class="cb-cosms sleeve" data-defil="cosm-sleeve">${Object.keys(SLEEVES).map(id => tuile('sleeve', id, SLEEVES[id], e.cosm.sleeve === id)).join('')}</div>
     <h4>Essences Brillantes</h4><div class="cb-brillantes">${Combat.COULEURS.map(k => {
       const a = (save.col || {})['b' + String(Combat.COULEURS.indexOf(k) + 1).padStart(3, '0')] > 0;
       return `<span class="cb-br${a ? ' eue' : ''}" title="${COLORS[k].nom}${a ? ' — brillante' : ''}">${essIcon(k)}</span>`;
@@ -623,15 +689,54 @@ function vCbGuides() {
       <span class="gd-ico">${GD_ICO[x.id] || NAVICO.quest}</span>
       <span class="gd-entree-t"><b>${h(x.titre)}</b><small>${h(x.resume)}</small></span>
       ${lus.includes(x.id) ? `<i class="gd-lu" title="Lu">${NAVICO.check}</i>` : NAVICO.caret}</button>`;
-  return `${cbSousTete('Guide', 'Apprendre à jouer')}
-    <button class="gd-une" data-cb="guide" data-v="${suivant.id}">
-      <span class="gd-une-t"><small>${n ? `${n} guide${n > 1 ? 's' : ''} lu${n > 1 ? 's' : ''} sur ${GUIDES.length}` : 'Nouveau dans l\'arène ?'}</small>
-        <b>${n === GUIDES.length ? 'Tout est lu. Relire l\'essentiel ?' : n ? `La suite : ${h(suivant.titre)}` : 'Commence par l\'essentiel'}</b>
-        <em>${h(suivant.resume)}</em></span>
-      <span class="gd-anneau" style="--p:${Math.round(100 * n / GUIDES.length)}%"><b class="tnum">${n}/${GUIDES.length}</b></span>
+  /* Version 3.0.6 : le Guide est d'abord un glossaire. En tête, le
+     tutoriel (une partie guidée, js/combat/tutoriel.js) ; puis chaque mot
+     du jeu, cherchable ; les chapitres, en dessous, pour lire d'un trait. */
+  const fait = typeof tutoFait === 'function' && tutoFait();
+  const mots = GLOSSAIRE().slice().sort((a, b) => noacc(a.mot).localeCompare(noacc(b.mot)));
+  const lettres = [...new Set(mots.map(x => noacc(x.mot)[0].toUpperCase()))];
+  const glossaire = lettres.map(L => `<section class="gd-lettre" data-lettre="${L}"><h3>${L}</h3><dl>${mots.filter(x => noacc(x.mot)[0].toUpperCase() === L).map(x =>
+    `<div class="gd-mot" data-mot="${h(noacc(x.mot + ' ' + x.def))}"><dt>${h(x.mot)}</dt><dd>${h(x.def)}${x.voir ? ` <button class="gd-voir" data-cb="guide" data-v="${x.voir}">${h((GUIDES.find(g => g.id === x.voir) || {}).titre || 'Lire')}</button>` : ''}</dd></div>`).join('')}</dl></section>`).join('');
+  return `${cbSousTete('Guide', 'Le tutoriel, et chaque mot du jeu')}
+    <button class="gd-tuto${fait ? ' fait' : ''}" data-cb="tuto">
+      <span class="gd-tuto-art"${cbArt('c012')}></span>
+      <span class="gd-tuto-t"><small>${fait ? 'Fait · à rejouer quand tu veux' : 'Nouveau · 200 Éclats la première fois'}</small>
+        <b>Le tutoriel</b><em>Une partie guidée, bulle après bulle : déployer, attaquer, défendre, les PV, la Résilience, les mots-clés…</em></span>
+      <span class="cb-une-go">${fait ? 'Rejouer' : 'Jouer'}</span>
     </button>
-    ${GD_GROUPES.map(([titre, ids]) => `<section class="gd-groupe"><h3>${titre}</h3><div class="gd-liste">${ids.map(id => GUIDES.find(x => x.id === id)).filter(Boolean).map(entree).join('')}</div></section>`).join('')}
+    <div class="gd-cherche"><input id="gd-q" type="search" placeholder="Chercher un mot : Garde, Réserve, Banc…" autocomplete="off" aria-label="Chercher dans le glossaire"></div>
+    <nav class="gd-abc" aria-label="Lettres">${lettres.map(L => `<a href="#" data-lettre-va="${L}">${L}</a>`).join('')}</nav>
+    <div class="gd-glossaire" id="gd-glo">${glossaire}<p class="muted gd-rien" hidden>Aucun mot ne correspond.</p></div>
+    <details class="gd-chapitres" data-garde="gd-chapitres">
+      <summary><span><b>Les règles, chapitre par chapitre</b><small>${n} lu${n > 1 ? 's' : ''} sur ${GUIDES.length} · la suite : ${h(suivant.titre)}</small></span>${NAVICO.caret}</summary>
+      ${GD_GROUPES.map(([titre, ids]) => `<section class="gd-groupe"><h3>${titre}</h3><div class="gd-liste">${ids.map(id => GUIDES.find(x => x.id === id)).filter(Boolean).map(entree).join('')}</div></section>`).join('')}
+    </details>
     <p class="muted small">Les règles officielles ne sont pas publiées : elles sont reconstituées à partir des cartes. Ce qui a été inventé est dit dans « Ce qui est maison ».</p>`;
+}
+
+/* La recherche du glossaire filtre sans redessiner la page : le champ garde
+   son curseur. Les lettres mènent à leur section. */
+function bindGuide() {
+  const q = $('#gd-q');
+  if (q && !q.dataset.lie) {
+    q.dataset.lie = '1';
+    q.addEventListener('input', () => {
+      const v = noacc(q.value.trim());
+      let n = 0;
+      document.querySelectorAll('.gd-mot').forEach(x => { const ok = !v || x.dataset.mot.includes(v); x.hidden = !ok; if (ok) n++; });
+      document.querySelectorAll('.gd-lettre').forEach(x => { x.hidden = !x.querySelector('.gd-mot:not([hidden])'); });
+      const r = document.querySelector('.gd-rien');
+      if (r) r.hidden = n > 0;
+    });
+  }
+  document.querySelectorAll('[data-lettre-va]:not([data-lie])').forEach(a => {
+    a.dataset.lie = '1';
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const x = document.querySelector(`.gd-lettre[data-lettre="${a.dataset.lettreVa}"]`);
+      if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 }
 
 /* Les guides, par-dessus l'arène, sans la quitter. */
@@ -758,7 +863,7 @@ function htmlRecompense(r) {
   const g = r.recompense || {};
   const l = [];
   if (g.degats) l.push(`<span class="ar-recompense">${NAVICO.foudre}${fmtN(g.degats)} dégât${g.degats > 1 ? 's' : ''}</span>`);
-  if (g.insignes) l.push(`<span class="ar-recompense">${insigneIco}+${fmtN(g.insignes)}</span>`);
+  if (g.insignes) l.push(`<span class="ar-recompense">${etincelleIco}+${fmtN(g.insignes)}</span>`);
   if (g.eclats) l.push(`<span class="ar-recompense">${shardIco}+${fmtN(g.eclats)}</span>`);
   if (g.boosters) l.push(`<span class="ar-recompense"><img src="${ART.seal}" alt="">+${g.boosters}</span>`);
   if (g.fragments) l.push(`<span class="ar-recompense">${NAVICO.fragment}+${fmtN(g.fragments)}</span>`);
@@ -845,6 +950,10 @@ function cbAction(k, el) {
       return toast(`${x.nom || 'Ce cosmétique'} : exclusif à l'événement « ${CHOC.nom} ».`);
     }
     case 'voir-deck': return voirDeck(v);
+    case 'decks-vue': cbDecksVue = v; return render();
+    case 'tuto': return lancerTutoriel();
+    case 'labo-fin': cbLabo = null; return aller('labo');
+    case 'bilan': return ouvrirBilan(v);
     case 'copier-deck': return copierDeck(v);
     case 'editer': return ouvrirAtelier(v);
     case 'nouveau-deck': return ouvrirAtelier(null);

@@ -83,7 +83,12 @@ const Table = (() => {
        titre, sousTitre, boss (le CEO adverse est un boss),
        surFin(E, gagne) → html, surAction(a, E, deMoi) (PvP), surQuitter,
        sauver (clé de reprise), meta,
-       minuteur (secondes par tour : un défi entre amis) } */
+       minuteur (secondes par tour : un défi entre amis),
+       guide (le tutoriel, js/combat/tutoriel.js) : { permis(a, E) → true ou
+         la raison du refus, refus(raison), apresRendu(T), surDecision(E, d),
+         apresAction(evs, E, a, deMoi) et avantIA(E, d) — ces deux-là peuvent
+         rendre une promesse : la partie attend qu'elle se résolve } ;
+       ia.choisir(E) remplace l'IA (un adversaire scénarisé) } */
   function ouvrir(o) {
     fermer(true);
     const E = o.E || Combat.creer(o.init);
@@ -119,6 +124,7 @@ const Table = (() => {
     if (!T) return;
     T.ferme = true;
     clearInterval(T.chronoTic);
+    if (T.echap) document.removeEventListener('keydown', T.echap);
     const el = T.el;
     el.hidden = true;
     el.innerHTML = '';
@@ -192,6 +198,7 @@ const Table = (() => {
     fin.textContent = d && d.type === 'tour' && monTour && !peutFinir && E.cpt.doitAttaquer ? 'Attaque obligée' : monTour ? 'Fin du tour' : 'Tour adverse';
 
     surligner();
+    if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
   }
 
   /* Le tapis du CEO dont c'est le tour, en fondu quand il change. */
@@ -549,6 +556,17 @@ const Table = (() => {
     const el = T.el;
     el.addEventListener('click', clic);
     el.addEventListener('contextmenu', e => e.preventDefault());
+    /* Échap, sur ordinateur : referme ce qui est ouvert, du plus haut au plus bas. */
+    T.echap = e => {
+      if (!T || e.key !== 'Escape') return;
+      const jr = qs('.ar-journal');
+      const sh = qs('.ar-sheet');
+      if (jr && !jr.hidden) jr.hidden = true;
+      else if (sh && !sh.hidden && sh.classList.contains('voile')) fermerSheet();
+      else if (T.focus) fermerFocus();
+      else if (T.cible) { T.cible = null; consigne(null); rendre(); }
+    };
+    document.addEventListener('keydown', T.echap);
     /* Glisser une carte jouable de la main vers sa place. */
     let appui = null;
     el.addEventListener('pointerdown', e => {
@@ -578,9 +596,17 @@ const Table = (() => {
     if (T.bloqueClic) { T.bloqueClic = false; return; }
     const b = e.target.closest('[data-ar]');
     if (b) return action(b.dataset.ar, b);
-    /* Le fond de la carte en grand : on la referme. */
+    /* La carte en grand : toucher ailleurs que sur elle, sur un bouton ou
+       sur le texte qu'on est en train de lire la referme — le flou autour,
+       le vide du panneau, la marge. */
+    /* Du plus haut au plus bas : le journal, puis une feuille qui n'attend
+       pas de décision (le menu, une pile), que son voile referme. */
+    const jr = qs('.ar-journal');
+    if (jr && !jr.hidden && !e.target.closest('.ar-journal')) { jr.hidden = true; return; }
+    const sh = e.target.closest('.ar-sheet.voile');
+    if (sh) { if (!e.target.closest('.ar-s-in')) fermerSheet(); return; }
     if (e.target.closest('.ar-focus')) {
-      if (!e.target.closest('.ar-f-carte,.ar-f-panneau')) fermerFocus();
+      if (!e.target.closest('.ar-f-carte .cwrap,.ar-f-texte,.ar-atq,.ar-f-fx,button,a')) fermerFocus();
       return;
     }
     /* Pendant une animation, on peut toujours lire une carte : le combat
@@ -614,7 +640,8 @@ const Table = (() => {
       const v = ceo ? 'ceo' : j ? +j.dataset.u : null;
       const a = v != null && T.cible.opts.find(o => o.cible === v);
       if (a) { T.cible = null; consigne(null); return jouer(a); }
-      if (v == null && !e.target.closest('.ar-j,.ar-ceo')) return;
+      /* Toucher ailleurs que sur une cible : on renonce à cette attaque. */
+      if (!e.target.closest('.ar-j,.ar-ceo,.ar-consigne')) { T.cible = null; consigne(null); return rendre(); }
       return;
     }
 
@@ -627,6 +654,8 @@ const Table = (() => {
       if (joueur) a = opts.find(o => o.t === 'lier' && o.cible === +joueur.dataset.u);
       if (!a && place && !place.querySelector('.ar-j')) a = opts.find(o => o.t === 'deployer' && o.ligne === +place.dataset.ligne);
       if (a) return poserDepuisFocus(a, joueur || place);
+      /* Ni une place libre ni un Joueur à équiper : on la repose. */
+      if (!e.target.closest('.ar-m')) return fermerFocus();
     }
 
     const m = e.target.closest('.ar-m');
@@ -635,6 +664,8 @@ const Table = (() => {
     if (o) return ouvrirFocus({ id: o.dataset.id });
     const j = e.target.closest('.ar-j');
     if (j) return ouvrirFocus({ u: +j.dataset.u });
+    /* Un toucher dans le vide du plateau repose la carte ouverte. */
+    if (T.focus) fermerFocus();
   }
 
   /* ---------- La carte en grand ---------- */
@@ -826,6 +857,11 @@ const Table = (() => {
 
   /* Poser la carte en grand à sa place : elle y vole, depuis le grand. */
   async function poserDepuisFocus(a, cibleEl) {
+    /* Un coup que le tutoriel ne demande pas : refusé avant le vol. */
+    if (T.o.guide && T.o.guide.permis) {
+      const ok = T.o.guide.permis(a, T.E);
+      if (ok !== true) { if (T.o.guide.refus) T.o.guide.refus(ok); return; }
+    }
     const de = qs('.ar-f-carte');
     if (de && cibleEl) {
       const r0 = de.getBoundingClientRect();
@@ -974,6 +1010,19 @@ const Table = (() => {
     if (!T || T.occupe) return;
     const d = Combat.demande(T.E);
     if (!d || d.qui !== T.moi) return;
+    /* Le tutoriel peut demander un coup précis : il dit pourquoi pas
+       celui-là, et la décision reste ouverte. */
+    if (T.o.guide && T.o.guide.permis) {
+      const ok = T.o.guide.permis(a, T.E);
+      if (ok !== true) {
+        if (T.o.guide.refus) T.o.guide.refus(ok);
+        T.cible = null;
+        consigne(null);
+        rendre();
+        if (d.type !== 'tour') montrerDecision(d);
+        return;
+      }
+    }
     fermerSheet();
     try {
       await executer(a);
@@ -1006,6 +1055,7 @@ const Table = (() => {
     } finally {
       if (T) { T.occupe = false; T.sauteVol = null; T.montreDepuis = null; rendre(); }
     }
+    if (T && T.o.guide && T.o.guide.apresAction) await T.o.guide.apresAction(evs, T.E, a, deMoi);
   }
 
   function sauver() {
@@ -1025,14 +1075,20 @@ const Table = (() => {
       while (T === moi && !T.ferme) {
         const d = Combat.demande(T.E);
         if (!d) { await finDePartie(); break; }
-        if (d.qui === T.moi) { montrerDecision(d); break; }
+        if (d.qui === T.moi) {
+          montrerDecision(d);
+          if (T.o.guide && T.o.guide.surDecision) T.o.guide.surDecision(T.E, d);
+          break;
+        }
         if (!T.o.ia) { attenteAdversaire(true); break; }
+        if (T.o.guide && T.o.guide.avantIA) await T.o.guide.avantIA(T.E, d);
+        if (T !== moi || T.ferme) break;
         /* Le temps de voir où on en est entre deux actions de l'IA : la
            partie se suit au rythme d'une vraie table, pas en rafale. */
         ticker(`<i class="ar-pense"></i>${h(nomCEO(d.qui))} réfléchit`);
         await attendre(d.type === 'tour' ? 1000 : 650);
         if (T !== moi || T.ferme) break;
-        const a = IA.choisir(T.E, { niveau: T.o.ia.niveau });
+        const a = T.o.ia.choisir ? T.o.ia.choisir(T.E) : IA.choisir(T.E, { niveau: T.o.ia.niveau });
         ticker(null);
         await executer(a);
       }
@@ -1076,7 +1132,10 @@ const Table = (() => {
   /* ---------- La feuille du bas (décisions, menu) ---------- */
   function ouvrirSheet(html, genre) {
     const p = qs('.ar-sheet');
-    p.className = 'ar-sheet ' + (genre || '');
+    /* Sans décision à prendre (menu, pile, règle), un voile : le toucher
+       referme la feuille. Une décision, elle, attend sa réponse. */
+    const voile = !/decision|centre/.test(genre || '');
+    p.className = 'ar-sheet ' + (genre || '') + (voile ? ' voile' : '');
     p.innerHTML = `<div class="ar-s-in">${html}</div>`;
     p.hidden = false;
   }
@@ -1202,7 +1261,7 @@ const Table = (() => {
       <div class="ar-menu">
         <button class="ar-mi" data-ar="journal">${NAVICO.quest}<span>Journal du combat</span></button>
         <button class="ar-mi${T.rapide ? ' on' : ''}" data-ar="vitesse">${NAVICO.rotate}<span>Animations rapides</span><i>${T.rapide ? 'oui' : 'non'}</i></button>
-        <button class="ar-mi" data-ar="regles">${NAVICO.illu}<span>Les règles</span></button>
+        <button class="ar-mi" data-ar="regles">${NAVICO.livre}<span>Les règles</span></button>
         ${fini ? `<button class="ar-mi" data-ar="quitter">${NAVICO.check}<span>Quitter</span></button>` : `<button class="ar-mi danger" data-ar="abandon">${NAVICO.lock}<span>Abandonner</span></button>`}
       </div>
       <div class="ar-s-act"><button class="ar-b ghost" data-ar="annuler">Reprendre</button></div>`, 'menu');
@@ -1678,20 +1737,20 @@ const Table = (() => {
    `img` absent : le tapis de base, dessiné par la page (css/arene.css). */
 const TAPIS = {
   t_base:      { nom: 'Nuit M8', img: null, prix: 0 },
-  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=3.0.5', prix: 4000 },
-  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=3.0.5', prix: 4000 },
-  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=3.0.5', prix: 5000 },
-  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=3.0.5', prix: 4000 },
-  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=3.0.5', prix: 4000 },
-  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.5', prix: 4000 },
+  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=3.0.6', prix: 4000 },
+  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=3.0.6', prix: 4000 },
+  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=3.0.6', prix: 5000 },
+  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=3.0.6', prix: 4000 },
+  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=3.0.6', prix: 4000 },
+  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.6', prix: 4000 },
   /* L'événement « Le Choc des Sections » : ni en vente, ni en Éclats.
      `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
-  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.5', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
-  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.5', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
+  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.6', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
+  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.6', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
 };
 const SLEEVES = {
-  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.5', prix: 0 },
-  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.5', prix: 3000 },
-  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.5', prix: 2500 },
-  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.5', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
+  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.6', prix: 0 },
+  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.6', prix: 3000 },
+  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.6', prix: 2500 },
+  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.6', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
 };

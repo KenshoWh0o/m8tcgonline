@@ -77,7 +77,7 @@ function vAtelier() {
     </nav>
     <div class="at-corps ong-${ong}">
       <section class="at-col at-cartes">${vAtCartes()}</section>
-      <section class="at-col at-deck">${vAtDeck()}${vAtReserve()}</section>
+      <section class="at-col at-deck" data-defil="at-deck">${vAtDeck()}${vAtReserve()}</section>
     </div>
     <footer class="at-pied">
       <button class="btn" data-cb="at-sauver" ${err.length && !d.id ? '' : ''}>Enregistrer</button>
@@ -91,8 +91,8 @@ function vAtCartes() {
   const f = atelier.filtres;
   return `<div class="at-filtres">
       <div class="at-cherche"><input id="at-q" type="search" placeholder="Chercher une carte, un mot-clé…" value="${h(f.q)}" autocomplete="off"></div>
-      <div class="at-chips">${AT_TYPES.map(([id, nom]) => `<button class="at-chip${f.type === id ? ' on' : ''}" data-cb="at-type" data-v="${id}">${nom}</button>`).join('')}</div>
-      <div class="at-chips coul">
+      <div class="at-chips" data-defil="at-types">${AT_TYPES.map(([id, nom]) => `<button class="at-chip${f.type === id ? ' on' : ''}" data-cb="at-type" data-v="${id}">${nom}</button>`).join('')}</div>
+      <div class="at-chips coul" data-defil="at-couls">
         <button class="at-chip${f.coul === 'all' ? ' on' : ''}" data-cb="at-coul" data-v="all">Toutes</button>
         ${['rose', 'orange', 'jade', 'violette', 'jaune', 'mauve', 'verte', 'bleue', 'azur', 'neutre'].map(k => `<button class="at-chip e${f.coul === k ? ' on' : ''}" data-cb="at-coul" data-v="${k}" title="${COLORS[k].nom}">${essIcon(k)}</button>`).join('')}
       </div>
@@ -189,7 +189,11 @@ function vStatsDeck(s) {
   const maxC = Math.max(1, ...s.couts);
   const r = atelier.deck.reserve || {};
   const manque = Object.keys(s.besoins).filter(k => !(r[k] > 0));
+  const b = Decks.bilan(atelier.deck);
+  const rates = b.reperes.filter(x => !x.ok);
   return `<div class="at-stats">
+    <button class="at-bilan" data-cb="bilan">${ETOILES_DECK(b.note)}<b>${b.nom}</b>
+      <small>${rates.length ? `À revoir : ${rates.map(x => x.titre.toLowerCase()).join(', ')}` : 'Les trois repères d\'un bon deck sont tenus.'}</small>${NAVICO.caret}</button>
     <div class="at-types" title="Répartition">
       ${['joueur', 'objet', 'coach', 'moment'].map(t => s[t] ? `<i class="t-${t}" style="flex:${s[t]}"></i>` : '').join('')}
     </div>

@@ -109,7 +109,7 @@ function vRfTete(fin) {
         <span class="rf-fin">${NAVICO.clock}<b data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</b></span>
       </div>
     </div>
-    <nav class="rf-onglets" role="tablist">
+    <nav class="rf-onglets" role="tablist" data-defil="rf-onglets">
       ${RF_VUES.map(([id, nom]) => `<button class="${rfVue === id ? 'on' : ''}" data-rfvue="${id}" role="tab"
         aria-selected="${rfVue === id}">${nom}${pastille(id)}</button>`).join('')}
     </nav>

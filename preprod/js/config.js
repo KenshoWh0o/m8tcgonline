@@ -32,21 +32,21 @@ const CARD_DIR = 'cards/';
 /* ---------- Habillage ---------- */
 /* Les quatre visuels de booster : un est tiré au sort à chaque paquet, sans effet sur le contenu. */
 const PACK_ARTS = [
-  'assets/boosters/booster-01.webp?v=3.0.5',
-  'assets/boosters/booster-02.webp?v=3.0.5',
-  'assets/boosters/booster-03.webp?v=3.0.5',
-  'assets/boosters/booster-04.webp?v=3.0.5'
+  'assets/boosters/booster-01.webp?v=3.0.6',
+  'assets/boosters/booster-02.webp?v=3.0.6',
+  'assets/boosters/booster-03.webp?v=3.0.6',
+  'assets/boosters/booster-04.webp?v=3.0.6'
 ];
 
-/* Le sceau assets/pack-star.svg?v=3.0.5 sert d'icône au compteur de boosters, directement dans index.html. */
+/* Le sceau assets/pack-star.svg?v=3.0.6 sert d'icône au compteur de boosters, directement dans index.html. */
 const ART = {
-  logo: 'assets/logo-m8.webp?v=3.0.5',         /* logo du jeu, en en-tête */
-  back: 'assets/card-back.webp?v=3.0.5',       /* dos de carte */
-  set: 'assets/extension-logo.svg?v=3.0.5',    /* logo de l'extension */
-  edition: 'assets/1st-edition.svg?v=3.0.5',   /* pastille 1re édition */
-  seal: 'assets/pack-star.svg?v=3.0.5',        /* sceau, icône de la réserve */
-  star: 'assets/star-pink.svg?v=3.0.5',        /* étincelle, repli d'avatar */
-  jeton: 'assets/jeton-echange.webp?v=3.0.5'   /* le jeton d'échange, frappé du M8 */
+  logo: 'assets/logo-m8.webp?v=3.0.6',         /* logo du jeu, en en-tête */
+  back: 'assets/card-back.webp?v=3.0.6',       /* dos de carte */
+  set: 'assets/extension-logo.svg?v=3.0.6',    /* logo de l'extension */
+  edition: 'assets/1st-edition.svg?v=3.0.6',   /* pastille 1re édition */
+  seal: 'assets/pack-star.svg?v=3.0.6',        /* sceau, icône de la réserve */
+  star: 'assets/star-pink.svg?v=3.0.6',        /* étincelle, repli d'avatar */
+  jeton: 'assets/jeton-echange.webp?v=3.0.6'   /* le jeton d'échange, frappé du M8 */
 };
 
 /* Petites icônes en ligne : elles héritent de la couleur du texte qui les entoure.
@@ -62,16 +62,16 @@ const ICON = {
 /* ---------- Référentiels ---------- */
 /* Couleurs officielles des neuf essences ; `ic` est le symbole affiché dans l'interface. */
 const COLORS = {
-  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.5' },
-  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.5' },
-  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.5' },
-  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.5' },
-  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.5' },
-  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.5' },
-  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.5' },
-  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.5' },
-  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.5' },
-  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.5' }
+  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.6' },
+  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.6' },
+  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.6' },
+  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.6' },
+  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.6' },
+  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.6' },
+  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.6' },
+  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.6' },
+  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.6' },
+  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.6' }
 };
 
 /* `PR` n'est pas une rareté de plus dans l'échelle : c'est une case à part.
@@ -225,13 +225,13 @@ const TITRES = {
 /* La monnaie d'un événement (supabase/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
    avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
-   de Reflets (2.0), les Insignes du Choc des Sections (3.0). Le serveur les
+   de Reflets (2.0), les Étincelles du Choc des Sections (3.0). Le serveur les
    range toutes au même endroit (evt_comptes) ; seuls le nom et l'icône
    changent. `PRISMES` suit l'événement en cours, ou celui dont on lit le
    récap. */
 const MONNAIES_EV = {
   reflets: { nom: 'Prismes', un: 'Prisme' },
-  choc: { nom: 'Insignes', un: 'Insigne' }
+  choc: { nom: 'Étincelles', un: 'Étincelle' }
 };
 const evMonnaieCode = () => {
   const ev = typeof evenementEnCours === 'function' ? evenementEnCours() : null;
@@ -288,11 +288,11 @@ const FRAMES = {
    Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
    avatarHTML dans js/ui.js). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.5', ico: true, bg: '#5d4bd9' },
-  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.5', objet: true, pos: '50%' },
-  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.5', objet: true, pos: '40%' },
-  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.5', ico: true, bg: '#5d4bd9' },
-  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.5', ico: true, bg: '#ee0073' }
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.6', ico: true, bg: '#5d4bd9' },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.6', objet: true, pos: '50%' },
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.6', objet: true, pos: '40%' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.6', ico: true, bg: '#5d4bd9' },
+  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.6', ico: true, bg: '#ee0073' }
 };
 
 /* ---------- Échanges ---------- */
@@ -401,6 +401,8 @@ const NAVICO = {
      Raid (l'éclair de The French Sorcerer), l'Épreuve du jour (un
      calendrier coché). */
   choc: '<svg viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.6v6.2c0 4.4-3.1 7.6-7.5 9.4-4.4-1.8-7.5-5-7.5-9.4V5.6Z"/><path d="M13 6.5 9.5 12.5h3l-1.5 5 4-6.5h-3Z"/></svg>',
+  /* Les règles, le Guide : un livre ouvert. */
+  livre: '<svg viewBox="0 0 24 24"><path d="M3.5 5.6c2.9-1.1 5.8-.9 8.5.8v13.2c-2.7-1.7-5.6-1.9-8.5-.8Z"/><path d="M20.5 5.6c-2.9-1.1-5.8-.9-8.5.8v13.2c2.7-1.7 5.6-1.9 8.5-.8Z"/></svg>',
   foudre: '<svg viewBox="0 0 24 24"><path d="M13.5 2.5 5.5 13.5h5.6l-1.6 8 8.5-11.4h-5.7Z"/></svg>',
   /* Le niveau de combattant : trois chevrons de grade. */
   niveau: '<svg viewBox="0 0 24 24"><path d="m5 11.5 7-5 7 5"/><path d="m5 16.5 7-5 7 5"/><path d="m5 21.5 7-5 7 5" opacity=".55"/></svg>',

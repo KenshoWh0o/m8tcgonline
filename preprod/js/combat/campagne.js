@@ -14,7 +14,7 @@
 const SECTIONS = {
   toxique: {
     id: 'toxique', nom: 'Section Toxique', court: 'Toxique', c: '#62d84e', c2: '#b7f29a',
-    promo: 'p03', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp?v=3.0.5',
+    promo: 'p03', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp?v=3.0.6',
     /* Les couleurs de ses adversaires de campagne, quand on affronte cette
        Section. */
     couleurs: ['rose', 'orange', 'verte', 'jaune'],
@@ -22,7 +22,7 @@ const SECTIONS = {
   },
   deter: {
     id: 'deter', nom: 'Section Déter', court: 'Déter', c: '#7c3aed', c2: '#c4b5fd',
-    promo: 'p04', starter: 'deter', boite: 'assets/combat/sections/deter.webp?v=3.0.5',
+    promo: 'p04', starter: 'deter', boite: 'assets/combat/sections/deter.webp?v=3.0.6',
     couleurs: ['mauve', 'violette', 'bleue', 'azur'],
     devise: 'Des Joueurs qui reviennent toujours, et des coups qui pèsent.'
   }
@@ -78,10 +78,10 @@ const RECOMPENSE_REJOUER = { eclats: 10 };
    en Légende 250 — de quoi compter, sans doubler les revenus d'un joueur. */
 const PVE_PLAFOND = 5;
 const DIFFICULTES = [
-  { niveau: 1, nom: 'Débutant', eclats: 10, texte: 'Elle apprend encore. Elle joue un coup sur deux au hasard.' },
-  { niveau: 2, nom: 'Facile', eclats: 15, texte: 'Des règles simples, sans calcul.' },
-  { niveau: 3, nom: 'Normal', eclats: 25, texte: 'Elle essaie ses coups avant de jouer.' },
-  { niveau: 4, nom: 'Difficile', eclats: 35, texte: 'Elle calcule, et se méfie de ta riposte.' },
+  { niveau: 1, nom: 'Débutant', eclats: 10, texte: 'Des règles simples : elle déploie et frappe ce qui tombe, sans Moments.' },
+  { niveau: 2, nom: 'Facile', eclats: 15, texte: 'Elle essaie ses coups, mais se trompe souvent.' },
+  { niveau: 3, nom: 'Normal', eclats: 25, texte: 'Elle essaie ses coups et se méfie un peu.' },
+  { niveau: 4, nom: 'Difficile', eclats: 35, texte: 'Elle calcule juste, et se méfie de ta riposte.' },
   { niveau: 5, nom: 'Légende', eclats: 50, texte: 'Elle prévoit ta réponse, avec un deck de Légendaires.' }
 ];
 

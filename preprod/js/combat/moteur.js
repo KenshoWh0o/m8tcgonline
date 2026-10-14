@@ -347,7 +347,10 @@ function* miseEnPlace(E) {
     const k = P.club.findIndex(c => c.id === p.id);
     return { ligne: p.ligne, c: k >= 0 ? P.club.splice(k, 1)[0] : nouvelleInst(E, p.id, i) };
   }));
-  for (const i of [0, 1]) {
+  /* `ordre` (le tutoriel, js/combat/tutoriel.js) : les Clubs et les
+     Réserves restent dans l'ordre donné — la partie est la même à chaque
+     fois. */
+  if (!E.init.ordre) for (const i of [0, 1]) {
     melanger(E, E.j[i].club);
     melanger(E, E.j[i].reserve);
   }
