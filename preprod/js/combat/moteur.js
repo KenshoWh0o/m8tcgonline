@@ -123,6 +123,13 @@ function creer(o) {
   cacher(E, 'snap', null);
   cacher(E, 'dem', null);
   cacher(E, 'gen', null);
+  /* `capture` (version 3.0.7) : chaque événement emporte une photo de la
+     partie à l'instant où il se produit (`e.etat`, du JSON). L'arène s'en
+     sert pour dessiner chaque étape d'une action dans l'ordre — sans elle,
+     elle ne voyait que l'état final, et un Joueur vaincu disparaissait du
+     plateau avant même que l'attaque ne le touche. Seule la partie affichée
+     l'allume : les copies de l'IA (cloner) ne photographient rien. */
+  cacher(E, 'capture', false);
   [0, 1].forEach(i => {
     const d = o.decks[i];
     E.j[i].club = d.club.map(id => nouvelleInst(E, id, i));
@@ -144,7 +151,11 @@ function cacher(E, k, v) {
 
 /* ---------- Événements ---------- */
 /* Ce que l'interface anime et que le journal raconte. */
-function ev(E, e) { E.ev.push(e); return e; }
+function ev(E, e) {
+  if (E.capture) Object.defineProperty(e, 'etat', { value: JSON.stringify(E), enumerable: false, writable: true, configurable: true });
+  E.ev.push(e);
+  return e;
+}
 
 /* ---------- Petits accès ---------- */
 const adv = j => 1 - j;
@@ -1103,6 +1114,7 @@ function cloner(E) {
   cacher(C, 'snap', null);
   cacher(C, 'dem', null);
   cacher(C, 'gen', null);
+  cacher(C, 'capture', false);
   C.gen = partie(C, true);
   avancer(C);
   for (const a of E.snap.actions) agirConfiance(C, a);
@@ -1135,6 +1147,8 @@ function infoAttaque(E, c, k) {
   };
 }
 
+const MODS_VISIBLES = ['def', 'atk', 'kw', 'pasAttaque', 'pasDefenseFace'];
+
 const Combat = {
   REGLE, COULEURS, catalogue, scripts, carte, toutes, baseId, scr,
   creer, agir, demande, options, optionsTour, cloner, rejouer, valider, cle,
@@ -1149,8 +1163,16 @@ const Combat = {
     ouiNon, choisirUn, choisirCartes, ordonner, ev, aMotCle, motCleImprime, defense, ou, retirerMain,
     porteurDe, trouverSurPlateau, essencesLibres, quitterPlateau, valeurAttaque, retirerObjet, sansAccent,
     shieldActif, REGLE,
-    /* Un effet « jusqu'à la fin du tour » (par défaut) ou plus long. */
-    mod: (E, t) => { E.temp.push(Object.assign({ jusqua: E.tour }, t)); return t; }
+    /* Un effet « jusqu'à la fin du tour » (par défaut) ou plus long. Ceux
+       qui se voient sur une carte (Défense, attaques, mot-clé, interdiction)
+       le disent aussi par un événement, pour que l'arène les montre ; les
+       autres (un piège posé, un coût réduit) restent silencieux — un piège
+       annoncé ne serait plus un piège. */
+    mod: (E, t) => {
+      E.temp.push(Object.assign({ jusqua: E.tour }, t));
+      if (MODS_VISIBLES.includes(t.type)) ev(E, { t: 'mod', type: t.type, cible: t.cible, camp: t.camp, val: t.val, kw: t.kw });
+      return t;
+    }
   }
 };
 

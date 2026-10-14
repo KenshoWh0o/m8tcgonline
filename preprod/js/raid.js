@@ -15,6 +15,10 @@
    décide côté serveur (supabase/27_raid.sql). */
 "use strict";
 
+/* Le visage du boss dans son illustration (#116, The French Sorcerer) : les
+   affiches du Raid le gardent au centre (illuCadre, js/ui.js). */
+const RAID_VISAGE = [.46, .24];
+
 let rdEtat = null;
 let rdErreur = '';
 let rdCharge = 0;
@@ -121,7 +125,7 @@ function vRaid() {
   const pips = Array.from({ length: r.max }, (_, i) => `<i class="${i < tr ? 'on' : ''}"></i>`).join('');
   return `<div class="rd">
     <section class="rd-hero">
-      ${k.img ? `<span class="rd-hero-art" style="background-image:url('${h(k.img)}')" aria-hidden="true"></span>` : ''}
+      ${k.img ? `<span class="rd-hero-art" aria-hidden="true">${illuCadre(k, RAID_VISAGE[0], RAID_VISAGE[1])}</span>` : ''}
       <div class="rd-hero-t">
         <small>Saison ${r.n} · encore ${rdJours(r)} jour${rdJours(r) > 1 ? 's' : ''}</small>
         <h2>${h(RAID.nom)}</h2>
@@ -186,7 +190,7 @@ function vRaidAffiche() {
     f = Math.max(0, Math.min(1, (r.degats - lo) / (r.phases[r.phase - 1].seuil - lo)));
   }
   return `<button class="rd-affiche" data-cb="vue" data-v="raid">
-    ${k.img ? `<span class="rd-affiche-art" style="background-image:url('${h(k.img)}')"></span>` : ''}
+    ${k.img ? `<span class="rd-affiche-art">${illuCadre(k, RAID_VISAGE[0], RAID_VISAGE[1], 1.15)}</span>` : ''}
     <span class="rd-affiche-t"><small>Raid${r ? ` · saison ${r.n}` : ''}</small><b>${h(RAID.nom)}</b>
       ${r ? `<span class="rd-affiche-ph">${infini ? 'Mode Infini' : `Phase ${r.phase} sur ${NB_PHASES()}`}</span>
         ${infini ? '' : `<span class="rd-pv mini"><i style="width:${Math.round(f * 100)}%"></i></span>`}` : ''}

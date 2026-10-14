@@ -186,7 +186,11 @@ Backend.apply = function (etat) {
     filleul: p.filleul === true,
     /* Version 3.0 (supabase/23_combats.sql) : la Section, les decks, les
        cosmétiques de combat, la campagne, les défis. */
-    combat: etat.combat || null
+    combat: etat.combat || null,
+    /* Version 3.0.7 (supabase/28_maitrise.sql) : le niveau de maîtrise de
+       chaque carte maîtrisée, et la carte fétiche du profil. */
+    maitrises: (etat.maitrise && etat.maitrise.niveaux) || {},
+    fetiche: (etat.maitrise && etat.maitrise.fetiche) || null
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -312,6 +316,11 @@ Backend.setProfile = async function (champs) {
 };
 
 Backend.setVitrine = async cartes => Backend.apply(await Backend.rpc('set_vitrine', { p_cards: cartes }));
+
+/* Version 3.0.7 : le niveau suivant d'une carte, et la carte fétiche
+   (`null` : la retirer). Le serveur revérifie tout (28_maitrise.sql). */
+Backend.maitriser = async id => Backend.apply(await Backend.rpc('maitriser', { p_carte: id }));
+Backend.setFetiche = async id => Backend.apply(await Backend.rpc('set_fetiche', { p_carte: id || null }));
 
 Backend.claimQuest = async id => Backend.apply(await Backend.rpc('claim_quest', { p_quest: id }));
 Backend.buy = async id => Backend.apply(await Backend.rpc('shop_buy', { p_item: id }));

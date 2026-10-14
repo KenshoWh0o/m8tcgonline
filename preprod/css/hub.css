@@ -147,9 +147,18 @@
 .moi-menu{display:grid;place-items:center;color:var(--subtle)}
 .moi-menu svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round}
 .ava-btn[aria-expanded="true"] .moi-menu{color:var(--accent-soft)}
-.moi-anneau{display:grid;place-items:center;padding:2.5px;border-radius:50%;
+/* Le niveau en chiffre, dans la pilule, juste avant la photo. */
+.moi-niv{display:grid;justify-items:center;line-height:1;min-width:18px;margin:0 1px 0 2px}
+.moi-niv small{font-size:7.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.moi-niv b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text);margin-top:1px}
+/* L'anneau d'XP et la photo : 32 px en tout, dans une pilule de 38. La règle
+   porte `.ava.sm` : `.ava.sm` (34 px, plus bas dans ce fichier) gagnait sur
+   `.moi-anneau .ava`, et la photo débordait de la pilule. Les cadres décorés
+   (`.fx`) ne débordent pas non plus : leur décor est rentré. */
+.moi-anneau{display:grid;place-items:center;flex:none;width:32px;height:32px;padding:2.5px;border-radius:50%;
   background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.14) 0)}
-.moi-anneau .ava{width:27px;height:27px;box-shadow:0 0 0 2px var(--bg)}
+.moi-anneau .ava.sm{width:27px;height:27px;box-shadow:0 0 0 2px var(--bg)}
+.moi-anneau .ava .fx-deco{display:none}
 
 /* Un point sur l'avatar quand quelque chose attend derrière le tiroir. */
 .hdrbtn.alerte::after{content:'';position:absolute;top:-1px;right:-1px;width:10px;height:10px;

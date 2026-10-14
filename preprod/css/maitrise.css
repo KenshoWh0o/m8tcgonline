@@ -1,0 +1,248 @@
+/* La maîtrise des cartes et la carte fétiche (version 3.0.7).
+
+   L'allure d'une carte maîtrisée, niveau par niveau (js/maitrise.js,
+   maitriseEnveloppe) :
+     .cwrap.mz.mz-N      l'enveloppe, avec --mc : la couleur de son Essence ;
+     .mz-l  (dans la carte, découpé à sa forme)
+            ::after  1 · Éclat   un éclat de lumière qui passe ;
+            ::before 2 · Gravure une gravure de reflets aux couleurs de l'Essence ;
+     .mz-a  (autour)  3 · Aura    un halo, et des étincelles qui montent ;
+     .mz-b  (autour)  4 · Arène   une bordure de lumière qui fait le tour ;
+     .mz-h  (dedans)  5 · Légende l'holographique,
+     .mz-c  (autour)              et la couronne.
+   `.mz-calme` : la même allure, immobile — une grille de cent cartes ne
+   s'anime pas, et la page reste fluide. Les mouvements réduits (réglage du
+   jeu ou du système) l'immobilisent aussi.
+
+   Toutes les mesures sont en cqi (la largeur de la carte, .cwrap étant un
+   conteneur) : le même effet tient sur une carte de 60 px en main comme sur
+   la carte de 320 px de la fiche. */
+
+/* ============ L'enveloppe ============ */
+.cwrap.mz{position:relative;isolation:isolate}
+.cwrap.mz>.card{z-index:1}
+.mz-l,.mz-h,.mz-a,.mz-b,.mz-c{position:absolute;pointer-events:none}
+
+/* ---------- 1 · Éclat : un éclat de lumière passe sur la carte ---------- */
+.mz-l{inset:0;z-index:4;border-radius:inherit;overflow:hidden}
+.mz-l::after{content:'';position:absolute;inset:0;mix-blend-mode:screen;
+  background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.08) 43%,rgba(255,255,255,.62) 50%,color-mix(in srgb,var(--mc) 55%,#fff) 53%,rgba(255,255,255,.06) 58%,transparent 63%) no-repeat;
+  background-size:260% 100%;background-position:150% 0;animation:mz-eclat 5.2s cubic-bezier(.45,0,.25,1) infinite}
+@keyframes mz-eclat{0%{background-position:150% 0}34%,100%{background-position:-60% 0}}
+/* Immobile : l'éclat reste posé dans le coin, comme un reflet. */
+.mz-calme .mz-l::after{animation:none;background-position:118% 0;opacity:.75}
+
+/* ---------- 2 · Gravure : des reflets gravés, aux couleurs de l'Essence ---------- */
+.mz-2 .mz-l::before,.mz-3 .mz-l::before,.mz-4 .mz-l::before,.mz-5 .mz-l::before{content:'';position:absolute;inset:0;
+  mix-blend-mode:color-dodge;opacity:.42;
+  background:
+    repeating-linear-gradient(128deg,color-mix(in srgb,var(--mc) 75%,#fff) 0 .35cqi,transparent .35cqi 2.4cqi),
+    repeating-linear-gradient(38deg,color-mix(in srgb,var(--mc) 60%,#fff) 0 .25cqi,transparent .25cqi 3.6cqi);
+  /* Une vague de lumière parcourt la gravure : on ne la voit qu'où elle passe. */
+  -webkit-mask:linear-gradient(115deg,transparent 25%,#000 42%,#000 58%,transparent 75%) 0 0/300% 100% no-repeat;
+  mask:linear-gradient(115deg,transparent 25%,#000 42%,#000 58%,transparent 75%) 0 0/300% 100% no-repeat;
+  animation:mz-gravure 6.5s ease-in-out infinite}
+@keyframes mz-gravure{0%{-webkit-mask-position:100% 0;mask-position:100% 0}50%{-webkit-mask-position:0 0;mask-position:0 0}100%{-webkit-mask-position:100% 0;mask-position:100% 0}}
+.mz-calme.mz .mz-l::before{animation:none;opacity:.26;-webkit-mask:none;mask:none}
+
+/* ---------- 3 · Aura : un halo de son Essence, des étincelles qui montent ---------- */
+.mz-3,.mz-4,.mz-5{box-shadow:none}
+.mz-a{inset:-3cqi;z-index:-1;border-radius:9cqi;
+  background:color-mix(in srgb,var(--mc) 80%,#fff);filter:blur(3.2cqi);
+  animation:mz-aura 3.4s ease-in-out infinite}
+@keyframes mz-aura{0%,100%{opacity:.7}50%{opacity:1}}
+/* Les étincelles : deux nuées décalées, qui montent et s'éteignent. Le halo
+   est flou : elles vivent sur l'enveloppe (::before et ::after), nettes. */
+.mz-3::before,.mz-4::before,.mz-5::before,.mz-3::after,.mz-4::after,.mz-5::after{content:'';position:absolute;z-index:6;
+  left:-4cqi;right:-4cqi;top:-14cqi;bottom:-2cqi;pointer-events:none;
+  background:
+    radial-gradient(circle,#fff 0 .55cqi,transparent .9cqi) 4% 92%/20% 26% no-repeat,
+    radial-gradient(circle,color-mix(in srgb,var(--mc) 50%,#fff) 0 .7cqi,transparent 1.1cqi) 28% 80%/20% 26% no-repeat,
+    radial-gradient(circle,#fff 0 .45cqi,transparent .8cqi) 52% 97%/20% 26% no-repeat,
+    radial-gradient(circle,color-mix(in srgb,var(--mc) 50%,#fff) 0 .6cqi,transparent 1cqi) 76% 86%/20% 26% no-repeat,
+    radial-gradient(circle,#fff 0 .5cqi,transparent .85cqi) 98% 94%/20% 26% no-repeat;
+  animation:mz-monte 3.6s linear infinite;opacity:0}
+@keyframes mz-monte{0%{transform:translateY(8%);opacity:0}15%{opacity:1}80%{opacity:.8}100%{transform:translateY(-34%);opacity:0}}
+/* La seconde nuée, en miroir et à contretemps. */
+.mz-3::after,.mz-4::after,.mz-5::after{animation-name:mz-monte-b;animation-delay:-1.8s}
+@keyframes mz-monte-b{0%{transform:scaleX(-1) translateY(8%);opacity:0}15%{opacity:1}80%{opacity:.8}100%{transform:scaleX(-1) translateY(-34%);opacity:0}}
+.mz-calme .mz-a{animation:none;opacity:.8}
+.mz-calme.mz::before{animation:none;opacity:.7;transform:translateY(-6%)}
+.mz-calme.mz::after{display:none}
+
+/* ---------- 4 · Arène : une bordure de lumière en fait le tour ---------- */
+@property --mz-tour{syntax:'<angle>';inherits:false;initial-value:0deg}
+.mz-b{inset:-1.5cqi;z-index:2;padding:1.5cqi;border-radius:7cqi;
+  background:conic-gradient(from var(--mz-tour),transparent 0 46%,color-mix(in srgb,var(--mc) 80%,#fff) 60%,#fff 70%,color-mix(in srgb,var(--mc) 80%,#fff) 80%,transparent 94%),
+    linear-gradient(color-mix(in srgb,var(--mc) 55%,#fff 25%),color-mix(in srgb,var(--mc) 55%,#fff 25%));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
+  filter:drop-shadow(0 0 1.6cqi color-mix(in srgb,var(--mc) 85%,#fff));
+  animation:mz-tour 3s linear infinite}
+@keyframes mz-tour{to{--mz-tour:360deg}}
+.mz-calme .mz-b{animation:none;--mz-tour:200deg}
+
+/* ---------- 5 · Légende : holographique, et couronnée ---------- */
+.mz-h{inset:0;z-index:3;border-radius:inherit;mix-blend-mode:color-dodge;opacity:.34;
+  background:linear-gradient(120deg,#ff5f9e,#ffd36b 18%,#7dffb2 34%,#68d4ff 50%,#b48cff 66%,#ff5f9e 84%,#ffd36b) 0 0/300% 300%;
+  animation:mz-holo 7s ease-in-out infinite alternate}
+@keyframes mz-holo{to{background-position:100% 100%}}
+.mz-calme .mz-h{animation:none;background-position:40% 40%;opacity:.26}
+.mz-c{left:50%;top:-10.5cqi;z-index:5;width:24cqi;transform:translateX(-50%);
+  filter:drop-shadow(0 .8cqi 1.2cqi rgba(0,0,0,.55)) drop-shadow(0 0 2cqi rgba(255,210,90,.55));
+  animation:mz-couronne 3.2s ease-in-out infinite}
+.mz-c svg{display:block;width:100%;height:auto}
+@keyframes mz-couronne{0%,100%{transform:translateX(-50%) translateY(0) rotate(-2deg)}50%{transform:translateX(-50%) translateY(-1.2cqi) rotate(2deg)}}
+.mz-calme .mz-c{animation:none;transform:translateX(-50%)}
+
+/* Les mouvements réduits : tout s'immobilise. */
+html.rm .mz .mz-l::after,html.rm .mz .mz-l::before,html.rm .mz-a,html.rm .mz::before,html.rm .mz-b,html.rm .mz-h,html.rm .mz-c{animation:none}
+html.rm .mz .mz-l::before{-webkit-mask:none;mask:none;opacity:.26}
+html.rm .mz::before{opacity:.7}
+html.rm .mz::after{display:none}
+@media (prefers-reduced-motion:reduce){
+  .mz .mz-l::after,.mz .mz-l::before,.mz-a,.mz::before,.mz-b,.mz-h,.mz-c{animation:none}
+  .mz .mz-l::before{-webkit-mask:none;mask:none;opacity:.26}
+  .mz::before{opacity:.7}
+  .mz::after{display:none}
+}
+
+/* ============ L'insigne : « III » ============ */
+.mz-ins{display:inline-grid;place-items:center;min-width:1.7em;height:1.35em;padding:0 .3em;border-radius:.4em;
+  font:800 .72em/1 var(--display,inherit);font-style:normal;letter-spacing:.02em;color:#1a1530;
+  background:linear-gradient(180deg,#f3efff,#c9bdff);box-shadow:0 0 0 1px rgba(255,255,255,.5) inset}
+.mz-ins-4{background:linear-gradient(180deg,#fff,#a3e4ff)}
+.mz-ins-5{background:linear-gradient(180deg,#fff6c8,#f2c24a);color:#4a2c00;box-shadow:0 0 0 1px rgba(255,240,190,.8) inset,0 0 8px rgba(255,200,80,.5)}
+
+/* ============ La fiche : l'onglet Maîtrise (js/maitrise.js, vMaitriseFiche) ============ */
+.mz-fiche{display:flex;flex-direction:column;gap:10px}
+.mz-tete{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 2px 0}
+.mz-titre{font-size:14px;font-weight:700;color:rgba(255,255,255,.75)}
+.mz-titre b{color:#fff;font-weight:900}
+.mz-pips{display:flex;gap:5px}
+.mz-pips i{width:22px;height:7px;border-radius:999px;background:rgba(255,255,255,.12)}
+.mz-pips i.on{background:linear-gradient(90deg,#c9bdff,#fff);box-shadow:0 0 8px rgba(179,166,255,.6)}
+.mz-pips i.on:nth-child(5){background:linear-gradient(90deg,#f2c24a,#fff6c8);box-shadow:0 0 8px rgba(255,200,80,.6)}
+.mz-cout{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.mz-cout>span{display:inline-flex;align-items:center;gap:5px;padding:6px 11px 6px 8px;border-radius:999px;font-size:12.5px;font-weight:700;
+  color:rgba(255,255,255,.8);background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.mz-cout>span svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;color:var(--accent-soft)}
+.mz-cout b{color:#fff;font-weight:900}
+.mz-cout .manque{box-shadow:inset 0 0 0 1px rgba(255,200,120,.35);color:#ffe2b8}
+.mz-fiche .btn[data-v="maitriser"]{justify-content:space-between;padding-inline:18px}
+.mz-tot{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.22);font-size:13px;font-weight:900}
+.mz-rien,.mz-max,.mz-note{margin:0;text-align:center;font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.65)}
+.mz-max{padding:10px;border-radius:14px;color:#ffe9a8;font-weight:800;background:rgba(255,200,80,.1);box-shadow:inset 0 0 0 1px rgba(255,200,80,.3)}
+.mz-note{font-size:11.5px;color:rgba(255,255,255,.5)}
+.mz-apercu{align-self:center;color:var(--accent-soft);text-decoration:underline;text-underline-offset:3px}
+.mz-niveaux{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.mz-niv{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:14px;background:rgba(255,255,255,.04);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);color:rgba(255,255,255,.55)}
+.mz-niv>b{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:900;font-size:12px;
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.6)}
+.mz-niv>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mz-niv em{font-style:normal;font-weight:800;font-size:13.5px;color:rgba(255,255,255,.8)}
+.mz-niv small{font-size:11.5px;line-height:1.35}
+.mz-niv>svg{flex:none;width:18px;height:18px;fill:none;stroke:#b3a6ff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.mz-niv.fait{color:rgba(255,255,255,.7);background:rgba(157,140,255,.08);box-shadow:inset 0 0 0 1px rgba(157,140,255,.22)}
+.mz-niv.fait>b{background:linear-gradient(180deg,#f3efff,#c9bdff);color:#1a1530}
+.mz-niv.fait em{color:#fff}
+.mz-niv.suivant{color:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+.mz-niv.suivant>b{background:rgba(255,255,255,.16);color:#fff}
+.mz-niv.suivant em{color:#fff}
+
+/* L'insigne sous une carte de la Collection, à côté de son numéro. */
+.gcell .num .mz-ins{margin-left:.3em;font-size:.82em;vertical-align:.08em}
+
+/* ============ La carte fétiche (profil, fiche de joueur) ============
+   Une scène : un projecteur aux couleurs de l'Essence tombe d'en haut, des
+   rayons tournent lentement derrière la carte, qui flotte au-dessus de son
+   reflet au sol. Le texte à côté, en grand. */
+.fet{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(118px,40%) 1fr;align-items:center;gap:14px;
+  margin:14px 0;padding:26px 18px 22px 22px;border-radius:24px;min-height:236px;
+  background:radial-gradient(120% 90% at 26% 110%,color-mix(in srgb,var(--fc) 26%,transparent),transparent 60%),linear-gradient(180deg,#14131c,#0c0b11);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 30%,rgba(255,255,255,.08)),0 14px 34px rgba(0,0,0,.4)}
+/* Le halo de la scène, et le grain. */
+.fet-fond{position:absolute;inset:0;z-index:-3;pointer-events:none;
+  background:radial-gradient(60% 70% at 28% 42%,color-mix(in srgb,var(--fc) 42%,transparent),transparent 70%),
+    radial-gradient(rgba(255,255,255,.06) .7px,transparent .8px) 0 0/16px 16px}
+/* Les rayons : un éventail qui tourne, effacé vers les bords. */
+.fet-rayons{position:absolute;left:28%;top:44%;z-index:-2;width:560px;height:560px;margin:-280px 0 0 -280px;pointer-events:none;opacity:.5;
+  background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--fc) 70%,#fff) 0 5deg,transparent 5deg 18deg);
+  -webkit-mask:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.5) 38%,transparent 72%);mask:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.5) 38%,transparent 72%);
+  animation:fet-tourne 38s linear infinite}
+@keyframes fet-tourne{to{transform:rotate(360deg)}}
+/* Le projecteur : un cône de lumière qui tombe sur la carte. */
+.fet-faisceau{position:absolute;left:28%;top:-30px;z-index:-1;width:300px;height:330px;margin-left:-150px;pointer-events:none;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--fc) 50%,#fff) 0%,color-mix(in srgb,var(--fc) 30%,transparent) 45%,transparent 92%);
+  clip-path:polygon(41% 0,59% 0,100% 100%,0 100%);opacity:.42;filter:blur(6px);mix-blend-mode:screen;
+  animation:fet-balaye 7s ease-in-out infinite}
+@keyframes fet-balaye{0%,100%{transform:rotate(-3deg);opacity:.36}50%{transform:rotate(3deg);opacity:.5}}
+/* La carte flotte, au-dessus de son reflet. */
+.fet-carte{position:relative;justify-self:center;width:100%;max-width:168px;padding:0;border:0;background:none;
+  animation:fet-flotte 4.6s ease-in-out infinite}
+.fet-carte .cwrap{box-shadow:0 18px 30px rgba(0,0,0,.55),0 0 34px color-mix(in srgb,var(--fc) 45%,transparent)}
+.fet-carte .cwrap.mz-3,.fet-carte .cwrap.mz-4,.fet-carte .cwrap.mz-5{box-shadow:0 18px 30px rgba(0,0,0,.55)}
+@keyframes fet-flotte{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-8px) rotate(1.5deg)}}
+.fet-sol{position:absolute;left:8%;right:8%;bottom:-20px;height:16px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--fc) 70%,transparent),transparent);filter:blur(2px);
+  animation:fet-sol 4.6s ease-in-out infinite}
+@keyframes fet-sol{0%,100%{transform:scaleX(1);opacity:.85}50%{transform:scaleX(.8);opacity:.5}}
+.fet-t{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
+.fet-t>small{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--fc) 55%,#fff)}
+.fet-t>b{font-family:var(--display);font-stretch:115%;font-style:italic;font-weight:900;font-size:clamp(21px,6.2vw,30px);line-height:1.02;
+  color:#fff;text-shadow:0 2px 18px color-mix(in srgb,var(--fc) 60%,transparent);overflow-wrap:anywhere}
+.fet-tags{display:flex;flex-wrap:wrap;gap:6px}
+.fet-mz{display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 6px;border-radius:999px;font-size:12px;font-weight:700;
+  color:rgba(255,255,255,.85);background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.fet-mz b{color:#fff;font-weight:900}
+.fet-mz5 .fet-mz{background:rgba(255,200,80,.12);box-shadow:inset 0 0 0 1px rgba(255,210,110,.45)}
+.fet-changer{padding:4px 0;color:var(--accent-soft);text-decoration:underline;text-underline-offset:3px}
+/* Une Légende : la scène s'embrase d'or. */
+.fet-mz5 .fet-rayons{opacity:.7;background:repeating-conic-gradient(from 0deg,#ffe7a0 0 4deg,transparent 4deg 11deg,color-mix(in srgb,var(--fc) 70%,#fff) 11deg 15deg,transparent 15deg 22deg)}
+/* Pas de carte fétiche encore : une invitation. */
+.fet.vide{display:block;min-height:0;padding:20px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);
+  outline:1.5px dashed rgba(179,166,255,.35);outline-offset:-7px}
+.fet-vide{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.fet-vide svg{width:30px;height:30px;color:var(--accent-soft);fill:currentColor}
+.fet-vide b{font-size:16px;font-weight:900}
+.fet-vide small{max-width:34ch;font-size:12.5px;line-height:1.4;color:var(--muted)}
+.fet-vide .btn{margin-top:6px}
+html.rm .fet-rayons,html.rm .fet-faisceau,html.rm .fet-carte,html.rm .fet-sol{animation:none}
+@media (prefers-reduced-motion:reduce){.fet-rayons,.fet-faisceau,.fet-carte,.fet-sol{animation:none}}
+/* Dans la feuille d'un joueur, la scène prend toute la largeur. */
+.sheet .fet{margin:12px 0}
+
+/* ============ En combat (js/combat/table.js) ============
+   Ses propres cartes seulement. Dans la carte (.ar-c) : la lumière, la
+   gravure, l'holographique. Autour du Joueur posé (.ar-j, dans sa place —
+   un conteneur à la largeur de la carte) : le halo, la bordure, la
+   couronne. Dans la main et la carte agrandie, la carte est seule : un
+   liseré de sa couleur tient lieu de halo. */
+.ar-c.mz{container-type:inline-size}
+.ar-c.mz .mz-l,.ar-c.mz .mz-h{border-radius:inherit}
+.ar-j.mz-j .mz-c{top:-9cqi;width:22cqi}
+/* Engagé : la carte s'assombrit, son halo aussi. */
+.ar-j.eng .mz-a,.ar-j.eng .mz-b{opacity:.25;animation:none}
+.ar-j.eng .mz-c{filter:brightness(.5) saturate(.4)}
+.ar-m .ar-c.mz-3,.ar-fc .ar-c.mz-3{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--mc) 60%,#fff),0 0 12px color-mix(in srgb,var(--mc) 75%,transparent)}
+.ar-m .ar-c.mz-4,.ar-fc .ar-c.mz-4{box-shadow:0 0 0 2px color-mix(in srgb,var(--mc) 45%,#fff),0 0 16px color-mix(in srgb,var(--mc) 85%,transparent)}
+.ar-m .ar-c.mz-5,.ar-fc .ar-c.mz-5{box-shadow:0 0 0 2px #ffe7a0,0 0 18px color-mix(in srgb,var(--mc) 85%,transparent),0 0 30px rgba(255,200,80,.45)}
+
+/* L'entrée d'une carte maîtrisée (niveau 4 et plus) : un éclat de lumière. */
+.ar-j.mz-entree::before{content:'';position:absolute;inset:-22%;z-index:7;border-radius:50%;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(closest-side,#fff 0,color-mix(in srgb,var(--mc) 85%,#fff) 30%,color-mix(in srgb,var(--mc) 60%,transparent) 55%,transparent 75%);
+  animation:mz-flash .95s cubic-bezier(.2,.8,.3,1) both}
+@keyframes mz-flash{0%{transform:scale(.3);opacity:0}18%{transform:scale(1.05);opacity:1}100%{transform:scale(1.6);opacity:0}}
+/* Une Légende (niveau 5) : une onde de choc traverse le plateau. */
+.mz-onde{position:absolute;z-index:30;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;pointer-events:none;
+  border:4px solid color-mix(in srgb,var(--mc) 50%,#fff);
+  background:radial-gradient(closest-side,transparent 62%,color-mix(in srgb,var(--mc) 35%,transparent) 88%,transparent);
+  box-shadow:0 0 26px 6px color-mix(in srgb,var(--mc) 85%,transparent),inset 0 0 26px 4px color-mix(in srgb,var(--mc) 70%,transparent);
+  animation:mz-onde 1.25s cubic-bezier(.25,.6,.35,1) forwards}
+@keyframes mz-onde{
+  0%{width:30px;height:30px;margin:-15px 0 0 -15px;opacity:1}
+  55%{width:430px;height:430px;margin:-215px 0 0 -215px;opacity:.9}
+  100%{width:820px;height:820px;margin:-410px 0 0 -410px;opacity:0;border-width:1px}}
+html.rm .ar-j.mz-entree::before,html.rm .mz-onde{animation:none;display:none}
+@media (prefers-reduced-motion:reduce){.ar-j.mz-entree::before,.mz-onde{display:none}}

@@ -142,7 +142,7 @@ function montrerNouveautes30() {
     title: 'Version 3.0 · Les Combats et les Secrètes',
     body: `<div class="nvhero v3">
         <div class="nvboites" aria-hidden="true">
-          <img src="${SECTIONS.toxique.boite}" alt=""><i>VS</i><img src="${SECTIONS.deter.boite}" alt="">
+          <img src="${SECTIONS.toxique.boite}" alt=""><img src="${SECTIONS.deter.boite}" alt="">
         </div>
         <div class="nvtexte">
           <span class="nvkicker">${choc ? 'Événement en cours' : 'Nouveau'}</span>
@@ -159,15 +159,23 @@ function montrerNouveautes30() {
           <small>${nbS || 'Cinq'} cartes cachées au-delà des 122. À toi de les trouver.</small>
         </div>
       </div>
+      <div class="nvhero v3r">
+        <div class="ch-ref-art" aria-hidden="true">${[[COUV.solo, -1], [COUV.versus, 0], [COUV.arcade, 1]].map(([id, i]) =>
+          `<span class="ch-ref-tuile" style="--i:${i};--a:${Math.abs(i)}">${illuCadre(id, .5, .32)}</span>`).join('')}</div>
+        <div class="nvtexte">
+          <span class="nvkicker">Un nouveau visage</span>
+          <b>La refonte visuelle</b>
+          <small>Tout le site redessiné, en graphite et lavande : des tuiles pleines, les illustrations en grand, du verre qui flotte.</small>
+        </div>
+      </div>
       <ol class="bvpoints nvpoints">
-        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt rivaux, et l\'Arcade, cinq difficultés) et Versus en direct contre tes amis, 60 secondes par tour, dans une arène en plein écran. Chaque carte de l\'adversaire s\'affiche en grand avec son effet, et toutes les cartes jouées restent consultables.')}
-        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes cachées au-delà des 122, avec la finition la plus rare du jeu : un reflet irisé, et un cadre pour qui trouve la première. Où et quand elles tombent ? C'est un secret. La Légendaire passe à 4,25 %.`)}
-        ${point('livre', 'Le tutoriel et le glossaire.', 'Une partie guidée, bulle après bulle, pour apprendre en jouant (et 200 Éclats la première fois) ; chaque mot du jeu, cherchable, dans le Guide des Combats.')}
+        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt rivaux, et l\'Arcade, cinq difficultés) et Versus en direct contre tes amis, 60 secondes par tour, dans une arène en plein écran. Pour commencer, un tutoriel : une partie guidée, bulle après bulle (et 200 Éclats la première fois).')}
+        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes cachées au-delà des 122, avec la finition la plus rare du jeu : un reflet irisé, et un cadre pour qui trouve la première. La Légendaire passe à 4,25 %.`)}
         ${point('foudre', 'Le Raid.', 'The French Sorcerer, un boss pour tout le serveur, par saisons de deux semaines. Six phases à abattre ensemble : chacune qui tombe ouvre un coffre pour tous ceux qui ont combattu, et tes dégâts paient aussi tes coffres à toi. La dernière abattue, place au mode Infini.')}
         ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
+        ${point('fragment', 'La maîtrise des cartes.', 'Tes Fragments font monter une carte en cinq niveaux — Éclat, Gravure, Aura, Arène, Légende — et chacun change son allure, en combat aussi. Seuls les exemplaires en trop sont pris. Et une carte fétiche, en grand en haut de ton profil.')}
         ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
-        ${point('star', 'Un nouveau visage.', 'Tout le site est redessiné, en graphite et lavande : des tuiles pleines, les illustrations du jeu en grand, et une seule couleur pour ce qu\'on peut faire, la lavande, partout, arène comprise.')}
-        ${point('user', 'Neuf nouveaux cadres.', 'Arène (niveaux 10 à 50), Toxique et Déter, Secrète, et ceux de l\'événement. Ton profil montre où gagner chacun.')}
+        ${point('user', 'Le cadre Secrète.', 'Le plus rare du jeu : le reflet irisé des Secrètes autour de ton avatar, pour qui trouve sa première. Et huit autres cadres : Arène (niveaux 10 à 50), Toxique et Déter, ceux de l\'événement ; ton profil montre où gagner chacun.')}
         ${point('shop', 'Tapis et sleeves.', 'Des tapis de jeu et des sleeves en boutique ; en combat, c\'est le tapis de celui qui joue qui s\'affiche.')}
         ${choc ? point('choc', 'Le Choc des Sections.', `L'Épreuve du jour, le Raid payé en Étincelles, un Pass de trente paliers et ses trois exclusifs — pendant trois semaines.`) : ''}
       </ol>`,

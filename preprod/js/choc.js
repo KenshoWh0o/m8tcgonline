@@ -175,18 +175,23 @@ function vChAccueil() {
     ${vChNouveautes()}`;
 }
 
-/* Ce que la 3.0 apporte : l'événement est aussi sa vitrine. Les deux grands
+/* Ce que la 3.0 apporte : l'événement est aussi sa vitrine. Les grands
    ajouts en grand — les Combats sous le chevalier de leur bandeau, les
-   Secrètes en éventail ; puis six tuiles illustrées, chacune menant à ce
-   qu'elle montre. */
+   Secrètes en éventail, la refonte visuelle (version 3.0.7, à la place de la
+   tuile du Guide, que le tutoriel met déjà en avant dans Combats) ; puis six
+   tuiles illustrées, chacune menant à ce qu'elle
+   montre. Les illustrations des cartes sont recadrées sur le visage
+   (illuCadre, js/ui.js), jamais sur le titre ou le cadre de la carte. */
 function vChNouveautes() {
   const n = niveauDe(cbEtat().xp || 0);
   const deck = cbDeckActif();
-  const fond = url => (url ? `<i style="background-image:url('${h(url)}')"></i>` : '');
+  const couv = (deck && byId[deck.couverture]) || byId[COUV.solo];
   const tuile = (attrs, art, titre, texte, cls) => `<button class="ch-nv${cls ? ' ' + cls : ''}" ${attrs}>
       <span class="ch-nv-art">${art}</span>
       <span class="ch-nv-t"><b>${titre}</b><small>${texte}</small></span>
     </button>`;
+  const tapis = ['t_veste', 't_arene', 't_chevalier'].map((k, i) => TAPIS[k] && TAPIS[k].img
+    ? `<i style="--i:${i - 1};background-image:url('${h(TAPIS[k].img.replace('.webp', '-mini.webp'))}')"></i>` : '').join('');
   return `<section class="ch-nouveau">
     <h3 class="rf-sous">Nouveau dans la 3.0</h3>
     <button class="ch-nv-une" data-tab="combats">
@@ -196,15 +201,35 @@ function vChNouveautes() {
       <span class="cb-une-go">Jouer</span>
     </button>
     ${vChSecretes()}
+    ${vChRefonte()}
     <div class="ch-nv-grille">
-      ${tuile('data-cb="vue" data-v="raid"', fond((byId[RAID.boss] || {}).img), 'Le Raid', 'Un boss pour tout le serveur, par saisons de deux semaines.', 'raid')}
-      ${tuile('data-tab="profil"', avatarHTML(save.avatar, 'f_niv50', 'ch-nv-ava'), 'Neuf cadres', 'Arène, Sections, Secrète, événement : ton profil dit où gagner chacun.', 'cadres')}
+      ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Tes Fragments font briller une carte, en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
+      ${tuile('data-cb="vue" data-v="raid"', illuCadre(RAID.boss, RAID_VISAGE[0], RAID_VISAGE[1], 1.2), 'Le Raid', 'Un boss pour tout le serveur, par saisons de deux semaines.', 'raid')}
+      ${tuile('data-tab="profil"', avatarHTML(save.avatar, 'f_secrete', 'ch-nv-ava'), 'Le cadre Secrète', 'Le plus rare du jeu : il revient à qui trouve sa première Secrète.', 'cadres')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
-      ${tuile('data-cb="vue" data-v="decks"', fond(TAPIS.t_veste.img.replace('.webp', '-mini.webp')), 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
-      ${tuile('data-cb="vue" data-v="decks"', fond(((deck && byId[deck.couverture]) || byId[COUV.solo] || {}).img), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
-      ${tuile('data-cb="vue" data-v="guides"', `<span class="ch-nv-ico">${NAVICO.livre}</span>`, 'Le Guide', 'Les règles du combat, en dix pages courtes.', 'guide')}
+      ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
+      ${tuile('data-cb="vue" data-v="decks"', illuCadre(couv, .5, .3), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
+      ${tuile('data-tab="combats"', `<span class="ch-nv-boites" aria-hidden="true"><img src="${h(SECTIONS.toxique.boite)}" alt=""><img src="${h(SECTIONS.deter.boite)}" alt=""></span>`, 'Deux Sections', 'Toxique ou Déter : ton camp, ton Starter Deck, ta campagne.', 'sections')}
     </div>
   </section>`;
+}
+
+/* La refonte visuelle (version 3.0.7) : une affiche à elle, à la hauteur des
+   deux autres. Trois tuiles de verre qui flottent — les portes Solo, Versus
+   et Arcade, illustrations en grand — sur la lumière lavande, et la palette
+   en quatre pastilles. Elle ouvre la fenêtre des nouveautés. */
+function vChRefonte() {
+  const t = (id, nom, i) => `<span class="ch-ref-tuile" style="--i:${i};--a:${Math.abs(i)}">${illuCadre(id, .5, .32)}<b>${nom}</b></span>`;
+  return `<button class="ch-nv-une ch-nv-refonte" data-act="nouveautes">
+      <span class="ch-ref-art" aria-hidden="true">
+        ${t(COUV.solo, 'Solo', -1)}${t(COUV.versus, 'Versus', 0)}${t(COUV.arcade, 'Arcade', 1)}
+        <span class="ch-ref-pal"><i></i><i></i><i></i><i></i></span>
+      </span>
+      <span class="ch-nv-une-t"><small>Un nouveau visage</small><b>La refonte visuelle</b>
+        <span>Tout le site redessiné : graphite et lavande, des tuiles pleines, les illustrations du jeu en grand, du verre qui flotte, et une seule couleur pour ce qu'on peut faire.</span>
+        <span class="ch-nv-modes"><i>Graphite et lavande</i><i>Verre</i><i>Illustrations en grand</i></span></span>
+      <span class="cb-une-go">Tout voir</span>
+    </button>`;
 }
 
 /* Les Secrètes, l'autre grand ajout : les cinq en éventail. Celles qu'on a
@@ -224,7 +249,7 @@ function vChSecretes() {
   return `<button class="ch-nv-une ch-nv-sec" data-colvue="speciales" data-tab="collection">
       <span class="ch-sec-fan" aria-hidden="true">${liste.map(carte).join('')}</span>
       <span class="ch-nv-une-t"><small>L'autre grand ajout</small><b>Les Secrètes</b>
-        <span>${liste.length} cartes cachées au-delà des 122, avec la finition la plus rare du jeu. Où et quand elles tombent ? C'est un secret.</span>
+        <span>${liste.length} cartes cachées au-delà des 122, avec la finition la plus rare du jeu. À toi de les trouver.</span>
         <span class="ch-nv-modes"><i class="tnum">${eues} / ${liste.length} trouvée${eues > 1 ? 's' : ''}</i><i>Reflet irisé</i><i>Cadre Secrète</i></span></span>
       <span class="cb-une-go">Voir</span>
     </button>`;

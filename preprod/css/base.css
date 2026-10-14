@@ -17,6 +17,18 @@
 /* `display` posé sur une classe l'emporterait sur la règle du navigateur : on tranche. */
 [hidden]{display:none!important}
 
+/* ============ Illustration recadrée (illuCadre, js/ui.js) ============ */
+/* La carte entière est posée derrière la case, assez grande pour que son
+   illustration la couvre (--cw : la largeur de la carte, d'après la case,
+   en unités de conteneur), puis décalée pour amener le point (--fx, --fy)
+   au centre, sans jamais laisser voir le bord de l'illustration (clamp). */
+.illu-cadre{position:absolute;inset:0;overflow:hidden;container-type:size;pointer-events:none}
+.illu-cadre>i{position:absolute;display:block;aspect-ratio:1000/1397;background:center/100% 100% no-repeat;
+  --cw:calc(max(100cqw / .81, 100cqh / .479) * var(--z,1));
+  width:var(--cw);
+  left:clamp(calc(100cqw - var(--cw) * .895), calc(50cqw - var(--cw) * (.085 + .81 * var(--fx))), calc(var(--cw) * -.085));
+  top:clamp(calc(100cqh - var(--cw) * .684), calc(50cqh - var(--cw) * (.205 + .479 * var(--fy))), calc(var(--cw) * -.205))}
+
 /* ============ Tête ============ */
 /* Elle flotte au-dessus du contenu, sans fond ni filet : le logo à gauche,
    des capsules de verre à droite. Sous elle, un bord qui floute et

@@ -100,8 +100,19 @@ function vColClassiques() {
 
     ${list.length
       ? `<div class="grid">${list.map(vCase).join('')}${noFilter ? cellulesSecretes() : ''}</div>`
-      : `<p class="empty">Aucune carte avec ces filtres.
-          <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}`;
+      : vVideFiltres()}`;
+}
+
+/* Rien ne correspond : on dit pourquoi quand c'est un des trois « Afficher »
+   qui vide la grille (pas encore de favori, pas d'objectif posé). */
+function vVideFiltres() {
+  const pourquoi = colFavoris && !(save.favoris || []).length
+    ? 'Tu n\'as pas encore de favori : ouvre une carte et touche son cœur.'
+    : colObjectifs && !objectifsPoses()
+      ? 'Rien à compléter : choisis d\'abord combien d\'exemplaires garder (Réglages, ou sur une carte ouverte).'
+      : 'Aucune carte avec ces filtres.';
+  return `<p class="empty">${pourquoi}
+    <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`;
 }
 
 /* ---------- Les 85 Reverses ---------- */
@@ -181,19 +192,11 @@ function vFiltres(all) {
           style="--ec:${COLORS[k].c}">${essIcon(k)}${COLORS[k].nom}</button>`).join('')}
       </div>`)}
 
-      <label class="toggle filtoggle">
-        <span>Seulement mes cartes<small>Masque les emplacements vides</small></span>
-        <input type="checkbox" id="col-poss" ${colPossedees ? 'checked' : ''}>
-      </label>
-      ${(save.favoris || []).length || colFavoris ? `<label class="toggle filtoggle">
-        <span>Mes favoris<small>Les cartes où tu as posé un cœur</small></span>
-        <input type="checkbox" id="col-fav" ${colFavoris ? 'checked' : ''}>
-      </label>` : ''}
-      ${objectifsPoses() || colObjectifs ? `<label class="toggle filtoggle">
-        <span>À compléter<small>Tu les as, mais moins que ce que tu veux garder</small></span>
-        <input type="checkbox" id="col-obj" ${colObjectifs ? 'checked' : ''}>
-      </label>` : ''}
-
+      ${ligne('Afficher', `<div class="chips filvues">
+        <label class="filpuce${colPossedees ? ' on' : ''}"><input type="checkbox" id="col-poss" ${colPossedees ? 'checked' : ''}>Mes cartes</label>
+        <label class="filpuce${colFavoris ? ' on' : ''}"><input type="checkbox" id="col-fav" ${colFavoris ? 'checked' : ''}>${NAVICO.coeur || '♥'}Favoris</label>
+        <label class="filpuce${colObjectifs ? ' on' : ''}"><input type="checkbox" id="col-obj" ${colObjectifs ? 'checked' : ''}>À compléter</label>
+      </div>`)}
       ${n ? '<button class="linkbtn filreset" data-act="col-reset">Tout réafficher</button>' : ''}
     </div>
   </div>`;
@@ -227,7 +230,10 @@ function vCase(c) {
   /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
      de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c)}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
+  /* Version 3.0.7 : sa maîtrise, immobile (une grille de cent cartes), et
+     son insigne à côté du numéro. */
+  const m = maitrisable(c) ? niveauMaitrise(c) : 0;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c, { m, calme: true })}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${insigneMaitrise(m)}${vGarde(c, n)}</span></span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);

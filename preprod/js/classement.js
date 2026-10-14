@@ -1,8 +1,10 @@
 /* Le classement : tous les joueurs, pas seulement les amis.
 
-   Huit critères, un sous-onglet chacun (trois de plus pour la 3.0 : le
-   niveau de combattant, les Secrètes, le Versus). Le serveur fait tout le calcul
-   (classement(), supabase/14_classement.sql) et renvoie les cinquante
+   Version 3.0.7 : quatre critères, pas plus — huit sous-onglets, c'était
+   trop. Le niveau de combattant, la collection, les Secrètes, le Versus.
+   Reverses, Boosters, Échanges et Série sont retirés de la page ; le serveur
+   sait toujours les calculer (classement(), supabase/14_classement.sql) :
+   les remettre, c'est rajouter une ligne ici. Il renvoie les cinquante
    premiers, plus sa propre ligne : on veut savoir où l'on en est, pas
    seulement qui est devant.
 
@@ -18,16 +20,7 @@ const CRITERES = [
   { id: 'secretes', titre: 'Secrètes', dit: 'Secrètes différentes',
     val: n => `${fmtN(n)}<small> / ${(typeof secretes !== 'undefined' ? secretes : []).length || 5}</small>` },
   { id: 'versus', titre: 'Versus', dit: 'Victoires en défi contre un ami',
-    val: n => `${fmtN(n)}<small> victoire${n > 1 ? 's' : ''}</small>` },
-  /* Version 2.0 */
-  { id: 'reverses', titre: 'Reverses', dit: 'Reverses différentes',
-    val: n => `${fmtN(n)}<small> / ${reverses.length}</small>` },
-  { id: 'boosters', titre: 'Boosters', dit: 'Boosters ouverts depuis le début',
-    val: n => fmtN(n) },
-  { id: 'echanges', titre: 'Échanges', dit: 'Échanges conclus',
-    val: n => fmtN(n) },
-  { id: 'serie', titre: 'Série', dit: 'Jours de connexion d\'affilée, en cours',
-    val: n => `${fmtN(n)}<small> j</small>` }
+    val: n => `${fmtN(n)}<small> victoire${n > 1 ? 's' : ''}</small>` }
 ];
 
 let clVue = 'niveau';
