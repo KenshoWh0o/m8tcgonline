@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-10-13
+--   Assemble le 2026-10-14
 --
 -- =====================================================================
 
@@ -1273,9 +1273,9 @@ begin
     update evt_comptes set solde = solde - it.prix
      where user_id = p and evenement = it.evenement and solde >= it.prix;
     -- Chaque evenement a le nom de sa monnaie : les Prismes de Reflets, les
-    -- Insignes du Choc des Sections (25_choc.sql).
+    -- Etincelles du Choc des Sections (25_choc.sql).
     if not found then
-      raise exception '%', case it.evenement when 'choc' then 'Pas assez d''Insignes.' else 'Pas assez de Prismes.' end;
+      raise exception '%', case it.evenement when 'choc' then 'Pas assez d''Étincelles.' else 'Pas assez de Prismes.' end;
     end if;
   else
     if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
@@ -1901,7 +1901,7 @@ delete from public.quests where id not in (
   -- Choc des Sections. Les oublier ici effacerait leur progression a chaque
   -- fois qu'on rejoue ce fichier (quest_progress suit la quete en cascade).
   'd_combat','d_victoire','d_vaincus','w_victoires','w_dur','w_defi',
-  'm_campagne','m_legende','m_cent','m_secrete',
+  'm_campagne','m_legende','m_cent','m_secrete','m_tutoriel',
   'd_xp','w_xp','m_combats50','m_vaincus100','m_defis10','m_dures25',
   'm_niv5','m_niv10','m_niv20','m_niv30','m_niv40','m_niv50',
   'c_visite','c_combats','c_raid','c_epreuve','c_vaincus','c_packs',
@@ -1955,6 +1955,7 @@ on conflict (id) do update set
 --   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
 --   niveau           : le niveau de combattant atteint — un etat, pas un
 --                      compteur : gagner_xp le recopie (26_niveaux.sql)
+--   tutoriel         : la partie du tutoriel gagnee (tutoriel_fini)
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_combat',    'daily',     'combats',          1,   20, null,         'Sur le terrain',        'Joue un combat, contre l''IA ou un ami.', 8),
   ('d_victoire',  'daily',     'victoires',        1,   40, null,         'Première victoire',     'Gagne un combat.', 9),
@@ -1966,6 +1967,9 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_legende',   'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l''IA en Légende.', 31),
   ('m_cent',      'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 32),
   ('m_secrete',   'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
+  -- Version 3.0.6 : le tutoriel (js/combat/tutoriel.js, tutoriel_fini dans
+  -- 23_combats.sql). Il se rejoue a volonte ; la quete ne paie qu'une fois.
+  ('m_tutoriel',  'milestone', 'tutoriel',         1,  200, null,         'Premiers pas',          'Gagne la partie du tutoriel (Combats, Guide).', 29),
   ('d_xp',        'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11),
   ('w_xp',        'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11),
   ('m_combats50', 'milestone', 'combats',         50,  300, null,         'Habitué de l''arène',   'Joue 50 combats.', 37),
@@ -1985,8 +1989,8 @@ on conflict (id) do update set
   evenement = null, monnaie = 'eclats';
 
 -- ------------------------------- l'evenement « Le Choc des Sections » (3.0)
--- Ses quetes paient en Insignes (25_choc.sql ; la colonne `monnaie` dit
--- « prismes » pour toute monnaie d'evenement). Du jour : 75 Insignes ; de
+-- Ses quetes paient en Etincelles (25_choc.sql ; la colonne `monnaie` dit
+-- « prismes » pour toute monnaie d'evenement). Du jour : 75 Etincelles ; de
 -- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
 --   raid, raid_degats, raid_victoires : le Raid contre The French Sorcerer
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
@@ -2076,7 +2080,7 @@ on conflict (id) do update set
 -- Version 3.0 : les tapis de jeu et les sleeves (23_combats.sql), en Eclats.
 -- Les visuels sont adaptes des illustrations fournies (tools/cosmetiques.py) ;
 -- le tapis et le sleeve de base sont a tout le monde, sans achat.
--- Et la boutique du Choc des Sections (25_choc.sql), en Insignes.
+-- Et la boutique du Choc des Sections (25_choc.sql), en Etincelles.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
   ('t_chateau',    'tapis',  'Tapis « Champions du Monde »', 'L''illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
   ('t_reverie',    'tapis',  'Tapis « La Relève »', 'L''illustration de la carte « La Relève », sous tes cartes.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
@@ -2951,6 +2955,13 @@ grant execute on function public.recycler, public.fabriquer to authenticated;
 --    · serie      : jours de connexion d'affilee, en cours. Une serie dont le
 --                   dernier jour est avant-hier ou plus ancien est rompue : elle
 --                   compte zero, meme si le chiffre dort encore dans le profil.
+--  Version 3.0, trois de plus :
+--    · niveau     : l'XP de combattant (xp_de, 26_niveaux.sql) ; le client en
+--                   tire le niveau ;
+--    · secretes   : Secretes differentes (24_secretes.sql) ;
+--    · versus     : victoires en defi contre un ami (combat_joueurs.pvp_v,
+--                   23_combats.sql). Les victoires contre l'IA ne comptent
+--                   pas : l'Arcade se rejoue a volonte au niveau le plus bas.
 --
 --  Ce qui est montre d'un joueur ne va pas au-dela de ce que le jeu montrait
 --  deja a n'importe qui (find_player, player_profile) : pseudo, avatar, cadre,
@@ -2972,7 +2983,7 @@ declare
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie') then
+  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie', 'niveau', 'secretes', 'versus') then
     raise exception 'Classement inconnu.';
   end if;
 
@@ -2985,6 +2996,11 @@ begin
                 -- Version 2.0 : les Reverses differentes.
                 when 'reverses'   then (select count(*) from collection c join cards k on k.id = c.card_id
                                          where c.user_id = pr.id and c.qty > 0 and k.reverse)
+                -- Version 3.0.
+                when 'niveau'     then xp_de(pr.id)
+                when 'secretes'   then (select count(*) from collection c join cards k on k.id = c.card_id
+                                         where c.user_id = pr.id and c.qty > 0 and k.secrete)
+                when 'versus'     then coalesce((select cj.pvp_v from combat_joueurs cj where cj.user_id = pr.id), 0)
                 when 'boosters'   then pr.packs_opened
                 when 'echanges'   then pr.trades_done
                 else case when pr.last_checkin >= auj - 1 then pr.streak else 0 end
@@ -4694,6 +4710,22 @@ begin
 end $$;
 
 -- ===================================================== 5. Section, reglages, decks
+-- Version 3.0.6 : la partie du tutoriel, gagnee. Elle se joue sans serveur
+-- (une partie ecrite d'avance, js/combat/tutoriel.js) : on ne peut que
+-- croire le client, et la quete m_tutoriel ne paie qu'une fois (200 Eclats).
+-- Rappeler la fonction ne rapporte donc rien de plus.
+create or replace function public.tutoriel_fini() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  perform bump_quests(p, 'tutoriel', 1);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.tutoriel_fini from public, anon;
+grant execute on function public.tutoriel_fini to authenticated;
+
 create or replace function public.combat_section(p_section text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs;
@@ -4849,8 +4881,8 @@ begin
                                  coalesce((p_resume->>'vaincus')::int, 0), coalesce((p_resume->>'tours')::int, 0)));
   end if;
 
-  -- Le Raid (27_raid.sql : Insignes pendant le Choc, Eclats sinon) et
-  -- l'Epreuve du jour (25_choc.sql, en Insignes).
+  -- Le Raid (27_raid.sql : Etincelles pendant le Choc, Eclats sinon) et
+  -- l'Epreuve du jour (25_choc.sql, en Etincelles).
   if o.mode in ('raid', 'epreuve') then
     r := case when o.mode = 'raid'
               then raid_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop)
@@ -5125,7 +5157,7 @@ on conflict (id) do update set
 --
 --  Trois semaines autour des Combats (23_combats.sql), avec ce qu'un
 --  evenement apporte deja depuis la 2.0 (21_reflets.sql) : une monnaie — les
---  Insignes, rangees dans evt_comptes comme les Prismes —, des quetes
+--  Etincelles, rangees dans evt_comptes comme les Prismes —, des quetes
 --  (04_seed.sql), un Pass de trente paliers, une boutique (04_seed.sql) et un
 --  classement. En plus, l'Epreuve du jour : le meme combat pour tout le
 --  monde (les decks et la regle se deduisent de la graine du jour,
@@ -5133,7 +5165,7 @@ on conflict (id) do update set
 --  du jour.
 --
 --  Le Raid (27_raid.sql) reste toute l'annee ; pendant l'evenement, il paie
---  en Insignes, et ce qu'on y fait compte pour le recap (choc_joueurs).
+--  en Etincelles, et ce qu'on y fait compte pour le recap (choc_joueurs).
 --
 --  La Guerre de l'evenement (points de Section doubles) a ete retiree du
 --  pre-build : ses tables et ses fonctions sont supprimees plus bas si une
@@ -5177,7 +5209,7 @@ revoke all on public.choc_joueurs, public.choc_epreuves from anon, authenticated
 -- ============================================================ 3. le Pass
 -- Trente paliers. Le calcul (docs/economie-3.0.md) : un joueur engage
 -- (toutes les quetes du jour, trois Raids, trois essais d'Epreuve) gagne
--- ~4 000 Insignes en trois semaines et finit le Pass vers le 18e jour ; un
+-- ~4 000 Etincelles en trois semaines et finit le Pass vers le 18e jour ; un
 -- joueur occasionnel ~2 000, palier 19 ou 20.
 delete from public.evt_piste where evenement = 'choc' and palier > 30;
 insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values
@@ -5482,7 +5514,7 @@ revoke all on function public.xp_requis, public.niveau_de, public.xp_combat, pub
 
 -- #####################################################################
 -- ###  27_raid.sql
--- ###  Version 3.0 : le Raid, un boss commun toute l'annee
+-- ###  Version 3.0 : le Raid, un boss commun par saisons de deux semaines
 -- #####################################################################
 
 -- =====================================================================
@@ -5500,7 +5532,7 @@ revoke all on function public.xp_requis, public.niveau_de, public.xp_combat, pub
 --  saison suivante, tout recommence.
 --
 --  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
---  Insignes ; le reste du temps, en Eclats.
+--  Etincelles ; le reste du temps, en Eclats.
 --
 --  Il remplace le Raid par niveaux de la pre-build 3.0.5 (et le Raid a
 --  phases de calendrier d'avant) : leurs tables et fonctions sont
@@ -5683,7 +5715,7 @@ end $$;
 -- Les degats : les PV pris au boss (plafonnes a ses PV + 1), ou tous et 3
 -- de plus s'il tombe. En phase, ils s'ajoutent a ceux du serveur (et
 -- peuvent abattre une ou plusieurs phases) ; dans l'Infini, une victoire
--- fait monter son palier. Pendant le Choc : 3 Insignes par degat, +15 s'il
+-- fait monter son palier. Pendant le Choc : 3 Etincelles par degat, +15 s'il
 -- tombe. Sinon : 2 Eclats par degat, +15.
 create or replace function public.raid_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
 returns jsonb language plpgsql security definer set search_path = public as $$

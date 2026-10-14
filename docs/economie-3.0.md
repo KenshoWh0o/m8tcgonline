@@ -90,22 +90,43 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 
 ## 3. L'événement « Le Choc des Sections » (21 jours) et le Raid
 
-### Le Raid, toute l'année [fait] `RAID`, `js/combat/choc-data.js` ; `supabase/27_raid.sql`
+### Le Raid, par saisons et phases [fait] `RAID`, `js/combat/choc-data.js` ; `supabase/27_raid.sql`
 
-- Un boss commun à tout le serveur, The French Sorcerer, par **niveaux**. La barre d'un niveau vaut `300 + 150 × (n − 1)` dégâts, multipliés sur le vrai serveur par `parametres.raid_echelle` (1 par défaut).
-- Chaque PV pris au boss en combat fait un dégât sur la barre ; le faire tomber ajoute 3 dégâts. Les dégâts d'un combat sont plafonnés côté serveur (PV du boss + 1, + 3 s'il tombe).
-- Trois tentatives par jour. Le combat durcit avec le niveau : IA de 3 à 5 étoiles, boss de 6 à 9 PV, jusqu'à 2 Essences d'avance.
-- Quand la barre est vide, **chacun de ceux qui ont frappé ce niveau** ouvre un coffre, à tour de rôle : 2 boosters, 300 Fragments, 3 boosters, 400 Éclats. Le boss revient au niveau suivant ; les dégâts en trop passent sur la nouvelle barre.
-- Ce que paie un combat : pendant le Choc, 3 Étincelles par dégât et 15 si le boss tombe ; le reste de l'année, 2 Éclats par dégât et 15 s'il tombe. Une victoire compte « PV du boss + 1 » dégâts (le PV qui manque fait gagner), plus les 3 du bonus.
+Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière des boss de guilde d'*AFK Journey*.
 
-| [calcul] Par jour, au plus (3 victoires) | Boss à 6 PV (niveaux 1-2) | Boss à 9 PV (niveau 7 et plus) |
+- Un boss commun, The French Sorcerer, par **saisons de 14 jours** (la première a commencé le 12 octobre 2026). Les dégâts de tous s'additionnent sur la saison.
+- **Six phases**, chacune à un seuil de dégâts cumulés : 120, 300, 550, 850, 1 200, 1 600 (multipliés sur le vrai serveur par `parametres.raid_echelle`, 1 par défaut). Chaque phase est un combat plus dur :
+
+| Phase | Seuil | IA | PV du boss | Essences d'avance | Coffre commun |
+|---|---|---|---|---|---|
+| 1 | 120 | 2 ★ | 5 | 0 | 2 boosters |
+| 2 | 300 | 3 ★ | 6 | 0 | 300 Fragments |
+| 3 | 550 | 3 ★ | 7 | 1 | 3 boosters |
+| 4 | 850 | 4 ★ | 7 | 1 | 500 Éclats |
+| 5 | 1 200 | 4 ★ | 8 | 2 | 4 boosters |
+| 6 | 1 600 | 5 ★ | 9 | 2 | 5 boosters |
+
+- Une phase tombée ouvre un **coffre commun** pour **chaque joueur qui a combattu au moins une fois dans la saison**, même s'il n'a pas porté le dernier coup. Il se réclame pendant la saison et la suivante.
+- Trois **paliers personnels** par saison, sur ses propres dégâts : 30 (1 booster), 80 (300 Fragments), 150 (2 boosters).
+- Les six phases tombées, le **mode Infini** : chaque victoire fait monter son propre palier (boss jusqu'à 12 PV et 3 Essences d'avance, puis c'est le joueur qui a moins de PV). Il ne débloque plus rien pour tous : c'est la performance de chacun, avec son classement.
+- Ce que paie un combat (inchangé) : pendant le Choc, 3 Étincelles par dégât et 15 si le boss tombe ; le reste du temps, 2 Éclats par dégât et 15. Une victoire compte « PV du boss + 1 » dégâts, plus 3 de bonus (9 en phase 1, 13 en phase 6) ; une défaite, les PV pris. Les dégâts d'un combat sont plafonnés côté serveur.
+
+| [calcul] Par jour, au plus (3 victoires) | Phase 1 (boss à 5 PV) | Phase 6 (boss à 9 PV) |
 |---|---|---|
-| Dégâts par victoire | 6 + 1 + 3 = 10 | 9 + 1 + 3 = 13 |
-| Hors événement, en Éclats | 3 × (10 × 2 + 15) = 105 | 3 × (13 × 2 + 15) = 123 |
-| Pendant le Choc, en Étincelles | 3 × (10 × 3 + 15) = 135 | 3 × (13 × 3 + 15) = 162 |
+| Dégâts par victoire | 5 + 1 + 3 = 9 | 9 + 1 + 3 = 13 |
+| Hors événement, en Éclats | 3 × (9 × 2 + 15) = 99 | 3 × (13 × 2 + 15) = 123 |
+| Pendant le Choc, en Étincelles | 3 × (9 × 3 + 15) = 126 | 3 × (13 × 3 + 15) = 162 |
 
-- **[calcul]** Hors événement, le Raid ajoute donc jusqu'à ≈ 105-125 Éclats par jour à un joueur qui gagne ses trois tentatives, l'équivalent de cinq victoires payées en Normal, en plus de celles-ci. Un premier réglage (4 Éclats par dégât, 20 par victoire) montait à 216 par jour, soit ≈ +50 % de revenu pour un joueur actif : jugé trop généreux, il a été divisé par deux environ avant la sortie.
-- **[inconnu]** La vitesse à laquelle les niveaux tombent : elle dépend du nombre de joueurs qui frappent. Un joueur engagé fait ≈ 20 dégâts par jour ; il faut ≈ 15 joueurs engagés pour faire tomber le niveau 1 en un jour, ≈ 30 pour le niveau 5 (900 dégâts). Le réglage se fait sans redéployer : `update public.parametres set raid_echelle = … where id = 1;`.
+**[calcul, sur des hypothèses d'activité]** Combien de phases tombent dans une saison, à `raid_echelle = 1` :
+
+| [hypothèse] Activité | Dégâts par jour | Sur 14 jours | Phases abattues | Jour où tombe la 6ᵉ |
+|---|---|---|---|---|
+| 10 joueurs, 3 tentatives, 7 dégâts en moyenne | 210 | 2 940 | 6 | ≈ 8ᵉ jour |
+| 6 joueurs, 2 tentatives, 6 dégâts | 72 | 1 008 | 4 | jamais (22 jours) |
+| 4 joueurs, 1,5 tentative, 5 dégâts | 30 | 420 | 2 | jamais |
+
+- **[inconnu]** L'activité réelle : c'est elle qui décide si l'Infini arrive (« si ça arrive, ce n'est même pas sûr »). Le réglage se fait sans redéployer, par `raid_echelle` : à 1, un serveur très engagé finit en une semaine, un serveur moyen s'arrête vers la phase 4.
+- **[calcul]** Tout ce qu'une saison complète donne à chaque participant, en coffres communs : 14 boosters, 300 Fragments, 500 Éclats ; plus 3 boosters et 300 Fragments de paliers personnels.
 
 ### Ce que rapportent les Étincelles [calcul]
 
@@ -146,6 +167,39 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 
 - Le serveur ne rejoue pas les combats contre l'IA : il croit le client sur le résultat, pour le PvE comme pour le Raid. Trois garde-fous : les dégâts d'un combat sont plafonnés (PV du boss + 1, + 3 s'il tombe), un combat doit durer au moins 20 s, et on a 3 tentatives par jour. Un tricheur peut donc gagner au plus 54 Étincelles (ou 41 Éclats) et 13 dégâts par tentative.
 - Pour les défis entre amis, le serveur de démo rejoue la partie, puisqu'il dispose du moteur en JavaScript. Le vrai serveur ne le peut pas : Postgres n'exécute pas ce moteur. Chaque joueur y déclare donc son résultat, et un désaccord entre les deux déclarations est enregistré (`defis.desaccord`) pour que l'administration puisse le voir.
+
+## 3 bis. Un bon deck, et la force de l'IA (version 3.0.6) [mesuré]
+
+Mesures faites en faisant jouer l'IA contre elle-même (`tools/combat-sim.js`), places échangées à chaque paire de decks pour que l'ordre de jeu ne décide pas. Marge (intervalle à 95 %) : environ ±6 points pour 300 parties, ±9 pour 120.
+
+**Le deck** (IA Difficile des deux côtés, 300 parties par point, contre des decks de référence tirés au sort) :
+
+| Ce qui change | Taux de victoire |
+|---|---|
+| Joueurs : 8 / 10 / 12 / 14 / 16 / 18 / 22 / 26 | 29 % / 40 % / 44 % / 51 % / 51 % / 56 % / 58 % / 56 % |
+| Réserve accordée aux attaques / d'une autre couleur | 43 % / 35 % |
+| Joueurs qui attaquent tous pour 2 Essences ou moins | 59 % |
+| Joueurs qui attaquent tous pour 3 Essences ou plus | 17 % (biaisé : il n'y en a pas assez, ces decks n'ont que 12,7 Joueurs en moyenne) |
+| Couleurs : 1 / 2 / 3 | 51 % / 50 % / 50 % |
+
+D'où les trois repères du bilan (`Decks.bilan`) : 16 Joueurs au moins, une Réserve accordée, au moins la moitié des Joueurs qui attaquent pour 2 Essences ou moins (ce seuil de la moitié est un choix, la mesure ne porte que sur les extrêmes). Le nombre de couleurs n'a pas d'effet mesurable : il n'est pas un repère. **Limite** : c'est l'IA qui joue ces decks, pas un humain ; un humain qui joue mieux les Moments pourrait profiter d'autres compositions.
+
+**L'IA** (mêmes decks, places échangées) :
+
+| Duel | Victoires du premier | Parties |
+|---|---|---|
+| Nouveau Débutant contre ancien Débutant (qui jouait un coup sur deux au hasard) | 84 % | 200 |
+| Nouveau Facile contre ancien Facile | 88 % | 200 |
+| Nouveau Normal contre ancien Normal | 63 % | 120 |
+| Nouveau Difficile contre ancien Difficile | 47 % | 120 |
+| Débutant contre Facile (réglage final) | 14 % | 200 |
+| Facile contre Normal (réglage final) | 46 % | 120 |
+| Normal contre Difficile (réglage final) | 44 % | 120 |
+| Difficile contre Légende (réglage final) | 32 % | 60 |
+| Difficile à 4 essais contre Difficile à 2 | 58 % | 120 |
+| Difficile sans méfiance contre Difficile | 47 % | 120 |
+
+**[mesuré]** Les niveaux bas sont bien plus solides qu'avant, et l'échelle monte à chaque marche (le niveau au-dessus gagne 86 %, 54 %, 56 % et 68 % des parties). **[mesuré]** Les marches Facile → Normal et Normal → Difficile restent courtes, dans la marge d'erreur : à deck égal, ces trois niveaux jouent presque aussi bien ; la difficulté de l'Arcade et de la campagne vient aussi du deck adverse, dont les raretés montent avec le niveau. Le seul levier qui a montré un gain est le nombre d'essais par coup (porté à 3 et 4 pour les niveaux 4 et 5) ; la méfiance envers la riposte n'en a montré aucun. **[inconnu]** La force perçue par un humain : à mesurer avec les taux de victoire réels après l'ouverture.
 
 ## 4. Ce qui reste ouvert
 

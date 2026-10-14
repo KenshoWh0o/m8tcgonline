@@ -83,7 +83,12 @@ const Table = (() => {
        titre, sousTitre, boss (le CEO adverse est un boss),
        surFin(E, gagne) → html, surAction(a, E, deMoi) (PvP), surQuitter,
        sauver (clé de reprise), meta,
-       minuteur (secondes par tour : un défi entre amis) } */
+       minuteur (secondes par tour : un défi entre amis),
+       guide (le tutoriel, js/combat/tutoriel.js) : { permis(a, E) → true ou
+         la raison du refus, refus(raison), apresRendu(T), surDecision(E, d),
+         apresAction(evs, E, a, deMoi) et avantIA(E, d) — ces deux-là peuvent
+         rendre une promesse : la partie attend qu'elle se résolve } ;
+       ia.choisir(E) remplace l'IA (un adversaire scénarisé) } */
   function ouvrir(o) {
     fermer(true);
     const E = o.E || Combat.creer(o.init);
@@ -193,6 +198,7 @@ const Table = (() => {
     fin.textContent = d && d.type === 'tour' && monTour && !peutFinir && E.cpt.doitAttaquer ? 'Attaque obligée' : monTour ? 'Fin du tour' : 'Tour adverse';
 
     surligner();
+    if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
   }
 
   /* Le tapis du CEO dont c'est le tour, en fondu quand il change. */
@@ -851,6 +857,11 @@ const Table = (() => {
 
   /* Poser la carte en grand à sa place : elle y vole, depuis le grand. */
   async function poserDepuisFocus(a, cibleEl) {
+    /* Un coup que le tutoriel ne demande pas : refusé avant le vol. */
+    if (T.o.guide && T.o.guide.permis) {
+      const ok = T.o.guide.permis(a, T.E);
+      if (ok !== true) { if (T.o.guide.refus) T.o.guide.refus(ok); return; }
+    }
     const de = qs('.ar-f-carte');
     if (de && cibleEl) {
       const r0 = de.getBoundingClientRect();
@@ -999,6 +1010,19 @@ const Table = (() => {
     if (!T || T.occupe) return;
     const d = Combat.demande(T.E);
     if (!d || d.qui !== T.moi) return;
+    /* Le tutoriel peut demander un coup précis : il dit pourquoi pas
+       celui-là, et la décision reste ouverte. */
+    if (T.o.guide && T.o.guide.permis) {
+      const ok = T.o.guide.permis(a, T.E);
+      if (ok !== true) {
+        if (T.o.guide.refus) T.o.guide.refus(ok);
+        T.cible = null;
+        consigne(null);
+        rendre();
+        if (d.type !== 'tour') montrerDecision(d);
+        return;
+      }
+    }
     fermerSheet();
     try {
       await executer(a);
@@ -1031,6 +1055,7 @@ const Table = (() => {
     } finally {
       if (T) { T.occupe = false; T.sauteVol = null; T.montreDepuis = null; rendre(); }
     }
+    if (T && T.o.guide && T.o.guide.apresAction) await T.o.guide.apresAction(evs, T.E, a, deMoi);
   }
 
   function sauver() {
@@ -1050,14 +1075,20 @@ const Table = (() => {
       while (T === moi && !T.ferme) {
         const d = Combat.demande(T.E);
         if (!d) { await finDePartie(); break; }
-        if (d.qui === T.moi) { montrerDecision(d); break; }
+        if (d.qui === T.moi) {
+          montrerDecision(d);
+          if (T.o.guide && T.o.guide.surDecision) T.o.guide.surDecision(T.E, d);
+          break;
+        }
         if (!T.o.ia) { attenteAdversaire(true); break; }
+        if (T.o.guide && T.o.guide.avantIA) await T.o.guide.avantIA(T.E, d);
+        if (T !== moi || T.ferme) break;
         /* Le temps de voir où on en est entre deux actions de l'IA : la
            partie se suit au rythme d'une vraie table, pas en rafale. */
         ticker(`<i class="ar-pense"></i>${h(nomCEO(d.qui))} réfléchit`);
         await attendre(d.type === 'tour' ? 1000 : 650);
         if (T !== moi || T.ferme) break;
-        const a = IA.choisir(T.E, { niveau: T.o.ia.niveau });
+        const a = T.o.ia.choisir ? T.o.ia.choisir(T.E) : IA.choisir(T.E, { niveau: T.o.ia.niveau });
         ticker(null);
         await executer(a);
       }

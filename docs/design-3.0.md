@@ -221,6 +221,14 @@ sur le plateau, en 3D, les modes de mélange ne s'appliquent pas : le reflet
 y est posé en clair, plus léger, et l'enveloppe n'a plus de `filter`, qui
 rendait la carte floue.
 
+## 10 bis. Version 3.0.6 : ce qui a changé après les retours
+
+- **Les cadres** (`tools/cadres-30.py`) adoptent la manière des cadres 2.0 (Maître, Aurore, Nébuleuse) : un anneau fin, à peine là, et le motif dessiné en traînées effilées, en dégradé de couleur et de transparence, avec leur lueur. Toxique et Déter se répondent (le poison monte du bas, la foudre tombe du haut) ; le Choc les fait se heurter en haut, dans un éclat blanc ; la Secrète reprend le reflet irisé des cartes et leur ✦✦. L'Arène s'enrichit par palier (laurier, épées à 20, gemmes à 30, prisme à 50).
+- **L'en-tête mobile** : plus de chevron ni de pastille sur la photo. Une pilule de verre, les trois traits du menu puis l'avatar dans un anneau qui se remplit avec l'XP du niveau.
+- **Le tutoriel** : une bulle sombre bordée de lavande, en haut, ou en bas quand la carte agrandie occupe le haut ; ce qu'il faut toucher a un contour blanc qui respire. Une bulle à lire assombrit légèrement l'arène et retient les doigts ; une bulle à faire les laisse passer.
+- **Fermer d'un geste** : dans l'arène, tout ce qui flotte se referme en touchant à côté (le flou, le vide, le voile). C'est la règle des feuilles du site, étendue à l'arène.
+- **Les filtres sur téléphone** : une rangée par critère, qui glisse de côté, l'intitulé à gauche ; sur ordinateur, les rangées passent à la ligne, faute de geste pour glisser.
+
 ## 11. Sources
 
 Consultées pendant la refonte. Les captures de jeux sont des observations

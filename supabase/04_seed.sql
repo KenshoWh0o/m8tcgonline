@@ -210,7 +210,7 @@ delete from public.quests where id not in (
   -- Choc des Sections. Les oublier ici effacerait leur progression a chaque
   -- fois qu'on rejoue ce fichier (quest_progress suit la quete en cascade).
   'd_combat','d_victoire','d_vaincus','w_victoires','w_dur','w_defi',
-  'm_campagne','m_legende','m_cent','m_secrete',
+  'm_campagne','m_legende','m_cent','m_secrete','m_tutoriel',
   'd_xp','w_xp','m_combats50','m_vaincus100','m_defis10','m_dures25',
   'm_niv5','m_niv10','m_niv20','m_niv30','m_niv40','m_niv50',
   'c_visite','c_combats','c_raid','c_epreuve','c_vaincus','c_packs',
@@ -264,6 +264,7 @@ on conflict (id) do update set
 --   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
 --   niveau           : le niveau de combattant atteint — un etat, pas un
 --                      compteur : gagner_xp le recopie (26_niveaux.sql)
+--   tutoriel         : la partie du tutoriel gagnee (tutoriel_fini)
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
   ('d_combat',    'daily',     'combats',          1,   20, null,         'Sur le terrain',        'Joue un combat, contre l''IA ou un ami.', 8),
   ('d_victoire',  'daily',     'victoires',        1,   40, null,         'Première victoire',     'Gagne un combat.', 9),
@@ -275,6 +276,9 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('m_legende',   'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l''IA en Légende.', 31),
   ('m_cent',      'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 32),
   ('m_secrete',   'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
+  -- Version 3.0.6 : le tutoriel (js/combat/tutoriel.js, tutoriel_fini dans
+  -- 23_combats.sql). Il se rejoue a volonte ; la quete ne paie qu'une fois.
+  ('m_tutoriel',  'milestone', 'tutoriel',         1,  200, null,         'Premiers pas',          'Gagne la partie du tutoriel (Combats, Guide).', 29),
   ('d_xp',        'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11),
   ('w_xp',        'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11),
   ('m_combats50', 'milestone', 'combats',         50,  300, null,         'Habitué de l''arène',   'Joue 50 combats.', 37),

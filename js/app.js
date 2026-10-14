@@ -321,6 +321,7 @@ function render() {
   if (tab === 'reflets') placerPass();
   if (tab === 'choc') placerPassChoc();
   if (tab === 'combats' && cbVue === 'atelier') bindAtelier();
+  if (tab === 'combats' && cbVue === 'guides' && !cbGuide) bindGuide();
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
@@ -540,6 +541,18 @@ async function clicPage(e) {
     case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
     case 't-v2-nouveautes': return montrerNouveautes21();
     case 't-v3-nouveautes': return montrerNouveautes30();
+    case 't-v3-camp': cbLabo = { section: el.dataset.v }; cbChoix.acte = 0; aller('combats'); cbVue = 'campagne'; cbChoix.acte = 0; return render();
+    case 't-v3-recompenses': return openSheet({ title: 'Toutes les récompenses', body: laboRecompenses(), actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
+    case 't-v3-niveau': return ouvrirNiveau();
+    case 't-v3-bon-deck': return Decks.STARTERS ? (cbVue = 'decks', ouvrirBilan('starter-toxique')) : null;
+    case 't-v3-fin': {
+      /* Une victoire en Légende qui fait passer deux niveaux, telle que l'écran
+         de fin de l'arène la montre. */
+      const total = [1, 2, 3, 4, 5, 6, 7, 8, 9].reduce((a, n) => a + xpRequis(n), 0) + 40;
+      const x = { gagne: Math.round(xpRequis(9) + xpRequis(8) / 2), total, paliers: [recompenseNiveau(9), recompenseNiveau(10)] };
+      return openSheet({ title: 'Victoire · aperçu', body: `<div class="ar-fin-apercu">${htmlRecompense({ recompense: { xp: x, eclats: 50, boosters: 2, fragments: 300 } })}</div>`,
+        actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
+    }
     case 't-v2-palier': {
       const x = { palier: 7, type: 'reverse_R', titre: 'Une Reverse Rare' };
       return montrerPalier(7, x, reverses.filter(c => c.rar === 'R').slice(0, 1));

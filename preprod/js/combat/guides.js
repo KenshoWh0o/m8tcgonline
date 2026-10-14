@@ -175,7 +175,7 @@ const GUIDES = (() => {
         <p>Choisis la difficulté, de 1 à 5 : l'IA reçoit un deck tiré au sort, différent à chaque partie. Plus c'est dur, plus ça rapporte.</p>
         ${note('Contre l\'IA, les cinq premières victoires de la journée rapportent des Éclats (Arcade, et combats de campagne rejoués). L\'XP, elle, n\'a pas de limite.')}
         <h3>Raid</h3>
-        <p>The French Sorcerer, un boss commun à tout le serveur. Chaque PV que tu lui prends entame sa barre ; quand elle est vide, tous ceux qui l'ont frappé ouvrent un coffre, et il revient plus fort. Trois tentatives par jour.</p>
+        <p>The French Sorcerer, un boss pour tout le serveur, par <b>saisons de deux semaines</b>. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>, où chacun monte aussi haut qu'il peut. Trois tentatives par jour.</p>
         <h3>Versus</h3>
         <p>Pas de recherche d'adversaire : tu défies un de tes amis, il accepte, et vous jouez en direct, 60 secondes par tour. Les trois premiers défis de la journée rapportent des Éclats.</p>`
     },
@@ -198,5 +198,65 @@ const GUIDES = (() => {
         </ul>
         ${note('La liste complète, règle par règle, avec les cartes qui appuient chaque déduction, est tenue à jour avec le jeu.')}`
     }
+  ];
+})();
+
+/* Version 3.0.6 : le glossaire. Chaque mot du jeu, en une ou deux phrases,
+   et le chapitre du Guide qui en dit plus. Même source que les chapitres :
+   docs/regles-3.0.md ; les nombres viennent de REGLE. */
+const GLOSSAIRE = (() => {
+  const R = () => Combat.REGLE;
+  const m = (mot, def, voir) => ({ mot, def, voir });
+  return () => [
+    m('Arcade', 'Un combat contre l\'IA, à la difficulté choisie (1 à 5 étoiles), avec un deck adverse tiré au sort.', 'modes'),
+    m('Attaque', 'Une ligne d\'un Joueur précédée d\'Essences : c\'est son coût. Son nombre se compare à la Défense de la cible.', 'attaquer'),
+    m('Banc (bench)', 'Une carte benchée quitte le jeu un moment et revient dans la main de son propriétaire au début de son prochain tour. Ce n\'est pas être vaincu.', 'motscles'),
+    m('Buff', 'Mot-clé : ce Joueur renforce tes autres Joueurs (+10 Attaque, +10 Défense…).', 'motscles'),
+    m('Campagne', 'Vingt rivaux de la Section adverse, en quatre actes. Chacun paie la première fois qu\'il tombe.', 'modes'),
+    m('CEO', 'Toi, et ton adversaire. Il a des PV ; touché alors qu\'il n\'en a plus, il a perdu.', 'essentiel'),
+    m('Club', `Ton deck : ${R().CLUB} cartes (Joueurs, Coachs, Moments, Objets). Tu y pioches une carte à chaque tour.`, 'deck'),
+    m('Coach', 'Un Instant : un effet, puis la défausse. Un seul Coach par tour.', 'cartes'),
+    m('Combat (phase de)', 'Elle commence à ta première attaque du tour. Plus de Joueur ni d\'Objet à poser ; les Instants, oui.', 'tour'),
+    m('Coût', 'Les Essences dessinées devant une attaque. Une de couleur veut sa couleur ; la Neutre prend n\'importe laquelle.', 'attaquer'),
+    m('Défausse', 'Où vont les Instants joués, les cartes détruites et les Joueurs vaincus, avec leurs Objets.', 'motscles'),
+    m('Défendre', 'Quand on t\'attaque, un de tes Joueurs désengagés, sur la ligne de l\'attaquant, peut s\'interposer : il devient la cible, et il s\'engage.', 'defendre'),
+    m('Défense', 'Le nombre d\'un Joueur. Une attaque au moins égale le vainc ; plus faible, elle est repoussée sans laisser de trace.', 'attaquer'),
+    m('Déployer', `Poser un Joueur de sa main sur une ligne libre. Gratuit, ${R().DEPLOIEMENTS} par tour. Il peut attaquer dès ce tour.`, 'tour'),
+    m('Désengager', 'Redresser une carte. Tes Joueurs et tes Essences se désengagent au début de ton tour.', 'motscles'),
+    m('Détruire', 'Mettre à la défausse.', 'motscles'),
+    m('Effet d\'entrée (★)', 'Une Signature qui se joue quand le Joueur arrive sur le plateau.', 'motscles'),
+    m('Engager', 'Tourner une carte de côté : elle a servi. Un Joueur engagé ne peut plus attaquer ni défendre, et peut être visé.', 'attaquer'),
+    m('Essence', 'Elle paie les attaques. Elle vit dans ta Réserve, pas dans ton Club, et n\'a pas besoin d\'être possédée.', 'cartes'),
+    m('Essence Brillante', 'La version rare d\'une Essence : si tu la possèdes, tes Essences de sa couleur brillent en combat. Rien d\'autre ne change.', 'deck'),
+    m('Garde', 'Mot-clé : ce Joueur peut défendre une attaque sur n\'importe quelle ligne.', 'motscles'),
+    m('Infini (mode)', 'Au Raid, une fois les six phases tombées : chaque victoire fait monter d\'un palier, plus dur, pour la performance de chacun.', 'modes'),
+    m('Instant', 'Un Coach ou un Moment : un effet, puis la défausse.', 'cartes'),
+    m('Jeu (phase de)', 'Le début de ton tour : déployer, lier des Objets, jouer des Instants, dans l\'ordre que tu veux.', 'tour'),
+    m('Joueur', 'La carte qui se déploie, attaque et défend. Il a une Défense, une ou deux attaques, parfois un mot-clé.', 'cartes'),
+    m('Légion', 'Mot-clé : vaincu, ce Joueur peut revenir dans ta main si tu défausses une carte.', 'motscles'),
+    m('Ligne', `${R().LIGNES} par camp, une place chacune, face à celles de l'adversaire. Défendre et Provocation se jouent ligne contre ligne.`, 'essentiel'),
+    m('Lier', `Attacher un Objet à un de tes Joueurs. Il le garde tant qu'il reste en jeu ; ${R().OBJETS} au plus par Joueur.`, 'cartes'),
+    m('Main', `${R().MAIN} cartes au départ, qu'on peut changer une fois. Elle grossit à chaque pioche et à chaque PV récupéré.`, 'tour'),
+    m('Moment', 'Un Instant : un effet, puis la défausse. Autant que tu veux par tour.', 'cartes'),
+    m('Mot-clé', 'Le talent d\'un Joueur : Provocation, Garde, Shield, Riposte, Légion, Buff, Signature.', 'motscles'),
+    m('Neutre', 'Le symbole gris d\'un coût : n\'importe quelle Essence le paie.', 'attaquer'),
+    m('Niveau', 'Ton niveau de combattant. Chaque combat fini rapporte de l\'XP ; chaque niveau paie.', 'modes'),
+    m('Objet', 'Il se lie à un de tes Joueurs et reste avec lui : « ce Joueur », c\'est celui qui le porte.', 'cartes'),
+    m('Phase (Raid)', 'Une étape du boss commun : elle tombe quand les dégâts de tout le serveur atteignent son seuil, et ouvre un coffre pour tous.', 'modes'),
+    m('Pioche', 'Une carte du Club au début de ton tour (pas au tout premier tour de celui qui commence). Club vide : ton CEO est touché.', 'tour'),
+    m('Provocation', 'Mot-clé : l\'attaquant face à ce Joueur doit le viser, même s\'il est désengagé.', 'motscles'),
+    m('PV', `Tes points de vie : ${R().PV} cartes de ton Club posées face cachée. Touché, ton CEO récupère son premier PV dans sa main.`, 'pv'),
+    m('Raid', 'The French Sorcerer, un boss pour tout le serveur, par saisons de deux semaines : six phases, des coffres communs et personnels, puis l\'Infini.', 'modes'),
+    m('Réserve', `Tes ${R().RESERVE} Essences, face cachée. La première entre en jeu à chaque tour (${R().ESSENCES_P2} au premier tour de celui qui joue en second).`, 'tour'),
+    m('Résilience', 'Sur un Coach, un Moment ou un Objet : récupéré comme PV, tu peux le jouer tout de suite, gratuitement, même pendant le tour adverse.', 'pv'),
+    m('Riposte', 'Mot-clé : vaincu, ce Joueur peut déclencher une de ses attaques contre son vainqueur, pour une Essence de moins.', 'motscles'),
+    m('Section', 'Toxique ou Déter : ton camp dans les Combats. Elle donne son Starter Deck et sa Promo, et la campagne t\'oppose à l\'autre.', 'modes'),
+    m('Shield', 'Mot-clé : ce Joueur ignore la première attaque qu\'il subit.', 'motscles'),
+    m('Signature', 'Le talent propre à un Joueur : un effet d\'entrée (★), un effet qui se déclenche (⚡), ou un effet permanent.', 'motscles'),
+    m('Starter Deck', 'Le deck d\'une Section, prêté : tu peux le jouer sans en posséder les cartes, et le dupliquer pour le modifier.', 'deck'),
+    m('Talent', 'Une ligne d\'un Joueur sans Essence devant : elle ne se paie pas, ce n\'est pas une attaque.', 'cartes'),
+    m('Touché', 'Un CEO frappé par une attaque. Une touche = un PV, quelle que soit la valeur de l\'attaque.', 'pv'),
+    m('Vaincu', 'Un Joueur dont l\'attaque reçue égale ou dépasse sa Défense : à la défausse, avec ses Objets.', 'attaquer'),
+    m('Versus', 'Un défi en direct contre un ami, 60 secondes par tour.', 'modes')
   ];
 })();

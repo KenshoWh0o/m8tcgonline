@@ -315,6 +315,22 @@ begin
 end $$;
 
 -- ===================================================== 5. Section, reglages, decks
+-- Version 3.0.6 : la partie du tutoriel, gagnee. Elle se joue sans serveur
+-- (une partie ecrite d'avance, js/combat/tutoriel.js) : on ne peut que
+-- croire le client, et la quete m_tutoriel ne paie qu'une fois (200 Eclats).
+-- Rappeler la fonction ne rapporte donc rien de plus.
+create or replace function public.tutoriel_fini() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  perform bump_quests(p, 'tutoriel', 1);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.tutoriel_fini from public, anon;
+grant execute on function public.tutoriel_fini to authenticated;
+
 create or replace function public.combat_section(p_section text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs;

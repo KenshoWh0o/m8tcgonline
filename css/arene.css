@@ -756,3 +756,28 @@ html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-atq.ok,html.rm .ar-c
 /* Une feuille sans décision (menu, pile) : un voile qui la referme. */
 .ar-sheet.voile{top:0;align-items:flex-end;pointer-events:auto;background:rgba(8,7,12,.5);animation:ar-voile .2s ease-out}
 @keyframes ar-voile{from{background:rgba(8,7,12,0)}}
+
+/* ============ Le tutoriel (js/combat/tutoriel.js) ============ */
+/* La bulle : en haut, ou en bas quand la carte agrandie occupe le haut.
+   Une bulle « à faire » laisse passer les doigts ; une bulle « à lire »
+   (Compris) retient tout le plateau tant qu'on ne l'a pas fermée. */
+.ar-tuto{position:absolute;left:0;right:0;top:calc(6px + env(safe-area-inset-top,0px));z-index:30;display:flex;justify-content:center;padding:0 10px;pointer-events:none}
+.ar-tuto[hidden]{display:none}
+.ar-tuto.bas,#arene:has(.ar-focus:not([hidden])) .ar-tuto:not(.bloque){top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.ar-tuto-in{width:min(100%,430px);padding:12px 14px 13px;border-radius:20px;color:#fff;
+  background:linear-gradient(180deg,rgba(48,42,82,.97),rgba(30,27,46,.98));
+  box-shadow:inset 0 0 0 1.5px rgba(179,166,255,.6),0 14px 34px rgba(0,0,0,.55);animation:ar-monte .3s ease}
+.ar-tuto-in small{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#b3a6ff}
+.ar-tuto-in>b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:17px;margin:2px 0 4px}
+.ar-tuto-in p{margin:0;font-size:13.5px;line-height:1.45;color:rgba(255,255,255,.88)}
+.ar-tuto-in p b{font-weight:800;color:#fff}
+.ar-tuto-in .ar-b{margin-top:10px;width:100%}
+.ar-tuto.bloque{top:0;bottom:0;align-items:flex-start;padding-top:calc(64px + env(safe-area-inset-top,0px));pointer-events:auto;background:rgba(8,7,12,.3)}
+.ar-tuto.bloque.bas{align-items:flex-end;padding-top:0;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.ar-tuto.secoue .ar-tuto-in{animation:tuto-secoue .4s}
+@keyframes tuto-secoue{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+/* Ce qu'il faut toucher : un contour blanc qui respire. */
+.tuto-vise{outline:2.5px solid #fff;outline-offset:3px;border-radius:12px;animation:tuto-vise 1.3s ease-in-out infinite}
+@keyframes tuto-vise{0%,100%{outline-color:rgba(255,255,255,.95);box-shadow:0 0 14px 2px rgba(157,140,255,.85)}50%{outline-color:rgba(200,191,255,.6);box-shadow:0 0 28px 8px rgba(157,140,255,.95)}}
+html.rm .tuto-vise{animation:none}
+@media (prefers-reduced-motion:reduce){.tuto-vise{animation:none}}

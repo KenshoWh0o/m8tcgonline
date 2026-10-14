@@ -337,11 +337,12 @@ const NIVEAUX = {
   4: { essai: true, menace: 1, bruit: 0, essais: 3 },
   5: { essai: true, menace: 1, bruit: 0, essais: 4, reponse: true }
 };
-/* Mesuré (IA contre IA, mêmes decks, places échangées) : le Débutant et le
-   Facile d'aujourd'hui battent ceux d'avant (qui jouaient au hasard) 84 et
-   88 fois sur 100 ; le Normal, 63 fois sur 100. Entre 3, 4 et 5, l'écart
-   tient surtout au nombre d'essais par coup (4 essais contre 2 : 57 %) —
-   la méfiance envers la riposte ne change rien de mesurable. La
+/* Mesuré (IA contre IA, mêmes decks, places échangées ; docs/economie-3.0.md,
+   partie 3 bis) : le Débutant et le Facile d'aujourd'hui battent ceux d'avant
+   (qui jouaient au hasard) 84 et 88 fois sur 100 ; le Normal, 63 fois sur
+   100. Le niveau au-dessus gagne 86 %, 54 %, 56 % et 68 % des parties : entre
+   2, 3 et 4 l'écart est court, et tient surtout au nombre d'essais par coup
+   — la méfiance envers la riposte ne change rien de mesurable. La
    difficulté vient aussi du deck adverse (Decks.aleatoire). */
 
 function graineDe(E) {

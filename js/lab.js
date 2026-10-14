@@ -112,6 +112,19 @@ function vTest() {
   </section>
 
   <section class="panel">
+    <h2>Version 3.0 · Les Combats, tout voir</h2>
+    <p class="muted small">Ce que le jeu cache, ou ne montre qu'au bon moment. En lecture seule : rien ne se joue ni ne s'enregistre.</p>
+    <div class="row">
+      <button class="btn ghost" data-act="t-v3-camp" data-v="toxique">Campagne de la Section Toxique</button>
+      <button class="btn ghost" data-act="t-v3-camp" data-v="deter">Campagne de la Section Déter</button>
+      <button class="btn ghost" data-act="t-v3-recompenses">Toutes les récompenses</button>
+      <button class="btn ghost" data-act="t-v3-fin">Fin de combat (victoire, deux niveaux)</button>
+      <button class="btn ghost" data-act="t-v3-niveau">Fiche du niveau</button>
+      <button class="btn ghost" data-act="t-v3-bon-deck">Bilan d'un deck</button>
+    </div>
+  </section>
+
+  <section class="panel">
     <h2>Annonce à tous les joueurs</h2>
     <p class="muted small">Elle arrive dans la boîte de réception de chacun, avec un ping
       pour ceux qui sont en jeu. Pour la retirer : « Retirer l'annonce » dans ta boîte.</p>
@@ -481,3 +494,38 @@ function labOffrirCadeau() {
   });
 }
 
+
+
+/* ---------- Version 3.0 : toutes les récompenses ---------- */
+/* La campagne (les deux Sections ont les mêmes), l'Arcade, les niveaux de
+   combattant, le Raid, et le Pass du Choc s'il est chargé. */
+function laboRecompenses() {
+  const gain = r => [r.eclats ? `${fmtN(r.eclats)} Éclats` : '', r.boosters ? `${r.boosters} booster${r.boosters > 1 ? 's' : ''}` : '',
+    r.fragments ? `${fmtN(r.fragments)} Fragments` : '', r.cadre ? `cadre « ${h((FRAMES[r.cadre] || {}).nom || r.cadre)} »` : '',
+    r.titre ? `titre « ${h((TITRES[r.titre] || {}).nom || r.titre)} »` : '', r.carte ? h((byId[r.carte] || {}).nom || r.carte) : ''].filter(Boolean).join(', ') || '—';
+  const tableau = (tete, lignes) => `<table class="labtab"><thead><tr>${tete.map(x => `<th>${x}</th>`).join('')}</tr></thead>
+    <tbody>${lignes.map(l => `<tr>${l.map(x => `<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  const camp = combatsCampagne('toxique').map(f => [f.n + 1, `Acte ${ACTES.indexOf(f.acte) + 1}${f.rang ? (f.rang === 'final' ? ' · finale' : ' · boss') : ''}`,
+    `${f.niveau}★`, f.regle ? [f.regle.pv ? `${f.regle.pv} PV` : '', f.regle.ess ? `+${f.regle.ess} Essence` : ''].filter(Boolean).join(', ') : '—', gain(f.recompense)]);
+  const niveaux = [];
+  for (let n = 2; n <= 60; n++) { const r = recompenseNiveau(n); if (r && (r.boosters || r.cadre || r.titre || r.fragments)) niveaux.push([n, fmtN(xpRequis(n - 1)), gain(Object.assign({}, r, { eclats: 0 }))]); }
+  const ev = typeof chEv !== 'undefined' && chEv && chEv.piste;
+  const R = RAID;
+  return `<p class="muted small">Rejouer un combat de campagne gagné : ${RECOMPENSE_REJOUER.eclats} Éclats. Au plus ${PVE_PLAFOND} victoires récompensées par jour contre l'IA.</p>
+    <h3>Campagne (la même pour les deux Sections)</h3>
+    ${tableau(['n°', 'Acte', 'IA', 'Règle', 'Première victoire'], camp)}
+    <p class="muted small">Au bout : la Promo de l'autre Section, le titre « Champion des Sections », son Starter Deck prêté.</p>
+    <h3>Arcade</h3>
+    ${tableau(['Niveau', 'Nom', 'Victoire'], DIFFICULTES.map(d => [`${d.niveau}★`, h(d.nom), `${d.eclats} Éclats`]))}
+    <h3>Niveaux de combattant</h3>
+    <p class="muted small">Chaque niveau : ${NIVEAUX.eclats} Éclats. Les paliers jusqu'au 60 :</p>
+    ${tableau(['Niveau', 'XP pour y monter', 'En plus'], niveaux)}
+    <h3>Le Raid · ${h(R.nom)}</h3>
+    ${tableau(['Phase', 'Seuil', 'Combat', 'Coffre commun'], R.phases.map((ph, i) => [i + 1, `${fmtN(ph.seuil)} × échelle`,
+      `IA ${ph.ia} ★ · ${ph.pv} PV${ph.ess ? ` · +${ph.ess} Ess.` : ''}`, h(ph.commun.titre)]))}
+    ${tableau(['Palier perso', 'Dégâts', 'Coffre'], R.perso.map((x, i) => [i + 1, fmtN(x.seuil), h(x.titre)]))}
+    ${tableau(['Infini', 'Combat'], [1, 2, 3, 4, 6, 9].map(n => { const c = R.infini(n); return [`palier ${n}`, `IA ${c.ia} ★ · boss ${c.pvBoss} PV · +${c.ess} Ess. · toi ${c.pvMoi} PV`]; }))}
+    <p class="muted small">Pendant le Choc : ${R.parDegat} Étincelles par dégât, +${R.victoire} si le boss tombe. Sinon : ${R.parDegatEclats} Éclats par dégât, +${R.victoireEclats}. ${R.tentatives} tentatives par jour ; saisons de ${R.saison.jours} jours. L'échelle des seuils se règle côté serveur (<code>parametres.raid_echelle</code>).</p>
+    <h3>Le Pass du Choc</h3>
+    ${ev ? tableau(['Palier', 'Étincelles', 'Récompense'], chEv.piste.map(x => [x.palier, fmtN(x.seuil), h(x.titre || x.type || '')])) : '<p class="muted small">Ouvre une fois l\'onglet de l\'événement (pendant le Choc) pour charger le Pass, puis reviens ici.</p>'}`;
+}

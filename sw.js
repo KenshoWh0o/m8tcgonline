@@ -7,26 +7,26 @@
    Rien de ce qui touche au compte n'est mis en cache. */
 "use strict";
 
-const VERSION = 'mtcg-v3.0.5';
+const VERSION = 'mtcg-v3.0.6';
 const COQUILLE = VERSION + '-coquille';
 const MEDIAS = VERSION + '-medias';
 
 /* Le strict nécessaire pour afficher quelque chose sans réseau. */
 const ESSENTIEL = [
-  './', 'index.html', 'manifest.webmanifest', 'css/tokens.css', 'css/base.css', 'css/cards.css',
-  'css/booster.css', 'css/opening.css', 'css/viewer.css', 'css/lab.css', 'css/auth.css',
-  'css/hub.css', 'css/promo.css', 'css/reflets.css', 'css/combat.css', 'css/arene.css',
-  'css/choc.css', 'js/config.js', 'js/supabase-config.js', 'js/utils.js', 'js/sfx.js',
-  'js/cards-data.js', 'js/promos-data.js', 'js/cards.js', 'js/storage.js', 'js/render-card.js',
-  'js/ui.js', 'js/backend.js', 'js/gate.js', 'js/auth.js', 'js/fx.js', 'js/booster.js',
-  'js/opening.js', 'js/collection.js', 'js/viewer.js', 'js/trade.js', 'js/social.js',
-  'js/quests.js', 'js/classement.js', 'js/tirages.js', 'js/partage.js', 'js/promos.js',
-  'js/boite.js', 'js/shop.js', 'js/recyclage.js', 'js/combat/moteur.js', 'js/combat/effets.js',
-  'js/combat/decks.js', 'js/combat/ia.js', 'js/combat/campagne.js', 'js/combat/choc-data.js',
-  'js/combat/niveaux.js', 'js/combat/guides.js', 'js/combat/table.js', 'js/combat/atelier.js',
-  'js/combat/defis.js', 'js/battle.js', 'js/profile.js', 'js/settings.js', 'js/bienvenue.js',
-  'js/cadeaux.js', 'js/reflets.js', 'js/choc.js', 'js/raid.js', 'js/pwa.js', 'js/lab.js',
-  'js/app.js',
+  './', 'index.html', 'manifest.webmanifest', 'js/cadrage.js', 'css/tokens.css', 'css/base.css',
+  'css/cards.css', 'css/booster.css', 'css/opening.css', 'css/viewer.css', 'css/lab.css',
+  'css/auth.css', 'css/hub.css', 'css/promo.css', 'css/reflets.css', 'css/combat.css',
+  'css/arene.css', 'css/choc.css', 'js/config.js', 'js/supabase-config.js', 'js/utils.js',
+  'js/sfx.js', 'js/cards-data.js', 'js/promos-data.js', 'js/cards.js', 'js/storage.js',
+  'js/render-card.js', 'js/ui.js', 'js/backend.js', 'js/gate.js', 'js/auth.js', 'js/fx.js',
+  'js/booster.js', 'js/opening.js', 'js/collection.js', 'js/viewer.js', 'js/trade.js',
+  'js/social.js', 'js/quests.js', 'js/classement.js', 'js/tirages.js', 'js/partage.js',
+  'js/promos.js', 'js/boite.js', 'js/shop.js', 'js/recyclage.js', 'js/combat/moteur.js',
+  'js/combat/effets.js', 'js/combat/decks.js', 'js/combat/ia.js', 'js/combat/campagne.js',
+  'js/combat/choc-data.js', 'js/combat/niveaux.js', 'js/combat/guides.js', 'js/combat/table.js',
+  'js/combat/tutoriel.js', 'js/combat/atelier.js', 'js/combat/defis.js', 'js/battle.js',
+  'js/profile.js', 'js/settings.js', 'js/bienvenue.js', 'js/cadeaux.js', 'js/reflets.js',
+  'js/choc.js', 'js/raid.js', 'js/pwa.js', 'js/lab.js', 'js/app.js',
   'assets/logo-m8.webp', 'assets/card-back.webp', 'assets/pack-star.svg',
   'assets/star-pink.svg', 'assets/extension-logo.svg', 'assets/1st-edition.svg',
   'assets/icon-192.png', 'assets/apple-touch-icon.png', 'assets/favicon.svg'

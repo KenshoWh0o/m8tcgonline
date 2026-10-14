@@ -162,6 +162,7 @@ function montrerNouveautes30() {
       <ol class="bvpoints nvpoints">
         ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt rivaux, et l\'Arcade, cinq difficultés) et Versus en direct contre tes amis, 60 secondes par tour, dans une arène en plein écran. Chaque carte de l\'adversaire s\'affiche en grand avec son effet, et toutes les cartes jouées restent consultables.')}
         ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes cachées au-delà des 122, avec la finition la plus rare du jeu : un reflet irisé, et un cadre pour qui trouve la première. Où et quand elles tombent ? C'est un secret. La Légendaire passe à 4,25 %.`)}
+        ${point('livre', 'Le tutoriel et le glossaire.', 'Une partie guidée, bulle après bulle, pour apprendre en jouant (et 200 Éclats la première fois) ; chaque mot du jeu, cherchable, dans le Guide des Combats.')}
         ${point('foudre', 'Le Raid.', 'The French Sorcerer, un boss pour tout le serveur, par saisons de deux semaines. Six phases à abattre ensemble : chacune qui tombe ouvre un coffre pour tous ceux qui ont combattu, et tes dégâts paient aussi tes coffres à toi. La dernière abattue, place au mode Infini.')}
         ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
         ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}

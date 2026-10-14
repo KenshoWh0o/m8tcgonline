@@ -32,21 +32,21 @@ const CARD_DIR = 'cards/';
 /* ---------- Habillage ---------- */
 /* Les quatre visuels de booster : un est tiré au sort à chaque paquet, sans effet sur le contenu. */
 const PACK_ARTS = [
-  'assets/boosters/booster-01.webp?v=3.0.5',
-  'assets/boosters/booster-02.webp?v=3.0.5',
-  'assets/boosters/booster-03.webp?v=3.0.5',
-  'assets/boosters/booster-04.webp?v=3.0.5'
+  'assets/boosters/booster-01.webp?v=3.0.6',
+  'assets/boosters/booster-02.webp?v=3.0.6',
+  'assets/boosters/booster-03.webp?v=3.0.6',
+  'assets/boosters/booster-04.webp?v=3.0.6'
 ];
 
-/* Le sceau assets/pack-star.svg?v=3.0.5 sert d'icône au compteur de boosters, directement dans index.html. */
+/* Le sceau assets/pack-star.svg?v=3.0.6 sert d'icône au compteur de boosters, directement dans index.html. */
 const ART = {
-  logo: 'assets/logo-m8.webp?v=3.0.5',         /* logo du jeu, en en-tête */
-  back: 'assets/card-back.webp?v=3.0.5',       /* dos de carte */
-  set: 'assets/extension-logo.svg?v=3.0.5',    /* logo de l'extension */
-  edition: 'assets/1st-edition.svg?v=3.0.5',   /* pastille 1re édition */
-  seal: 'assets/pack-star.svg?v=3.0.5',        /* sceau, icône de la réserve */
-  star: 'assets/star-pink.svg?v=3.0.5',        /* étincelle, repli d'avatar */
-  jeton: 'assets/jeton-echange.webp?v=3.0.5'   /* le jeton d'échange, frappé du M8 */
+  logo: 'assets/logo-m8.webp?v=3.0.6',         /* logo du jeu, en en-tête */
+  back: 'assets/card-back.webp?v=3.0.6',       /* dos de carte */
+  set: 'assets/extension-logo.svg?v=3.0.6',    /* logo de l'extension */
+  edition: 'assets/1st-edition.svg?v=3.0.6',   /* pastille 1re édition */
+  seal: 'assets/pack-star.svg?v=3.0.6',        /* sceau, icône de la réserve */
+  star: 'assets/star-pink.svg?v=3.0.6',        /* étincelle, repli d'avatar */
+  jeton: 'assets/jeton-echange.webp?v=3.0.6'   /* le jeton d'échange, frappé du M8 */
 };
 
 /* Petites icônes en ligne : elles héritent de la couleur du texte qui les entoure.
@@ -62,16 +62,16 @@ const ICON = {
 /* ---------- Référentiels ---------- */
 /* Couleurs officielles des neuf essences ; `ic` est le symbole affiché dans l'interface. */
 const COLORS = {
-  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.5' },
-  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.5' },
-  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.5' },
-  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.5' },
-  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.5' },
-  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.5' },
-  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.5' },
-  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.5' },
-  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.5' },
-  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.5' }
+  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.6' },
+  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.6' },
+  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.6' },
+  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.6' },
+  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.6' },
+  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.6' },
+  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.6' },
+  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.6' },
+  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.6' },
+  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.6' }
 };
 
 /* `PR` n'est pas une rareté de plus dans l'échelle : c'est une case à part.
@@ -288,11 +288,11 @@ const FRAMES = {
    Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
    avatarHTML dans js/ui.js). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.5', ico: true, bg: '#5d4bd9' },
-  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.5', objet: true, pos: '50%' },
-  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.5', objet: true, pos: '40%' },
-  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.5', ico: true, bg: '#5d4bd9' },
-  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.5', ico: true, bg: '#ee0073' }
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.6', ico: true, bg: '#5d4bd9' },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.6', objet: true, pos: '50%' },
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.6', objet: true, pos: '40%' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.6', ico: true, bg: '#5d4bd9' },
+  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.6', ico: true, bg: '#ee0073' }
 };
 
 /* ---------- Échanges ---------- */

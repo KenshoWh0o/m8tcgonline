@@ -7,7 +7,7 @@
    engagé ou non, avec quelles Essences — puis joue des actions et vérifie
    ce que dit la règle (docs/regles-3.0.md). */
 "use strict";
-const { Combat, Decks, Choc, Campagne, Niveaux } = require('./combat-sim.js');
+const { Combat, Decks, Choc, Campagne, Niveaux, Tuto, IA } = require('./combat-sim.js');
 
 let ok = 0, ko = 0;
 function test(nom, f) {
@@ -379,6 +379,39 @@ test('rejouer redonne exactement la même partie', () => {
     Combat.agir(E, a);
   }
   egal(JSON.stringify(Combat.rejouer(E.init, E.journal)), JSON.stringify(E));
+});
+
+console.log('Le tutoriel (js/combat/tutoriel.js)');
+test('la partie écrite se déroule comme les bulles le disent', () => {
+  const E = Combat.creer({ decks: [{ club: Tuto.TUTO_MOI, reserve: Array(10).fill('rose') }, { club: Tuto.TUTO_LUI, reserve: Array(10).fill('mauve') }],
+    graine: 7, premier: 0, ordre: true, pv: [5, 3] });
+  const d = () => Combat.demande(E);
+  const u = (j, id) => { const P = E.j[j]; const c = P.main.find(x => x.id === id) || P.lignes.find(x => x && x.id === id); return c && c.u; };
+  const coup = f => { const a = Combat.optionsTour(E).find(f); vrai(a, 'coup introuvable'); Combat.agir(E, a); };
+  const rival = () => { let n = 0; while (d() && d().qui === 1 && n++ < 20) Combat.agir(E, Tuto.tutoRival(E)); };
+  Combat.agir(E, { t: 'choix', v: 'oui' }); rival();
+  egal(E.j[0].main.map(c => c.id), ['c012', 'c085', 'c014', 'c097', 'c078'], 'la main');
+  coup(a => a.t === 'deployer' && a.u === u(0, 'c012') && a.ligne === 1);
+  coup(a => a.t === 'lier' && a.u === u(0, 'c085'));
+  Combat.agir(E, { t: 'finTour' });
+  rival();
+  egal(d().but, 'defense', 'Baby Driver attaque');
+  Combat.agir(E, { t: 'choix', v: u(0, 'c012') });
+  rival();
+  egal(E.tour, 3);
+  coup(a => a.t === 'deployer' && a.u === u(0, 'c013'));
+  coup(a => a.t === 'jouer' && a.u === u(0, 'c097'));
+  coup(a => a.t === 'jouer' && a.u === u(0, 'c014'));
+  const bd = u(1, 'c059');
+  coup(a => a.t === 'attaquer' && a.u === u(0, 'c012') && a.cible === bd);
+  rival();
+  vrai(u(1, 'c059'), 'Shield : Baby Driver tient la première attaque');
+  coup(a => a.t === 'attaquer' && a.u === u(0, 'c013') && a.cible === bd);
+  rival();
+  vrai(!u(1, 'c059'), 'Baby Driver vaincu à la seconde');
+  Combat.agir(E, { t: 'finTour' });
+  rival();
+  egal(d().but, 'resilience', 'touché : la Résilience de Mur Salvateur');
 });
 
 console.log(`\n${ok} réussis, ${ko} en échec`);

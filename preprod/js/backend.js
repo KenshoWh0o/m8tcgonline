@@ -584,6 +584,14 @@ Backend.combatFin = async function (id, gagne, resume) {
   return r;
 };
 
+/* Version 3.0.6 : la partie du tutoriel gagnée (js/combat/tutoriel.js) ;
+   la quête « Premiers pas » avance, puis l'état est relu. */
+Backend.tutorielFini = async function () {
+  if (Backend.mode !== 'cloud') return;
+  await Backend.rpc('tutoriel_fini');
+  await Backend.pull();
+};
+
 /* L'événement « Le Choc des Sections » (js/choc.js, supabase/25_choc.sql) :
    l'Épreuve du jour. */
 Backend.chocEtat = () => Backend.rpc('choc_etat');

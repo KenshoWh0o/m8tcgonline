@@ -20,7 +20,7 @@ let qVue = 'daily';
 
 /* Une icône par famille d'objectif : on reconnaît la quête avant de la lire. */
 const QICO = {
-  checkin: 'clock', packs: 'star', new_cards: 'cards',
+  checkin: 'clock', packs: 'star', new_cards: 'cards', tutoriel: 'livre',
   rarity_R: 'quest', rarity_E: 'quest', rarity_L: 'coin',
   trades: 'swap', recycle: 'recycle', collection_pct: 'cards',
   /* Toutes les cartes d'une rareté (supabase/04_seed.sql). */

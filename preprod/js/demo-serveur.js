@@ -142,6 +142,7 @@
     ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l\'IA en Légende.', 21],
     ['m_cent',     'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 22],
     ['m_secrete',  'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
+    ['m_tutoriel', 'milestone', 'tutoriel',         1,  200, null,         'Premiers pas',          'Gagne la partie du tutoriel (Combats, Guide).', 24],
     /* L'XP et le niveau de combattant (26_niveaux.sql). */
     ['d_xp',       'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11],
     ['w_xp',       'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11],
@@ -1120,6 +1121,9 @@
   RPC.annonce_retirer = () => refuser('Réservé aux administrateurs.');
 
   /* ------------------------------------ classement, 14_classement.sql */
+  /* ------------------------------------ tutoriel_fini, 23_combats.sql */
+  RPC.tutoriel_fini = p => { bump(p, 'tutoriel', 1); return { ok: true }; };
+
   RPC.classement = (moi, { p_critere }) => {
     if (!['collection', 'reverses', 'boosters', 'echanges', 'serie', 'niveau', 'secretes', 'versus'].includes(p_critere)) refuser('Classement inconnu.');
     const auj = jourParis(now());
