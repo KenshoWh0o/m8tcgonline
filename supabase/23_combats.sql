@@ -470,8 +470,8 @@ begin
                                  coalesce((p_resume->>'vaincus')::int, 0), coalesce((p_resume->>'tours')::int, 0)));
   end if;
 
-  -- Le Raid (27_raid.sql : Insignes pendant le Choc, Eclats sinon) et
-  -- l'Epreuve du jour (25_choc.sql, en Insignes).
+  -- Le Raid (27_raid.sql : Etincelles pendant le Choc, Eclats sinon) et
+  -- l'Epreuve du jour (25_choc.sql, en Etincelles).
   if o.mode in ('raid', 'epreuve') then
     r := case when o.mode = 'raid'
               then raid_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop)

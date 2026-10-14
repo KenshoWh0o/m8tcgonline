@@ -182,7 +182,7 @@
     ['e_recycle', 'ev',      'recycle', 150, 30, null, 'Grand ménage',        'Recycle 150 doublons pendant l\'événement.', 8, 'reflets', 'prismes'],
     ['e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes'],
     /* L'événement « Le Choc des Sections » (25_choc.sql) : ses quêtes paient
-       en Insignes — la colonne `monnaie` dit « prismes » pour toute monnaie
+       en Étincelles — la colonne `monnaie` dit « prismes » pour toute monnaie
        d'événement, c'est l'événement qui lui donne son nom. */
     ['c_visite',  'ev_jour', 'ev_visite',         1, 10, null, 'Au rapport',           'Passe voir l\'événement aujourd\'hui.', 1, 'choc', 'prismes'],
     ['c_combats', 'ev_jour', 'combats',           2, 15, null, 'Deux combats',         'Joue 2 combats, contre l\'IA ou un ami.', 2, 'choc', 'prismes'],
@@ -236,7 +236,7 @@
     ['ev_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 60, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5],
     ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
     ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
-    /* Le Choc des Sections (25_choc.sql), en Insignes. */
+    /* Le Choc des Sections (25_choc.sql), en Étincelles. */
     ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10],
     ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3],
     ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8],
@@ -802,7 +802,7 @@
       pr.fragments -= it.prix;
     } else if (it.devise === 'prismes') {
       const c = compte(p);
-      if (c.solde < it.prix) refuser(evenementEnCours() === 'choc' ? 'Pas assez d\'Insignes.' : 'Pas assez de Prismes.');
+      if (c.solde < it.prix) refuser(evenementEnCours() === 'choc' ? 'Pas assez d\'Étincelles.' : 'Pas assez de Prismes.');
       c.solde -= it.prix;
     } else {
       if (pr.shards < it.prix) refuser('Pas assez d\'Éclats.');
@@ -1883,7 +1883,7 @@
 
   /* ================================== version 3.0, 25_choc.sql */
   /* Le Choc des Sections : l'Épreuve du jour (la même graine pour tous), et
-     ce que le Raid y ajoute (des Insignes, le récap). Les chiffres viennent
+     ce que le Raid y ajoute (des Étincelles, le récap). Les chiffres viennent
      de la page (js/combat/choc-data.js). */
   const chocDe = () => {
     const c = (S.choc = S.choc || {});
@@ -1929,7 +1929,7 @@
     return { avant, apres };
   }
 
-  /* raid_fin : pendant le Choc, des Insignes ; le reste du temps, des Éclats. */
+  /* raid_fin : pendant le Choc, des Étincelles ; le reste du temps, des Éclats. */
   function finRaid(p, c, o, gagne, res, trop, r) {
     if (gagne) { c.stats.victoires++; bump(p, 'victoires', 1); bump(p, 'vaincus', Math.min(20, Math.max(0, +res.vaincus || 0))); }
     else c.stats.defaites++;
@@ -2108,7 +2108,7 @@
       }
     });
     /* Les joueurs simulés frappent le boss du Raid, toute l'année ; pendant
-       le Choc, ils tentent aussi l'Épreuve et gagnent des Insignes. */
+       le Choc, ils tentent aussi l'Épreuve et gagnent des Étincelles. */
     S.raidTic = S.raidTic || t;
     if (t - S.raidTic > 30000) {
       S.raidTic = t;

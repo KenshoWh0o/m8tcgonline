@@ -139,7 +139,7 @@ function montrerNouveautes30() {
     <span><b>${titre}</b> ${texte}</span></li>`;
   const nbS = (typeof secretes !== 'undefined' ? secretes : []).length;
   openSheet({
-    title: 'Version 3.0 · Les Combats',
+    title: 'Version 3.0 · Les Combats et les Secrètes',
     body: `<div class="nvhero v3">
         <div class="nvboites" aria-hidden="true">
           <img src="${SECTIONS.toxique.boite}" alt=""><i>VS</i><img src="${SECTIONS.deter.boite}" alt="">
@@ -150,16 +150,25 @@ function montrerNouveautes30() {
           <small>Choisis ta Section, construis ton deck, et entre dans l'arène.</small>
         </div>
       </div>
+      <div class="nvhero v3s">
+        <div class="nvsec" aria-hidden="true">${Array.from({ length: nbS || 5 }, (_, i) =>
+          `<span class="ch-sec-c" style="--i:${i - ((nbS || 5) - 1) / 2}"><b>?</b></span>`).join('')}</div>
+        <div class="nvtexte">
+          <span class="nvkicker">Et aussi</span>
+          <b>Les Secrètes</b>
+          <small>${nbS || 'Cinq'} cartes cachées au-delà des 122. À toi de les trouver.</small>
+        </div>
+      </div>
       <ol class="bvpoints nvpoints">
-        ${point('star', 'Un nouveau visage.', 'Tout le site est redessiné, en graphite et lavande : des tuiles pleines, les illustrations du jeu en grand, et une seule couleur pour ce qu\'on peut faire, la lavande, partout, arène comprise. Les Secrètes ont un nouveau reflet.')}
         ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt rivaux, et l\'Arcade, cinq difficultés) et Versus en direct contre tes amis, 60 secondes par tour, dans une arène en plein écran. Chaque carte de l\'adversaire s\'affiche en grand avec son effet, et toutes les cartes jouées restent consultables.')}
-        ${point('foudre', 'Le Raid, toute l\'année.', 'The French Sorcerer, un boss pour tout le serveur. Quand sa barre tombe, chacun de ceux qui l\'ont frappé ouvre un coffre, et il revient plus fort.')}
+        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes cachées au-delà des 122, avec la finition la plus rare du jeu : un reflet irisé, et un cadre pour qui trouve la première. Où et quand elles tombent ? C'est un secret. La Légendaire passe à 4,25 %.`)}
+        ${point('foudre', 'Le Raid.', 'The French Sorcerer, un boss pour tout le serveur, par saisons de deux semaines. Six phases à abattre ensemble : chacune qui tombe ouvre un coffre pour tous ceux qui ont combattu, et tes dégâts paient aussi tes coffres à toi. La dernière abattue, place au mode Infini.')}
         ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
         ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
-        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, une chance sur 133 par booster, et une finition à part. La Légendaire passe à 4,25 %.`)}
+        ${point('star', 'Un nouveau visage.', 'Tout le site est redessiné, en graphite et lavande : des tuiles pleines, les illustrations du jeu en grand, et une seule couleur pour ce qu\'on peut faire, la lavande, partout, arène comprise.')}
         ${point('user', 'Neuf nouveaux cadres.', 'Arène (niveaux 10 à 50), Toxique et Déter, Secrète, et ceux de l\'événement. Ton profil montre où gagner chacun.')}
         ${point('shop', 'Tapis et sleeves.', 'Des tapis de jeu et des sleeves en boutique ; en combat, c\'est le tapis de celui qui joue qui s\'affiche.')}
-        ${choc ? point('choc', 'Le Choc des Sections.', `L'Épreuve du jour, le Raid payé en Insignes, un Pass de trente paliers et ses trois exclusifs — pendant trois semaines.`) : ''}
+        ${choc ? point('choc', 'Le Choc des Sections.', `L'Épreuve du jour, le Raid payé en Étincelles, un Pass de trente paliers et ses trois exclusifs — pendant trois semaines.`) : ''}
       </ol>`,
     actions: choc
       ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('choc'); } },

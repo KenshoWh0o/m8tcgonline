@@ -96,18 +96,18 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 - Chaque PV pris au boss en combat fait un dégât sur la barre ; le faire tomber ajoute 3 dégâts. Les dégâts d'un combat sont plafonnés côté serveur (PV du boss + 1, + 3 s'il tombe).
 - Trois tentatives par jour. Le combat durcit avec le niveau : IA de 3 à 5 étoiles, boss de 6 à 9 PV, jusqu'à 2 Essences d'avance.
 - Quand la barre est vide, **chacun de ceux qui ont frappé ce niveau** ouvre un coffre, à tour de rôle : 2 boosters, 300 Fragments, 3 boosters, 400 Éclats. Le boss revient au niveau suivant ; les dégâts en trop passent sur la nouvelle barre.
-- Ce que paie un combat : pendant le Choc, 3 Insignes par dégât et 15 si le boss tombe ; le reste de l'année, 2 Éclats par dégât et 15 s'il tombe. Une victoire compte « PV du boss + 1 » dégâts (le PV qui manque fait gagner), plus les 3 du bonus.
+- Ce que paie un combat : pendant le Choc, 3 Étincelles par dégât et 15 si le boss tombe ; le reste de l'année, 2 Éclats par dégât et 15 s'il tombe. Une victoire compte « PV du boss + 1 » dégâts (le PV qui manque fait gagner), plus les 3 du bonus.
 
 | [calcul] Par jour, au plus (3 victoires) | Boss à 6 PV (niveaux 1-2) | Boss à 9 PV (niveau 7 et plus) |
 |---|---|---|
 | Dégâts par victoire | 6 + 1 + 3 = 10 | 9 + 1 + 3 = 13 |
 | Hors événement, en Éclats | 3 × (10 × 2 + 15) = 105 | 3 × (13 × 2 + 15) = 123 |
-| Pendant le Choc, en Insignes | 3 × (10 × 3 + 15) = 135 | 3 × (13 × 3 + 15) = 162 |
+| Pendant le Choc, en Étincelles | 3 × (10 × 3 + 15) = 135 | 3 × (13 × 3 + 15) = 162 |
 
 - **[calcul]** Hors événement, le Raid ajoute donc jusqu'à ≈ 105-125 Éclats par jour à un joueur qui gagne ses trois tentatives, l'équivalent de cinq victoires payées en Normal, en plus de celles-ci. Un premier réglage (4 Éclats par dégât, 20 par victoire) montait à 216 par jour, soit ≈ +50 % de revenu pour un joueur actif : jugé trop généreux, il a été divisé par deux environ avant la sortie.
 - **[inconnu]** La vitesse à laquelle les niveaux tombent : elle dépend du nombre de joueurs qui frappent. Un joueur engagé fait ≈ 20 dégâts par jour ; il faut ≈ 15 joueurs engagés pour faire tomber le niveau 1 en un jour, ≈ 30 pour le niveau 5 (900 dégâts). Le réglage se fait sans redéployer : `update public.parametres set raid_echelle = … where id = 1;`.
 
-### Ce que rapportent les Insignes [calcul]
+### Ce que rapportent les Étincelles [calcul]
 
 | Source | Par jour, au plus |
 |---|---|
@@ -116,7 +116,7 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 | Épreuve : 5 par essai, + 25 à la première victoire | 40 |
 | Quêtes de l'événement (une fois) | 670 au total |
 
-| Profil [hypothèse] | Insignes sur 21 jours | Pass (30 paliers, 3 500 pour le dernier) |
+| Profil [hypothèse] | Étincelles sur 21 jours | Pass (30 paliers, 3 500 pour le dernier) |
 |---|---|---|
 | Tout au maximum | ≈ 6 500 | fini vers le 11ᵉ jour |
 | Engagé (toutes les quêtes du jour, 3 Raids, 3 Épreuves) | ≈ 4 000 | fini vers le 18ᵉ jour |
@@ -138,13 +138,13 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 | Tapis « The French Sorcerer » | 600 | 1 | 600 |
 | Titre « Supporter du Choc » | 200 | 1 | 200 |
 
-- Tout acheter coûte **2 700 Insignes** [calcul] (3 140 avant). Retirés à la demande : l'Essence Brillante et la Reverse Rare. Pour que les Insignes gardent un usage, les boosters et les Fragments y sont un peu moins chers et plus nombreux, et un lot de 5 boosters s'ajoute.
-- [hypothèse] Un joueur engagé (≈ 4 000 Insignes) peut tout acheter ; un occasionnel (≈ 2 000) prend le tapis, le titre et une partie des boosters.
-- Le Pass compte les Insignes **gagnées**, la boutique dépense le **solde** : acheter ne fait pas reculer dans le Pass.
+- Tout acheter coûte **2 700 Étincelles** [calcul] (3 140 avant). Retirés à la demande : l'Essence Brillante et la Reverse Rare. Pour que les Étincelles gardent un usage, les boosters et les Fragments y sont un peu moins chers et plus nombreux, et un lot de 5 boosters s'ajoute.
+- [hypothèse] Un joueur engagé (≈ 4 000 Étincelles) peut tout acheter ; un occasionnel (≈ 2 000) prend le tapis, le titre et une partie des boosters.
+- Le Pass compte les Étincelles **gagnées**, la boutique dépense le **solde** : acheter ne fait pas reculer dans le Pass.
 
 ### Ce que le serveur croit sur parole [fait]
 
-- Le serveur ne rejoue pas les combats contre l'IA : il croit le client sur le résultat, pour le PvE comme pour le Raid. Trois garde-fous : les dégâts d'un combat sont plafonnés (PV du boss + 1, + 3 s'il tombe), un combat doit durer au moins 20 s, et on a 3 tentatives par jour. Un tricheur peut donc gagner au plus 54 Insignes (ou 41 Éclats) et 13 dégâts par tentative.
+- Le serveur ne rejoue pas les combats contre l'IA : il croit le client sur le résultat, pour le PvE comme pour le Raid. Trois garde-fous : les dégâts d'un combat sont plafonnés (PV du boss + 1, + 3 s'il tombe), un combat doit durer au moins 20 s, et on a 3 tentatives par jour. Un tricheur peut donc gagner au plus 54 Étincelles (ou 41 Éclats) et 13 dégâts par tentative.
 - Pour les défis entre amis, le serveur de démo rejoue la partie, puisqu'il dispose du moteur en JavaScript. Le vrai serveur ne le peut pas : Postgres n'exécute pas ce moteur. Chaque joueur y déclare donc son résultat, et un désaccord entre les deux déclarations est enregistré (`defis.desaccord`) pour que l'administration puisse le voir.
 
 ## 4. Ce qui reste ouvert

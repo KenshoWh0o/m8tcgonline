@@ -5,15 +5,21 @@
     python3 tools/choc-visuels.py
 
 Ecrit :
+  assets/combat/choc-toxique.webp              l'affiche de l'en-tete, a gauche
+  assets/combat/choc-deter.webp                l'affiche de l'en-tete, a droite
   assets/combat/tapis/t_arene.webp (+ -mini)   Pass, palier 30 : « Le Choc des Sections »
   assets/combat/tapis/t_orage.webp (+ -mini)   boutique de l'evenement : « The French Sorcerer »
   assets/combat/sleeves/s_choc.webp            Pass, palier 8 : « Le Choc »
 
 Comme les tapis de la Boutique (tools/cosmetiques.py), ils partent
 d'illustrations du jeu, pas d'un dessin invente :
-  - Le Choc des Sections : Gotaga Pose (#060, Deter) en haut, chez
-    l'adversaire ; Squeezie le Toxique (#012) en bas, chez soi. Chacun teinte
-    a la couleur de sa Section, une coupe lumineuse en biais entre les deux.
+  - L'affiche de l'en-tete de l'evenement : Squeezie le Toxique (#012) et
+    Brawks Deter (#077). Le haut de la carte de Brawks porte son titre et
+    ses etoiles derriere la tete : on les remplace par un ciel sombre, la
+    tete (profil, crane, barbe) gardee intacte.
+  - Le Choc des Sections : Brawks Deter en haut, chez l'adversaire ;
+    Squeezie le Toxique en bas, chez soi. Chacun teinte a la couleur de sa
+    Section, une coupe lumineuse en biais entre les deux.
   - The French Sorcerer : l'illustration de la carte #116, en grand du haut
     jusqu'au milieu, fondue ensuite dans le violet sombre de son ciel.
   - Le Choc (sleeve) : le dos officiel des cartes (assets/card-back.webp),
@@ -21,7 +27,7 @@ d'illustrations du jeu, pas d'un dessin invente :
 Les memes reperes que les autres tapis : bords sombres, bande plus sombre au
 milieu, filet interieur. Necessite Pillow, avec l'AVIF (les cartes)."""
 import os
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'assets', 'combat')
@@ -37,7 +43,9 @@ VIOLET = ((16, 6, 40), (124, 58, 237), (241, 235, 255))
 # bandeau « Joueur · Def » (gabarit commun des cartes, 1000 x 1397).
 ILLU = (85, 205, 895, 684)
 SQUEEZIE = ('012_PC_Joueur_Rose_Squeezie-Le-Toxique.avif', (85, 222, 895, 684))
-GOTAGA = ('060_E_Joueur_Mauve_Gotaga-Pose.avif', ILLU)
+# Brawks : plus large que le gabarit, pour garder la tete entiere et les
+# gants ; le haut (titre, etoiles) est efface par brawks().
+BRAWKS = ('077_PC_Joueur_Neutre_Brawks-Deter.avif', (200, 125, 880, 730))
 SORCIER = ('116_L_Joueur_Mauve_The-French-Sorcerer.avif', ILLU)
 
 
@@ -50,6 +58,38 @@ def dossier(*p):
 def illustration(carte):
     fichier, boite = carte
     return Image.open(os.path.join(CARTES, fichier)).convert('RGB').crop(boite)
+
+
+def brawks():
+    """Brawks Deter sans le titre ni les etoiles de sa carte : la bande du
+    haut devient un ciel sombre, sauf la tete. Les formes sont mesurees sur
+    le recadrage BRAWKS (680 x 605)."""
+    im = illustration(BRAWKS)
+    w, h = im.size
+    ciel = Image.new('RGB', (w, h))
+    dc = ImageDraw.Draw(ciel)
+    for y in range(h):
+        t = min(1, y / 110)
+        dc.line((0, y, w, y), fill=tuple(round(a + (b - a) * t) for a, b in zip((12, 12, 30), (28, 30, 62))))
+    # Le bandeau du titre descend jusqu'a y = 88 a gauche de la tete, mais
+    # les eclairs commencent des y = 56 a droite : le ciel couvre le titre,
+    # puis s'efface en fondu sur le haut des eclairs (pas de ligne droite).
+    m = Image.new('L', (w, h), 0)
+    dm = ImageDraw.Draw(m)
+    for y in range(120):
+        dm.line((0, y, w, y), fill=255 if y <= 56 else round(255 * (1 - (y - 56) / 64) ** 1.6))
+    gauche = Image.new('L', (w, h), 0)
+    ImageDraw.Draw(gauche).rectangle((0, 0, 150, 98), fill=255)
+    m = ImageChops.lighter(m, gauche.filter(ImageFilter.GaussianBlur(12)))
+    tete = Image.new('L', (w, h), 0)
+    dt = ImageDraw.Draw(tete)
+    dt.ellipse((192, 10, 348, 176), fill=255)                       # le crane
+    dt.polygon([(185, 95), (200, 60), (215, 130), (185, 150)], fill=255)  # le profil
+    dt.rectangle((210, 86, 330, 200), fill=255)                      # la barbe
+    dt.rectangle((0, 0, w, 18), fill=0)                              # le bord de la carte
+    tete = tete.filter(ImageFilter.GaussianBlur(4))
+    m = Image.composite(Image.new('L', (w, h), 0), m, tete)
+    return Image.composite(ciel, im, m)
 
 
 def couvrir(im, w, h, cx=.5, cy=.5):
@@ -114,10 +154,28 @@ def enregistrer_tapis(im, cle):
     print('tapis', cle, os.path.getsize(os.path.join(d, cle + '.webp')) // 1024, 'Ko')
 
 
+# ------------------------------------------------- L'affiche de l'en-tete
+def affiche():
+    """Les deux moitiés de l'en-tete (css/choc.css, .ch-aff-sec) : la teinte
+    et le cadrage sont faits par la feuille de style."""
+    # Du ciel au-dessus de Brawks : sa tete ne touche pas le haut de l'en-tete.
+    b = brawks()
+    deter = Image.new('RGB', (b.width, b.height + 50), (12, 12, 30))
+    deter.paste(b, (0, 50))
+    for nom, im in (('choc-toxique', illustration(SQUEEZIE)), ('choc-deter', deter)):
+        im = im.resize((600, round(im.height * 600 / im.width)), Image.LANCZOS)
+        im.save(os.path.join(OUT, nom + '.webp'), 'WEBP', quality=82, method=6)
+        print('affiche', nom, im.size)
+
+
 # ------------------------------------------------- Le Choc des Sections
 def choc_des_sections():
     """Deter en haut, Toxique en bas ; la coupe passe en biais au milieu."""
-    haut = couvrir(illustration(GOTAGA), W, 760, cx=.52, cy=.5)
+    # Un peu de ciel au-dessus de Brawks : sa tete descend sous la vignette.
+    b = brawks()
+    haut = Image.new('RGB', (b.width, b.height + 100), (12, 12, 30))
+    haut.paste(b, (0, 100))
+    haut = couvrir(haut, W, 760, cx=.5, cy=.0)
     haut = ImageEnhance.Contrast(ImageEnhance.Brightness(haut).enhance(.56)).enhance(1.15)
     haut = teinter(haut, ((10, 4, 28), (96, 40, 200), (226, 214, 255)), .4)
     bas = couvrir(illustration(SQUEEZIE), W, 760, cx=.4, cy=.35)
@@ -175,6 +233,7 @@ def sleeve():
 
 
 if __name__ == '__main__':
+    affiche()
     choc_des_sections()
     french_sorcerer()
     sleeve()

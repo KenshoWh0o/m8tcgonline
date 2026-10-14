@@ -388,9 +388,9 @@ begin
     update evt_comptes set solde = solde - it.prix
      where user_id = p and evenement = it.evenement and solde >= it.prix;
     -- Chaque evenement a le nom de sa monnaie : les Prismes de Reflets, les
-    -- Insignes du Choc des Sections (25_choc.sql).
+    -- Etincelles du Choc des Sections (25_choc.sql).
     if not found then
-      raise exception '%', case it.evenement when 'choc' then 'Pas assez d''Insignes.' else 'Pas assez de Prismes.' end;
+      raise exception '%', case it.evenement when 'choc' then 'Pas assez d''Étincelles.' else 'Pas assez de Prismes.' end;
     end if;
   else
     if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;

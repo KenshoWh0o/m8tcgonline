@@ -204,13 +204,15 @@ const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><pat
 /* Le Prisme, monnaie de l'événement (version 2.0). */
 const prismeIco = '<svg class="prismeico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="prg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7cc8"/><stop offset=".5" stop-color="#b38cff"/><stop offset="1" stop-color="#7fd8ff"/></linearGradient></defs><path d="M12 2.5 21 18.5H3Z" fill="url(#prg)"/><path d="M12 2.5 9.4 18.5h5.2Z" fill="#fff" opacity=".35"/></svg>';
 
-/* L'Insigne, monnaie du Choc des Sections (version 3.0) : un écusson d'or
-   frappé de deux galons, comme un grade. Lisible à 14 px : une forme, deux
-   chevrons, pas de détail qui se brouille. */
-const insigneIco = '<svg class="prismeico insigneico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="insg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a8"/><stop offset=".55" stop-color="#ffc73b"/><stop offset="1" stop-color="#d98a12"/></linearGradient></defs><path d="M12 1.8 20.2 4.9v6.6c0 5-3.4 8.7-8.2 10.7-4.8-2-8.2-5.7-8.2-10.7V4.9Z" fill="url(#insg)" stroke="#8a5600" stroke-width="1.1" stroke-linejoin="round"/><path d="m7.4 9.6 4.6-2.9 4.6 2.9M7.4 13.8 12 10.9l4.6 2.9" fill="none" stroke="#7a4300" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 3.3 18.8 5.9v2.2" fill="none" stroke="#fff" stroke-width=".9" stroke-linecap="round" opacity=".7"/></svg>';
+/* L'Étincelle, monnaie du Choc des Sections (version 3.0) : quand Toxique
+   et Déter se heurtent, ça fait des étincelles. Une étoile à quatre
+   branches, verte à gauche et violette à droite (les deux Sections, coupées
+   comme la bannière), un cœur blanc, deux éclats autour. Lisible à 14 px :
+   une forme franche, pas de détail qui se brouille. */
+const etincelleIco = '<svg class="prismeico etincelleico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="etg" x1="0" y1="0" x2="1" y2="0"><stop offset=".22" stop-color="#62d84e"/><stop offset=".48" stop-color="#e9ffe0"/><stop offset=".52" stop-color="#ece6ff"/><stop offset=".78" stop-color="#9b70ff"/></linearGradient><radialGradient id="etc"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><path d="M12 1.2C13.1 7.7 16.3 10.9 22.8 12 16.3 13.1 13.1 16.3 12 22.8 10.9 16.3 7.7 13.1 1.2 12 7.7 10.9 10.9 7.7 12 1.2Z" fill="url(#etg)"/><circle cx="12" cy="12" r="4.6" fill="url(#etc)"/><path d="M19.4 2.4 20 4 21.6 4.6 20 5.2 19.4 6.8 18.8 5.2 17.2 4.6 18.8 4Z" fill="#c4b5fd"/><path d="M4.6 17.2 5.1 18.5 6.4 19 5.1 19.5 4.6 20.8 4.1 19.5 2.8 19 4.1 18.5Z" fill="#b7f29a"/></svg>';
 
 /* L'icône de la monnaie de l'événement en cours (MONNAIES_EV, js/config.js). */
-const evIco = () => (evMonnaieCode() === 'choc' ? insigneIco : prismeIco);
+const evIco = () => (evMonnaieCode() === 'choc' ? etincelleIco : prismeIco);
 
 const fmtN = n => String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 

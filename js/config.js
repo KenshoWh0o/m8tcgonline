@@ -225,13 +225,13 @@ const TITRES = {
 /* La monnaie d'un événement (supabase/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
    avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
-   de Reflets (2.0), les Insignes du Choc des Sections (3.0). Le serveur les
+   de Reflets (2.0), les Étincelles du Choc des Sections (3.0). Le serveur les
    range toutes au même endroit (evt_comptes) ; seuls le nom et l'icône
    changent. `PRISMES` suit l'événement en cours, ou celui dont on lit le
    récap. */
 const MONNAIES_EV = {
   reflets: { nom: 'Prismes', un: 'Prisme' },
-  choc: { nom: 'Insignes', un: 'Insigne' }
+  choc: { nom: 'Étincelles', un: 'Étincelle' }
 };
 const evMonnaieCode = () => {
   const ev = typeof evenementEnCours === 'function' ? evenementEnCours() : null;

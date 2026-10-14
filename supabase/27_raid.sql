@@ -13,7 +13,7 @@
 --  saison suivante, tout recommence.
 --
 --  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
---  Insignes ; le reste du temps, en Eclats.
+--  Etincelles ; le reste du temps, en Eclats.
 --
 --  Il remplace le Raid par niveaux de la pre-build 3.0.5 (et le Raid a
 --  phases de calendrier d'avant) : leurs tables et fonctions sont
@@ -196,7 +196,7 @@ end $$;
 -- Les degats : les PV pris au boss (plafonnes a ses PV + 1), ou tous et 3
 -- de plus s'il tombe. En phase, ils s'ajoutent a ceux du serveur (et
 -- peuvent abattre une ou plusieurs phases) ; dans l'Infini, une victoire
--- fait monter son palier. Pendant le Choc : 3 Insignes par degat, +15 s'il
+-- fait monter son palier. Pendant le Choc : 3 Etincelles par degat, +15 s'il
 -- tombe. Sinon : 2 Eclats par degat, +15.
 create or replace function public.raid_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
 returns jsonb language plpgsql security definer set search_path = public as $$

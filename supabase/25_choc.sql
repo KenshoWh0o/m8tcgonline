@@ -4,7 +4,7 @@
 --
 --  Trois semaines autour des Combats (23_combats.sql), avec ce qu'un
 --  evenement apporte deja depuis la 2.0 (21_reflets.sql) : une monnaie — les
---  Insignes, rangees dans evt_comptes comme les Prismes —, des quetes
+--  Etincelles, rangees dans evt_comptes comme les Prismes —, des quetes
 --  (04_seed.sql), un Pass de trente paliers, une boutique (04_seed.sql) et un
 --  classement. En plus, l'Epreuve du jour : le meme combat pour tout le
 --  monde (les decks et la regle se deduisent de la graine du jour,
@@ -12,7 +12,7 @@
 --  du jour.
 --
 --  Le Raid (27_raid.sql) reste toute l'annee ; pendant l'evenement, il paie
---  en Insignes, et ce qu'on y fait compte pour le recap (choc_joueurs).
+--  en Etincelles, et ce qu'on y fait compte pour le recap (choc_joueurs).
 --
 --  La Guerre de l'evenement (points de Section doubles) a ete retiree du
 --  pre-build : ses tables et ses fonctions sont supprimees plus bas si une
@@ -56,7 +56,7 @@ revoke all on public.choc_joueurs, public.choc_epreuves from anon, authenticated
 -- ============================================================ 3. le Pass
 -- Trente paliers. Le calcul (docs/economie-3.0.md) : un joueur engage
 -- (toutes les quetes du jour, trois Raids, trois essais d'Epreuve) gagne
--- ~4 000 Insignes en trois semaines et finit le Pass vers le 18e jour ; un
+-- ~4 000 Etincelles en trois semaines et finit le Pass vers le 18e jour ; un
 -- joueur occasionnel ~2 000, palier 19 ou 20.
 delete from public.evt_piste where evenement = 'choc' and palier > 30;
 insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values

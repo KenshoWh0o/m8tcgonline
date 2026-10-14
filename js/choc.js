@@ -7,19 +7,19 @@
    rubrique a la place de respirer dans sa propre page.
 
    L'en-tête montre les deux Sections face à face : Squeezie le Toxique
-   (#012) et Gotaga Pose (#060), fondus l'un dans l'autre et coupés en biais ;
+   (#012) et Brawks Déter (#077), fondus l'un dans l'autre et coupés en biais ;
    l'illustration de The French Sorcerer est réservée au Raid, pour ne pas
    répéter le même visuel deux fois sur le même écran. Le Raid a sa page (js/raid.js) :
    l'onglet de l'événement en montre la page, et pendant l'événement il paie
-   en Insignes. L'Épreuve se joue dans l'arène (js/combat/table.js), lancée
+   en Étincelles. L'Épreuve se joue dans l'arène (js/combat/table.js), lancée
    par demarrer() (js/battle.js) ; les règles et les chiffres sont dans
    js/combat/choc-data.js.
 
    Ce qui compte se décide côté serveur (supabase/25_choc.sql) : la graine
-   de l'Épreuve, les Insignes. */
+   de l'Épreuve, les Étincelles. */
 "use strict";
 
-/* evenement_etat (le solde, le Pass, le classement des Insignes) et
+/* evenement_etat (le solde, le Pass, le classement des Étincelles) et
    choc_etat (l'Épreuve). Le Raid a son état à lui (rdEtat, js/raid.js). */
 let chEv = null;
 let chEtat = null;
@@ -90,14 +90,13 @@ function vChoc() {
 }
 
 /* L'affiche de l'en-tête : une illustration par Section, teintée à sa
-   couleur, la coupe en biais qui brille entre les deux, et le VS dessus
-   (css/choc.css). */
+   couleur, et la coupe en biais qui brille entre les deux (css/choc.css ;
+   les images sortent de tools/choc-visuels.py). */
 function chAffiche() {
   return `<span class="ch-affiche" aria-hidden="true">
     <span class="ch-aff-sec toxique"></span>
     <span class="ch-aff-sec deter"></span>
     <span class="ch-aff-coupe"><i></i></span>
-    <span class="ch-aff-vs">VS</span>
   </span>`;
 }
 
@@ -125,7 +124,7 @@ function vChTete(fin) {
         <h1>Le Choc<span>des Sections</span></h1>
       </div>
       <div class="rf-tetechiffres">
-        <button class="rf-solde" data-ch="vue" data-v="boutique" title="${CHOC.monnaie.nom} à dépenser">${insigneIco}<b class="tnum">${fmtN(chEv.solde)}</b></button>
+        <button class="rf-solde" data-ch="vue" data-v="boutique" title="${CHOC.monnaie.nom} à dépenser">${etincelleIco}<b class="tnum">${fmtN(chEv.solde)}</b></button>
         <span class="rf-fin">${NAVICO.clock}<b data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</b></span>
       </div>
     </div>
@@ -176,11 +175,11 @@ function vChAccueil() {
     ${vChNouveautes()}`;
 }
 
-/* Ce que la 3.0 apporte : l'événement est aussi sa vitrine. Les Combats en
-   grand, sous le chevalier de leur bandeau ; puis six tuiles illustrées,
-   chacune menant à ce qu'elle montre. */
+/* Ce que la 3.0 apporte : l'événement est aussi sa vitrine. Les deux grands
+   ajouts en grand — les Combats sous le chevalier de leur bandeau, les
+   Secrètes en éventail ; puis six tuiles illustrées, chacune menant à ce
+   qu'elle montre. */
 function vChNouveautes() {
-  const sec = (secretes || []).find(c => c.img) || (secretes || [])[0];
   const n = niveauDe(cbEtat().xp || 0);
   const deck = cbDeckActif();
   const fond = url => (url ? `<i style="background-image:url('${h(url)}')"></i>` : '');
@@ -196,15 +195,39 @@ function vChNouveautes() {
         <span class="ch-nv-modes"><i>Campagne</i><i>Arcade</i><i>Raid</i><i>Versus</i></span></span>
       <span class="cb-une-go">Jouer</span>
     </button>
+    ${vChSecretes()}
     <div class="ch-nv-grille">
       ${tuile('data-cb="vue" data-v="raid"', fond((byId[RAID.boss] || {}).img), 'Le Raid', 'Un boss pour tout le serveur, par saisons de deux semaines.', 'raid')}
-      ${tuile('data-colvue="speciales" data-tab="collection"', fond(sec && sec.img), 'Les Secrètes', `${(secretes || []).length || 5} cartes au-delà des 122, une finition à part.`, 'secrete')}
+      ${tuile('data-tab="profil"', avatarHTML(save.avatar, 'f_niv50', 'ch-nv-ava'), 'Neuf cadres', 'Arène, Sections, Secrète, événement : ton profil dit où gagner chacun.', 'cadres')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', fond(TAPIS.t_veste.img.replace('.webp', '-mini.webp')), 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
-      ${tuile('data-cb="vue" data-v="decks"', fond(deck && (byId[deck.couverture] || {}).img), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
+      ${tuile('data-cb="vue" data-v="decks"', fond(((deck && byId[deck.couverture]) || byId[COUV.solo] || {}).img), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
       ${tuile('data-cb="vue" data-v="guides"', `<span class="ch-nv-ico">${NAVICO.livre}</span>`, 'Le Guide', 'Les règles du combat, en dix pages courtes.', 'guide')}
     </div>
   </section>`;
+}
+
+/* Les Secrètes, l'autre grand ajout : les cinq en éventail. Celles qu'on a
+   se retournent (floutées tant qu'elles ne sont pas révélées) ; les autres
+   restent de dos, un « ? » irisé dessus. Ni leur nom ni leur taux : c'est
+   un secret. */
+function vChSecretes() {
+  const liste = secretes || [];
+  if (!liste.length) return '';
+  const eues = liste.filter(c => save.col[c.id] > 0).length;
+  const milieu = (liste.length - 1) / 2;
+  const carte = (c, i) => {
+    const a = save.col[c.id] > 0;
+    const face = a ? `<img src="${h(c.img)}" alt=""${c.cachee ? ' class="floue"' : ''}>` : '<b>?</b>';
+    return `<span class="ch-sec-c${a ? ' eue' : ''}" style="--i:${i - milieu}">${face}</span>`;
+  };
+  return `<button class="ch-nv-une ch-nv-sec" data-colvue="speciales" data-tab="collection">
+      <span class="ch-sec-fan" aria-hidden="true">${liste.map(carte).join('')}</span>
+      <span class="ch-nv-une-t"><small>L'autre grand ajout</small><b>Les Secrètes</b>
+        <span>${liste.length} cartes cachées au-delà des 122, avec la finition la plus rare du jeu. Où et quand elles tombent ? C'est un secret.</span>
+        <span class="ch-nv-modes"><i class="tnum">${eues} / ${liste.length} trouvée${eues > 1 ? 's' : ''}</i><i>Reflet irisé</i><i>Cadre Secrète</i></span></span>
+      <span class="cb-une-go">Voir</span>
+    </button>`;
 }
 
 /* =====================================================================
@@ -281,7 +304,7 @@ async function lancerEpreuve() {
    ===================================================================== */
 function vChQuetes() {
   const qs = (save.quetes || []).filter(q => q.evenement === 'choc');
-  return `${chTitre('Quêtes', `Elles paient en ${CHOC.monnaie.nom}, et chaque ${CHOC.monnaie.un} gagné fait avancer le Pass.`)}
+  return `${chTitre('Quêtes', `Elles paient en ${CHOC.monnaie.nom}, et chaque ${CHOC.monnaie.un} gagnée fait avancer le Pass.`)}
     <h3 class="rf-sous">Du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
     ${vListeQuetes(qs.filter(q => q.scope === 'ev_jour'), 'choc-jour')}
     <h3 class="rf-sous">De l'événement</h3>
@@ -296,7 +319,7 @@ function vChQuetes() {
 function chIco(x, taille) {
   if (x.type === 'tapis' && TAPIS[x.objet]) return `<img class="ch-ico-tapis" src="${TAPIS[x.objet].img.replace('.webp', '-mini.webp')}" alt="">`;
   if (x.type === 'sleeve' && SLEEVES[x.objet]) return `<img class="ch-ico-sleeve" src="${SLEEVES[x.objet].img}" alt="">`;
-  if (x.type === 'insignes') return insigneIco;
+  if (x.type === 'insignes') return etincelleIco;
   return rfIco(x, taille);
 }
 
@@ -316,19 +339,19 @@ function vChPass() {
       <span class="rf-palnum tnum">${x.pris ? NAVICO.check : x.palier}</span>
       <div class="rf-palcarte">
         <span class="rf-palico">${chIco(x)}</span>
-        <span class="rf-paltxt"><b>${h(x.titre)}</b><small>${insigneIco}<span class="tnum">${fmtN(x.seuil)}</span></small></span>
+        <span class="rf-paltxt"><b>${h(x.titre)}</b><small>${etincelleIco}<span class="tnum">${fmtN(x.seuil)}</span></small></span>
         ${x.pris ? '<span class="rf-paletat">Récupéré</span>'
           : ok ? `<button class="btn tiny" data-ch="palier" data-v="${x.palier}" data-snd="piece">Récupérer</button>`
           : x === prochain ? `<span class="rf-paletat">encore ${fmtN(x.seuil - total)}</span>` : ''}
       </div>
     </li>`;
   };
-  return `${chTitre('Le Pass', `Trente paliers, en ${CHOC.monnaie.nom} gagnés.`)}
+  return `${chTitre('Le Pass', `Trente paliers, en ${CHOC.monnaie.nom} gagnées.`)}
     <section class="rf-passtete">
       <div class="rf-passniv"><small>Palier</small><b class="tnum">${atteint}<span>/${piste.length}</span></b></div>
       <div class="rf-passjauge">
         <div class="rf-passchiffres">
-          <span><b class="tnum">${fmtN(total)}</b> ${CHOC.monnaie.nom} gagnés</span>
+          <span><b class="tnum">${fmtN(total)}</b> ${CHOC.monnaie.nom} gagnées</span>
           <small>${prochain ? `encore <b class="tnum">${fmtN(prochain.seuil - total)}</b>` : 'Pass terminé'}</small>
         </div>
         <div class="rf-jauge"><i style="width:${pct}%"></i></div>
@@ -423,7 +446,7 @@ function vChBoutique() {
       <small>${h(it.detail)}</small>
       ${reste ? `<span class="rf-artreste">${fini && !it.unique_buy ? 'Épuisé' : reste}</span>` : ''}
       ${fini ? '<span class="qtag">Acquis</span>'
-        : `<button class="btn tiny ghost" data-shop="${h(it.id)}" ${chEv.solde < it.prix ? 'disabled' : ''}>${insigneIco}${fmtN(it.prix)}</button>`}
+        : `<button class="btn tiny ghost" data-shop="${h(it.id)}" ${chEv.solde < it.prix ? 'disabled' : ''}>${etincelleIco}${fmtN(it.prix)}</button>`}
     </article>`;
   };
   return `${chTitre('Boutique', `En ${CHOC.monnaie.nom}, seulement pendant l'événement.`)}
@@ -442,7 +465,7 @@ function vChClassement() {
     corps = top.length ? `<ol class="rf-top">${top.map((j, i) => `<li class="${j.moi ? 'moi' : ''}">
         <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo, j.xp)}
         <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.titre && TITRES[j.titre] ? `<small class="titreligne t${TITRES[j.titre].ton}">${h(TITRES[j.titre].nom)}</small>` : ''}</span>
-        <span class="rf-pts tnum">${insigneIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
+        <span class="rf-pts tnum">${etincelleIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
       : `<p class="muted">Personne n'a encore gagné d'${CHOC.monnaie.nom} : à toi de commencer.</p>`;
   } else {
     corps = vTopRaid(10) || '<p class="muted">Personne n\'a encore frappé le Sorcier.</p>';
@@ -460,7 +483,7 @@ function vBandeauChoc(lieu) {
   const n = chocPastille();
   const vers = lieu === 'boutique' ? 'boutique' : 'accueil';
   const sous = lieu === 'boutique' ? `En ${CHOC.monnaie.nom}, pendant l'événement`
-    : 'L\'Épreuve du jour, et le Raid en Insignes';
+    : 'L\'Épreuve du jour, et le Raid en Étincelles';
   return `<button class="rfban chban${lieu ? ' ' + lieu : ''}" data-ch="vue" data-v="${vers}" aria-label="Ouvrir l'événement Le Choc des Sections">
     ${chAffiche()}
     <span class="rfban-txt">
@@ -468,7 +491,7 @@ function vBandeauChoc(lieu) {
       <b>Le Choc des Sections</b>
       ${lieu ? `<em class="chban-sous">${h(sous)}</em>` : ''}
     </span>
-    ${n ? `<span class="rfban-n">${n}</span>` : `<span class="rfban-solde">${insigneIco}${fmtN(save.prismes || 0)}</span>`}
+    ${n ? `<span class="rfban-n">${n}</span>` : `<span class="rfban-solde">${etincelleIco}${fmtN(save.prismes || 0)}</span>`}
     <span class="rfban-fl" aria-hidden="true">›</span>
   </button>`;
 }
@@ -521,12 +544,12 @@ function vChRecap() {
     <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
   const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
       <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo, j.xp)}
-      <b>${h(j.pseudo)}</b><small>${insigneIco}${fmtN(j.total)}</small></li>`).join('');
+      <b>${h(j.pseudo)}</b><small>${etincelleIco}${fmtN(j.total)}</small></li>`).join('');
   return `<div class="rf ch">${tete}<div class="rf-page">
     <section class="rr-bilan">
       <h2>Ton bilan</h2>
       <div class="rr-stats">
-        ${stat(insigneIco, fmtN(r.total), CHOC.monnaie.nom + ' gagnés', r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup> sur ${r.joueurs}` : '')}
+        ${stat(etincelleIco, fmtN(r.total), CHOC.monnaie.nom + ' gagnées', r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup> sur ${r.joueurs}` : '')}
         ${stat(NAVICO.trophy, `${r.paliers}<small>/${r.paliers_max}</small>`, 'paliers du Pass', r.paliers >= r.paliers_max ? 'Pass terminé' : '')}
         ${stat(NAVICO.foudre, fmtN(r.degats || 0), 'dégâts au Sorcier', `${r.raid_phases || 0} phase${(r.raid_phases || 0) > 1 ? 's' : ''} abattue${(r.raid_phases || 0) > 1 ? 's' : ''}`)}
         ${stat(NAVICO.epreuve, r.epreuves || 0, 'Épreuves gagnées', '')}

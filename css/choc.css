@@ -6,16 +6,20 @@
    palette (la lavande pour l'action) ; les deux Sections gardent les
    leurs — Toxique vert, Déter violet — et seulement là où on parle d'elles. */
 
-.insigneico{width:1.1em;height:1.1em}
-.sac.prismes .insigneico + b{color:var(--gold)}
+.etincelleico{width:1.1em;height:1.1em}
+.sac.prismes .etincelleico + b{color:var(--gold)}
 
 /* ============ L'en-tête : les deux Sections face à face ============ */
-/* Une illustration par Section — Squeezie le Toxique, Gotaga Pose —, teintée
-   à sa couleur et fondue dans le fond : à gauche sous le titre (assombrie
-   pour qu'il se lise), à droite en pleine lumière. Une coupe en biais qui
-   brille les sépare, le VS posé dessus. Les pourcentages de la coupe sont
-   les mêmes partout : elle reste droite quelle que soit la largeur. */
-.ch-tete{background:#16151e;padding-top:18px;min-height:212px}
+/* Une illustration par Section — Squeezie le Toxique, Brawks Déter —,
+   teintée à sa couleur et fondue dans le fond : à gauche sous le titre
+   (assombrie pour qu'il se lise), à droite en pleine lumière, la tête de
+   Brawks en haut. Une coupe en biais qui brille les sépare. Les
+   pourcentages de la coupe sont les mêmes partout : elle reste droite
+   quelle que soit la largeur. L'en-tête est une colonne : les onglets
+   restent collés en bas, quelle que soit la hauteur du texte. */
+.ch-tete{background:#16151e;padding-top:18px;min-height:212px;display:flex;flex-direction:column}
+.ch-tete .rf-onglets{margin-top:auto}
+.ch-tete .rf-tetehaut{margin-bottom:16px}
 .ch-tete::before{display:none}
 .ch-tete::after{background:linear-gradient(90deg,rgba(22,21,30,.9) 0%,rgba(22,21,30,.55) 26%,rgba(22,21,30,.05) 48%,rgba(22,21,30,0) 70%),
   linear-gradient(180deg,rgba(22,21,30,.25) 0%,rgba(22,21,30,0) 30%,rgba(22,21,30,.2) 60%,rgba(22,21,30,.92) 88%,#16151e)}
@@ -25,21 +29,20 @@
 .ch-aff-sec.toxique{left:0;width:72%;background-image:url('../assets/combat/choc-toxique.webp');background-position:12% 24%;
   clip-path:polygon(0 0,100% 0,77.8% 100%,0 100%)}
 .ch-aff-sec.toxique::after{background:radial-gradient(80% 90% at 70% 40%,rgba(98,216,78,.3),rgba(98,216,78,.12))}
-.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp');background-position:52% 30%;
+.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp');background-position:8% 0%;
   clip-path:polygon(36.4% 0,100% 0,100% 100%,0 100%)}
 .ch-aff-sec.deter::after{background:rgba(124,58,237,.36)}
 .ch-aff-coupe{position:absolute;inset:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.7)) drop-shadow(0 0 14px rgba(179,166,255,.8))}
 .ch-aff-coupe i{position:absolute;inset:0;background:linear-gradient(180deg,#b7f29a,#fff 45%,#c4b5fd);
   clip-path:polygon(calc(72% - 2px) 0,calc(72% + 2px) 0,calc(56% + 2px) 100%,calc(56% - 2px) 100%)}
-.ch-aff-vs{position:absolute;left:66%;top:36%;z-index:2;translate:-50% -50%;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;
-  font-family:var(--display);font-style:italic;font-weight:900;font-size:14px;color:#fff;background:#16151e;
-  box-shadow:0 0 0 2px rgba(255,255,255,.85),0 0 18px rgba(179,166,255,.8),0 6px 16px rgba(0,0,0,.5)}
 /* Le texte à gauche : les compteurs passent sous le titre. */
 .ch-tete .rf-tetehaut{flex-direction:column;align-items:flex-start;gap:12px;max-width:58%}
 .ch-tete .rf-tetenom h1{background:none;color:#fff;font-size:32px;text-shadow:0 2px 16px rgba(0,0,0,.6)}
 .ch-tete .rf-tetenom h1 span{display:block;font-size:.52em;letter-spacing:.01em;margin-top:2px}
 .ch-tete .rf-tetechiffres{flex-direction:row;align-items:center;flex-wrap:wrap}
-@media (min-width:640px){.ch-tete{min-height:250px}.ch-tete .rf-tetehaut{max-width:50%}.ch-tete .rf-tetenom h1{font-size:40px}}
+@media (min-width:640px){.ch-tete{min-height:250px}.ch-tete .rf-tetehaut{max-width:50%}.ch-tete .rf-tetenom h1{font-size:40px}
+  /* Plus large que haute : sans agrandir, la tête de Brawks frôlerait la coupe. */
+  .ch-aff-sec.deter{background-size:130% auto;background-position:0 12%}}
 .ch .rf-pastille{background:var(--brand)}
 .rf-solde{cursor:pointer}
 
@@ -101,7 +104,7 @@
 /* ============ Les icônes des récompenses ============ */
 .ch-ico-tapis{width:24px;height:40px;object-fit:cover;border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
 .ch-ico-sleeve{width:28px;height:39px;object-fit:cover;border-radius:4px}
-.rf-palico .insigneico{width:24px;height:24px}
+.rf-palico .etincelleico{width:24px;height:24px}
 .ch-gainico{background:linear-gradient(180deg,#8f7dfb,#5d4bd9)!important}
 .ch-gainico .ch-ico-tapis{width:44px;height:76px}
 .ch-gainico .ch-ico-sleeve{width:50px;height:70px}
@@ -197,17 +200,54 @@
 .ch-ep-pips{display:flex;gap:8px}
 .ch-ep-pips i{flex:1;height:8px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
 .ch-ep-pips i.ok{background:var(--ok);box-shadow:none}
+/* Les Secrètes, l'autre grand ajout : les cinq en éventail sur un fond
+   irisé (les couleurs du reflet des Secrètes, css/cards.css). De dos, un
+   « ? » qui scintille ; retournée, l'illustration (floutée si la carte n'est
+   pas encore révélée). */
+.ch-nv-sec{display:grid;grid-template-columns:1fr auto;grid-template-areas:"fan fan" "txt go";align-items:end;row-gap:10px;min-height:0;
+  background:linear-gradient(180deg,rgba(18,17,25,0) 30%,rgba(18,17,25,.5) 60%,rgba(24,23,33,.92) 92%),
+    radial-gradient(34% 46% at 30% 22%,rgba(255,154,213,.3),transparent 70%),
+    radial-gradient(30% 40% at 50% 6%,rgba(255,224,138,.24),transparent 70%),
+    radial-gradient(34% 46% at 70% 22%,rgba(143,211,255,.28),transparent 70%),
+    radial-gradient(60% 60% at 50% 30%,rgba(195,178,255,.3),transparent 75%),var(--surface)}
+.ch-nv-sec .ch-nv-une-t{grid-area:txt}
+.ch-nv-sec .ch-nv-une-t small{color:#ffd0ec}
+.ch-nv-sec .cb-une-go{grid-area:go}
+.ch-sec-fan{grid-area:fan;position:relative;justify-self:center;width:0;height:106px}
+@media (min-width:640px){
+  .ch-nv-sec{grid-template-columns:1fr 230px auto;grid-template-areas:"txt fan go";align-items:center;min-height:170px;
+    background:radial-gradient(30% 70% at 72% 30%,rgba(255,154,213,.28),transparent 70%),radial-gradient(26% 60% at 80% 10%,rgba(255,224,138,.2),transparent 70%),
+      radial-gradient(30% 70% at 86% 40%,rgba(143,211,255,.26),transparent 70%),radial-gradient(50% 90% at 78% 40%,rgba(195,178,255,.28),transparent 75%),var(--surface)}
+  .ch-sec-fan{height:124px;align-self:start}}
+.ch-sec-c{position:absolute;left:-31px;top:4px;display:grid;place-items:center;width:62px;aspect-ratio:1000/1397;overflow:hidden;border-radius:5px;
+  transform-origin:50% 190%;transform:rotate(calc(var(--i) * 10deg)) translateY(calc(var(--i) * var(--i) * 1.5px));
+  background:url('../assets/card-back.webp') 50% 50%/cover,#2a2540;
+  box-shadow:0 0 0 1px rgba(255,255,255,.32),0 0 14px rgba(200,190,255,.35),0 8px 18px rgba(0,0,0,.5)}
+.ch-sec-c::before{content:"";position:absolute;inset:0;mix-blend-mode:soft-light;
+  background:linear-gradient(115deg,transparent 22%,#ff9ad5 33%,#ffe08a 41%,#8ff0c8 49%,#8fd3ff 57%,#c3b2ff 65%,transparent 76%) no-repeat;
+  background-size:300% 100%;background-position:120% 0;animation:s-reflet 6s ease-in-out infinite;animation-delay:calc(var(--i) * .25s)}
+.ch-sec-c>b{position:relative;font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;line-height:1;color:#fff;
+  text-shadow:0 0 10px rgba(255,208,236,.9),0 0 22px rgba(143,211,255,.7)}
+.ch-sec-c>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ch-sec-c>img.floue{filter:blur(4px) brightness(.85);transform:scale(1.15)}
+.ch-sec-c.eue{box-shadow:0 0 0 1px rgba(255,255,255,.5),0 0 18px rgba(255,208,236,.55),0 8px 18px rgba(0,0,0,.5)}
+@media (min-width:640px){.ch-sec-c{width:74px;left:-37px}}
+html.rm .ch-sec-c::before{animation:none}
+@media (prefers-reduced-motion:reduce){.ch-sec-c::before{animation:none}}
+/* Les cadres, dans la grille des nouveautés : ton avatar dans le cadre
+   Arène · Prisme. */
+.ch-nv.cadres .ch-nv-art{background:radial-gradient(70% 90% at 50% 30%,rgba(138,120,245,.3),transparent 70%),var(--surface-2)}
+.ch-nv.cadres .ch-nv-art .ava{z-index:1;width:58px;height:58px}
 .ch-ep-pips i.ko{background:var(--danger);opacity:.7;box-shadow:none}
 
 /* ============ Les bandeaux (écran Boosters, Combats, Boutique) ============ */
 .chban{background:#16151e}
 .chban::before{display:none}
 /* Le petit bandeau (Boosters, Boutique) reprend l'affiche de l'en-tête :
-   les deux illustrations, la coupe et le VS, sous un voile à gauche pour
-   le texte. */
+   les deux illustrations et la coupe, sous un voile à gauche pour le
+   texte. */
 .chban::after{background:linear-gradient(90deg,rgba(22,21,30,.95) 0%,rgba(22,21,30,.75) 38%,rgba(22,21,30,.1) 70%,rgba(22,21,30,0))}
 .chban .ch-affiche{z-index:-3}
-.chban .ch-aff-vs{display:none}
 .chban .rfban-txt b{background:none;color:#fff;font-size:19px}
 .chban-sous{font-style:normal;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.8)}
 .chban .rfban-n{background:var(--brand)}
@@ -237,6 +277,12 @@
 .nvboites img:last-child{rotate:8deg;margin-left:-10%}
 .nvboites i{position:relative;z-index:2;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-style:italic;font-weight:900;
   font-size:12px;color:#fff;background:#16151e;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+/* Le second bandeau : les Secrètes, de dos, en éventail (.ch-sec-c). */
+.nvhero.v3s{isolation:isolate;min-height:118px;background:radial-gradient(50% 90% at 14% 30%,rgba(255,154,213,.32),transparent 70%),
+  radial-gradient(50% 90% at 34% 70%,rgba(143,211,255,.3),transparent 70%),radial-gradient(60% 100% at 24% 50%,rgba(195,178,255,.34),transparent 75%),#16151e}
+.nvhero.v3s .nvkicker{background:linear-gradient(90deg,#ffd0ec,#c9d6ff);color:#1d1830}
+.nvsec{position:relative;flex:0 0 42%;align-self:stretch;min-height:86px}
+.nvsec .ch-sec-c{left:calc(50% - 22px);top:4px;width:44px}
 
 /* ============ Combats : un cosmétique d'événement ============ */
 .cb-cosm-prix.ev{font-size:9.5px;white-space:nowrap;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);color:#fff}

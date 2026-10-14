@@ -294,8 +294,8 @@ on conflict (id) do update set
   evenement = null, monnaie = 'eclats';
 
 -- ------------------------------- l'evenement « Le Choc des Sections » (3.0)
--- Ses quetes paient en Insignes (25_choc.sql ; la colonne `monnaie` dit
--- « prismes » pour toute monnaie d'evenement). Du jour : 75 Insignes ; de
+-- Ses quetes paient en Etincelles (25_choc.sql ; la colonne `monnaie` dit
+-- « prismes » pour toute monnaie d'evenement). Du jour : 75 Etincelles ; de
 -- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
 --   raid, raid_degats, raid_victoires : le Raid contre The French Sorcerer
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
@@ -385,7 +385,7 @@ on conflict (id) do update set
 -- Version 3.0 : les tapis de jeu et les sleeves (23_combats.sql), en Eclats.
 -- Les visuels sont adaptes des illustrations fournies (tools/cosmetiques.py) ;
 -- le tapis et le sleeve de base sont a tout le monde, sans achat.
--- Et la boutique du Choc des Sections (25_choc.sql), en Insignes.
+-- Et la boutique du Choc des Sections (25_choc.sql), en Etincelles.
 insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
   ('t_chateau',    'tapis',  'Tapis « Champions du Monde »', 'L''illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
   ('t_reverie',    'tapis',  'Tapis « La Relève »', 'L''illustration de la carte « La Relève », sous tes cartes.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),

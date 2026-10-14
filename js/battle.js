@@ -745,7 +745,7 @@ function htmlRecompense(r) {
   const g = r.recompense || {};
   const l = [];
   if (g.degats) l.push(`<span class="ar-recompense">${NAVICO.foudre}${fmtN(g.degats)} dégât${g.degats > 1 ? 's' : ''}</span>`);
-  if (g.insignes) l.push(`<span class="ar-recompense">${insigneIco}+${fmtN(g.insignes)}</span>`);
+  if (g.insignes) l.push(`<span class="ar-recompense">${etincelleIco}+${fmtN(g.insignes)}</span>`);
   if (g.eclats) l.push(`<span class="ar-recompense">${shardIco}+${fmtN(g.eclats)}</span>`);
   if (g.boosters) l.push(`<span class="ar-recompense"><img src="${ART.seal}" alt="">+${g.boosters}</span>`);
   if (g.fragments) l.push(`<span class="ar-recompense">${NAVICO.fragment}+${fmtN(g.fragments)}</span>`);

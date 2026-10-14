@@ -9,7 +9,7 @@
    abattues (si le serveur y arrive), le mode Infini : un palier par joueur,
    qui monte à chaque victoire, pour le classement. Trois tentatives par
    jour. La saison suivante, tout recommence. Pendant le Choc, il paie en
-   Insignes ; sinon, en Éclats.
+   Étincelles ; sinon, en Éclats.
 
    L'événement (CHOC) ajoute l'Épreuve du jour : le même combat pour tout le
    monde — les mêmes deux decks imposés, la même donne, une règle du jour.
@@ -55,7 +55,7 @@ const RAID = {
     return { ia: 5, pvBoss: Math.min(12, 9 + k), ess: Math.min(3, 2 + Math.floor(k / 3)), pvMoi: Math.max(2, 5 - Math.floor(Math.max(0, k - 3) / 2)) };
   },
   /* Ce que rapporte un combat : par PV pris, et s'il tombe (+ bonusDegats
-     dégâts). Pendant le Choc, en Insignes ; sinon, en Éclats. */
+     dégâts). Pendant le Choc, en Étincelles ; sinon, en Éclats. */
   parDegat: 3, victoire: 15, bonusDegats: 3,
   parDegatEclats: 2, victoireEclats: 15
 };
@@ -83,7 +83,7 @@ const CHOC = {
   code: 'choc',
   nom: 'Le Choc des Sections',
   /* La monnaie de l'événement (evt_comptes, comme les Prismes de Reflets). */
-  monnaie: { nom: 'Insignes', un: 'Insigne' },
+  monnaie: { nom: 'Étincelles', un: 'Étincelle' },
 
   epreuve: {
     essais: 3,
