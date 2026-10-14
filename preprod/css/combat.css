@@ -701,3 +701,69 @@ button.cb-une:active{transform:scale(.98)}
 .gd-surcouche-in>header{display:flex;align-items:center;justify-content:space-between}
 .gd-surcouche-in>header b{font-family:var(--display);font-style:italic;font-size:20px}
 .gd-surcouche .gd-page{color:var(--text)}
+
+/* ============ L'onglet Decks ============ */
+/* Deux volets (les decks, l'apparence) ; le deck actif en grand, avec sa
+   note ; les autres en lignes ; puis ce qui fait un bon deck. */
+.dk-seg{display:flex;gap:2px;padding:4px;margin-bottom:12px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.dk-seg button{flex:1;padding:9px 6px;border:0;border-radius:999px;font:inherit;font-weight:800;font-size:13.5px;color:var(--muted);background:none;cursor:pointer}
+.dk-seg button.on{color:var(--text);background:rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),var(--sh-1)}
+.dk-actif{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;min-height:170px;padding:16px;
+  border-radius:var(--radius-xl);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);background:var(--surface)}
+.dk-actif-art{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,.1) 0%,rgba(18,17,25,.55) 45%,rgba(24,23,33,.97) 85%),var(--art) 50% 22%/cover no-repeat}
+.dk-actif-t{flex:1 1 200px;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.dk-actif-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.dk-actif-t>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dk-actif-act{display:flex;gap:8px}
+.dk-note{display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 8px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:800;color:var(--text);
+  background:rgba(18,17,25,.65);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);cursor:pointer}
+.dk-note svg{width:12px;height:12px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
+.dk-note.petit{padding:2px 8px 2px 6px;font-size:11.5px;background:var(--bg-2);align-self:flex-start}
+.dk-etoiles{display:inline-flex;gap:2px}
+.dk-etoiles i{width:11px;height:11px;background:var(--surface-3);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.dk-etoiles i.on{background:var(--gold)}
+.dk-boutons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+.dk-nouveau{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:0;border-radius:var(--radius);font:inherit;font-weight:800;font-size:13.5px;
+  color:var(--subtle);background:transparent;box-shadow:inset 0 0 0 1.5px var(--line-2);cursor:pointer}
+.dk-nouveau span{display:grid;place-items:center;width:20px;height:20px;font-size:20px;line-height:1}
+.dk-nouveau svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}
+.dk-sous{margin:14px 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.dk-liste{display:flex;flex-direction:column;gap:8px}
+.dk-ligne{display:flex;align-items:center;gap:12px;padding:8px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
+.dk-ligne-art{width:58px;height:58px;flex:none;padding:0;border:0;border-radius:12px;cursor:pointer;background:var(--art) 50% 22%/cover no-repeat,var(--surface-3)}
+.dk-ligne-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.dk-ligne-t>b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-ligne-t>small{font-size:12px;color:var(--muted)}
+.dk-ligne-act{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.dk-bon{margin-top:14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.dk-bon summary{display:flex;align-items:center;gap:12px;padding:12px;list-style:none;cursor:pointer}
+.dk-bon summary::-webkit-details-marker{display:none}
+.dk-bon summary>span:nth-child(2){flex:1;display:flex;flex-direction:column}
+.dk-bon summary b{font-size:14.5px}
+.dk-bon summary small{font-size:12px;color:var(--muted)}
+.dk-bon summary>svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;transition:transform .2s}
+.dk-bon[open] summary>svg{transform:rotate(180deg)}
+.dk-bon-ico{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:12px;color:var(--deco-ink);background:var(--deco-wash)}
+.dk-bon-ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.dk-bon-l{margin:0;padding:0 14px 0 34px;display:flex;flex-direction:column;gap:8px}
+.dk-bon-l li{font-size:13px;line-height:1.45}
+.dk-bon-l li b{display:block}
+.dk-bon-l li span{color:var(--subtle)}
+.dk-bon>p{margin:10px 14px 14px}
+.dk-bilan-tete{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-weight:800}
+.dk-bilan-tete .dk-etoiles i{width:16px;height:16px}
+.dk-bilan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.dk-bilan li{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.dk-bilan li>i{display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:50%;font-style:normal;font-weight:900;font-size:13px}
+.dk-bilan li.ok>i{color:var(--ok);background:var(--ok-wash)}
+.dk-bilan li.ko>i{color:var(--warn);background:rgba(255,184,77,.14)}
+.dk-bilan li>i svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6}
+.dk-bilan li span{display:flex;flex-direction:column;gap:2px}
+.dk-bilan li b{font-size:13.5px}
+.dk-bilan li small{font-size:12px;line-height:1.4;color:var(--subtle)}
+/* Le bilan, en tête des chiffres de l'atelier. */
+.at-bilan{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2px 8px;padding:8px 10px;border:0;border-radius:12px;font:inherit;color:var(--text);text-align:left;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.at-bilan b{font-size:13.5px}
+.at-bilan small{grid-column:1/3;font-size:11.5px;color:var(--subtle)}
+.at-bilan svg{grid-row:1/3;grid-column:3;width:14px;height:14px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}

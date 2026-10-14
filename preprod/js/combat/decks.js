@@ -236,7 +236,55 @@ function decoder(s) {
   return { cartes, reserve };
 }
 
-const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, aleatoire, tirerCouleurs, couverture, encoder, decoder, total };
+/* ---------- Qu'est-ce qu'un bon deck ? ---------- */
+/* Trois repères, mesurés en faisant jouer l'IA (niveau Difficile des deux
+   côtés, 300 parties par point) avec des decks qui ne diffèrent que par un
+   point, contre des decks de référence :
+     - les Joueurs : 8 → 29 % de victoires, 12 → 44 %, 16 → 51 %, 18 → 56 %,
+       22 → 58 %, 26 → 56 % ; au-delà de 16, ça ne se dégrade plus ;
+     - la Réserve : accordée aux attaques 43 %, d'une autre couleur 35 % ;
+     - le coût : des Joueurs qui attaquent tous pour 2 Essences ou moins,
+       59 % (le seuil de la moitié est un choix, pas une mesure).
+   Mesuré aussi, et sans effet visible : le nombre de couleurs (1, 2 ou 3 :
+   51 %, 50 %, 50 %) ; d'où l'absence de repère « couleurs » ou « soutien ».
+   Ce ne sont pas des règles : un deck qui les rate peut gagner, mais il
+   part avec un handicap qu'on sait chiffrer (docs/economie-3.0.md). */
+const BON = { joueurs: 16, accord: 0.8, bas: 0.5 };
+
+function bilan(deck) {
+  const cartes = deck.cartes || {};
+  let joueurs = 0, bas = 0;
+  for (const id in cartes) {
+    const c = Combat.carte(id), q = +cartes[id] || 0;
+    if (!c || !q || c.cat !== 'joueur') continue;
+    joueurs += q;
+    if (Math.min(...c.atks.map(a => Combat.totalCout(a.cout))) <= 2) bas += q;
+  }
+  /* L'accord de la Réserve : la part des symboles de couleur des attaques
+     que la Réserve couvre, couleur par couleur, au prorata. */
+  const b = besoins(cartes), r = deck.reserve || {};
+  const tb = total(b), tr = total(r) || 1;
+  const accord = tb ? Object.keys(b).reduce((s, k) => s + Math.min((r[k] || 0) / tr, b[k] / tb), 0) : 1;
+  const reperes = [
+    { cle: 'joueurs', ok: joueurs >= BON.joueurs, titre: `${BON.joueurs} Joueurs au moins`,
+      dit: `${joueurs} Joueur${joueurs > 1 ? 's' : ''}.`,
+      pourquoi: joueurs >= BON.joueurs ? 'Assez de monde pour tenir tes trois lignes tout le combat.'
+        : 'Trop peu : tes lignes se vident, et chaque Joueur vaincu laisse un trou. Mesuré : 12 Joueurs gagnent 44 % du temps, 16 et plus, plus de 50 %.' },
+    { cle: 'reserve', ok: accord >= BON.accord, titre: 'Une Réserve accordée',
+      dit: `Elle suit tes attaques à ${Math.round(100 * accord)} %.`,
+      pourquoi: accord >= BON.accord ? 'Les couleurs de ta Réserve sont celles que tes attaques demandent.'
+        : 'Des Essences qui ne paient aucune de tes attaques. « Réserve auto » la règle d\'après tes cartes.' },
+    { cle: 'bas', ok: joueurs > 0 && bas / joueurs >= BON.bas, titre: 'Des attaques qui partent tôt',
+      dit: `${bas} Joueur${bas > 1 ? 's' : ''} sur ${joueurs} attaque${bas > 1 ? 'nt' : ''} pour 2 Essences ou moins.`,
+      pourquoi: joueurs && bas / joueurs >= BON.bas ? 'Tu peux frapper dès les premiers tours.'
+        : 'Une seule Essence par tour : des attaques chères te laissent sans rien faire au début.' }
+  ];
+  const note = reperes.filter(x => x.ok).length;
+  const nom = note >= 3 ? 'Solide' : note >= 2 ? 'Jouable' : 'À revoir';
+  return { reperes, note, sur: reperes.length, nom, joueurs, bas, accord };
+}
+
+const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, aleatoire, tirerCouleurs, couverture, encoder, decoder, total, bilan, BON };
 if (typeof module !== 'undefined' && module.exports) module.exports = Decks;
 racine.Decks = Decks;
 

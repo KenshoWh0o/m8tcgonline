@@ -6,12 +6,15 @@
    PV et la suite de son Club — a été remélangé. Elle ne triche donc pas sur
    la carte qu'elle va piocher, ni sur ce que l'adversaire tient en main.
 
-   Cinq niveaux :
-     1 Débutant   joue vite et souvent mal : un coup sur deux au hasard ;
-     2 Facile     suit des règles simples, sans rien essayer ;
-     3 Normal     essaie chaque coup sur une copie et garde le meilleur, avec
-                  un peu d'hésitation ;
-     4 Difficile  pareil, sans hésiter, et en se méfiant de la riposte ;
+   Cinq niveaux. Aucun ne joue au hasard : un adversaire qui finit son tour
+   avec une attaque gagnante sous la main n'apprend rien à personne. Ce qui
+   change d'un niveau à l'autre, c'est ce qu'il voit :
+     1 Débutant   des règles simples : il déploie, il frappe ce qui tombe ;
+                  il ne joue pas ses Moments et ne défend que s'il tient ;
+     2 Facile     essaie ses coups sur une copie, mais juge mal (beaucoup
+                  d'imprécision) et ne pense pas à la riposte ;
+     3 Normal     essaie ses coups, juge à peu près, se méfie un peu ;
+     4 Difficile  juge juste, et se méfie de la riposte ;
      5 Légende    pareil, en regardant aussi la réponse adverse la plus
                   probable. Le niveau de son deck fait le reste
                   (js/combat/decks.js). */
@@ -110,16 +113,16 @@ function menace(E, a, d) {
 /* ---------- Les choix rapides ---------- */
 /* Des règles simples : pour les niveaux bas, et pour finir les coups qu'on
    essaie sur une copie. */
-function rapide(E, d, r) {
+function rapide(E, d, r, simple) {
   const j = d.qui;
-  if (d.type === 'tour') return tourRapide(E, j, r);
-  if (d.type === 'choix') return { t: 'choix', v: choixRapide(E, d, j) };
+  if (d.type === 'tour') return tourRapide(E, j, r, simple);
+  if (d.type === 'choix') return { t: 'choix', v: choixRapide(E, d, j, simple) };
   if (d.type === 'cartes') return { t: 'cartes', u: cartesRapide(E, d, j) };
   if (d.type === 'ordre') return { t: 'ordre', u: ordreRapide(E, d) };
   throw new Error('demande inconnue');
 }
 
-function tourRapide(E, j, r) {
+function tourRapide(E, j, r, simple) {
   const opts = Combat.optionsTour(E);
   const P = E.j[j];
   const par = t => opts.filter(o => o.t === t);
@@ -134,14 +137,17 @@ function tourRapide(E, j, r) {
   if (lie.length) {
     return lie.slice().sort((a, b) => scoreLien(E, b) - scoreLien(E, a))[0];
   }
-  /* Les Instants qui piochent ou renforcent, avant d'attaquer. */
-  const jo = par('jouer').filter(o => instantUtile(E, j, o));
+  /* Les Instants qui piochent ou renforcent, avant d'attaquer (pas au
+     niveau Débutant : il ne lit pas encore ses Moments). */
+  const jo = simple ? [] : par('jouer').filter(o => instantUtile(E, j, o));
   if (jo.length) return jo[0];
-  /* Attaquer : abattre ce qui tombe, sinon le CEO. */
+  /* Attaquer : abattre ce qui tombe, sinon le CEO. Une attaque qui ne fait
+     rien (un Joueur qu'elle n'abat pas, un CEO qu'un défenseur protège)
+     engage l'attaquant pour rien : elle l'expose à la riposte. */
   const at = par('attaquer');
   if (at.length) {
     const best = at.slice().sort((a, b) => scoreAttaque(E, j, b) - scoreAttaque(E, j, a))[0];
-    if (scoreAttaque(E, j, best) > 0) return best;
+    if (scoreAttaque(E, j, best) > 20) return best;
   }
   return opts.find(o => o.t === 'finTour') || opts[0];
 }
@@ -180,7 +186,7 @@ function scoreAttaque(E, j, o) {
   return val >= Combat.defense(E, t) ? 40 + valeurJoueur(E, t) : 2;
 }
 
-function choixRapide(E, d, j) {
+function choixRapide(E, d, j, simple) {
   const ops = d.options.map(o => o.v);
   const non = ops.includes('non') ? 'non' : ops[ops.length - 1];
   switch (d.but) {
@@ -190,7 +196,7 @@ function choixRapide(E, d, j) {
       /* Défendre si le défenseur tient, ou si le CEO n'a plus de marge. */
       const bons = d.options.filter(o => o.info && !o.info.vaincu);
       if (bons.length) return bons.sort((a, b) => valeurJoueur(E, O.trouverSurPlateau(E, a.v)) - valeurJoueur(E, O.trouverSurPlateau(E, b.v)))[0].v;
-      if (d.cible === 'ceo' && E.j[j].pv.length <= 1) {
+      if (d.cible === 'ceo' && E.j[j].pv.length <= 1 && !simple) {
         const tous = d.options.filter(o => o.v !== 'non');
         if (tous.length) return tous.sort((a, b) => valeurJoueur(E, O.trouverSurPlateau(E, a.v)) - valeurJoueur(E, O.trouverSurPlateau(E, b.v)))[0].v;
       }
@@ -325,12 +331,18 @@ function essayer(E, j, a, r, o) {
 
 /* ---------- Choisir ---------- */
 const NIVEAUX = {
-  1: { hasard: 0.5, essai: false, menace: 0 },
-  2: { hasard: 0.12, essai: false, menace: 0 },
-  3: { hasard: 0.08, essai: true, menace: 0.5, bruit: 18 },
-  4: { hasard: 0, essai: true, menace: 1, bruit: 0 },
-  5: { hasard: 0, essai: true, menace: 1, bruit: 0, reponse: true }
+  1: { essai: false, simple: true, menace: 0 },
+  2: { essai: true, menace: 0, bruit: 90, essais: 1 },
+  3: { essai: true, menace: 0.6, bruit: 12 },
+  4: { essai: true, menace: 1, bruit: 0, essais: 3 },
+  5: { essai: true, menace: 1, bruit: 0, essais: 4, reponse: true }
 };
+/* Mesuré (IA contre IA, mêmes decks, places échangées) : le Débutant et le
+   Facile d'aujourd'hui battent ceux d'avant (qui jouaient au hasard) 84 et
+   88 fois sur 100 ; le Normal, 63 fois sur 100. Entre 3, 4 et 5, l'écart
+   tient surtout au nombre d'essais par coup (4 essais contre 2 : 57 %) —
+   la méfiance envers la riposte ne change rien de mesurable. La
+   difficulté vient aussi du deck adverse (Decks.aleatoire). */
 
 function graineDe(E) {
   return (E.rng ^ (E.journal.length * 2654435761)) >>> 0;
@@ -347,21 +359,15 @@ function aleaDe(seed) {
 
 function choisir(E, o) {
   o = o || {};
-  const N = NIVEAUX[o.niveau || 3] || NIVEAUX[3];
+  /* `reglages` : pour les bancs d'essai (tools/), on remplace une valeur du
+     niveau sans toucher au reste. */
+  const N = Object.assign({}, NIVEAUX[o.niveau || 3] || NIVEAUX[3], o.reglages || {});
   const d = Combat.demande(E);
   if (!d) return null;
   const j = d.qui;
   const r = aleaDe(graineDe(E) ^ (o.sel || 0));
 
-  /* Le hasard des niveaux bas : un coup permis, n'importe lequel. */
-  if (N.hasard && r() < N.hasard) {
-    const opts = d.type === 'tour' ? Combat.optionsTour(E) : null;
-    if (opts && opts.length) {
-      const sansFin = opts.filter(x => x.t !== 'finTour');
-      if (sansFin.length && r() < 0.8) return sansFin[Math.floor(r() * sansFin.length)];
-    } else if (d.type === 'choix') return { t: 'choix', v: d.options[Math.floor(r() * d.options.length)].v };
-  }
-  if (!N.essai || d.type === 'cartes' || d.type === 'ordre') return rapide(E, d, r);
+  if (!N.essai || d.type === 'cartes' || d.type === 'ordre') return rapide(E, d, r, N.simple);
 
   let cands;
   if (d.type === 'tour') cands = candidatsTour(E, j);
@@ -370,7 +376,8 @@ function choisir(E, o) {
 
   /* Combien d'essais par coup : plus il y a de hasard dans la suite, plus il
      en faut ; on reste raisonnable pour un téléphone. */
-  const essais = o.essais || (cands.length > 18 ? 1 : 2);
+  const n0 = N.essais || 2;
+  const essais = o.essais || (cands.length > 18 ? Math.max(1, n0 - 1) : n0);
   const base = evaluer(E, j, { menace: N.menace });
   let best = null, bestS = -Infinity;
   for (const a of cands) {

@@ -78,10 +78,10 @@ const RECOMPENSE_REJOUER = { eclats: 10 };
    en Légende 250 — de quoi compter, sans doubler les revenus d'un joueur. */
 const PVE_PLAFOND = 5;
 const DIFFICULTES = [
-  { niveau: 1, nom: 'Débutant', eclats: 10, texte: 'Elle apprend encore. Elle joue un coup sur deux au hasard.' },
-  { niveau: 2, nom: 'Facile', eclats: 15, texte: 'Des règles simples, sans calcul.' },
-  { niveau: 3, nom: 'Normal', eclats: 25, texte: 'Elle essaie ses coups avant de jouer.' },
-  { niveau: 4, nom: 'Difficile', eclats: 35, texte: 'Elle calcule, et se méfie de ta riposte.' },
+  { niveau: 1, nom: 'Débutant', eclats: 10, texte: 'Des règles simples : elle déploie et frappe ce qui tombe, sans Moments.' },
+  { niveau: 2, nom: 'Facile', eclats: 15, texte: 'Elle essaie ses coups, mais se trompe souvent.' },
+  { niveau: 3, nom: 'Normal', eclats: 25, texte: 'Elle essaie ses coups et se méfie un peu.' },
+  { niveau: 4, nom: 'Difficile', eclats: 35, texte: 'Elle calcule juste, et se méfie de ta riposte.' },
   { niveau: 5, nom: 'Légende', eclats: 50, texte: 'Elle prévoit ta réponse, avec un deck de Légendaires.' }
 ];
 

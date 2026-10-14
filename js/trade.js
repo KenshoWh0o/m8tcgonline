@@ -182,7 +182,7 @@ function vEchanges() {
       ${vRecharge()}
       <button class="btn tiny" data-tr="nouvelle">${NAVICO.swap}Proposer</button>
     </div>
-    <div class="souschips">${sous.map(([k, l, n]) =>
+    <div class="souschips" data-defil="tr-sous">${sous.map(([k, l, n]) =>
       `<button data-tr="${k}" class="${trVue === k ? 'on' : ''}">${l}${n ? ` <i class="pastille">${n}</i>` : ''}</button>`).join('')}</div>
     ${corps}`;
 }

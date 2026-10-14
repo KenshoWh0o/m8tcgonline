@@ -127,6 +127,7 @@
 .pill:active{transform:scale(.95)}
 .pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px var(--accent-glow))}
 .pill.ec{padding:0 13px 0 11px;gap:5px}
+.pill b,.pill span{white-space:nowrap}
 .pill.ec .shard{width:15px;height:15px}
 
 .hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid var(--glass-line);
@@ -139,17 +140,16 @@
 /* L'avatar n'a ni fond ni cadre : c'est l'image qui fait le bouton. */
 .hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;border:0;width:auto;height:auto;overflow:visible}
 
-/* Le chevron qui dit « ça se déplie ». Il tourne quand le tiroir est ouvert. */
-.moicaret{position:absolute;right:-3px;bottom:-3px;display:grid;place-items:center;width:17px;height:17px;
-  border-radius:50%;background:var(--plate-3);color:var(--subtle);
-  box-shadow:0 0 0 2px var(--bg),var(--sh-1);transition:transform .24s,color .15s}
-.moicaret svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.6;
-  stroke-linecap:round;stroke-linejoin:round}
-.ava-btn:hover .moicaret{color:var(--text)}
-.ava-btn[aria-expanded="true"] .moicaret{transform:rotate(180deg);color:var(--accent-soft)}
-/* Version 3.0 : le niveau prend le coin bas droit, comme partout ; le
-   chevron passe en bas à gauche. */
-.ava-btn:has(.ava-niv) .moicaret{right:auto;left:-3px}
+/* Version 3.0, sur mobile : une pilule — les trois traits du menu, puis
+   l'avatar dans l'anneau de son XP. Plus de chevron ni de pastille dessus. */
+.hdrbtn.ava-btn.pilule{display:flex;align-items:center;gap:5px;height:38px;padding:0 3px 0 9px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--glass-hi),var(--sh-1)}
+.moi-menu{display:grid;place-items:center;color:var(--subtle)}
+.moi-menu svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round}
+.ava-btn[aria-expanded="true"] .moi-menu{color:var(--accent-soft)}
+.moi-anneau{display:grid;place-items:center;padding:2.5px;border-radius:50%;
+  background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.14) 0)}
+.moi-anneau .ava{width:27px;height:27px;box-shadow:0 0 0 2px var(--bg)}
 
 /* Un point sur l'avatar quand quelque chose attend derrière le tiroir. */
 .hdrbtn.alerte::after{content:'';position:absolute;top:-1px;right:-1px;width:10px;height:10px;
@@ -781,9 +781,6 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   .offres{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
   .pickrow{gap:10px}
 
-  /* Sur ordinateur, l'avatar mène droit au profil : il n'y a pas de tiroir à
-     déplier, donc pas de chevron à montrer. */
-  .moicaret{display:none}
 
   /* Le rail a la place d'afficher les deux groupes : plus besoin de tiroir. */
   #nav .second{display:flex}
@@ -1450,3 +1447,23 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
 .garde-groupe{display:flex;align-items:center;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   color:var(--muted);margin:14px 0 0}
 
+
+/* Version 3.0 : les succès du profil en pavés, cinq ou six par rangée. */
+.succes.paves{grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px 4px}
+.sucpave{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 3px 7px;border:0;border-radius:14px;font:inherit;color:var(--muted);
+  background:transparent;cursor:pointer;opacity:.55;filter:grayscale(.7)}
+.sucpave.on{opacity:1;filter:none;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.sucpave .sucico{flex:none;width:36px;height:36px}
+.sucpave b{font-size:10.5px;line-height:1.2;text-align:center;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sucpave.on.tC .sucico{background:var(--surface-3);color:var(--text)}
+.sucpave.on.tR .sucico{background:#39b8ff;color:#06263a}
+.sucpave.on.tE .sucico{background:#a95cf2;color:#fff}
+.sucpave.on.tL .sucico{background:var(--gold);color:var(--gold-ink)}
+.sucpave.on.tUN .sucico{background:conic-gradient(#ff5bb0,var(--gold),#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
+
+/* Version 3.0 : huit critères au classement, la rangée glisse de côté sur
+   téléphone (sa position est gardée, js/app.js). */
+.segbar.clseg{overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
+.segbar.clseg::-webkit-scrollbar{display:none}
+.segbar.clseg button{flex:0 0 auto;padding-inline:14px}
+@media (min-width:900px){.segbar.clseg button{flex:1 0 auto}}

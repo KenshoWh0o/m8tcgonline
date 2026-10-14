@@ -1121,11 +1121,14 @@
 
   /* ------------------------------------ classement, 14_classement.sql */
   RPC.classement = (moi, { p_critere }) => {
-    if (!['collection', 'reverses', 'boosters', 'echanges', 'serie'].includes(p_critere)) refuser('Classement inconnu.');
+    if (!['collection', 'reverses', 'boosters', 'echanges', 'serie', 'niveau', 'secretes', 'versus'].includes(p_critere)) refuser('Classement inconnu.');
     const auj = jourParis(now());
     const valeur = pr => p_critere === 'collection'
       ? extension().filter(k => (colDe(pr.id)[k.id] || 0) > 0).length
       : p_critere === 'reverses' ? reverses.filter(k => (colDe(pr.id)[k.id] || 0) > 0).length
+      : p_critere === 'niveau' ? xpDe(pr.id)
+      : p_critere === 'secretes' ? secretes.filter(k => (colDe(pr.id)[k.id] || 0) > 0).length
+      : p_critere === 'versus' ? (((S.cb || {})[pr.id] || {}).stats || {}).pvp_v || 0
       : p_critere === 'boosters' ? pr.packs_opened
       : p_critere === 'echanges' ? pr.trades_done
       : (pr.last_checkin === auj || pr.last_checkin === hier(auj)) ? pr.streak : 0;

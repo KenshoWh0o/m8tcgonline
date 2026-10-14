@@ -378,3 +378,23 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
 html.rm .card.r-S::before,html.rm .card.r-S::after,html.rm .cwrap:has(.card.r-S),html.rm .cwrap:has(.card.r-S)::after{animation:none}
 @media (prefers-reduced-motion:reduce){.card.r-S::before,.card.r-S::after,.cwrap:has(.card.r-S),.cwrap:has(.card.r-S)::after{animation:none}}
 
+
+/* Version 3.0, sur téléphone : le tiroir de filtres tient en peu de place.
+   L'intitulé à gauche, une seule rangée de puces par critère, qui glisse de
+   côté (la rangée garde sa position quand on choisit, js/app.js) ; les
+   Essences en icônes seules ; les interrupteurs sans leur explication. Sur
+   ordinateur, les rangées passent à la ligne comme avant : il n'y a pas de
+   geste pour faire glisser une rangée. */
+@media (max-width:899px){
+  .filcorps{padding:0 10px 10px}
+  .filigne{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:6px;margin-top:9px}
+  .filab{margin:0;font-size:10px;letter-spacing:.06em}
+  .filcorps .chips,.filcorps .essrow{flex-wrap:nowrap;overflow-x:auto;touch-action:pan-x;padding:2px 0;
+    -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+  .filcorps .chips button{padding:6px 11px;font-size:12px}
+  .filcorps .essrow button{padding:5px 10px}
+  .filcorps .essrow button:not([data-ess="all"]){gap:0;padding:5px 7px;font-size:0}
+  .filcorps .essrow .ess{width:20px;height:20px}
+  .filcorps .filtoggle{margin:9px 0 0;padding:8px 10px}
+  .filcorps .filtoggle small{display:none}
+}

@@ -47,7 +47,7 @@ function vProfil() {
   <section class="panel">
     <h2>Succès <span class="muted small">— ${(save.succes || []).length} / ${SUCCES.length}</span></h2>
     ${vSucces(save.succes, true)}
-    <p class="muted small">Ceux que tu as débloqués apparaissent aussi sur ta fiche.</p>
+    <p class="muted small">Touche un succès pour voir comment l'obtenir. Ceux que tu as débloqués apparaissent aussi sur ta fiche.</p>
   </section>
 
   <section class="panel">
@@ -206,6 +206,12 @@ function vSucces(obtenus, tous) {
   const ok = new Set(obtenus || []);
   const liste = tous ? SUCCES : SUCCES.filter(s => ok.has(s.id));
   if (!liste.length) return '<p class="muted small">Aucun succès pour l\'instant.</p>';
+  /* Version 3.0 : sur son profil, tous les succès en pavés (l'icône et le
+     nom) ; ce qu'il faut faire s'affiche quand on en touche un. La liste
+     avec les explications faisait une page et demie de téléphone. */
+  if (tous) return `<div class="succes paves">${liste.map(s =>
+    `<button class="sucpave t${s.ton}${ok.has(s.id) ? ' on' : ''}" data-succes="${s.id}" aria-label="${h(s.nom)} : ${h(s.dit)}${ok.has(s.id) ? ' (obtenu)' : ''}">
+      <span class="sucico">${NAVICO[s.ico] || NAVICO.promo}</span><b>${h(s.nom)}</b></button>`).join('')}</div>`;
   return `<div class="succes${tous ? '' : ' compact'}">${liste.map(s =>
     `<div class="badge t${s.ton}${ok.has(s.id) ? ' on' : ''}" title="${h(s.dit)}">
       <span class="sucico">${NAVICO[s.ico] || NAVICO.promo}</span>

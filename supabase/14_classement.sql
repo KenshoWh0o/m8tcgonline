@@ -11,6 +11,13 @@
 --    · serie      : jours de connexion d'affilee, en cours. Une serie dont le
 --                   dernier jour est avant-hier ou plus ancien est rompue : elle
 --                   compte zero, meme si le chiffre dort encore dans le profil.
+--  Version 3.0, trois de plus :
+--    · niveau     : l'XP de combattant (xp_de, 26_niveaux.sql) ; le client en
+--                   tire le niveau ;
+--    · secretes   : Secretes differentes (24_secretes.sql) ;
+--    · versus     : victoires en defi contre un ami (combat_joueurs.pvp_v,
+--                   23_combats.sql). Les victoires contre l'IA ne comptent
+--                   pas : l'Arcade se rejoue a volonte au niveau le plus bas.
 --
 --  Ce qui est montre d'un joueur ne va pas au-dela de ce que le jeu montrait
 --  deja a n'importe qui (find_player, player_profile) : pseudo, avatar, cadre,
@@ -32,7 +39,7 @@ declare
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie') then
+  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie', 'niveau', 'secretes', 'versus') then
     raise exception 'Classement inconnu.';
   end if;
 
@@ -45,6 +52,11 @@ begin
                 -- Version 2.0 : les Reverses differentes.
                 when 'reverses'   then (select count(*) from collection c join cards k on k.id = c.card_id
                                          where c.user_id = pr.id and c.qty > 0 and k.reverse)
+                -- Version 3.0.
+                when 'niveau'     then xp_de(pr.id)
+                when 'secretes'   then (select count(*) from collection c join cards k on k.id = c.card_id
+                                         where c.user_id = pr.id and c.qty > 0 and k.secrete)
+                when 'versus'     then coalesce((select cj.pvp_v from combat_joueurs cj where cj.user_id = pr.id), 0)
                 when 'boosters'   then pr.packs_opened
                 when 'echanges'   then pr.trades_done
                 else case when pr.last_checkin >= auj - 1 then pr.streak else 0 end

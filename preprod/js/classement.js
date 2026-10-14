@@ -1,6 +1,7 @@
 /* Le classement : tous les joueurs, pas seulement les amis.
 
-   Quatre critères, un sous-onglet chacun. Le serveur fait tout le calcul
+   Huit critères, un sous-onglet chacun (trois de plus pour la 3.0 : le
+   niveau de combattant, les Secrètes, le Versus). Le serveur fait tout le calcul
    (classement(), supabase/14_classement.sql) et renvoie les cinquante
    premiers, plus sa propre ligne : on veut savoir où l'on en est, pas
    seulement qui est devant.
@@ -9,8 +10,15 @@
 "use strict";
 
 const CRITERES = [
+  /* Version 3.0 : le niveau de combattant, les Secrètes, le Versus. */
+  { id: 'niveau', titre: 'Niveau', dit: 'Niveau de combattant (l\'XP gagnée en combat)',
+    val: xp => { const n = niveauDe(xp); return `Niv. ${n.niveau}<small> · ${fmtN(xp)} XP</small>`; } },
   { id: 'collection', titre: 'Collection', dit: 'Cartes différentes de l\'extension',
     val: n => `${fmtN(n)}<small> / ${cards.length}</small>` },
+  { id: 'secretes', titre: 'Secrètes', dit: 'Secrètes différentes',
+    val: n => `${fmtN(n)}<small> / ${(typeof secretes !== 'undefined' ? secretes : []).length || 5}</small>` },
+  { id: 'versus', titre: 'Versus', dit: 'Victoires en défi contre un ami',
+    val: n => `${fmtN(n)}<small> victoire${n > 1 ? 's' : ''}</small>` },
   /* Version 2.0 */
   { id: 'reverses', titre: 'Reverses', dit: 'Reverses différentes',
     val: n => `${fmtN(n)}<small> / ${reverses.length}</small>` },
@@ -22,7 +30,7 @@ const CRITERES = [
     val: n => `${fmtN(n)}<small> j</small>` }
 ];
 
-let clVue = 'collection';
+let clVue = 'niveau';
 /* Une réponse par critère, gardée une minute : passer d'un sous-onglet à
    l'autre ne refait pas l'appel à chaque fois. */
 const clCache = {};
@@ -49,7 +57,7 @@ function vClassement() {
       <h1>Classement</h1>
       <p>Tous les joueurs, pas seulement tes amis.</p>
     </div></div>
-    <div class="segbar">${CRITERES.map(x =>
+    <div class="segbar clseg" role="tablist" data-defil="cl-seg">${CRITERES.map(x =>
       `<button data-clv="${x.id}" class="${x.id === def.id ? 'on' : ''}">${h(x.titre)}</button>`).join('')}</div>`;
 
   if (!c) return tete + '<p class="muted boitecharge">Chargement…</p>';

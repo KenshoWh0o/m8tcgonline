@@ -128,7 +128,7 @@ function vChTete(fin) {
         <span class="rf-fin">${NAVICO.clock}<b data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</b></span>
       </div>
     </div>
-    <nav class="rf-onglets" role="tablist">
+    <nav class="rf-onglets" role="tablist" data-defil="ch-onglets">
       ${CH_ONGLETS.map(([id, nom]) => `<button class="${chVue === id ? 'on' : ''}" data-ch="vue" data-v="${id}" role="tab"
         aria-selected="${chVue === id}">${nom}${pastille(id)}</button>`).join('')}
     </nav>

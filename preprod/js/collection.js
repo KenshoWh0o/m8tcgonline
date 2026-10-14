@@ -166,16 +166,16 @@ function vFiltres(all) {
     </button>
 
     <div class="filcorps">
-      ${ligne('Type', `<div class="chips">${cats.map(([k, l]) =>
+      ${ligne('Type', `<div class="chips" data-defil="col-types">${cats.map(([k, l]) =>
         `<button data-filter="${k}" class="${colFilter === k ? 'on' : ''}">${l}</button>`).join('')}</div>`)}
 
-      ${ligne('Rareté', `<div class="chips">
+      ${ligne('Rareté', `<div class="chips" data-defil="col-rars">
         <button data-rar="all" class="${rarFilter === 'all' ? 'on' : ''}">Toutes</button>
         ${rars.map(k => `<button data-rar="${k}" class="rarchip r${k} ${rarFilter === k ? 'on' : ''}">
           <i class="rardot"></i>${(RAR[k] || RAR.C).nom}</button>`).join('')}
       </div>`)}
 
-      ${ligne('Essence', `<div class="essrow">
+      ${ligne('Essence', `<div class="essrow" data-defil="col-ess">
         <button data-ess="all" class="${essFilter === 'all' ? 'on' : ''}">Toutes</button>
         ${essences.map(k => `<button data-ess="${k}" class="${essFilter === k ? 'on' : ''}"
           style="--ec:${COLORS[k].c}">${essIcon(k)}${COLORS[k].nom}</button>`).join('')}

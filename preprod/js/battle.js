@@ -499,28 +499,86 @@ function vCbDefis(e) {
 const DEFI_GAIN = { victoire: 40, defaite: 15, plafond: 3 };
 
 /* ---------- Les decks et la personnalisation ---------- */
+/* Deux volets : les decks, et l'apparence (tapis, sleeves, Essences
+   Brillantes). Le deck actif en tête, en grand, avec sa note ; les autres
+   en lignes ; et ce qui fait un bon deck, à portée de main. */
+let cbDecksVue = 'decks';
+const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" aria-label="${n} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 function vCbDecks(e) {
+  const seg = `<div class="dk-seg" role="tablist">
+      <button class="${cbDecksVue === 'decks' ? 'on' : ''}" data-cb="decks-vue" data-v="decks" role="tab">Mes decks</button>
+      <button class="${cbDecksVue === 'apparence' ? 'on' : ''}" data-cb="decks-vue" data-v="apparence" role="tab">Apparence</button>
+    </div>`;
+  if (cbDecksVue === 'apparence') return `${cbSousTete('Decks', 'Tapis, sleeves et Essences Brillantes')}${seg}${vPersonnaliser(e)}`;
   const l = cbDecks();
   const actif = cbDeckActif();
+  const essences = d => Object.keys(d.reserve || {}).filter(k => d.reserve[k]).map(k => `${essIcon(k)}<i>${d.reserve[k]}</i>`).join('');
+  const bouton = d => d.starter
+    ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>`
+    : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`;
+  let une = '';
+  if (actif) {
+    const b = Decks.bilan(actif);
+    une = `<section class="dk-actif">
+      <span class="dk-actif-art"${cbArt(actif.couverture)}></span>
+      <div class="dk-actif-t"><small>Ton deck actif</small><b>${h(actif.nom)}</b>
+        <button class="dk-note" data-cb="bilan" data-v="${h(actif.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span>${NAVICO.caret}</button>
+        <span class="cb-deck-ess">${essences(actif)}</span></div>
+      <div class="dk-actif-act">${bouton(actif)}<button class="btn tiny ghost" data-cb="voir-deck" data-v="${h(actif.id)}">Voir</button></div>
+    </section>`;
+  }
+  const autres = l.filter(d => !actif || d.id !== actif.id);
   const ligne = d => {
     const err = Decks.verifier(d, d.starter ? null : save.col);
-    const n = Decks.total(d.cartes);
-    return `<div class="cb-deck${actif && actif.id === d.id ? ' actif' : ''}">
-      <button class="cb-deck-art" data-cb="${d.starter ? 'voir-deck' : 'editer'}" data-v="${h(d.id)}">${renderCard(byId[d.couverture] || {})}</button>
-      <div class="cb-deck-txt"><b>${h(d.nom)}</b>
-        <small>${d.starter ? 'Starter Deck · prêté' : err.length ? `<span class="cb-ko">${h(err[0])}</span>` : `${n} cartes · prêt`}</small>
-        <span class="cb-deck-ess">${Object.keys(d.reserve || {}).filter(k => d.reserve[k]).map(k => `${essIcon(k)}<i>${d.reserve[k]}</i>`).join('')}</span></div>
-      <div class="cb-deck-act">
-        ${actif && actif.id === d.id ? '<span class="cb-actif">Actif</span>' : `<button class="btn tiny ghost" data-cb="activer" data-v="${h(d.id)}" ${err.length ? 'disabled' : ''}>Utiliser</button>`}
-        ${d.starter ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>` : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`}
-      </div></div>`;
+    const b = Decks.bilan(d);
+    return `<div class="dk-ligne">
+      <button class="dk-ligne-art" data-cb="${d.starter ? 'voir-deck' : 'editer'}" data-v="${h(d.id)}"${cbArt(d.couverture)} aria-label="${d.starter ? 'Voir' : 'Modifier'} ${h(d.nom)}"></button>
+      <div class="dk-ligne-t"><b>${h(d.nom)}</b>
+        <small>${d.starter ? 'Starter Deck · prêté' : err.length ? `<span class="cb-ko">${h(err[0])}</span>` : 'Prêt à jouer'}</small>
+        ${err.length ? '' : `<button class="dk-note petit" data-cb="bilan" data-v="${h(d.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span></button>`}</div>
+      <div class="dk-ligne-act">
+        <button class="btn tiny" data-cb="activer" data-v="${h(d.id)}" ${err.length ? 'disabled' : ''}>Utiliser</button>
+        ${bouton(d)}</div>
+    </div>`;
   };
-  return `${cbSousTete('Decks', `${Combat.REGLE.CLUB} cartes et ${Combat.REGLE.RESERVE} Essences`)}
-    <div class="cb-decks">${l.map(ligne).join('')}
-      <button class="cb-deck nouveau" data-cb="nouveau-deck"><span>+</span><b>Nouveau deck</b></button>
-      <button class="cb-deck nouveau" data-cb="importer-deck"><span>${NAVICO.partage}</span><b>Importer un code</b></button>
+  return `${cbSousTete('Decks', `${Combat.REGLE.CLUB} cartes et ${Combat.REGLE.RESERVE} Essences`)}${seg}
+    ${une}
+    <div class="dk-boutons">
+      <button class="dk-nouveau" data-cb="nouveau-deck"><span>+</span>Nouveau deck</button>
+      <button class="dk-nouveau" data-cb="importer-deck"><span>${NAVICO.partage}</span>Importer un code</button>
     </div>
-    ${vPersonnaliser(e)}`;
+    ${autres.length ? `<h3 class="dk-sous">Tes autres decks</h3><div class="dk-liste">${autres.map(ligne).join('')}</div>` : ''}
+    ${vBonDeck()}`;
+}
+
+/* Ce qui fait un bon deck : les trois repères de Decks.bilan, expliqués
+   avec ce qu'ils valent, et le chemin le plus court pour en construire un. */
+function vBonDeck() {
+  const B = Decks.BON;
+  const point = (t, x) => `<li><b>${t}</b><span>${x}</span></li>`;
+  return `<details class="dk-bon" data-garde="bon-deck">
+    <summary><span class="dk-bon-ico">${GD_ICO.deck}</span><span><b>Qu'est-ce qu'un bon deck ?</b><small>Trois repères, mesurés en faisant jouer l'IA</small></span>${NAVICO.caret}</summary>
+    <ol class="dk-bon-l">
+      ${point(`${B.joueurs} Joueurs au moins.`, 'Ce sont eux qui attaquent et qui tiennent tes lignes. Avec 8, un deck gagne 3 parties sur 10 ; avec 12, un peu plus de 4 ; à partir de 16, la moitié ou plus — et en mettre davantage ne fait pas de mal.')}
+      ${point('Une Réserve accordée à tes attaques.', 'Si tes attaques demandent du Rose, mets du Rose : une Réserve d\'une autre couleur fait perdre environ 8 parties sur 100. « Réserve auto », dans l\'atelier, la règle pour toi.')}
+      ${point('Des attaques qui partent tôt.', 'Tu ne poses qu\'une Essence par tour. Des Joueurs qui attaquent tous pour 2 Essences ou moins ont gagné 59 parties sur 100 : vise au moins la moitié.')}
+    </ol>
+    <p class="muted small">Ce qui n'a pas changé le résultat, mesuré de la même façon : jouer une, deux ou trois couleurs, ou le nombre d'Objets et de Moments. Le plus court chemin : pars d'un Starter Deck (« Dupliquer »), remplace ses cartes par tes meilleures, et laisse l'atelier régler la Réserve. Un repère tenu, une étoile.</p>
+  </details>`;
+}
+
+/* Le bilan d'un deck, repère par repère. */
+function ouvrirBilan(id) {
+  const d = cbVue === 'atelier' && atelier ? atelier.deck : cbDecks().find(x => x.id === id);
+  if (!d) return;
+  const b = Decks.bilan(d);
+  openSheet({
+    title: `${d.nom} · ${b.nom}`,
+    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${b.note} repère${b.note > 1 ? 's' : ''} tenu${b.note > 1 ? 's' : ''} sur ${b.sur}</span></div>
+      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}"><i>${x.ok ? NAVICO.check : '!'}</i>
+        <span><b>${x.titre}</b><small>${h(x.dit)} ${h(x.pourquoi)}</small></span></li>`).join('')}</ul>`,
+    actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
+  });
 }
 
 function vPersonnaliser(e) {
@@ -538,10 +596,10 @@ function vPersonnaliser(e) {
         : `<img src="${x.img}" alt="" loading="lazy">`}${a ? '' : verrou}</span>
       <b>${h(x.nom)}</b></button>`;
   };
-  return `<section class="cb-bloc cb-perso"><h3>Personnaliser</h3>
+  return `<section class="cb-bloc cb-perso">
     <p class="muted small">Tapis de jeu et sleeves s'achètent dans la Boutique. Les Essences Brillantes que tu possèdes brillent en combat.</p>
-    <h4>Tapis de jeu</h4><div class="cb-cosms tapis">${Object.keys(TAPIS).map(id => tuile('tapis', id, TAPIS[id], e.cosm.tapis === id)).join('')}</div>
-    <h4>Sleeves</h4><div class="cb-cosms sleeve">${Object.keys(SLEEVES).map(id => tuile('sleeve', id, SLEEVES[id], e.cosm.sleeve === id)).join('')}</div>
+    <h4>Tapis de jeu</h4><div class="cb-cosms tapis" data-defil="cosm-tapis">${Object.keys(TAPIS).map(id => tuile('tapis', id, TAPIS[id], e.cosm.tapis === id)).join('')}</div>
+    <h4>Sleeves</h4><div class="cb-cosms sleeve" data-defil="cosm-sleeve">${Object.keys(SLEEVES).map(id => tuile('sleeve', id, SLEEVES[id], e.cosm.sleeve === id)).join('')}</div>
     <h4>Essences Brillantes</h4><div class="cb-brillantes">${Combat.COULEURS.map(k => {
       const a = (save.col || {})['b' + String(Combat.COULEURS.indexOf(k) + 1).padStart(3, '0')] > 0;
       return `<span class="cb-br${a ? ' eue' : ''}" title="${COLORS[k].nom}${a ? ' — brillante' : ''}">${essIcon(k)}</span>`;
@@ -832,6 +890,8 @@ function cbAction(k, el) {
       return toast(`${x.nom || 'Ce cosmétique'} : exclusif à l'événement « ${CHOC.nom} ».`);
     }
     case 'voir-deck': return voirDeck(v);
+    case 'decks-vue': cbDecksVue = v; return render();
+    case 'bilan': return ouvrirBilan(v);
     case 'copier-deck': return copierDeck(v);
     case 'editer': return ouvrirAtelier(v);
     case 'nouveau-deck': return ouvrirAtelier(null);

@@ -119,6 +119,7 @@ const Table = (() => {
     if (!T) return;
     T.ferme = true;
     clearInterval(T.chronoTic);
+    if (T.echap) document.removeEventListener('keydown', T.echap);
     const el = T.el;
     el.hidden = true;
     el.innerHTML = '';
@@ -549,6 +550,17 @@ const Table = (() => {
     const el = T.el;
     el.addEventListener('click', clic);
     el.addEventListener('contextmenu', e => e.preventDefault());
+    /* Échap, sur ordinateur : referme ce qui est ouvert, du plus haut au plus bas. */
+    T.echap = e => {
+      if (!T || e.key !== 'Escape') return;
+      const jr = qs('.ar-journal');
+      const sh = qs('.ar-sheet');
+      if (jr && !jr.hidden) jr.hidden = true;
+      else if (sh && !sh.hidden && sh.classList.contains('voile')) fermerSheet();
+      else if (T.focus) fermerFocus();
+      else if (T.cible) { T.cible = null; consigne(null); rendre(); }
+    };
+    document.addEventListener('keydown', T.echap);
     /* Glisser une carte jouable de la main vers sa place. */
     let appui = null;
     el.addEventListener('pointerdown', e => {
@@ -578,9 +590,17 @@ const Table = (() => {
     if (T.bloqueClic) { T.bloqueClic = false; return; }
     const b = e.target.closest('[data-ar]');
     if (b) return action(b.dataset.ar, b);
-    /* Le fond de la carte en grand : on la referme. */
+    /* La carte en grand : toucher ailleurs que sur elle, sur un bouton ou
+       sur le texte qu'on est en train de lire la referme — le flou autour,
+       le vide du panneau, la marge. */
+    /* Du plus haut au plus bas : le journal, puis une feuille qui n'attend
+       pas de décision (le menu, une pile), que son voile referme. */
+    const jr = qs('.ar-journal');
+    if (jr && !jr.hidden && !e.target.closest('.ar-journal')) { jr.hidden = true; return; }
+    const sh = e.target.closest('.ar-sheet.voile');
+    if (sh) { if (!e.target.closest('.ar-s-in')) fermerSheet(); return; }
     if (e.target.closest('.ar-focus')) {
-      if (!e.target.closest('.ar-f-carte,.ar-f-panneau')) fermerFocus();
+      if (!e.target.closest('.ar-f-carte .cwrap,.ar-f-texte,.ar-atq,.ar-f-fx,button,a')) fermerFocus();
       return;
     }
     /* Pendant une animation, on peut toujours lire une carte : le combat
@@ -614,7 +634,8 @@ const Table = (() => {
       const v = ceo ? 'ceo' : j ? +j.dataset.u : null;
       const a = v != null && T.cible.opts.find(o => o.cible === v);
       if (a) { T.cible = null; consigne(null); return jouer(a); }
-      if (v == null && !e.target.closest('.ar-j,.ar-ceo')) return;
+      /* Toucher ailleurs que sur une cible : on renonce à cette attaque. */
+      if (!e.target.closest('.ar-j,.ar-ceo,.ar-consigne')) { T.cible = null; consigne(null); return rendre(); }
       return;
     }
 
@@ -627,6 +648,8 @@ const Table = (() => {
       if (joueur) a = opts.find(o => o.t === 'lier' && o.cible === +joueur.dataset.u);
       if (!a && place && !place.querySelector('.ar-j')) a = opts.find(o => o.t === 'deployer' && o.ligne === +place.dataset.ligne);
       if (a) return poserDepuisFocus(a, joueur || place);
+      /* Ni une place libre ni un Joueur à équiper : on la repose. */
+      if (!e.target.closest('.ar-m')) return fermerFocus();
     }
 
     const m = e.target.closest('.ar-m');
@@ -635,6 +658,8 @@ const Table = (() => {
     if (o) return ouvrirFocus({ id: o.dataset.id });
     const j = e.target.closest('.ar-j');
     if (j) return ouvrirFocus({ u: +j.dataset.u });
+    /* Un toucher dans le vide du plateau repose la carte ouverte. */
+    if (T.focus) fermerFocus();
   }
 
   /* ---------- La carte en grand ---------- */
@@ -1076,7 +1101,10 @@ const Table = (() => {
   /* ---------- La feuille du bas (décisions, menu) ---------- */
   function ouvrirSheet(html, genre) {
     const p = qs('.ar-sheet');
-    p.className = 'ar-sheet ' + (genre || '');
+    /* Sans décision à prendre (menu, pile, règle), un voile : le toucher
+       referme la feuille. Une décision, elle, attend sa réponse. */
+    const voile = !/decision|centre/.test(genre || '');
+    p.className = 'ar-sheet ' + (genre || '') + (voile ? ' voile' : '');
     p.innerHTML = `<div class="ar-s-in">${html}</div>`;
     p.hidden = false;
   }

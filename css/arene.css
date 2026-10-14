@@ -753,3 +753,6 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
   .ar-pf-res,.ar-pf-sous{animation-delay:0s}
 }
 html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-atq.ok,html.rm .ar-c.holo::after,html.rm .ar-c.secrete::before,html.rm .ar-c.secrete::after,html.rm .ar-gem.brille::after{animation:none}
+/* Une feuille sans décision (menu, pile) : un voile qui la referme. */
+.ar-sheet.voile{top:0;align-items:flex-end;pointer-events:auto;background:rgba(8,7,12,.5);animation:ar-voile .2s ease-out}
+@keyframes ar-voile{from{background:rgba(8,7,12,0)}}
