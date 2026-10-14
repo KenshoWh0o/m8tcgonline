@@ -155,62 +155,46 @@ html.rm .mz::after{display:none}
 .gcell .num .mz-ins{margin-left:.3em;font-size:.82em;vertical-align:.08em}
 
 /* ============ La carte fétiche (profil, fiche de joueur) ============
-   Une scène : un projecteur aux couleurs de l'Essence tombe d'en haut, des
-   rayons tournent lentement derrière la carte, qui flotte au-dessus de son
-   reflet au sol. Le texte à côté, en grand. */
-.fet{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(118px,40%) 1fr;align-items:center;gap:14px;
-  margin:14px 0;padding:26px 18px 22px 22px;border-radius:24px;min-height:236px;
-  background:radial-gradient(120% 90% at 26% 110%,color-mix(in srgb,var(--fc) 26%,transparent),transparent 60%),linear-gradient(180deg,#14131c,#0c0b11);
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 30%,rgba(255,255,255,.08)),0 14px 34px rgba(0,0,0,.4)}
-/* Le halo de la scène, et le grain. */
-.fet-fond{position:absolute;inset:0;z-index:-3;pointer-events:none;
-  background:radial-gradient(60% 70% at 28% 42%,color-mix(in srgb,var(--fc) 42%,transparent),transparent 70%),
-    radial-gradient(rgba(255,255,255,.06) .7px,transparent .8px) 0 0/16px 16px}
-/* Les rayons : un éventail qui tourne, effacé vers les bords. */
-.fet-rayons{position:absolute;left:28%;top:44%;z-index:-2;width:560px;height:560px;margin:-280px 0 0 -280px;pointer-events:none;opacity:.5;
-  background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--fc) 70%,#fff) 0 5deg,transparent 5deg 18deg);
-  -webkit-mask:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.5) 38%,transparent 72%);mask:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.5) 38%,transparent 72%);
-  animation:fet-tourne 38s linear infinite}
-@keyframes fet-tourne{to{transform:rotate(360deg)}}
-/* Le projecteur : un cône de lumière qui tombe sur la carte. */
-.fet-faisceau{position:absolute;left:28%;top:-30px;z-index:-1;width:300px;height:330px;margin-left:-150px;pointer-events:none;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--fc) 50%,#fff) 0%,color-mix(in srgb,var(--fc) 30%,transparent) 45%,transparent 92%);
-  clip-path:polygon(41% 0,59% 0,100% 100%,0 100%);opacity:.42;filter:blur(6px);mix-blend-mode:screen;
-  animation:fet-balaye 7s ease-in-out infinite}
-@keyframes fet-balaye{0%,100%{transform:rotate(-3deg);opacity:.36}50%{transform:rotate(3deg);opacity:.5}}
-/* La carte flotte, au-dessus de son reflet. */
-.fet-carte{position:relative;justify-self:center;width:100%;max-width:168px;padding:0;border:0;background:none;
-  animation:fet-flotte 4.6s ease-in-out infinite}
-.fet-carte .cwrap{box-shadow:0 18px 30px rgba(0,0,0,.55),0 0 34px color-mix(in srgb,var(--fc) 45%,transparent)}
-.fet-carte .cwrap.mz-3,.fet-carte .cwrap.mz-4,.fet-carte .cwrap.mz-5{box-shadow:0 18px 30px rgba(0,0,0,.55)}
-@keyframes fet-flotte{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-8px) rotate(1.5deg)}}
-.fet-sol{position:absolute;left:8%;right:8%;bottom:-20px;height:16px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(closest-side,color-mix(in srgb,var(--fc) 70%,transparent),transparent);filter:blur(2px);
-  animation:fet-sol 4.6s ease-in-out infinite}
-@keyframes fet-sol{0%,100%{transform:scaleX(1);opacity:.85}50%{transform:scaleX(.8);opacity:.5}}
-.fet-t{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
-.fet-t>small{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--fc) 55%,#fff)}
-.fet-t>b{font-family:var(--display);font-stretch:115%;font-style:italic;font-weight:900;font-size:clamp(21px,6.2vw,30px);line-height:1.02;
-  color:#fff;text-shadow:0 2px 18px color-mix(in srgb,var(--fc) 60%,transparent);overflow-wrap:anywhere}
-.fet-tags{display:flex;flex-wrap:wrap;gap:6px}
-.fet-mz{display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 6px;border-radius:999px;font-size:12px;font-weight:700;
-  color:rgba(255,255,255,.85);background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+   Version 3.0.8 : une tuile pleine de la DA (plus de rayons, de projecteur
+   ni de cadre lavande). La lumière vient de la carte : son illustration,
+   très floue et assombrie, teinte le fond ; un voile de la surface, à
+   droite, garde le texte calme. La carte, intacte et légèrement penchée,
+   porte elle-même sa maîtrise. Les couleurs gardent leur sens : la rareté à
+   sa couleur, la lavande pour l'action (Changer), rien d'or hors Légendaire. */
+.fet{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(112px,min(38%,200px)) 1fr;align-items:center;gap:16px;
+  margin:14px 0;padding:22px 18px 22px 20px;border-radius:var(--radius-xl);min-height:224px;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.fet-fond{position:absolute;inset:-40px;z-index:-2;pointer-events:none;background-size:cover;background-position:50% 32%;
+  filter:blur(34px) saturate(1.35) brightness(.62);transform:scale(1.15)}
+.fet::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(28,27,37,.15) 0%,rgba(28,27,37,.55) 46%,rgba(28,27,37,.82) 100%),
+    linear-gradient(180deg,rgba(28,27,37,0) 55%,rgba(28,27,37,.6))}
+.fet-carte{position:relative;justify-self:center;width:100%;max-width:156px;padding:0;border:0;background:none;cursor:pointer;
+  transform:rotate(-3deg);transition:transform .3s var(--spring)}
+.fet-carte:active{transform:rotate(-3deg) scale(.97)}
+.fet-carte .cwrap{box-shadow:0 16px 30px rgba(0,0,0,.5)}
+.fet-t{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+.fet-t>small{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)}
+.fet-t>b{font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:clamp(22px,6.4vw,30px);line-height:1.02;
+  color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.45);overflow-wrap:anywhere}
+.fet-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;font-weight:700;color:var(--subtle)}
+.fet-rar{font-weight:800}
+.fet-rar.rS{background:linear-gradient(90deg,#ffd0ea,#e6e1ff 50%,#c9ecff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fet-ess{display:inline-flex;align-items:center;gap:5px}
+.fet-ess .ess{width:15px;height:15px}
+.fet-num{color:var(--muted)}
+.fet-mz{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--subtle)}
 .fet-mz b{color:#fff;font-weight:900}
-.fet-mz5 .fet-mz{background:rgba(255,200,80,.12);box-shadow:inset 0 0 0 1px rgba(255,210,110,.45)}
-.fet-changer{padding:4px 0;color:var(--accent-soft);text-decoration:underline;text-underline-offset:3px}
-/* Une Légende : la scène s'embrase d'or. */
-.fet-mz5 .fet-rayons{opacity:.7;background:repeating-conic-gradient(from 0deg,#ffe7a0 0 4deg,transparent 4deg 11deg,color-mix(in srgb,var(--fc) 70%,#fff) 11deg 15deg,transparent 15deg 22deg)}
-/* Pas de carte fétiche encore : une invitation. */
-.fet.vide{display:block;min-height:0;padding:20px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);
-  outline:1.5px dashed rgba(179,166,255,.35);outline-offset:-7px}
-.fet-vide{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
-.fet-vide svg{width:30px;height:30px;color:var(--accent-soft);fill:currentColor}
-.fet-vide b{font-size:16px;font-weight:900}
-.fet-vide small{max-width:34ch;font-size:12.5px;line-height:1.4;color:var(--muted)}
-.fet-vide .btn{margin-top:6px}
-html.rm .fet-rayons,html.rm .fet-faisceau,html.rm .fet-carte,html.rm .fet-sol{animation:none}
-@media (prefers-reduced-motion:reduce){.fet-rayons,.fet-faisceau,.fet-carte,.fet-sol{animation:none}}
-/* Dans la feuille d'un joueur, la scène prend toute la largeur. */
+.fet-changer{margin-top:2px}
+/* Pas de carte fétiche encore : la même tuile, une carte fantôme à gauche. */
+.fet.vide{min-height:0;padding:18px 18px 18px 20px}
+.fet.vide::after{display:none}
+.fet-fantome{justify-self:center;display:grid;place-items:center;width:min(100%,108px);aspect-ratio:1000/1397;border-radius:10px;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1.5px var(--line-2);color:var(--accent-soft)}
+.fet-fantome svg{width:30px;height:30px;fill:currentColor;opacity:.85}
+.fet-dit{font-size:12.5px;line-height:1.45;color:var(--muted)}
+.fet.vide .fet-t>b{font-size:20px}
+/* Dans la feuille d'un joueur, la tuile prend toute la largeur. */
 .sheet .fet{margin:12px 0}
 
 /* ============ En combat (js/combat/table.js) ============

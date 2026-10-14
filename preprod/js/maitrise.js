@@ -175,31 +175,39 @@ function apercuMaitriseVw() {
 }
 
 /* ---------- La carte fétiche ---------- */
-/* Une carte qu'on possède, mise en scène en haut de son profil : en grand,
-   sous un projecteur aux couleurs de son Essence, avec sa maîtrise. Les
-   autres la voient sur la fiche du joueur (player_profile, fetiche_de).
-   `o.moi` : c'est la sienne (« Ma carte fétiche ») ; `o.edit` : sur son
-   propre profil, avec de quoi la changer, et une invitation tant qu'il n'y
-   en a pas. */
+/* La carte fétiche (profil, fiche d'un joueur ; version 3.0.8) : une tuile
+   de la DA, pleine, sans rayons ni projecteur. La lumière vient de la carte
+   elle-même — son illustration, très floue, teinte le fond — ; la carte,
+   intacte, se tient à gauche avec sa maîtrise ; à droite, son nom en grand
+   et ce qui la situe : rareté (à sa couleur), Essence, numéro, maîtrise. */
+const FET_RAR = { ES: '--r-es', C: '--r-c', PC: '--r-pc', R: '--r-r', E: '--r-e', L: '--r-l', PR: '--r-pr' };
+
 function vFetiche(id, niveau, o) {
   o = o || {};
   const c = id && byId[id];
   if (!c) {
-    return o.edit ? `<section class="fet vide"><div class="fet-vide">${NAVICO.star}<b>Ta carte fétiche</b>
-        <small>Celle que tu veux montrer en premier, en grand, sous son projecteur. Touche une carte de ta Collection, puis « Gérer ».</small>
-        <button class="btn tiny" data-tab="collection">Choisir dans la Collection</button></div></section>` : '';
+    return o.edit ? `<section class="fet vide">
+        <span class="fet-fantome" aria-hidden="true">${NAVICO.star}</span>
+        <div class="fet-t"><small>Ma carte fétiche</small><b>Aucune, pour l'instant</b>
+          <span class="fet-dit">Celle que tu montres en premier, sur ton profil et ta fiche. Touche une carte de ta Collection, puis « Gérer ».</span>
+          <button class="btn tiny" data-tab="collection">Choisir une carte</button></div>
+      </section>` : '';
   }
+  const k = carteMaitrise(c);
   const n = niveau == null ? (maitrisable(c) ? niveauMaitrise(c) : 0) : niveau;
   const R = RAR[c.rar] || RAR.C;
-  return `<section class="fet${n ? ' fet-mz' + n : ''}" style="--fc:${tcol(carteMaitrise(c))}">
-    <span class="fet-fond" aria-hidden="true"></span><span class="fet-rayons" aria-hidden="true"></span><span class="fet-faisceau" aria-hidden="true"></span>
-    <button class="fet-carte" data-show="${c.id}" data-snd="carte" aria-label="Voir ${h(c.nom)}">${renderCard(c, { m: n })}<i class="fet-sol" aria-hidden="true"></i></button>
+  const col = COLORS[k.col] || COLORS.neutre;
+  const rar = FET_RAR[c.rar] ? `style="color:var(${FET_RAR[c.rar]})"` : '';
+  return `<section class="fet${n ? ' fet-mz' + n : ''}" style="--fc:${tcol(k)}">
+    <span class="fet-fond" aria-hidden="true" style="background-image:url('${h(c.img)}')"></span>
+    <button class="fet-carte" data-show="${c.id}" data-snd="carte" aria-label="Voir ${h(c.nom)}">${renderCard(c, { m: n })}</button>
     <div class="fet-t">
       <small>${o.moi ? 'Ma carte fétiche' : 'Sa carte fétiche'}</small>
       <b>${h(c.nom)}</b>
-      <span class="fet-tags"><span class="rc-tag r${c.rar}">${R.nom}</span>${c.rev ? '<span class="rc-tag rev">Reverse</span>' : ''}</span>
-      ${n ? `<span class="fet-mz">${insigneMaitrise(n)}<span>Maîtrise · <b>${MAITRISE.noms[n - 1]}</b></span></span>` : ''}
-      ${o.edit ? '<button class="linkbtn fet-changer" data-tab="collection">Changer</button>' : ''}
+      <span class="fet-meta"><span class="fet-rar r${c.rar}" ${rar}>${R.nom}${c.rev ? ' · Reverse' : ''}</span>
+        <span class="fet-ess">${essIcon(k.col)}${h(col.nom)}</span><span class="fet-num tnum">${c.num ? '#' + String(c.num).padStart(3, '0') : h(c.code || '')}</span></span>
+      ${n ? `<span class="fet-mz">${insigneMaitrise(n)}<span>Maîtrise ${CHIFFRES_ROMAINS[n]} · <b>${MAITRISE.noms[n - 1]}</b></span></span>` : ''}
+      ${o.edit ? '<button class="btn tiny ghost fet-changer" data-tab="collection">Changer</button>' : ''}
     </div>
   </section>`;
 }
