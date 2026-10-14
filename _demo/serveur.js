@@ -238,12 +238,13 @@
     ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
     ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
     /* Le Choc des Sections (25_choc.sql), en Étincelles. */
+    // Deux colonnes : le tapis (4) et le cadre (6) du Sorcier l'un sous l'autre.
     ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10],
     ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3],
     ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8],
     ['t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L\'illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l\'événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null],
-    ['f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l\'événement.', 400, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
-    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
+    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
+    ['f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l\'événement.', 400, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
   ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
        devise: devise || 'eclats', evenement: evenement || null, limite: limite == null ? null : limite }));

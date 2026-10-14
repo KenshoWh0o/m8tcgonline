@@ -59,8 +59,12 @@
   border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
   background:linear-gradient(180deg,rgba(18,17,25,0) 20%,rgba(18,17,25,.55) 55%,rgba(24,23,33,.97) 88%),
     radial-gradient(70% 80% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
-    url('../assets/combat/banniere-combats.webp?v=3.0.7') 50% 4%/cover no-repeat,var(--surface);
+    url('../assets/combat/banniere-combats.webp?v=3.0.7') 55% 100%/165% auto no-repeat,var(--surface);
   box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+/* Le chevalier est cadré comme dans l'onglet Combats (.cb-hero-art) : sur le
+   médaillon d'or de son plastron, pas sur le casque. Plus large que haute,
+   la tuile prend l'image en largeur et descend jusqu'au médaillon. */
+@media (min-width:640px){.ch-nv-une.ch-nv-combats{background-size:auto,auto,cover;background-position:0 0,0 0,50% 92%}}
 .ch-nv-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .ch-nv-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
 .ch-nv-une-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:28px;line-height:1}
@@ -80,11 +84,6 @@
 .ch-nv-tapis{position:relative;z-index:1;width:0;height:78px}
 .ch-nv-tapis i{position:absolute;left:-22px;top:4px;width:44px;height:78px;border-radius:6px;background:center/cover no-repeat;
   transform-origin:50% 160%;transform:rotate(calc(var(--i) * 14deg));box-shadow:0 0 0 1px rgba(255,255,255,.22),0 6px 14px rgba(0,0,0,.5)}
-.ch-nv-boites{position:relative;z-index:1;display:flex;align-items:flex-end;gap:2px;height:84px}
-.ch-nv-boites img{height:82px;width:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55))}
-.ch-nv-boites img:first-child{transform:rotate(-6deg) translateX(6px)}
-.ch-nv-boites img:last-child{transform:rotate(6deg) translateX(-6px)}
-.ch-nv.sections .ch-nv-art{background:radial-gradient(60% 90% at 25% 40%,rgba(98,216,78,.25),transparent 70%),radial-gradient(60% 90% at 75% 40%,rgba(124,58,237,.3),transparent 70%),var(--surface-2)}
 .ch-nv.tapis .ch-nv-art{background:radial-gradient(70% 90% at 50% 30%,rgba(138,120,245,.22),transparent 70%),var(--surface-2)}
 .ch-nv-t{display:flex;flex-direction:column;gap:2px;padding:4px 12px 12px}
 .ch-nv-t b{font-size:14px;font-weight:800}
@@ -287,7 +286,18 @@ html.rm .ch-ref-tuile{animation:none}
 .chban .rfban-txt b{background:none;color:#fff;font-size:19px}
 .chban-sous{font-style:normal;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.8)}
 .chban .rfban-n{background:var(--brand)}
-.chban.combats,.chban.boutique{max-width:none;margin:0 0 12px}
+.chban.boutique{max-width:none;margin:0 0 12px}
+/* Brawks dans le petit bandeau : l'image à la hauteur du bandeau (la tête
+   en fait le quart), calée à droite pour que la tête tombe entre la coupe
+   et la flèche. La coupe se mesure depuis la droite (172 px), et non en
+   pourcentage : sur un bandeau large, l'image couvrirait moins que sa part. */
+.chban .ch-aff-sec.toxique{width:calc(100% - 109px);clip-path:polygon(0 0,100% 0,calc(100% - 63px) 100%,0 100%)}
+.chban .ch-aff-sec.deter{width:172px;background-size:auto 340%;background-position:right -11px top 5%}
+.chban .ch-aff-coupe i{clip-path:polygon(calc(100% - 111px) 0,calc(100% - 107px) 0,calc(100% - 170px) 100%,calc(100% - 174px) 100%)}
+.chban-n{position:absolute;top:6px;right:8px;min-width:18px;height:18px;padding:0 5px;font-size:11px;box-shadow:0 0 0 2px #16151e}
+.chban-sous{display:inline-flex;align-items:center;gap:4px}
+.chban-sous .etincelleico{width:14px;height:14px}
+.chban-sous strong{font-weight:900;color:#fff}
 
 /* ============ Le récap ============ */
 .ch-vainqueur-titre{font-weight:800;color:var(--gold)}

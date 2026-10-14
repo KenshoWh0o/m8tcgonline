@@ -141,21 +141,35 @@ def affiche():
 
 
 # ------------------------------------------------- Le Choc des Sections
+# La tete de Brawks dans l'illustration originale : centre et hauteur
+# (du haut du crane au bas de la barbe).
+BRAWKS_TETE = (705, 200)
+BRAWKS_TETE_H = 255
+
+
 def choc_des_sections():
-    """Deter en haut, Toxique en bas ; la coupe passe en biais au milieu."""
-    # L'illustration originale (version 3.0.7) ; un peu de nuit au-dessus de
-    # Brawks, fondue dans l'image : sa tete descend sous la vignette.
-    b = brawks_net().crop((300, 0, 1100, 1055))
-    b = b.resize((W, round(b.height * W / b.width)), Image.LANCZOS)
-    haut = Image.new('RGB', (W, b.height + 90), (14, 14, 36))
+    """Deter en haut, Toxique en bas ; la coupe passe en biais au milieu.
+
+    Version 3.0.8 : Brawks est la meme illustration que l'affiche de l'en-tete
+    et du bandeau (choc-deter.webp), avec ses couleurs (plus de voile sombre
+    ni de teinte violette), la tete entiere au milieu du camp du haut. Dans
+    l'arene, le tapis est pose en « cover » : sur telephone, le haut et le
+    bas de l'image sont rognes d'environ 110 px ; la tete est donc placee
+    vers y = 340, au milieu de ce qui reste visible du camp adverse."""
+    src = brawks_net()
+    e = 1.0
+    cx, cy = 360, 340
+    haut = Image.new('RGB', (W, 760), (13, 12, 32))
+    b = src.resize((round(src.width * e), round(src.height * e)), Image.LANCZOS)
+    x0, y0 = round(cx - BRAWKS_TETE[0] * e), round(cy - BRAWKS_TETE[1] * e)
+    # Le haut de l'illustration se fond dans la nuit au-dessus de lui.
     fondu = Image.new('L', b.size, 255)
     df = ImageDraw.Draw(fondu)
-    for y in range(170):
-        df.line((0, y, W, y), fill=round(255 * (y / 170) ** 1.8))
-    haut.paste(b, (0, 90), fondu)
-    haut = couvrir(haut, W, 760, cx=.5, cy=.0)
-    haut = ImageEnhance.Contrast(ImageEnhance.Brightness(haut).enhance(.62)).enhance(1.12)
-    haut = teinter(haut, ((10, 4, 28), (96, 40, 200), (226, 214, 255)), .25)
+    for y in range(200):
+        df.line((0, y, b.width, y), fill=round(255 * (y / 200) ** 1.3))
+    haut.paste(b, (x0, y0), fondu)
+    haut = ImageEnhance.Contrast(ImageEnhance.Brightness(haut).enhance(.94)).enhance(1.04)
+    haut = teinter(haut, ((10, 4, 28), (96, 40, 200), (226, 214, 255)), .1)
     bas = couvrir(illustration(SQUEEZIE), W, 760, cx=.4, cy=.35)
     bas = teinter(ImageEnhance.Brightness(bas).enhance(.85), VERT, .35)
     im = Image.new('RGB', (W, H), NUIT)

@@ -176,11 +176,10 @@ function vChAccueil() {
 }
 
 /* Ce que la 3.0 apporte : l'événement est aussi sa vitrine. Les grands
-   ajouts en grand — les Combats sous le chevalier de leur bandeau, les
-   Secrètes en éventail, la refonte visuelle (version 3.0.7, à la place de la
-   tuile du Guide, que le tutoriel met déjà en avant dans Combats) ; puis six
-   tuiles illustrées, chacune menant à ce qu'elle
-   montre. Les illustrations des cartes sont recadrées sur le visage
+   ajouts en grand — les Combats sous le chevalier de leur bandeau (cadré sur
+   le médaillon, comme dans l'onglet Combats), les Secrètes en éventail, la
+   refonte visuelle ; puis six tuiles illustrées, chacune menant à ce
+   qu'elle montre. Les illustrations des cartes sont recadrées sur le visage
    (illuCadre, js/ui.js), jamais sur le titre ou le cadre de la carte. */
 function vChNouveautes() {
   const n = niveauDe(cbEtat().xp || 0);
@@ -194,7 +193,7 @@ function vChNouveautes() {
     ? `<i style="--i:${i - 1};background-image:url('${h(TAPIS[k].img.replace('.webp', '-mini.webp'))}')"></i>` : '').join('');
   return `<section class="ch-nouveau">
     <h3 class="rf-sous">Nouveau dans la 3.0</h3>
-    <button class="ch-nv-une" data-tab="combats">
+    <button class="ch-nv-une ch-nv-combats" data-tab="combats">
       <span class="ch-nv-une-t"><small>Le grand ajout</small><b>Les Combats</b>
         <span>Choisis ta Section, construis ton deck, et entre dans l'arène.</span>
         <span class="ch-nv-modes"><i>Campagne</i><i>Arcade</i><i>Raid</i><i>Versus</i></span></span>
@@ -209,7 +208,6 @@ function vChNouveautes() {
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
       ${tuile('data-cb="vue" data-v="decks"', illuCadre(couv, .5, .3), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
-      ${tuile('data-tab="combats"', `<span class="ch-nv-boites" aria-hidden="true"><img src="${h(SECTIONS.toxique.boite)}" alt=""><img src="${h(SECTIONS.deter.boite)}" alt=""></span>`, 'Deux Sections', 'Toxique ou Déter : ton camp, ton Starter Deck, ta campagne.', 'sections')}
     </div>
   </section>`;
 }
@@ -246,7 +244,7 @@ function vChSecretes() {
     const face = a ? `<img src="${h(c.img)}" alt=""${c.cachee ? ' class="floue"' : ''}>` : '<b>?</b>';
     return `<span class="ch-sec-c${a ? ' eue' : ''}" style="--i:${i - milieu}">${face}</span>`;
   };
-  return `<button class="ch-nv-une ch-nv-sec" data-colvue="speciales" data-tab="collection">
+  return `<button class="ch-nv-une ch-nv-sec" data-colvue="classiques" data-tab="collection">
       <span class="ch-sec-fan" aria-hidden="true">${liste.map(carte).join('')}</span>
       <span class="ch-nv-une-t"><small>L'autre grand ajout</small><b>Les Secrètes</b>
         <span>${liste.length} cartes cachées au-delà des 122, avec la finition la plus rare du jeu. À toi de les trouver.</span>
@@ -502,21 +500,22 @@ function vChClassement() {
 /* =====================================================================
    Les bandeaux : écran Boosters, Combats, Boutique
    ===================================================================== */
+/* La droite du bandeau est à Brawks : sa tête, entière, entre la coupe et
+   la flèche. Rien ne se pose dessus — le solde passe dans le texte (Boutique),
+   ce qui reste à prendre dans une pastille au coin. */
 function vBandeauChoc(lieu) {
   const ev = save.evenement;
   const fin = ev ? srvTime(ev.fin) : Date.now();
   const n = chocPastille();
-  const vers = lieu === 'boutique' ? 'boutique' : 'accueil';
-  const sous = lieu === 'boutique' ? `En ${CHOC.monnaie.nom}, pendant l'événement`
-    : 'L\'Épreuve du jour, et le Raid en Étincelles';
-  return `<button class="rfban chban${lieu ? ' ' + lieu : ''}" data-ch="vue" data-v="${vers}" aria-label="Ouvrir l'événement Le Choc des Sections">
+  const boutique = lieu === 'boutique';
+  return `<button class="rfban chban${boutique ? ' boutique' : ''}" data-ch="vue" data-v="${boutique ? 'boutique' : 'accueil'}" aria-label="Ouvrir l'événement Le Choc des Sections">
     ${chAffiche()}
     <span class="rfban-txt">
-      <small>${lieu === 'boutique' ? 'Boutique de l\'événement' : `Événement 3.0 · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span>`}</small>
+      <small>${boutique ? 'Boutique de l\'événement' : `Événement 3.0 · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span>`}</small>
       <b>Le Choc des Sections</b>
-      ${lieu ? `<em class="chban-sous">${h(sous)}</em>` : ''}
+      ${boutique ? `<em class="chban-sous">${etincelleIco}<strong class="tnum">${fmtN(save.prismes || 0)}</strong> ${h(CHOC.monnaie.nom)} à dépenser</em>` : ''}
     </span>
-    ${n ? `<span class="rfban-n">${n}</span>` : `<span class="rfban-solde">${etincelleIco}${fmtN(save.prismes || 0)}</span>`}
+    ${n ? `<span class="rfban-n chban-n" aria-label="${n} à récupérer">${n}</span>` : ''}
     <span class="rfban-fl" aria-hidden="true">›</span>
   </button>`;
 }
@@ -587,7 +586,7 @@ function vChRecap() {
       <div class="rr-cartes">
         <button class="rr-lien" data-cb="vue" data-v="raid"><span class="rr-ico">${NAVICO.foudre}</span><b>Le Raid continue</b><small>Une nouvelle saison toutes les deux semaines, payée en Éclats.</small></button>
         <button class="rr-lien" data-tab="combats"><span class="rr-ico">${NAVICO.sword}</span><b>Les Combats continuent</b><small>Campagne, Arcade, défis entre amis.</small></button>
-        <button class="rr-lien" data-colvue="speciales" data-tab="collection"><span class="rr-ico">${NAVICO.promo}</span><b>Les Secrètes restent</b><small>Une chance dans chaque booster.</small></button>
+        <button class="rr-lien" data-colvue="classiques" data-tab="collection"><span class="rr-ico">${NAVICO.promo}</span><b>Les Secrètes restent</b><small>Une chance dans chaque booster.</small></button>
       </div>
     </section>
   </div></div>`;

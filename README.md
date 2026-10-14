@@ -1,397 +1,702 @@
 # Mate TCG Online
 
-Jeu de collection de cartes façon TCG Pocket. Les 122 cartes de l'extension *Tout commence ici* sont livrées avec le jeu : on ouvre des boosters, on remplit sa collection, et on échange avec les autres joueurs.
+**M8 TCG Online** (ou *Mate TCG*) est un jeu de cartes à collectionner en ligne, fait par des fans autour de **Gentle Mates** (sans lien officiel avec Gentle Mates). On y ouvre des boosters de l'extension *Tout commence ici* (122 cartes), on complète sa collection, on échange avec ses amis et, depuis la version 3.0, on **combat** avec ses decks.
 
-Le site est fait de fichiers statiques — aucune étape de compilation, aucun paquet à installer. Il fonctionne dans **deux régimes** :
+Le site est **statique** : HTML, CSS et JavaScript « vanilla », sans framework, sans paquet npm et sans étape de compilation. Il est hébergé sur **GitHub Pages** (`matetcg.com`). Le serveur est un projet **Supabase** : PostgreSQL, et des fonctions SQL (RPC) qui appliquent toutes les règles du jeu.
 
-- **Hors ligne.** Rien à configurer : la progression est enregistrée dans le navigateur de l'appareil (IndexedDB). **Ce régime n'est plus proposé aux joueurs : on ne joue qu'en se connectant avec Discord** (`porteVisible()`, `js/auth.js`). Sans serveur joignable, le site affiche l'écran de connexion avec « Réessayer ». Il n'y a plus de « jouer sans compte ».
-- **En ligne.** Un projet [Supabase](https://supabase.com) gratuit apporte les comptes, la collection sauvegardée sur le compte, un cooldown que la montre du téléphone ne peut pas tromper, les échanges, les quêtes et la boutique. Marche à suivre : **[SETUP.md](SETUP.md)**.
+> **Ce README est la porte d'entrée unique du projet.** Il est écrit pour quelqu'un, humain ou agent, qui ne connaît rien au dépôt. Il doit rester vrai : **chaque modification du projet met ce fichier à jour dans le même commit** (voir [§ 1.4](#14-garder-ce-readme-à-jour)).
 
-La connexion se fait **par Discord**, en un clic : le public du jeu y est déjà, le pseudo et l'avatar arrivent tout faits, et surtout aucun courriel n'est envoyé — donc aucun joueur bloqué faute d'avoir reçu son lien. L'inscription par adresse existe dans le code et se rouvre en passant `email` à `true` dans `CONNEXION` (`js/config.js`).
+---
 
-Le jeu bascule tout seul : tant que `js/supabase-config.js` est vide, il tourne hors ligne.
+## Sommaire
 
-> **Rien ne se paie avec de l'argent réel.** La monnaie du jeu, les *Éclats*, se gagne uniquement en accomplissant des quêtes.
+1. [À lire en premier](#1-à-lire-en-premier)
+2. [Lancer, tester, publier](#2-lancer-tester-publier)
+3. [Arborescence du dépôt](#3-arborescence-du-dépôt)
+4. [Architecture du client](#4-architecture-du-client)
+5. [Direction artistique](#5-direction-artistique)
+6. [Cartes, collection et progression](#6-cartes-collection-et-progression)
+7. [Les Combats](#7-les-combats)
+8. [Les événements](#8-les-événements)
+9. [Le serveur (Supabase)](#9-le-serveur-supabase)
+10. [Le Labo (administrateurs)](#10-le-labo-administrateurs)
+11. [La pré-prod et le faux serveur](#11-la-pré-prod-et-le-faux-serveur)
+12. [Outils, sources et visuels](#12-outils-sources-et-visuels)
+13. [Pièges](#13-pièges)
+14. [Dette connue](#14-dette-connue)
+15. [Historique des versions](#15-historique-des-versions)
 
-## Lancer le projet
+Autres documents : [`SETUP.md`](SETUP.md) (mettre un serveur Supabase en ligne, pas à pas), [`docs/design-3.0.md`](docs/design-3.0.md) (le système visuel et son histoire), [`docs/regles-3.0.md`](docs/regles-3.0.md) (les règles du jeu de combat, justifiées), [`docs/economie-3.0.md`](docs/economie-3.0.md) (l'équilibrage, chiffre par chiffre), [`presse/README.md`](presse/README.md) (le kit presse).
 
-**Le plus simple :** double-clique sur `index.html`. Le jeu s'ouvre dans ton navigateur.
+---
 
-**Recommandé pour développer :** ouvre le dossier dans VS Code, installe l'extension *Live Server*, puis clic droit sur `index.html` › *Open with Live Server*. La page se recharge toute seule à chaque modification.
+## 1. À lire en premier
 
-Autre option, si Node.js est installé : `npx serve .` dans le dossier, puis ouvre l'adresse affichée.
+### 1.1 Le projet en une minute
 
-> Chaque adresse a sa propre sauvegarde. Si tu passes d'un double-clic à Live Server ou à un site en ligne, tes cartes sont toujours là, mais la progression repart de zéro.
+- **Le jeu.** Une réserve de boosters gratuits se recharge (un toutes les 4 h, 5 au plus). Chaque booster contient 6 cartes. Les quêtes paient en **Éclats**, la monnaie du jeu, qui achète boosters et cosmétiques. Les doublons se recyclent en **Fragments**, qui fabriquent les cartes manquantes et, depuis la 3.0.7, font monter la **maîtrise** d'une carte. On échange une carte contre une carte de même rareté avec ses amis. **Aucun argent réel n'entre nulle part.**
+- **La 3.0** ajoute les **Combats** : un jeu de cartes complet contre l'IA (tutoriel, campagne de 20 rivaux, Arcade, Raid contre un boss commun) ou contre ses amis (Versus), les **Secrètes** (5 cartes cachées au-delà des 122), l'XP de combattant, l'événement « **Le Choc des Sections** », une **refonte visuelle** complète (palette « Graphite et lavande », verre réservé à ce qui flotte), la maîtrise des cartes et la carte fétiche.
+- **La technique.** Une page unique (`index.html`) charge une cinquantaine de scripts classiques qui partagent l'espace global. L'interface est rendue par chaînes HTML (`render()` dans `js/app.js`). Toutes les écritures passent par des RPC SQL `security definer` : le navigateur ne fait foi sur rien d'important.
 
-## Mettre en ligne
+### 1.2 Où vit quoi : production, branche de travail, pré-prod
 
-- **GitHub Pages** : pousse le dossier dans un dépôt GitHub, puis *Settings › Pages › Deploy from branch*.
-- **Netlify Drop** (app.netlify.com/drop) : fais glisser le dossier entier, tu obtiens une adresse.
+| Lieu | Contenu | Version |
+|---|---|---|
+| **`main`, à la racine** | **Le vrai site**, servi à `matetcg.com` par GitHub Pages (`CNAME`). | **2.1.2** |
+| **`main`, dossier `preprod/`** | La pré-prod : une copie *construite* de la version suivante, servie à `matetcg.com/preprod/`, qui tourne avec un **faux serveur** dans le navigateur (aucun compte, aucune base). | 3.0.x |
+| **Branche de travail** (aujourd'hui `claude/new-session-kjkzxl`) | Le **code source** de la version suivante, à la racine. `preprod/` y est aussi versionné (même contenu que sur `main`). | 3.0.7 |
+| **Base Supabase de production** | Installée en 2.1. **Aucun SQL 3.0 n'y a été joué.** | 2.1 |
 
-Le service worker et l'installation sur l'écran d'accueil exigent **HTTPS** (ou `localhost`). Un fichier ouvert par double-clic marche, mais sans mode hors ligne ni installation.
+**État du projet.** Le 24 septembre 2026, le lancement public a été **annulé** après échange avec Gentle Mates (`vAnnonceArret()`, `js/gate.js`) : l'écran d'entrée du vrai site affiche « Projet annulé · Merci ». Les comptes déjà invités jouent toujours à la 2.1.2. Le développement de la 3.0 continue **uniquement en pré-prod**.
 
-Pour brancher les comptes en ligne : **[SETUP.md](SETUP.md)**, écrit pas à pas. Et à tout moment, la page **`verif.html`** du site contrôle l'installation et dit en clair ce qui manque.
+**Conséquence pratique.** On développe sur la branche, on construit `preprod/` avec `python3 tools/demo.py --preprod`, et on ne reporte **que `preprod/`** sur `main` ([§ 2.5](#25-construire-et-publier-la-pré-prod)). **La branche ne se fusionne jamais dans `main`** : sa racine est la 3.0, qui appelle des RPC absentes de la base de production.
 
-## Organisation
+### 1.3 Les règles du propriétaire (non négociables)
 
-```
-mate-tcg-online/
-├── index.html          Structure de la page + chargement des fichiers
-├── verif.html          Page de diagnostic : ce qui est branché, ce qui manque
-├── manifest.webmanifest  Identité de l'application installée (nom, icônes, couleurs)
-├── sw.js               Service worker : le jeu s'ouvre hors réseau
-├── SETUP.md            Mettre le jeu en ligne, pas à pas
-├── cards/              Les images des cartes (une par carte, .avif)
-├── assets/             Habillage : logos, visuels de booster, dos de carte, essences
-│   ├── boosters/       Les quatre visuels de paquet
-│   ├── essences/       Les dix symboles d'essence
-│   ├── icon-*.png      Icônes de l'application installée (générées)
-│   └── og-image.png    Image affichée quand le lien du site est partagé (générée)
-├── presse/             Kit presse : visuels prêts à publier et leur mode d'emploi
-├── _demo/              La démo autonome : faux serveur, réglages, mode d'emploi (non publié)
-├── tools/              Petits scripts de maintenance (Python, sans dépendance)
-│   ├── build-sql.py    Assemble supabase/TOUT.sql
-│   ├── demo.py         Fabrique la démo autonome dans _build/
-│   ├── version.py      Pose le numéro de version et marque les fichiers
-│   ├── gen-icons.py    Régénère icônes, favicons et image de partage
-│   └── kit-presse.py   Régénère les visuels de presse/visuels/
-├── supabase/           Tout le code serveur : tables, sécurité, actions du jeu
-│   ├── TOUT.sql        Les fichiers d'installation ci-dessous, en un seul (assemblé)
-│   ├── 01_schema.sql   Tables, règles d'accès, recharge des boosters
-│   ├── 02_cards.sql    Catalogue des cartes (généré depuis js/cards-data.js)
-│   ├── 03_rpc.sql      Ouvrir un booster, échanger, encaisser une quête, acheter
-│   ├── 03b_promos.sql  Les cartes Promo et leurs paliers de collection
-│   ├── 04_seed.sql     Quêtes et boutique — c'est ici qu'on équilibre
-│   ├── 06_social.sql   Amis et fiches de joueur
-│   ├── 07_vitrine.sql  La vitrine du profil
-│   ├── 11_boite.sql    Boîte de réception : notifications, annonces, temps réel
-│   ├── 12_recyclage.sql  Recyclage des doublons en Fragments, et fabrication
-│   ├── 13_maj-recyclage-quetes.sql  Mise à jour d'une base déjà installée (28 sept.)
-│   ├── 14_classement.sql  Le classement global
-│   ├── 15_evenements.sql  Tirages, succès, événements et chasse à la carte unique
-│   ├── 16_maj-v1.5.sql   Mise à jour 1.5 d'une base déjà installée
-│   ├── 17_maj-quetes.sql Mise à jour 1.5.3 : quêtes rééquilibrées, carte unique en dernière carte
-│   ├── 18_cadeaux.sql    Les cadeaux offerts par un administrateur (aussi dans TOUT.sql)
-│   ├── 19_maj-boosters-offerts.sql  Mise à jour 1.5.5 : boosters offerts sans carte unique
-│   ├── 20_maj-boosters-hors-reserve.sql  Mise à jour 1.5.6 : boosters achetés et offerts hors réserve, cadre Unique
-│   ├── 22_garder.sql     Version 2.1 : les exemplaires à garder (aussi dans TOUT.sql)
-│   ├── 05_admin.sql    Se donner les droits d'administrateur
-│   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
-│   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
-│   └── gen-cards-sql.py  Régénère 02_cards.sql
-├── css/
-│   ├── tokens.css      Couleurs, typos, rythme (la charte)
-│   ├── base.css        Fond, en-tête, navigation, boutons, fenêtres
-│   ├── cards.css       Cartes, symboles d'essence, grille de collection
-│   ├── booster.css     Écran du paquet et animation d'ouverture
-│   ├── opening.css     Ouverture plein écran, révélations, récap
-│   ├── viewer.css      Visionneuse 3D
-│   ├── lab.css         Onglet Labo
-│   ├── auth.css        Écran de connexion
-│   ├── promo.css       Scène d'obtention d'une carte Promo
-│   └── hub.css         En-tête, navigation, et les écrans autour du jeu
-├── js/
-│   ├── config.js       Nom du jeu, habillage, couleurs, raretés, onglets, révélations
-│   ├── supabase-config.js  Les deux clés du compte en ligne (vides = hors ligne)
-│   ├── utils.js        Outils partagés
-│   ├── sfx.js          Les sons, fabriqués à la volée (Web Audio)
-│   ├── cards-data.js   La liste des cartes de l'extension
-│   ├── promos-data.js  Les cartes Promo, hors extension
-│   ├── cards.js        Transforme ces listes en cartes du jeu
-│   ├── storage.js      État global + sauvegarde locale
-│   ├── render-card.js  Affichage d'une carte
-│   ├── ui.js           Fenêtre modale, avatars, petits blocs répétés
-│   ├── backend.js      Un seul jeu d'appels, deux implantations (local / en ligne)
-│   ├── gate.js         Écran d'attente et code d'accès
-│   ├── auth.js         Écran de connexion et création de compte
-│   ├── fx.js           Particules
-│   ├── booster.js      Réserve, composition d'un booster, écran du paquet en 3D
-│   ├── opening.js      Pile 3D, révélation, godpack, récap
-│   ├── collection.js   Onglet Collection
-│   ├── viewer.js       Visionneuse 3D
-│   ├── trade.js        Échanges (section de Social)
-│   ├── social.js       Onglet Social : amis, fiches de joueur
-│   ├── quests.js       Onglet Quêtes
-│   ├── classement.js   Onglet Classement (menu du compte)
-│   ├── tirages.js      Onglet Mes tirages : historique et statistiques
-│   ├── partage.js      Image de partage d'un booster
-│   ├── promos.js       Détection et mise en scène des cartes Promo
-│   ├── boite.js        Boîte de réception, pings, relève et temps réel
-│   ├── shop.js         Onglet Boutique
-│   ├── recyclage.js    Onglet Recyclage
-│   ├── battle.js       Onglet Combats (à venir)
-│   ├── profile.js      Onglet Profil
-│   ├── settings.js     Onglet Réglages
-│   ├── bienvenue.js    Fenêtres d'accueil et lien vers le Discord
-│   ├── pwa.js          Ajout à l'écran d'accueil, service worker
-│   ├── lab.js          Onglet Labo (administrateurs)
-│   ├── cadeaux.js      Les cadeaux : le paquet à ouvrir
-│   └── app.js          Navigation, clics, démarrage (chargé en dernier)
+1. **Rien sur le vrai site.** Aucun fichier hors de `preprod/` ne change sur `main` ; aucun SQL 3.0 n'est joué sur la base de production.
+2. **Pas de pull request** sans demande explicite.
+3. **Français**, partout : interface, commentaires, documentation, messages de commit.
+4. **Mode sombre uniquement.** Il n'y a qu'un thème.
+5. **Aucun identifiant de modèle d'IA** dans les messages de commit, le code ou la documentation.
+6. **Comptes rendus honnêtes et exhaustifs** : dire ce qui est sûr, ce qui est supposé et ce qui n'a pas été testé.
+7. **Ce README est tenu à jour à chaque modification** ([§ 1.4](#14-garder-ce-readme-à-jour)).
+8. **La DA s'applique partout** ([§ 5](#5-direction-artistique)) : un écran nouveau ou retouché doit s'y fondre.
+
+### 1.4 Garder ce README à jour
+
+Ce fichier n'est utile que s'il est vrai. Toute modification du projet, même petite, se termine par une relecture des sections qu'elle touche :
+
+- **un fichier ajouté, supprimé ou déplacé** → [§ 3](#3-arborescence-du-dépôt) ;
+- **une règle de jeu, un montant ou un taux** → la section du domaine, et [§ 9.8](#98-une-règle-plusieurs-copies) (les copies à tenir d'accord) ;
+- **un élément visuel** → [§ 5](#5-direction-artistique) ;
+- **une RPC, une table** → [§ 9](#9-le-serveur-supabase) ;
+- **un piège découvert** → [§ 13](#13-pièges) ; **une dette** → [§ 14](#14-dette-connue) ;
+- **une nouvelle version** → [§ 15](#15-historique-des-versions).
+
+Un README faux est pire que pas de README : en cas de doute, vérifier dans le code, et corriger le README.
+
+### 1.5 Premiers pas (liste de reprise)
+
+1. Lire ce README en entier, puis [`docs/design-3.0.md`](docs/design-3.0.md) avant de toucher à un écran, et [`docs/regles-3.0.md`](docs/regles-3.0.md) avant de toucher aux combats.
+2. `git fetch origin` : la branche `main` locale peut être en retard sur `origin/main`. Toujours comparer avec `origin/main`.
+3. `node tools/combat-tests.js` : les tests de règles doivent tous passer.
+4. `python3 tools/demo.py --preprod`, puis servir le dépôt ([§ 2.1](#21-servir-le-site-en-local)) et ouvrir `/preprod/` : c'est là que la 3.0 se teste.
+5. Regarder [§ 14](#14-dette-connue) : ce qui est connu pour être faux ou mort.
+
+---
+
+## 2. Lancer, tester, publier
+
+### 2.1 Servir le site en local
+
+```bash
+npx http-server -p 8781 -c-1 -s .        # ou : python3 -m http.server 8765
 ```
 
-Les fichiers JavaScript sont des scripts classiques chargés dans l'ordre par `index.html`. Ils partagent leurs variables et fonctions. **L'ordre compte** : un fichier peut utiliser ce qui est défini dans un fichier chargé avant lui, et `app.js` doit rester en dernier.
+- **`http://localhost:8781/preprod/`** : la 3.0 avec le faux serveur. C'est **l'adresse de travail**. Il faut d'abord `python3 tools/demo.py --preprod` après chaque modification : `preprod/` est une copie construite, pas un lien vers les sources.
+- **`http://localhost:8781/`** : la racine de la branche. Elle parle au **vrai** Supabase (clés réelles dans `js/supabase-config.js`), qui est en 2.1 : on n'y voit que l'écran « Projet annulé ». Ne pas s'en servir pour tester la 3.0.
+- `.claude/launch.json` lance `python3 -m http.server 8765` (configuration « mate-tcg ») : même chose sur un autre port.
+- `-c-1` coupe le cache du serveur ; un service worker de production ne s'installe pas en local sous `/preprod/`, mais il peut traîner dans un navigateur qui a déjà visité la racine : en cas de doute, navigation privée.
 
-Chaque feuille de style porte aussi ses propres règles d'adaptation — téléphone, écran court, ordinateur. Une règle qui concerne l'écran Boosters vit dans `booster.css`, y compris quand elle ne s'applique qu'au mobile : chercher à deux endroits pour comprendre un écran, c'est ainsi qu'on finit par en corriger un seul.
+**Remettre la démo à zéro** : ajouter `?reinitialiser` à l'adresse. Cela n'efface que l'état du faux serveur ; les réglages du navigateur (`preprod:mtcg.*` dans `localStorage` : tutoriel vu, fenêtres vues…) restent. Pour tout effacer, vider aussi le stockage du site.
 
-## Où modifier quoi
+### 2.2 Les tests
 
-| Je veux… | Fichier |
+| Commande | Ce qu'elle vérifie |
 |---|---|
-| Ajouter, retirer ou corriger une carte | `js/cards-data.js` (+ l'image dans `cards/`) |
-| Changer le nom du jeu ou de l'extension | `js/config.js` (`GAME_NAME`, `SET_NAME`) |
-| Changer les visuels de booster | `js/config.js` (`PACK_ARTS`) + les images dans `assets/boosters/` |
-| Changer le dos de carte, le logo d'extension, la pastille | `js/config.js` (`ART`) |
-| Changer les couleurs, les typos, les arrondis | `css/tokens.css` |
-| Changer le nombre de cartes par booster | `js/config.js` (`PACK_SIZE`) + `makeBooster()` dans `js/booster.js` |
-| Changer les taux de drop ou du godpack | **en ligne :** `open_pack()` dans `supabase/03_rpc.sql` · **hors ligne :** `RATES`, `GOD` dans `js/booster.js` |
-| Ajouter ou modifier une carte Promo | `js/promos-data.js` (+ l'image dans `cards/promos/`) **et** `supabase/03b_promos.sql` |
-| Changer le palier qui donne une Promo | `PROMO_PALIER` dans `js/config.js` **et** `cfg('promo_palier_pct')` dans `supabase/01_schema.sql` |
-| Changer le thème par défaut | `poserTheme()` dans `js/settings.js` ; les deux palettes sont dans `css/tokens.css` |
-| Annoncer une Promo pas encore livrée | `PROMOS_A_VENIR` dans `js/config.js` |
-| Refaire les visuels de promotion | `python3 tools/kit-presse.py` — voir `presse/README.md` |
-| **Remettre à zéro tous les joueurs** | `supabase/10_reset-tout.sql` |
-| Régler la durée ou les particules d'une révélation | `js/config.js` (`REVEAL`) |
-| Modifier l'animation de déchirure du paquet | `showRip()` dans `js/opening.js` + bloc `Déchirure` de `css/booster.css` |
-| Modifier les animations de révélation | `css/opening.css` + `doReveal()` dans `js/opening.js` |
-| Changer le nombre de boosters gratuits ou le délai | **en ligne :** `cfg()` dans `supabase/01_schema.sql` · **hors ligne :** `TICKET_CAP`, `INTERVAL` dans `js/config.js` |
-| Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
-| Publier une annonce à tous les joueurs | Labo › *Annonce à tous les joueurs*, ou à la main en bas de `supabase/11_boite.sql` |
-| Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
-| Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
-| Modifier la mention légale | `MENTIONS` dans `js/config.js` (elle s'affiche aux trois endroits d'un coup) |
-| Changer l'adresse du Discord | `DISCORD_URL` dans `js/config.js` (elle est citée à cinq endroits) |
-| Inviter quelqu'un à la bêta | `supabase/09_beta.sql` |
-| Changer la date d'ouverture | `beta_lancement()` dans `supabase/01_schema.sql` — et nulle part ailleurs |
-| Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
-| Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
-| Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
-| Regénérer l'image de partage et les icônes | `python3 tools/gen-icons.py` |
-| Donner les droits d'administrateur | `supabase/05_admin.sql` |
-| Changer ce que rapporte le recyclage, ou le coût d'une carte fabriquée | `cfg()` dans `supabase/01_schema.sql` (clés `recyclage_*` et `fabrication_*`) |
-| Changer la fréquence des Essences Brillantes ou de la carte unique | `cfg('foil_odds')`, `cfg('chasse_odds')` dans `supabase/01_schema.sql` (+ `FOIL_ODDS` dans `js/config.js` pour le Labo) |
-| Lancer un événement, ouvrir la chasse | requêtes en bas de `supabase/15_evenements.sql` |
-| Ajouter ou modifier un succès | `succes_de()` dans `supabase/15_evenements.sql` **et** `SUCCES` dans `js/config.js` |
-| Changer les critères du classement | `classement()` dans `supabase/14_classement.sql` + `CRITERES` dans `js/classement.js` |
-| Fabriquer la démo autonome à envoyer | `python3 tools/demo.py` — voir « La démo autonome » |
-| Régler la démo (pseudo, Éclats de départ, recharge) | `_demo/reglages.js` |
-| Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
+| `node tools/combat-tests.js` | Les règles du combat, une à une (38 tests ; code de sortie 1 en cas d'échec). |
+| `node tools/combat-sim.js aleatoire 2000` | Des parties au hasard : aucun plantage, et le rejeu redonne la même partie. |
+| `node tools/combat-sim.js clone 200` | La fidélité de `Combat.cloner` (en cas d'écart : `/tmp/a.json` et `/tmp/b.json`). |
+| `node tools/combat-sim.js ia 200 3 4` | L'équilibre entre deux niveaux d'IA. |
+| `node tools/combat-sim.js starters 200` | L'équilibre entre les deux Starter Decks. |
 
-## La démo autonome
+Il n'y a pas de tests automatisés de l'interface. **Toute modification visible se vérifie dans Chromium** (Playwright est installé dans l'environnement cloud : `require(<npm root -g>/playwright)`, Chromium dans `/opt/pw-browsers`), aux largeurs **390 × 844**, **375 × 667**, **360 × 740** et sur ordinateur (**1280 × 800**). Une capture regardée vaut mieux qu'une hypothèse.
 
-Une version du jeu **entière, sans compte ni serveur**, à envoyer en fichier : boosters, collection, quêtes, boutique, recyclage, profil, amis, échanges et boîte de réception. Tout est enregistré dans le navigateur de celui qui l'ouvre.
+### 2.3 Tester le SQL sur un PostgreSQL local
 
-```
-python3 tools/demo.py
+PostgreSQL 16 est installé dans l'environnement cloud. Recette vérifiée :
+
+```bash
+mkdir -p /var/tmp/pg && chown postgres /var/tmp/pg
+su postgres -c "/usr/lib/postgresql/16/bin/initdb -D /var/tmp/pg/data -A trust -E UTF8 --locale=C.UTF-8"
+su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pg/data -o '-p 5499 -k /var/tmp/pg' -l /var/tmp/pg/log start"
+P="psql -h /var/tmp/pg -p 5499 -U postgres -v ON_ERROR_STOP=1"
+$P -c "create database m8"
+$P -d m8 -f stub.sql                                     # l'imitation de Supabase, ci-dessous
+git show origin/main:supabase/TOUT.sql > tout-21.sql      # la base de production (2.1)
+$P -d m8 -f tout-21.sql
+$P -d m8 -f supabase/TOUT.sql && $P -d m8 -f supabase/TOUT.sql   # la 3.0, deux fois : doit passer
 ```
 
-produit `_build/m8tcg-demo/` (ouvrir `index.html`) et `_build/m8tcg-demo.zip` à envoyer. `_build/` n'est pas versionné.
+`stub.sql` imite ce que Supabase fournit :
 
-**Comment ça marche.** Le jeu ne parle au serveur que par le client Supabase (`Backend.sb`). La démo remplace la bibliothèque Supabase par un faux client (`_demo/serveur.js`) qui répond aux mêmes appels avec les mêmes réponses : chaque fonction y est la traduction de sa jumelle SQL, citée en commentaire. Le code du jeu est copié tel quel : **rien ne change sur le site**, et le site ne contient pas la démo — GitHub Pages ne publie pas les dossiers qui commencent par `_`.
+```sql
+create role anon nologin; create role authenticated nologin; create role service_role nologin;
+create schema auth;
+create table auth.users (id uuid primary key default gen_random_uuid(), email text,
+  raw_user_meta_data jsonb default '{}'::jsonb, created_at timestamptz default now());
+create function auth.uid() returns uuid language sql stable as
+  $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+grant usage on schema auth to anon, authenticated;
+create publication supabase_realtime;
+```
 
-**Les autres joueurs sont simulés** : Lumen et Mira sont amis dès le départ, Kairo envoie une demande d'ami peu après l'arrivée, Nova.92 attend qu'on l'ajoute. Ils acceptent les demandes d'ami, répondent aux échanges (le premier est toujours accepté s'il est possible, les suivants trois fois sur quatre) et proposent des échanges de temps en temps.
+Jouer en tant que joueur : insérer un utilisateur dans `auth.users` (le profil se crée par trigger), **l'inscrire dans `beta_invites`** (sinon tout répond `BETA_FERMEE`), puis :
 
-> **À garder synchronisé.** Les quêtes, la boutique, les taux de drop, `cfg()` et les règles des actions sont recopiés dans `_demo/serveur.js`. Quand ils changent dans `supabase/`, il faut les changer là aussi, puis relancer `tools/demo.py`. Le script s'arrête avec un message clair si `index.html` ou `sw.js` ont changé au point qu'il ne s'y retrouve plus.
+```sql
+select set_config('request.jwt.claim.sub', '<uuid>', false);
+set role authenticated;
+select open_pack();
+```
 
-Pour repartir de zéro dans la démo : ajouter `?reinitialiser` à la fin de l'adresse. Une partie que la version en cours ne sait plus relire est mise de côté (`demo-serveur-ancienne`) et la démo repart d'elle-même d'un monde neuf, en le disant. Et si la démo ne démarre pas, son écran d'entrée (jamais l'annonce d'arrêt du vrai site) donne l'erreur, avec « Réessayer » et « Repartir de zéro » (`demoPorte`, `_demo/serveur.js`, branché par `tools/demo.py`).
+### 2.4 Changer de version
 
-## Composition d'un booster
+```bash
+python3 tools/version.py 3.0.8
+```
 
-Six cartes, dans l'ordre de révélation (`makeBooster()`, `js/booster.js`) :
+Le script écrit `APP_VERSION` (`js/pwa.js`) et `VERSION = 'mtcg-v3.0.8'` (`sw.js`), ajoute `?v=3.0.8` à chaque CSS et JS local d'`index.html` et de `verif.html`, et **régénère la liste `ESSENTIEL` de `sw.js`**. Il ne touche ni `preprod/` (relancer `demo.py --preprod` ensuite), ni `NOUVEAUTES_VERSION` (`js/bienvenue.js`), ni ce README.
 
-| Carte | Contenu |
+**Pourquoi.** GitHub Pages met en cache dix minutes, et le service worker garde les fichiers : sans `?v=`, une correction peut ne jamais arriver chez un joueur.
+
+### 2.5 Construire et publier la pré-prod
+
+```bash
+python3 tools/version.py 3.0.x            # si la version change (avant demo.py : il relit la version)
+python3 tools/demo.py --preprod           # construit preprod/
+git add -A && git commit && git push -u origin <branche>
+
+# Reporter preprod/ seul sur main :
+W=<dossier temporaire>; git fetch origin main
+git worktree add --detach $W origin/main
+rm -rf $W/preprod && cp -a preprod $W/preprod
+cd $W && git add -A preprod && git status --short   # ne doit lister que preprod/
+git commit -m "Pré-prod 3.0.x : …" && git push origin HEAD:main
+cd - && git worktree remove --force $W
+```
+
+Contrôle après coup : `git diff --stat origin/main~1 origin/main` ne liste que `preprod/`. GitHub Pages publie en une à deux minutes.
+
+### 2.6 La démo autonome
+
+`python3 tools/demo.py` (sans option) construit la même chose dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git) : un jeu complet à envoyer en fichier, qui s'ouvre sans serveur. `_demo/LISEZMOI.txt` l'accompagne. Les réglages de départ (pseudo, Éclats offerts, rythme des boosters, échelle du Raid) sont dans `_demo/reglages.js`.
+
+### 2.7 Le jour d'une sortie en production
+
+Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la branche dans `main`, coller `supabase/TOUT.sql` dans Supabase (il passe sur une base 2.x sans rien perdre, testé), régler `PORTE` et `beta_lancement()` ([§ 4.9](#49-porte-bêta-et-connexion)), puis ouvrir l'événement à la main (commande en fin de `supabase/25_choc.sql`). La mise en place d'un serveur neuf est décrite dans [`SETUP.md`](SETUP.md).
+
+---
+
+## 3. Arborescence du dépôt
+
+```
+.
+├── index.html             La page unique : squelette DOM, chargement ordonné des CSS et des JS
+├── verif.html             Diagnostic d'une installation Supabase (non copié dans la pré-prod)
+├── manifest.webmanifest   Application installable (nom, icônes, couleurs)
+├── sw.js                  Service worker (cache hors réseau, versionné)
+├── CNAME                  matetcg.com (ne compte que sur main)
+├── README.md              Ce fichier
+├── SETUP.md               Mettre un serveur Supabase en ligne, pas à pas
+├── REPRISE.md             Note de passation de la session précédente (absorbée par ce README)
+├── .claude/launch.json    Serveur local pour les agents (port 8765)
+│
+├── js/                    Le client (scripts classiques, un espace global)
+│   ├── config.js          Configuration : nom, couleurs, raretés, cadres, titres, succès, onglets, icônes
+│   ├── supabase-config.js Les deux clés publiques Supabase (réécrites dans la pré-prod)
+│   ├── utils.js           Petits outils ($, h, toast, RM, essIcon, gyroscope…)
+│   ├── sfx.js             Bruitages synthétisés (Web Audio, aucun fichier son)
+│   ├── cards-data.js      Les 122 cartes de l'extension (données brutes)
+│   ├── promos-data.js     Promos, carte unique, Secrètes (données brutes)
+│   ├── cards.js           Fabrique les objets carte (aussi chargé par Node)
+│   ├── storage.js         État global (save, cards, byId…) et IndexedDB
+│   ├── render-card.js     renderCard(c, {m, calme}) : une carte en HTML
+│   ├── maitrise.js        Maîtrise des cartes et carte fétiche (3.0.7)
+│   ├── ui.js              Feuilles, avatars, recadrage d'illustration, agir(), formats
+│   ├── backend.js         Toutes les données passent ici : RPC Supabase (ou mode local)
+│   ├── gate.js            Écran d'entrée : porte, bêta, invitation, annonce d'arrêt
+│   ├── auth.js            Écran de connexion (Discord ; e-mail désactivé)
+│   ├── fx.js              Particules (canvas #fx)
+│   ├── booster.js         Réserve, tirage local, écran Boosters, bandeaux d'événement
+│   ├── opening.js         Ouverture plein écran, révélations, récap
+│   ├── collection.js      Onglet Collection
+│   ├── viewer.js          Fiche de carte plein écran (pages Infos, Maîtrise, Gérer)
+│   ├── trade.js           Échanges, et utilitaires d'exemplaires utilisés partout
+│   ├── social.js          Onglet Social : amis, fiche d'un joueur
+│   ├── quests.js          Onglet Quêtes, notifications de quête
+│   ├── classement.js      Onglet Classement
+│   ├── tirages.js         Onglet Mes tirages
+│   ├── partage.js         Image de partage d'un booster (canvas 1080 × 1350)
+│   ├── promos.js          Scène d'obtention d'une Promo
+│   ├── boite.js           Boîte de réception, cloche, temps réel
+│   ├── shop.js            Boutique, scène d'achat, invitations
+│   ├── recyclage.js       Recyclage et fabrication
+│   ├── combat/            Les Combats (3.0)
+│   │   ├── moteur.js      Les règles : générateur, état JSON, déterminisme (aussi sous Node)
+│   │   ├── effets.js      L'effet de chaque carte
+│   │   ├── decks.js       Decks : limites, vérification, Starters, aléatoire, codes, bilan
+│   │   ├── ia.js          L'IA, cinq niveaux
+│   │   ├── campagne.js    Sections, rivaux de la campagne, récompenses, Arcade
+│   │   ├── choc-data.js   Chiffres du Raid et de l'Épreuve du jour
+│   │   ├── niveaux.js     XP et niveaux de combattant
+│   │   ├── guides.js      Guide et glossaire pour les joueurs
+│   │   ├── table.js       L'arène plein écran (TAPIS et SLEEVES en bas du fichier)
+│   │   ├── tutoriel.js    La partie guidée
+│   │   ├── atelier.js     L'atelier de decks
+│   │   └── defis.js       Versus entre amis
+│   ├── battle.js          Onglet Combats (accueil, campagne, Arcade, Versus, decks, guides)
+│   ├── profile.js         Onglet Profil (avatar, cadre, titre, bannière, vitrine, fétiche)
+│   ├── settings.js        Onglet Réglages (et bindReglages(), rejoué à chaque rendu)
+│   ├── bienvenue.js       Fenêtres d'accueil, nouveautés, Discord
+│   ├── cadeaux.js         Les cadeaux d'un administrateur
+│   ├── reflets.js         Événement 2.0 « Reflets », et Devine l'illu
+│   ├── choc.js            Événement 3.0 « Le Choc des Sections »
+│   ├── raid.js            Le Raid
+│   ├── pwa.js             Installation, service worker, APP_VERSION
+│   ├── lab.js             Onglet Labo (administrateurs)
+│   ├── cadrage.js         Hauteur de l'application installée (chargé dans <head>)
+│   └── app.js             Navigation, rendu, clics, démarrage (chargé en dernier)
+│
+├── css/                   Les styles, chargés dans cet ordre
+│   ├── tokens.css         Les jetons : palette, typographies, rayons, ombres
+│   ├── base.css           Fond, en-tête, barre du bas, boutons, panneaux, feuilles
+│   ├── cards.css          Cartes, reflets de rareté, grille de la Collection
+│   ├── booster.css        Écran Boosters et déchirure du paquet
+│   ├── opening.css        Théâtre d'ouverture et récap
+│   ├── viewer.css         Fiche de carte
+│   ├── maitrise.css       Maîtrise, carte fétiche
+│   ├── lab.css            Labo
+│   ├── auth.css           Connexion, écran d'entrée, champs de saisie communs
+│   ├── hub.css            Écrans autour du jeu, tiroir, rail d'ordinateur, mouvements réduits
+│   ├── promo.css          Scène d'obtention d'une Promo
+│   ├── reflets.css        Charpente des événements (réutilisée par le Choc), cadres décorés 2.0
+│   ├── combat.css         Onglet Combats
+│   ├── arene.css          L'arène
+│   └── choc.css           Le Choc des Sections, cadres 3.0
+│
+├── supabase/              Le serveur (voir § 9)
+│   ├── 01…28_*.sql        Fichiers d'installation (assemblés), mises à jour historiques, outils
+│   ├── TOUT.sql           Assemblé par tools/build-sql.py : ce qu'on colle dans Supabase
+│   └── gen-cards-sql.py   Régénère 02_cards.sql depuis js/cards-data.js
+│
+├── cards/                 Les images des cartes (.avif 1000 × 1397), promos/ et uniques/
+├── assets/                Habillage : logos, paquets, essences, cadres, cosmétiques de combat, icônes
+├── docs/                  design-3.0.md, regles-3.0.md, economie-3.0.md
+├── tools/                 Scripts de maintenance (§ 12)
+├── _demo/                 Le faux serveur et ses réglages (non publié par GitHub Pages)
+├── _sources/              Images d'origine des visuels générés (non publié)
+├── presse/                Kit presse : visuels, polices, mode d'emploi
+└── preprod/               La pré-prod CONSTRUITE (ne jamais l'éditer à la main)
+```
+
+GitHub Pages passe par Jekyll : les dossiers qui commencent par `_` (`_demo/`, `_sources/`, `_build/`) ne sont pas publiés. `preprod/`, `presse/`, `tools/`, `docs/` et `supabase/` le sont (sur `main`).
+
+---
+
+## 4. Architecture du client
+
+### 4.1 Scripts classiques, un seul espace global
+
+Il n'y a **ni modules ni bundler**. `index.html` charge les scripts dans un ordre strict ; chaque `const`, `let` ou `function` de premier niveau devient global.
+
+- **Ordre** : `config` → `supabase-config` → `utils` → `sfx` → `cards-data` → `promos-data` → `cards` → `storage` → `render-card` → `maitrise` → `ui` → `backend` → `gate` → `auth` → `fx` → `booster` → `opening` → `collection` → `viewer` → `trade` → `social` → `quests` → `classement` → `tirages` → `partage` → `promos` → `boite` → `shop` → `recyclage` → `combat/{moteur, effets, decks, ia, campagne, choc-data, niveaux, guides, table, tutoriel, atelier, defis}` → `battle` → `profile` → `settings` → `bienvenue` → `cadeaux` → `reflets` → `choc` → `raid` → `pwa` → `lab` → **`app` en dernier**. `js/cadrage.js` est chargé à part, dans `<head>`.
+- **Deux déclarations de même nom** au premier niveau provoquent une `SyntaxError` : le second script ne s'exécute pas du tout. Chercher le nom avant d'en créer un.
+- **Le code exécuté au chargement** doit trouver ses dépendances déjà chargées. Le code dans les fonctions peut, lui, utiliser n'importe quel script (la résolution se fait à l'appel).
+- `moteur.js`, `effets.js`, `decks.js` et `ia.js` sont enfermés dans une IIFE (`globalThis`) et n'exposent que `Combat`, `Decks` et `IA` : ils tournent aussi sous Node (`tools/combat-*.js`). `cards.js` doit lui aussi rester exécutable sous Node (aucun accès au DOM).
+- La bibliothèque Supabase (`supabase-js@2.116.0`, UMD) vient de jsDelivr. Dans la pré-prod, `demo.py` la remplace par le faux serveur.
+- **Ajouter un fichier** : la balise dans `index.html` à sa place, puis `python3 tools/version.py` (sinon `sw.js` ne le connaît pas et le démarrage hors réseau casse).
+
+### 4.2 Le démarrage (`js/app.js`, fin du fichier)
+
+1. Construire les cartes : `buildCards`, `buildPromos`, `buildBrillantes`, `buildReverses`, `buildUniques`, `buildSecretes`, puis `rebuild()` (l'index `byId`) et `Combat.catalogue(…)`.
+2. `brand()`, `rollPack()`, `oublierTheme()`, `poserRM(reglageRM())`.
+3. `brancherSW()` — **avant le premier `await`** : il écoute `load`.
+4. `lireErreurRetour()` — **avant `Backend.init()`**, qui nettoie l'URL au retour de Discord.
+5. `await Backend.init()` : session Supabase, puis `pull()` (la RPC `me`).
+6. Si `PORTE.active` : `Porte.lire()`. Si la porte est fermée : `render()` et arrêt.
+7. En ligne : `checkin()` (une fois par jour de Paris), `loadShop`, `loadTrades`, `loadAmis`, `demarrerBoite()`, `relireCadeaux()`, `chargerIllu()`.
+8. `render()`.
+
+### 4.3 Le rendu
+
+- **`render()`** réécrit `#main.innerHTML` avec `VUES[tab]()` : chaque vue est une fonction `vXxx()` qui renvoie une chaîne HTML. Il n'y a ni DOM virtuel ni composants : l'état d'interface vit dans des globales (`colVue`, `cbVue`, `trVue`, `socVue`, `qVue`, `shopVue`, `chVue`…).
+- Ordre : porte fermée → `vPorte()` ; sinon connexion nécessaire → `vAuth()` ; sinon en-tête (`header()`), barre (`navHTML()`), puis la vue.
+- **Ce qui survit à un rendu** (sur le même onglet) : le défilement de `#main` ; l'état ouvert des `<details data-garde="clé">` ; le défilement des éléments `[data-defil="clé"]` ; dans un `[role=tablist][data-defil]`, l'élément `.on` est ramené en vue.
+- `#main` reçoit la classe `tab-<onglet>` : c'est par elle qu'on stylise un onglet (`#main.tab-boosters`). **Jamais de `data-tab` sur `<body>`** : chaque clic deviendrait un retour à l'onglet.
+- Après le rendu : `bindPack()` (Boosters), `placerPass()` / `placerPassChoc()` (Pass), `bindAtelier()` / `bindGuide()` (Combats), **`bindReglages()` à chaque rendu** (il rebranche tous les champs à `id` du jeu), puis `viderFilePromos()` et `proposerAccueil()`.
+- **`aller(id)`** change d'onglet (son, défilement en haut, `render()`) et relance le chargement propre à l'onglet (Social, Boutique, Choc, Classement…).
+- **Seul `<main>` défile** : `html` et `body` sont en `overflow:hidden`. Utiliser `$('#main').scrollTop`, jamais `window.scrollTo`.
+
+### 4.4 Les clics
+
+Un seul gestionnaire, `clicPage(e)` (`js/app.js`), écoute `#main`, `#sheet` et `#tiroir`. Il cherche le premier ancêtre qui porte un des attributs de la liste du `closest(…)` et le traite dans cet ordre :
+
+1. `data-tab` → `aller()` (**traité avant tout** : un élément qui porte `data-tab` et un autre attribut voit l'autre ignoré) ;
+2. les préfixes de module : `data-cb` → `cbAction` (Combats), `data-ch` → `chAction` (Choc), `data-rd` → `raidAction` (Raid) ;
+3. les attributs spécialisés (`data-show`, `data-craft`, `data-shop`, `data-quete`, `data-tr…`, `data-rec…`, `data-vit-…`, `data-palier`, `data-illu`…) ;
+4. enfin `switch (d.act)` sur `data-act`.
+
+Ont leur propre délégation : `#nav` et l'en-tête, `#viewer` (`data-v`, `js/viewer.js`), `#theater` (`data-t`, `js/opening.js`), les feuilles (`data-si`, `js/ui.js`) et l'arène (`data-ar`, `js/combat/table.js`).
+
+**Ajouter un bouton** : de préférence `data-act="mon-action"` et un `case` dans le `switch`. Un attribut `data-x` nouveau doit **aussi** être ajouté à la liste du `closest(…)`, sinon il est ignoré.
+
+### 4.5 La boucle d'une seconde et le redessin discret
+
+Un `setInterval` d'une seconde (`js/app.js`) : relève le serveur quand un booster devrait être rechargé, ou au passage d'une bascule d'événement (au plus toutes les 30 s), met à jour les comptes à rebours `[data-rebours]` et la remise des quêtes.
+
+`majDiscrete(pageAussi)` met à jour l'en-tête, la barre et le tiroir, mais **ne redessine la page que si** `!ecranOccupe()` (ouverture de booster, scène Promo, combat) **et** `!enTrainDEcrire()` (un champ de saisie a le focus : échanges, Labo, devise, atelier…). **Tout nouveau champ de saisie** doit être ajouté à `enTrainDEcrire()`, sinon un rafraîchissement de fond lui vole le focus.
+
+Au retour sur l'onglet du navigateur (`visibilitychange`) : `pull`, relève de la boîte, des cadeaux et de Devine l'illu.
+
+### 4.6 L'objet `save` et `Backend`
+
+- **`save`** est l'état du joueur. En ligne, **il est entièrement reconstruit** par `Backend.apply(me())` à chaque `pull()`, `checkin()` ou action : un champ posé à la main sur `save` disparaît au rafraîchissement suivant. Ne jamais y ranger d'état d'interface.
+- Champs principaux : `id`, `pseudo`, `avatar`, `frame`, `isAdmin`, `invite` (strictement `=== true`), `filleul` ; `tickets`, `bonus`, `lastTick` ; `col` (`{id: nombre}`), `inv`, `vitrine`, `garder`, `gardes`, `favoris` ; `shards` (Éclats), `fragments`, `prismes` (monnaie de l'événement en cours) ; `quetes`, `succes`, `titre`, `banniere`, `devise`, `titres` ; `evenement`, `recap`, `chasse` ; `combat` ; `maitrises` (`{idClassique: niveau}`) et `fetiche`.
+- `Backend.apply` écrase aussi `TICKET_CAP` et `INTERVAL` (le serveur impose le rythme), calcule `Backend.skew` (décalage d'horloge : `srvTime(iso)` en tient compte), puis appelle `signalerQuetes` et `signalerPromos`, qui comparent l'état précédent au nouveau.
+- **`Backend.rpc(nom, args)`** appelle une RPC, retire les préfixes d'erreur SQL et traduit les codes connus (`MSG_SERVEUR` : `BETA_FERMEE`, `RESERVE_VIDE`, `BONUS_VIDE`, `BOOSTER_VIDE`, `ECHANGE_EN_RECHARGE`, `non connecte`). Les autres messages SQL sont **montrés tels quels au joueur** : ils doivent être en français.
+- **`agir(fn, msg)`** (`js/ui.js`) enveloppe une action : `occupe`, `await fn`, toast, `render()` ; renvoie `true` ou `false`. À utiliser pour toute action serveur déclenchée par un bouton.
+- Le mode `local` (sauvegarde IndexedDB, sans compte) existe encore dans le code mais **n'est plus atteignable** ([§ 4.9](#49-porte-bêta-et-connexion)).
+
+### 4.7 Les onglets
+
+Les onglets sont décrits par `TABS` (`js/config.js`) :
+
+| Drapeau | Effet |
 |---|---|
-| 1 et 2 | Commune |
-| 3 | **Peu commune garantie** |
-| 4 | Essence — Brillante une fois sur 50 |
-| 5 | **Une Reverse** (version 2.0) : Commune 50 %, Peu commune 35 %, Rare 15 % (`RATES.REVERSE`) |
-| 6 | Le hit : rare, épique, légendaire ou secrète (`RATES.HIT` = 79 / 16 / 4,25 / 0,75 %, version 3.0 ; avant : 80 / 16 / 4) |
+| `bas: true` | Barre du bas sur mobile, rail sur ordinateur : **Boosters, Collection, Combats, Social, Quêtes** (cinq places, pas une de plus). |
+| `tiroir: true` | Tiroir du compte sur mobile (on l'ouvre par l'avatar), second groupe du rail sur ordinateur : Mon profil, Mes tirages, Devine l'illu, Classement, Boutique, Recyclage, Réglages, Labo. |
+| `evenement: 'code'` | L'onglet d'un événement (`reflets`, `choc`) : présent pendant l'événement et les 3 jours de son récap, **en tête du tiroir**. |
+| `horsEvenement: 'reflets'` | Devine l'illu disparaît pendant Reflets (le jeu vit alors dans l'onglet Reflets). |
+| `admin: true` | Labo : seulement si `save.isAdmin`. |
 
-Environ un booster sur 2 000 (`GOD`) est un **godpack** : 5 rares, 4 épiques et une légendaire en dernier. Rien ne l'annonce, ni écran, ni mot : voir plus bas.
+La boîte de réception n'a pas d'onglet visible : on l'ouvre par **la cloche** de l'en-tête. Sur ordinateur (`min-width: 900px`, `surOrdi()`), la barre devient un **rail à droite** et il n'y a pas de tiroir. Les **pastilles** (`pastilleOnglet()`) signalent ce qui attend : boosters disponibles, quêtes à encaisser, demandes sur Social, défis et coffres du Raid sur Combats, paliers et quêtes d'événement.
 
-> Ces taux existent à deux endroits : `open_pack()` dans `supabase/03_rpc.sql` (le vrai tirage) et `RATES` dans `js/booster.js` (les ouvertures de test du Labo). Les garder identiques, sinon le Labo ment sur ce qu'il montre.
+**Ajouter un onglet** : une entrée `TABS` (`id`, `nom`, `ico` = clé de `NAVICO`, `bas` ou `tiroir`, `desc`), une vue dans `VUES` (`js/app.js`), et si besoin un chargement dans `aller()`, une pastille dans `pastilleOnglet()`.
 
-### L'ouverture
+### 4.8 Feuilles, toasts, notifications, fenêtres d'accueil
 
-Tout se joue dans **un seul écran, sans jamais remplacer le DOM** : c'est ce qui évite les coupures. `showStack()` (`js/opening.js`) monte la pile complète *et* le paquet par-dessus, puis `packOpen()` déroule la séquence :
+- **Feuille** : `openSheet({title, body, actions: [{label, fn, primary}], locked})` (`js/ui.js`). `body` est du HTML brut (échapper avec `h()`). L'action `primary` devient un bouton plein, les autres des boutons « ghost ». Sur mobile elle monte du bas et se ferme d'un glissé vers le bas ; sur ordinateur elle se centre. `locked` empêche de la fermer en touchant le fond.
+- **Toast** : `toast(message)` (2,6 s). **Notification** en haut d'écran : `notifQuete()` (quêtes), `notifBoite()` (boîte).
+- **Fenêtres d'accueil** (`js/bienvenue.js`) : une seule proposition par session, par `quandCalme()` qui attend que l'écran soit libre. Ordre de `proposerAccueil()` : bienvenue, fin de chasse, récap Reflets, récap Choc, nouveautés, Discord. La fenêtre des **nouveautés** se montre une fois par valeur de `NOUVEAUTES_VERSION` (aujourd'hui `'3.0'`) et à l'annonce puis au début d'un événement ; `montrerNouveautes()` choisit la fonction selon la version (le test `=== '3.0'` est écrit en dur).
 
-1. Le paquet de l'écran Boosters grossit et se fond — on plonge dedans (`.pack.tear`).
-2. Le paquet tremble en 3D, un trait lumineux coupe le haut, la bande se détache en dents de scie et bascule vers l'arrière en s'assombrissant (`riptop`, perspective posée par `.stackwrap`).
-3. La classe `packed` est retirée : la pile, jusque-là tassée *dans* le paquet (`translateY(11%) scale(.82) rotateX(-16deg)`, calée pour que le bas des cartes ne dépasse jamais sous le sachet), revient à sa position de repos en une seule transition. Les six cartes sortent alignées et se présentent de face pendant que le paquet vide bascule et descend hors champ.
+### 4.9 Porte, bêta et connexion
 
-Les délais sont dans `packOpen()`, le reste dans le bloc `Déchirure` de `css/booster.css`.
+Deux écrans peuvent remplacer le jeu :
 
-**Pas de spoiler.** La dernière carte ne reçoit sa classe de rareté que dans `doReveal()` : avant, aucune lueur colorée ne trahit ce qu'il y a dessous. À la place, `bindStack()` écrit `--tilt` sur la scène selon l'inclinaison, et la tranche de la carte s'allume en blanc quand on fait tourner la pile — le spoil devient un geste volontaire.
+- **la porte** (`vPorte()`, `js/gate.js`, `body.inlock`) : l'écran d'entrée ;
+- **la connexion** (`vAuth()`, `js/auth.js`, `body.inauth`).
 
-### Le godpack
+`etatPorte()` décide :
 
-Il n'a ni écran, ni lettrage, ni surbrillance carte par carte : **c'est la lumière qui le raconte**, dans la même séquence que n'importe quelle ouverture.
+1. `PORTE.active === false` → ouvert ;
+2. pas de session en ligne → `'attente'` : l'annonce « Projet annulé · Merci », le lien Discord, « J'ai déjà un accès » (connexion Discord) et Matepedia ;
+3. connecté et `save.invite === true` → le jeu ; sinon `'refus'` : la saisie d'un **code d'invitation** (`utiliser_invitation`) et « Changer de compte ».
 
-1. Le paquet reste normal, mais `packOpen()` lui accorde 860 ms de plus (`rip-wake`) : l'image s'assombrit (`goddim`), la couture du haut s'allume de plus en plus (`leakwake`) et le tremblement monte (`godtremble`). On sent qu'il y a quelque chose dedans, sans savoir quoi.
-2. À la déchirure, la couture explose (`leakflash`) et un faisceau s'échappe par la fente (`.rp-beam`) : un trapèze découpé en `clip-path`, flouté et masqué en radial, qui s'évase vers le haut — un cône de lumière, pas un bloc. La classe `lit` arrive en même temps : la nappe dorée (`.godwash`) inonde la scène, les rayons lents (`.godaura`) apparaissent, la pile prend son halo.
-3. Les cartes sortent dans cette lumière et la pluie d'étincelles se relance à mi-parcours pour qu'elle ne s'arrête jamais net.
+Avec `PORTE.active = true` (la valeur actuelle, sur `main` comme sur la branche), **`vAuth()` n'est jamais visible** et le jeu sans compte n'est plus atteignable. Côté serveur, `beta_lancement()` vaut `'infinity'` : la bêta est fermée pour toujours ; `garde_beta()` refuse toute action d'un compte qui n'est pas dans `beta_invites`. **Rouvrir le jeu** demanderait les deux : `PORTE.active = false` **et** une date passée dans `beta_lancement()`.
 
-Dans un godpack, `announce()` **n'ajoute pas** la surbrillance de rareté carte par carte : toutes les cartes sont des hits, les éclairs bleus et violets ne feraient que brouiller l'or. Seule la légendaire finale garde sa révélation complète.
+Un lien `?invitation=CODE` est retenu (`mtcg.invitation`) et proposé après la connexion. La connexion se fait **par Discord** ; l'e-mail existe dans le code mais est fermé (`CONNEXION.email = false`, `js/config.js`).
 
-> `PACK_SIZE` sert à l'affichage ; c'est `makeBooster()` qui décide vraiment du contenu — et, en ligne, `open_pack()` dans `supabase/03_rpc.sql`, qui seul fait foi. Les trois doivent bouger ensemble. Les visuels de paquet portent la mention imprimée « Booster de 6 cartes » : si le nombre change, il faut refaire les images, sinon le paquet ment sur ce qu'il contient.
+### 4.10 PWA, service worker, versionnage
 
-## Ajouter une carte
+- `manifest.webmanifest` + `sw.js` rendent le site installable et consultable hors réseau. `js/pwa.js` propose l'installation (après 2 boosters ouverts, pas dans les 14 jours suivant un refus ; trois étapes illustrées sur iPhone) et prévient d'une nouvelle version (« Recharger »).
+- `sw.js` : le **code** (CSS, JS) est servi réseau d'abord, puis cache ; les **médias** (images, polices) sont servis **depuis le cache, à vie, jusqu'au prochain changement de `VERSION`**. Une image retouchée sous le même nom reste donc l'ancienne chez les joueurs : changer son nom, ou changer de version.
+- La pré-prod n'a pas de service worker (`brancherSW()` neutralisé par `demo.py`), **mais celui du vrai site couvre aussi `/preprod/`**. C'est pourquoi `demo.py` ajoute `?v=<version>` à toutes les URL `assets/…` de la pré-prod (pas à `cards/`).
+- `js/cadrage.js` corrige la hauteur de l'application installée (`--app-h`, `html.cadre-app`).
 
-1. Dépose son image dans `cards/` (avif, png, jpg ou webp).
-2. Ajoute une entrée dans `js/cards-data.js`. Le champ `fichier` la relie à son image, et `num` fixe son numéro dans la collection.
+### 4.11 Stockage local et réglages de l'appareil
+
+| Clé `localStorage` | Contenu |
+|---|---|
+| `mtcg.rm` | Réglage « Animations réduites » (pose `html.rm`). |
+| `mtcg.jeu` | `{recapDirect, vibrer, gyro, rapide}` (récap direct à l'ouverture, vibrations, gyroscope, combats rapides). |
+| `mtcg.audio` | Réglages du son. |
+| `mtcg.accueil` | Fenêtres d'accueil déjà vues. |
+| `mtcg.install` | Proposition d'installation. |
+| `mtcg.invitation` | Code d'invitation gardé. |
+| `mtcg.tutoriel`, `mtcg.guides.lus` | Tutoriel réussi, chapitres du Guide lus. |
+| `mtcg.combat.encours` | Combat en cours, pour la reprise après rechargement. |
+
+IndexedDB : base `premier-lobby` (en pré-prod `premier-lobby-preprod`), magasin `kv` ; le faux serveur y range tout son état sous la clé `demo-serveur`. Dans la pré-prod, **toutes** les clés `localStorage` sont préfixées par `preprod:` (le vrai site partage l'adresse).
+
+### 4.12 Sons et particules
+
+- **Sons** (`js/sfx.js`) : tout est synthétisé en Web Audio, il n'y a aucun fichier son. Une recette par son dans `RECETTES` (`tap`, `onglet`, `carte`, `retourne`, `dechire`, `rare`, `epique`, `legend`, `gagne`, `erreur`…) ; `SFX.jouer(nom)`. Chaque `button` sonne seul ; `data-snd="nom"` choisit le son, `data-snd="non"` le coupe. Sur mobile, le contexte audio est réveillé au premier geste et repris au retour sur l'onglet (sur iPhone, l'interrupteur silencieux coupe tout).
+- **Particules** (`js/fx.js`) : `FX.burst`, `FX.sparkle`, `FX.confetti` sur `canvas#fx`.
+
+---
+
+## 5. Direction artistique
+
+> Le système visuel complet, son histoire et ses sources sont dans [`docs/design-3.0.md`](docs/design-3.0.md). **Les valeurs font foi dans `css/tokens.css`.** Cette section est le guide pratique : ce qu'il faut savoir pour qu'un écran nouveau s'intègre sans qu'on le remarque.
+
+### 5.1 L'esprit : graphite, lavande et verre liquide
+
+La DA 3.0 s'appelle **« Graphite et lavande »**. Elle a été choisie sur maquettes parmi trois propositions, après une première refonte jugée « pas belle, pas harmonieuse ». Ses cinq principes :
+
+1. **Le contenu d'abord.** L'interface est un **gris anthracite neutre**, à peine violacé ; ce sont les cartes et les illustrations qui portent la couleur de l'écran.
+2. **Des tuiles pleines.** Les blocs sont des aplats posés sur le fond par une ombre douce, à la manière de *Pokémon TCG Pocket* — jamais des voiles translucides.
+3. **Une seule couleur d'action, la lavande**, partout, arène comprise. **Choisir n'est pas agir** : ce qu'on a choisi est **blanc**.
+4. **Le verre pour ce qui flotte, et seulement ça.** C'est le principe du *Liquid Glass* d'Apple (WWDC 2025) : un verre dépoli, lumineux sur son bord haut, réservé à la couche qui flotte au-dessus du contenu (barre des onglets, en-tête, feuilles, tiroir, toasts). **Jamais de verre sur du verre**, jamais de flou animé, toujours un repli opaque.
+5. **Lisible d'abord.** Contraste WCAG 2.2 vérifié : 4,5:1 pour le texte, 3:1 pour les gros titres et les éléments graphiques.
+
+**Sombre uniquement** (`color-scheme: dark`) : il n'y a qu'un thème, et `oublierTheme()` efface un ancien réglage.
+
+### 5.2 La palette
+
+Les jetons de `css/tokens.css` (les inutilisés sont listés au [§ 14](#14-dette-connue)) :
+
+| Jeton | Valeur | Usage |
+|---|---|---|
+| `--bg` | `#121119` | Fond de page (jamais de noir pur ; aussi `theme-color`) |
+| `--bg-2` | `rgba(0,0,0,.26)` | Le creux : jauge vide, rail de `.segbar`, case vide |
+| `--surface` / `-2` / `-3` | `#1c1b25` / `#24232f` / `#2d2b3a` | Les tuiles, de la plus basse à la plus haute |
+| `--plate` / `-2` / `-3` | `#16151e` / `#1c1b25` / `#2a2837` | Aplats opaques posés **sur une image** (badges, compteurs) |
+| `--veil-2` | `rgba(18,17,25,.92)` | Voile presque opaque |
+| `--scrim` | `rgba(8,7,12,.66)` | Fond derrière une feuille ou le tiroir |
+| `--line` / `-2` / `-3` | blanc à 7 / 12 / 20 % | Filets |
+| `--text` / `--subtle` / `--muted` | `#f1f0f8` / `#c4c1d6` / `#9a97ae` | Texte, secondaire, discret |
+| `--accent` | `#8a78f5` | **La lavande d'action** |
+| `--accent-soft` | `#b3a6ff` | Lavande claire : icône d'onglet actif, liens, anneaux (le jeton le plus utilisé) |
+| `--accent-deep` | `#5d4bd9` | Bas du dégradé d'action |
+| `--accent-wash` / `-2` | lavande à 12 / 22 % | Lavis |
+| `--accent-glow` | `rgba(140,120,255,.45)` | Lueur sous un bouton, halos |
+| `--cta` | `linear-gradient(180deg,#8f7dfb,#5d4bd9)` | **Le** bouton principal (un par écran) |
+| `--brand` | `#ff5f7e` | Le rouge des **pastilles d'attention** (malgré son nom) |
+| `--brand-light` | `#e6e1ff` | Montants en Éclats |
+| `--deco-wash` / `--deco-ink` | `rgba(157,140,255,.13)` / `#c8bfff` | Le décor : tuile d'icône au trait, lavis d'en-tête |
+| `--progress` | `linear-gradient(90deg,#7a68ec,#b3a6ff)` | Toutes les jauges |
+| `--gold` (+ `-light`, `-ink`, `-wash`, `-line`) | `#f5c451` | **Récompenses et Légendaire uniquement** |
+| `--ok` (+ `-deep`, `-wash`, `-line`) | `#4fd6a0` | « Réussi » |
+| `--danger` (+ `-wash`, `-line`) | `#ff6b6b` | Erreur, défaite, adversaire |
+| `--glass` | `rgba(30,29,40,.74)` | Verre |
+| `--glass-strong` | `linear-gradient(180deg,rgba(38,37,50,.95),rgba(24,23,32,.97))` | Verre couvrant (feuilles, tiroir) |
+| `--glass-line` / `--glass-line-top` | blanc à 10 / 20 % | Bord du verre, plus clair en haut |
+| `--glass-hi` | `inset 0 1px 0 rgba(255,255,255,.12)` | Reflet du bord haut |
+| `--glass-solid` | `rgba(26,25,34,.97)` | Repli opaque du verre |
+| `--sh-1` … `--sh-4` | de `0 1px 2px` à `0 24px 60px` | Ombres (légère → objets flottants) |
+| `--tuile` | `inset 0 1px 0 rgba(255,255,255,.05),0 6px 18px rgba(0,0,0,.24)` | **L'ombre de tuile** |
+| `--gloss` / `--gloss-soft` | blanc à 34 / 14 % | Reflet des boutons |
+| `--hover` | blanc à 5 % | Survol |
+| `--radius-xs` … `--radius-xl` | 8, 12, 18 (`--radius`), 22 (`--radius-lg`), 28 px | Rayons concentriques |
+| `--gap-2` … `--gap-5` | 10, 14, 20, 28 px | Espacements |
+| `--spring` | `cubic-bezier(.2,1.25,.4,1)` | Ressort : ce qu'on touche |
+| `--ease` | `cubic-bezier(.2,.8,.2,1)` | Courbe douce : ce qui entre |
+| `--top-h` / `--nav-h` | 58 px / 66 px | Hauteurs de l'en-tête et de la barre du bas |
+
+Les « salles obscures » (`#theater`, `#viewer`, `.promoscene`) redéfinissent `--bg`, `--surface` et `--line` un cran plus sombres. L'arène a ses propres variables `--ar-*` ([§ 5.11](#511-dans-larène)).
+
+### 5.3 Le code couleur
+
+| Couleur | Sens | Exemples |
+|---|---|---|
+| **Lavande** | Ce que tu peux faire maintenant | `--cta`, `--accent`, ce qui est jouable en combat |
+| **Blanc** | Ce que tu as choisi | puce ou segment `.on` (blanc à 12–17 % et filets intérieurs), carte choisie |
+| **Rouge** | Attention, adversaire | pastilles `--brand`, `--danger`, `--ar-adv` |
+| **Vert** | Réussi | `--ok` |
+| **Or** | Récompenses et Légendaire | `--gold` |
+
+Une couleur, un sens, partout le même. Ne pas utiliser l'or pour décorer, ni la lavande pour un choix.
+
+### 5.4 Essences, raretés, Sections
+
+**Les Essences** (`COLORS`, `js/config.js`) arrivent dans le CSS par des variables posées en ligne (`--tc` sur une carte, `--ec`, `--mc`, `--fc`) ; leurs symboles sont dans `assets/essences/`.
+
+| Essence | Couleur | Essence | Couleur |
+|---|---|---|---|
+| Rose | `#ee0073` | Mauve | `#ec8fff` |
+| Orange | `#f77514` | Verte | `#9df244` |
+| Jade | `#55e6a6` | Bleue | `#2f7fc9` |
+| Violette | `#8936ff` | Azur | `#39b8ff` |
+| Jaune | `#ffc73b` | Neutre | `#90b2a5` |
+
+**Les raretés** (jetons `--r-*`) : Essence `#90b2a5`, Commune `#a29dbb`, Peu commune `#7bd6b4`, Rare `#5aa9ff`, Épique `#a98bff`, Légendaire `#f5c451`, Promo `#ff7eb6`. Secrète, Brillante et Unique ont leurs effets propres (reflet irisé, prisme, liseré d'or) dans `css/cards.css`.
+
+**Les Sections** (`SECTIONS`, `js/combat/campagne.js`) : **Toxique** `#62d84e` (clair `#b7f29a`), **Déter** `#7c3aed` (clair `#c4b5fd`). Ces couleurs ne servent **qu'à dire une Section** ; l'onglet Combats les reçoit en `--sc` / `--sc2`.
+
+### 5.5 Typographie
+
+- **Archivo** (`--display`) pour les titres et les chiffres : axe de largeur 62–125 %, graisses 400–900, **italique seulement en 700–900**.
+- **Figtree** (`--body`) pour tout le reste : graisses 400, 600, 700, 800 (**pas de 500 ni de 900** : demander 900 donne 800).
+- `h1` : Archivo 900 italique, `font-stretch:112%`, 29 px. `h2` : Archivo 800 droit, 17 px. Corps : 15 px, interligne 1,45.
+- **Titre mis en scène** : Archivo 900 italique, 17 à 28 px, interligne 1 à 1,1.
+- **Kicker** (petites capitales au-dessus d'un titre) : 10,5 px, 800, `letter-spacing:.1em`, majuscules, `--accent-soft`.
+- **Chiffres** : Archivo 900 avec `.tnum` (chiffres tabulaires).
+
+### 5.6 Les matières
+
+| Matière | Recette |
+|---|---|
+| **Tuile** | `background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--tuile); border-radius: var(--radius-lg);` (la classe `.panel` en est une ancienne forme, avec `border`). |
+| **Verre** (*liquid glass*) | `background: var(--glass);` + `-webkit-backdrop-filter` **et** `backdrop-filter: blur(22px) saturate(170%);` + `border: 1px solid var(--glass-line); border-top-color: var(--glass-line-top);` + `box-shadow: var(--glass-hi), var(--sh-3 ou --sh-4);` |
+| **Verre couvrant** | `--glass-strong` + `blur(32px) saturate(160%)` : feuilles, tiroir. |
+
+**Règles du verre.** Pas de verre sur du verre (les capsules de l'en-tête, `.pill` et `.hdrbtn`, n'ont pas de flou à elles). On n'anime jamais le flou. **Repli obligatoire** : tout nouvel élément de verre s'ajoute aux deux listes de `css/base.css` (`@supports not (backdrop-filter…)` et `@media (prefers-reduced-transparency: reduce)`), qui le passent à `--glass-solid`.
+
+Où se trouve le verre : `#nav`, le fond de l'en-tête, `.sheet`, le tiroir, `#toast`, les notifications, les pieds collants (`.at-pied`, `.recpied`) ; dans l'arène, les boutons, la carte agrandie, les feuilles et le journal ; sur les bandeaux illustrés, les petites capsules (`.rf-solde`, `.rf-fin`, `.rf-onglets`).
+
+### 5.7 Les composants
+
+- **Boutons** (`css/base.css`) : `.btn` (principal, `--cta`, pleine largeur, Archivo 800 16 px, reflet `--gloss`, lueur `--accent-glow`, `scale(.97)` à l'appui avec `--spring`) ; `.btn.ghost` (verre clair, secondaire) ; `.btn.tiny` (compact) ; `.linkbtn` (lien discret). **Un seul bouton principal par écran.**
+- **`.segbar`** : le rail segmenté (sous-navigation). Fond `--bg-2` ; le segment `.on` en blanc à 15 %.
+- **`.chips`** : rangée de puces qui glisse de côté ; la puce `.on` est blanche.
+- **`.panel`** : la tuile classique d'un écran ; `.pagehead` : le titre d'onglet et sa ligne d'explication.
+- **Pastilles** : `.pastille` (rouge, une attente) ; `.ava-niv` (niveau, lavande) ; `.qtag` (étiquette en petites capitales) ; `.new` (nouvelle carte).
+- **Bandeau illustré** (`.cb-mode`, `.cb-porte`, `.ch-nv-une`…) : conteneur `position:relative; isolation:isolate; overflow:hidden; border-radius:var(--radius-xl)`, un calque d'art en `z-index:-2` (`background: var(--art) 50% 22%/cover`), un `::after` en `z-index:-1` qui fond l'image vers la tuile (`linear-gradient(180deg, transparent …, rgba(24,23,33,.97) 80%)`), le texte en bas.
+- **Lavis d'en-tête** : `linear-gradient(135deg, var(--deco-wash), var(--surface) 62%)` (variantes vert `--ok-wash`, or `--gold-wash`).
+- **Tuile d'icône** : 36 à 42 px, `--radius-sm`, fond `--deco-wash`, couleur `--deco-ink`, SVG **au trait** (`fill:none; stroke:currentColor; stroke-width:1.8–2.2; stroke-linecap/linejoin:round`). Les icônes de l'interface sont dans `NAVICO` (`js/config.js`) et sont toutes au trait, sauf l'étoile du logo (`ICON.star`).
+- **Jauge** : piste `--bg-2` + `inset 0 0 0 1px var(--line)`, remplissage `--progress`. **Anneau** : `conic-gradient(var(--accent-soft) var(--p), rgba(255,255,255,.14) 0)`.
+- **Avatars** : `avatarHTML(avatar, cadre, 'sm|md|lg|xl', photo, xp)` (`js/ui.js`) ; avec `xp`, la pastille de niveau. Les **cadres** (`FRAMES`, `js/config.js`) sont un anneau coloré (`--f1`, `--f2`) ou un **cadre décoré** : un SVG animé dans `assets/cadres/` qui déborde du cercle (`.ava.fx-<nom> .fx-deco`).
+- **Recadrer une illustration de carte** dans une case : `illuCadre(id, fx, fy, zoom)` (`js/ui.js`) : `fx`/`fy` est le point de l'illustration gardé au centre.
+- **Cartes** : toujours par `renderCard(c, o)` ; `o.m` montre un niveau de maîtrise, `o.calme` coupe les animations (grilles).
+
+### 5.8 Mouvement
+
+- `--spring` pour ce qu'on touche (`:active` en `scale(.93 à .98)`), `--ease` pour ce qui entre ; les feuilles montent en `.34s`.
+- **Mouvements réduits** : la préférence système (`prefers-reduced-motion`) **et** le réglage du jeu « Animations réduites » (`html.rm`, clé `mtcg.rm`) coupent toutes les animations (règles globales dans `base.css` et `hub.css`). **En JavaScript, tester les deux** : `RM() || document.documentElement.classList.contains('rm')` — `RM()` seul ne voit que la préférence système. Une animation qui doit laisser un état de repos (un reflet posé, des étincelles cachées) le déclare sous `html.rm …` et sous la media query.
+
+### 5.9 Écrans, bords et couches
+
+- **Conçu d'abord pour un téléphone de 390 × 844** ; vérifié en 375 × 667 et 360 × 740. Point de rupture principal : **900 px** (ordinateur : rail à droite, feuilles centrées, `#main > *` limité à 860 px, 1 180 px pour Boosters et Collection). Autres : 359, 420, 560, 640.
+- Chaque élément qui touche un bord tient compte de la **safe-area** (`env(safe-area-inset-*, 0px)`).
+- `#main > *` est centré par `margin-inline:auto` : un `margin` raccourci posé en ligne sur un enfant direct le décentre.
+- **Pile des `z-index`** : `.bgdeco` −1 · `.top`, `#nav` 6 · `#theater` 30 · surcouche du Guide 35 · `#arene` 40 · `#tiroir` 45 · `.sheet-wrap` 50 · `#viewer` 55 · `.promoscene`, `#fx` 60 · `#qnotif` 70 · `#toast` 80 · bandeau de la pré-prod 99999.
+
+### 5.10 Organisation du CSS
+
+Les fichiers se chargent dans l'ordre du [§ 3](#3-arborescence-du-dépôt) (« les jetons d'abord ») ; l'ordre compte (`choc.css` surcharge `reflets.css`). Chaque écran a son fichier **et son préfixe de classes** ; ses règles d'adaptation (mobile, ordinateur) vivent dans le même fichier.
+
+| Fichier | Préfixes |
+|---|---|
+| `base.css` | briques génériques : `btn`, `chips`, `panel`, `sheet`, `top`, `qn` |
+| `hub.css` | `q*` (quêtes), `of*` (boutique), `a3d-*` (scène d'achat), `ava*`, `vit*`, `cl*`, `ami*`, `troc-*`, `b*` (boîte), `rec*`, `tiroir-*`, `moi-*`, `garde-*`… |
+| `cards.css` | `card`, `cwrap`, `gcell`, `fil*`, `col*`, `rar*`, `tx-*`, `rev*` |
+| `booster.css` | `pack*`, `res*`, `rp-*`, `rip-*`, `evb*` |
+| `opening.css` | `th-*`, `scard`, `op-rar`, `rc-*`, `charge-*`, `flash-*`, `god*` |
+| `viewer.css` | `vw-*` |
+| `maitrise.css` | `mz-*`, `fet-*` |
+| `lab.css` | `lab*` |
+| `auth.css` | `auth*`, `lock*` |
+| `promo.css` | `pr-*`, `promo*` |
+| `reflets.css` | `rf-*`, `rfban*`, `il-*`, `rr-*`, `titre*`, `inv*`, `fx-*` |
+| `combat.css` | `cb-*`, `rd-*` (Raid), `at-*` (atelier), `gd-*` (guides), `dk-*` (decks) |
+| `arene.css` | `ar-*`, `mk-*`, `tuto-*` |
+| `choc.css` | `ch-*`, `chban` |
+
+**États** : `.on` (choisi), `.ok`, `.pret`, `.pris`, `.fait`, `.ferme`, `.eng`, `.moi` / `.lui`, `.vide`. Le CSS utilise des fonctions récentes (`color-mix()`, `:has()`, `@property`, container queries `cqi`/`cqw`/`cqh`, `dvh`, `scroll-snap`) : un navigateur récent est requis.
+
+### 5.11 Dans l'arène
+
+L'arène (`#arene`, `css/arene.css`) a ses variables locales : `--ar-act` `#9d8cff` et `--ar-act2` `#c8bfff` (l'action), `--ar-adv` `#ff6b6b` (l'adversaire), `--t-joueur`, `--t-objet`, `--t-coach`, `--t-moment` (couleurs des sortes de cartes), `--ar-barres`, `--ar-main`. Elles **n'existent que sous `#arene`** : hors de l'arène, les redéfinir (voir `.ar-fin-apercu`, `css/lab.css`). Les surbrillances se posent sur `::after`, jamais sur la carte ; les mesures sont en `cqi` (la place `.ar-place` est un conteneur à la largeur d'une carte). `#arene button{font:inherit}` l'emporte sur une simple classe : écrire `#arene .x`.
+
+### 5.12 Recettes
+
+- **Un écran d'onglet** : `<div class="pagehead"><div><h1>Titre</h1><p>Une ligne.</p></div></div>`, puis des tuiles, un seul `.btn`, des `.btn ghost` à côté, une `.segbar` pour les sous-pages. Un nouveau préfixe, dans le fichier de l'écran. **Uniquement des jetons** (les rgba blancs et noirs sont tolérés pour les filets et les voiles).
+- **Une couleur nouvelle** : un jeton dans `tokens.css`, documenté dans `docs/design-3.0.md`. Ne jamais réécrire `#8f7dfb, #5d4bd9` : `var(--cta)`.
+- **Une image en variable CSS** : une URL **absolue** (`new URL(img, location.href)`) ; une URL relative dans `--art` se résout depuis `css/`.
+- **Un élément de verre** : la recette du [§ 5.6](#56-les-matières), les deux préfixes, et l'ajout aux deux listes de repli.
+- **Une animation** : `@keyframes` préfixée, état de repos sous `html.rm` et la media query, et en JS le double test.
+- **Un cadre décoré** : un SVG dans `assets/cadres/` (128 × 128, avatar au rayon 50 ; ou 152 avec la marge des cadres 3.0), la règle `.ava.fx-<id> .fx-deco{background-image:url('../assets/cadres/<id>.svg')}` (avec `inset:-26%` pour une marge de 12), et `FRAMES.f_<id> = {nom, fx:'<id>', c1, c2}`. Les cadres sont dessinés par `tools/cadres.py` (2.0) et `tools/cadres-30.py` (3.0).
+
+---
+
+## 6. Cartes, collection et progression
+
+### 6.1 Les familles de cartes
+
+| Famille | Identifiants | Nombre | Rareté (`RAR`, rang) | D'où elle vient | Échange | Recyclage / fabrication | Maîtrise |
+|---|---|---|---|---|---|---|---|
+| **Extension** « Tout commence ici » | `c001`…`c122` | 122 | ES 0, C 1, PC 2, R 3, E 4, L 5 | les boosters | même rareté (sauf ES) | oui (ES compris) | oui, sauf ES |
+| **Reverses** | `r` + numéro (`r010`…) | 85 | celle de la classique (C, PC, R) | 5ᵉ carte du booster | contre une Reverse | fermés tant que `parametres.fabrication_reverse` est faux ; fabrication au double | partage celle de sa classique |
+| **Secrètes** | `c123`…`c127` | 5 | S (5,5) | le hit, 0,75 % | contre une Secrète (serveur) | non | oui, sans exemplaire |
+| **Promos** | `p01`…`p06` | 6 | PR (6) | boutique, paliers, Sections | non | non | non |
+| **Essences Brillantes** | `b001`…`b009` | 9 | BR (7) | case Essence, 1 fois sur 50 | non | non | non |
+| **Carte unique** | `u01` | 1 | UN (8) | la chasse | non | non | non |
+
+- **« 122 » est sacré.** `cards` ne contient que l'extension : ni Promo, ni Reverse, ni Secrète n'y entrent. Les jauges, `check_promos()` et les quêtes de collection en dépendent. Les Secrètes sont **hors de tout total**.
+- **Deux conventions pour le drapeau `promo`.** Côté **serveur**, Promos, Brillantes, Unique, Reverses **et Secrètes** ont `cards.promo = true` (c'est ce qui les protège du ménage de `02_cards.sql`) ; les colonnes `reverse` et `secrete` les distinguent. Côté **navigateur**, Reverses et Secrètes ont `promo: false`, et ce sont `rev` et `secrete` qui les mettent à part.
+- **Une Reverse et une Brillante n'ont pas d'image à elles** : elles reprennent celle de leur carte (`base`), avec un traitement CSS (`.card.rev`, `.card.r-BR`).
+- `toutesCartes()` (`js/utils.js`) concatène extension, Reverses, Promos, Brillantes et Unique, **sans les Secrètes** (voir [§ 14](#14-dette-connue)).
+
+### 6.2 Données et images
+
+**`js/cards-data.js`** est le seul fichier à toucher pour une carte de l'extension : `const CARD_DATA = [...]`, 122 entrées.
 
 ```js
   {
-    fichier: "123_R_Joueur_Rose_Mon-Joueur.avif", num: 123, nom: "Mon joueur",
+    fichier: "012_R_Joueur_Rose_Squeezie-le-Toxique.avif", num: 12, nom: "…",
     categorie: "Joueur", couleur: "Rose", rarete: "R", def: 120,
-    attaques: [
-      { nom: "Frappe", cout: { rose: 1, neutre: 1 }, degats: 100 }
-    ],
+    attaques: [ { nom: "…", cout: { rose: 1, neutre: 1 }, degats: 100, effet: "…" } ],
     mot_cle: { nom: "Signature", texte: "…" }
   },
-  {
-    fichier: "124_C_Objet-Lien_Neutre_Mon-Objet.avif", num: 124, nom: "Mon objet",
-    categorie: "Objet", sous_type: "Lien", couleur: "Neutre", rarete: "C",
-    effets: [
-      { texte: "Ce Joueur a +20 Attaque." }
-    ]
-  }
 ```
 
-- **Catégories :** Joueur, Coach, Moment, Objet, Essence
-- **Raretés :** ES, C, PC, R, E, L
-- **Couleurs :** Rose, Orange, Jade, Violette, Jaune, Mauve, Verte, Bleue, Azur, Neutre
-- **Facultatif :** `sous_type`, `mot_cle`, `ambiance`, `resilience`, et `booster: false` pour qu'une carte ne sorte jamais dans un paquet.
+- Obligatoires : `fichier`, `num`, `nom`, `categorie` (Joueur, Coach, Moment, Objet, Essence), `couleur` (Rose, Orange, Jade, Violette, Jaune, Mauve, Verte, Bleue, Azur, Neutre), `rarete` (ES, C, PC, R, E, L).
+- Facultatifs : `sous_type` (`Instant`, `Lien`), `def` (alias `pv`), `attaques` (`{nom, cout, degats, effet?, plus?}`), `mot_cle`, `effets: [{texte}]`, `resilience`, `ambiance`, et `booster: false` (ne sort jamais en paquet).
+- **Le format est un contrat** : guillemets doubles et blocs qui commencent par `"\n  {"` (deux espaces). `supabase/gen-cards-sql.py` découpe le fichier ainsi, et `tools/combat-sim.js` / `tools/illu-pixels.js` l'exécutent après avoir remplacé `const CARD_DATA` par `globalThis.CARD_DATA`. Une carte mal formée est **ignorée en silence** par le générateur SQL.
+- **Le numéro est l'identifiant** (`cardId` → `c` + 3 chiffres). Changer le `num` d'une carte possédée la fait repartir à zéro.
 
-### Les Secrètes
+**`js/cards.js`** normalise tout en objets carte : `{id, num, nom, cat, col, rar, sous, img, inBoost, atks, talents, kw, fx, def, res}`, plus `code`, `promo`, `foil`, `rev`, `base`, `unique`, `secrete`, `cachee`, `provisoire` selon la famille. Un coût vide vaut `{neutre:1}` ; une attaque sans coût devient un **talent** ; un Joueur sans attaque reçoit une attaque par défaut (`DEFD`, `DEFV` dans `config.js`). Ce fichier est aussi chargé **par Node** (`combat-sim.js`) : il ne touche jamais au DOM.
 
-Version 3.0. Cinq cartes numérotées après l'extension (#123 à #127), **hors du total** : la barre de progression reste sur 122. Deux sont révélées, trois encore floutées : elles existent, se tirent et s'échangent, mais leur texte arrivera plus tard (`cachee` dans `SECRET_DATA`, `js/promos-data.js` ; `buildSecretes()`, `js/cards.js`). Rareté `S`, tirées à la place du hit une fois sur 133 (0,75 %). Elles s'échangent contre une autre Secrète, mais ne se recyclent ni ne se fabriquent. Côté serveur, ce sont des lignes de `cards` marquées `promo` (hors des 122) et `secrete` (échangeables), créées par `supabase/24_secretes.sql`. Quand une Secrète floutée est révélée : remplir sa fiche dans `SECRET_DATA`, retirer `cachee`, poser son image dans `cards/`, et mettre son nom à jour dans le SQL.
+**`js/promos-data.js`** : `PROMO_DATA` (6), `UNIQUE_DATA` (1), `SECRET_DATA` (5).
 
-> Le numéro sert d'identifiant : changer le `num` d'une carte déjà collectionnée la fait repartir à zéro dans la collection. Les champs `ambiance` et `resilience` sont conservés avec la carte mais ne sont pas affichés : ils font déjà partie de l'image.
-
-## Habillage
-
-Les visuels de la marque vivent dans `assets/` et sont déclarés dans `js/config.js` :
-
-- `boosters/booster-01…04.webp` — les quatre paquets, 337 × 460, recadrés au ras du plastique. Un est tiré au sort à chaque ouverture, **sans aucun effet sur le contenu**. Leurs proportions sont reprises à la main dans `css/booster.css` (`aspect-ratio` de `.pack` et de `.packrip`, et le facteur du `calc()` qui plafonne la largeur) : remplacer les images sans toucher à ces trois valeurs laisserait le paquet flotter dans une boîte qui n'est plus la sienne.
-- `essences/<couleur>.svg` et `essences/neutre.png` — les dix symboles d'essence, utilisés dans les filtres de collection et la fiche d'une carte. Leurs couleurs officielles sont reprises dans `COLORS` (`js/config.js`), avec un bleu légèrement éclairci pour rester lisible sur fond sombre.
-- `card-back.webp` — le dos affiché quand la dernière carte se retourne.
-- `extension-logo.svg` — le logo de l'extension, en haut de l'écran Boosters et sur le récap.
-- `1st-edition.svg`, `pack-star.svg`, `star-pink.svg` — pastille de première édition, icône du compteur de boosters, étincelle posée sur le logo et dans les emplacements vides de la collection.
-- `logo-m8.webp` — le logo du jeu, affiché en en-tête (`ART.logo`). Il est détouré sur fond transparent depuis le fichier d'origine.
-- `logo.webp` et `logo-bw.svg` — le lettrage Gentle Mates d'origine, gardé comme référence si tu retouches la charte.
-
-**Une seule couleur d'interface : le violet.** Boutons, onglet actif, puces sélectionnées, pastilles *NEW*, jauges de recharge et de collection, halos de fond — tout est en `--accent` `#8936ff` / `--accent-soft` `#a95cf2`, avec le rebord `#57189e` sous les éléments pressables. L'orchidée `#df6de8` et le rose pâle `#ffd7f0` du logo ne servent plus qu'au logo lui-même. Les fonds sont un noir teinté prune. Les raretés gardent leurs couleurs propres (bleu, violet, or).
-
-L'étoile du logo (`assets/star-pink.svg`, reprise en ligne dans `ICON.star`) sert d'icône à l'onglet Boosters et au bouton d'ouverture : c'est la seule icône pleine, les deux autres onglets restent au trait.
-
-Les boutons, les puces et les pastilles ont un rebord plein dessous qui s'enfonce au clic (`.btn`, `.chips button`, `.rchip` dans `base.css` et `booster.css`) : c'est ce qui donne le ressenti « jeu de cartes mobile ».
-
-## Les onglets
-
-Ils sont décrits dans `TABS` (`js/config.js`), sur deux niveaux : ce qu'on joue, et ce qui concerne le compte.
-
-| Onglet | Où | Compte requis |
+| Promo | Nom | Obtention |
 |---|---|---|
-| Boosters | barre du bas / rail | non |
-| Collection | barre du bas / rail | non |
-| Combats | barre du bas / rail | non |
-| Social | barre du bas / rail | oui |
-| Quêtes | barre du bas / rail | oui |
-| Mon profil | tiroir (mobile) · rail (ordinateur) | oui |
-| Boutique | tiroir (mobile) · rail (ordinateur) | oui |
-| Recyclage | tiroir (mobile) · rail (ordinateur) | oui |
-| Réglages | tiroir (mobile) · rail (ordinateur) | non |
-| Labo | tiroir · rail | **administrateurs seulement** |
-| Boîte de réception | la cloche de l'en-tête | oui |
+| P01 | Major de Paris | Boutique, 5 000 Éclats |
+| P02 | Major de Paris (illustration alternative) | Boutique, 5 000 Éclats |
+| P03 | Section Toxique (provisoire, sans image : dessinée en texte par `carteTextuelle`) | Rejoindre la Section Toxique, puis finir la campagne de l'autre |
+| P04 | Section Déter (provisoire, idem) | Rejoindre la Section Déter, idem |
+| P05 | Tout Commence Ici | 100 % de l'extension (Master Set) |
+| P06 | Le Marionnettiste | 75 % de l'extension (`cfg('promo_palier_pct')` = `PROMO_PALIER`) |
 
-Pour déplacer un onglet, il suffit de changer son drapeau : `bas: true` le met dans la barre du bas, `tiroir: true` le range dans le menu du compte.
+Les paliers ne donnent **que** la carte. `check_promos()` (`supabase/03b_promos.sql`) les accorde, de façon idempotente, depuis `me()` et `open_pack()`. Le champ `obtention` ne sert qu'à l'affichage ; `PROMOS_A_VENIR` (`config.js`) peut réserver des cases « à venir » (vide aujourd'hui).
 
-**La barre du bas ne contient que le jeu.** Cinq places, pas une de plus — les cinq endroits où l'on revient tout le temps. Une pastille y signale ce qui attend : récompenses à encaisser sur Quêtes, demandes d'ami et d'échange sur Social.
+**Secrètes** : #123 *Le Quatrième du Nom* et #125 *6W26L* sont révélées ; #124, #126, #127 sont `cachee` (nom « Secrète n°NNN », image floutée `NNN_S_Secrete.avif`, pas de texte, injouables). Leur code s'affiche `#123/122`.
 
-**Le compte vit dans un tiroir.** Sur mobile, appuyer sur son avatar déplie un panneau depuis le bord droit — celui d'où vient le doigt : pseudo, ressources, profil, boutique, réglages, déconnexion. Un point sur l'avatar prévient quand quelque chose y attend.
+**Images** (`cards/`, voir [§ 12.4](#124-les-images-des-cartes)) : `NNN_RAR_Catégorie[-SousType]_Couleur_Nom.avif` en 1000 × 1397 ; Promos dans `cards/promos/` (WebP 640 × 880) ; l'Unique dans `cards/uniques/`. Seul le champ `fichier` fait le lien : le nom n'est qu'indicatif. **Une image refaite change de nom** (suffixe `_v2`), sinon le service worker resert l'ancienne ([§ 13](#13-pièges)).
 
-**Sur ordinateur, il n'y a pas de tiroir** : le rail a la place d'afficher les deux groupes, séparés par un filet, et l'avatar mène directement au profil. Inutile de cacher derrière un menu ce qui tient à l'écran.
+### 6.3 Les boosters
 
-**Mobile d'abord.** La barre du bas tient cinq onglets au pouce ; à partir de 900 px de large elle devient un rail vertical à droite, et les feuilles modales se centrent au lieu de monter du bas. Toute l'adaptation ordinateur tient dans un seul bloc `@media` en bas de `css/hub.css`.
+**La réserve** : un booster toutes les 4 h, 5 au plus (`cfg('ticket_minutes')` = 240, `cfg('ticket_cap')` = 5), recalculée par le serveur à chaque `me()` (`regen_tickets`). Un événement peut accélérer le rythme (`evenements.ticket_minutes`, 120 = boosters doublés). Côté client, `TICKET_CAP` et `INTERVAL` (`config.js`) sont des `let` **écrasés** par `Backend.apply`. Les boosters achetés, offerts ou gagnés vont **hors réserve** (`profiles.boosters_bonus`, `save.bonus`), ouverts par `open_pack(true)` : mélangés à la réserve, ils la faisaient déborder et remettaient son compte à rebours à zéro. Parmi eux, ceux d'un cadeau (`tickets_offerts`) partent en premier et ne peuvent pas contenir la carte unique.
 
-Sur ordinateur, la page est une **grille** (en-tête sur toute la largeur, puis contenu et rail), et non un flex qui passe à la ligne : avec `flex-wrap`, le navigateur répartit la hauteur restante entre les lignes, et l'en-tête s'allongeait dès qu'une page avait peu de contenu. Le contenu se **centre** dans la colonne qui lui reste : collé contre le rail, il donnait l'impression d'une page décalée d'un côté.
+**Composition** (`open_pack()` dans `supabase/03_rpc.sql` fait foi ; `makeBooster()` dans `js/booster.js` sert au Labo ; `tirerPaquet()` dans `_demo/serveur.js` à la pré-prod) :
 
-> Ces règles de largeur portent sur `#main > *`, et non sur `main > *`. Une classe comme `.pagehead` pose un `margin` raccourci, qui l'emporte sur un sélecteur d'éléments seuls — le titre d'une page se recollait alors à gauche pendant que les panneaux restaient centrés.
-
-> Les règles de la barre du bas sont accrochées à `#nav`, jamais à l'élément `<nav>` : le panneau du tiroir en est un aussi, et héritait sinon de sa mise en colonne.
-
-**L'en-tête montre toujours les deux compteurs et l'avatar**, même hors ligne. Ce sont les seules portes vers la boutique et vers le menu du compte : les cacher revenait à cacher qu'ils existent. Avec un compte, **la cloche** s'y ajoute : c'est l'entrée de la boîte de réception (voir plus bas).
-
-**Les icônes.** Collection : trois cartes en éventail, l'étoile du logo sur celle du dessus — le classeur à pochettes d'avant se lisait comme un tableur. Combats : deux épées croisées complètes, lame, garde et pommeau ; l'ancienne n'en gardait que les pointes et ressemblait à un blason vide.
-
-## Les avatars des autres joueurs
-
-Choisir « Discord » comme avatar n'enregistre pas la photo chez nous : on stocke le
-mot `discord`, et l'adresse réelle se lit dans la session ouverte. C'est ce qui fait
-qu'une photo changée sur Discord se met à jour toute seule, sans rien à resynchroniser.
-
-**Mais un navigateur n'a qu'une session : la sienne.** En dessinant la liste d'amis, il
-résolvait donc `discord` avec la photo de *celui qui regarde* — et tous les joueurs
-ayant choisi cet avatar portaient le visage du spectateur.
-
-La photo est désormais une donnée comme une autre : le serveur la joint au profil qu'il
-renvoie (`photo_discord()` dans `supabase/01_schema.sql`, appelée par `friend_list`,
-`player_profile`, `trade_list` et `find_player`). Elle ne rend que l'adresse de l'image,
-rien d'autre de `auth.users`, et seulement pour des joueurs dont le jeu montrait déjà le
-pseudo et l'avatar.
-
-Côté navigateur, `avatarHTML(avatar, cadre, taille, photo)` prend la photo en quatrième
-argument. **Il n'y a aucun repli sur la session en cours** : sans adresse, on dessine
-l'étoile. C'est délibéré — un avatar générique se remarque et se corrige, le visage de
-quelqu'un d'autre passe inaperçu et trompe. `maPhoto()` marque explicitement les endroits
-où l'on se dessine soi-même.
-
-## Social
-
-Les échanges vivent dans l'onglet **Social**, pas à côté : on n'échange pas avec un inconnu. On cherche quelqu'un par son pseudo, on l'ajoute, on regarde ce qu'il possède, puis on propose.
-
-**Les amis.** Une demande part vers un pseudo, l'autre accepte ou refuse. La table `friendships` range chaque paire dans un ordre stable (`a < b`), ce qui rend impossible deux amitiés croisées entre les mêmes personnes — et une demande envoyée à quelqu'un qui t'avait déjà demandé vaut acceptation.
-
-**La fiche d'un joueur** montre ses compteurs à tout le monde, mais sa collection **seulement entre amis**. On y voit ses doublons : les cartes qu'il a en plusieurs exemplaires, donc celles qu'il peut céder sans se démunir. C'est ce qui permet de viser un échange qui a une chance d'aboutir.
-
-**Les échanges.** Une carte contre une carte, **de rareté identique**, et jamais en simultané : quelqu'un propose, l'autre répond quand il veut, et l'échange ne se fait que si les deux ont validé.
-
-**L'écran des échanges ne dit que ce que les cartes ne disent pas.** Une illustration porte déjà son nom et sa rareté, et un toucher l'ouvre en grand : les trois lignes de texte qu'on empilait sous chaque vignette sont parties. Il reste une étiquette posée sur la carte — combien *j'en ai* : « Nouvelle » si aucune, « Dernière » si je donne mon seul exemplaire — et une légende dessous, « Tu reçois » ou « Tu donnes ». Partout le même ordre, dans les demandes comme dans la composition : à gauche ce qu'on reçoit, à droite ce qu'on donne. La composition tient en trois blocs (avec qui, quoi contre quoi, un mot) et une seule phrase d'aide, celle de l'étape où l'on en est ; la première carte choisie, d'un côté ou de l'autre, fixe la rareté. L'historique est une liste d'une ligne par échange.
-
-Le coût est payé par celui qui lance la demande : **une demande gratuite toutes les 6 heures**, ou un **jeton d'échange** acheté en boutique pour ne pas attendre. Une barre de recharge le montre en haut de la section. Le délai et le jeton sont vérifiés par le serveur, pas par la page.
-
-Au moment où la demande est acceptée, le serveur revérifie **tout** : que les deux joueurs possèdent encore leur carte, que les raretés correspondent toujours, et il échange les deux cartes dans une seule transaction. Personne ne peut donner deux fois la même carte en lançant deux demandes.
-
-## La boîte de réception
-
-Tout ce qui arrive des autres — demande d'ami, demande d'échange, réponse à ses propres demandes — et les annonces publiées pour tout le monde. On l'ouvre par **la cloche de l'en-tête** : ce qui arrive ne concerne pas un onglet en particulier, et l'en-tête est la seule bande visible sur tous les écrans.
-
-**C'est le serveur qui écrit.** Avant, le navigateur comparait deux listes successives pour deviner ce qui était nouveau : une demande d'ami n'était jamais annoncée, et rien de ce qui arrivait pendant qu'on était ailleurs ne l'était non plus. Désormais `friend_request`, `friend_respond`, `trade_create` et `trade_respond` écrivent l'événement dans la boîte du destinataire (`notifier()`, `supabase/11_boite.sql`), au moment où il a lieu.
-
-**Le ping.** Quand quelque chose arrive : la cloche prend une pastille et le titre de l'onglet un « (2) » ; deux notes courtes et une vibration brève ; une carte passe en haut de l'écran avec le visage de celui qui écrit, et la toucher mène là où l'on répond. Rien ne passe pendant l'ouverture d'un paquet ou la scène d'une Promo : les nouveautés attendent la fin. Onglet en arrière-plan, la boîte est quand même relevée — le « (2) » du titre et la pastille de l'icône installée servent justement là — et le bandeau part au retour.
-
-**Deux voies d'arrivée.** Le temps réel de Supabase pousse une ligne dès qu'elle est écrite ; une relève toutes les trente secondes prend le relais s'il ne répond pas. On ne dépend jamais de lui.
-
-**Lu ou non lu** tient en une date par joueur, `profiles.boite_vue_le` : tout ce qui est plus récent est nouveau. Ouvrir la boîte, c'est tout lire. Les demandes d'ami s'y acceptent directement ; une demande d'échange mène à l'onglet Social.
-
-**Les annonces** se publient depuis le Labo (réservé aux administrateurs, et vérifié par le serveur), ou à la main dans le SQL Editor — la requête est en bas de `supabase/11_boite.sql`. On les retire depuis sa propre boîte. Un mois d'historique est gardé, pas plus.
-
-## Le classement
-
-Un classement **global** : tous les joueurs, pas seulement les amis. On l'ouvre depuis le menu du compte. Quatre sous-onglets :
-
-| Critère | Ce qui est compté |
+| Case | Contenu |
 |---|---|
-| Collection | Cartes différentes de l'extension, sur 122 (les Promos n'y entrent pas, comme partout) |
-| Boosters | Boosters ouverts depuis le début |
-| Échanges | Échanges conclus |
-| Série | Jours de connexion d'affilée **en cours** : une série dont le dernier jour est avant-hier compte zéro |
+| 1 et 2 | Commune |
+| 3 | Peu commune |
+| 4 | Essence — **Brillante** une fois sur 50 (`cfg('foil_odds')`, `FOIL_ODDS`) |
+| 5 | **Reverse** : C 50 %, PC 35 %, R 15 % |
+| 6 | Le hit : R 79 %, E 16 %, L 4,25 %, **S 0,75 %** |
 
-Le serveur fait tout le calcul (`classement()`, `supabase/14_classement.sql`) et renvoie les cinquante premiers, plus la ligne du joueur qui regarde s'il est plus bas. Les ex æquo partagent leur rang ; un joueur à zéro n'est pas classé. Tant que le jeu est fermé au public, seuls les comptes invités apparaissent. D'un joueur, on ne voit que ce que le jeu montrait déjà à tout le monde : pseudo, avatar, cadre, et le chiffre du critère. Une ligne se touche pour ouvrir sa fiche.
+- **Godpack** : une fois sur 2 000 (`cfg('god_odds')`, `GOD`), six cartes tirées dans les tables `[R90/E10, R70/E30, R50/E50, E90/L10, E60/L40, L100]` (Légendaire garantie à la fin), sans Essence ni Reverse. Il n'est **annoncé par rien** : c'est la lumière qui le raconte (paquet qui s'assombrit et tremble, faisceau à la déchirure, nappe dorée ; `packOpen()` lui donne 860 ms de plus).
+- **Chasse** : tant que `chasse.active` et que personne ne l'a, l'Unique a une chance sur 250 (`cfg('chasse_odds')`) de **remplacer le hit**. La mise à jour `where gagnant is null` garantit un seul gagnant. Le gagnant reçoit le cadre `f_unique` et une annonce part chez tout le monde.
+- **Repli** : si la rareté visée est vide, `pick_card` / `pickFrom` se rabattent sur la plus proche (S sans Secrète → L). Les deux ordres de repli diffèrent légèrement ([§ 14](#14-dette-connue)).
+- Le visuel du paquet porte la mention imprimée « Booster de 6 cartes » : changer la taille oblige à refaire les images.
 
-## Le recyclage et la fabrication
+**L'ouverture** (`js/opening.js`, `css/booster.css` bloc « Déchirure », `css/opening.css`) se joue dans **un seul écran sans remplacer le DOM** : `showStack()` monte la pile et le paquet, `packOpen()` déroule la déchirure (délais : coupe +360 ms, ouvre +640, sortie de la pile +920, fin +2 050). **Pas de spoiler** : la dernière carte, si elle est rare ou mieux, ne reçoit sa classe de rareté qu'au `doReveal()` (charge R 450 ms, E 800, L 1 150, S 1 500, UN 1 900 — `REVEAL`). Passer : balayage, toucher bref, ou → / Espace / Entrée. Le récap montre la meilleure carte, les nouvelles, le partage. `JEU.recapDirect` (Réglages) saute la révélation.
 
-Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une carte qui manque**. Toutes les raretés de l'extension se recyclent et se fabriquent ; jamais ce qui est hors extension (Promos, Essences Brillantes, carte unique). **On garde toujours un exemplaire** de chaque carte : recycler ne fait jamais reculer la collection. Et depuis la version 2.1, **autant d'exemplaires qu'on a choisi d'en garder** (voir plus bas). Les exemplaires proposés dans une demande d'échange encore en attente sont mis de côté — sinon l'échange, une fois accepté, prendrait le dernier.
+### 6.4 La Collection et la fiche de carte
+
+**La Collection** (`js/collection.js`) a trois vues (`colVue`) sous une jauge commune de 223 (122 + 85 + 16) :
+
+- **Classiques** : les 122, puis les Secrètes à la fin (seulement sans filtre) ;
+- **Reverses** : les 85 ;
+- **Spéciales** : Promos (6), Brillantes (9) et la vitrine de l'Unique (quatre états : la mienne, trouvée par un autre, chasse ouverte, bientôt).
+
+Filtres (`vFiltres`) : Essence, rareté, et trois cases « Afficher » (possédées, à compléter, favoris). Une case possédée ouvre la fiche (`data-show`) ; une case manquante, **en ligne**, lance la fabrication (`data-craft`). Sous la carte : `×n`, le cœur, l'éclat « Reverse possédée », l'insigne de maîtrise, et les points « à garder » (cadenas pour « Tous », « 3/8 » au-delà de cinq).
+
+**La fiche** (`js/viewer.js`, `#viewer`, `css/viewer.css`) : la carte en 3D (inclinaison au doigt ou au gyroscope), puis **trois pages glissées** (`VW_ONGLETS`, scroll-snap) : **Infos** (Défense, attaques avec leur coût dessiné par `Table.coutHTML`, mot-clé, talents, Résilience, ou le texte d'un Objet / Moment / Coach), **Maîtrise** (`vMaitriseFiche`), **Gérer** (favori, à garder, carte fétiche). La page choisie est retenue d'une carte à l'autre (`vwOngletRetenu`). Ouverte depuis un échange (`data-qui`), elle dit aussi « X en a N ». Ses clics passent par `data-v` (pas par `clicPage`). Sur ordinateur (≥ 900 px), carte et pages sont côte à côte.
+
+### 6.5 À garder et favoris (2.1)
+
+- **À garder** (`supabase/22_garder.sql`) : par rareté dans Réglages (1 à 4 ; clés `ES`…`L`, et `rC`, `rPC`, `rR` pour les Reverses ; `profiles.garder`), et par carte dans la page Gérer (1 à 10, ou 99 = « Tous » ; table `gardes`). Le réglage d'une carte l'emporte ; revenu à la valeur de sa rareté, il s'efface. Envoi différé de 600 ms (`Backend.reglerGarde`).
+- **Ce que ça protège** : les exemplaires gardés échappent au recyclage, à la maîtrise, et aux « doublons » que voient les amis. Un échange qui cède une carte gardée demande une confirmation, sans être interdit.
+- **Favori** : un cœur pour soi (table `favoris`), filtre « Favoris » de la Collection ; possible sur une carte qu'on n'a plus.
+- Trois quêtes saisonnières vont avec : 10 exemplaires d'une même Rare, 5 d'une Épique, 3 d'une Légendaire (métriques `ex_R`, `ex_E`, `ex_L`, classiques seulement).
+
+### 6.6 Recyclage et fabrication
+
+Les doublons deviennent des **Fragments** (`recycler`, `supabase/12_recyclage.sql`) ; les Fragments **fabriquent une carte qui manque** (`fabriquer`, depuis une case vide de la Collection).
 
 | Rareté | Recycler rapporte | Fabriquer coûte |
 |---|---|---|
@@ -402,433 +707,710 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 | Épique | 80 | 2 000 |
 | Légendaire | 250 | 8 000 |
 
-**Pourquoi des Fragments, et plus d'Éclats.** Recycler contre des Éclats n'avait pas de bon réglage : un joueur régulier produit ~6 300 Éclats de doublons par semaine une fois sa collection avancée. Plafonné, le recyclage ne permettait pas de se débarrasser de ses cartes ; déplafonné, il triplait les Éclats, qui rachètent des boosters. Les Fragments n'achètent qu'une carte manquante : aucune boucle possible, donc **plus de plafond**.
+- Montants : `cfg('recyclage_*')` / `cfg('fabrication_*')` (`01_schema.sql`), envoyés au client par `me().recyclage` ; `REC_DEFAUT` / `FAB_DEFAUT` (`js/recyclage.js`) ne sont que des secours.
+- On garde **toujours** un exemplaire, et autant qu'on a choisi d'en garder ; les exemplaires promis dans un échange en attente sont réservés (`recDispo = mesEx − aGarder − réservés`). 150 lots au plus par envoi ; le serveur refuse tout l'envoi si un seul point ne tient pas ; journal `recyclages`.
+- Garde-fous de l'interface : « Tout prendre » laisse E et L de côté ; une case à cocher si une E ou une L est sélectionnée ; une dernière confirmation dont le bouton ne répond qu'après 3 s.
+- **Pourquoi des Fragments et pas des Éclats** (1.5) : recycler en Éclats créait une boucle (les Éclats rachètent des boosters). Les Fragments n'achètent qu'une carte manquante : pas de boucle, donc pas de plafond. Le calcul est en tête de `12_recyclage.sql`.
 
-**Ils règlent aussi la fin de collection.** Quand il ne manque qu'une Légendaire, elle met ~42 jours à sortir en moyenne, sans progrès visible. Avec la fabrication, chaque booster plein de doublons la rapproche : ~2 200 Fragments par semaine pour un joueur régulier, soit une Épique tous les six jours ou une Légendaire en un peu moins de quatre semaines. Simulation, médiane du temps pour finir l'extension : 92 → 62 jours pour un joueur à 120 boosters, et 124 → 73 jours pour le quart le plus malchanceux. Le calcul est en tête de `supabase/12_recyclage.sql`.
+### 6.7 La maîtrise et la carte fétiche (3.0.7)
 
-**On fabrique depuis la Collection** : une case vide se touche, une fiche montre la carte, son prix et le solde qui restera. Seulement une carte qu'on ne possède pas (`fabriquer()`).
+> La maîtrise est en cours de refonte (interface, équilibrage, effets, couronne du niveau 5). Cette section décrit l'état de la 3.0.7 ; la mettre à jour avec la refonte.
 
-**Pas de bêtise.** On choisit carte par carte, exemplaire par exemplaire ; « Tout sélectionner » laisse les Épiques et les Légendaires de côté. Un récapitulatif liste chaque carte et ce qu'elle rapporte — avec une case à cocher s'il y a une Épique ou une Légendaire dedans —, puis une dernière confirmation dont le bouton ne répond qu'au bout de trois secondes. Le serveur revérifie tout (doublons, réservations) et refuse l'envoi entier si un seul point ne tient pas. Chaque recyclage est journalisé dans la table `recyclages`.
+- **Cinq niveaux** par carte : Éclat, Gravure, Aura, Arène, Légende. Seules les cartes de l'extension (hors Essence) et les Secrètes se maîtrisent ; **une Reverse partage la maîtrise de sa classique** (`carteMaitrise`, `maitrise_carte`).
+- **Coût** : des Fragments (300 / 700 / 1 500 / 3 000 / 6 000, soit 11 500) et des exemplaires **en trop** :
 
-## Essences Brillantes, carte unique et événements
+| Rareté | Niv. 1 | Niv. 2 | Niv. 3 | Niv. 4 | Niv. 5 |
+|---|---|---|---|---|---|
+| C, PC | 1 | 1 | 2 | 2 | 3 |
+| R | 0 | 1 | 1 | 2 | 2 |
+| E | 0 | 1 | 1 | 1 | 1 |
+| L | 0 | 0 | 1 | 0 | 1 |
+| S | 0 | 0 | 0 | 0 | 0 |
 
-**Les exemplaires à garder (version 2.1).** Pour ceux qui collectionnent plusieurs exemplaires d'une carte. Deux réglages, enregistrés sur le compte (`supabase/22_garder.sql`) :
-- **par rareté**, dans Réglages › Exemplaires à garder : de 1 à 4 (« garder 2 de chaque Légendaire »), les Reverses à part (clés `rC`, `rPC`, `rR`) ;
-- **par carte**, dans la visionneuse (toucher une carte de sa Collection) : de 1 à 10, ou « Tous ». Le réglage d'une carte l'emporte sur celui de sa rareté ; revenu à la même valeur, il s'efface et la carte suit de nouveau sa rareté.
+- **« En trop »** = au-delà de `max(limite de deck (1 pour L, S, UN, PR ; 2 sinon), à garder)`, moins les exemplaires engagés dans un échange. Chaque exemplaire qui manque se paie au **prix de fabrication** : la maîtrise n'est jamais bloquée par la chance. Seuls les exemplaires de la classique sont pris.
+- **Rendu** : `renderCard(c, {m, calme})` appelle `maitriseEnveloppe` ; rien n'est déduit tout seul, l'appelant passe le niveau. Dans une grille, `calme: true`. Couches : `.mz .mz-N`, `--mc` (couleur de l'Essence), `i.mz-l`, `i.mz-h` (niveau 5) dans la carte ; autour, `mz-a` (≥ 3), `mz-b` (≥ 4), la couronne `mz-c` (5). En combat (`table.js`) : flash d'entrée au niveau 4, onde de choc au niveau 5, impact coloré dès le 4.
+- **Serveur** : tables `maitrises` et `maitrises_journal`, RPC `maitriser(p_carte)` ; état dans `me().maitrise = {niveaux, fetiche}` → `save.maitrises`, `save.fetiche`.
+- **La carte fétiche** : une carte possédée, mise en scène en haut du profil (`vFetiche`, projecteur aux couleurs de son Essence) et sur la fiche publique (`fetiche_de`, qui revérifie la possession). Elle se choisit dans Gérer (`set_fetiche(id|null)`, colonne `profiles.fetiche`). Elle est distincte de la vitrine (4 cartes).
+- **Trois copies des chiffres** : `MAITRISE` (`js/maitrise.js`), `maitrise_fragments` / `maitrise_copies` (`28_maitrise.sql`), `MZ_FRAGMENTS` / `MZ_COPIES` (`_demo/serveur.js`). Justification : `docs/economie-3.0.md`, partie 3 ter.
 
-Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change sinon : le Recyclage ne propose plus que les exemplaires en plus (le serveur le revérifie dans `recycler`) ; les amis ne voient plus les exemplaires gardés comme des doublons (sa fiche, « Ses doublons », « Chez tes amis ») ; dans la Collection, sous la carte et à côté de son numéro, un point par exemplaire voulu (pleins pour ceux qu'on a, dorés au complet ; « 3/8 » au-delà de cinq ; un cadenas pour « Tous »), et le tiroir de filtres gagne « À compléter ». Les échanges restent libres : proposer ou accepter de céder une carte gardée demande seulement une confirmation.
+### 6.8 Échanges et Social
 
-**Trois quêtes saisonnières vont avec (version 2.1)** : posséder 10 exemplaires d'une même Rare (1 000 Éclats), 5 d'une même Épique (1 500), 3 d'une même Légendaire (2 500). Seules les cartes classiques comptent, pas les Reverses (métriques `ex_R`, `ex_E`, `ex_L`, `sync_collection_quests` dans `supabase/01_schema.sql`). La progression ne recule pas : c'est le plus haut nombre d'exemplaires atteint. Simulation sans recycler la carte : environ 170, 200 et 230 boosters (médianes), soit un mois chacune à six boosters par jour. La quête montre la carte dont on a le plus d'exemplaires ; une pression l'ouvre, pour régler « Garder ».
+- **On n'échange qu'avec un ami** : l'onglet Social (`js/social.js`) a deux volets, Amis et Échanges (`js/trade.js`).
+- **Amis** (`supabase/06_social.sql`) : table `friendships` rangée `a < b` ; une demande croisée vaut acceptation ; 25 demandes en attente au plus. La **fiche d'un joueur** (`player_profile`) montre à tous bannière, avatar, titre, devise, niveau, l'Élu, la fétiche, la vitrine, les statistiques et les succès ; **entre amis seulement**, sa collection et ses 12 meilleurs doublons (R ou mieux).
+- **Règles d'un échange** (`trade_create`, `trade_respond`, `03_rpc.sql`) : une carte contre une carte **de même rareté** ; ni Essence, ni Promo, ni Brillante, ni Unique ; Reverse contre Reverse, Secrète contre Secrète ; posséder ce qu'on offre ; 10 demandes en attente au plus ; une note de 140 caractères. **Coût** : une demande gratuite toutes les 6 h (`cfg('trade_cooldown_h')`), sinon un jeton (`trade_token`, boutique), sinon `ECHANGE_EN_RECHARGE`. À l'acceptation, le serveur revérifie tout et échange dans une seule transaction.
+- **Écran** : à gauche ce qu'on **reçoit**, à droite ce qu'on **donne**, partout. L'étiquette dit combien *j'en ai* (« Nouvelle », « ×n », « Dernière », « Gardée »). « Chez tes amis » liste ce qui te manque et qu'un ami a en double (`amis_doublons`).
+- **La photo Discord des autres** : on stocke le mot `discord`, et le serveur joint l'adresse de la photo (`photo_discord()`) aux profils qu'il renvoie. `avatarHTML(a, cadre, taille, photo)` **ne se rabat jamais sur la session** : sans adresse, on dessine l'étoile (avant, tout le monde portait le visage du spectateur).
 
-**Les favoris (version 2.1).** Un cœur, en haut à gauche de la visionneuse, en face de la croix. Rien que pour soi : il ne protège de rien (c'est le rôle des exemplaires à garder) ; il sert à retrouver ses cartes préférées, avec le filtre « Mes favoris » de la Collection, et pose un petit cœur à gauche du numéro, sous la carte. Enregistré sur le compte (table `favoris`, fonction `favori`, `supabase/22_garder.sql`) ; hors ligne, dans le navigateur. On peut aimer une carte qu'on n'a plus.
+### 6.9 Profil, succès, titres
 
-**Les Essences Brillantes** sont la version brillante des 9 Essences : même illustration, avec un reflet arc-en-ciel et des paillettes posés par le CSS (`.card.r-BR`, `css/cards.css`). La case Essence d'un booster en donne une **une fois sur 50** (`cfg('foil_odds')`) — une tous les huit jours environ pour un joueur régulier. Identifiants `b001` à `b009`, hors extension comme les Promos : ni dans les 122, ni échangeables, ni recyclables, ni fabricables. Elles ont leur section dans la Collection.
+- **Avatar** (`set_profile`) : `'discord'`, `'card:<id>'`, une clé d'`AVATARS`, ou `'ess:<couleur>'`. **Cadre** : un `f_*` possédé (`FRAMES`, `config.js` : `fx` = SVG animé, `vente: false`, `unique`). Les cadres « Arène » (`f_niv10/20/30/50`) se gagnent aux niveaux de combattant.
+- **Titre, bannière, devise** (`personnaliser`, `null` = inchangé, `''` = retirer) : le titre se gagne par les succès, les quêtes jalons, le Pass ou la boutique (`TITRES`, 27 ; `titres_de()` côté serveur) ; la bannière est une carte possédée ; la devise, 80 signes.
+- **Vitrine** : 4 cartes (`set_vitrine`). **L'Élu** : l'écrin du gagnant de la chasse. **Fétiche** : [§ 6.7](#67-la-maîtrise-et-la-carte-fétiche-307).
+- **Succès** : calculés à la volée par `succes_de()` (`15_evenements.sql`) ; noms dans `SUCCES` (18, `config.js`). Les identifiants doivent rester les mêmes des deux côtés.
 
-**La carte unique**, *L'Unique Chevalière* (`u01`), n'existe qu'en **un exemplaire dans tout le jeu**. Tant que la chasse est ouverte (`chasse.active`) et que personne ne l'a, chaque booster a une chance sur 250 (`cfg('chasse_odds')`) de la contenir : elle prend la place de la dernière carte (le hit), avec la plus longue révélation du jeu. Avec ~70 boosters ouverts par jour dans la communauté, elle sort en trois à quatre jours. C'est la base qui garantit l'unicité : la mise à jour `where gagnant is null` dans `open_pack()` laisse passer un seul gagnant, même si deux joueurs la tirent à la même seconde. Une annonce part alors dans toutes les boîtes de réception ; chaque autre joueur voit aussi, une fois, la fenêtre « La chasse est terminée ». La carte a sa vitrine dans la Collection : en tête, dorée, chez celui qui l'a ; en bas, avec le nom du gagnant, chez les autres. Elle ne s'échange pas et ne se recycle pas. Celui qui la tire reçoit aussi le **cadre d'avatar « Unique »** (`f_unique`), posé d'office et que personne d'autre n'aura, et un écrin « L'Élu » sur son profil et sa fiche. Son visuel est dans `cards/uniques/`.
+### 6.10 Quêtes
 
-**Les événements** sont des lignes de la table `evenements` : un titre, un début, une fin, et le rythme de recharge pendant ce temps (`ticket_minutes`, 120 = boosters doublés). `minutes_recharge()` donne le rythme en cours, `regen_tickets()` et le compte à rebours du navigateur le suivent. Un bandeau s'affiche au-dessus du paquet tant qu'un événement ou une chasse est en cours. Les requêtes pour lancer un événement, l'arrêter ou ouvrir la chasse sont en bas de `supabase/15_evenements.sql`.
+- **Portées** : `daily`, `weekly`, `milestone` (« Saisonnières »), et pour un événement `ev_jour` / `ev`. La clé de période est calculée **à l'heure de Paris** (`period_key`) ; l'interface affiche le temps restant avec le même calendrier (`resteAvantRemise`).
+- **La progression n'est jamais envoyée par le navigateur** : le serveur l'avance quand l'événement arrive vraiment (`bump_quests`, appelé par `open_pack`, `trade_respond`, `recycler`, `combat_fin`…). Seule nuance : pour un combat, le serveur croit le navigateur sur le **résultat** (`combat_fin`, `tutoriel_fini`), dans les limites du [§ 7.11](#711-ce-que-le-serveur-vérifie). Les quêtes « d'état » (pourcentage de collection, raretés complètes `set_*` / `rset_*`, Brillantes, exemplaires `ex_*`, niveau) sont recalculées par `sync_collection_quests` et ne reculent pas.
+- **97 quêtes** dans `supabase/04_seed.sql` (`d_*`, `w_*`, `m_*`, Reflets `e_*`, Choc `c_*`), avec leurs récompenses (Éclats, `item_id`, ou `monnaie = 'prismes'`). Calculs d'équilibrage en tête du fichier.
+- **Signalement** : une carte passe 4 s en haut de l'écran (`notifQuete`), puis la pastille de l'onglet reste tant qu'il y a quelque chose à encaisser. C'est `Backend.apply` qui compare l'état avant / après.
+- L'onglet Quêtes a trois sous-onglets (Quotidiennes, Hebdomadaires, Saisonnières) ; les quêtes de combat vivent aussi dans Combats › Missions (`METRIQUES_COMBAT`).
 
-**La fenêtre des nouveautés** (`montrerNouveautes()`, `js/bienvenue.js`) s'ouvre une fois par version et par appareil, et se rouvre depuis le bandeau. Changer `NOUVEAUTES_VERSION` la remontre à tout le monde.
+### 6.11 La boutique
 
-## Version 2.0 · Reflets
+Trois rayons (`RAYONS`, `js/shop.js`) : **Cartes**, **Cosmétiques**, **Combats** ; les articles d'événement vivent dans l'onglet de l'événement. 32 articles dans `04_seed.sql` (catégories `boosters`, `echange`, `invitation`, `promo`, `cosmetique`, `tapis`, `sleeve`, `evenement`).
 
-**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 5ᵉ carte. Elles ne s'échangent que contre une autre Reverse. Leur recyclage et leur fabrication (au double du prix d'une classique) restent **fermés** tant que `parametres.fabrication_reverse` ne vaut pas `true` :
-
-    update public.parametres set fabrication_reverse = true where id = 1;
-
-**La Collection** a trois vues : Classiques (les 122), Reverses (les 85) et Spéciales (Promos, Brillantes, carte unique), sous une jauge commune. Une classique dont on a aussi la Reverse porte un petit éclat nacré à côté de son numéro. Dans les listes sans image, une Reverse garde le nom de sa carte, suivi du même éclat (`nomH()`, `js/utils.js`).
-
-**Titres, bannière, devise.** Un titre s'affiche sous le pseudo (profil, fiche, classement). Il se gagne par les succès, les quêtes jalons, le Pass de l'événement ou la boutique (`TITRES`, `js/config.js` ; `titres_de()`, `supabase/21_reflets.sql`). La bannière est une carte qu'on possède, en fond de fiche ; la devise, une phrase de 80 signes. Tout passe par `personnaliser()`. Les cadres Prisme, Sceau, Maître, Reflet, Aurore, Miroir et Nébuleuse sont des cadres décorés, à la manière des décorations d'avatar de Discord : une illustration animée qui entoure l'avatar et déborde de son cercle (`fx` dans `FRAMES` ; un SVG par cadre dans `assets/cadres/`, généré, ses animations dedans).
-
-**L'événement Reflets** (`code = 'reflets'` dans `evenements`) remplace Combats dans la barre du bas tant qu'il dure. Sa monnaie, les **Prismes**, ne se gagne que par ses quêtes (quotidiennes `ev_jour` et de l'événement `ev`, colonne `evenement` de `quests`). Tout Prisme gagné fait avancer un **Pass** de 20 paliers (table `evt_piste`, le calcul de l'équilibrage est en tête de son tableau) ; en dépenser à la **boutique de l'événement** (`shop_items.devise = 'prismes'`) n'y change rien. L'onglet a six sous-onglets — Accueil (aujourd'hui, et les nouveautés de la 2.0), Quêtes, Pass, Devine l'illu, Boutique, Classement — et un bandeau d'une ligne l'annonce sur l'écran Boosters. La boutique principale n'a plus qu'un lien vers celle de l'événement.
-
-**Devine l'illu** : une illustration de l'extension par jour, la même pour tous. Elle arrive en 9 × 6 pixels ; chaque essai raté la précise (12 × 8, 18 × 12, 36 × 24). Quatre essais. Trouvée au premier : 25 Prismes et 120 Éclats, puis 18/90, 12/60, 6/30 (`illu_gain()`) — les Prismes seulement pendant l'événement. Tout est automatique : les 113 illustrations sont rangées une fois pour toutes dans un ordre secret (tiré du sel `parametres.illu_sel`, créé au hasard à l'installation et jamais montré), et chaque jour prend la suivante — aucune ne revient avant 113 jours, et l'ordre ne se devine pas depuis le code, qui est public. Le serveur garde les pixels (`illu_pixels`, rempli par `supabase/21b_illu.sql`) et n'envoie que la grille du moment : le navigateur ne connaît la carte qu'une fois la partie finie. Quand une illustration change : `node tools/illu-pixels.js`, puis `python3 tools/build-sql.py`.
-
-**Les invitations** s'achètent en boutique : 2 000 Éclats, trois par joueur (`shop_items.limite`). Chaque achat crée un code `M8-XXXX-XXXX`, valable une fois. L'ami se connecte avec Discord, arrive sur l'écran d'attente, et saisit le code — ou le reçoit tout rempli par le lien `/?invitation=CODE`. Il entre avec un cadeau de bienvenue : 10 boosters hors réserve (en plus des 5 de départ) et 1 000 Éclats. Pour que ce soit possible, **un compte non invité est désormais créé** à la connexion (`handle_new_user`) : il reste bloqué par `garde_beta()` sur toutes les actions du jeu et n'apparaît ni dans la recherche ni dans le classement, mais il peut utiliser un code. **Un invité n'invite pas à son tour** (version 2.1, `est_filleul()`) : sinon chaque nouveau venu ouvrirait la porte à d'autres et la liste d'accès ne voudrait plus rien dire. Le serveur refuse l'achat (`shop_buy`, `creer_invitation`), la boutique ne lui montre pas l'article et ses quêtes d'invitation sont cachées (`me()`). Les codes achetés par un invité avant cette règle et jamais utilisés ont été annulés et remboursés ; ceux déjà utilisés restent valables.
-
-**Après l'événement.** Pendant trois jours, son onglet devient un **récap** (`evenement_recap()`) : le bilan du joueur, le podium, ce qui reste, et un « À suivre » sur les Combats et les Secrets ; le bandeau de l'écran Boosters y mène, et une fenêtre l'annonce une fois. Puis l'onglet disparaît. **Devine l'illu continue** dans son propre onglet (tiroir) : il rapporte toujours ses Éclats (120, 90, 60, 30 selon l'essai), plus de Prismes. Le Labo montre l'onglet récap, la fenêtre et le bandeau avec des chiffres inventés.
-
-**Échanges · Chez tes amis** : les cartes qui te manquent et qu'un ami a en double (`amis_doublons()`), une pression sur l'ami prépare la demande.
-
-**Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
-
-## Version 3.0 · Les Combats
-
-> **Pré-build.** Les règles du jeu de cartes ne sont pas encore publiées : celles du jeu sont **reconstituées** à partir des cartes, et tout ce qui a été inventé est signalé (`docs/regles-3.0.md`, et le guide « Ce qui est maison » dans le jeu). La 3.0 ne sortira qu'avec les vraies règles et les visuels des Secrètes.
-
-**Le moteur** (`js/combat/moteur.js`) fait tourner une partie entière dans la page, sans serveur de jeu : un générateur qui s'arrête à chaque décision, une graine tirée par le serveur, et un journal d'actions qui suffit à rejouer la partie à l'identique (reprise après un rechargement, défis entre amis). Les effets des cartes sont dans `js/combat/effets.js`, l'IA (cinq niveaux, des règles simples à la recherche sur deux tours ; aucun ne joue au hasard) dans `js/combat/ia.js`, l'arène animée dans `js/combat/table.js`. Le banc d'essai et les tests tournent sans navigateur :
-
-    node tools/combat-tests.js          les règles, une par une
-    node tools/combat-sim.js ia 200     IA contre IA : durée, équilibre
-
-**L'onglet Combats** (`js/battle.js`) : on choisit sa **Section** (Toxique ou Déter, les deux Starter Decks — sa Promo et son deck, prêté), puis la **campagne** (vingt rivaux en quatre actes contre l'autre Section, sur un chemin acte par acte ; la finir donne sa Promo), l'**Arcade** (cinq difficultés, un deck adverse tiré au sort ; cinq victoires payées par jour contre l'IA ; `mode = 'infini'` côté serveur), le **Raid** (par saisons, `js/raid.js`), les **défis** entre amis (Versus : en direct, chacun sur son écran, 60 secondes par tour ; le serveur range les actions, chaque navigateur rejoue celles de l'autre ; trois défis payés par jour), l'**atelier de decks** (`js/combat/atelier.js` ; codes de partage) et les **Guides** (`js/combat/guides.js`).
-
-**L'arène** (`js/combat/table.js`, `css/arene.css`) : le plateau en plein écran, le tapis du joueur dont c'est le tour. Toucher une carte la montre en grand au-dessus de son propre camp, qui reste visible : on y choisit la place d'un Joueur, le Joueur qui reçoit un Objet, ou l'attaque — les attaques possibles s'allument, la carte retourne à sa place et les cibles s'allument à leur tour. Sur le plateau : la Défense en pastille, les Essences en gemmes (éteintes quand elles sont engagées), les PV en dos de cartes ; plus de signe de sorte de carte. Toucher une carte montre aussi ce qui la touche en ce moment (« En ce moment » : bonus, malus, mots-clés gagnés). Le plateau reste consultable pendant que l'adversaire joue : une animation n'en interrompt jamais une autre.
-
-**L'XP et le niveau de combattant** (`js/combat/niveaux.js`, `supabase/26_niveaux.sql`) : chaque combat fini rapporte de l'XP, sans limite par jour ; chaque niveau paie 50 Éclats, certains paliers des boosters, des cadres (Arène bronze, argent, or, prisme) et des titres. Quêtes d'XP (du jour, de la semaine) et de niveau (saison). Le calcul est dans `docs/economie-3.0.md` (partie 2 bis).
-
-**L'accueil des Combats** tient en un écran : un bandeau illustré (le chevalier du tapis « La Luxueuse III », `assets/combat/banniere-combats.webp`), la Section et le niveau en anneau, l'affiche du prochain combat de campagne, deux portes illustrées **Solo** (qui mène à la **Campagne** et à l'**Arcade**, deux pages distinctes) et **Versus**, l'affiche du **Raid**, trois raccourcis (Decks, Missions — les quêtes de combat et de niveau —, Guide). Les Jetons de combat sont retirés.
-
-**Les cosmétiques** : six tapis de jeu et deux sleeves en boutique (rayon Combats ; visuels adaptés des illustrations par `tools/cosmetiques.py`) ; chaque tapis porte le nom de sa carte (Champions du Monde, La Relève, La Luxueuse III, Marteen Supreme, Baby Driver, Vanyabubu), la sleeve noire est la Secrète « 6W26L ». Ceux de l'événement partent eux aussi d'images du jeu (`tools/choc-visuels.py`) : le tapis « Le Choc des Sections » (Gotaga Pose et Squeezie le Toxique), le tapis « The French Sorcerer », la sleeve « Le Choc » (le dos officiel recoloré). Les Essences Brillantes qu'on possède brillent en combat.
-
-**Les cadres de la 3.0** (`tools/cadres-30.py`, redessinés en 3.0.6 à la manière des cadres de la 2.0 : un anneau fin, des traînées effilées en dégradé et leur lueur) : Arène ×4 (niveaux ; le laurier s'allonge, les épées arrivent à 20, les gemmes à 30, le prisme à 50), Toxique (le poison monte du bas) et Déter (la foudre tombe du haut) en boutique, Secrète (le reflet irisé et le ✦✦ de la rareté, quêtes), Choc (les deux se heurtent en haut, dans un éclat blanc) et Foudre (événement). Le profil montre aussi ceux qu'on n'a pas, et où les gagner.
-
-**L'arène** (`js/combat/table.js`, `css/arene.css`) se suit au rythme d'une table : l'IA marque un temps entre deux actions, chaque carte de l'adversaire (Moment, Coach, Objet, Résilience) s'affiche en grand avec son effet écrit (toucher passe à la suite), une attaque adverse annonce son effet, et les cartes jouées restent consultables (vignettes au bout de la bande du milieu, puis la liste de la partie). Attaquer ne demande plus de confirmation : la bande du milieu montre les deux phases du tour. La maîtrise des cartes de la première pré-prod 3.0 a été retirée ; elle revient, refaite, en 3.0.7 (plus bas).
-
-**Le Raid** (`js/raid.js`, `RAID` dans `js/combat/choc-data.js`, `supabase/27_raid.sql`), dans l'onglet Combats, pensé pour un serveur d'une dizaine de joueurs : The French Sorcerer, un boss commun, par **saisons de quatorze jours**. Les dégâts de tous s'additionnent ; à chaque seuil, une des **six phases** tombe et ouvre un **coffre commun** pour chaque joueur qui a combattu dans la saison (boosters, Fragments, Éclats). Les dégâts de chacun paient aussi trois **paliers personnels**. Chaque phase est un combat plus dur (niveau de l'IA, PV et Essences d'avance du boss). Les six tombées, le **mode Infini** : un palier de plus à chaque victoire, pour la performance de chacun, sans plus rien débloquer pour tous. Trois tentatives par jour ; le Sorcier commence chaque combat déjà sur le plateau. Il paie en Éclats, en Étincelles pendant le Choc. Les seuils se règlent sans redéployer, selon le nombre de joueurs : `update public.parametres set raid_echelle = … where id = 1;`.
-
-**L'événement « Le Choc des Sections »** (`code = 'choc'`, trois semaines ; `js/choc.js`, `js/combat/choc-data.js`, `supabase/25_choc.sql`) : l'**Épreuve du jour** (le même combat pour tout le monde, trois essais, un classement du jour), le Raid payé en **Étincelles**, des quêtes, un **Pass de trente paliers** (ses trois exclusifs : la sleeve « Le Choc », le cadre « Choc » et, au bout, le tapis « Le Choc des Sections » ; plus de Légendaire, une seule Essence Brillante), une boutique (boosters, Fragments, le tapis « The French Sorcerer », un titre). L'en-tête montre les deux Sections face à face, Squeezie le Toxique et Gotaga Pose fondus l'un dans l'autre. Son onglet passe en tête du tiroir : Combats garde sa place dans la barre du bas, et un bandeau annonce l'événement sur les écrans Boosters, Combats et Boutique. L'équilibrage complet, chiffres et hypothèses, est dans **`docs/economie-3.0.md`**.
-
-**La refonte visuelle** (`css/tokens.css`, `css/base.css`, détail, règles et sources dans **`docs/design-3.0.md`**) : la palette « Graphite et lavande ». Un gris anthracite neutre qui laisse la couleur aux cartes, des **tuiles pleines** posées par une ombre douce (dans l'esprit de *Pokémon TCG Pocket*), le verre réservé à ce qui flotte (l'en-tête, la barre des onglets, les feuilles). Une couleur, un sens, partout la même, arène comprise : la **lavande** pour ce qu'on peut faire, le **blanc** pour ce qu'on a choisi, le **rouge** pour l'adversaire, le **vert** pour ce qui est réussi, l'**or** pour les récompenses et la rareté Légendaire. Toxique est vert, Déter violet. Le niveau de combattant est une pastille lavande sur l'avatar (profil et fiche). Les Secrètes ont un reflet irisé et des éclats, sans trame. Sans flou disponible, ou si le système demande moins de transparence, le verre devient un aplat.
-
-**Version 3.0.6.**
-- **Le tutoriel** (`js/combat/tutoriel.js`) : une partie écrite d'avance (Clubs non mélangés, option `ordre` du moteur), guidée bulle après bulle. Une bulle « à lire » attend « Compris » ; une bulle « à faire » allume ce qu'il faut toucher, et l'arène refuse les autres coups (option `guide` de `Table.ouvrir`). Ensuite la partie est libre, avec des remarques à la première occurrence (une touche, un Joueur vaincu, Légion, le Banc…). Il se rejoue à l'infini ; la première victoire fait avancer la quête « Premiers pas » (`tutoriel_fini`, 200 Éclats une fois). Le scénario est vérifié par `tools/combat-tests.js`.
-- **Le Guide** devient un **glossaire** (`GLOSSAIRE`, `js/combat/guides.js`) : cinquante mots, cherchables, chacun relié à son chapitre ; les chapitres restent en dessous.
-- **L'IA** ne joue plus au hasard : le Débutant suit des règles simples, le Facile essaie ses coups avec beaucoup d'imprécision, les niveaux 4 et 5 font plus d'essais par coup. Mesures (IA contre IA, mêmes decks) dans `docs/economie-3.0.md`.
-- **Les Decks** : deux volets (Mes decks, Apparence), le deck actif en tête, et un **bilan** sur trois repères mesurés en faisant jouer l'IA (`Decks.bilan`, `js/combat/decks.js`).
-- **L'arène se referme d'un geste** : toucher le flou ou le vide repose la carte ouverte ; le menu et les piles ont un voile qui les referme ; Échap sur ordinateur.
-- **Les positions de défilement** survivent aux rendus (`data-defil`, `js/app.js`) : colonne du deck, rangées de filtres, onglets.
-- **Le Classement** gagne Niveau, Secrètes et Versus (`supabase/14_classement.sql`).
-- **Le Labo** montre les deux campagnes dévoilées, toutes les récompenses, et la fin de combat.
-- **L'événement** : bannière Squeezie le Toxique contre Brawks Déter, sans VS ; les Secrètes à la une ; la monnaie s'appelle désormais les **Étincelles**.
-
-**Version 3.0.7.**
-- **La maîtrise des cartes** (`js/maitrise.js`, `css/maitrise.css`, `supabase/28_maitrise.sql`) : un usage durable pour les Fragments. Une carte possédée monte en cinq niveaux — Éclat, Gravure, Aura, Arène, Légende — et chaque niveau change son allure partout où elle apparaît : la fiche, la Collection (immobile, avec son insigne « III »), la vitrine, et le combat (dans la main, sur le plateau, en grand). En combat, dès le niveau 4, elle entre dans un éclat et ses coups brillent de sa couleur ; au niveau 5, une onde de choc traverse le plateau. Un niveau coûte des Fragments (300 à 6 000, 11 500 en tout) et des exemplaires **en trop** seulement — jamais ceux qu'un deck peut contenir, qu'on garde, ou qu'on a promis dans un échange ; chaque exemplaire qui manque se paie à son prix de fabrication. La Reverse partage la maîtrise de sa carte. Chiffres et calculs : `docs/economie-3.0.md`, partie 3 ter.
-- **La carte fétiche** : une carte possédée, mise en scène en haut du profil — un projecteur aux couleurs de son Essence, des rayons qui tournent, la carte qui flotte, sa maîtrise — et sur la fiche publique du joueur (`fetiche_de`). Distincte de la vitrine de quatre cartes, qui reste.
-- **La fiche d'une carte** (`js/viewer.js`) : sous la carte, trois pages qu'on fait glisser du doigt — **Infos** (Défense, attaques, mot-clé, talents, Résilience, dans le style de la carte agrandie de l'arène), **Maîtrise** (le niveau, ce que coûte le suivant, l'aperçu du niveau suivant sur la carte), **Gérer** (favori, à garder, carte fétiche).
-- **L'arène** : la carte agrandie est montrée intacte, en grand, avec son état en direct dessous (rien n'est posé sur la carte) ; un Joueur engagé ne pivote plus (carte assombrie et étiquette « Engagé ») ; les animations sont rejouées depuis l'état de chaque instant (une cible ne disparaît plus avant l'impact) ; les effets du tour se voient ; une flèche relie l'attaquant à sa cible ; les touchers perdus sur iOS sont corrigés.
-- **Le tutoriel** : textes réécrits, deux étapes d'information (la carte en grand, Attaque contre Défense) ; l'attaque à toucher sous la carte agrandie s'allume, et l'étape « Garde » allume les Joueurs à choisir (elle n'allumait rien).
-- **Les écrans** : récap de booster sans défilement sur mobile ; le compteur de boosters passe de la barre du haut à une pastille sur l'onglet Boosters ; l'en-tête mobile montre le niveau ; l'accueil des Combats remplit l'écran et met le Tutoriel en avant ; les Actes verrouillés ne se touchent plus ; le Guide en deux onglets, Règles puis Glossaire ; la Collection retrouve ses options d'affichage ; le Classement se réduit à quatre critères (niveau, collection, Secrètes, Versus).
-- **L'événement et les cadres** : Brawks « Déter » en illustration propre, Nouveautés et Raid recadrés (`illuCadre`), le cadre « The French Sorcerer » en boutique d'événement ; les cadres Foudre et Arène redessinés (`tools/cadres-30.py`).
-
-**Côté serveur** : `supabase/23_combats.sql` (Sections, decks, combats, défis), `24_secretes.sql` (les Secrètes), `25_choc.sql` (l'événement), `26_niveaux.sql` (l'XP), `27_raid.sql` (le Raid par saisons et phases) et `28_maitrise.sql` (la maîtrise et la carte fétiche, version 3.0.7), plus des retouches des fichiers existants (taux du hit, quêtes et boutique 3.0, `me()`, l'XP sur la fiche publique). Le serveur ne fait pas tourner le moteur : il fixe la graine de chaque combat, plafonne ce qu'un combat peut rapporter, et croit le navigateur sur le résultat — un défi est déclaré par les deux joueurs, et un désaccord est noté (`defis.desaccord`). `verif.html` contrôle que la 3.0 est installée.
-
-**Sortie de la 3.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase (il passe sur une base 2.x sans rien perdre — testé sur PostgreSQL 16). L'événement ne s'ouvre pas tout seul : la commande est en fin de `supabase/25_choc.sql`.
-
-## Succès, historique et partage
-
-**Les succès** sont calculés à la volée par le serveur (`succes_de()`, `supabase/15_evenements.sql`) à partir de ce qu'il sait déjà : boosters, collection, échanges, plus longue série (`profiles.serie_max`), godpacks du journal, Brillantes, fabrications, carte unique. Rien à stocker ni à synchroniser. Les noms et descriptions sont dans `SUCCES` (`js/config.js`) ; les identifiants doivent rester les mêmes des deux côtés. Le profil les montre tous (obtenus en couleur, les autres grisés), la fiche d'un joueur seulement les siens.
-
-**L'historique** : chaque booster ouvert est journalisé dans `tirages`. L'onglet *Mes tirages* (menu du compte) montre les trente derniers, avec quelques compteurs (Légendaires, Brillantes, godpacks), et chaque booster se partage en image. Le journal commence à la version 1.5 : les boosters ouverts avant n'y sont pas.
-
-**Le partage** dessine une image 1080 × 1350 du booster dans un canvas (`js/partage.js`) : le logo, le pseudo, les cartes avec la lueur de leur rareté, l'adresse du jeu. Sur téléphone, le menu de partage du système s'ouvre ; ailleurs, l'image se télécharge. Le bouton est dans le récap d'ouverture et sur chaque booster de l'historique. Ouvert comme fichier (la démo), le navigateur refuse d'exporter l'image : il faut une adresse web.
-
-## L'équilibrage
-
-Tout le jeu tient sur une seule tension : **le temps contre la collection.** Les 122 cartes ne s'achètent pas, elles se trouvent ; les Éclats ne font qu'accélérer un peu. Les chiffres ci-dessous viennent d'une simulation, pas d'une intuition.
-
-### La collection
-
-Six boosters gratuits par jour (un toutes les 4 h, réserve de 5). En médiane :
-
-| Étape | Boosters | Environ |
-|---|---|---|
-| 25 % | 4 | le premier jour |
-| 50 % | 10 | deux jours |
-| 75 % | 26 | une semaine |
-| **90 %** | 85 | deux semaines — donne la Promo **P06** |
-| **100 %** | 655 | ~110 jours — donne la Promo **P05** |
-
-La courbe est volontairement brutale à la fin : le goulot, ce sont les **dix légendaires à 4 %** chacune. Tout le reste se complète en un mois ; c'est la dernière poignée de cartes qui fait la valeur du Master Set.
-
-### Les Éclats
-
-Depuis la version 1.5, **les quêtes sont la seule source d'Éclats** : le recyclage donne des Fragments. Les quêtes quotidiennes et hebdomadaires ont été relevées pour compenser, et les premiers paliers baissés : ce sont eux qui offraient à un nouveau venu dix boosters en cinq jours et une Promo en sept.
-
-Simulation, médiane, sans échange (les échanges ajoutent des quêtes à part) :
-
-| Joueur | Éclats par jour | 3 000 (x10 boosters) | 5 000 (une Promo) |
-|---|---|---|---|
-| Régulier (6 boosters/jour), nouveau venu | ~340 | 7ᵉ jour | 10ᵉ jour |
-| Régulier, avancé | ~340 | 10ᵉ jour | 14ᵉ jour |
-| Occasionnel (4/jour, 5 jours sur 7), nouveau venu | ~160 | 11ᵉ jour | 21ᵉ jour |
-| Occasionnel, avancé | ~155 | 21ᵉ jour | 31ᵉ jour |
-
-Avant, un régulier avancé touchait ~275 Éclats par jour, et un nouveau venu atteignait 3 000 le 5ᵉ jour, 5 000 le 7ᵉ.
-
-| Article | Prix | Pour un régulier avancé |
-|---|---|---|
-| Un booster | 350 | un jour |
-| Dix boosters | 3 000 | neuf à dix jours |
-| Un cadre | 1 200 à 5 000 | de quatre à quinze jours |
-| **Une carte Promo** | 5 000 | quinze jours |
-
-Tout dépenser en boosters ajoute ~1,1 booster par jour aux six de la réserve (**+18 %**) : les Éclats aident, ils ne remplacent pas le temps.
-
-La quête quotidienne **Petit ménage** (recycler 5 doublons) sert la fin de collection : *Du sang neuf* devient impossible quand il ne manque plus rien, celle-ci reste faisable tant qu'on tire des doublons.
-
-Le détail du calcul est en tête de `supabase/04_seed.sql`, à côté des valeurs elles-mêmes.
-
-## Quêtes et boutique
-
-Les quêtes paient en **Éclats**, la seule monnaie du jeu. La boutique les dépense. Aucun achat avec de l'argent réel, nulle part.
-
-La progression d'une quête n'est **jamais** envoyée par le navigateur : c'est le serveur qui l'incrémente au moment où l'événement arrive vraiment, dans `open_pack()`, `trade_respond()` et `recycler()`. C'est pour ça que toutes les quêtes portent sur des choses qu'il peut constater lui-même — boosters ouverts, cartes inédites, raretés sorties, échanges conclus, doublons recyclés, jours de connexion, pourcentage de collection, raretés complètes.
-
-**Les raretés complètes** sont six quêtes saisonnières : posséder toutes les Essences, toutes les Communes, et ainsi de suite jusqu'aux Légendaires. L'objectif est le nombre de cartes de la rareté, calculé sur le catalogue ; l'avancement est recompté par `sync_collection_quests()`, comme le pourcentage de collection, et ne recule pas si l'on cède une carte ensuite. Les récompenses suivent le temps médian qu'il faut (simulation, six boosters par jour) :
-
-| Rareté | Cartes | Environ | Récompense |
-|---|---|---|---|
-| Essences | 9 | 4 jours | 100 Éclats |
-| Communes | 33 | 8 jours | 250 Éclats |
-| Peu communes | 24 | 10 jours | 350 Éclats |
-| Rares | 28 | 3 semaines | 1 200 Éclats |
-| Épiques | 18 | 2 mois | 3 000 Éclats |
-| Légendaires | 10 | ~110 jours | 6 000 Éclats |
-
-Objectifs, récompenses, articles et prix sont tous dans `supabase/04_seed.sql`. On équilibre là, on rejoue le fichier, c'est pris en compte : ni déploiement, ni mise à jour du site.
-
-**Trois périodes, trois sous-onglets.** Quotidiennes, Hebdomadaires, Saisonnières. Les seize quêtes d'un seul tenant faisaient une page qu'on ne lisait plus : on n'a qu'une question à la fois, « qu'est-ce que je peux finir aujourd'hui ? ». Chaque période affiche le temps qui lui reste — « remise à zéro dans 3 h 20 » plutôt que « remis à zéro chaque nuit », qui ne dit pas quand. Le calcul est calé sur l'heure de Paris via `Intl`, exactement comme `period_key()` côté serveur : les deux frontières doivent tomber ensemble.
-
-Une quête qui se termine se signale **deux fois**, et jamais en travers du chemin : une carte passe en haut de l'écran pendant quatre secondes (`notifQuete()`, `js/quests.js`), puis la pastille de l'onglet prend le relais et reste tant qu'il y a une récompense à encaisser. C'est `Backend.apply()` qui les repère, en comparant l'état reçu du serveur au précédent.
-
-**La boutique a deux rayons** — Cartes et Cosmétiques — et un étal plutôt qu'une liste : on voit l'objet avant son libellé. Un achat demande **toujours deux gestes**, ouvrir la fiche puis confirmer, avec le solde restant affiché avant de payer. Un article à 5 000 Éclats ne doit jamais partir sur un doigt posé de travers.
-
-**Et sur la fiche, on manipule ce qu'on achète.** Le paquet tourne sous le doigt, un lot s'ouvre en éventail — cinq paquets pour un lot de cinq —, la carte Promo se retourne recto-verso, le jeton s'empile. On n'achète pas une icône. La bascule recto-verso ne se fie pas à `backface-visibility` : la propriété ne s'hérite pas, et la carte imbriquée se retrouvait dessinée en miroir. On échange les deux faces au quart de tour exact, quand la carte est sur la tranche et que l'échange ne se voit pas.
-
-**Les remises sont calculées, pas décrétées.** « −14 % » se vérifie contre le prix à l'unité du même rayon ; « éco » se croyait sur parole.
-
-## Les cartes Promo
-
-Quatre cartes hors extension. Elles ne sortent d'aucun booster, ne comptent pas dans les 122, et ne s'échangent pas — le serveur refuse les trois.
-
-| Carte | Comment l'obtenir |
+| Article | Prix |
 |---|---|
-| **P01** Major de Paris | Boutique, 5 000 Éclats |
-| **P02** Major de Paris *(illustration alternative)* | Boutique, 5 000 Éclats |
-| **P03**, **P04** | *À venir* — leur emplacement est déjà dans la grille |
-| **P06** Le Marionnettiste | 75 % de la collection |
-| **P05** Tout Commence Ici | Master Set complet (les 122 cartes) |
+| 1 / 5 / 10 boosters | 350 / 1 600 / 3 000 Éclats |
+| 1 / 5 jetons d'échange | 600 / 2 500 |
+| Promo P01, P02 | 5 000 chacune |
+| Cadres Azur, Rose / Or / Prisme / Toxique, Déter | 1 200 / 2 500 / 5 000 / 3 000 |
+| Invitation (3 par joueur) | 2 000 |
+| 6 tapis de jeu | 4 000 (La Luxueuse III : 5 000) ; 25 000 en tout |
+| 2 sleeves | 3 000 (6W26L) et 2 500 (Argent) |
 
-Les deux paliers ne donnent **que** la carte, zéro Éclat. Une récompense qui paie deux fois dilue les deux : on se souvient d'avoir débloqué la carte, pas d'avoir touché six mille Éclats en même temps. Le **Cadre Sceau** n'est vendu nulle part et n'est plus donné par aucune quête : ceux qui l'ont déjà le gardent. Pour le rendre accessible, le poser en `item_id` d'une quête dans `supabase/04_seed.sql`.
+- **Un achat demande toujours deux gestes** (ouvrir la fiche, confirmer), avec le solde restant affiché. Sur la fiche, on manipule l'objet (paquet qui tourne, lot en éventail, Promo recto-verso). Les remises (« −14 % ») sont **calculées** contre l'article unitaire de même effet et même devise (`remiseDe`).
+- Après l'achat : des boosters s'ouvrent aussitôt (`openBooster({bonus:true})`) ; une Promo passe par sa scène ; un tapis ou une sleeve propose de l'équiper ; une invitation montre son code.
+- **Invitations** : un code `M8-XXXX-XXXX` à usage unique, aussi transmissible par le lien `/?invitation=CODE`. L'invité entre avec 10 boosters et 1 000 Éclats. **Un invité n'invite pas à son tour** (2.1.1, `est_filleul()`).
 
-Elles vivent dans `promos`, jamais dans `cards` : c'est ce qui garantit que « 122 » reste 122 partout, et que le pourcentage de collection ne bouge pas quand on en ajoute une. Côté serveur, la colonne `cards.promo` les exclut du tirage (`pick_card`) et du calcul d'avancement (`sync_collection_quests`).
+### 6.12 Boîte de réception, cadeaux, classement, tirages, partage
 
-Les deux cartes de palier sont accordées par `check_promos()` (`supabase/03b_promos.sql`), appelée depuis `me()` et `open_pack()`. L'insertion est idempotente : une carte déjà possédée n'est pas redonnée, sinon le compteur d'exemplaires grimperait tout seul à chaque rafraîchissement.
+- **Boîte** (`js/boite.js`, `supabase/11_boite.sql`) : demandes d'ami et d'échange, réponses, défis, annonces. Le **serveur écrit** l'événement au moment où il a lieu (`notifier()`). Arrivée par le temps réel Supabase, avec une relève toutes les 30 s en secours. Lu / non lu = une date par joueur (`boite_vue_le`). Ping : pastille sur la cloche, « (n) » dans le titre, badge d'app, carte en haut de l'écran — **jamais** pendant une ouverture, une scène de Promo ou un combat (`ecranOccupe()`). Annonces publiées depuis le Labo ; 30 jours d'historique.
+- **Cadeaux** (`js/cadeaux.js`, `18_cadeaux.sql`) : un administrateur offre Éclats, boosters, Fragments, une carte (pas l'Unique) et un mot ; le joueur ouvre un paquet-cadeau, et c'est `ouvrir_cadeau` qui crédite, une seule fois.
+- **Classement** (`js/classement.js`, `14_classement.sql`) : quatre critères affichés (`CRITERES` : niveau, collection, Secrètes, Versus) ; le serveur en sait huit (aussi Reverses, boosters, échanges, série). Top 50 et ma ligne ; seuls les comptes invités ; cache de 60 s.
+- **Mes tirages** (`js/tirages.js`, table `tirages`) : les 30 derniers boosters, depuis la 1.5.
+- **Partage** (`js/partage.js`) : une image 1080 × 1350 dessinée en canvas ; Web Share si possible, sinon téléchargement. Refusé en `file://`.
 
-> **Pourquoi 75 % et non 50 %.** La moitié de l'extension se fait en une dizaine de paquets, c'est-à-dire le deuxième jour. Une récompense décrochée le deuxième jour n'en est pas une. À 75 % il faut une bonne semaine de jeu régulier, et ça laisse les 100 % — cent dix jours — comme dernier sommet.
+### 6.13 Monnaies et équilibrage
 
-> **Pourquoi des emplacements pour P03 et P04.** Une série se lit entière ou pas du tout : un trou entre P02 et P05 se lirait comme un bug plutôt que comme une suite à venir. Les deux cases portent « Coming soon… », et le compteur affiche bien `/ 6`. La liste est dans `PROMOS_A_VENIR` (`js/config.js`) : le jour où les images arrivent, on déplace la ligne vers `js/promos-data.js`.
+| Monnaie | Où elle vit | Gagnée par | Dépensée pour |
+|---|---|---|---|
+| **Éclats** | `profiles.shards`, `save.shards` | quêtes, combats, niveaux, Raid hors Choc, Devine l'illu, cadeaux | boosters, cosmétiques, Promos, jetons, invitations |
+| **Fragments** | `profiles.fragments` | recyclage, Pass, coffres du Raid, campagne | fabrication, maîtrise |
+| **Prismes / Étincelles** | `evt_comptes` (`monnaie = 'prismes'` en base) | quêtes d'événement, Épreuve, Raid pendant le Choc, Devine l'illu pendant Reflets | boutique de l'événement (le Pass avance sur le **total** gagné) |
+| Jetons d'échange | `inventory.trade_token` | boutique | une demande sans attendre |
 
-**L'obtention a sa propre scène** (`js/promos.js`, `css/promo.css`) : la carte arrive de loin, dos tourné, se retourne, et le nom tombe. Rien à toucher avant la fin — le bouton ne devient cliquable qu'une fois la carte révélée, sinon un doigt posé au hasard fermait la scène avant le retournement. La détection suit le même principe que les quêtes : on compare deux états successifs envoyés par le serveur, et une file d'attente enchaîne les cartes si plusieurs tombent ensemble.
+**Aucun argent réel, nulle part.** Repères (simulation, `docs/economie-3.0.md` et en-tête de `04_seed.sql`) : un joueur régulier ouvre ~6 boosters par jour ; avant la 3.0, les quêtes rapportaient au plus ~606 Éclats par jour (~415 en jeu « typique ») ; tout dépenser en boosters ajoute ~1 booster par jour (les Éclats aident, ils ne remplacent pas le temps). La campagne rapporte une fois 3 400 Éclats, 14 boosters et 2 800 Fragments. Le goulot de la collection, ce sont les dix Légendaires (simulation 2.x, six boosters par jour, en tête de `04_seed.sql`) : 25 % en 7 boosters, 50 % en 17, **75 % (P06) en 45, soit une semaine**, 90 % en 125, **100 % (P05) en ~690, soit près de quatre mois** (un peu moins depuis que la Légendaire est passée à 4,25 %). **Il n'existe aucune donnée réelle sur les combats** : à mesurer à l'ouverture (`quest_progress`, `combat_joueurs`, `evt_comptes`, `maitrises_journal` ; la table `combat_parties` que cite `docs/economie-3.0.md` n'existe pas).
 
-## Le thème
+### 6.14 Recettes
 
-Un seul thème, **sombre**, depuis la version 2.0 : c'est là que les cartes brillent. Ses couleurs sont des jetons, dans `css/tokens.css` ; une feuille qui a besoin d'une teinte prend le jeton plutôt que d'écrire la couleur en dur. Le thème clair et son réglage ont été retirés ; un ancien choix rangé dans le navigateur est effacé au démarrage (`oublierTheme()`, `js/settings.js`).
+- **Ajouter une carte d'extension** : poser l'image, ajouter l'entrée à `CARD_DATA`, puis `python3 supabase/gen-cards-sql.py`, `node tools/illu-pixels.js`, `python3 tools/build-sql.py`, et vérifier `starters` / `cle_copie` (`23_combats.sql`), la boutique (`04_seed.sql`), les textes en dur (« 122 », « 85 », `CADRE_SOURCE`). ⚠ **Les numéros 123 à 127 sont pris par les Secrètes** : un `num: 123` écraserait `c123` des deux côtés.
+- **Révéler une Secrète** : compléter son entrée de `SECRET_DATA`, retirer `cachee`, poser l'image (`tools/cosmetiques.py` ou à la main ; le nom de fichier change, le cache suit), et corriger son nom dans `24_secretes.sql`.
+- **Ajouter une Promo** : `PROMO_DATA` + image dans `cards/promos/`, ligne `pNN` dans `03b_promos.sql`, et si elle se vend, l'article dans `04_seed.sql` (effet `carte`, `carte_id`).
+- **Changer les taux** : `open_pack` (SQL), `RATES` / `GOD` (`booster.js`) **et** `tirerPaquet` (`_demo/serveur.js`), ensemble.
+- **Changer recyclage / fabrication** : `cfg()` (`01_schema.sql`), `REC_DEFAUT` / `FAB_DEFAUT`, `CFG` du faux serveur.
+- **Ouvrir recyclage et fabrication des Reverses** : `update public.parametres set fabrication_reverse = true where id = 1;`.
+- **Ajouter une page à la fiche** : une entrée dans `VW_ONGLETS`, un cas dans `vPageVw`, un `data-v` dans la délégation de `#viewer`, et un appel dans `rafraichirFicheVw` si elle doit se redessiner.
+- **Remettre un critère au Classement** : un objet `{id, titre, dit, val}` dans `CRITERES` (le serveur sait déjà le calculer).
+- **Tester une ouverture** : Labo, `openBooster({test:true, force, god, brillante, unique, reverseR})` (tirage local, rien n'est écrit).
 
-## Les sons
+---
 
-Aucun fichier audio dans le dépôt : tout est **fabriqué à la volée** par le navigateur (`js/sfx.js`, Web Audio). Rien à télécharger, rien à héberger, aucune question de droits, et le son part à l'instant où on touche l'écran.
+## 7. Les Combats
 
-Chaque son est une recette courte dans `RECETTES` : quelques souffles de bruit filtré pour tout ce qui frotte, glisse ou se déchire, quelques notes pour les clics et les carillons. La déchirure du paquet, le passage d'une carte, la montée avant une révélation et les trois paliers de carillon (rare, épique, légendaire) sont branchés dans `js/opening.js`.
+> **Les règles sont reconstituées.** Les règles officielles du jeu de cartes n'étaient pas publiées : celles de M8 TCG Online sont déduites des cartes, et tout ce qui est inventé est signalé. **La source qui fait foi est [`docs/regles-3.0.md`](docs/regles-3.0.md)** (chaque règle porte un statut [Carte] / [Déduit] / [Maison] / [Direction] ; § 10 les lectures de textes ambigus ; § 12 les 17 points inconnus ; § 13 les valeurs), avec `REGLE` dans `js/combat/moteur.js`.
 
-Il n'y a **que des bruitages** : chacun répond à un geste. Une musique de fond, elle, joue sans qu'on l'ait demandée — le jeu n'en a pas.
+### 7.1 Les règles en bref
 
-### Le son sur mobile
+- **Deux CEO**, chacun avec **5 PV** : 5 cartes du Club posées face cachée. Touché, un CEO prend son premier PV **en main** ; touché sans PV, il a perdu. Club vide au moment de piocher : le CEO est touché.
+- **Zones** : Club (deck de 30), Réserve (10 Essences au choix, jamais possédées), main (5 au départ, mulligan possible), PV, Essences en jeu, **3 lignes** par camp, Banc, défausse.
+- **Sortes de cartes** : **Joueur** (Défense, une ou deux attaques, éventuellement un mot-clé ou un talent) ; **Coach** (Instant, un par tour) ; **Moment** (Instant, sans limite) ; **Objet** (se lie à un Joueur, 3 au plus) ; **Essence** (Réserve uniquement). **Rien ne coûte à jouer, sauf les attaques.**
+- **Le tour** : désengagement → le Banc revient en main → pioche (pas au premier tour du premier CEO) → une Essence de la Réserve (2 au premier tour du second) → **phase de jeu** (1 déploiement, des liens d'Objets, des Instants) → **phase de combat**, ouverte par la première attaque → fin du tour. Le premier CEO n'attaque pas à son premier tour.
+- **Attaquer** : payer (une couleur demande sa couleur, le Neutre n'importe laquelle), **s'engager**, viser le CEO ou un Joueur adverse **engagé**. **Défendre** : le Joueur désengagé de la même ligne, ou un Joueur avec Garde ; il s'engage et devient la cible. **Attaque ≥ Défense** : vaincu (défausse, avec ses Objets) ; sinon repoussée, sans trace. Contre le CEO, toute touche vaut un PV.
+- **Résilience** : une carte récupérée depuis les PV peut être jouée aussitôt, gratuitement, même pendant le tour adverse.
+- **Mots-clés** : Provocation (l'attaquant d'en face doit le viser), Garde (défend n'importe quelle ligne), Shield (ignore la première attaque subie), Riposte (vaincu, il contre-attaque), Légion (vaincu, il revient en main contre une carte défaussée), Buff (renforce les autres Joueurs), Signature (★ entrée, ⚡ déclencheur, sinon permanent). **Bench** : au Banc, retour en main au prochain tour (ce n'est pas « vaincu »).
 
-Un navigateur de téléphone ne laisse pas une page faire du bruit quand elle veut, et trois règles s'ajoutent les unes aux autres. Chacune coupait le son ici :
+| `REGLE` | `LIGNES` | `PV` | `MAIN` | `CLUB` | `RESERVE` | `OBJETS` | `COPIES` | `COPIES_RARES` | `DEPLOIEMENTS` | `COACHS` | `ESSENCES` | `ESSENCES_P2` |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| valeur | 3 | 5 | 5 | 30 | 10 | 3 | 2 | 1 | 1 | 1 | 1 | 2 |
 
-1. **Rien avant un geste.** L'`AudioContext` naît suspendu et ne se réveille que dans un gestionnaire déclenché par la personne. On le réveille au tout premier contact, quel qu'il soit.
-2. **`resume()` prend son temps.** Il rend une promesse : juste après l'appel, l'état est encore `suspended`. L'ancien code vérifiait l'état tout de suite et renonçait — le premier son de chaque session était systématiquement perdu. Les sons demandés pendant ce réveil sont désormais **mis de côté** et joués dès que le contexte tourne.
-3. **Le système reprend la main.** Quitter l'onglet, verrouiller l'écran, recevoir un appel : le contexte est suspendu et n'est pas rendu. Sans reprise explicite, tout restait muet au retour, définitivement. On redemande le réveil sur `visibilitychange`, sur `pageshow`, et à chaque geste.
+### 7.2 Le moteur (`js/combat/moteur.js`)
 
-Ce qu'on ne peut pas corriger : sur iPhone, l'interrupteur « silencieux » de la tranche coupe le son des pages web. Aucune ligne de JavaScript ne passe outre — les Réglages le disent au joueur plutôt que de le laisser chercher, et un bouton **Tester le son** répond honnêtement (`SFX.audible()`).
+- **Aucun affichage**, et il tourne aussi sous Node (IIFE sur `globalThis`, `module.exports`). Il expose `Combat` : `creer`, `agir`, `demande`, `optionsTour`, `cloner`, `rejouer`, `catalogue`, `scripts`, les calculs (`defense`, `valeurAttaque`, `infoAttaque`, `defenseurs`…) et **`Combat.O`**, la boîte à outils des effets (`piocher`, `engager`, `bancer`, `vaincre`, `toucher`, `payer`, `choisirUn`, `choisirCartes`, `ouiNon`, `ordonner`, `mod`, `alea`, `melanger`…).
+- **Un générateur** : `partie()` → `miseEnPlace()` → `tour()` en boucle. Il s'arrête (`yield`) à chaque décision : `{type:'tour'}`, `{type:'choix', but, options…}`, `{type:'cartes', parmi, min, max}`, `{type:'ordre'}`. Un effet de carte est une coroutine qui fait `yield*` sur ses décisions.
+- **Actions** : `deployer {u, ligne}`, `lier {u, cible}`, `jouer {u}`, `attaquer {u, k, cible, chevaliere?}`, `finTour`, et en réponse `choix {v}`, `cartes {u:[…]}`, `ordre {u:[…]}` ; `abandon` à tout moment. `agir(E, a)` valide l'action (`valider`, comparaison par `cle()` = JSON à clés triées), l'ajoute au journal, avance, et **renvoie les événements produits**.
+- **L'état `E` est du JSON pur** : `{v, rng, seq, tour, actif, premier, phase, fin, temp, cpt, j:[P0, P1]}` ; chaque objet porte un numéro unique `u`. Les propriétés techniques (`ev`, `journal`, `snap`, `dem`, `gen`, `capture`, `init`) sont **non énumérables** : ni copiées, ni photographiées.
+- **Déterminisme absolu** : hasard par `O.alea` (mulberry32 dont l'état tient dans `E.rng`) et `O.melanger`. Même graine + mêmes actions = même partie : c'est ce qui permet la reprise après rechargement, les défis (chaque navigateur rejoue les actions de l'autre) et l'IA (`cloner` repart de la photo du début de tour et rejoue les actions du tour).
+- **Options de `creer`** : `decks`, `noms`, `graine`, `premier`, `pv:[n,n]` et `essDepart:[n,n]` (avantages de campagne / Raid), `poses` (le boss du Raid est posé d'avance), `ordre: true` (pas de mélange : le tutoriel).
+- **Effets temporaires** : `E.temp` avec une durée `jusqua` (« jusqu'à la fin du tour adverse » = `E.tour + 1` ; `E.tour` compte les tours des deux CEO). Types `atk`, `def`, `kw`, `pasAttaque`, `pasDefenseFace` (visibles, événement `mod`) et `cout`, `lyon`, `piochePlus`, `ripostePlus`, `guet` (silencieux : un piège annoncé n'en est plus un).
+- **Déclencheurs** (`declencher`) : `deploie`, `lier`, `attaque`, `defense`, `finAttaque`, `engage`, `desengage`, `desengageEss`, `recupPV`, `vainc`, `finCombat` ; les Joueurs du CEO actif d'abord, chaque Joueur puis ses Objets, puis les guetteurs.
+- **`E.capture`** (3.0.7) : chaque événement reçoit `e.etat`, l'état sérialisé à cet instant, pour que l'arène anime depuis l'état de chaque moment. Seule la `Table` l'allume (c'est un `JSON.stringify` par événement).
 
-Les navigateurs interdisent le son tant que la personne n'a rien touché : tout se débloque au premier geste, quel qu'il soit. Un clic sur n'importe quel bouton sonne sans avoir à le brancher, grâce à un écouteur unique posé sur la page.
+### 7.3 Les effets des cartes (`js/combat/effets.js`)
 
-## Installation sur l'écran d'accueil
+Un objet `S` indexé par l'identifiant de la **carte d'origine** (`c010`…`c125`, `p01`, `p05`, `u01`), donné à `Combat.scripts(S)`. Une Reverse joue comme sa carte (`baseId`).
 
-`manifest.webmanifest` et `sw.js` font du site une application installable : ouverte en plein écran, sans barre d'adresse, avec son icône — et consultable sans réseau.
+| Champ | Rôle |
+|---|---|
+| `entree(x)` | effet d'entrée ★ |
+| `sur.{quand}(x, data)` | déclencheur ⚡ (ou d'un Objet) |
+| `attaques.{k}(x)` / `plus.{k}(E,c)` | effet sous l'attaque k / bonus « 60+ » |
+| `double(E,c)` | double la valeur d'attaque |
+| `buffAtk` / `buffDef`, `atk` / `def` | ce que donne un Buff aux autres / un Objet à son porteur |
+| `effet(x)` + `jouable(x)` | effet d'un Coach ou d'un Moment, et sa condition |
+| `resilience(x)` + `resPossible(x)` | Résilience |
+| `guets.{nom}` | gestionnaires d'un guetteur (`E.temp` de type `guet`) |
+| `donne`, `motsCles(E,c)` | mots-clés donnés ou conditionnels |
 
-Sur Android, le navigateur propose lui-même l'installation : `js/pwa.js` récupère sa demande et la déclenche au bon moment. **Sur iPhone, rien de tel n'existe** — il faut passer par le bouton *Partager* de Safari — alors le jeu dessine la marche à suivre en trois étapes illustrées, avec une flèche qui pointe vers le bas de l'écran.
+Contexte `x = {E, j, c, P, A}` (+ `porteur`, `X` l'attaque en cours, `guet`). Drapeaux lus par le moteur : `provocSiLibre`, `jusDeBagarre`, `invitation`, `chevaliere`, `nucleaire`, `legionGratuite`, `ombre:false`. Couverture vérifiée : aucune des 122 cartes jouables n'a de texte sans script ; les trois Secrètes floutées ne se jouent pas.
 
-La bulle ne s'affiche **jamais au premier écran** : elle attend que deux boosters aient été ouverts, et ne revient pas avant deux semaines si on a dit non. Le bouton dans les Réglages permet de la rappeler à tout moment.
+### 7.4 L'IA (`js/combat/ia.js`)
 
-Le service worker sert le code par le réseau d'abord (les corrections arrivent sans attendre) et les images par le cache (elles ne changent jamais sans changer de nom). Quand une nouvelle version est en ligne, il prévient au lieu de recharger sous les doigts.
+`IA.choisir(E, {niveau})` essaie chaque coup candidat sur une copie (`cloner`), **brouille ce qu'elle ne peut pas voir** (main et Club adverses mélangés, ses propres PV et Club, les Réserves), laisse filer la partie avec des choix rapides jusqu'au tour suivant, et note la position (`evaluer` : PV, main, Essences, plateau, menace). Elle préfère développer avant d'attaquer. Son hasard ne touche jamais `E.rng`.
 
-## Identité visuelle
-
-`python3 tools/gen-icons.py` régénère les icônes de l'application, les favicons et l'image de partage à partir de `assets/logo-m8.webp` et des couleurs de `css/tokens.css`. Le script n'a besoin d'aucune bibliothèque : il écrit les PNG à la main et rasterise l'étoile du logo lui-même.
-
-`assets/favicon.svg` est écrit à la main et reste net à toutes les tailles ; les PNG sont là pour les navigateurs qui n'acceptent pas le SVG, et pour l'icône d'iPhone qui l'exige.
-
-Les balises de partage (Open Graph et Twitter Card) sont en haut de `index.html`. Elles pointent en relatif, ce qui marche partout ; si tu prends un vrai domaine, renseigne `SITE_URL` dans `js/config.js` — il sert aussi d'adresse de retour après un courriel de confirmation ou un détour par Discord.
-
-## Écran d'attente et bêta fermée
-
-Tant que `PORTE.active` vaut `true` dans `js/gate.js`, le jeu n'est ouvert qu'aux comptes
-invités. Les autres voient un paquet qui flotte, « Bientôt disponible », le lien vers le
-Discord — pour suivre l'actualité du jeu et discuter avec la communauté — et, en discret,
-« J'ai déjà un accès » pour les comptes invités.
-
-**L'accès est nominatif.** On se connecte avec son compte Discord, et c'est le serveur qui
-vérifie que ce compte figure dans la table `beta_invites`. On invite, on retire, on
-regarde qui est entré depuis `supabase/09_beta.sql`. Depuis la 2.0, un joueur peut aussi
-inviter un ami avec un code acheté en boutique (voir « Version 2.0 · Reflets ») : le code
-inscrit le compte Discord de l'ami dans `beta_invites`, une seule fois.
-
-Deux raisons d'avoir abandonné le code d'accès, et les deux ont servi contre nous :
-
-1. **L'empreinte était dans la page.** Le code n'y figurait pas en clair, mais son
-   empreinte si — et la comparaison se faisait dans le navigateur. Ouvrir la console et
-   écrire la valeur attendue dans le stockage local suffisait à entrer.
-2. **Un code se transmet.** Une fois dans un salon Discord, il n'appartient plus à
-   personne et ne se reprend plus. Une invitation, elle, se retire.
-
-Le contrôle vit maintenant côté serveur, dans `garde_beta()` : tant que la bêta est
-fermée, **aucune action du jeu n'aboutit** pour un compte non invité — ni ouvrir un
-booster, ni consulter un profil, ni chercher un joueur. Le mode hors ligne ne franchit
-plus cet écran non plus : c'était la vraie faille, puisqu'il donnait accès à tout le jeu
-sans le moindre compte.
-
-### L'ouverture est datée — par le serveur
-
-La date d'ouverture au public — **jeudi 24 septembre 2026 à 18 h** — vit à un seul endroit :
-`beta_lancement()`, dans `supabase/01_schema.sql`. Un compte à rebours s'affiche tout seul,
-et à la seconde dite l'écran s'efface : pas de rechargement, pas de geste à faire, rien à
-pousser ce soir-là.
-
-**L'écran ne consulte plus la montre de l'appareil.** Il comparait l'heure d'ouverture à
-`Date.now()` : avancer la date du téléphone suffisait à l'effacer, et derrière lui le mode
-hors ligne donnait accès à tout le jeu, sans compte. C'est par là que des visiteurs
-passaient. Désormais il demande au serveur (`porte()`, appelable sans compte) si c'est
-ouvert, quand ça ouvre et quelle heure il est chez lui, puis compte le temps qui passe avec
-`performance.now()` — une horloge qui démarre avec la page et qu'on ne règle pas. Sans
-réponse du serveur, l'écran reste fermé. Au retour sur l'onglet, il redemande l'heure : un
-téléphone en veille peut avoir arrêté l'horloge de la page.
-
-Trois autres fermetures vont avec : le drapeau `invite` renvoyé par `me()` doit valoir
-`true` explicitement (un champ absent valait « invité ») ; `PORTE` est figé et les fonctions
-de l'écran sont des constantes, qu'on ne remplace plus d'une ligne dans la console ; et
-`est_invite()`, `garde_beta()`, `photo_discord()` et `check_promos()` ne sont plus
-appelables sans compte — le droit n'avait été retiré qu'à `anon` et `authenticated`, pas au
-rôle `public` dont ils héritent.
-
-Le passage est étalé exprès. Personne ne recharge : la page se redessine sur place, et le
-premier appel au serveur part après un délai tiré au hasard entre 0 et 20 secondes. Sans
-ça, tous ceux qui attendent le compte à rebours frapperaient le serveur à la même
-seconde.
-
-> **Ce que cet écran protège, et ce qu'il ne protège pas.** Il protège le *jeu* : sans
-> invitation, le serveur ne répond rien. Il ne protège pas les *fichiers*. Le site est
-> statique : ses scripts, ses images et la liste des cartes se téléchargent à l'adresse
-> où ils sont publiés, écran d'attente ou non — et le dépôt lui-même est lisible s'il est
-> public. La seule réponse à ça est du côté de l'hébergement : dépôt privé, et un
-> hébergeur capable de demander une identité avant de servir le premier octet
-> (Cloudflare Access, un mot de passe Netlify, un proxy). Aucune ligne de JavaScript ne
-> peut le faire à leur place.
-
-### Ouvrir le jeu à tout le monde
-
-Il n'y a rien à faire : la date suffit. Le 24 septembre à 18 h, `beta_ouverte()` bascule
-côté serveur, et l'écran, qui lit l'heure du serveur, s'efface au même instant.
-
-Une fois l'ouverture passée et la poussière retombée, on peut faire le ménage :
-`PORTE.active` → `false` dans `js/gate.js`, ce qui retire définitivement l'écran d'attente
-du chemin. Ce n'est qu'un nettoyage — le jeu est déjà ouvert sans ça.
-
-## Remettre les compteurs à zéro
-
-Deux fichiers, deux portées. Aucun des deux ne touche aux comptes eux-mêmes :
-personne n'a jamais à se réinscrire.
-
-| Fichier | Pour qui | Ce qu'il efface |
+| Niveau | Nom | Réglage |
 |---|---|---|
-| `supabase/08_reset-profil.sql` | **un** joueur | sa collection, ses Éclats, ses quêtes, ses compteurs |
-| `supabase/10_reset-tout.sql` | **tout le monde** | la même chose, pour tous les comptes |
+| 1 | Débutant | règles simples, **ne joue aucun Instant** (Coachs compris) |
+| 2 | Facile | un essai, beaucoup d'imprécision |
+| 3 | Normal | deux essais, un peu d'imprécision |
+| 4 | Difficile | trois essais |
+| 5 | Légende | quatre essais, et la réponse adverse (deux tours) |
 
-Le second est celui du jour du lancement, quand la période de test se termine et
-que tout le monde doit repartir du même point. Il demande une confirmation écrite
-dans le fichier avant de s'exécuter : tant qu'on n'a pas remplacé une ligne à la
-main, la requête refuse de tourner. Ce n'est pas un fichier qu'on joue par accident
-en le collant trop vite.
+**Tout nouveau `but` de décision doit être ajouté à `choixRapide` / `cartesRapide`**, sinon l'IA prend la première option. `INSTANTS_SURS` liste les Instants que l'IA rapide joue. Mesures (IA contre IA, decks) dans `docs/economie-3.0.md` § 3 bis.
 
-Ce qu'il garde : les comptes, les pseudos, les listes d'amis, les droits
-d'administrateur. Ce qu'il remet à neuf : la réserve repart pleine, donc tout le
-monde ouvre cinq boosters le jour de l'ouverture.
+### 7.5 Decks et atelier
 
-> Le cadre porté revient à « aucun », et un avatar qui pointait vers une carte
-> revient à l'étoile. Sans ça, `set_profile()` refuserait ensuite un cadre ou une
-> carte qu'on ne possède plus, et le joueur se retrouverait avec un profil qu'il
-> ne peut plus modifier.
+- **`js/combat/decks.js`** (`Decks`) : un deck enregistré vaut `{id, nom, cartes:{id:n}, reserve:{couleur:n}, couverture}` ; `versMoteur()` le met à plat. Limites : **1 exemplaire** pour L, S, UN, PR et les Promos non Reverse, **2 sinon** ; une Reverse compte avec sa classique ; alias `p02 → p01`, `p06 → c121`. `jouable()` exclut les Essences et les Secrètes cachées. `verifier(deck, possede)` renvoie la liste des erreurs.
+- **Starter Decks** (`STARTERS`) : `toxique` (avec `p03`, Réserve rose ×10) et `deter` (avec `p04`, mauve ×10), **prêtés** (on n'a pas besoin d'en posséder les cartes). Les listes sont reconstituées.
+- `aleatoire(rand, {niveau, couleurs})` tire un deck crédible (16 Joueurs, 5 Objets, 9 Instants ; sans jade ni jaune) : decks adverses de l'Arcade, du Raid et de l'Épreuve. `bilan()` note un deck « Solide / Jouable / À revoir » sur trois repères mesurés. Code de partage `M8D1.c012x2.c013|rose10` (`encoder` / `decoder`).
+- **L'atelier** (`js/combat/atelier.js`) : filtres, grille, Réserve, « Compléter » (cibles 16 / 5 / 9 triées par `IA.valeurCarte`), import / export du code, enregistrement par `deck_sauver` (le serveur revérifie).
 
-Les invitations de la bêta, elles, ne sont pas touchées : la remise à zéro vide
-les collections, pas la table `beta_invites`. Pour retirer quelqu'un de la liste,
-c'est `supabase/09_beta.sql`.
+### 7.6 L'arène (`js/combat/table.js`, `css/arene.css`)
 
-## Le Discord
+- **`Table.ouvrir(o)`** : `init` (partie à créer) ou `E` (reprise), `moi`, `ia: {niveau, choisir?}` (ou `null` contre un humain), `joueurs`, `cosm`, `titre`, `boss`, `minuteur`, `sauver` (clé `localStorage`), et les rappels `surFin(E, gagne)`, `surAction(a, E, deMoi)`, `surQuitter`. L'option **`guide`** (`permis`, `refus`, `apresRendu`, `surDecision`, `apresAction`, `avantIA`) sert au tutoriel.
+- **La boucle** avance tant que ce n'est pas au joueur ; l'IA marque un temps (1 000 ms, 650 pour un choix) avant `IA.choisir`. `executer(a)` : `Combat.agir` → `surAction` → `sauver` → `animer(evs)`.
+- **Ce qu'on dessine et ce qu'on décide** : `rendre()` dessine `vue()` (la photo `e.etat` de l'événement en cours, sinon `T.E`) ; **les décisions se lisent toujours sur `T.E`**, qui est déjà à l'état final pendant une animation. `rendre()` est repoussé pendant `T.anim`, sauf `rendre(true)` depuis un geste d'animation.
+- **`ANIM[e.t]`** : un geste par type d'événement (vol de carte, secousse, bandeau, flèche de visée, éclats, `entreeMaitrisee`). `journaliser` écrit le journal, `historiser` les « cartes jouées ».
+- **La carte agrandie** (`ouvrirFocus`) : la carte intacte, et dessous son état en direct (Défense réelle, Prêt / Engagé, Objets), les attaques jouables (`data-ar="attaque"`), « En ce moment » (bonus, malus). Un Joueur engagé ne pivote pas : il est assombri, avec l'étiquette « Engagé ».
+- **Décisions** : mulligan, choix, cartes, ordre, dans une feuille `.ar-sheet` ; les choix qui portent sur le plateau se font en touchant les éléments `.option`. Échap referme ; `T.bloqueClic` (350 ms) corrige les touchers fantômes de Safari iOS.
+- **Défis** : `minuteur` secondes par tour, 20 s pour une décision pendant le tour adverse ; au-delà, l'adversaire est marqué « Ne répond plus ».
+- **Cosmétiques** : `TAPIS` et `SLEEVES` en bas du fichier (identifiants = articles de `shop_items` ; chaque tapis a sa vignette `-mini.webp`). Les Essences Brillantes possédées brillent en combat.
+- Vitesse : `localStorage['mtcg.jeu'].rapide` (×0,55) ; mouvement réduit ×0,4.
 
-`DISCORD_URL` dans `js/config.js` porte l'adresse du serveur, et elle est citée partout où
-elle a sa place : sur l'écran d'attente (en bouton principal — avant l'ouverture, c'est la
-seule chose qu'un visiteur puisse faire), au pied du tiroir du compte et du rail
-d'ordinateur, dans un panneau des Réglages, et dans les deux fenêtres d'accueil.
+### 7.7 Le tutoriel (`js/combat/tutoriel.js`)
 
-Ces fenêtres vivent dans `js/bienvenue.js` :
+Une partie écrite d'avance (`graine 7`, `ordre: true`, PV 5 contre 3, Réserves rose contre mauve ; decks `TUTO_MOI` / `TUTO_LUI` dans l'ordre main, PV, pioches). Le Rival est scénarisé aux tours 2 et 4 (`tutoRival`), puis joue en niveau 1. **21 étapes** (`ETAPES`) : une étape « à lire » attend « Compris » ; une étape « à faire » allume ce qu'il faut toucher (`vise` → sélecteurs CSS) et l'arène refuse les autres coups (`guide.permis`). **14 remarques** (`REMARQUES`) à la première occurrence. La fin écrit `mtcg.tutoriel` et appelle `tutoriel_fini` (quête « Premiers pas », 200 Éclats une fois). La variable `--tuto-h` arrête la carte agrandie au-dessus de la bulle. **Le tutoriel dépend du DOM de l'arène** : changer une classe de `table.js` peut le casser en silence (les sélecteurs fautifs sont avalés) — le rejouer dans un navigateur à chaque retouche de l'arène.
 
-- **La bienvenue** — une fois par compte et par appareil. Elle pose le cadre en trois
-  points : ce qu'on fait ici, à quel rythme, et qu'aucun argent réel n'entre dans
-  l'affaire. C'est la première question qu'on se pose devant un jeu de cartes.
-- **Le rappel du Discord** — une seule fois, après trois boosters, et seulement pour qui
-  n'est pas déjà passé par le lien de la bienvenue.
+### 7.8 L'onglet Combats (`js/battle.js`, `css/combat.css`)
 
-Les deux passent par `quandCalme()`, qui attend que l'écran soit rendu au joueur et
-n'autorise **qu'une proposition par session** — la bienvenue, le Discord et l'installation
-sur l'écran d'accueil (`js/pwa.js`) partagent la même file. Sans ça, elles pouvaient se
-succéder juste après la déchirure d'un paquet, c'est-à-dire au seul moment du jeu où l'on
-ne veut voir personne.
+- **Vues** (`cbVue`) : `accueil`, `solo`, `campagne`, `arcade`, `raid`, `versus`, `decks`, `missions`, `guides`, `atelier`. Sans Section, `vChoixSection()` s'affiche d'abord (Toxique ou Déter, avec leur Starter et leur Promo).
+- **L'accueil** : le bandeau illustré (`assets/combat/banniere-combats.webp`, le chevalier de « La Luxueuse III »), Section et niveau, le Tutoriel en avant, l'affiche du prochain combat de campagne, les portes Solo et Versus, l'affiche du Raid, les raccourcis Decks, Missions (quêtes de combat et de niveau), Guide.
+- **Lancer un combat** : `demarrer(o)` appelle `combat_debut(mode, cle, niveau)` → `{id, graine}`, puis `ouvrirArene` → `Table.ouvrir({sauver: 'mtcg.combat.encours', surFin: finirCombat})`. `finirCombat` envoie `combat_fin(id, gagne, {tours, vaincus, touches, pv, actions})` et affiche ce qui a été gagné. Un combat interrompu se reprend (`reprendreCombat`, par `Combat.rejouer`).
+- **Guides** (`js/combat/guides.js`) : deux onglets, Règles (chapitres `GUIDES`) puis Glossaire (`GLOSSAIRE()`, ~50 mots reliés à leur chapitre).
 
-## Administrateurs
+### 7.9 Les modes
 
-L'onglet **Labo** n'est plus accessible à tout le monde. Il n'apparaît que pour les profils marqués `is_admin` en base, et ce drapeau ne peut être posé que depuis le tableau de bord Supabase (`supabase/05_admin.sql`) : aucune fonction du jeu ne l'expose, et le navigateur n'a pas le droit d'écrire dans la table des profils.
+| Mode | Fichiers | Ce que c'est | Ce que ça rapporte |
+|---|---|---|---|
+| **Campagne** | `campagne.js` | 20 rivaux **de l'autre Section** (`RIVAUX`), en 4 actes ; IA 1 → 5 (`NIVEAUX_CAMPAGNE`), règles spéciales aux combats 5, 10, 15, 20 (`REGLES_CAMPAGNE`) ; la finir donne la Promo de l'autre Section | une récompense par combat (`RECOMPENSES_CAMPAGNE`, 3 400 Éclats, 14 boosters, 2 800 Fragments en tout), puis 10 Éclats en rejouant |
+| **Arcade** (`'infini'` côté serveur) | `battle.js` | 5 difficultés, deck adverse tiré de la graine du serveur | 10 / 15 / 25 / 35 / 50 Éclats ; **5 victoires payées par jour** (`PVE_PLAFOND`) |
+| **Raid** | `raid.js`, `RAID` dans `choc-data.js`, `27_raid.sql` | The French Sorcerer (`c116`), boss commun au serveur, déjà posé sur le plateau. Saisons de 14 jours (depuis le 12 octobre 2026), **6 phases** abattues par les dégâts de tous (chacune ouvre un coffre commun), 3 paliers personnels, puis le mode Infini. **3 tentatives par jour** | coffres ; 2 Éclats par dégât +15 si victoire (3 Étincelles par dégât +15 pendant le Choc) |
+| **Épreuve du jour** | `choc.js` | pendant le Choc seulement ([§ 8.6](#86-le-choc-des-sections)) | Étincelles |
+| **Versus** | `defis.js`, `23_combats.sql` | défi entre amis, en direct, 60 s par tour ; le serveur range les actions numérotées, chaque navigateur rejoue celles de l'autre ; les deux déclarent le gagnant (désaccord noté) | 40 Éclats la victoire, 15 la défaite, **3 défis payés par jour** ; rien sous 12 actions |
 
-Cacher un bouton ne protège rien — ce qui protège, c'est que le serveur refuse les actions. Les boutons du Labo qui touchent à la collection ne modifient que l'affichage local : en ligne, la vérité reste celle du serveur, et la page la récupère telle quelle au rafraîchissement suivant.
+Le seuil des phases du Raid se règle sans redéployer : `update public.parametres set raid_echelle = 0.5 where id = 1;` (rétroactif : recalculé à chaque lecture).
 
-Le Labo sert à **voir ce qu'on ne peut pas provoquer** :
+### 7.10 XP et niveau de combattant (`js/combat/niveaux.js`, `26_niveaux.sql`)
 
-- les sept ouvertures de test (normale, rare, épique, légendaire, Essence Brillante, carte unique, godpack), et l'image de partage d'un booster ;
-- **l'événement et la chasse** : ce que le serveur dit en ce moment (événement, rythme de recharge, état de la chasse), quatre aperçus de l'interface (avant le départ, pendant, chasse terminée, carte unique en main), les fenêtres des nouveautés et de fin de chasse, et les requêtes SQL pour lancer ou arrêter un événement et ouvrir la chasse ;
-- **l'animation d'obtention de chaque carte Promo**, une par une ou toutes à la suite — c'est exactement ce que verra un joueur, seule l'écriture dans la collection est sautée ;
-- les notifications qui passent en haut de l'écran, dont le ping de la boîte de réception ;
-- **publier une annonce** dans la boîte de réception de tous les joueurs ;
-- **offrir un cadeau** à un ou plusieurs joueurs : des Éclats, des boosters, des Fragments, une carte (sauf la carte unique) et un mot. La liste montre, pour chacun, sa date d'inscription, ses boosters ouverts, ses cartes et son retard sur la médiane, de quoi doser un rattrapage. Le joueur le découvre à sa visite suivante, dans un paquet qu'il ouvre lui-même : c'est l'ouverture, côté serveur, qui crédite le compte, une seule fois (`supabase/18_cadeaux.sql`, `js/cadeaux.js`). Une Promo offerte compte comme achetée : la boutique ne la revend pas. Les boosters offerts, comme ceux de la boutique, **ne vont pas dans la réserve** : ils s'ouvrent à part (`open_pack(true)`, colonne `boosters_bonus`), tout de suite après l'achat ou l'ouverture du cadeau, ou plus tard par « Ouvrir un booster en plus » sur l'écran Boosters. Mélangés à la réserve, ils la faisaient déborder du plafond, et une réserve pleine remet son compte à rebours à zéro : on perdait des boosters gratuits en en achetant. Parmi eux, ceux d'un cadeau (`tickets_offerts`) partent en premier et **ne peuvent pas contenir la carte unique**. Le bouton *Voir un cadeau reçu* montre le paquet et son ouverture tels que les verra le joueur, avec ce qui est saisi (ou un exemple), sans rien envoyer ni créditer ;
-- la collection remplie à 90 %, des Fragments et tous les succès en affichage, pour regarder la grille, la fabrication et le profil dans des états qu'on ne croise pas tous les jours ;
-- un tableau des valeurs d'équilibrage en cours, telles que le serveur les impose, avec ce que rapporte et coûte chaque rareté en Fragments.
+Chaque combat fini rapporte de l'XP, **sans limite** : 50 la victoire, 20 la défaite (rien sous 6 tours), × un facteur de difficulté, +4 par Joueur vaincu (6 au plus) ; défi 80 / 35. `xpRequis(n) = min(100 + 25(n−1), 1100)`. Chaque niveau paie **50 Éclats** ; des paliers (3, 5, 10, 15, 20, 25, 30, 40, 50) ajoutent boosters, cadres Arène (`f_niv10/20/30/50`) et titres ; au-delà de 50, 2 boosters tous les 5 niveaux. Le niveau s'affiche en pastille sur l'avatar. Attention : `NIVEAUX` (global, ici) n'a rien à voir avec `IA.NIVEAUX`.
 
-Pour obtenir une Promo **pour de vrai** sur son compte — et vérifier la détection, la boutique et les paliers de bout en bout — les requêtes sont commentées en bas de `supabase/03b_promos.sql`.
+### 7.11 Ce que le serveur vérifie
 
-## La pré-prod
+Le serveur **ne fait pas tourner le moteur**. Il fixe la graine de chaque combat (`combat_debut`, table `combats_ouverts`), plafonne ce qu'un combat rapporte, et **croit le navigateur sur le résultat** : un combat de moins de 20 s ne rapporte rien ; 5 victoires payées par jour contre l'IA ; 3 défis payés ; un défi de moins de 12 actions ne paie pas ; les dégâts du Raid sont plafonnés (PV du boss + 1, + 3 si victoire). Un essai d'Épreuve ou une tentative de Raid est **consommé au départ** (abandonner ne le rend pas). Les decks sont revérifiés (`deck_erreur`, qui recopie 30 / 10, les alias et les limites).
 
-La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site, sans le toucher :
+### 7.12 Recettes
 
-    python3 tools/demo.py --preprod
+- **Ajouter ou modifier l'effet d'une carte** : écrire `S.cNNN = {…}` dans `effets.js` (texte imprimé en commentaire), en ne passant que par `O.*` et `x.E` ; émettre un `O.ev(E, {t:…})` pour tout ce que l'arène doit montrer (et son geste dans `ANIM` si `t` est nouveau) ; ajouter tout nouveau `but` à l'IA ; toujours fournir `jouable` / `resPossible` ; écrire un test dans `tools/combat-tests.js` (`situation()`), puis `combat-sim.js aleatoire 2000` et `clone 200` ; noter toute lecture ambiguë dans `docs/regles-3.0.md` § 10.
+- **Ajouter une étape au tutoriel** : un objet dans `ETAPES` **à sa place chronologique** ; outils `tourDe`, `tuU`, `tuIdDe`, `enMain`, `surPlateau`, `placesLibres` ; mettre à jour le test du tutoriel dans `combat-tests.js` et rejouer le tutoriel dans Chromium.
+- **Changer une valeur de règle** : `REGLE`, **puis** les copies en dur (`deck_erreur` SQL, textes de `guides.js`, du tutoriel et de l'arène, `docs/regles-3.0.md` § 13), et mesurer avec `combat-sim ia`.
+- **Ajouter un mode contre l'IA** : `demarrer({mode, cle, niveau, deck, deckIA, …})` ; le mode doit être accepté par `combat_debut` / `combat_fin` (contrainte `check (mode in (…))`, `23_combats.sql`) et par `_demo/serveur.js`.
+- **Ajouter un tapis ou une sleeve** : l'image (et sa `-mini`) dans `assets/combat/…` (générée par `tools/cosmetiques.py` ou `choc-visuels.py`), l'entrée dans `TAPIS` / `SLEEVES`, l'article `shop_items` du même identifiant (SQL et `BOUTIQUE` du faux serveur).
 
-C'est la démo autonome (faux serveur, `_demo/serveur.js`) publiée dans `preprod/` : pas de compte, pas de vrai serveur, des joueurs simulés, et le Labo ouvert. Un bandeau « Pré-prod » le rappelle, et la page n'est pas indexée. Tout ce qu'elle range dans le navigateur porte un préfixe à part (`preprod:` pour le stockage local, une base IndexedDB à son nom) : elle ne lit ni n'écrase les réglages ou la session du vrai site, qui partage l'adresse. Elle n'a pas de service worker, pour ne pas vider les caches de celui du vrai site.
+---
 
-Le développement se fait sur une branche à part ; `main` reste le site public. Pour publier une pré-prod : construire `preprod/` sur la branche, puis le reporter seul sur `main`. Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
+## 8. Les événements
 
-## Mettre à jour le site
+### 8.1 Le modèle
 
-GitHub Pages sert les fichiers avec un cache de dix minutes. Sans précaution, une
-correction poussée peut mettre ce temps-là à apparaître — voire ne jamais apparaître sur
-un navigateur qui garde l'ancienne copie. C'est la raison d'être de `tools/version.py` :
+Un événement est **une ligne de `evenements`** (`supabase/15_evenements.sql`) : `titre`, `texte`, `debut`, `fin`, `ticket_minutes` (facultatif), `code` (facultatif).
 
-```bash
-python3 tools/version.py 2.3.2
-git add -A && git commit -m "…" && git push
+- **Sans code**, il ne change que le rythme des boosters (`ticket_minutes`, 120 = doublés) et pose un bandeau sur l'écran Boosters.
+- **Avec un code** (`reflets`, `choc`), il active tout ce qui porte ce code : les quêtes (`quests.evenement`), la boutique (`shop_items.evenement`), le Pass (`evt_piste.evenement`), le compte de monnaie (`evt_comptes.evenement`), et l'onglet du même nom.
+
+**Cycle de vie** :
+
+1. **À venir** : début dans moins de 15 jours → `me().evenement.a_venir` ; le bandeau compte à rebours.
+2. **En cours** : `evenement_en_cours()` renvoie le code ; l'onglet existe, **en tête du tiroir** (Combats garde sa place dans la barre du bas).
+3. **Récap** : pendant 3 jours après `fin` (si aucun autre événement codé n'a commencé), `me().recap = evenement_recent()` ; l'onglet devient un récap et une fenêtre l'annonce une fois.
+4. **Fini** : l'onglet disparaît. **Tout ce qui n'a pas été réclamé est perdu** (`piste_reclamer` et `claim_quest` refusent dès la fin).
+
+**Côté client** : `evenementEnCours()` et `ongletDispo` (`js/app.js`, avec `RECAPS = {reflets, choc}`), `TABS` (`{id:'reflets', evenement:'reflets'}`, `{id:'choc', evenement:'choc'}` ; Devine l'illu porte `horsEvenement: 'reflets'`). Le bandeau de l'écran Boosters (`vBandeauEvenement`, `js/booster.js`) choisit, dans l'ordre : récap Reflets, Reflets, récap Choc, Choc, puis l'événement sans code ou la chasse. La boutique principale a aussi son bandeau. `prochaineBascule()` relit l'état au début et à la fin.
+
+### 8.2 Les monnaies d'événement
+
+- **Une seule table**, `evt_comptes(user_id, evenement, solde, total)` : `solde` se dépense en boutique, `total` fait avancer le Pass. **Acheter ne fait jamais reculer le Pass.**
+- **En base, la monnaie s'appelle toujours `prismes`** (`quests.monnaie = 'prismes'`, `shop_items.devise = 'prismes'`), quel que soit l'événement. Le nom affiché vient de `MONNAIES_EV` (`config.js` : `reflets` → Prismes, `choc` → Étincelles), lu par les accesseurs `PRISMES.nom` / `PRISMES.un` ; l'icône par `evIco()`. Les Étincelles s'appelaient d'abord « Insignes » : d'où les clés serveur `insignes` qui restent.
+- `me().prismes` = le solde de l'événement en cours. Crédits : quêtes, Devine l'illu (pendant Reflets), Épreuve (`choc_fin`), Raid pendant le Choc (`raid_fin`).
+
+### 8.3 Quêtes, Pass, boutique
+
+- **Quêtes** : `scope = 'ev_jour'` (chaque jour de Paris) et `'ev'` (une fois pour tout l'événement, clé `'all'`). La quête de visite (`ev_visite`) est validée **en ouvrant l'onglet** (`evenement_etat` et `choc_etat` écrivent). Totaux : Choc 75 Étincelles par jour et 670 une fois ; Reflets 50 par jour et 380 une fois.
+- **Le Pass** (« piste » en base) : `evt_piste(evenement, palier, seuil, type, montant, objet, titre)` et `evt_piste_prises`. `piste_reclamer(p_palier)` exige un événement en cours, `total ≥ seuil` et une prise unique ; il passe par `accorder()` (types `boosters`, `eclats`, `fragments`, `titre`, `cadre`, `tapis`, `sleeve`, `reverse_R`, `brillante`).
+  - **Pass Reflets** (20 paliers, 15 → 1 100) : 14 boosters, 1 350 Éclats, 1 250 Fragments, 4 Reverses Rares, 1 Brillante, titres `t_eclaireur` et `t_ame`, cadres `f_miroir` et `f_nebuleuse`.
+  - **Pass Choc** (30 paliers, 20 → 3 500) : 23 boosters, 2 200 Éclats, 3 750 Fragments, 5 Reverses Rares, la Brillante (palier 15), la sleeve `s_choc` (8), le cadre `f_choc` (12), les titres `t_recrue`, `t_veteran`, `t_maitre_choc`, et **le tapis `t_arene`** (30).
+- **Boutique d'événement** (`categ = 'evenement'`, `devise = 'prismes'`, `limite` par joueur) :
+  - Reflets : `ev_boosters` (70, ×5), `ev_fragments` (60, ×5), `ev_reverse` (150, ×3), `t_collect` (200, unique) ;
+  - Choc : `ch_boosters` (2 boosters, 80, ×10), `ch_boosters5` (5 boosters, 180, ×3), `ch_fragments` (500 Fragments, 70, ×8), tapis `t_orage` « The French Sorcerer » (600), cadre `f_foudre` (400), titre `t_supporter` (200) — **3 100 Étincelles** pour tout acheter.
+
+### 8.4 Le récap
+
+`evenement_recap()` renvoie le total, les paliers atteints / pris, les illus trouvées, les Reverses, les quêtes réclamées, le rang, le nombre de joueurs et le podium ; pour le Choc s'ajoutent les dégâts au Raid, les phases tombées et les Épreuves (`choc_recap`). Le Labo en montre un aperçu factice (`apercuRecap`, `apercuRecapChoc`), sans rien enregistrer.
+
+### 8.5 Reflets (2.0) et Devine l'illu
+
+- **Reflets** (`js/reflets.js`, `css/reflets.css`, `supabase/21_reflets.sql`) : l'événement de la 2.0, terminé en production. Son onglet a six sous-onglets (Accueil et ses Nouveautés 2.0, Quêtes, Pass, Devine l'illu, Boutique, Classement). Son code et sa CSS servent de **charpente** au Choc. En pré-prod, il est remplacé par le Choc.
+- **Devine l'illu** survit à l'événement, dans son onglet (`illu`, tiroir) : une illustration par jour de Paris, la même pour tous, dans un ordre secret (cartes triées par `md5(illu_sel || ':' || id)`, cycle de 113 jours ; le sel `parametres.illu_sel` n'est jamais montré). Pixels 36 × 24 à 12 bits dans `illu_pixels` (`21b_illu.sql`, généré par `node tools/illu-pixels.js`) ; le serveur n'envoie que la grille du niveau en cours (9 × 6 → 12 × 8 → 18 × 12 → 36 × 24) et ne révèle la carte qu'à la fin. 4 essais ; gains 120 / 90 / 60 / 30 Éclats, plus 25 / 18 / 12 / 6 Prismes **pendant Reflets seulement** (`illu_gain`). Partage façon Wordle. En pré-prod, les grilles viennent de `js/demo-illu.js` (non salé).
+
+### 8.6 Le Choc des Sections
+
+L'événement de la 3.0 (`code = 'choc'`, trois semaines ; `js/choc.js`, `css/choc.css`, `js/combat/choc-data.js`, `supabase/25_choc.sql`). Il oppose les deux Sections : **Toxique** (vert, Squeezie le Toxique, #012) et **Déter** (violet, Brawks Déter, #077).
+
+- **Sept sous-onglets** (`CH_ONGLETS`) : Accueil (l'affiche coupée en biais `chAffiche()`, les Nouveautés de la 3.0), Raid, Épreuve, Quêtes, Pass, Boutique, Classement (Raid ou Étincelles).
+- **L'Épreuve du jour** : un combat imposé, **le même pour tous** (`choc_etat()` donne `jour` et `graine` ; le client en tire la règle du jour parmi 7 — `eclair`, `siege`, `renforts`, `miroir`, `outsider`, `marathon`, `classique` — et les decks de niveau 3 par `epreuveDuJour`). **3 essais**, le meilleur compte (`scoreEpreuve` ↔ `choc_score`). L'essai est enregistré perdu dès le départ. 5 Étincelles par essai joué (plus de 20 s), +25 à la première victoire du jour. Le serveur ne vérifie ni la règle ni les decks.
+- **Le Raid paie en Étincelles** pendant le Choc (3 par dégât, +15 si victoire), et alimente `choc_joueurs`.
+- **Les Nouveautés** (`vChNouveautes`) : la grande bannière des Combats, les Secrètes en éventail (celles qu'on possède se retournent), la refonte visuelle (qui ouvre `montrerNouveautes30`), et une grille de tuiles (maîtrise, Raid, cadre Secrète, niveau, tapis et sleeves, atelier, deux Sections).
+- **Visuels** (`tools/choc-visuels.py`) : les affiches `choc-toxique.webp` et `choc-deter.webp`, les tapis `t_arene` (Brawks en haut, Squeezie en bas) et `t_orage`, la sleeve `s_choc`. Cadres `f_choc` et `f_foudre` (`tools/cadres-30.py`).
+
+### 8.7 La fenêtre des Nouveautés
+
+`montrerNouveautes()` (`js/bienvenue.js`) s'ouvre une fois par version et par appareil (`NOUVEAUTES_VERSION = '3.0'`), et **se rouvre** quand un événement est annoncé puis quand il commence (clé `titre|debut|avant/pendant`). Elle se rouvre aussi à la main (`data-act="nouveautes"` : bandeau, tuile « refonte », Labo). Pour une nouvelle fenêtre : changer `NOUVEAUTES_VERSION`, écrire `montrerNouveautesXX()` **et** modifier le dispatch de `montrerNouveautes()`, qui teste `=== '3.0'` en dur. À ne pas confondre avec la page « Nouveau dans la 3.0 » de l'onglet du Choc (`vChNouveautes`).
+
+### 8.8 Recettes
+
+```sql
+-- Lancer un événement à code (production)
+insert into public.evenements (titre, texte, debut, fin, code) values
+  ('Le Choc des Sections', 'La version 3.0 : …', '2026-11-02 18:00+01', '2026-11-23 18:00+01', 'choc');
+-- Boosters doublés (sans code) : … (titre, texte, debut, fin, ticket_minutes) values (…, 120)
+-- Arrêter : le récap s'affiche 3 jours (pour le sauter : fin = now() - interval '3 days', en gardant fin > debut)
+update public.evenements set fin = now() where code = 'choc' and fin > now();
+-- Ouvrir la chasse
+update public.chasse set active = true, ouvre_le = now() where id = 1;
 ```
 
-Le script écrit le numéro dans `js/pwa.js` et `sw.js`, et accroche `?v=2.3.2` à chaque
-css et js de `index.html` et `verif.html`. Chaque version devient ainsi une adresse
-différente : le navigateur ne peut plus servir l'ancienne par erreur. Le service worker
-met en réserve les mêmes adresses marquées, et propose la mise à jour au lieu de
-recharger sous les doigts.
+- **Ne jamais réutiliser un code** : soldes, paliers pris et quêtes `ev` (clé `'all'`) sont indexés par code. Relancer `reflets` rendrait tout ce qui a été pris.
+- **Ne pas chevaucher** un événement sans code et un événement codé : le client affiche le dernier commencé (avec ou sans code, `evenement_actif`), le serveur crédite le dernier **codé** (`evenement_en_cours`) — l'onglet du Choc disparaîtrait pendant que le serveur continue de payer.
+- **Ajouter un nouvel événement** : SQL (Pass `evt_piste`, quêtes `evenement = code`, articles `devise = 'prismes'`, ajoutés aux listes `delete … not in` de `04_seed.sql`, message d'erreur de `shop_buy`, éventuellement un `xxx_recap`) ; JS (`MONNAIES_EV`, `evIco`, `TABS`, `VUES`, `RECAPS`, `pastilleOnglet`, chargement dans `aller()`, `vBandeauEvenement`, bandeau de la boutique, `proposerAccueil`, Labo) ; faux serveur (`PISTES`, `QUETES`, `BOUTIQUE`, `S.evenement`).
+- **Changer l'Épreuve ou le Raid** : `CHOC` / `RAID` dans `choc-data.js` **et** les valeurs écrites en dur dans `25_choc.sql` (`>= 3`, `'max', 3`, `insignes := 5`, `+ 25`, `'niveau', 3`) et `27_raid.sql` (`raid_phases()`, `raid_perso()`, `raid_fin()`, `n < 3`).
 
-**À lancer avant chaque mise en ligne qui touche au code.** Les images et les cartes ne
-sont pas marquées : elles ne changent jamais sans changer de nom.
+---
 
-## Dépendances externes
+## 9. Le serveur (Supabase)
 
-- **Polices Google Fonts** (Archivo, Figtree), chargées en ligne. Sans connexion, le navigateur utilise des polices de secours.
-- **supabase-js**, chargé depuis un CDN, uniquement pour le compte en ligne. S'il est absent (hors réseau, bloqueur), le jeu bascule tout seul en mode hors ligne.
+### 9.1 Principes et sécurité
 
-Aucune autre bibliothèque, aucune étape de compilation : tout le reste est dans le dépôt.
+- **Le serveur fait foi sur tout ce qui compte** : tirages, monnaies, collection, quêtes, récompenses. Le navigateur affiche et propose ; les copies de règles côté client ne servent qu'à l'affichage, au Labo et à la pré-prod.
+- **Aucune écriture directe.** RLS activée sur les 44 tables ; le navigateur ne peut **rien** écrire, et ne lit directement que `cards`, `quests`, `shop_items` (plus `friendships`, `notifications`, `annonces` une fois connecté, pour le temps réel). Tout passe par des fonctions **`security definer set search_path = public`**.
+- **Modèle de chaque RPC joueur** :
+
+  ```sql
+  create or replace function public.ma_rpc(p_x text) returns jsonb
+  language plpgsql security definer set search_path = public as $$
+  declare p uuid := auth.uid();
+  begin
+    if p is null then raise exception 'non connecte'; end if;
+    perform garde_beta();
+    -- … vérifier, écrire …
+    return me();
+  end $$;
+  revoke all on function public.ma_rpc(text) from public, anon;
+  grant execute on function public.ma_rpc(text) to authenticated;
+  ```
+
+  **`revoke … from public` est obligatoire** : PostgreSQL accorde EXECUTE à PUBLIC par défaut, et `anon` en hérite. Exceptions voulues à `garde_beta` : `me()` (elle renvoie `invite`) et `utiliser_invitation()`.
+- **La bêta est fermée pour toujours** : `beta_lancement()` renvoie `'infinity'` ; seuls les comptes de `beta_invites` (par e-mail ou identifiant Discord, `est_invite`) jouent. `handle_new_user` crée quand même le profil (pour qu'un code d'invitation puisse servir), mais `garde_beta()` refuse tout le reste avec `BETA_FERMEE`. **Même l'administrateur doit être dans `beta_invites`.**
+- **Administrateur** : `profiles.is_admin`, posé **uniquement en SQL** (`05_admin.sql`). `annonce_*`, `offrir_cadeau`, `admin_joueurs` le vérifient côté serveur.
+- **Les messages d'erreur sont montrés tels quels** : ils sont en français. Un code en majuscules (`RESERVE_VIDE`, `BONUS_VIDE`, `BOOSTER_VIDE`, `ECHANGE_EN_RECHARGE`, `BETA_FERMEE`) doit être traduit dans `MSG_SERVEUR` (`js/backend.js`).
+- **Jours à l'heure de Paris** partout (`period_key`, `jour_paris`, `illu_jour`, `checkin`).
+- **Ce que l'écran d'attente ne protège pas** : les *fichiers*. Le site est statique et public ; seul le *jeu* est fermé (le serveur ne répond rien sans invitation).
+
+### 9.2 Les fichiers SQL
+
+| Fichiers | Nature | Dans `TOUT.sql` |
+|---|---|---|
+| `01`, `02`, `03`, `03b`, `04`, `06`, `07`, `11`, `12`, `14`, `15`, `18`, `21`, `21b`, `22`, `23`, `24`, `25`, `26`, `27`, `28` | **Installation**, rejouable (`if not exists`, `on conflict`, `create or replace`) | oui, dans cet ordre (`MORCEAUX`, `tools/build-sql.py`) |
+| `02_cards.sql`, `21b_illu.sql` | **Générés** (`supabase/gen-cards-sql.py`, `node tools/illu-pixels.js`) : ne jamais éditer | oui |
+| `13`, `16`, `17`, `19`, `20` | **Mises à jour historiques** (bases 1.4 / 1.5) : **dangereuses aujourd'hui**, ne jamais rejouer | non |
+| `05_admin`, `08_reset-profil`, `09_beta`, `10_reset-tout` | **Outils d'administration** ponctuels ([§ 9.10](#910-outils-dadministration)) | non |
+| `TOUT.sql` | **Assemblé** par `python3 tools/build-sql.py` (~6 100 lignes) : c'est ce qu'on colle dans Supabase | — |
+
+| Fichier | Contenu |
+|---|---|
+| `01_schema.sql` | Tables de base (`profiles`, `cards`, `collection`, `quests`, `quest_progress`, `shop_items`, `inventory`, `trades`, `beta_invites`), `cfg()`, la porte et la bêta, `handle_new_user`, `regen_tickets`, `period_key`, `bump_quests`, `sync_collection_quests`, droits |
+| `02_cards.sql` | Les 122 cartes ; ménage des cartes `not promo` absentes (et de leurs échanges et exemplaires) |
+| `03_rpc.sql` | `me` (version courte), `open_pack`, `claim_quest`, `shop_buy`, échanges, `find_player`, `pick_card` |
+| `03b_promos.sql` | Promos, Brillantes, Reverses, carte unique, `check_promos` |
+| `04_seed.sql` | 97 quêtes, 32 articles (chaque liste finit par un `delete … not in (…)`) |
+| `06_social.sql` | Amis, `player_profile` (version courte) |
+| `07_vitrine.sql` | Vitrine, et **les versions définitives de `me()` et `player_profile()`** |
+| `11_boite.sql` | Notifications, annonces, temps réel |
+| `12_recyclage.sql` | `recycler`, `fabriquer` |
+| `14_classement.sql` | `classement(p_critere)` |
+| `15_evenements.sql` | `tirages`, `evenements`, `chasse`, `succes_de`, `mes_tirages` |
+| `18_cadeaux.sql` | Cadeaux d'un administrateur, boosters hors réserve |
+| `21_reflets.sql` | `parametres`, moteur d'événements (`evt_*`, `accorder`, Pass), Devine l'illu, invitations, titres, `personnaliser` ; **crée l'événement Reflets pour 14 jours s'il n'existe pas** |
+| `22_garder.sql` | À garder, favoris |
+| `23_combats.sql` | Sections, decks, combats (`combat_debut` / `combat_fin`), campagne, Arcade, Starters, défis, tutoriel |
+| `24_secretes.sql` | Les 5 Secrètes |
+| `25_choc.sql` | Le Choc : Pass, Épreuve, `choc_etat`, `choc_recap` |
+| `26_niveaux.sql` | XP et niveaux |
+| `27_raid.sql` | Le Raid par saisons et phases, `raid_echelle` |
+| `28_maitrise.sql` | Maîtrise et carte fétiche |
+
+**Ordre** : `03b` avant `04` (la boutique vend `p01`) ; `21` avant `21b` ; `23` avant `26`. Ailleurs, PL/pgSQL résout les appels à l'exécution : `me()` (07) appelle des fonctions de 11 à 28 — **il faut passer tout `TOUT.sql`**.
+
+### 9.3 Les tables (44)
+
+- **Joueur** : `profiles` (pseudo, avatar, cadre, `shards`, `fragments`, `tickets`, `last_tick`, `boosters_bonus`, `tickets_offerts`, `is_admin`, `garder`, `vitrine`, `titre`, `banniere`, `devise`, `fetiche`…), `collection`, `inventory`, `quest_progress`, `favoris`, `gardes`, `tirages`, `recyclages`, `cadeaux`, `notifications`.
+- **Catalogue et réglages** : `cards`, `quests`, `shop_items`, `parametres` (une ligne : `fabrication_reverse`, `illu_sel`, `raid_echelle`), `pve_campagne`, `pve_difficultes`, `starters`, `niveau_paliers`, `illu_pixels`, `evt_piste`.
+- **Social** : `friendships`, `trades`, `annonces`, `invitations`, `beta_invites`.
+- **Événements** : `evenements`, `chasse`, `evt_comptes`, `evt_piste_prises`, `devine_illu`, `choc_joueurs`, `choc_epreuves`.
+- **Combat** : `combat_joueurs` (section, deck actif, cosmétiques, campagne, plafonds du jour, statistiques, `xp`), `decks`, `combats_ouverts`, `defis`.
+- **Raid** : `raid_saisons`, `raid_tombees`, `raid_participants`, `raid_pris`, `raid_tentatives`.
+- **Maîtrise** : `maitrises`, `maitrises_journal`.
+
+Préfixes d'inventaire : `f_` cadres, `t_` titres **et** tapis, `s_` sleeves (et articles), `trade_token`.
+
+### 9.4 Les RPC publiques (58, plus `porte`)
+
+| Domaine | RPC (→ retour) | Appelées par |
+|---|---|---|
+| Compte et état | `porte()` (aussi `anon`), `me()` → l'état complet, `checkin()`, `set_profile(p_pseudo, p_avatar, p_frame)`, `personnaliser(p_titre, p_banniere, p_devise)`, `set_vitrine(p_cards)`, `utiliser_invitation(p_code)` | `gate`, `app`, `settings`, `profile` |
+| Boosters, quêtes, boutique | `open_pack(p_bonus)` → `{cards, god, etat}`, `claim_quest(p_quest)`, `shop_buy(p_item)`, `mes_tirages()` | `opening`, `app`, `shop`, `tirages` |
+| Collection | `regler_garder(p_carte, p_n)`, `regler_garder_defaut(p_garder)`, `favori(p_carte, p_on)` → liste, `recycler(p_lots)`, `fabriquer(p_carte)`, `maitriser(p_carte)`, `set_fetiche(p_carte)` | `viewer`, `settings`, `recyclage`, `maitrise` |
+| Social | `trade_create`, `trade_respond`, `trade_cancel`, `trade_list`, `find_player`, `friend_request`, `friend_respond`, `friend_remove`, `friend_list`, `player_profile(p_pseudo)`, `amis_doublons()`, `classement(p_critere)`, `boite()`, `boite_lue()` | `trade`, `social`, `classement`, `boite` |
+| Cadeaux | `mes_cadeaux()`, `ouvrir_cadeau(p_id)` | `cadeaux` |
+| Administration | `annonce_publier`, `annonce_retirer`, `offrir_cadeau(p_joueurs, p_eclats, p_boosters, p_fragments, p_carte, p_message)`, `admin_joueurs()` | `lab`, `app` |
+| Événements | `evenement_etat()`, `piste_reclamer(p_palier)`, `evenement_recap()`, `illu_etat()`, `illu_essai(p_carte)`, `choc_etat()`, `raid_etat()`, `raid_reclamer(p_saison, p_quoi, p_n)` | `reflets`, `choc`, `raid` |
+| Combats | `tutoriel_fini()`, `combat_section`, `combat_reglages`, `deck_sauver`, `deck_supprimer`, `combat_debut(p_mode, p_cle, p_niveau)` → `{id, graine}`, `combat_fin(p_id, p_gagne, p_resume)` → `{etat, recompense}`, `defi_lancer`, `defi_repondre`, `defi_etat(p_id, p_depuis)`, `defi_jouer(p_id, p_n, p_action)`, `defi_fin(p_id, p_gagnant, p_tours)` | `battle`, `combat/*` |
+
+La plupart des RPC qui écrivent renvoient `me()`, que `Backend.apply` transforme en `save`. **Le faux serveur `_demo/serveur.js` implémente exactement les mêmes 58** (vérifié). Les rouages internes (`regen_tickets`, `bump_quests`, `pick_card`, `check_promos`, `garde_beta`, `notifier`, `accorder`, `crediter_prismes`, `evenement_en_cours`, `titres_de`, `garde_de`, toutes les fonctions de combat, Choc, Raid, niveaux, maîtrise…) ne sont pas appelables depuis le navigateur.
+
+### 9.5 `cfg()` : les réglages d'économie
+
+`cfg(k)` (`01_schema.sql`, fonction `immutable`) renvoie un entier, ou `null` pour une clé inconnue (signal utilisé : `cfg('recyclage_BR')` = `null` → « ne se recycle pas »).
+
+| Clé | Valeur | Clé | Valeur |
+|---|---|---|---|
+| `ticket_cap` | 5 | `promo_palier_pct` | 75 |
+| `ticket_minutes` | 240 | `foil_odds` | 50 |
+| `god_odds` | 2000 | `chasse_odds` | 250 |
+| `trade_cooldown_h` | 6 | `recyclage_ES/C/PC/R/E/L` | 1 / 2 / 5 / 20 / 80 / 250 |
+| `pack_size`, `shards_per_dup` | morts | `fabrication_ES/C/PC/R/E/L` | 20 / 40 / 100 / 400 / 2000 / 8000 |
+
+### 9.6 `me()` et `Backend`
+
+- **`me()`** (`07_vitrine.sql`) appelle `regen_tickets`, `sync_collection_quests` et `check_promos`, puis renvoie `profil`, `boite`, `recyclage {valeurs, couts}`, `succes`, `evenement`, `recap`, `chasse`, `parametres`, `prismes`, `invitations`, `col`, `gardes`, `favoris`, `combat`, `maitrise`, `inv`, `quetes` (filtrées sur l'événement en cours). **Pour exposer un champ, c'est ici** (et dans `Backend.apply` et le faux serveur).
+- **`js/backend.js`** est la seule couche d'accès aux données. `Backend.init()` crée le client Supabase (Discord : scopes `identify email`), puis `pull()` ; si `me()` échoue au démarrage, on revient à l'écran d'entrée (plus de repli hors ligne). `Backend.rpc(nom, args)` retire le préfixe d'erreur et traduit via `MSG_SERVEUR`. `Backend.apply(etat)` reconstruit `save`, écrase `TICKET_CAP` / `INTERVAL`, calcule `Backend.skew` (horloge serveur) et appelle `signalerQuetes` / `signalerPromos`. `srvTime(iso)` corrige une date par `skew`.
+- `js/supabase-config.js` contient l'URL et la **clé publique** (`sb_publishable_…`, faite pour être publiée). **Jamais la clé secrète** : `verif.html` la détecte.
+
+### 9.7 Installer, mettre à jour, vérifier
+
+- **Installer ou mettre à jour** : coller **tout** `supabase/TOUT.sql` dans Supabase › SQL Editor › Run. Une seule transaction (une erreur annule tout), idempotent, passe sur une base 2.x sans rien perdre (testé sur PostgreSQL 16). **Règle du propriétaire : aucun SQL 3.0 sur la base de production.**
+- **Un serveur neuf** : [`SETUP.md`](SETUP.md) (projet, `TOUT.sql`, clés, URL de retour, Discord, SMTP, administrateur, GitHub Pages, domaine). Ajouter son compte à `beta_invites`. Une installation neuve **lance l'événement Reflets** pour 14 jours.
+- **Vérifier** : ouvrir `verif.html` sur le site (clés, réglages d'authentification, catalogue, présence de chaque RPC jusqu'à `maitriser`, compte administrateur). Une RPC indispensable à une version mérite sa sonde.
+- **Chiffres attendus** après installation : 122 cartes d'extension, 85 Reverses, 9 Brillantes, 5 Secrètes, 6 Promos, 1 Unique, 97 quêtes, 32 articles.
+
+### 9.8 Une règle, plusieurs copies
+
+Chaque règle de jeu existe en **trois exemplaires** : le SQL (qui fait foi), le **faux serveur** `_demo/serveur.js` (la pré-prod), et une **constante JS** (affichage, Labo). Une valeur changée à un seul endroit rend la pré-prod ou le Labo faux, sans erreur visible.
+
+| Règle | SQL | Faux serveur | Client |
+|---|---|---|---|
+| Taux des boosters | `open_pack`, `pick_card` (03) | `tirerPaquet` | `RATES`, `GOD`, `pickFrom` (`booster.js`) |
+| Réglages d'économie | `cfg()` (01) | `CFG` | `REC_DEFAUT`, `FAB_DEFAUT`, `TRADE_COOLDOWN_H`, `PROMO_PALIER`, `FOIL_ODDS` |
+| Quêtes, boutique | `04_seed.sql`, 21, 23, 25, 26 | `QUETES`, `BOUTIQUE` | `QICO`, `JALON_THEMES` |
+| Pass | `evt_piste` (21, 25) | `PISTE`, `PISTE_CHOC` | — |
+| Maîtrise | `maitrise_fragments`, `maitrise_copies` (28) | `MZ_FRAGMENTS`, `MZ_COPIES` | `MAITRISE` (`maitrise.js`) |
+| Limites de deck | `deck_erreur`, `cle_copie`, `limite_copies` (23) | via `Decks` | `REGLE`, `Decks.limite`, `ALIAS` |
+| Campagne, Arcade, défis | `pve_campagne`, `pve_difficultes`, plafonds 5 / 3, 40 / 15 (23) | via `campagne.js` | `RECOMPENSES_CAMPAGNE`, `DIFFICULTES`, `PVE_PLAFOND`, `DEFI_GAIN` |
+| XP | `xp_requis`, `xp_combat`, `niveau_paliers` (26) | via `niveaux.js` | `NIVEAUX` (`niveaux.js`) |
+| Raid | `raid_phases`, `raid_perso`, `raid_fin` (27) | via `choc-data.js` | `RAID` (`choc-data.js`) |
+| Épreuve | `choc_debut`, `choc_fin`, `choc_score` (25) | via `choc-data.js` | `CHOC`, `scoreEpreuve` |
+| Devine l'illu | `illu_gain` (21) | `ILLU_GAINS` | — |
+| Succès, titres | `succes_de` (15), `titres_de` (21) | `succesDe`, `titresDe` | `SUCCES`, `TITRES` (`config.js`) |
+
+### 9.9 Recettes
+
+- **Ajouter une RPC** : écrire la fonction selon le modèle du [§ 9.1](#91-principes-et-sécurité) ; si c'est un nouveau fichier, l'ajouter à `MORCEAUX` (`tools/build-sql.py`) ; `Backend.xxx` dans `js/backend.js` ; `RPC.xxx` dans `_demo/serveur.js` (refuser par `refuser('…')`, renvoyer `me(p)`) ; une sonde dans `verif.html` si elle est indispensable ; `python3 tools/build-sql.py`.
+- **Ajouter une quête ou un article** : l'insérer dans `04_seed.sql` **et ajouter son identifiant à la liste du `delete … not in (…)`** (sinon il est effacé, avec sa progression, à chaque rejeu) ; implémenter la métrique (`bump_quests` ou `sync_collection_quests`) ; recopier dans le faux serveur.
+- **Changer un réglage d'économie** : `cfg()`, puis la copie du faux serveur et la constante JS, `build-sql.py`, rejouer `TOUT.sql`.
+- **Tester** : PostgreSQL local ([§ 2.3](#23-tester-le-sql-sur-un-postgresql-local)), en jouant la 2.1 de `origin/main` puis `TOUT.sql` deux fois.
+
+### 9.10 Outils d'administration
+
+| Fichier | Rôle | Attention |
+|---|---|---|
+| `05_admin.sql` | Donner `is_admin` à un e-mail | — |
+| `08_reset-profil.sql` | Remettre un joueur à zéro (pseudo en dur) | **Obsolète** : ignore Fragments, boosters bonus, maîtrise, combats, événements… |
+| `09_beta.sql` | Inviter, retirer, lister les comptes de la bêta | La section 2 n'est pas commentée : jouer le fichier entier insère deux invitations factices |
+| `10_reset-tout.sql` | Remettre tout le monde à zéro (confirmation écrite exigée) | **Obsolète**, comme 08 |
+
+---
+
+## 10. Le Labo (administrateurs)
+
+L'onglet **Labo** (`js/lab.js`, `css/lab.css`) n'apparaît que pour `save.isAdmin` (posé en SQL, [§ 9.1](#91-principes-et-sécurité)). En pré-prod, le faux serveur rend le visiteur administrateur : **le Labo y est toujours ouvert**. Il sert à **voir ce qu'on ne peut pas provoquer**. Presque tout y est local : les boutons qui touchent la collection ne modifient que l'affichage, et le `pull` suivant remet l'état du serveur. Le Labo n'est jamais redessiné en arrière-plan (`enTrainDEcrire()`).
+
+| Panneau | Ce qu'il permet |
+|---|---|
+| Ouvertures de test | normale, R / E / L / Secrète forcées, Essence Brillante, carte unique, godpack, Reverse Rare (tirage local `makeBooster`, rien n'est écrit) ; l'image de partage d'un booster |
+| Événement et chasse | l'état serveur (événement, rythme, chasse) ; 4 aperçus (`avant`, `pendant`, `trouvee`, `mienne`) ; « Revenir à l'état réel » ; les fenêtres de nouveautés et de fin de chasse ; les requêtes SQL à copier |
+| Promos | la scène d'obtention de chaque Promo, ou toutes à la suite |
+| **Offrir un cadeau** (réel) | Éclats, boosters, Fragments, une carte et un mot à un ou plusieurs joueurs (liste avec leur retard sur la médiane) ; aperçu sans rien envoyer |
+| Version 2.0 · Reflets | Nouveautés 2.1, fenêtres de palier, invitation achetée (`M8-TEST-0000`), l'onglet (si Reflets est en cours), Devine l'illu, le récap (onglet, fenêtre, bandeau) |
+| Version 3.0 · Choc | Nouveautés 3.0, l'onglet (si le Choc est en cours), le récap |
+| Version 3.0 · Combats | campagnes dévoilées, **toutes les récompenses** (`laboRecompenses` : campagne, Arcade, niveaux 2 → 60, Raid, Pass), une fin de combat à deux niveaux, la fiche de niveau, le bilan d'un Starter |
+| **Annonce à tous** (réelle) | `annonce_publier`, avec confirmation |
+| Notifications | quête accomplie, ping de la boîte, message court |
+| Aperçu de la collection (local) | tout débloquer, vider, 90 %, +10 boosters, +5 000 Fragments, tous les succès, boosters illimités |
+| Équilibrage | les valeurs en vigueur (lecture seule), barèmes de recyclage et de fabrication |
+
+Les clics du Labo passent par `clicPage` (`data-act="t-*"`, `data-apercu`, `data-promo`).
+
+---
+
+## 11. La pré-prod et le faux serveur
+
+### 11.1 Ce que fait `tools/demo.py`
+
+Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `css/`, `js/`, puis **modifie la copie** :
+
+1. `_demo/serveur.js` devient `js/demo-serveur.js`, `_demo/reglages.js` devient `js/demo-reglages.js` ; `js/demo-illu.js` (`window.DEMO_ILLU`, 113 grilles) est extrait de `supabase/21b_illu.sql`.
+2. La balise supabase-js est remplacée par ces trois scripts (chargés **avant** `config.js`) ; `js/supabase-config.js` reçoit de fausses valeurs (`https://demo.invalid`).
+3. `vPorteAttente()` (`js/gate.js`) commence par `return demoPorte()` ; les trois fichiers entrent dans `ESSENTIEL` (`sw.js`).
+
+**Avec `--preprod`** (sortie : `preprod/`) :
+
+- `noindex` ; un script qui **préfixe tout le stockage par `preprod:`** (`Storage.prototype.getItem/setItem/removeItem/clear`) ; la base IndexedDB devient `premier-lobby-preprod` : la pré-prod ne lit ni n'écrase rien du vrai site, qui partage l'adresse.
+- Titre `PRÉ-PROD 3.0.x`, bandeau « Pré-prod · démo, rien n'est réel », noms du manifeste.
+- **Pas de service worker** (`brancherSW` commence par `return;`, `sw.js` supprimé). **Mais celui du vrai site (portée racine) contrôle aussi `/preprod/`** et sert les médias depuis son cache : c'est pourquoi `demo.py` ajoute `?v=<version>` à chaque `assets/…` cité dans les CSS, JS et HTML (pas à `cards/`).
+- Le visiteur est administrateur (Labo ouvert).
+
+**Sans option** : la démo autonome, dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git), avec `_demo/LISEZMOI.txt`.
+
+`remplacer()` **arrête la construction** si un motif attendu ne se trouve pas exactement une fois : les chaînes qu'il cherche (la balise supabase-js, `function vPorteAttente() {`, `'js/app.js',` dans `sw.js`, `<head>`, `<title>`, `<body`, `indexedDB.open('premier-lobby'`, `function brancherSW() {`, le nom du manifeste, la création du profil dans `serveur.js`) sont des **contrats**.
+
+### 11.2 Le faux serveur (`_demo/serveur.js`)
+
+- Il définit `window.supabase = {createClient: () => client}` : **le code du jeu croit parler à Supabase**. Il implémente les **58 mêmes RPC**, avec les mêmes noms, paramètres et messages d'erreur, et `from('shop_items')`.
+- **Un appel** (`appeler`) : charge l'état, refuse `'non connecte'` sans session, copie l'état, fait vivre les bots, exécute `RPC[nom](MOI, args)`, sauvegarde, attend 60 à 150 ms. **Une exception annule tout l'appel** (bots compris). Un refus s'écrit `refuser('…')` (jamais un `throw` brut : sur `me`, il déclencherait la recréation du monde).
+- **Stockage** : l'état entier `S` dans IndexedDB (`kvSet('demo-serveur', S)`). Le seul numéro de schéma est `S.v === 1` : **ne jamais le changer** (cela effacerait toutes les parties). Les ajouts se font dans `completer()` (`S.x = S.x || …`) ou dans une fonction `mondeXX()` idempotente.
+- **Il ne lit rien du jeu au chargement** (il est chargé avant `config.js`) : seulement à l'intérieur de fonctions (`cards`, `byId`, `Decks`, `Combat`, `IA`, `RAID`, `CHOC`, `NIVEAUX`…).
+- **Session** : connecté sauf si `localStorage['mtcg.demo.connecte'] === '0'` ; « Discord » pose `'1'`. **`?reinitialiser`** efface l'état du faux serveur (pas le `localStorage` du client : tutoriel vu, accueil, etc.).
+- **Réglages** (`_demo/reglages.js`) : pseudo `Visiteur`, 6 000 Éclats, `ticket_minutes` 240, `raid_echelle` 0,25. Pseudo et Éclats ne valent que pour un monde neuf ; le rythme et l'échelle du Raid s'appliquent tout de suite.
+
+### 11.3 Le monde de démo
+
+- **Quatre bots** : Lumen (`f_or`, ami), Mira (`f_rose`, amie), Kairo (`f_azur`), Nova.92 (`f_prisme`, gagnant de la chasse : il porte `f_unique`). Leurs collections viennent de vrais tirages. Ils font leur check-in, acceptent une demande d'ami (6 à 20 s) ou d'échange (12 à 40 s ; le premier échange possible est toujours accepté, les suivants 3 fois sur 4), proposent des échanges, acceptent et jouent tes défis (IA niveau 3 ; `defi_fin` **rejoue** la partie, contrairement au vrai serveur), te défient une fois, frappent le Raid toutes les 30 s environ, tentent l'Épreuve. **Ils ne vivent que page ouverte** (minuteur de 4 s).
+- **Événements** : `monde20()` crée Reflets, puis `monde30()` le remplace par **le Choc, commencé 4 jours avant la première visite en 3.0 et prévu pour 21 jours**. Au-delà (17 jours plus le récap de 3), plus d'événement : seul `?reinitialiser` le relance. Un seul `S.evenement` à la fois.
+- **Raid** : `mondeRaid()` inflige 102 dégâts à la saison courante (avec `raid_echelle` 0,25 : deux phases tombées, la troisième en cours). Le Raid suit le vrai calendrier : une nouvelle saison repart à zéro.
+
+---
+
+## 12. Outils, sources et visuels
+
+### 12.1 Les outils
+
+| Commande | Dépendances | Produit |
+|---|---|---|
+| `python3 tools/version.py X.Y.Z` | aucune | `APP_VERSION`, `VERSION` du service worker, `?v=` d'`index.html` / `verif.html`, liste `ESSENTIEL` |
+| `python3 tools/demo.py [--preprod]` | aucune | `preprod/` ou `_build/m8tcg-demo(.zip)` |
+| `python3 tools/build-sql.py` | aucune | `supabase/TOUT.sql` |
+| `python3 supabase/gen-cards-sql.py` | aucune | `supabase/02_cards.sql` |
+| `node tools/illu-pixels.js` | Node, Playwright (Chromium) | `supabase/21b_illu.sql` (puis `build-sql.py` et `demo.py`) |
+| `node tools/combat-tests.js` | Node | les tests de règles |
+| `node tools/combat-sim.js <mode> N …` | Node | parties simulées (`aleatoire`, `clone`, `ia`, `starters`) |
+| `python3 tools/cadres.py` | aucune | les 7 cadres SVG de la 2.0 (`assets/cadres/`) |
+| `python3 tools/cadres-30.py` | aucune | les 9 cadres SVG de la 3.0 |
+| `python3 tools/cosmetiques.py` | Pillow (AVIF) | 6 tapis (+ `-mini`), 2 sleeves, 2 boîtes de Starter, **les 5 Secrètes dans `cards/`** |
+| `python3 tools/choc-visuels.py` | Pillow (AVIF) | 2 affiches du Choc, tapis `t_arene` et `t_orage`, sleeve `s_choc` |
+| `python3 tools/gen-icons.py` | **macOS** (`sips`) | icônes d'app, favicons, `og-image.png` (palette **2.1**, pas refaites en 3.0) |
+| `python3 tools/kit-presse.py` | Pillow | `presse/visuels/*` |
+
+L'environnement cloud a Python 3 avec Pillow (AVIF), Node 22, Playwright et Chromium, `http-server`, PostgreSQL 16 ; pas `sips`.
+
+### 12.2 Les sources (`_sources/`, branche de travail seulement)
+
+| Source | Script | Sortie |
+|---|---|---|
+| `combat/brawks-deter.jpg` (1490 × 1055) | `choc-visuels.py` | `choc-deter.webp`, haut de `t_arene` |
+| `combat/secrete-123.jpg`, `secrete-125.jpg` | `cosmetiques.py` | les deux Secrètes révélées |
+| `combat/secrete-floue-a/b/c.jpg` | `cosmetiques.py` | les trois Secrètes floutées |
+| `combat/sleeve-argent.jpg`, `sleeve-sorcier.jpg` | `cosmetiques.py` | `s_argent`, `s_sorcier` |
+| `combat/starter-deter.jpg`, `starter-toxique.jpg` | `cosmetiques.py` | `assets/combat/sections/*.webp` (détourées) |
+| `combat/tapis-*.jpg / .webp` (6) | `cosmetiques.py` | `assets/combat/tapis/t_*.webp` |
+
+Les autres visuels partent des cartes elles-mêmes (`cards/`). `assets/combat/banniere-combats.webp` est faite à la main (aucun script).
+
+### 12.3 L'habillage (`assets/`)
+
+- `cadres/` : 16 SVG animés (7 de la 2.0 + 9 de la 3.0), branchés par `.ava.fx-<id> .fx-deco` dans `css/reflets.css` et `css/choc.css`.
+- `combat/` : `tapis/` (8 + `-mini`), `sleeves/` (3), `sections/` (2 boîtes), `choc-toxique.webp`, `choc-deter.webp`, `banniere-combats.webp`.
+- `boosters/booster-01…04.webp` (`PACK_ARTS`), `essences/*.svg`, `card-back.webp`, `logo-m8.webp`, `extension-logo.svg`, `favicon.svg`, `pack-star.svg`, `star-pink.svg`, `1st-edition.svg`, `jeton-echange.webp` ; icônes PNG générées.
+
+### 12.4 Les images des cartes
+
+- `cards/NNN_RAR_Catégorie[-SousType]_Couleur_Nom.avif` (1000 × 1397), `NNN` de 001 à 127 ; Secrètes cachées `NNN_S_Secrete.avif`. Le nom ne se découpe pas sur `_` (certains noms en contiennent).
+- `cards/promos/PNN-Nom.webp` (640 × 880 ; P03 et P04 n'ont pas d'image) ; `cards/uniques/U01-L_Unique_Chevaliere_v2.webp`.
+- Le gabarit d'une carte (1000 × 1397) a son illustration de (85, 205) à (895, 684) : c'est ce qu'utilisent `illuCadre()` (`js/ui.js`) et `tools/choc-visuels.py` (`ILLU`) pour recadrer une illustration.
+
+### 12.5 Le kit presse (`presse/`)
+
+`presse/README.md` (mode d'emploi, ordre de publication, textes), `presse/visuels/` (6 PNG et 2 GIF composés par `tools/kit-presse.py`), `presse/visuels.html` (les mêmes visuels en HTML, `?v=N`), `presse/polices/` (Archivo, Figtree, sous licence SIL OFL). Le kit date de la 2.x.
+
+---
+
+## 13. Pièges
+
+Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa section.
+
+**Production et branches**
+
+1. **Rien sur le vrai site** : aucun fichier hors `preprod/` sur `main`, aucun SQL 3.0 en production. **Ne jamais fusionner la branche dans `main`.**
+2. La racine de la branche parle au **vrai** Supabase (clés réelles dans `js/supabase-config.js`) : on n'y voit que « Projet annulé ». La 3.0 se teste dans `/preprod/` ([§ 2.1](#21-servir-le-site-en-local)).
+3. La branche `main` locale peut être en retard : toujours comparer avec `origin/main` après un `fetch`.
+4. `preprod/` est **construit** : on modifie `js/`, `css/`, `_demo/`, puis `python3 tools/demo.py --preprod`. Une retouche faite dans `preprod/` est écrasée à la prochaine construction.
+5. Ajouter un `.nojekyll` sur `main` publierait `_demo/` et `_sources/`.
+
+**JavaScript**
+
+6. **Un seul espace global** : deux `const` / `function` de même nom au niveau d'un script = `SyntaxError`, et tout le second fichier est ignoré. Le code exécuté au chargement doit trouver ses dépendances déjà chargées (ordre d'`index.html`).
+7. **`save` est reconstruit à chaque `pull()`** : n'y ranger aucun état d'interface ; ne pas garder de référence à `save.col` ; les comparaisons avant / après se font dans `Backend.apply`.
+8. **`data-tab` est traité avant tout le reste** dans `clicPage` : un élément qui porte `data-tab` et un autre attribut voit l'autre ignoré. Ne jamais mettre `data-tab` sur `<body>`. Un nouvel attribut `data-x` doit être ajouté au sélecteur `closest()` de `clicPage`. Un `data-act` posé dans la fiche (`#viewer`) ou le théâtre n'est pas traité par `clicPage`.
+9. **On défile `#main`**, jamais `window` (`body` est en `overflow:hidden`).
+10. **Un champ de saisie** doit être rebranché dans `bindReglages()` et déclaré dans `enTrainDEcrire()`, sinon un rafraîchissement de fond lui vole le focus.
+11. `brancherSW()` reste **avant** le premier `await` du démarrage ; `lireErreurRetour()` **avant** `Backend.init()`.
+12. **Mouvement réduit** : `RM()` ne lit que la préférence système. Une animation en JS teste `RM()` **et** `document.documentElement.classList.contains('rm')`.
+13. `h()` remplace « et » entouré d'espaces par des espaces insécables : en tenir compte pour comparer des chaînes.
+14. `toutesCartes()` n'inclut pas les Secrètes.
+
+**CSS et DA**
+
+15. Pas de couleur en dur quand un jeton existe ; verre seulement sur ce qui flotte, jamais de flou sur du verre ; toute nouvelle classe de verre entre dans **les deux listes de repli** de `base.css` ([§ 5.6](#56-les-matières)).
+16. `#main > *` est centré par `margin-inline: auto` : un `margin` raccourci en style en ligne le décentre.
+17. En 3D (`preserve-3d`), `mix-blend-mode` ne s'applique pas et un `filter` sur l'enveloppe floute la carte.
+18. Ne pas toucher `.sheet::before` sans lire `js/ui.js` (il détecte l'ordinateur par son `display`). Plusieurs sélecteurs reposent sur `:empty` : le JS ne doit pas y laisser d'espaces.
+19. Archivo n'existe en italique qu'en 700–900 ; Figtree n'existe pas en 900.
+
+**Cache et versions**
+
+20. **Une image retouchée sous le même nom reste l'ancienne** chez les joueurs (le service worker garde les médias jusqu'à la prochaine version). Donner un nouveau nom, ou changer de version. En pré-prod, seuls les `assets/` reçoivent `?v=`, pas `cards/`.
+21. `?v=` des CSS / JS = `VERSION` de `sw.js` : passer par `tools/version.py`, **avant** `demo.py` (qui relit la version).
+22. Un nouveau fichier JS ou CSS : l'ajouter à `index.html` puis lancer `version.py` (qui régénère `ESSENTIEL`), sinon le démarrage hors réseau casse.
+
+**Serveur**
+
+23. **Ne jamais éditer** `TOUT.sql`, `02_cards.sql`, `21b_illu.sql` (générés).
+24. **Ne jamais rejouer** `13`, `16`, `17`, `19`, `20` (ils réinstallent d'anciennes versions ; `17` supprime les quêtes 2.0 / 3.0 et leur progression), malgré leurs en-têtes « rejouable sans danger ».
+25. Rejouer `03_rpc.sql` ou `06_social.sql` seul remplace `me()` / `player_profile()` par des versions tronquées : toujours rejouer `TOUT.sql`.
+26. Une carte créée ailleurs que dans `02_cards.sql` doit être `promo = true`, sinon le ménage de `02` la supprime avec tous ses exemplaires.
+27. Les listes `delete … not in (…)` de `04_seed.sql` : un identifiant oublié efface la quête ou l'article, et sa progression.
+28. Toute règle a trois copies ([§ 9.8](#98-une-règle-plusieurs-copies)).
+29. `revoke … from public` sur chaque nouvelle fonction ; les messages d'erreur sont en français et montrés tels quels.
+30. Une installation neuve lance Reflets pour 14 jours ; l'administrateur lui-même doit être dans `beta_invites`.
+
+**Pré-prod**
+
+31. Dans `_demo/serveur.js` : rien lu du jeu au niveau du module ; `refuser()` plutôt que `throw` ; ne jamais changer `S.v`.
+32. Le Choc de la démo expire (21 jours après le début, posé 4 jours avant la première visite) ; les bots ne vivent que page ouverte.
+33. Le préfixe `preprod:` ne réécrit que `getItem`, `setItem`, `removeItem`, `clear` : `key()` et `length` voient aussi les clés du vrai site.
+
+**Combats et événements**
+
+34. **Déterminisme** : aucun `Math.random` ni `Date` dans le moteur et les effets ; l'état reste du JSON sans référence.
+35. Une action doit être **exactement** l'une de `optionsTour` (`chevaliere` n'existe que s'il vaut `true`).
+36. Pendant une animation, `T.E` est déjà à l'état final : dessiner `vue()`, décider sur `T.E`.
+37. Tout nouveau `but` de décision doit être connu de l'IA **et** de l'interface.
+38. Le tutoriel dépend des classes de l'arène : le rejouer après toute retouche de `table.js` / `arene.css`.
+39. Un défi ne tolère aucun trou dans la numérotation des actions (« Actions désynchronisées »).
+40. Ne jamais réutiliser un code d'événement ; ne pas chevaucher un événement sans code et un événement codé.
+
+---
+
+## 14. Dette connue
+
+État au moment de l'écriture. Ce qui est corrigé sort de cette liste dans le même commit.
+
+### 14.1 Bugs
+
+- **`data-colvue` avec `data-tab` est ignoré** (`clicPage` traite `data-tab` d'abord) : les boutons « Les Secrètes » / « Spéciales » du Choc et « Reverses » de Reflets ouvrent la Collection sur la dernière vue affichée.
+- **Après un achat dans la boutique du Choc**, `shop.js` appelle `chargerReflets()` au lieu de `chargerChoc()` : le solde d'Étincelles affiché reste périmé.
+- **Échanger une Secrète est impossible depuis l'interface** (`ouvrirChoixCarte` part de `cards` et `reverses`, `RAR_ORDRE` n'a pas `S`), alors que le serveur l'accepte et que l'interface le promet.
+- **Le bouton « Apprendre d'abord »** du choix de Section ne mène nulle part (sans Section, `vCombats()` renvoie toujours le choix de Section).
+- `TABS.recyclage.desc` dit « Tes doublons contre des Éclats » (ce sont des Fragments).
+- `titres_de()` range les **tapis** (`t_*`) parmi les titres : `personnaliser` accepte un tapis comme titre (l'interface filtre).
+- `set_profile` accepte comme cadre n'importe quel objet d'inventaire ; l'avatar n'est pas borné en longueur.
+- `RM()` ignore le réglage « Animations réduites » du jeu : particules, gyroscope et vibrations n'en tiennent pas compte.
+- `localStorage['mtcg.jeu']` a deux écrivains (Réglages écrit tout `JEU`, l'arène seulement `rapide`) : changer un réglage peut restaurer l'ancienne vitesse de combat.
+- Les raccourcis du manifeste (`?onglet=boosters`, `?onglet=collection`) ne sont pas lus : les deux ouvrent Boosters.
+- La pastille de l'onglet d'événement n'allume pas l'alerte de l'avatar (`pastilleTiroir` ne compte que les onglets `tiroir`).
+- `brand()` et `majSignalBoite()` réécrivent `document.title` : le titre « PRÉ-PROD » disparaît.
+- L'avertissement « Nouvelle version » peut remplacer une feuille ouverte.
+- Combat : `resoudre` pose `X.vaincu = true` avant `vaincre()` (un Joueur sauvé par Invitation reste « vaincu » pour Target Missed) ; un `defiJouer` perdu fait avancer le compteur local quand même.
+- `deck_sauver` ignore les cartes prêtées (impossible d'enregistrer une copie d'un Starter sans en posséder les cartes) ; `deck_erreur` ne refuse pas une Secrète cachée.
+- Les deux ordres de repli de rareté (`pickFrom` / `pick_card`) diffèrent.
+
+### 14.2 Code mort
+
+- **Porte** : `vCompteARebours`, `ouvrirLaPorte`, `Porte.lancee`, `Porte.reste` ; l'appel `Porte.lire()` au démarrage ne change rien. **Mode local et `vAuth`** : inatteignables tant que `PORTE.active` vaut `true` (et le mode local l'est toujours).
+- **Navigation** : `combatsAuTiroir()` (toujours faux) et sa branche, la classe `evnav`, `TABS.online` / `.cache`, `body.dataset.onglet`, `body.installsheet`, `PWA.installe`, `NAVICO.sun/moon/auto`.
+- **Données** : `c.nomBase`, `c.variante`, `kw.icone`, le champ `ambiance` (jamais affiché), la branche des talents (aucune carte n'en a), l'effet de boutique `refill`, `MSG_SERVEUR.PLAFOND_RECYCLAGE`, `Backend.erreur`, `profil.bonus_offerts`, `bindTilt()` (aucun `.tilt`), `PROMOS_A_VENIR` vide.
+- **SQL** : `cfg('pack_size')`, `cfg('shards_per_dup')`, `recyclage_semaine()` / `debut_semaine()`, la branche `'legendaire'` d'`accorder`, `choc_joueurs.victoires`, les critères de classement non affichés.
+- **Combat** : `E.pileFace`, `P.enCours`, `vuMain`, `E.cpt.essDesengagees`, `c.tour`, `E.v`, `defiActif.dernier`, `atelier.filtres.rar`, `'c012'` dans `INSTANTS_SURS`, `CB_ALIAS`, trois copies du même mulberry32, une vingtaine d'exports jamais appelés de l'extérieur.
+- **Événements** : `CHOC.code`, la branche `insignes` de `chIco`, les visuels `reverse_R` / `brillante` de `vChBoutique`, `vBandeauChoc('combats')`, `epreuveRegle()` (doublon), `montrerNouveautes21` et les boutons `t-v2-*` (encore joignables depuis le Labo).
+- **CSS** : de nombreux sélecteurs sans producteur (`.soon*`, `.cb-deck*` remplacés par `dk-*`, toute l'ancienne partie Raid de `choc.css`, `.rd-*`, `.gd-une*`, `.ar-atq.ok`…), des neutralisations de `h2::before` qui n'existe plus, et des jetons inutilisés (`--brand-deep`, `--brand-ink`, `--violet`, `--cyan`, `--cyan-glow`, `--gold-deep`, `--gold-glow`, `--hover-2`, `--sh-press`, `--veil`, `--gap-1`).
+- **Dépôt** : `tools/__pycache__/*.pyc` suivi par git ; `assets/logo.webp` et `assets/logo-bw.svg` cités par aucun code ; `presse/polices/Archivo-Black-Italic.ttf` inutilisé.
+
+### 14.3 Écarts à la DA
+
+- `--cta` réécrit en dur 16 fois ; `#5d4bd9`, `#c8bfff`, `#16151e`, `#121119`, `#b3a6ff`, `#ff6b6b` réécrits au lieu de leurs jetons ; le vert de réussite de l'arène est `#8ff0c8` et non `--ok`.
+- Restes de la palette 2.x (`#b38cff` surtout dans `reflets.css`, `rgba(154,115,255,…)`, le dégradé rose de `.colpct`) ; couleurs de rareté hors jetons dans l'ouverture, la fiche, le podium, les succès.
+- Le « choisi » en lavande au lieu du blanc (`.cb-acte-ong.on`, `.filpuce.on`, `.rf-onglets .on::after`…) ; l'or hors des récompenses (`.dk-etoiles`, `.labalerte`…) ; trois roses différents pour le cœur favori ; le vert de Toxique n'est pas le même partout (et `f_toxique` est décrit « rose » dans la boutique).
+- Icônes d'app, favicons et image de partage encore à la palette 2.1 (`tools/gen-icons.py`, qui exige macOS).
+
+### 14.4 Documentation et commentaires périmés
+
+- **Fichiers SQL** : en-têtes « rejouable sans danger » de 13 / 16 / 17 / 19 / 20 ; `08_reset-profil.sql` et `10_reset-tout.sql` ignorent tout ce qui est venu après la 1.5 ; `09_beta.sql` insère des invitations factices si on le joue en entier ; l'en-tête de `TOUT.sql` parle de « quatre fichiers » ; l'en-tête de `04_seed.sql` décrit l'ancien booster.
+- **`SETUP.md`** : Promo « à 10 000 » (5 000), dépannage qui renvoie à l'« étape 7 » (5 et 5 bis), mode hors ligne, ni `beta_invites` ni l'événement Reflets créé à l'installation, `illu-pixels.js` oublié.
+- **`docs/`** : `design-3.0.md` décrit l'en-tête du Choc « avec Gotaga Pose et le VS » et les cadres Arène « laurier, épées, gemmes » (aujourd'hui Brawks Déter sans VS ; anneau, plaque, cimier et ailes) ; `economie-3.0.md` cite une table `combat_parties` qui n'existe pas, oublie `f_foudre` (boutique du Choc : 3 100, pas 2 700) et `d_xp` / `w_xp`.
+- **`presse/`** : « quatre Promos », « thème Sombre » à régler, GIF annoncés « douze images » et « cinq cartes ».
+- **Commentaires de code** : la Reverse décrite comme « quatrième carte » (c'est la 5ᵉ) ; « l'événement remplace Combats dans la barre du bas » (il va en tête du tiroir) ; `shop.js` « deux rayons » (trois) ; « Aucune logique ici » (`config.js`) ; `gate.js` « aucun compte ne se crée » (un profil est créé) ; `supabase-config.js` « vide = hors ligne » ; `verif.html` (« mode hors ligne », « e-mail », `theme-color` 2.x) ; `tutoriel.js` se dit 3.0.6 ; `REGLE` présenté comme « le seul endroit » alors que des valeurs sont recopiées en dur (SQL, guides, tutoriel, arène).
+- **Le stub PostgreSQL** du [§ 2.3](#23-tester-le-sql-sur-un-postgresql-local) n'est pas versionné ; `.claude/launch.json` (port 8765) et ce README (8781) ne proposent pas le même port.
+
+### 14.5 Pistes non engagées
+
+- Montrer la maîtrise de l'adversaire en Versus (il faudrait l'envoyer avec le défi).
+- Mesurer l'économie réelle (maîtrise, combats) une fois le jeu ouvert.
+- Rendre les Secrètes échangeables depuis l'interface (le serveur l'accepte déjà).
+
+---
+
+## 15. Historique des versions
+
+| Version | Date | Ce qu'elle a apporté |
+|---|---|---|
+| **1.0** | 22 sept. 2026 | Boosters, Collection, Social (amis et échanges), Quêtes, Profil, Boutique, Réglages ; l'onglet Combats annoncé « à venir ». |
+| 1.x | 23–28 sept. | Feuilles qui se ferment d'un glissé ; **connexion Discord obligatoire, plus de jeu hors ligne** ; le 24 septembre, **le lancement public est annulé** (écran « Projet annulé · Merci ») ; démo autonome ; recyclage rééquilibré, quêtes de raretés complètes, classement global. |
+| **1.5** | 3 oct. | Fragments (le recyclage ne paie plus en Éclats), fabrication, Essences Brillantes, succès, historique des tirages, partage d'un booster, **chasse à la carte unique** ; puis cadeaux d'administrateur et boosters offerts ou achetés **hors réserve**. 1.5.8 : teaser de la 2.0. |
+| **2.0 « Reflets »** | 8 oct. | **Reverses**, Collection en trois vues, titres / bannière / devise, cadres décorés animés, l'événement Reflets (Prismes, Pass, boutique, récap), **Devine l'illu**, invitations, « Chez tes amis » ; la pré-prod à `matetcg.com/preprod/`. |
+| **2.1** | 9 oct. | Exemplaires **à garder** (par rareté et par carte), **favoris**, quêtes « Dix fois la même ». 2.1.1 : un invité n'invite pas à son tour. |
+| **2.1.2** | 13 oct. | Cadre Maître refait, flèche du menu, pastille Devine l'illu, cadrage de l'app installée. **C'est la version en production.** |
+| 3.0.0 – 3.0.1 | 11–12 oct. | Pré-build : moteur de combat, effets, IA, règles reconstituées, arène, onglet Combats, atelier, guides, défis, cosmétiques ; Secrètes et nouveaux taux ; l'événement « Le Choc des Sections » (Raid, Épreuve du jour, Pass) ; XP et niveaux ; SQL `23`–`26`. |
+| 3.0.2 – 3.0.4 | 12 oct. | Refonte visuelle complète, puis la palette **« Graphite et lavande »** (verre réservé à ce qui flotte) ; la « Guerre » des Sections et la première maîtrise retirées ; la pré-prod ne reste plus bloquée sur « Merci ». |
+| 3.0.5 | 12 oct. | Onglet Combats refait (bannière du Chevalier, portes Solo et Versus, campagne en chemin, Arcade) ; Raid permanent ; événement refait (bannière, Nouveautés, Pass et boutique rééquilibrés). |
+| 3.0.6 | 13–14 oct. | **Raid par saisons et phases** (`27_raid.sql`) ; **tutoriel jouable** ; Guide en glossaire ; IA sans coups au hasard (mesurée) ; Decks avec bilan ; Classement Niveau / Secrètes / Versus ; bannière Squeezie le Toxique contre Brawks Déter, sans VS ; Insignes renommées **Étincelles** ; cadres 3.0 redessinés ; le Labo montre tout. |
+| **3.0.7** | 14 oct. | **Maîtrise des cartes** (`28_maitrise.sql`) et **carte fétiche** ; fiche de carte en trois pages (Infos, Maîtrise, Gérer) ; arène : carte agrandie intacte avec son état dessous, Joueur engagé qui ne pivote plus, animations rejouées depuis l'état de chaque instant, flèche de visée, touchers iOS ; tutoriel réécrit et vérifié dans Chromium (390, 375, 360) ; récap de booster sans défilement, pastille Boosters, niveau dans l'en-tête, Classement à quatre critères. |
+
+**Choix d'interprétation de la 3.0.7, à connaître** : « Éclats » dans la demande sur la maîtrise a été lu comme **Fragments** ; le conflit entre exemplaires et decks est résolu par les exemplaires **en trop** seulement (le manque se paie en Fragments) ; la carte fétiche est distincte de la vitrine ; le Classement est réduit à quatre critères. Non vérifié sur un vrai appareil iOS (zones sûres, glissé des pages de la fiche).

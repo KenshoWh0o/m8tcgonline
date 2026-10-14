@@ -83,7 +83,9 @@ function allerCb(vue) {
 /* ---------- L'onglet ---------- */
 function vCombats() {
   const e = cbEtat();
-  if (!e.section) return vChoixSection();
+  /* Sans Section, tout mène au choix — sauf « Apprendre d'abord » : le Guide
+     (et le tutoriel) se lisent avant de choisir ; son retour y ramène. */
+  if (!e.section) return cbVue === 'guides' ? `<div class="cb cb-v-guides">${vCbGuides(e)}</div>` : vChoixSection();
   if (cbVue === 'atelier' && typeof vAtelier === 'function') return vAtelier();
   const corps = {
     accueil: vCbAccueil, solo: vCbSolo, campagne: vCbCampagne, arcade: vCbArcade, raid: vCbRaid,

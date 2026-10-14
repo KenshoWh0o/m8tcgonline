@@ -14,7 +14,8 @@ Ecrit dans assets/cadres/ :
   foudre.svg                                The French Sorcerer (boutique du Choc)
 
 Meme gabarit que les autres cadres decores (css/reflets.css) : 128 x 128,
-l'avatar au centre sur un rayon de 50, le decor deborde autour. Chaque
+l'avatar au centre sur un rayon de 50, le decor deborde autour ; l'Arene et
+la Foudre ont une marge de 12 (viewBox de 152, css/choc.css : inset -26 %). Chaque
 fichier a son prefixe d'identifiants : deux cadres sur une meme page ne se
 marchent pas dessus.
 
@@ -24,8 +25,9 @@ degrade de couleur et de transparence, avec leur lueur. Les deux Sections se
 repondent : le poison de Toxique monte du bas et s'evapore ; la foudre de
 Deter tombe du haut et s'eteint. Le Choc les fait se rencontrer en haut, dans
 un eclat blanc. Les quatre cadres d'Arene s'enrichissent d'un palier a
-l'autre : le laurier s'allonge, les epees arrivent a 20, les gemmes a 30, le
-prisme et ses eclats a 50."""
+l'autre : un anneau de metal et son cimier (bronze, 10), de petites ailes
+(argent, 20), de grandes ailes et deux gemmes (or, 30), les ailes deployees,
+une couronne et le metal irise (prisme, 50)."""
 import math
 import os
 import random
@@ -368,9 +370,10 @@ def secrete():
 # ------------------------------------------------------------ l'Arene
 # Version 3.0.7 : les cadres d'Arene sont refaits a la maniere des bordures
 # de niveau des grands jeux en ligne. Un anneau de metal epais, biseaute et
-# grave ; une plaque en bas qui porte le niveau ; un cimier en haut et sa
-# gemme ; et, d'un palier a l'autre, des ailes qui grandissent :
-#   10 · bronze : l'anneau, la plaque, le cimier ;
+# grave ; un cimier en haut et sa gemme ; et, d'un palier a l'autre, des
+# ailes qui grandissent (version 3.0.8 : plus de plaque « NIV » en bas, le
+# niveau se lit deja sur la pastille de l'avatar) :
+#   10 · bronze : l'anneau, les rivets, le cimier ;
 #   20 · argent : de petites ailes, trois plumes ;
 #   30 · or     : de grandes ailes, cinq plumes, deux gemmes sur les cotes ;
 #   50 · prisme : les grandes ailes deployees, une couronne sur le cimier,
@@ -417,7 +420,7 @@ def aile(n, cote, echelle, fill, fill2, trait, veine):
     return s
 
 
-def arene(cle, n):
+def arene(cle):
     clair, mid, sombre, trait, reflet, gem = METAUX[cle]
     ailes, echelle = AILES[cle]
     prisme = cle == 'niv50'
@@ -485,17 +488,6 @@ def arene(cle, n):
     if prisme:
         couronne = "M54 2.5 57.5 -3.5 60.6 1 64 -5.5 67.4 1 70.5 -3.5 74 2.5Z"
         c.append(f"<g transform='translate(0 5)'><path d='{couronne}' fill='url(#{p}-i)' stroke='{trait}' stroke-width='.7' stroke-linejoin='round'/></g>")
-    # La plaque du niveau, en bas, et ses deux rubans.
-    for cote in (-1, 1):
-        x0 = 64 + cote * 17
-        c.append(f"<path d='M{f(x0)} 110.5 L{f(x0 + cote * 15)} 113 L{f(x0 + cote * 10.5)} 118.5 L{f(x0 + cote * 15)} 124 L{f(x0)} 122.5Z' "
-                 f"fill='url(#{p}-pl)' stroke='{trait}' stroke-width='.7' stroke-linejoin='round'/>"
-                 f"<path d='M{f(x0)} 110.5 L{f(x0 + cote * 2.5)} 113 L{f(x0)} 116Z' fill='{trait}' opacity='.6'/>")
-    c.append(f"<path d='M45 107.5h38l3.6 7.5-3.6 7.5H45l-3.6-7.5Z' fill='{trait}'/>"
-             f"<path d='M45.7 108.6h36.6l3 6.4-3 6.4H45.7l-3-6.4Z' fill='{metal}'/>"
-             f"<path d='M47.4 110.4h33.2l2.2 4.6-2.2 4.6H47.4l-2.2-4.6Z' fill='url(#{p}-pl)'/>"
-             f"<text x='64' y='118.5' text-anchor='middle' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='9.6' "
-             f"letter-spacing='.2' fill='#fff' stroke='{trait}' stroke-width='.5' paint-order='stroke'>NIV {n}</text>")
     if prisme:
         for r, a, sz, d, b in ((62, -40, 3.4, 2.4, 0), (62, -140, 3, 2.8, .9), (61, 32, 2.4, 2.2, 1.5), (61, 148, 2.4, 2.6, .5), (60, 62, 2, 2.3, 1.1)):
             c.append(twinkle(star4(*pt(r, a), sz, '#fff'), d, b))
@@ -570,8 +562,8 @@ def foudre():
 
 
 if __name__ == '__main__':
-    for cle, n in (('niv10', 10), ('niv20', 20), ('niv30', 30), ('niv50', 50)):
-        arene(cle, n)
+    for cle in ('niv10', 'niv20', 'niv30', 'niv50'):
+        arene(cle)
     foudre()
     toxique()
     deter()

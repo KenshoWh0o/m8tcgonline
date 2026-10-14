@@ -413,7 +413,9 @@ async function clicPage(e) {
   if (!el) return;
   const d = el.dataset;
 
-  if (d.tab) return aller(d.tab);
+  /* Un lien vers une vue précise de la Collection porte les deux : la vue
+     d'abord, puis l'onglet (data-tab passe avant tout le reste). */
+  if (d.tab) { if (d.colvue) colVue = d.colvue; return aller(d.tab); }
   /* Version 3.0 : l'onglet Combats et son atelier (js/battle.js). */
   if (d.cb) return cbAction(d.cb, el);
   /* Version 3.0 : l'événement « Le Choc des Sections » (js/choc.js). */
@@ -426,7 +428,7 @@ async function clicPage(e) {
     const x = SUCCES.find(y => y.id === d.succes);
     return x && toast(`${x.nom} — ${x.dit}${(save.succes || []).includes(x.id) ? ' Obtenu.' : ''}`);
   }
-  if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
+  if (d.colvue) { colVue = d.colvue; return render(); }
   if (d.palier) return reclamerPalier(+d.palier);
   if (d.illu) return illuProposer(d.illu);
   if (d.rfvue) return allerRf(d.rfvue);
