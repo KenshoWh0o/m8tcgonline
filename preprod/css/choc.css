@@ -29,9 +29,9 @@
 .ch-aff-sec.toxique{left:0;width:72%;background-image:url('../assets/combat/choc-toxique.webp?v=3.0.6');background-position:12% 24%;
   clip-path:polygon(0 0,100% 0,77.8% 100%,0 100%)}
 .ch-aff-sec.toxique::after{background:radial-gradient(80% 90% at 70% 40%,rgba(98,216,78,.3),rgba(98,216,78,.12))}
-.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp?v=3.0.6');background-position:8% 0%;
+.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp?v=3.0.6');background-position:0% 0%;
   clip-path:polygon(36.4% 0,100% 0,100% 100%,0 100%)}
-.ch-aff-sec.deter::after{background:rgba(124,58,237,.36)}
+.ch-aff-sec.deter::after{background:rgba(124,58,237,.2)}
 .ch-aff-coupe{position:absolute;inset:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.7)) drop-shadow(0 0 14px rgba(179,166,255,.8))}
 .ch-aff-coupe i{position:absolute;inset:0;background:linear-gradient(180deg,#b7f29a,#fff 45%,#c4b5fd);
   clip-path:polygon(calc(72% - 2px) 0,calc(72% + 2px) 0,calc(56% + 2px) 100%,calc(56% - 2px) 100%)}
@@ -41,8 +41,10 @@
 .ch-tete .rf-tetenom h1 span{display:block;font-size:.52em;letter-spacing:.01em;margin-top:2px}
 .ch-tete .rf-tetechiffres{flex-direction:row;align-items:center;flex-wrap:wrap}
 @media (min-width:640px){.ch-tete{min-height:250px}.ch-tete .rf-tetehaut{max-width:50%}.ch-tete .rf-tetenom h1{font-size:40px}
-  /* Plus large que haute : sans agrandir, la tête de Brawks frôlerait la coupe. */
-  .ch-aff-sec.deter{background-size:130% auto;background-position:0 12%}}
+  /* Plus large que haute : l'illustration couvre la largeur, la tête de
+     Brawks en haut, entière (version 3.0.7 : l'illustration originale, plus
+     de ciel peint derrière lui). */
+  .ch-aff-sec.deter{background-size:cover;background-position:50% 0%}}
 .ch .rf-pastille{background:var(--brand)}
 .rf-solde{cursor:pointer}
 
@@ -57,7 +59,7 @@
   border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
   background:linear-gradient(180deg,rgba(18,17,25,0) 20%,rgba(18,17,25,.55) 55%,rgba(24,23,33,.97) 88%),
     radial-gradient(70% 80% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
-    url('../assets/combat/banniere-combats.webp?v=3.0.6') 50% 12%/cover no-repeat,var(--surface);
+    url('../assets/combat/banniere-combats.webp?v=3.0.6') 50% 4%/cover no-repeat,var(--surface);
   box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
 .ch-nv-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .ch-nv-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
@@ -73,8 +75,17 @@
 .ch-nv-art{position:relative;display:grid;place-items:center;height:96px;overflow:hidden;background:var(--surface-2)}
 .ch-nv-art>i{position:absolute;inset:0;background-repeat:no-repeat;background-size:240% auto;background-position:50% 24%}
 .ch-nv-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,27,37,0) 40%,var(--surface))}
-.ch-nv.tapis .ch-nv-art>i{background-size:cover;background-position:50% 30%}
-.ch-nv.raid .ch-nv-art>i{background-size:200% auto;background-position:50% 26%}
+/* Version 3.0.7 : les illustrations de cartes passent par illuCadre (le
+   visage au centre) ; les tapis, trois petits plateaux en éventail. */
+.ch-nv-tapis{position:relative;z-index:1;width:0;height:78px}
+.ch-nv-tapis i{position:absolute;left:-22px;top:4px;width:44px;height:78px;border-radius:6px;background:center/cover no-repeat;
+  transform-origin:50% 160%;transform:rotate(calc(var(--i) * 14deg));box-shadow:0 0 0 1px rgba(255,255,255,.22),0 6px 14px rgba(0,0,0,.5)}
+.ch-nv-boites{position:relative;z-index:1;display:flex;align-items:flex-end;gap:2px;height:84px}
+.ch-nv-boites img{height:82px;width:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55))}
+.ch-nv-boites img:first-child{transform:rotate(-6deg) translateX(6px)}
+.ch-nv-boites img:last-child{transform:rotate(6deg) translateX(-6px)}
+.ch-nv.sections .ch-nv-art{background:radial-gradient(60% 90% at 25% 40%,rgba(98,216,78,.25),transparent 70%),radial-gradient(60% 90% at 75% 40%,rgba(124,58,237,.3),transparent 70%),var(--surface-2)}
+.ch-nv.tapis .ch-nv-art{background:radial-gradient(70% 90% at 50% 30%,rgba(138,120,245,.22),transparent 70%),var(--surface-2)}
 .ch-nv-t{display:flex;flex-direction:column;gap:2px;padding:4px 12px 12px}
 .ch-nv-t b{font-size:14px;font-weight:800}
 .ch-nv-t small{font-size:11.5px;line-height:1.35;color:var(--muted)}
@@ -234,8 +245,33 @@
 @media (min-width:640px){.ch-sec-c{width:74px;left:-37px}}
 html.rm .ch-sec-c::before{animation:none}
 @media (prefers-reduced-motion:reduce){.ch-sec-c::before{animation:none}}
+/* La refonte visuelle (version 3.0.7) : trois tuiles de verre qui flottent
+   au-dessus du texte, sur la lumière lavande ; la palette en pastilles. */
+.ch-nv-refonte{display:grid;grid-template-columns:1fr auto;grid-template-areas:"art art" "txt go";align-items:end;row-gap:12px;min-height:0;
+  background:radial-gradient(60% 55% at 50% 22%,rgba(138,120,245,.42),transparent 72%),radial-gradient(40% 40% at 85% 10%,rgba(179,166,255,.25),transparent 70%),
+    linear-gradient(180deg,#1d1b2b,var(--surface) 70%)}
+.ch-nv-refonte .ch-nv-une-t{grid-area:txt}
+.ch-nv-refonte .cb-une-go{grid-area:go}
+.ch-ref-art{grid-area:art;position:relative;height:132px;perspective:700px}
+.ch-ref-tuile{position:absolute;left:50%;top:10px;width:30%;max-width:118px;height:112px;overflow:hidden;isolation:isolate;border-radius:16px;
+  translate:calc(-50% + var(--i) * 105%) calc(var(--a) * 8px);transform:rotateY(calc(var(--i) * -16deg)) rotate(calc(var(--i) * 3deg));
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),inset 0 1px 0 rgba(255,255,255,.3),0 14px 30px -8px rgba(0,0,0,.7),0 0 24px -6px var(--accent-glow);
+  animation:refFlotte 5s ease-in-out infinite;animation-delay:calc(var(--i) * .6s)}
+.ch-ref-tuile::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,17,25,0) 40%,rgba(18,17,25,.85))}
+.ch-ref-tuile b{position:absolute;left:10px;bottom:8px;z-index:1;font-family:var(--display);font-style:italic;font-weight:900;font-size:15px;color:#fff}
+@keyframes refFlotte{50%{margin-top:-5px}}
+.ch-ref-pal{position:absolute;left:50%;bottom:-4px;translate:-50% 0;display:flex;gap:4px;padding:5px 7px;border-radius:999px;background:rgba(18,17,25,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.ch-ref-pal i{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.ch-ref-pal i:nth-child(1){background:#121119}.ch-ref-pal i:nth-child(2){background:#24232f}
+.ch-ref-pal i:nth-child(3){background:#8a78f5}.ch-ref-pal i:nth-child(4){background:#c8bfff}
+@media (min-width:640px){
+  .ch-nv-refonte{grid-template-columns:1fr 330px auto;grid-template-areas:"txt art go";align-items:center;min-height:170px}
+  .ch-ref-art{height:150px}.ch-ref-tuile{width:31%;height:124px}}
+@media (prefers-reduced-motion:reduce){.ch-ref-tuile{animation:none}}
+html.rm .ch-ref-tuile{animation:none}
+
 /* Les cadres, dans la grille des nouveautés : ton avatar dans le cadre
-   Arène · Prisme. */
+   Secrète (version 3.0.7). */
 .ch-nv.cadres .ch-nv-art{background:radial-gradient(70% 90% at 50% 30%,rgba(138,120,245,.3),transparent 70%),var(--surface-2)}
 .ch-nv.cadres .ch-nv-art .ava{z-index:1;width:58px;height:58px}
 .ch-ep-pips i.ko{background:var(--danger);opacity:.7;box-shadow:none}
@@ -264,6 +300,10 @@ html.rm .ch-sec-c::before{animation:none}
 .ava.fx-niv20 .fx-deco{background-image:url('../assets/cadres/niv20.svg?v=3.0.6')}
 .ava.fx-niv30 .fx-deco{background-image:url('../assets/cadres/niv30.svg?v=3.0.6')}
 .ava.fx-niv50 .fx-deco{background-image:url('../assets/cadres/niv50.svg?v=3.0.6')}
+/* Version 3.0.7 : l'Arène (ses ailes) et la Foudre ont 12 unités de décor
+   en plus de chaque côté (tools/cadres-30.py, `marge`) : 152 au lieu de 128,
+   l'avatar toujours au rayon 50 — le décor déborde de 26 % au lieu de 14. */
+.ava.fx-niv10 .fx-deco,.ava.fx-niv20 .fx-deco,.ava.fx-niv30 .fx-deco,.ava.fx-niv50 .fx-deco,.ava.fx-foudre .fx-deco{inset:-26%}
 .ava.fx-toxique .fx-deco{background-image:url('../assets/cadres/toxique.svg?v=3.0.6')}
 .ava.fx-deter .fx-deco{background-image:url('../assets/cadres/deter.svg?v=3.0.6')}
 .ava.fx-secrete .fx-deco{background-image:url('../assets/cadres/secrete.svg?v=3.0.6')}
@@ -278,6 +318,12 @@ html.rm .ch-sec-c::before{animation:none}
 .nvboites i{position:relative;z-index:2;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-style:italic;font-weight:900;
   font-size:12px;color:#fff;background:#16151e;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
 /* Le second bandeau : les Secrètes, de dos, en éventail (.ch-sec-c). */
+/* La refonte visuelle (version 3.0.7) : trois tuiles de verre qui flottent,
+   comme sur l'affiche de l'événement (.ch-ref-*). */
+.nvhero.v3r{isolation:isolate;min-height:126px;background:radial-gradient(60% 110% at 20% 30%,rgba(138,120,245,.5),transparent 70%),linear-gradient(135deg,#221f36,#17151f)}
+.nvhero.v3r .ch-ref-art{flex:0 0 42%;align-self:stretch;height:auto;min-height:100px;perspective:500px}
+.nvhero.v3r .ch-ref-tuile{width:40%;height:76px;top:12px;border-radius:11px;translate:calc(-50% + var(--i) * 72%) calc(var(--a) * 6px)}
+.nvhero.v3r .nvkicker{background:linear-gradient(90deg,#c8bfff,#8a78f5);color:#17151f}
 .nvhero.v3s{isolation:isolate;min-height:118px;background:radial-gradient(50% 90% at 14% 30%,rgba(255,154,213,.32),transparent 70%),
   radial-gradient(50% 90% at 34% 70%,rgba(143,211,255,.3),transparent 70%),radial-gradient(60% 100% at 24% 50%,rgba(195,178,255,.34),transparent 75%),#16151e}
 .nvhero.v3s .nvkicker{background:linear-gradient(90deg,#ffd0ec,#c9d6ff);color:#1d1830}

@@ -11,6 +11,7 @@ Ecrit dans assets/cadres/ :
   toxique.svg deter.svg                     les deux Sections (Boutique)
   choc.svg                                  le Pass du Choc des Sections
   secrete.svg                               la premiere Secrete (quete)
+  foudre.svg                                The French Sorcerer (boutique du Choc)
 
 Meme gabarit que les autres cadres decores (css/reflets.css) : 128 x 128,
 l'avatar au centre sur un rayon de 50, le decor deborde autour. Chaque
@@ -85,10 +86,14 @@ def degrade(stops, t):
 class Cadre:
     """Un fichier : ses definitions (degrades, filtres), son style, son corps."""
 
-    def __init__(self, nom, p):
+    def __init__(self, nom, p, marge=0):
         self.nom, self.p = nom, p
         self.defs, self.style, self.corps = [], [STYLE_TW], []
         self.n = 0
+        # `marge` : de la place en plus autour du gabarit 128 x 128 (les
+        # ailes de l'Arene, la Foudre). La feuille de style agrandit le
+        # decor d'autant (inset, css/choc.css) : l'avatar reste au rayon 50.
+        self.marge = marge
 
     def id(self, base=''):
         self.n += 1
@@ -124,7 +129,8 @@ class Cadre:
         return s
 
     def ecrire(self):
-        svg = (f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs>{''.join(self.defs)}</defs>"
+        m = self.marge
+        svg = (f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='{-m} {-m} {128 + 2 * m} {128 + 2 * m}'><defs>{''.join(self.defs)}</defs>"
                f"<style>{''.join(self.style)}{RM}</style>{''.join(self.corps)}</svg>\n")
         with open(os.path.join(OUT, self.nom + '.svg'), 'w', encoding='utf-8') as fi:
             fi.write(svg)
@@ -360,132 +366,205 @@ def secrete():
 
 
 # ------------------------------------------------------------ l'Arene
+# Version 3.0.7 : les cadres d'Arene sont refaits a la maniere des bordures
+# de niveau des grands jeux en ligne. Un anneau de metal epais, biseaute et
+# grave ; une plaque en bas qui porte le niveau ; un cimier en haut et sa
+# gemme ; et, d'un palier a l'autre, des ailes qui grandissent :
+#   10 · bronze : l'anneau, la plaque, le cimier ;
+#   20 · argent : de petites ailes, trois plumes ;
+#   30 · or     : de grandes ailes, cinq plumes, deux gemmes sur les cotes ;
+#   50 · prisme : les grandes ailes deployees, une couronne sur le cimier,
+#                 une aura, le metal irise qui change de couleur.
 METAUX = {
-    #        clair      milieu     sombre     trait      reflet
-    'niv10': ('#ffe0c4', '#d08a4c', '#7a3f12', '#4a2306', '#ffd9b5'),
-    'niv20': ('#ffffff', '#c9d1de', '#6f7889', '#343a47', '#ffffff'),
-    'niv30': ('#fff6c8', '#f2c24a', '#9a620a', '#563300', '#fff3b0'),
-    'niv50': ('#ffe3f4', '#b38cff', '#3a7bd5', '#24104f', '#ffffff'),
+    #        clair      milieu     sombre     trait      reflet     gemme
+    'niv10': ('#ffd9b8', '#c47a3e', '#6b3410', '#3a1a05', '#ffe6cf', '#ff6a3d'),
+    'niv20': ('#ffffff', '#c3ccd9', '#5f6878', '#2c313b', '#ffffff', '#4ea8ff'),
+    'niv30': ('#fff4c2', '#f0bd3c', '#8a5606', '#4a2c00', '#fff8d6', '#ff3d7a'),
+    'niv50': ('#ffe9f8', '#c4a6ff', '#4a58d8', '#1d0f4a', '#ffffff', '#ffffff'),
 }
-# Ce que chaque palier ajoute : le laurier (feuilles par branche, arc
-# couvert), les epees, les gemmes, le prisme.
-PALIERS = {'niv10': (5, 64, False, False), 'niv20': (6, 82, True, False),
-           'niv30': (8, 104, True, True), 'niv50': (9, 120, True, True)}
+AILES = {'niv10': (0, 0), 'niv20': (4, .9), 'niv30': (6, 1.1), 'niv50': (8, 1.28)}
 
 
-def feuille(x, y, dx, dy, L, W, fill, trait):
-    """Une feuille de laurier : pointue aux deux bouts, une nervure."""
-    tx, ty = x + dx * L, y + dy * L
-    mx, my = x + dx * L * .5, y + dy * L * .5
-    nx, ny = -dy, dx
-    return (f"<path d='M{f(x)} {f(y)}Q{f(mx + nx * W)} {f(my + ny * W)} {f(tx)} {f(ty)}Q{f(mx - nx * W)} {f(my - ny * W)} {f(x)} {f(y)}Z' "
-            f"fill='{fill}' stroke='{trait}' stroke-width='.5' stroke-linejoin='round'/>"
-            f"<path d='M{f(x + dx * L * .12)} {f(y + dy * L * .12)}L{f(x + dx * L * .78)} {f(y + dy * L * .78)}' stroke='{trait}' stroke-width='.35' opacity='.6'/>")
+def plume(x, y, ang, L, W, fill, trait, veine):
+    """Une plume large, en goutte : sa base en (x, y), sa pointe a L dans la
+    direction `ang` ; un bord plus bombe que l'autre, une nervure."""
+    d = (f"M0 0C{f(L * .22)} {f(-W)} {f(L * .72)} {f(-W * .95)} {f(L)} 0"
+         f"C{f(L * .78)} {f(W * .5)} {f(L * .3)} {f(W * .62)} 0 0Z")
+    return (f"<g transform='translate({f(x)} {f(y)}) rotate({f(ang)})'>"
+            f"<path d='{d}' fill='{fill}' stroke='{trait}' stroke-width='.6' stroke-linejoin='round'/>"
+            f"<path d='M{f(L * .06)} 0Q{f(L * .5)} {f(-W * .18)} {f(L * .92)} 0' fill='none' stroke='{veine}' stroke-width='.55' opacity='.8'/></g>")
 
 
-def laurier(n, arc, fill, trait):
-    """Deux branches qui partent du bas et remontent le long de l'anneau,
-    les feuilles de plus en plus petites vers la pointe."""
+def aile(n, cote, echelle, fill, fill2, trait, veine):
+    """Une aile qui part d'un seul point, en haut sur le cote de l'anneau, et
+    se deploie en eventail serre vers l'exterieur : les grandes plumes du
+    haut aux petites du bas, qui se recouvrent ; une rangee de petites
+    plumes par-dessus (des le palier 30). `cote` : -1 a gauche, 1 a droite."""
+    rx, ry = pt(52.5, -90 + cote * 50)
     s = ''
-    R = 58.6
-    for cote in (1, -1):
-        a0 = 90 + cote * 9
-        a1 = a0 + cote * arc
-        p0, p1 = pt(R, a0), pt(R, a1)
-        s += (f"<path d='M{f(p0[0])} {f(p0[1])}A{R} {R} 0 0 {1 if cote > 0 else 0} {f(p1[0])} {f(p1[1])}' fill='none' "
-              f"stroke='{trait}' stroke-width='1.3' stroke-linecap='round'/>")
-        for k in range(n):
-            t = (k + .5) / n
-            a = a0 + cote * arc * t
-            ta = math.radians(a + cote * 90)
-            tdx, tdy = math.cos(ta), math.sin(ta)
-            ox, oy = math.cos(math.radians(a)), math.sin(math.radians(a))
-            L = 8.2 * (1 - .4 * t)
-            W = L * .34
-            for side in (1, -1):
-                dx, dy = tdx + side * .62 * ox, tdy + side * .62 * oy
-                m = math.hypot(dx, dy)
-                x, y = pt(R + side * .6, a)
-                s += feuille(x, y, dx / m, dy / m, L, W, fill, trait)
-        # La pointe de la branche : une feuille dans l'axe.
-        ta = math.radians(a1 + cote * 90)
-        s += feuille(p1[0], p1[1], math.cos(ta), math.sin(ta), 6, 2, fill, trait)
+    rangs = [(i / max(1, n - 1)) for i in range(n)]
+    # Du bas (horizontale, courte) vers le haut (dressee, longue) : celles du
+    # haut recouvrent celles du bas.
+    for t in reversed(rangs):
+        ang = -90 + cote * (22 + t * 88)
+        L = (31 - t * 14) * echelle
+        W = (6.8 - t * 1.6) * echelle
+        s += plume(rx, ry, ang, L, -W * cote, fill, trait, veine)
+    if n >= 5:
+        for t in reversed(rangs[:-1]):
+            ang = -90 + cote * (30 + t * 76)
+            s += plume(rx, ry, ang, (16 - t * 6) * echelle, -(5 - t) * echelle * cote, fill2, trait, veine)
     return s
 
 
-def epee(x0, y0, x1, y1, lame, garde, trait):
-    """Une epee, du pommeau (x0, y0) a la pointe (x1, y1)."""
-    dx, dy = x1 - x0, y1 - y0
-    L = math.hypot(dx, dy)
-    ux, uy = dx / L, dy / L
-    nx, ny = -uy, ux
-    gx, gy = x0 + ux * 7.5, y0 + uy * 7.5        # la garde
-    w = 1.7
-    pointe = (x1, y1)
-    epaule = (x1 - ux * 4, y1 - uy * 4)
-    lame_pts = [(gx + nx * w, gy + ny * w), (epaule[0] + nx * w, epaule[1] + ny * w), pointe,
-                (epaule[0] - nx * w, epaule[1] - ny * w), (gx - nx * w, gy - ny * w)]
-    return (f"<polygon points='{P(*lame_pts)}' fill='{lame}' stroke='{trait}' stroke-width='.55' stroke-linejoin='round'/>"
-            f"<line x1='{f(gx + ux)}' y1='{f(gy + uy)}' x2='{f(epaule[0])}' y2='{f(epaule[1])}' stroke='#fff' stroke-width='.6' opacity='.75'/>"
-            f"<line x1='{f(x0)}' y1='{f(y0)}' x2='{f(gx)}' y2='{f(gy)}' stroke='{trait}' stroke-width='2.4' stroke-linecap='round'/>"
-            f"<line x1='{f(gx - nx * 5)}' y1='{f(gy - ny * 5)}' x2='{f(gx + nx * 5)}' y2='{f(gy + ny * 5)}' stroke='{garde}' stroke-width='2.4' stroke-linecap='round'/>"
-            f"<line x1='{f(gx - nx * 5)}' y1='{f(gy - ny * 5)}' x2='{f(gx + nx * 5)}' y2='{f(gy + ny * 5)}' stroke='{trait}' stroke-width='.4' stroke-linecap='round' opacity='.6'/>"
-            f"<circle cx='{f(x0)}' cy='{f(y0)}' r='2' fill='{garde}' stroke='{trait}' stroke-width='.5'/>")
-
-
-def gemme(x, y, s, fill, trait):
-    return (f"<path d='M{f(x)} {f(y - s)}L{f(x + s * .8)} {f(y)}L{f(x)} {f(y + s)}L{f(x - s * .8)} {f(y)}Z' fill='{fill}' stroke='{trait}' stroke-width='.5'/>"
-            f"<path d='M{f(x)} {f(y - s)}L{f(x + s * .8)} {f(y)}L{f(x)} {f(y)}Z' fill='#fff' opacity='.45'/>")
-
-
 def arene(cle, n):
-    clair, mid, sombre, trait, reflet = METAUX[cle]
-    feuilles, arc, epees, gemmes = PALIERS[cle]
+    clair, mid, sombre, trait, reflet, gem = METAUX[cle]
+    ailes, echelle = AILES[cle]
     prisme = cle == 'niv50'
-    F = Cadre(cle, cle)
+    F = Cadre(cle, cle, marge=12)
     p = cle
-    F.defs.append(f"<linearGradient id='{p}-m' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='{clair}'/>"
-                  f"<stop offset='.45' stop-color='{mid}'/><stop offset='1' stop-color='{sombre}'/></linearGradient>"
-                  f"<linearGradient id='{p}-b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='{clair}'/><stop offset='.55' stop-color='{mid}'/>"
-                  f"<stop offset='1' stop-color='{sombre}'/></linearGradient>"
-                  f"<linearGradient id='{p}-g' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#fff' stop-opacity='0'/>"
-                  f"<stop offset='.5' stop-color='#fff' stop-opacity='.9'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></linearGradient>"
-                  f"<clipPath id='{p}-c'><path d='M52.5 1.5h23v10.5c0 7-5 11-11.5 13.5-6.5-2.5-11.5-6.5-11.5-13.5Z'/></clipPath>"
-                  f"<mask id='{p}-r'><path d='{ring_path(50, 55)}' fill='#fff' fill-rule='evenodd'/></mask>"
-                  f"<radialGradient id='{p}-h'><stop offset='0' stop-color='{reflet}' stop-opacity='.7'/><stop offset='1' stop-color='{reflet}' stop-opacity='0'/></radialGradient>")
-    F.style.append(".lu{animation:lu 4s ease-in-out infinite}@keyframes lu{0%,55%{transform:translateX(-32px)}100%{transform:translateX(32px)}}"
-                   ".rt{transform-origin:64px 64px;animation:rt 7s linear infinite}@keyframes rt{to{transform:rotate(360deg)}}"
-                   + (".pr{animation:pr 8s linear infinite}@keyframes pr{to{filter:hue-rotate(360deg)}}" if prisme else ''))
+    F.defs.append(
+        # Le metal : une lumiere en haut a gauche, l'ombre en bas a droite.
+        f"<linearGradient id='{p}-m' x1='.15' y1='0' x2='.85' y2='1'><stop offset='0' stop-color='{clair}'/>"
+        f"<stop offset='.38' stop-color='{mid}'/><stop offset='.62' stop-color='{sombre}'/><stop offset='.82' stop-color='{mid}'/>"
+        f"<stop offset='1' stop-color='{clair}'/></linearGradient>"
+        f"<linearGradient id='{p}-v' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='{clair}'/><stop offset='.5' stop-color='{mid}'/>"
+        f"<stop offset='1' stop-color='{sombre}'/></linearGradient>"
+        f"<linearGradient id='{p}-w' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='{sombre}'/><stop offset='.45' stop-color='{mid}'/>"
+        f"<stop offset='1' stop-color='{clair}'/></linearGradient>"
+        f"<linearGradient id='{p}-pl' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='{mid}'/><stop offset='1' stop-color='{sombre}'/></linearGradient>"
+        f"<linearGradient id='{p}-s' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#fff' stop-opacity='0'/>"
+        f"<stop offset='.5' stop-color='#fff' stop-opacity='.95'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></linearGradient>"
+        f"<radialGradient id='{p}-g' cx='.35' cy='.3' r='.8'><stop offset='0' stop-color='#fff'/><stop offset='.35' stop-color='{gem}'/>"
+        f"<stop offset='1' stop-color='{melange(gem, '#000000', .55)}'/></radialGradient>"
+        f"<mask id='{p}-r'><path d='{ring_path(50, 57)}' fill='#fff' fill-rule='evenodd'/></mask>")
+    if prisme:
+        F.defs.append(f"<linearGradient id='{p}-i' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ff9ad5'/><stop offset='.25' stop-color='#ffe08a'/>"
+                      "<stop offset='.5' stop-color='#8ff0c8'/><stop offset='.75' stop-color='#8fd3ff'/><stop offset='1' stop-color='#c3b2ff'/>"
+                      "<animateTransform attributeName='gradientTransform' type='rotate' from='0 .5 .5' to='360 .5 .5' dur='8s' repeatCount='indefinite'/></linearGradient>")
+    F.style.append(".rt{transform-origin:64px 64px;animation:rt 6s linear infinite}@keyframes rt{to{transform:rotate(360deg)}}"
+                   ".gm{transform-box:fill-box;transform-origin:center;animation:gm 2.8s ease-in-out infinite alternate}"
+                   "@keyframes gm{from{opacity:.55}to{opacity:1}}"
+                   + (".au{transform-origin:64px 64px;animation:au 3.2s ease-in-out infinite alternate}@keyframes au{from{opacity:.45;transform:scale(.97)}to{opacity:.9;transform:scale(1.03)}}" if prisme else ''))
+    metal = f'url(#{p}-i)' if prisme else f'url(#{p}-m)'
     c = []
     if prisme:
-        fl = F.flou(2.6)
-        c.append(f"<circle cx='64' cy='64' r='55' fill='none' stroke='{mid}' stroke-width='7' opacity='.55' filter='url(#{fl})'/>")
-    c.append(f"<g class='{'pr' if prisme else ''}'>")
-    # L'anneau de metal, biseaute, et un reflet qui en fait le tour.
-    c.append(f"<path d='{ring_path(50, 55)}' fill='url(#{p}-m)' fill-rule='evenodd'/>"
-             f"<circle cx='64' cy='64' r='55' fill='none' stroke='{trait}' stroke-width='.8'/>"
-             f"<circle cx='64' cy='64' r='50.6' fill='none' stroke='{reflet}' stroke-width='.7' opacity='.8'/>"
-             f"<circle cx='64' cy='64' r='52.8' fill='none' stroke='{trait}' stroke-width='.35' opacity='.45'/>"
-             f"<g mask='url(#{p}-r)'><g class='rt'><ellipse cx='64' cy='9' rx='13' ry='5' fill='url(#{p}-g)'/></g></g>")
-    c.append(laurier(feuilles, arc, f'url(#{p}-b)', trait))
-    if gemmes:
-        for a in (180, 0, 135, 45):
-            x, y = pt(52.5, a)
-            c.append(gemme(x, y, 3.2 if a in (0, 180) else 2.5, 'url(#%s-m)' % p if prisme else '#8a78f5', trait))
-    if epees:
-        c.append(epee(78.5, 16.5, 31, 3.5, f'url(#{p}-m)', f'url(#{p}-b)', trait)
-                 + epee(49.5, 16.5, 97, 3.5, f'url(#{p}-m)', f'url(#{p}-b)', trait))
-    # L'ecusson, son chiffre, et un eclat qui passe dessus.
-    c.append(f"<circle cx='64' cy='11' r='15' fill='url(#{p}-h)'/>"
-             f"<path d='M52.5 1.5h23v10.5c0 7-5 11-11.5 13.5-6.5-2.5-11.5-6.5-11.5-13.5Z' fill='url(#{p}-m)' stroke='{trait}' stroke-width='1'/>"
-             f"<path d='M55 4h18v8c0 5.4-3.8 8.6-9 10.7-5.2-2.1-9-5.3-9-10.7Z' fill='none' stroke='{reflet}' stroke-width='.6' opacity='.85'/>"
-             f"<text x='64' y='16.4' text-anchor='middle' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='11.5' "
-             f"fill='{trait}' stroke='{reflet}' stroke-width='.3'>{n}</text>"
-             f"<g clip-path='url(#{p}-c)'><rect class='lu' x='45' y='0' width='12' height='30' fill='url(#{p}-g)' transform='skewX(-18)'/></g>")
-    c.append("</g>")
+        fl = F.flou(3.4)
+        c.append(f"<g class='au'><circle cx='64' cy='64' r='56' fill='none' stroke='url(#{p}-i)' stroke-width='9' opacity='.7' filter='url(#{fl})'/></g>")
+    # Les ailes, derriere l'anneau.
+    if ailes:
+        c.append(aile(ailes, -1, echelle, f'url(#{p}-w)', f'url(#{p}-v)', trait, reflet) + aile(ailes, 1, echelle, f'url(#{p}-w)', f'url(#{p}-v)', trait, reflet))
+    # L'anneau : la bande de metal, son biseau (un filet clair dedans, un
+    # trait sombre dehors), ses gravures, et un eclat qui en fait le tour.
+    gravures = ''.join(
+        f"<line x1='{f(pt(50.6, a)[0])}' y1='{f(pt(50.6, a)[1])}' x2='{f(pt(56.4, a)[0])}' y2='{f(pt(56.4, a)[1])}' stroke='{trait}' stroke-width='.45' opacity='.55'/>"
+        for a in range(0, 360, 15) if a not in (90, 270))
+    c.append(f"<path d='{ring_path(49.6, 57.4)}' fill='{trait}' fill-rule='evenodd'/>"
+             f"<path d='{ring_path(50.2, 56.8)}' fill='{metal}' fill-rule='evenodd'/>"
+             f"<circle cx='64' cy='64' r='53.5' fill='none' stroke='{trait}' stroke-width='.5' opacity='.5'/>"
+             f"{gravures}"
+             f"<circle cx='64' cy='64' r='56.3' fill='none' stroke='{reflet}' stroke-width='.55' opacity='.7'/>"
+             f"<circle cx='64' cy='64' r='50.7' fill='none' stroke='{reflet}' stroke-width='.5' opacity='.55'/>"
+             f"<g mask='url(#{p}-r)'><g class='rt'><ellipse cx='64' cy='7.5' rx='16' ry='5' fill='url(#{p}-s)'/></g></g>")
+    # Les rivets (10, 20) ou les gemmes (30, 50), a trois et neuf heures.
+    for a in (0, 180):
+        x, y = pt(53.5, a)
+        if ailes >= 5:
+            c.append(f"<path d='M{f(x)} {f(y - 4.4)}L{f(x + 3.2)} {f(y)}L{f(x)} {f(y + 4.4)}L{f(x - 3.2)} {f(y)}Z' fill='{trait}'/>"
+                     f"<path class='gm' d='M{f(x)} {f(y - 3.4)}L{f(x + 2.4)} {f(y)}L{f(x)} {f(y + 3.4)}L{f(x - 2.4)} {f(y)}Z' fill='url(#{p}-g)'/>")
+        else:
+            c.append(f"<circle cx='{f(x)}' cy='{f(y)}' r='2.2' fill='{trait}'/><circle cx='{f(x)}' cy='{f(y)}' r='1.5' fill='url(#{p}-v)'/>"
+                     f"<circle cx='{f(x - .5)}' cy='{f(y - .5)}' r='.5' fill='#fff' opacity='.8'/>")
+    # Le cimier : une pointe de metal, sa gemme ; la couronne au palier 50.
+    cimier = "M64 1.5 72.5 9 70 17.5 64 21.5 58 17.5 55.5 9Z"
+    c.append(f"<path d='{cimier}' fill='{trait}' transform='translate(0 .8)'/>"
+             f"<path d='{cimier}' fill='{metal}' stroke='{trait}' stroke-width='.8' stroke-linejoin='round'/>"
+             f"<path d='M64 4.5 69.6 9.6 67.8 15.8 64 18.6 60.2 15.8 58.4 9.6Z' fill='none' stroke='{reflet}' stroke-width='.5' opacity='.75'/>"
+             f"<circle cx='64' cy='11.6' r='4.3' fill='{trait}'/><circle class='gm' cx='64' cy='11.6' r='3.4' fill='url(#{p}-g)'/>"
+             f"<circle cx='62.8' cy='10.4' r='1' fill='#fff' opacity='.9'/>")
     if prisme:
-        for r, a, s, d, b in ((61, -38, 3.6, 2.4, 0), (61, -142, 3, 2.8, .9), (60, 30, 2.4, 2.2, 1.5), (60, 150, 2.4, 2.6, .5)):
-            c.append(twinkle(star4(*pt(r, a), s, '#fff'), d, b))
+        couronne = "M54 2.5 57.5 -3.5 60.6 1 64 -5.5 67.4 1 70.5 -3.5 74 2.5Z"
+        c.append(f"<g transform='translate(0 5)'><path d='{couronne}' fill='url(#{p}-i)' stroke='{trait}' stroke-width='.7' stroke-linejoin='round'/></g>")
+    # La plaque du niveau, en bas, et ses deux rubans.
+    for cote in (-1, 1):
+        x0 = 64 + cote * 17
+        c.append(f"<path d='M{f(x0)} 110.5 L{f(x0 + cote * 15)} 113 L{f(x0 + cote * 10.5)} 118.5 L{f(x0 + cote * 15)} 124 L{f(x0)} 122.5Z' "
+                 f"fill='url(#{p}-pl)' stroke='{trait}' stroke-width='.7' stroke-linejoin='round'/>"
+                 f"<path d='M{f(x0)} 110.5 L{f(x0 + cote * 2.5)} 113 L{f(x0)} 116Z' fill='{trait}' opacity='.6'/>")
+    c.append(f"<path d='M45 107.5h38l3.6 7.5-3.6 7.5H45l-3.6-7.5Z' fill='{trait}'/>"
+             f"<path d='M45.7 108.6h36.6l3 6.4-3 6.4H45.7l-3-6.4Z' fill='{metal}'/>"
+             f"<path d='M47.4 110.4h33.2l2.2 4.6-2.2 4.6H47.4l-2.2-4.6Z' fill='url(#{p}-pl)'/>"
+             f"<text x='64' y='118.5' text-anchor='middle' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='9.6' "
+             f"letter-spacing='.2' fill='#fff' stroke='{trait}' stroke-width='.5' paint-order='stroke'>NIV {n}</text>")
+    if prisme:
+        for r, a, sz, d, b in ((62, -40, 3.4, 2.4, 0), (62, -140, 3, 2.8, .9), (61, 32, 2.4, 2.2, 1.5), (61, 148, 2.4, 2.6, .5), (60, 62, 2, 2.3, 1.1)):
+            c.append(twinkle(star4(*pt(r, a), sz, '#fff'), d, b))
+    F.corps = c
+    F.ecrire()
+
+
+# ------------------------------------------------------------ la Foudre
+def foudre():
+    """Le cadre de The French Sorcerer (boutique du Choc, version 3.0.7) :
+    un anneau d'orage violet, grave de runes, que des eclairs parcourent en
+    crepitant ; une brume d'orage autour ; en haut, l'oeil du Sorcier, qui
+    brille comme ses yeux sur sa carte ; des arcs qui jaillissent vers
+    l'exterieur, et un eclair qui frappe de temps en temps."""
+    F = Cadre('foudre', 'fo', marge=12)
+    ORAGE = [(0, '#1b0846'), (.4, '#5b2bd6'), (.75, '#a98bff'), (1, '#e9f4ff')]
+    F.defs.append("<linearGradient id='fo-m' x1='.1' y1='0' x2='.9' y2='1'><stop offset='0' stop-color='#d9c8ff'/><stop offset='.35' stop-color='#6d3ff0'/>"
+                  "<stop offset='.65' stop-color='#22105c'/><stop offset='1' stop-color='#8f6dff'/></linearGradient>"
+                  "<radialGradient id='fo-o' cx='.5' cy='.5' r='.5'><stop offset='0' stop-color='#ffffff'/><stop offset='.3' stop-color='#d7f0ff'/>"
+                  "<stop offset='.6' stop-color='#8fb8ff' stop-opacity='.6'/><stop offset='1' stop-color='#6d3ff0' stop-opacity='0'/></radialGradient>"
+                  f"<mask id='fo-r'><path d='{ring_path(50, 56.5)}' fill='#fff' fill-rule='evenodd'/></mask>"
+                  "<linearGradient id='fo-s' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#e9f4ff' stop-opacity='0'/>"
+                  "<stop offset='.5' stop-color='#e9f4ff'/><stop offset='1' stop-color='#e9f4ff' stop-opacity='0'/></linearGradient>")
+    F.style.append(".ec{animation:ec 2.2s steps(1) infinite}.ec2{animation-delay:-.7s}.ec3{animation-delay:-1.5s}"
+                   "@keyframes ec{0%,58%{opacity:1}60%{opacity:.15}64%{opacity:1}68%{opacity:.3}72%,100%{opacity:1}}"
+                   ".rt{transform-origin:64px 64px;animation:rt 3.4s linear infinite}@keyframes rt{to{transform:rotate(360deg)}}"
+                   ".rn{transform-origin:64px 64px;animation:rn 40s linear infinite}@keyframes rn{to{transform:rotate(-360deg)}}"
+                   ".oe{transform-box:fill-box;transform-origin:center;animation:oe 2.4s ease-in-out infinite alternate}"
+                   "@keyframes oe{from{opacity:.7;transform:scale(.88)}to{opacity:1;transform:scale(1.1)}}"
+                   ".fr{animation:fr 5.5s steps(1) infinite}@keyframes fr{0%,88%{opacity:0}89%{opacity:1}91%{opacity:.2}93%{opacity:1}96%,100%{opacity:0}}")
+    fl2 = F.flou(3)
+    fl4 = F.flou(4.5)
+    c = [f"<circle cx='64' cy='64' r='55' fill='none' stroke='#7c4dff' stroke-width='10' opacity='.55' filter='url(#{fl4})'/>"]
+    # La brume d'orage, des deux cotes, qui monte vers l'oeil.
+    for a0, a1, ph in ((150, 262, 0), (30, -82, 1.7)):
+        c.append(f"<g filter='url(#{fl2})' opacity='.8'>{F.trainee(55, a0, a1, 14, 1, 12, 0, .9, ORAGE, (1.6, 1.3, ph))}</g>"
+                 + F.trainee(57.5, a0 + (a1 - a0) * .3, a1, 12, .1, 2.2, 0, .85, ORAGE, (1.4, 1.8, ph + 1)))
+    # L'anneau : metal d'orage, biseau, runes gravees qui tournent lentement.
+    runes = ''
+    rnd = random.Random(5)
+    for k in range(24):
+        a = k * 15 + 7.5
+        x, y = pt(53.4, a)
+        g = rnd.choice(['M-1.2 -1.4V1.4M-1.2 0H1.2', 'M-1.2 1.4L0 -1.4L1.2 1.4', 'M-1.2 -1.4L1.2 1.4M1.2 -1.4L-1.2 1.4', 'M0 -1.4V1.4M-1.2 -.6L1.2 -.6', 'M-1.2 -1.4H1.2L-1.2 1.4H1.2'])
+        runes += f"<path d='{g}' transform='translate({f(x)} {f(y)}) rotate({f(a + 90)})' fill='none' stroke='#cfe4ff' stroke-width='.45' stroke-linecap='round' opacity='.75'/>"
+    c.append(f"<path d='{ring_path(49.6, 57)}' fill='#0e0526' fill-rule='evenodd'/>"
+             f"<path d='{ring_path(50.2, 56.4)}' fill='url(#fo-m)' fill-rule='evenodd'/>"
+             f"<g class='rn'>{runes}</g>"
+             "<circle cx='64' cy='64' r='56' fill='none' stroke='#e9f4ff' stroke-width='.5' opacity='.7'/>"
+             "<circle cx='64' cy='64' r='50.6' fill='none' stroke='#b9a4ff' stroke-width='.5' opacity='.6'/>"
+             "<g mask='url(#fo-r)'><g class='rt'><ellipse cx='64' cy='8' rx='14' ry='4.5' fill='url(#fo-s)'/></g></g>")
+    # Des eclairs qui courent le long de l'anneau.
+    c.append(crepite(F, 53.3, 196, 238, '#b79bff', pas=6, ecart=2, graine=31, large=2.6)
+             + crepite(F, 53.3, -58, -16, '#b79bff', pas=6, ecart=2, graine=37, large=2.6, classe='ec ec2')
+             + crepite(F, 53.3, 70, 112, '#8fb8ff', pas=6, ecart=1.8, graine=41, large=2.2, classe='ec ec3'))
+    # Des arcs qui jaillissent vers l'exterieur.
+    for (a0, a1), g, k in (((214, 186), 51, 'ec'), ((-34, -6), 53, 'ec ec2'), ((156, 128), 57, 'ec ec3'), ((24, 52), 59, 'ec'), ((100, 80), 61, 'ec ec2')):
+        c.append(crepite(F, 61.5, a0, a1, '#c9b6ff', pas=4, ecart=3, graine=g, large=2.4, classe=k))
+    # L'eclair qui frappe : du haut de l'oeil, vers l'exterieur, de temps en temps.
+    c.append(f"<g class='fr'><path d='M64 4 59 -2 63 -1.5 57 -9' fill='none' stroke='#e9f4ff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' filter='url(#{F.flou(.8)})'/>"
+             "<path d='M64 4 59 -2 63 -1.5 57 -9' fill='none' stroke='#fff' stroke-width='.6' stroke-linecap='round' stroke-linejoin='round'/></g>")
+    # L'oeil du Sorcier : un orbe de lumiere sur un losange sombre.
+    c.append("<g class='oe'><circle cx='64' cy='8.5' r='15' fill='url(#fo-o)' opacity='.75'/></g>"
+             "<path d='M64 -1.5 77 8.5 64 18.5 51 8.5Z' fill='#0e0526' stroke='#d7c6ff' stroke-width='1' stroke-linejoin='round'/>"
+             "<path d='M64 1.8 72.6 8.5 64 15.2 55.4 8.5Z' fill='#2a1470'/>"
+             "<g class='oe'><circle cx='64' cy='8.5' r='9' fill='url(#fo-o)'/></g>"
+             "<ellipse cx='64' cy='8.5' rx='5.6' ry='2' fill='#fff'/><circle cx='64' cy='8.5' r='1.3' fill='#8fb8ff'/>")
+    for r, a, sz, d, b in ((61, 128, 1.8, 2.2, .3), (61, 52, 1.6, 2.6, 1.2), (62, 168, 1.4, 2.4, .8), (62, 12, 1.4, 2, 1.6)):
+        c.append(twinkle(star4(*pt(r, a), sz, '#e9f4ff'), d, b))
     F.corps = c
     F.ecrire()
 
@@ -493,6 +572,7 @@ def arene(cle, n):
 if __name__ == '__main__':
     for cle, n in (('niv10', 10), ('niv20', 20), ('niv30', 30), ('niv50', 50)):
         arene(cle, n)
+    foudre()
     toxique()
     deter()
     choc()

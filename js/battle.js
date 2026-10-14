@@ -23,6 +23,8 @@ let cbVue = 'accueil';
    du prochain combat). */
 let cbChoix = { infini: 3, acte: null };
 let cbGuide = null;
+/* L'onglet du Guide : les règles (par défaut) ou le glossaire. */
+let cbGuideOnglet = 'regles';
 const CB_VUES = ['accueil', 'solo', 'campagne', 'arcade', 'raid', 'versus', 'decks', 'missions', 'guides', 'atelier'];
 /* Les anciennes adresses mènent encore quelque part. */
 const CB_ALIAS = { infini: 'arcade', defis: 'versus' };
@@ -87,7 +89,7 @@ function vCombats() {
     accueil: vCbAccueil, solo: vCbSolo, campagne: vCbCampagne, arcade: vCbArcade, raid: vCbRaid,
     versus: vCbDefis, decks: vCbDecks, missions: vCbMissions, guides: vCbGuides
   }[cbVue] || vCbAccueil;
-  return `<div class="cb sec-${e.section}" style="--sc:${SECTIONS[e.section].c};--sc2:${SECTIONS[e.section].c2}">${corps(e)}</div>`;
+  return `<div class="cb sec-${e.section} cb-v-${cbVue}" style="--sc:${SECTIONS[e.section].c};--sc2:${SECTIONS[e.section].c2}">${corps(e)}</div>`;
 }
 
 /* L'en-tête d'une page : le retour (vers l'accueil, ou vers Solo pour la
@@ -218,6 +220,10 @@ function vCbAccueil(e) {
   const petit = (v, ico, titre, sous, n) => `<button class="cb-petit" data-cb="vue" data-v="${v}">
       <span class="cb-petit-ico">${CB_ICO[ico]}</span><b>${titre}</b><small>${sous}</small>${n ? `<i class="rf-pastille">${n}</i>` : ''}
     </button>`;
+  /* Version 3.0.7 : tant que le tutoriel n'est pas fait, il a sa propre
+     tuile, sous le Raid — une pastille « Nouveau » sur la petite tuile du
+     Guide ne suffisait pas à le faire voir. */
+  const tuto = typeof tutoFait === 'function' && !tutoFait();
   return `<section class="cb-hero">
       <span class="cb-hero-art" aria-hidden="true"></span>
       <div class="cb-hero-haut"><span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(SECTIONS[e.section].court)}</b></span>${vCbNivAnneau(e)}</div>
@@ -226,6 +232,11 @@ function vCbAccueil(e) {
     ${enCours ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat en cours</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Reprends-le où tu l'as laissé.</em></span>
       <span class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Reprendre</button><button class="btn tiny ghost" data-cb="oublier">Abandonner</button></span></section>`
       : vRaidAffiche()}
+    ${tuto ? `<button class="cb-tuto" data-cb="tuto">
+      <span class="cb-tuto-art"${cbArt('c012')} aria-hidden="true"></span>
+      <span class="cb-tuto-t"><small>Nouveau · le tutoriel</small><b>Apprends à combattre</b><em>Une partie guidée · 200 Éclats la première fois</em></span>
+      <span class="cb-une-go">Jouer</span>
+    </button>` : ''}
     <div class="cb-portes">
       <button class="cb-porte solo" data-cb="vue" data-v="solo">
         <span class="cb-porte-art"${cbArt(COUV.solo)}></span>
@@ -242,7 +253,7 @@ function vCbAccueil(e) {
     <div class="cb-petits">
       ${petit('decks', 'decks', 'Decks', deck ? h(deck.nom) : 'Aucun deck valide')}
       ${petit('missions', 'missions', 'Missions', missions ? `${missions} à récupérer` : 'Quêtes de combat', missions)}
-      ${typeof tutoFait === 'function' && !tutoFait() ? petit('guides', 'guide', 'Guide', 'Le tutoriel t\'attend', 'Nouveau') : petit('guides', 'guide', 'Guide', 'Tutoriel et glossaire')}
+      ${petit('guides', 'guide', 'Guide', 'Règles et glossaire')}
     </div>`;
 }
 
@@ -332,7 +343,9 @@ function vCbCampagne(e) {
   const ouvert = cbLabo ? () => true : f => f.n === 0 || fait.has(combats[f.n - 1].id) || fait.has(f.id);
   const moi = SECTIONS[section], adverse = SECTIONS[autreSection(section)];
   const prochain = combats.find(f => !fait.has(f.id));
-  const ia = cbChoix.acte != null ? cbChoix.acte : prochain ? ACTES.indexOf(prochain.acte) : ACTES.length - 1;
+  const iaDefaut = prochain ? ACTES.indexOf(prochain.acte) : ACTES.length - 1;
+  const acteOuvert = i => { const l = combats.filter(f => f.acte.id === ACTES[i].id); return !!l.length && ouvert(l[0]); };
+  const ia = cbChoix.acte != null && acteOuvert(cbChoix.acte) ? cbChoix.acte : iaDefaut;
   const a = ACTES[ia];
   const fs = combats.filter(f => f.acte.id === a.id);
   const boss = fs.find(f => f.rang) || fs[fs.length - 1];
@@ -343,7 +356,9 @@ function vCbCampagne(e) {
     const l = combats.filter(f => f.acte.id === x.id);
     const n = l.filter(f => fait.has(f.id)).length;
     const ferme = !ouvert(l[0]);
-    return `<button class="cb-acte-ong${i === ia ? ' on' : ''}${n === l.length ? ' fini' : ''}${ferme ? ' ferme' : ''}" data-cb="acte" data-v="${i}">
+    /* Version 3.0.7 : un acte verrouillé ne s'ouvre pas du tout — son
+       onglet est éteint, on ne peut pas aller voir ce qu'il cache. */
+    return `<button class="cb-acte-ong${i === ia ? ' on' : ''}${n === l.length ? ' fini' : ''}${ferme ? ' ferme' : ''}"${ferme ? ' disabled aria-disabled="true" title="Finis l\'acte précédent pour l\'ouvrir"' : ` data-cb="acte" data-v="${i}"`}>
       <small>Acte ${i + 1}</small><i>${n === l.length ? NAVICO.check : ferme ? NAVICO.lock : `<b class="tnum">${n}/${l.length}</b>`}</i></button>`;
   }).join('');
   const promo = byId[adverse.promo] || {};
@@ -697,20 +712,29 @@ function vCbGuides() {
   const lettres = [...new Set(mots.map(x => noacc(x.mot)[0].toUpperCase()))];
   const glossaire = lettres.map(L => `<section class="gd-lettre" data-lettre="${L}"><h3>${L}</h3><dl>${mots.filter(x => noacc(x.mot)[0].toUpperCase() === L).map(x =>
     `<div class="gd-mot" data-mot="${h(noacc(x.mot + ' ' + x.def))}"><dt>${h(x.mot)}</dt><dd>${h(x.def)}${x.voir ? ` <button class="gd-voir" data-cb="guide" data-v="${x.voir}">${h((GUIDES.find(g => g.id === x.voir) || {}).titre || 'Lire')}</button>` : ''}</dd></div>`).join('')}</dl></section>`).join('');
-  return `${cbSousTete('Guide', 'Le tutoriel, et chaque mot du jeu')}
+  /* Version 3.0.7 : deux onglets sous le tutoriel, les règles d'abord —
+     rangées tout en bas du glossaire, elles ne se voyaient plus. */
+  const ong = cbGuideOnglet === 'glossaire' ? 'glossaire' : 'regles';
+  const regles = `<section class="gd-regles">
+      <p class="gd-regles-tete"><span><b>${n}</b> chapitre${n > 1 ? 's' : ''} lu${n > 1 ? 's' : ''} sur ${GUIDES.length}</span>
+        <button class="btn tiny" data-cb="guide" data-v="${suivant.id}">${n ? 'La suite' : 'Commencer'} : ${h(suivant.titre)}</button></p>
+      ${GD_GROUPES.map(([titre, ids]) => `<section class="gd-groupe"><h3>${titre}</h3><div class="gd-liste">${ids.map(id => GUIDES.find(x => x.id === id)).filter(Boolean).map(entree).join('')}</div></section>`).join('')}
+    </section>`;
+  const glo = `<div class="gd-cherche"><input id="gd-q" type="search" placeholder="Chercher un mot : Garde, Réserve, Banc…" autocomplete="off" aria-label="Chercher dans le glossaire"></div>
+    <nav class="gd-abc" aria-label="Lettres">${lettres.map(L => `<a href="#" data-lettre-va="${L}">${L}</a>`).join('')}</nav>
+    <div class="gd-glossaire" id="gd-glo">${glossaire}<p class="muted gd-rien" hidden>Aucun mot ne correspond.</p></div>`;
+  return `${cbSousTete('Guide', 'Le tutoriel, les règles, chaque mot du jeu')}
     <button class="gd-tuto${fait ? ' fait' : ''}" data-cb="tuto">
       <span class="gd-tuto-art"${cbArt('c012')}></span>
       <span class="gd-tuto-t"><small>${fait ? 'Fait · à rejouer quand tu veux' : 'Nouveau · 200 Éclats la première fois'}</small>
         <b>Le tutoriel</b><em>Une partie guidée, bulle après bulle : déployer, attaquer, défendre, les PV, la Résilience, les mots-clés…</em></span>
       <span class="cb-une-go">${fait ? 'Rejouer' : 'Jouer'}</span>
     </button>
-    <div class="gd-cherche"><input id="gd-q" type="search" placeholder="Chercher un mot : Garde, Réserve, Banc…" autocomplete="off" aria-label="Chercher dans le glossaire"></div>
-    <nav class="gd-abc" aria-label="Lettres">${lettres.map(L => `<a href="#" data-lettre-va="${L}">${L}</a>`).join('')}</nav>
-    <div class="gd-glossaire" id="gd-glo">${glossaire}<p class="muted gd-rien" hidden>Aucun mot ne correspond.</p></div>
-    <details class="gd-chapitres" data-garde="gd-chapitres">
-      <summary><span><b>Les règles, chapitre par chapitre</b><small>${n} lu${n > 1 ? 's' : ''} sur ${GUIDES.length} · la suite : ${h(suivant.titre)}</small></span>${NAVICO.caret}</summary>
-      ${GD_GROUPES.map(([titre, ids]) => `<section class="gd-groupe"><h3>${titre}</h3><div class="gd-liste">${ids.map(id => GUIDES.find(x => x.id === id)).filter(Boolean).map(entree).join('')}</div></section>`).join('')}
-    </details>
+    <div class="segbar gd-ong" role="tablist">
+      <button role="tab" aria-selected="${ong === 'regles'}" class="${ong === 'regles' ? 'on' : ''}" data-cb="gd-ong" data-v="regles">${NAVICO.livre}Les règles</button>
+      <button role="tab" aria-selected="${ong === 'glossaire'}" class="${ong === 'glossaire' ? 'on' : ''}" data-cb="gd-ong" data-v="glossaire">${NAVICO.quest}Glossaire · ${mots.length} mots</button>
+    </div>
+    ${ong === 'regles' ? regles : glo}
     <p class="muted small">Les règles officielles ne sont pas publiées : elles sont reconstituées à partir des cartes. Ce qui a été inventé est dit dans « Ce qui est maison ».</p>`;
 }
 
@@ -941,6 +965,7 @@ function cbAction(k, el) {
     case 'reprendre': return reprendreCombat();
     case 'oublier': return oublierCombat();
     case 'guide': cbGuide = v || null; render(); return $('#main').scrollTo({ top: 0 });
+    case 'gd-ong': cbGuideOnglet = v; return render();
     case 'activer': return agir(() => Backend.combatReglages({ deck_actif: v }), 'Deck activé.');
     case 'cosm': return agir(() => Backend.combatReglages({ [el.dataset.t]: v }));
     case 'boutique-cosm': shopVue = 'combat'; return aller('boutique');

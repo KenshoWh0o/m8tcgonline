@@ -10,11 +10,13 @@
    remarques arrivent la première fois que quelque chose se produit — une
    touche, un Joueur vaincu, un Banc, une Légion…
 
-   Ce que la partie montre, dans l'ordre : la main de départ, le camp et les
-   PV, les Essences, déployer, lier un Objet, finir son tour, le tour adverse
+   Ce que la partie montre, dans l'ordre : le but (les PV, qui reviennent en
+   main), la main de départ, le camp, les Essences, les quatre sortes de
+   cartes et la carte en grand (3.0.7), déployer, lier un Objet, finir son
+   tour, le tour adverse
    et ses deux Essences, défendre, Shield, le tour suivant (redresser,
    piocher), Provocation, un Moment, un Coach, payer une attaque (la Neutre),
-   attaquer un Joueur engagé, le vaincre, être touché, la Résilience, Garde,
+   Attaque contre Défense (3.0.7), attaquer un Joueur engagé, le vaincre, être touché, la Résilience, Garde,
    Légion. Il se rejoue à l'infini ; la première victoire fait avancer la
    quête « Premiers pas » (supabase/04_seed.sql, tutoriel_fini). */
 "use strict";
@@ -103,62 +105,70 @@ function tutoRival(E) {
 /* Une étape « à lire » (info) s'affiche et attend « Compris ». Une étape « à
    faire » allume ce qu'il faut toucher, et seul le coup `attend` passe. */
 const tourDe = (E, d, n) => d && d.type === 'tour' && d.qui === 0 && E.tour === n;
+/* Les petits signes des bulles (version 3.0.7) : une Essence, la Défense. */
+const tuEss = c => (typeof essIcon === 'function' ? essIcon(c, 'tu-ico') : '');
+const TU_DEF = '<svg class="tu-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7Z" fill="#1e1d28" stroke="#fff" stroke-width="1.8"/></svg>';
+const defDe = (E, j, id) => { const c = E.j[j].lignes.find(x => x && x.id === id); return c ? Combat.defense(E, c) : '?'; };
 const ETAPES = [
   { info: true, quand: (E, d) => d && d.but === 'mulligan', titre: 'Bienvenue dans l\'arène',
-    texte: () => 'Deux CEO s\'affrontent : toi en bas, le Rival en haut. Chacun a des <b>PV</b>, des cartes posées face cachée. Ton but : <b>toucher le CEO adverse quand il n\'a plus de PV</b>. Le Rival n\'en a que 3 aujourd\'hui.' },
+    texte: () => 'Deux <b>CEO</b> s\'affrontent : toi en bas, le Rival en haut. Chacun a des <b>PV</b> : des cartes posées face cachée. Quand ton CEO est <b>touché</b>, il perd un PV… et cette carte <b>rejoint ta main</b>. Pour gagner : toucher le CEO adverse <b>quand il n\'a plus de PV</b>. Le Rival n\'en a que 3 aujourd\'hui.' },
   { quand: (E, d) => d && d.but === 'mulligan', titre: 'Ta main de départ',
     texte: () => 'Cinq cartes. Tu peux une fois en changer, mais celle-ci est bonne : <b>garde-la</b>.',
     attend: a => a.t === 'choix' && a.v === 'oui', vise: () => ['[data-ar="opt"][data-v="oui"]'] },
   { info: true, quand: (E, d) => tourDe(E, d, 1), titre: 'Ton camp',
-    texte: () => '<b>Trois lignes</b>, face à celles du Rival : tu y déploies tes Joueurs. Tes <b>5 PV</b> sont à côté de ton CEO, en bas.', vise: () => ['.ar-camp.moi .ar-lignes', '.ar-ceo.moi'] },
+    texte: () => '<b>Trois lignes</b>, face à celles du Rival : tu y poses tes Joueurs, et chacun garde la ligne où il est. Tes <b>5 PV</b> sont à côté de ton CEO, en bas.', vise: () => ['.ar-camp.moi .ar-lignes', '.ar-ceo.moi'] },
   { info: true, quand: (E, d) => tourDe(E, d, 1), titre: 'Les Essences',
-    texte: () => 'Au début de chaque tour, une Essence de ta <b>Réserve</b> entre en jeu (ici, une Rose). Elles <b>paient les attaques</b>. Poser une carte, elle, ne coûte rien.', vise: () => ['.ar-zone.moi .ar-ess-zone'] },
+    texte: () => `Au début de chaque tour, une Essence de ta <b>Réserve</b> entre en jeu (ici, une Rose ${tuEss('rose')}). Elles <b>paient les attaques</b>, et rien d'autre : poser un Joueur, lier un Objet, jouer un Moment, tout ça est gratuit.`, vise: () => ['.ar-zone.moi .ar-ess-zone'] },
+  { info: true, quand: (E, d) => tourDe(E, d, 1), titre: 'Quatre sortes de cartes',
+    texte: () => '<b>Joueurs</b> : sur tes lignes, ils attaquent et défendent. <b>Objets</b> : liés à un Joueur, ils le renforcent. <b>Moments</b> : un effet, autant que tu veux. <b>Coachs</b> : un effet, <b>un par tour</b>. Touche n\'importe quelle carte pour la voir <b>en grand</b> : ses attaques, leur coût, ses dégâts et sa Défense <b>en direct</b>.', vise: () => ['.ar-main'] },
   { quand: (E, d) => tourDe(E, d, 1), titre: 'Déploie un Joueur',
-    texte: () => 'Touche <b>Squeezie le Toxique</b> dans ta main, puis une ligne libre. <b>Un Joueur déployé par tour</b>, pas plus.',
+    texte: () => 'Touche <b>Squeezie le Toxique</b> dans ta main, puis une <b>ligne libre</b> (elles s\'allument). Un seul Joueur déployé par tour.',
     attend: (a, E) => a.t === 'deployer' && tuIdDe(E, a.u) === 'c012', vise: E => [enMain(E, 'c012'), placesLibres] },
   { quand: (E, d) => tourDe(E, d, 1), titre: 'Lie un Objet',
-    texte: () => '<b>Cooked</b> donne +30 Attaque. Touche-le, puis Squeezie : il le portera tant qu\'il reste en jeu (<b>3 Objets</b> au plus par Joueur).',
+    texte: () => '<b>Cooked</b> donne +30 Attaque. Touche-le, puis touche <b>Squeezie</b> : il le portera tant qu\'il reste en jeu (3 Objets au plus par Joueur). Regarde ses chiffres monter.',
     attend: (a, E) => a.t === 'lier' && tuIdDe(E, a.u) === 'c085', vise: E => [enMain(E, 'c085'), surPlateau(E, 0, 'c012')] },
   { quand: (E, d) => tourDe(E, d, 1), titre: 'Fin du tour',
-    texte: () => 'Celui qui commence <b>n\'attaque pas à son premier tour</b>. Garde le Coach et le Moment pour plus tard, et termine ton tour.',
+    texte: () => 'Celui qui commence <b>n\'attaque pas à son premier tour</b>. Garde le Coach et le Moment pour plus tard : touche « Fin du tour ». C\'est au Rival.',
     attend: a => a.t === 'finTour', vise: () => ['.ar-fin'], refus: 'Garde tes autres cartes pour le tour prochain : touche « Fin du tour ».' },
   { quand: (E, d) => d && d.but === 'defense' && E.tour === 2, titre: 'On t\'attaque !', pos: 'haut',
-    texte: E => `Baby Driver vise ton CEO. <b>Squeezie</b>, désengagé et sur la même ligne, peut <b>s'interposer</b>. Sa Défense (${Combat.defense(E, E.j[0].lignes.find(c => c && c.id === 'c012'))}) dépasse l'Attaque (40) : il tient. Défends avec lui.`,
+    texte: E => `La <b>flèche rouge</b> montre ce que vise Baby Driver : ton CEO. <b>Squeezie</b>, debout (désengagé) et sur la même ligne, peut <b>s'interposer</b>. On compare deux chiffres : sa Défense ${TU_DEF}<b>${defDe(E, 0, 'c012')}</b> contre l'Attaque <b>40</b>. Plus haute : l'attaque est repoussée. Défends avec lui.`,
     attend: (a, E) => a.t === 'choix' && a.v === tuU(E, 0, 'c012'), vise: E => [`[data-ar="opt"][data-v="${tuU(E, 0, 'c012')}"]`] },
   { info: true, quand: (E, d) => tourDe(E, d, 3), titre: 'Un nouveau tour',
-    texte: () => 'Tes Joueurs et tes Essences se <b>redressent</b>, tu <b>pioches</b> une carte (Pas Compris), et une <b>deuxième Essence</b> arrive.', vise: () => ['.ar-zone.moi .ar-ess-zone'] },
+    texte: () => `Tes Joueurs et tes Essences se <b>redressent</b> (ils sont de nouveau désengagés), tu <b>pioches</b> une carte (Pas Compris), et une <b>deuxième Essence</b> ${tuEss('rose')} arrive.`, vise: () => ['.ar-zone.moi .ar-ess-zone'] },
   { quand: (E, d) => tourDe(E, d, 3), titre: 'Provocation',
-    texte: () => '<b>Pas Compris</b> a Provocation : un attaquant face à lui <b>doit le viser</b>. Déploie-le sur une ligne libre.',
+    texte: () => '<b>Pas Compris</b> a Provocation : un attaquant face à lui <b>doit le viser</b>. Un bouclier pour tes autres Joueurs. Déploie-le sur une ligne libre.',
     attend: (a, E) => a.t === 'deployer' && tuIdDe(E, a.u) === 'c013', vise: E => [enMain(E, 'c013'), placesLibres] },
   { quand: (E, d) => tourDe(E, d, 3), titre: 'Un Moment',
-    texte: () => 'Les <b>Moments</b> se jouent autant que tu veux. <b>Doig\'Dance</b> rend ta première attaque du tour moins chère d\'une Essence <b>Neutre</b>. Touche-la, puis « Jouer ».',
+    texte: () => `Les <b>Moments</b> se jouent autant que tu veux. <b>Doig'Dance</b> rend ta première attaque du tour moins chère d'une Essence <b>Neutre</b> ${tuEss('neutre')}. Touche-la, puis « Jouer ce Moment ».`,
     attend: (a, E) => a.t === 'jouer' && tuIdDe(E, a.u) === 'c097', vise: E => [enMain(E, 'c097'), '[data-ar="jouer"]'] },
   { quand: (E, d) => tourDe(E, d, 3), titre: 'Un Coach',
     texte: () => 'Les <b>Coachs</b> : <b>un seul par tour</b>. <b>Zacking Buff</b> donne +30 Attaque à tes Joueurs jusqu\'à la fin du tour. Joue-le.',
     attend: (a, E) => a.t === 'jouer' && tuIdDe(E, a.u) === 'c014', vise: E => [enMain(E, 'c014'), '[data-ar="jouer"]'] },
   { info: true, quand: (E, d) => tourDe(E, d, 3), titre: 'Payer une attaque',
-    texte: () => 'Le coût, ce sont les Essences dessinées devant l\'attaque : une de couleur veut <b>sa couleur</b>, la <b>Neutre</b> (grise) prend <b>n\'importe laquelle</b>. Trash-talk coûte Rose + Neutre ; avec Doig\'Dance, une Rose suffit.' },
+    texte: () => `Le coût, ce sont les Essences dessinées devant l'attaque. Une de couleur ${tuEss('rose')} veut <b>sa couleur</b> ; la <b>Neutre</b> ${tuEss('neutre')} prend <b>n'importe laquelle</b>. Trash-talk coûte ${tuEss('rose')}${tuEss('neutre')} ; avec Doig'Dance, ${tuEss('rose')} suffit. Une Essence payée s'éteint jusqu'à ton prochain tour.` },
+  { info: true, quand: (E, d) => tourDe(E, d, 3), titre: 'Attaque contre Défense',
+    texte: () => `Une attaque compare son <b>Attaque</b> à la <b>Défense</b> ${TU_DEF} de sa cible. <b>Égale ou plus haute</b> : la cible est <b>vaincue</b>, à la défausse. <b>Plus basse</b> : elle est <b>repoussée</b>. Contre un <b>CEO</b>, la valeur ne compte pas : il est <b>touché</b>, il perd un PV.` },
   { quand: (E, d) => tourDe(E, d, 3), titre: 'Attaque !', pos: 'bas',
-    texte: () => 'Baby Driver s\'est <b>engagé</b> en attaquant : tu peux le viser (un Joueur désengagé, non). Touche <b>Squeezie</b>, son attaque, puis <b>Baby Driver</b>. Ta première attaque ouvre la <b>phase de Combat</b> : plus de déploiement ensuite.',
+    texte: () => 'Baby Driver s\'est <b>engagé</b> en attaquant : on peut le viser (un Joueur debout, non). Touche <b>Squeezie</b> : sa carte s\'ouvre en grand, et son attaque <b>s\'allume juste dessous</b>. Touche-la, puis <b>Baby Driver</b>. Ta première attaque ouvre la <b>phase de Combat</b> : plus de déploiement ensuite.',
     attend: (a, E) => a.t === 'attaquer' && a.u === tuU(E, 0, 'c012') && a.cible === tuU(E, 1, 'c059'),
     vise: E => [surPlateau(E, 0, 'c012'), `[data-ar="attaque"][data-u="${tuU(E, 0, 'c012')}"]`, surPlateau(E, 1, 'c059')],
     refus: 'Attaque Baby Driver avec Squeezie : c\'est lui qu\'on vise.' },
   { quand: (E, d) => tourDe(E, d, 3) && tuU(E, 1, 'c059'), titre: 'Encore une fois', pos: 'bas',
-    texte: () => 'La suivante passera. Attaque <b>Baby Driver</b> avec <b>Pas Compris</b>.',
+    texte: () => 'Son Shield a pris le coup ; la suivante passera. Attaque <b>Baby Driver</b> avec <b>Pas Compris</b>.',
     attend: (a, E) => a.t === 'attaquer' && a.u === tuU(E, 0, 'c013') && a.cible === tuU(E, 1, 'c059'),
     vise: E => [surPlateau(E, 0, 'c013'), `[data-ar="attaque"][data-u="${tuU(E, 0, 'c013')}"]`, surPlateau(E, 1, 'c059')],
     refus: 'Attaque Baby Driver avec Pas Compris.' },
   { quand: (E, d) => tourDe(E, d, 3), titre: 'Fin du tour',
-    texte: () => 'Tes Essences sont toutes engagées : rien d\'autre à payer. Termine ton tour.',
+    texte: () => 'Tes Essences sont toutes engagées : plus rien à payer. Termine ton tour.',
     attend: a => a.t === 'finTour', vise: () => ['.ar-fin'] },
   { quand: (E, d) => d && d.but === 'resilience', titre: 'Touché… et Résilience', pos: 'haut',
-    texte: () => 'Tes deux Joueurs ont attaqué : ils sont <b>engagés</b>, personne ne peut défendre. Ton CEO est <b>touché</b> : son premier PV, <b>Mur Salvateur</b>, part dans ta main. Il a une <b>Résilience</b> : tu peux la jouer <b>tout de suite, gratuitement</b>. Joue-la.',
+    texte: () => 'Tes deux Joueurs ont attaqué : ils sont <b>engagés</b>, personne ne peut défendre. Ton CEO est <b>touché</b> : son premier PV, <b>Mur Salvateur</b>, part dans ta main. Il a une <b>Résilience</b> : un effet que tu peux jouer <b>tout de suite, gratuitement</b>, quand la carte sort de tes PV. Joue-la.',
     attend: a => a.t === 'choix' && a.v === 'oui', vise: () => ['[data-ar="opt"][data-v="oui"]'] },
   { quand: (E, d) => d && d.but === 'buffDef', titre: 'Garde', pos: 'haut',
-    texte: () => 'Choisis un de tes Joueurs : il gagne <b>Garde</b> jusqu\'à la fin du tour — il peut alors défendre <b>n\'importe quelle ligne</b>.',
+    texte: () => 'Choisis un de tes Joueurs : il gagne <b>Garde</b> jusqu\'à la fin du tour — il peut alors défendre <b>n\'importe quelle ligne</b>, pas seulement la sienne.',
     attend: a => a.t === 'choix' },
   { info: true, quand: (E, d) => tourDe(E, d, 5), titre: 'À toi de jouer',
-    texte: E => `Tu as tout l'essentiel. Le Rival a <b>${E.j[1].pv.length} PV</b> : touche son CEO jusqu'à ce qu'il n'en ait plus, puis une dernière fois. Les bulles reviendront quand il se passera quelque chose de nouveau.`,
+    texte: E => `Le Rival a <b>${E.j[1].pv.length} PV</b> : touche son CEO jusqu'à ce qu'il n'en ait plus, puis une dernière fois. À retenir : <b>un Joueur</b> et <b>un Coach</b> par tour ; les Essences ne paient que les attaques ; <b>Attaque contre Défense</b> ; un Joueur <b>debout</b> peut défendre. Les bulles reviendront quand il se passera quelque chose de nouveau.`,
     alors: () => { tuto.libre = true; } }
 ];
 
@@ -170,7 +180,7 @@ const REMARQUES = [
   { id: 'shield-vu', evs: (evs, E) => evs.some(e => e.t === 'deploie' && e.id === 'c059'), titre: 'Baby Driver',
     texte: () => 'Il a <b>Shield</b> : il ignore la <b>première attaque</b> qu\'il subit. Retiens-le.' },
   { id: 'repousse', evs: evs => evs.some(e => e.t === 'repousse' || e.t === 'defend'), quandTour: 2, titre: 'Repoussée',
-    texte: () => 'L\'attaque s\'écrase sur Squeezie. Mais un défenseur <b>s\'engage</b> (il est tourné) : un Joueur engagé peut être <b>visé</b>, et ne peut plus défendre ce tour-ci.' },
+    texte: () => 'L\'attaque s\'écrase sur Squeezie. Mais un défenseur <b>s\'engage</b> (sa carte s\'assombrit, marquée « Engagé ») : un Joueur engagé peut être <b>visé</b>, et ne peut plus défendre ce tour-ci.' },
   { id: 'shield', evs: evs => evs.some(e => e.t === 'shield'), titre: 'Shield !',
     texte: () => 'La première attaque contre Baby Driver est <b>ignorée</b> : c\'était son Shield. Il est maintenant sans protection.' },
   { id: 'vaincu', evs: evs => evs.some(e => e.t === 'vaincu'), titre: 'Vaincu',

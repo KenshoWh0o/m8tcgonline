@@ -14,9 +14,10 @@ Ecrit :
 Comme les tapis de la Boutique (tools/cosmetiques.py), ils partent
 d'illustrations du jeu, pas d'un dessin invente :
   - L'affiche de l'en-tete de l'evenement : Squeezie le Toxique (#012) et
-    Brawks Deter (#077). Le haut de la carte de Brawks porte son titre et
-    ses etoiles derriere la tete : on les remplace par un ciel sombre, la
-    tete (profil, crane, barbe) gardee intacte.
+    Brawks Deter. Version 3.0.7 : Brawks vient de son illustration
+    originale, sans le cadre de la carte (_sources/combat/brawks-deter.jpg,
+    fournie par l'auteur) — plus de ciel peint derriere la tete a la place
+    du titre de la carte, qui laissait un vide.
   - Le Choc des Sections : Brawks Deter en haut, chez l'adversaire ;
     Squeezie le Toxique en bas, chez soi. Chacun teinte a la couleur de sa
     Section, une coupe lumineuse en biais entre les deux.
@@ -43,9 +44,13 @@ VIOLET = ((16, 6, 40), (124, 58, 237), (241, 235, 255))
 # bandeau « Joueur · Def » (gabarit commun des cartes, 1000 x 1397).
 ILLU = (85, 205, 895, 684)
 SQUEEZIE = ('012_PC_Joueur_Rose_Squeezie-Le-Toxique.avif', (85, 222, 895, 684))
-# Brawks : plus large que le gabarit, pour garder la tete entiere et les
-# gants ; le haut (titre, etoiles) est efface par brawks().
-BRAWKS = ('077_PC_Joueur_Neutre_Brawks-Deter.avif', (200, 125, 880, 730))
+# L'illustration originale de Brawks Deter, sans cadre (1490 x 1055) : la
+# tete est vers x = 662, le haut du crane vers y = 75.
+BRAWKS_NET = os.path.join(ROOT, '_sources', 'combat', 'brawks-deter.jpg')
+
+
+def brawks_net():
+    return Image.open(BRAWKS_NET).convert('RGB')
 SORCIER = ('116_L_Joueur_Mauve_The-French-Sorcerer.avif', ILLU)
 
 
@@ -58,38 +63,6 @@ def dossier(*p):
 def illustration(carte):
     fichier, boite = carte
     return Image.open(os.path.join(CARTES, fichier)).convert('RGB').crop(boite)
-
-
-def brawks():
-    """Brawks Deter sans le titre ni les etoiles de sa carte : la bande du
-    haut devient un ciel sombre, sauf la tete. Les formes sont mesurees sur
-    le recadrage BRAWKS (680 x 605)."""
-    im = illustration(BRAWKS)
-    w, h = im.size
-    ciel = Image.new('RGB', (w, h))
-    dc = ImageDraw.Draw(ciel)
-    for y in range(h):
-        t = min(1, y / 110)
-        dc.line((0, y, w, y), fill=tuple(round(a + (b - a) * t) for a, b in zip((12, 12, 30), (28, 30, 62))))
-    # Le bandeau du titre descend jusqu'a y = 88 a gauche de la tete, mais
-    # les eclairs commencent des y = 56 a droite : le ciel couvre le titre,
-    # puis s'efface en fondu sur le haut des eclairs (pas de ligne droite).
-    m = Image.new('L', (w, h), 0)
-    dm = ImageDraw.Draw(m)
-    for y in range(120):
-        dm.line((0, y, w, y), fill=255 if y <= 56 else round(255 * (1 - (y - 56) / 64) ** 1.6))
-    gauche = Image.new('L', (w, h), 0)
-    ImageDraw.Draw(gauche).rectangle((0, 0, 150, 98), fill=255)
-    m = ImageChops.lighter(m, gauche.filter(ImageFilter.GaussianBlur(12)))
-    tete = Image.new('L', (w, h), 0)
-    dt = ImageDraw.Draw(tete)
-    dt.ellipse((192, 10, 348, 176), fill=255)                       # le crane
-    dt.polygon([(185, 95), (200, 60), (215, 130), (185, 150)], fill=255)  # le profil
-    dt.rectangle((210, 86, 330, 200), fill=255)                      # la barbe
-    dt.rectangle((0, 0, w, 18), fill=0)                              # le bord de la carte
-    tete = tete.filter(ImageFilter.GaussianBlur(4))
-    m = Image.composite(Image.new('L', (w, h), 0), m, tete)
-    return Image.composite(ciel, im, m)
 
 
 def couvrir(im, w, h, cx=.5, cy=.5):
@@ -157,11 +130,10 @@ def enregistrer_tapis(im, cle):
 # ------------------------------------------------- L'affiche de l'en-tete
 def affiche():
     """Les deux moitiés de l'en-tete (css/choc.css, .ch-aff-sec) : la teinte
-    et le cadrage sont faits par la feuille de style."""
-    # Du ciel au-dessus de Brawks : sa tete ne touche pas le haut de l'en-tete.
-    b = brawks()
-    deter = Image.new('RGB', (b.width, b.height + 50), (12, 12, 30))
-    deter.paste(b, (0, 50))
+    et le cadrage sont faits par la feuille de style. Brawks : un portrait
+    tire de l'illustration originale, la tete aux trois cinquiemes de la
+    largeur (la coupe en biais mange le bord gauche du haut), le gant en bas."""
+    deter = brawks_net().crop((100, 0, 1050, 1055))
     for nom, im in (('choc-toxique', illustration(SQUEEZIE)), ('choc-deter', deter)):
         im = im.resize((600, round(im.height * 600 / im.width)), Image.LANCZOS)
         im.save(os.path.join(OUT, nom + '.webp'), 'WEBP', quality=82, method=6)
@@ -171,13 +143,19 @@ def affiche():
 # ------------------------------------------------- Le Choc des Sections
 def choc_des_sections():
     """Deter en haut, Toxique en bas ; la coupe passe en biais au milieu."""
-    # Un peu de ciel au-dessus de Brawks : sa tete descend sous la vignette.
-    b = brawks()
-    haut = Image.new('RGB', (b.width, b.height + 100), (12, 12, 30))
-    haut.paste(b, (0, 100))
+    # L'illustration originale (version 3.0.7) ; un peu de nuit au-dessus de
+    # Brawks, fondue dans l'image : sa tete descend sous la vignette.
+    b = brawks_net().crop((300, 0, 1100, 1055))
+    b = b.resize((W, round(b.height * W / b.width)), Image.LANCZOS)
+    haut = Image.new('RGB', (W, b.height + 90), (14, 14, 36))
+    fondu = Image.new('L', b.size, 255)
+    df = ImageDraw.Draw(fondu)
+    for y in range(170):
+        df.line((0, y, W, y), fill=round(255 * (y / 170) ** 1.8))
+    haut.paste(b, (0, 90), fondu)
     haut = couvrir(haut, W, 760, cx=.5, cy=.0)
-    haut = ImageEnhance.Contrast(ImageEnhance.Brightness(haut).enhance(.56)).enhance(1.15)
-    haut = teinter(haut, ((10, 4, 28), (96, 40, 200), (226, 214, 255)), .4)
+    haut = ImageEnhance.Contrast(ImageEnhance.Brightness(haut).enhance(.62)).enhance(1.12)
+    haut = teinter(haut, ((10, 4, 28), (96, 40, 200), (226, 214, 255)), .25)
     bas = couvrir(illustration(SQUEEZIE), W, 760, cx=.4, cy=.35)
     bas = teinter(ImageEnhance.Brightness(bas).enhance(.85), VERT, .35)
     im = Image.new('RGB', (W, H), NUIT)

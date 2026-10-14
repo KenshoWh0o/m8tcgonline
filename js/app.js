@@ -44,8 +44,9 @@ function ongletValide(id) {
    ce sont les seules portes vers la boutique et vers le menu du compte. Les cacher
    revenait à cacher qu'ils existent. */
 function header() {
-  const tk = $('#tk');
-  if (tk) tk.textContent = save.unlimited ? '∞' : String(save.tickets);
+  /* Version 3.0 : plus de compteur de boosters dans l'en-tête — c'est une
+     pastille sur l'onglet Boosters (pastilleOnglet), remise à jour ici. */
+  majPastilleBoosters();
 
   const ec = $('#ec');
   if (ec) ec.querySelector('b').textContent = fmtN(save.shards);
@@ -53,10 +54,11 @@ function header() {
   /* Sur mobile, l'avatar ouvre le tiroir du compte — mais rien ne le disait :
      une photo ronde ressemble à une décoration, pas à un bouton. Une flèche
      et la pastille du niveau posées dessus en faisaient trop. Le bouton est
-     donc une pilule : les trois traits du menu, puis l'avatar dans un fin
-     anneau qui se remplit avec l'XP du niveau en cours (le chiffre est dans
-     le tiroir). Sur ordinateur il n'y a pas de tiroir : l'avatar seul, avec
-     son niveau (voir css/hub.css). */
+     donc une pilule : les trois traits du menu, le niveau en chiffre, puis
+     l'avatar dans un fin anneau qui se remplit avec l'XP du niveau en cours.
+     Le niveau est dans la pilule, à côté de la photo, plus dessus. Sur
+     ordinateur il n'y a pas de tiroir : l'avatar seul, avec son niveau (voir
+     css/hub.css). */
   const av = $('#moi');
   if (av) {
     const ordi = surOrdi();
@@ -65,6 +67,7 @@ function header() {
     av.innerHTML = ordi
       ? avatarHTML(save.avatar, save.frame, 'sm', maPhoto(), monXp())
       : `<span class="moi-menu" aria-hidden="true">${NAVICO.menu}</span>`
+        + (n ? `<span class="moi-niv" aria-hidden="true"><small>Niv.</small><b class="tnum">${n.niveau}</b></span>` : '')
         + `<span class="moi-anneau" style="--p:${p}%" title="${n ? `Niveau ${n.niveau}` : ''}">${avatarHTML(save.avatar, save.frame, 'sm', maPhoto())}</span>`;
     av.classList.toggle('pilule', !ordi);
     /* Sur ordinateur, il n'y a pas de tiroir : le rail montre déjà chaque
@@ -112,6 +115,9 @@ function navHTML() {
 
 /* Ce qui réclame l'attention, onglet par onglet. */
 function pastilleOnglet(id) {
+  /* Les boosters qui attendent d'être ouverts (rien quand c'est illimité :
+     une pastille « ∞ » ne dirait rien). En ligne comme hors ligne. */
+  if (id === 'boosters') return save && !save.unlimited ? Math.max(0, save.tickets || 0) : 0;
   if (Backend.mode !== 'cloud') return 0;
   if (id === 'quetes') return questesPretes();
   /* L'événement : ses quêtes à encaisser et les paliers de piste atteints. */
@@ -122,6 +128,18 @@ function pastilleOnglet(id) {
   /* Version 3.0 : un défi qui attend une réponse, un coffre du Raid à ouvrir. */
   if (id === 'combats') return ((save.combat || {}).defis || []).filter(d => d.pour_moi && d.statut === 'attente').length + rdCoffres();
   return 0;
+}
+
+/* La pastille de l'onglet Boosters suit la réserve à la seconde (un booster
+   qui se recharge, un booster ouvert) sans redessiner toute la barre. */
+function majPastilleBoosters() {
+  const b = document.querySelector('#nav [data-tab="boosters"]');
+  if (!b || !save) return;
+  const n = pastilleOnglet('boosters');
+  let p = b.querySelector('.pastille.nav');
+  if (!n) { if (p) p.remove(); return; }
+  if (!p) { p = document.createElement('i'); p.className = 'pastille nav'; b.appendChild(p); }
+  p.textContent = n;
 }
 
 /* Sur l'avatar : ce qui attend derrière le tiroir, pour qu'on pense à l'ouvrir. */
@@ -639,7 +657,6 @@ $('.top').addEventListener('click', e => {
   if (e.target.closest('#cloche')) return aller('boite');
   if (e.target.closest('#btn-install')) return ouvrirInstall(true);
   if (e.target.closest('#ec')) return aller('boutique');
-  if (e.target.closest('.pill')) return aller('boosters');
 });
 
 /* ---------- Tiroir ---------- */

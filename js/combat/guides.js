@@ -29,7 +29,7 @@ const GUIDES = (() => {
           <div class="gd-camp lui"><i></i><i class="eng"></i><i></i></div>
           <div class="gd-ligne-milieu"><span>la frontière</span></div>
           <div class="gd-camp moi"><i></i><i></i><i class="vide"></i></div>
-          <p>Trois lignes par camp, face à face. Un Joueur <b>engagé</b> est tourné de côté.</p>
+          <p>Trois lignes par camp, face à face. Un Joueur <b>engagé</b> est assombri, marqué « Engagé ».</p>
         </div>
         ${note('Ces règles sont reconstituées à partir des cartes : la version officielle n\'est pas encore publiée. Ce qui a été inventé pour combler les vides est listé dans la section « Ce qui est maison ».')}`
     },
@@ -81,7 +81,7 @@ const GUIDES = (() => {
         <h3>Payer</h3>
         <p>Engage autant d'Essences que de symboles. Un symbole de couleur veut une Essence de sa couleur ; le symbole <b>Neutre</b> ${ess('neutre')} prend n'importe laquelle. Les Essences se redressent au début de ton tour.</p>
         <h3>S'engager</h3>
-        <p>Le Joueur qui attaque <b>s'engage</b> (il est tourné de côté). Un Joueur engagé ne peut plus attaquer — sauf si un effet le désengage.</p>
+        <p>Le Joueur qui attaque <b>s'engage</b> (sa carte s'assombrit, marquée « Engagé »). Un Joueur engagé ne peut plus attaquer — sauf si un effet le désengage.</p>
         <h3>Viser</h3>
         <p>Une attaque vise <b>le CEO adverse</b>, ou <b>un Joueur adverse engagé</b>, sur n'importe quelle ligne.</p>
         <ul>
@@ -135,7 +135,7 @@ const GUIDES = (() => {
         ${kw('Signature', 'Le talent propre à un Joueur. Trois sortes, selon son icône : <b>★</b> un <b>effet d\'entrée</b>, qui se joue quand il arrive sur le plateau ; <b>⚡</b> un effet qui <b>se déclenche</b> quand sa condition arrive (« Lorsque… ») ; sans icône, un effet <b>permanent</b> (« Si… »).')}
         <h3>Le vocabulaire</h3>
         <dl class="gd-voc">
-          <dt>Engager / désengager</dt><dd>Tourner une carte de côté (elle a servi) / la redresser.</dd>
+          <dt>Engager / désengager</dt><dd>Marquer une carte qui a servi (sur une vraie table, on la tourne de côté ; dans l'arène, elle s'assombrit) / lui rendre ses couleurs.</dd>
           <dt>Déployé</dt><dd>Sur le plateau.</dd>
           <dt>Vaincu</dt><dd>Battu par une attaque : à la défausse, avec ses Objets.</dd>
           <dt>Bench (le Banc)</dt><dd>La carte quitte le jeu un moment : elle revient dans la main de son propriétaire au début de son prochain tour. Un Joueur benché emporte ses Objets. Être benché n'est pas être vaincu.</dd>
@@ -225,7 +225,7 @@ const GLOSSAIRE = (() => {
     m('Désengager', 'Redresser une carte. Tes Joueurs et tes Essences se désengagent au début de ton tour.', 'motscles'),
     m('Détruire', 'Mettre à la défausse.', 'motscles'),
     m('Effet d\'entrée (★)', 'Une Signature qui se joue quand le Joueur arrive sur le plateau.', 'motscles'),
-    m('Engager', 'Tourner une carte de côté : elle a servi. Un Joueur engagé ne peut plus attaquer ni défendre, et peut être visé.', 'attaquer'),
+    m('Engager', 'Marquer une carte qui a servi (dans l\'arène, elle s\'assombrit, marquée « Engagé »). Un Joueur engagé ne peut plus attaquer ni défendre, et peut être visé.', 'attaquer'),
     m('Essence', 'Elle paie les attaques. Elle vit dans ta Réserve, pas dans ton Club, et n\'a pas besoin d\'être possédée.', 'cartes'),
     m('Essence Brillante', 'La version rare d\'une Essence : si tu la possèdes, tes Essences de sa couleur brillent en combat. Rien d\'autre ne change.', 'deck'),
     m('Garde', 'Mot-clé : ce Joueur peut défendre une attaque sur n\'importe quelle ligne.', 'motscles'),

@@ -198,6 +198,19 @@ function avatarNiveau(html, xp, cls) {
 /* L'XP du joueur lui-même : son niveau suit son avatar comme celui des autres. */
 const monXp = () => (typeof cbEtat === 'function' ? cbEtat().xp : null);
 
+/* L'illustration d'une carte, recadrée dans une case de n'importe quelle
+   forme (version 3.0.7). Toutes les cartes suivent le même gabarit (1000 ×
+   1397, l'illustration de (85, 205) à (895, 684)) : la case montre
+   l'illustration seule — jamais le titre ni le cadre de la carte —, la
+   couvre entièrement, et garde au centre le point (fx, fy) de
+   l'illustration (0 à 1), le visage en général. Le calcul est dans
+   css/base.css (.illu-cadre). `zoom` > 1 resserre sur ce point. */
+function illuCadre(id, fx, fy, zoom) {
+  const c = typeof id === 'string' ? byId[id] : id;
+  if (!c || !c.img) return '';
+  return `<span class="illu-cadre" aria-hidden="true" style="--fx:${fx == null ? .5 : fx};--fy:${fy == null ? .35 : fy}${zoom ? `;--z:${zoom}` : ''}"><i style="background-image:url('${h(c.img)}')"></i></span>`;
+}
+
 /* ---------- Petits blocs répétés ---------- */
 const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 9.5 12 22 4 9.5Z" fill="currentColor" opacity=".9"/><path d="M12 2 4 9.5h16Z" fill="#fff" opacity=".35"/></svg>';
 

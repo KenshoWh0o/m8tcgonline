@@ -22,7 +22,11 @@
    Luxueuse III », son casque et sa chaîne d'or. Sur téléphone, il passe sous
    l'en-tête de verre et touche les bords. Le titre en bas à gauche, la
    Section et le niveau en haut à droite : ils ne se croisent jamais. */
-.cb-hero{position:relative;isolation:isolate;height:252px;overflow:hidden;
+/* La hauteur compte l'encoche du téléphone (safe-area) : le bandeau monte
+   sous elle, et le badge de la Section descend d'autant. Sans elle, sur
+   iPhone, le badge descendait de 47 px dans un bandeau de hauteur fixe et le
+   titre « Combats » lui passait dessus (version 3.0.7). */
+.cb-hero{position:relative;isolation:isolate;height:calc(252px + env(safe-area-inset-top,0px));overflow:hidden;
   margin:calc(-1 * (var(--top-h) + env(safe-area-inset-top,0px) + 8px)) -16px 0}
 /* Cadré sur le médaillon d'or de son plastron, pas sur le casque. */
 .cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg) url('../assets/combat/banniere-combats.webp?v=3.0.6') 55% 100%/165% auto no-repeat}
@@ -111,6 +115,23 @@ button.cb-une:active{transform:scale(.98)}
 .cb-porte-ico svg .f,.cb-petit-ico svg .f{fill:var(--deco-wash)}
 .cb-porte-ico svg .e,.cb-petit-ico svg .e{fill:var(--accent-soft);stroke:none}
 
+/* Le tutoriel, tant qu'il n'est pas fait : une tuile à lui, lumineuse, entre
+   le Raid et les portes. */
+.cb-tuto{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;min-height:64px;
+  padding:10px 12px 10px 76px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:linear-gradient(100deg,rgba(138,120,245,.34),rgba(138,120,245,.08) 60%),var(--surface);
+  box-shadow:inset 0 0 0 1px rgba(179,166,255,.55),0 0 22px -6px var(--accent-glow);transition:transform .18s var(--spring);
+  animation:cbTutoLueur 2.6s ease-in-out infinite}
+.cb-tuto:active{transform:scale(.98)}
+@keyframes cbTutoLueur{50%{box-shadow:inset 0 0 0 1px rgba(179,166,255,.9),0 0 30px -4px var(--accent-glow)}}
+.cb-tuto-art{position:absolute;left:0;top:0;bottom:0;width:66px;z-index:-1;background:var(--art) 50% 18%/240% auto no-repeat;
+  -webkit-mask-image:linear-gradient(90deg,#000 55%,transparent);mask-image:linear-gradient(90deg,#000 55%,transparent)}
+.cb-tuto-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.cb-tuto-t small{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-soft)}
+.cb-tuto-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:17px;line-height:1.1}
+.cb-tuto-t em{font-style:normal;font-size:11.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){.cb-tuto{animation:none}}
+
 /* Decks, Missions, Guide : trois petites tuiles. */
 .cb-petits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .cb-petit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;padding:9px 6px;border:0;
@@ -196,16 +217,34 @@ button.cb-une:active{transform:scale(.98)}
 .cb-barre i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
 
 @media (max-width:560px){.cb-hero{margin-inline:-12px}}
+/* Sur téléphone, la Section et le niveau passent en haut à gauche : le titre,
+   penché, monte vers la droite — à droite, il finissait par passer sur le
+   badge de la Section (version 3.0.7). À gauche, il est à son plus bas. */
+@media (max-width:899px){.cb-hero-haut{left:16px;right:auto;flex-direction:row-reverse}}
 @media (max-width:380px){
-  .cb-hero-titre{font-size:50px}.cb-hero-haut .cb-badge b{display:none}.cb-hero-haut .cb-badge{padding:4px}
+  .cb-hero-titre{font-size:50px}
   .cb-porte-t b{font-size:20px}.cb-etape-t b{font-size:13px}
   .cb-une{gap:10px}.cb-une-art{width:44px;height:44px}.cb-une-go{padding:10px 14px;font-size:13px}
 }
+/* Sur téléphone, l'accueil remplit l'écran, ni plus ni moins (version
+   3.0.7) : la page fait la hauteur de la zone entre l'en-tête et la barre du
+   bas, et les deux portes prennent ce qui reste — sur un grand écran, elles
+   grandissent au lieu de laisser un vide sous les petites tuiles. */
+@media (max-width:899px){
+  .cb.cb-v-accueil{min-height:calc(100dvh - var(--top-h) - env(safe-area-inset-top,0px) - 8px
+    - var(--nav-h) - env(safe-area-inset-bottom,0px) - 30px)}
+  .cb-v-accueil .cb-portes{flex:1 1 auto}
+}
 /* Un écran bas (moins de 720 px) : tout se resserre pour tenir sans défiler. */
 @media (max-height:720px) and (max-width:899px){
-  .cb-hero{height:216px}.cb-hero-titre{font-size:48px;bottom:56px}
-  .cb-porte{min-height:116px}.cb-petit{min-height:70px}.cb-petit small{display:none}
-  .rd-affiche{min-height:104px;padding:11px 12px}
+  .cb-hero{height:calc(200px + env(safe-area-inset-top,0px))}.cb-hero-titre{font-size:46px;bottom:54px}
+  .cb-porte{min-height:96px}.cb-petit{min-height:58px;gap:2px}.cb-petit small{display:none}
+  .cb-petit-ico{width:30px;height:30px}.cb-petit-ico svg{width:22px;height:22px}
+  .rd-affiche{min-height:92px;padding:9px 12px}
+  .rd-affiche-t b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rd-affiche-t em{display:none}
+  .cb-porte-ico{width:36px;height:36px}.cb-porte-ico svg{width:26px;height:26px}
+  .cb-tuto{min-height:50px;padding-block:6px}.cb-tuto-t em{display:none}.cb-tuto-t b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 /* Sur ordinateur, le bandeau est une grande carte arrondie dans la colonne,
    et les portes prennent de la hauteur. */
@@ -235,7 +274,7 @@ button.cb-une:active{transform:scale(.98)}
 .cb-acte-ong i b{font-family:var(--display);font-weight:900;font-size:13px;color:var(--text)}
 .cb-acte-ong svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .cb-acte-ong.fini i{color:var(--ok)}
-.cb-acte-ong.ferme{opacity:.6}
+.cb-acte-ong.ferme{opacity:.45;cursor:not-allowed}
 .cb-acte-ong.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1.5px var(--accent-soft),0 8px 20px -10px var(--accent-glow)}
 .cb-acte{border-radius:var(--radius-xl);overflow:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .cb-acte-tete{position:relative;isolation:isolate;padding:58px 16px 14px;
@@ -341,7 +380,7 @@ button.cb-une:active{transform:scale(.98)}
 /* À la une de l'accueil, elle mord sur le bandeau. */
 .cb-hero+.rd-affiche,.cb-hero+.cb-une{z-index:2;margin-top:-50px;box-shadow:inset 0 0 0 1px rgba(157,140,255,.3),var(--sh-3)}
 .rd-affiche-ph{font-size:12px;font-weight:800;color:var(--text)}
-.rd-affiche-art{position:absolute;top:0;bottom:0;right:0;width:68%;z-index:-2;background:50% 20%/170% auto no-repeat;
+.rd-affiche-art{position:absolute;top:0;bottom:0;right:0;width:68%;z-index:-2;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}
 .rd-affiche::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(70% 120% at 0% 50%,rgba(93,75,217,.4),transparent 70%)}
 .rd-affiche-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
@@ -355,7 +394,7 @@ button.cb-une:active{transform:scale(.98)}
 .rd{display:flex;flex-direction:column;gap:12px}
 .rd-hero{position:relative;isolation:isolate;overflow:hidden;min-height:230px;display:flex;align-items:flex-end;padding:16px;border-radius:var(--radius-xl);background:#17151f;
   box-shadow:inset 0 0 0 1px rgba(157,140,255,.22)}
-.rd-hero-art{position:absolute;inset:0;z-index:-2;background:50% 30%/150% auto no-repeat}
+.rd-hero-art{position:absolute;inset:0;z-index:-2}
 .rd-hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,0) 30%,rgba(23,21,31,.96) 92%)}
 .rd-hero-t{display:flex;flex-direction:column;gap:2px}
 .rd-hero-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
@@ -797,3 +836,14 @@ button.cb-une:active{transform:scale(.98)}
 .gd-chapitres summary>svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;transition:transform .2s}
 .gd-chapitres[open] summary>svg{transform:rotate(180deg)}
 .gd-chapitres .gd-groupe{padding:0 12px 12px}
+/* Version 3.0.7 : Règles et Glossaire, deux onglets sous le tutoriel. */
+.gd-ong{margin:14px 0 4px}
+.gd-ong button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gd-regles-tete{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:13px;color:var(--muted)}
+.gd-regles-tete b{color:var(--text);font-family:var(--display);font-weight:900}
+.gd-regles-tete .btn{width:auto;max-width:100%;padding-inline:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Sur ordinateur, quand la tuile du tutoriel est là, les portes cèdent sa
+   hauteur : l'accueil tient toujours sans défiler. */
+@media (min-width:900px){
+  .cb-tuto+.cb-portes .cb-porte{min-height:150px}
+}

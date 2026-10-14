@@ -268,7 +268,7 @@ const FRAMES = {
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
   /* Version 3.0 : le Pass et le Raid du Choc des Sections. */
   f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#62d84e', c2: '#7c3aed' },
-  f_foudre: { nom: 'Foudre', fx: 'foudre', vente: false, c1: '#ec8fff', c2: '#6a2bd6' },
+  f_foudre: { nom: 'The French Sorcerer', fx: 'foudre', vente: false, c1: '#ec8fff', c2: '#6a2bd6' },
   /* Version 3.0 : les niveaux de combattant (js/combat/niveaux.js), les deux
      Sections (Boutique), et la première Secrète (quêtes).
      Dessinés par tools/cadres-30.py. */
