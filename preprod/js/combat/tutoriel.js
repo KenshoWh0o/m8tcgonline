@@ -1,5 +1,6 @@
-/* Le tutoriel (version 3.0.6) : une partie écrite d'avance, pour apprendre
-   en jouant.
+/* Le tutoriel : une partie écrite d'avance, pour apprendre en jouant. Né en
+   3.0.6, réécrit et vérifié dans Chromium en 3.0.7, retouché en 3.0.8 (la
+   bulle de l'attaque suit la zone de détails de l'arène).
 
    Les deux Clubs ne sont pas mélangés (`ordre`, js/combat/moteur.js) : la
    main, les PV et les pioches sont les mêmes à chaque partie. Le Rival joue
@@ -18,7 +19,7 @@
    piocher), Provocation, un Moment, un Coach, payer une attaque (la Neutre),
    Attaque contre Défense (3.0.7), attaquer un Joueur engagé, le vaincre, être touché, la Résilience, Garde,
    Légion. Il se rejoue à l'infini ; la première victoire fait avancer la
-   quête « Premiers pas » (supabase/04_seed.sql, tutoriel_fini). */
+   quête « Premiers pas » (supabase/installation/04_seed.sql, tutoriel_fini). */
 "use strict";
 
 const TUTO_MOI = [

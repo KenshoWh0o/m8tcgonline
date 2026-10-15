@@ -2,7 +2,7 @@
 
    Demandes d'ami, demandes d'échange, réponses à ses propres demandes, et les
    annonces publiées pour tout le monde. C'est le serveur qui écrit chaque
-   événement au moment où il a lieu (supabase/11_boite.sql) : la page n'a rien
+   événement au moment où il a lieu (supabase/installation/11_boite.sql) : la page n'a rien
    à deviner, elle lit la boite et annonce ce qu'elle n'avait pas encore vu.
 
    ------------------------------------------------------------------------

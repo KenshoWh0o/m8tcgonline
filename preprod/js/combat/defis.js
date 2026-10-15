@@ -2,7 +2,7 @@
 
    Pas de serveur de jeu : chacun fait tourner le moteur chez soi, avec la
    même graine. Le serveur range les actions dans l'ordre (defi_jouer,
-   supabase/23_combats.sql) ; chaque navigateur envoie les siennes et
+   supabase/installation/23_combats.sql) ; chaque navigateur envoie les siennes et
    récupère celles de l'autre, qu'il rejoue. Le moteur vérifie chacune : une
    action impossible ne passe pas.
 
@@ -82,7 +82,7 @@ function ouvrirDefi(d) {
   } catch (err) {
     return toast('Ce défi ne peut pas être rejoué : ' + err.message);
   }
-  defiActif = { id: d.id, moi: d.moi, n: (d.actions || []).length, poll: null, dernier: Date.now() };
+  defiActif = { id: d.id, moi: d.moi, n: (d.actions || []).length, poll: null };
   const adv = d.adversaire || {};
   Table.ouvrir({
     E: E.journal.length || E.fin ? E : null, init: d.init,
@@ -101,7 +101,7 @@ function ouvrirDefi(d) {
     surFin: async (E2, gagne) => {
       arreterDefi();
       /* Le vrai serveur ne fait pas tourner le moteur : chacun lui dit qui a
-         gagné (supabase/23_combats.sql), et il note un désaccord. */
+         gagné (supabase/installation/23_combats.sql), et il note un désaccord. */
       const r = await Backend.defiFin(d.id, E2.fin ? E2.fin.gagnant : null, E2.tour).catch(() => null);
       return htmlRecompense(r);
     },
@@ -122,7 +122,6 @@ function ecouterDefi() {
       const r = await Backend.defiEtat(defiActif.id, defiActif.n);
       for (const a of r.actions || []) {
         defiActif.n++;
-        defiActif.dernier = Date.now();
         await Table.actionDistante(a);
       }
       if (r.statut === 'abandon' && !T.E.fin) toast('Ton adversaire a quitté le défi.');

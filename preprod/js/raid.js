@@ -12,7 +12,7 @@
    Choc des Sections, dans l'onglet de l'événement. Le combat se joue dans
    l'arène (js/combat/table.js), lancé par demarrer() (js/battle.js). Les
    chiffres sont dans js/combat/choc-data.js (RAID) ; ce qui compte se
-   décide côté serveur (supabase/27_raid.sql). */
+   décide côté serveur (supabase/installation/27_raid.sql). */
 "use strict";
 
 /* Le visage du boss dans son illustration (#116, The French Sorcerer) : les

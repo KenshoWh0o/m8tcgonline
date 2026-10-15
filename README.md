@@ -44,7 +44,7 @@ Autres documents : [`SETUP.md`](SETUP.md) (mettre un serveur Supabase en ligne, 
 |---|---|---|
 | **`main`, à la racine** | **Le vrai site**, servi à `matetcg.com` par GitHub Pages (`CNAME`). | **2.1.2** |
 | **`main`, dossier `preprod/`** | La pré-prod : une copie *construite* de la version suivante, servie à `matetcg.com/preprod/`, qui tourne avec un **faux serveur** dans le navigateur (aucun compte, aucune base). | 3.0.x |
-| **Branche de travail** (aujourd'hui `claude/new-session-kjkzxl`) | Le **code source** de la version suivante, à la racine. `preprod/` y est aussi versionné : identique à `main` juste après une publication, en avance entre deux (`git diff --stat origin/main HEAD -- preprod`). | 3.0.8 (en cours) |
+| **Branche de travail** (aujourd'hui `claude/new-session-kjkzxl`) | Le **code source** de la version suivante, à la racine. `preprod/` y est aussi versionné : identique à `main` juste après une publication, en avance entre deux (`git diff --stat origin/main HEAD -- preprod`). | 3.0.8 |
 | **Base Supabase de production** | Installée en 2.1. **Aucun SQL 3.0 n'y a été joué.** | 2.1 |
 
 **État du projet.** Le 24 septembre 2026, le lancement public a été **annulé** après échange avec Gentle Mates (`vAnnonceArret()`, `js/gate.js`) : l'écran d'entrée du vrai site affiche « Projet annulé · Merci ». Les comptes déjà invités jouent toujours à la 2.1.2. Le développement de la 3.0 continue **uniquement en pré-prod**.
@@ -337,7 +337,7 @@ Au retour sur l'onglet du navigateur (`visibilitychange`) : `pull`, relève de l
 - **`save`** est l'état du joueur. En ligne, **il est entièrement reconstruit** par `Backend.apply(me())` à chaque `pull()`, `checkin()` ou action : un champ posé à la main sur `save` disparaît au rafraîchissement suivant. Ne jamais y ranger d'état d'interface.
 - Champs principaux : `id`, `pseudo`, `avatar`, `frame`, `isAdmin`, `invite` (strictement `=== true`), `filleul` ; `tickets`, `bonus`, `lastTick` ; `col` (`{id: nombre}`), `inv`, `vitrine`, `garder`, `gardes`, `favoris` ; `shards` (Éclats), `fragments`, `prismes` (monnaie de l'événement en cours) ; `quetes`, `succes`, `titre`, `banniere`, `devise`, `titres` ; `evenement`, `recap`, `chasse` ; `combat` ; `maitrises` (`{idClassique: niveau}`) et `fetiche`.
 - `Backend.apply` écrase aussi `TICKET_CAP` et `INTERVAL` (le serveur impose le rythme), calcule `Backend.skew` (décalage d'horloge : `srvTime(iso)` en tient compte), puis appelle `signalerQuetes` et `signalerPromos`, qui comparent l'état précédent au nouveau.
-- **`Backend.rpc(nom, args)`** appelle une RPC, retire les préfixes d'erreur SQL et traduit les codes connus (`MSG_SERVEUR` : `BETA_FERMEE`, `PLAFOND_RECYCLAGE` (mort), `RESERVE_VIDE`, `BONUS_VIDE`, `BOOSTER_VIDE`, `ECHANGE_EN_RECHARGE`, `non connecte`). Les autres messages SQL sont **montrés tels quels au joueur** : ils doivent être en français.
+- **`Backend.rpc(nom, args)`** appelle une RPC, retire les préfixes d'erreur SQL et traduit les codes connus (`MSG_SERVEUR` : `BETA_FERMEE`, `RESERVE_VIDE`, `BONUS_VIDE`, `BOOSTER_VIDE`, `ECHANGE_EN_RECHARGE`, `non connecte`). Les autres messages SQL sont **montrés tels quels au joueur** : ils doivent être en français.
 - **`agir(fn, msg)`** (`js/ui.js`) enveloppe une action : `occupe`, `await fn`, toast, `render()` ; renvoie `true` ou `false`. À utiliser pour toute action serveur déclenchée par un bouton.
 - Le mode `local` (sauvegarde IndexedDB, sans compte) existe encore dans le code mais **n'est plus atteignable** ([§ 4.9](#49-porte-bêta-et-connexion)).
 
@@ -427,7 +427,7 @@ La DA 3.0 s'appelle **« Graphite et lavande »**. Elle a été choisie sur maqu
 
 ### 5.2 La palette
 
-Les principaux jetons de `css/tokens.css` (les inutilisés sont listés au [§ 14](#14-dette-connue) ; s'y ajoutent `--on-accent` `#fff`, le texte posé sur `--cta` ; `--warn` `#f5c451`, même valeur que `--gold` ; `--violet-glow` `rgba(140,120,255,.3)`, le halo lavande des grands avatars) :
+Les principaux jetons de `css/tokens.css` (onze jetons inutilisés en ont été retirés en 3.0.8 ; s'y ajoutent `--on-accent` `#fff`, le texte posé sur `--cta` ; `--warn` `#f5c451`, même valeur que `--gold` ; `--violet-glow` `rgba(140,120,255,.3)`, le halo lavande des grands avatars) :
 
 | Jeton | Valeur | Usage |
 |---|---|---|
@@ -615,7 +615,7 @@ L'arène (`#arene`, `css/arene.css`) a ses variables locales : `--ar-act` `#9d8c
 ```
 
 - Obligatoires : `fichier`, `num`, `nom`, `categorie` (Joueur, Coach, Moment, Objet, Essence), `couleur` (Rose, Orange, Jade, Violette, Jaune, Mauve, Verte, Bleue, Azur, Neutre), `rarete` (ES, C, PC, R, E, L).
-- Facultatifs : `sous_type` (`Instant`, `Lien`), `def` (alias `pv`), `attaques` (`{nom, cout, degats, effet?, plus?}`), `mot_cle`, `effets: [{texte}]`, `resilience`, `ambiance`, et `booster: false` (ne sort jamais en paquet).
+- Facultatifs : `sous_type` (`Instant`, `Lien`), `def` (alias `pv`), `attaques` (`{nom, cout, degats, effet?, plus?}`), `mot_cle`, `effets: [{texte}]`, `resilience`, `ambiance` (texte d'intention, lu par aucun code), et `booster: false` (ne sort jamais en paquet).
 - **Le format est un contrat** : guillemets doubles et blocs qui commencent par `"\n  {"` (deux espaces). `tools/gen-cards-sql.py` découpe le fichier ainsi ; `tools/illu-pixels.js` l'exécute après avoir remplacé `const CARD_DATA` par `globalThis.CARD_DATA` ; `tools/combat-sim.js` (et `combat-tests.js`) le charge tel quel dans un contexte `vm`. Une carte mal formée est **ignorée en silence** par le générateur SQL.
 - **Le numéro est l'identifiant** (`cardId` → `c` + 3 chiffres). Changer le `num` d'une carte possédée la fait repartir à zéro.
 
@@ -1343,9 +1343,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 ### 14.1 Bugs
 
-- **Après un achat dans la boutique du Choc**, `shop.js` appelle `chargerReflets()` au lieu de `chargerChoc()` : le solde d'Étincelles affiché reste périmé.
 - **Échanger une Secrète est impossible depuis l'interface** (`ouvrirChoixCarte` part de `cards` et `reverses`, `RAR_ORDRE` n'a pas `S`), alors que le serveur l'accepte et que l'interface le promet.
-- `TABS.recyclage.desc` dit « Tes doublons contre des Éclats » (ce sont des Fragments).
 - `titres_de()` range les **tapis** (`t_*`) parmi les titres : `personnaliser` accepte un tapis comme titre (l'interface filtre).
 - `set_profile` accepte comme cadre n'importe quel objet d'inventaire ; l'avatar n'est pas borné en longueur.
 - `RM()` ignore le réglage « Animations réduites » du jeu : particules, gyroscope et vibrations n'en tiennent pas compte.
@@ -1360,17 +1358,16 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 ### 14.2 Code mort
 
-- **Porte** : `vCompteARebours`, `ouvrirLaPorte`, `Porte.lancee`, `Porte.reste` ; l'appel `Porte.lire()` au démarrage ne change rien. **Mode local et `vAuth`** : inatteignables tant que `PORTE.active` vaut `true` (et le mode local l'est toujours).
-- **Navigation** : `combatsAuTiroir()` (toujours faux) et sa branche, la classe `evnav`, `TABS.online` / `.cache`, `body.dataset.onglet`, `body.installsheet`, `PWA.installe`, `NAVICO.sun/moon/auto`.
-- **Données** : `c.nomBase`, `c.variante`, `kw.icone`, le champ `ambiance` (jamais affiché), la branche des talents (aucune carte n'en a), l'effet de boutique `refill`, `MSG_SERVEUR.PLAFOND_RECYCLAGE`, `profil.bonus_offerts`, `bindTilt()` (aucun `.tilt`), `PROMOS_A_VENIR` vide. (`Backend.erreur` n'est lu que par l'écran d'entrée de la démo, `demoPorte` dans `_demo/serveur.js` : ne pas le supprimer.)
-- **SQL** : `cfg('pack_size')`, `cfg('shards_per_dup')`, `recyclage_semaine()` / `debut_semaine()`, la branche `'legendaire'` d'`accorder`, `choc_joueurs.victoires`, les critères de classement non affichés.
-- **Combat** : `E.pileFace`, `P.enCours`, `vuMain`, `E.cpt.essDesengagees`, `c.tour`, `E.v`, `defiActif.dernier`, `atelier.filtres.rar`, `'c012'` dans `INSTANTS_SURS`, `CB_ALIAS`, trois copies du même mulberry32, une vingtaine d'exports jamais appelés de l'extérieur.
-- **Événements** : `CHOC.code`, la branche `insignes` de `chIco`, les visuels `reverse_R` / `brillante` de `vChBoutique`, `epreuveRegle()` (doublon), `montrerNouveautes21` et les boutons `t-v2-*` (encore joignables depuis le Labo).
-- **CSS** : de nombreux sélecteurs sans producteur (`.soon*`, `.cb-deck*` remplacés par `dk-*`, toute l'ancienne partie Raid de `choc.css`, `.rd-*`, `.gd-une*`, `.ar-atq.ok`…), des neutralisations de `h2::before` qui n'existe plus, et des jetons inutilisés (`--brand-deep`, `--brand-ink`, `--violet`, `--cyan`, `--cyan-glow`, `--gold-deep`, `--gold-glow`, `--hover-2`, `--sh-press`, `--veil`, `--gap-1`).
+Le gros du code mort a été retiré en 3.0.8 (navigation, données, combat, événements, CSS ; détail dans l'historique git, commits « code mort retiré » et « CSS mort retiré »), après vérification qu'aucun JS, HTML, faux serveur ni outil ne le produisait. Ce qui reste, volontairement :
+
+- **Porte** : `vCompteARebours`, `ouvrirLaPorte`, `Porte.lancee`, `Porte.reste` ; l'appel `Porte.lire()` au démarrage ne change rien. **Mode local et `vAuth`** : inatteignables tant que `PORTE.active` vaut `true`. Gardés : c'est l'architecture du jour où le jeu rouvrirait.
+- **Données** : la branche des **talents** (une attaque sans coût) est vivante dans le code (`k.talents`, lu par l'arène et la fiche) mais aucune carte n'en a ; `PROMOS_A_VENIR` est vide mais c'est un réglage ([§ 6.2](#62-données-et-images)) ; `profil.bonus_offerts` est envoyé par le serveur (`07_vitrine.sql`, `_demo/serveur.js`) et lu par personne. `Backend.erreur` n'est lu que par l'écran d'entrée de la démo (`demoPorte`, `_demo/serveur.js`) : ne pas le supprimer.
+- **SQL** : `cfg('pack_size')`, `cfg('shards_per_dup')`, `recyclage_semaine()` / `debut_semaine()`, la branche `'legendaire'` d'`accorder`, `choc_joueurs.victoires`, les critères de classement non affichés, l'effet de boutique `refill` (plus aucun article ne s'en sert ; retiré côté client).
+- **Combat** : trois copies du même mulberry32 (moteur, IA, campagne), une vingtaine d'exports jamais appelés de l'extérieur. `CB_ALIAS` n'est **pas** mort : la boîte de réception ouvre encore `defis` pour un défi reçu.
+- **Événements** : `montrerNouveautes21` et les boutons `t-v2-*` du Labo (joignables, ils rejouent les fenêtres de la 2.0).
 
 ### 14.3 Écarts à la DA
 
-- Verre sans repli opaque : `.at-pied`, `.recpied`, `.rf-solde`, `.rf-fin`, `.rf-onglets`, `.cb-badge`, `.cb-porte-ico` et le verre de l'arène ne sont pas dans les deux listes de `css/base.css`.
 - `--cta` réécrit en dur 16 fois ; `#5d4bd9`, `#c8bfff`, `#16151e`, `#121119`, `#b3a6ff`, `#ff6b6b` réécrits au lieu de leurs jetons ; le vert de réussite de l'arène est `#8ff0c8` et non `--ok`.
 - Restes de la palette 2.x (`#b38cff` surtout dans `reflets.css`, `rgba(154,115,255,…)`, le dégradé rose de `.colpct`) ; couleurs de rareté hors jetons dans l'ouverture, la fiche, le podium, les succès.
 - Le « choisi » en lavande au lieu du blanc (`.cb-acte-ong.on`, `.filpuce.on`, `.rf-onglets .on::after`…) ; l'or hors des récompenses (`.dk-etoiles`, `.labalerte`…) ; trois roses différents pour le cœur favori ; le vert de Toxique n'est pas le même partout (et `f_toxique` est décrit « rose » dans la boutique).
@@ -1378,11 +1375,11 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 ### 14.4 Documentation et commentaires périmés
 
-- **Fichiers SQL** : les médianes de simulation en tête de `04_seed.sql` (boosters pour 25 / 50 / 75 / 90 / 100 % de la collection) datent du booster de la 1.x et n'ont pas été recalculées (l'en-tête le dit).
-- **`SETUP.md`** : Promo « à 10 000 » (5 000), dépannage qui renvoie à l'« étape 7 » (5 et 5 bis), mode hors ligne, ni `beta_invites` ni l'événement Reflets créé à l'installation, `illu-pixels.js` oublié.
-- **`docs/`** : `design-3.0.md` décrit l'en-tête du Choc « avec Gotaga Pose et le VS » et les cadres Arène « laurier, épées, gemmes » (aujourd'hui Brawks Déter sans VS ; anneau, cimier et ailes, sans plaque depuis la 3.0.8) ; `economie-3.0.md` cite une table `combat_parties` qui n'existe pas, oublie `f_foudre` (boutique du Choc : 3 100, pas 2 700) et `d_xp` / `w_xp`.
-- **`presse/`** : « quatre Promos », « thème Sombre » à régler, GIF annoncés « douze images » et « cinq cartes ».
-- **Commentaires de code** : la Reverse décrite comme « quatrième carte » (c'est la 5ᵉ) ; « l'événement remplace Combats dans la barre du bas » (il va en tête du tiroir) ; `shop.js` « deux rayons » (trois) ; « Aucune logique ici » (`config.js`) ; `gate.js` « aucun compte ne se crée » (un profil est créé) ; `supabase-config.js` « vide = hors ligne » ; `verif.html` (« mode hors ligne », « e-mail », `theme-color` 2.x) ; `tutoriel.js` se dit 3.0.6 ; `REGLE` présenté comme « le seul endroit » alors que des valeurs sont recopiées en dur (SQL, guides, tutoriel, arène).
+`SETUP.md`, `docs/`, le kit presse, `verif.html`, le LISEZMOI de la démo et les commentaires de code signalés ici ont été remis d'accord avec le code en 3.0.8. Reste :
+
+- **`04_seed.sql`** : les médianes de simulation en tête du fichier (boosters pour 25 / 50 / 75 / 90 / 100 % de la collection) datent du booster de la 1.x et n'ont pas été recalculées (l'en-tête le dit).
+- **Mise en page** : en passant les chemins à `supabase/installation/`, une cinquantaine de lignes de commentaire dépassent 90 caractères (rien de faux, seulement long).
+- `docs/design-3.0.md` reste un journal de conception, version par version : ses premières sections décrivent ce qui a été changé depuis (il le dit à chaque fois). Ce README fait foi.
 
 ### 14.5 Pistes non engagées
 
@@ -1407,6 +1404,8 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 | 3.0.5 | 12 oct. | Onglet Combats refait (bannière du Chevalier, portes Solo et Versus, campagne en chemin, Arcade) ; Raid permanent ; événement refait (bannière, Nouveautés, Pass et boutique rééquilibrés). |
 | 3.0.6 | 13–14 oct. | **Raid par saisons et phases** (`27_raid.sql`) ; **tutoriel jouable** ; Guide en glossaire ; IA sans coups au hasard (mesurée) ; Decks avec bilan ; Classement Niveau / Secrètes / Versus ; bannière Squeezie le Toxique contre Brawks Déter, sans VS ; Insignes renommées **Étincelles** ; cadres 3.0 redessinés ; le Labo montre tout. |
 | **3.0.7** | 14 oct. | **Maîtrise des cartes** (`28_maitrise.sql`) et **carte fétiche** ; fiche de carte en trois pages (Infos, Maîtrise, Gérer) ; arène : carte agrandie intacte avec son état dessous, Joueur engagé qui ne pivote plus, animations rejouées depuis l'état de chaque instant, flèche de visée, touchers iOS ; tutoriel réécrit et vérifié dans Chromium (390, 375, 360) ; récap de booster sans défilement, pastille Boosters, niveau dans l'en-tête, Classement à quatre critères. |
-| 3.0.8 (en cours) | 14–15 oct. | **Pas encore versionnée** (`APP_VERSION` vaut toujours 3.0.7) **ni publiée** (`preprod/` n'est reconstruit que sur la branche). README réécrit de zéro et `CLAUDE.md` ; bandeau et tapis « Le Choc des Sections » refaits autour de Brawks Déter ; tapis et cadre du Sorcier dans la même colonne de la boutique du Choc ; « Apprendre d'abord » ouvre le Guide avant le choix de Section ; liens `data-colvue` + `data-tab` réparés ; cadres Arène sans plaque « NIV » ; carte fétiche refaite dans la DA ; **maîtrise refaite** (barème par rareté, effets sans voile, un joyau à la place de la couronne, fiche qui tient sans défiler) ; arène : **zone de détails** au-dessus de son camp pour sa main et ses Joueurs, **fantôme de la carte** dans les places libres à la place du « + ». |
+| **3.0.8** | 14–15 oct. | **README réécrit de zéro** et `CLAUDE.md` ; bandeau et tapis « Le Choc des Sections » recadrés sur Brawks Déter, Nouveautés sans « Deux Sections » ; tapis et cadre du Sorcier dans la même colonne de la boutique du Choc ; « Apprendre d'abord » ouvre le Guide ; liens `data-colvue` réparés ; cadres Arène sans plaque « NIV » ; **carte fétiche** refaite dans la DA ; **maîtrise refaite** (barème par rareté, effets sans voile, un joyau à la place de la couronne, fiche qui tient sans défiler) ; arène : **zone de détails** au-dessus de son camp pour sa main et ses Joueurs, **fantôme de la carte** dans les places libres à la place du « + » ; **dépôt rangé** (SQL en `installation/` et `administration/`, remises à zéro réécrites pour la 3.0 et protégées par un garde-fou, mises à jour historiques supprimées, code et CSS morts retirés, `SETUP.md` et docs remis d'accord avec le code) ; solde du Choc à jour après un achat. |
 
 **Choix d'interprétation de la 3.0.7, à connaître** : « Éclats » dans la demande sur la maîtrise a été lu comme **Fragments** ; le conflit entre exemplaires et decks est résolu par les exemplaires **en trop** seulement (le manque se paie en Fragments) ; la carte fétiche est distincte de la vitrine ; le Classement est réduit à quatre critères. Non vérifié sur un vrai appareil iOS (zones sûres, glissé des pages de la fiche).
+
+**Choix d'interprétation de la 3.0.8, à connaître** : « les cartes joueurs dans notre main ne sont pas adaptées au nouvel affichage » a été lu comme **l'affichage d'une carte touchée** (la carte en grand de la 3.0.7, qui laissait un vide à côté d'une carte de la main), et « garder la zone de détails aussi de nos 3 emplacements » comme **la zone de détails de la 3.0.6, pour la main et pour ses Joueurs posés, son camp restant visible** ; la main elle-même (l'éventail en bas) n'a pas changé. « Le cadre et le tapis dans la même colonne » de la boutique du Choc a été pris à la lettre : l'un sous l'autre dans la grille à deux colonnes. L'équilibrage de la maîtrise repose sur une **simulation** (`tools/equilibre-fragments.py`), pas sur des données réelles. Non vérifié sur un vrai appareil iOS.

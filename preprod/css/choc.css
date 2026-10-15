@@ -26,10 +26,10 @@
 .ch-affiche{position:absolute;inset:0;z-index:-3;pointer-events:none;overflow:hidden}
 .ch-aff-sec{position:absolute;top:0;bottom:0;background-repeat:no-repeat;background-size:cover}
 .ch-aff-sec::after{content:"";position:absolute;inset:0;mix-blend-mode:color}
-.ch-aff-sec.toxique{left:0;width:72%;background-image:url('../assets/combat/choc-toxique.webp?v=3.0.7');background-position:12% 24%;
+.ch-aff-sec.toxique{left:0;width:72%;background-image:url('../assets/combat/choc-toxique.webp?v=3.0.8');background-position:12% 24%;
   clip-path:polygon(0 0,100% 0,77.8% 100%,0 100%)}
 .ch-aff-sec.toxique::after{background:radial-gradient(80% 90% at 70% 40%,rgba(98,216,78,.3),rgba(98,216,78,.12))}
-.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp?v=3.0.7');background-position:0% 0%;
+.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp?v=3.0.8');background-position:0% 0%;
   clip-path:polygon(36.4% 0,100% 0,100% 100%,0 100%)}
 .ch-aff-sec.deter::after{background:rgba(124,58,237,.2)}
 .ch-aff-coupe{position:absolute;inset:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.7)) drop-shadow(0 0 14px rgba(179,166,255,.8))}
@@ -59,7 +59,7 @@
   border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
   background:linear-gradient(180deg,rgba(18,17,25,0) 20%,rgba(18,17,25,.55) 55%,rgba(24,23,33,.97) 88%),
     radial-gradient(70% 80% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
-    url('../assets/combat/banniere-combats.webp?v=3.0.7') 55% 100%/165% auto no-repeat,var(--surface);
+    url('../assets/combat/banniere-combats.webp?v=3.0.8') 55% 100%/165% auto no-repeat,var(--surface);
   box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
 /* Le chevalier est cadré comme dans l'onglet Combats (.cb-hero-art) : sur le
    médaillon d'or de son plastron, pas sur le casque. Plus large que haute,
@@ -88,15 +88,13 @@
 .ch-nv-t{display:flex;flex-direction:column;gap:2px;padding:4px 12px 12px}
 .ch-nv-t b{font-size:14px;font-weight:800}
 .ch-nv-t small{font-size:11.5px;line-height:1.35;color:var(--muted)}
-.ch-nv.niv .ch-nv-art,.ch-nv.guide .ch-nv-art{background:radial-gradient(70% 90% at 50% 30%,rgba(138,120,245,.3),transparent 70%),var(--surface-2)}
+.ch-nv.niv .ch-nv-art{background:radial-gradient(70% 90% at 50% 30%,rgba(138,120,245,.3),transparent 70%),var(--surface-2)}
 .ch-nv-niv{position:relative;z-index:1;display:grid;place-items:center;width:66px;height:66px;border-radius:50%;
   background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.14) 0)}
 .ch-nv-niv>span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;line-height:1;color:#fff;
   background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .ch-nv-niv b{font-family:var(--display);font-weight:900;font-size:22px}
 .ch-nv-niv small{font-size:8.5px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
-.ch-nv-ico{position:relative;z-index:1;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;color:var(--deco-ink);background:var(--deco-wash)}
-.ch-nv-ico svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ============ Les exclusifs du Pass ============ */
 .ch-exclus{display:flex;flex-direction:column;gap:8px}
@@ -123,71 +121,17 @@
 .ch-art-pack{height:78px}
 .ch-seg{margin:0}
 
-/* ============ La barre de vie commune ============ */
-.ch-barre{display:flex;flex-direction:column;gap:6px;width:100%}
-.ch-barre-tete{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px}
-.ch-barre-tete b{font-weight:800}
-.ch-barre-tete span{color:var(--muted);font-weight:800;white-space:nowrap}
-/* La vie d'un adversaire : rouge, comme l'adversaire en combat. */
-.ch-pv{position:relative;height:12px;border-radius:999px;overflow:hidden;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.ch-pv>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94848,#ff6b6b 70%,#ff9a9a);
-  box-shadow:0 0 12px rgba(255,107,107,.45);transition:width .6s var(--ease)}
-.ch-barre.grand .ch-pv{height:16px}
-.ch-barre.rappel .ch-pv>i{background:repeating-linear-gradient(115deg,#5d4bd9 0 12px,#9d8cff 12px 24px);animation:chrappel 1.6s linear infinite;background-size:34px 100%}
-@keyframes chrappel{to{background-position:34px 0}}
-.ch-terre{margin:2px 0 0;font-size:12px;line-height:1.4;color:var(--subtle)}
-.ch-barre.terre .ch-pv{box-shadow:inset 0 0 0 1px var(--line-3)}
-.ch-barre.terre .ch-pv>i{width:0!important}
-
 /* ============ Le Raid ============ */
-/* Le seul endroit où le Sorcier se montre en grand. */
-.ch-boss{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:var(--radius-lg);
-  background:radial-gradient(100% 120% at 0% 0%,rgba(255,107,107,.1),transparent 60%),var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
-.ch-boss-carte{flex:0 0 116px;filter:drop-shadow(0 12px 22px rgba(0,0,0,.55))}
-.ch-boss-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
-.ch-boss-dit{margin:0;font-size:13px;line-height:1.45;font-style:italic;color:var(--subtle)}
-.ch-couleurs{display:block;margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
-.ch-couleurs b{color:var(--text)}
-.ch-couleurs .ess{width:18px;height:18px;vertical-align:-4px;margin:0 3px}
-.ch-regles{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
-.ch-regles li{font-size:11.5px;font-weight:800;padding:5px 10px;border-radius:999px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
-@media (max-width:420px){.ch-boss{flex-direction:column;align-items:center}.ch-boss-carte{flex-basis:auto;width:132px}}
-
-.ch-attaque{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
-.ch-attaque .cb-choixdeck{margin-top:0}
-.ch-moi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.ch-moi>div{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;border-radius:var(--radius);background:var(--surface-2);text-align:center}
-.ch-moi b{font-family:var(--display);font-weight:900;font-size:22px;line-height:1}
-.ch-moi b small{font-size:12px;color:var(--muted)}
-.ch-moi>div>small{font-size:11px;color:var(--muted);font-weight:700}
-.ch-lancer{display:inline-flex;align-items:center;justify-content:center;gap:8px}
-.ch-lancer svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
-.ch-lancer:disabled{background:var(--surface-2);color:var(--muted);text-shadow:none}
-.ch-attaque>p{margin:0}
-
-.ch-phases{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
-.ch-ph{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
-.ch-ph-n{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:900;
-  background:var(--surface-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line-2)}
-.ch-ph-n svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.6}
-.ch-ph-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ch-ph-txt b{font-size:14px}
-.ch-ph-txt small{font-size:11.5px;color:var(--muted);line-height:1.35}
-.ch-ph-gain{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:96px;text-align:center}
-.ch-ph-gain .rf-palico{flex-basis:auto;width:38px;height:38px}
-.ch-ph-gain small{font-size:10.5px;color:var(--muted);line-height:1.2}
-.ch-ph-gain .btn{padding:7px 12px;font-size:11.5px}
-.ch-ph.cours{box-shadow:inset 0 0 0 1.5px var(--accent-soft),var(--tuile)}
-.ch-ph.cours .ch-ph-n{color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:none}
-.ch-ph.tombee .ch-ph-n,.ch-ph.pris .ch-ph-n{color:#052a1c;background:var(--ok);box-shadow:none}
-.ch-ph.tombee{box-shadow:inset 0 0 0 1.5px var(--ok-line),var(--tuile)}
-.ch-ph.pris{opacity:.6}
-.ch-ph.loin{opacity:.72}
-.ch-rappel{margin:10px 0 0;padding:10px 12px;border-radius:var(--radius-sm);font-size:12.5px;background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+/* La page du Raid (js/raid.js) est la même ici et dans l'onglet Combats :
+   ses règles sont dans css/combat.css (`rd-*`). Il ne reste ici que la
+   Section d'un joueur, sous son pseudo, dans le classement de la saison. */
 .ch-sec{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);font-weight:700}
 .ch-sec .cb-embleme{width:14px;height:14px}
 
 /* ============ L'Épreuve du jour ============ */
+.ch-lancer{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.ch-lancer svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
+.ch-lancer:disabled{background:var(--surface-2);color:var(--muted);text-shadow:none}
 .ch-ep-regle{display:flex;align-items:center;gap:14px;padding:16px;border-radius:var(--radius-lg);
   background:radial-gradient(100% 140% at 0% 50%,rgba(157,140,255,.16),transparent 60%),var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
 .ch-ep-ico{flex:0 0 48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9)}
@@ -231,7 +175,7 @@
   .ch-sec-fan{height:124px;align-self:start}}
 .ch-sec-c{position:absolute;left:-31px;top:4px;display:grid;place-items:center;width:62px;aspect-ratio:1000/1397;overflow:hidden;border-radius:5px;
   transform-origin:50% 190%;transform:rotate(calc(var(--i) * 10deg)) translateY(calc(var(--i) * var(--i) * 1.5px));
-  background:url('../assets/card-back.webp?v=3.0.7') 50% 50%/cover,#2a2540;
+  background:url('../assets/card-back.webp?v=3.0.8') 50% 50%/cover,#2a2540;
   box-shadow:0 0 0 1px rgba(255,255,255,.32),0 0 14px rgba(200,190,255,.35),0 8px 18px rgba(0,0,0,.5)}
 .ch-sec-c::before{content:"";position:absolute;inset:0;mix-blend-mode:soft-light;
   background:linear-gradient(115deg,transparent 22%,#ff9ad5 33%,#ffe08a 41%,#8ff0c8 49%,#8fd3ff 57%,#c3b2ff 65%,transparent 76%) no-repeat;
@@ -299,24 +243,21 @@ html.rm .ch-ref-tuile{animation:none}
 .chban-sous .etincelleico{width:14px;height:14px}
 .chban-sous strong{font-weight:900;color:#fff}
 
-/* ============ Le récap ============ */
-.ch-vainqueur-titre{font-weight:800;color:var(--gold)}
-
 /* ============ Les cadres décorés de l'événement ============ */
-.ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg?v=3.0.7')}
-.ava.fx-foudre .fx-deco{background-image:url('../assets/cadres/foudre.svg?v=3.0.7')}
+.ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg?v=3.0.8')}
+.ava.fx-foudre .fx-deco{background-image:url('../assets/cadres/foudre.svg?v=3.0.8')}
 /* Les autres cadres de la 3.0 (tools/cadres-30.py). */
-.ava.fx-niv10 .fx-deco{background-image:url('../assets/cadres/niv10.svg?v=3.0.7')}
-.ava.fx-niv20 .fx-deco{background-image:url('../assets/cadres/niv20.svg?v=3.0.7')}
-.ava.fx-niv30 .fx-deco{background-image:url('../assets/cadres/niv30.svg?v=3.0.7')}
-.ava.fx-niv50 .fx-deco{background-image:url('../assets/cadres/niv50.svg?v=3.0.7')}
+.ava.fx-niv10 .fx-deco{background-image:url('../assets/cadres/niv10.svg?v=3.0.8')}
+.ava.fx-niv20 .fx-deco{background-image:url('../assets/cadres/niv20.svg?v=3.0.8')}
+.ava.fx-niv30 .fx-deco{background-image:url('../assets/cadres/niv30.svg?v=3.0.8')}
+.ava.fx-niv50 .fx-deco{background-image:url('../assets/cadres/niv50.svg?v=3.0.8')}
 /* Version 3.0.7 : l'Arène (ses ailes) et la Foudre ont 12 unités de décor
    en plus de chaque côté (tools/cadres-30.py, `marge`) : 152 au lieu de 128,
    l'avatar toujours au rayon 50 — le décor déborde de 26 % au lieu de 14. */
 .ava.fx-niv10 .fx-deco,.ava.fx-niv20 .fx-deco,.ava.fx-niv30 .fx-deco,.ava.fx-niv50 .fx-deco,.ava.fx-foudre .fx-deco{inset:-26%}
-.ava.fx-toxique .fx-deco{background-image:url('../assets/cadres/toxique.svg?v=3.0.7')}
-.ava.fx-deter .fx-deco{background-image:url('../assets/cadres/deter.svg?v=3.0.7')}
-.ava.fx-secrete .fx-deco{background-image:url('../assets/cadres/secrete.svg?v=3.0.7')}
+.ava.fx-toxique .fx-deco{background-image:url('../assets/cadres/toxique.svg?v=3.0.8')}
+.ava.fx-deter .fx-deco{background-image:url('../assets/cadres/deter.svg?v=3.0.8')}
+.ava.fx-secrete .fx-deco{background-image:url('../assets/cadres/secrete.svg?v=3.0.8')}
 
 /* ============ Les nouveautés de la 3.0 ============ */
 .nvhero.v3{isolation:isolate;background:radial-gradient(90% 140% at 0% 30%,rgba(98,216,78,.4),transparent 60%),

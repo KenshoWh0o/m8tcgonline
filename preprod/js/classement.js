@@ -3,7 +3,7 @@
    Version 3.0.7 : quatre critères, pas plus — huit sous-onglets, c'était
    trop. Le niveau de combattant, la collection, les Secrètes, le Versus.
    Reverses, Boosters, Échanges et Série sont retirés de la page ; le serveur
-   sait toujours les calculer (classement(), supabase/14_classement.sql) :
+   sait toujours les calculer (classement(), supabase/installation/14_classement.sql) :
    les remettre, c'est rajouter une ligne ici. Il renvoie les cinquante
    premiers, plus sa propre ligne : on veut savoir où l'on en est, pas
    seulement qui est devant.

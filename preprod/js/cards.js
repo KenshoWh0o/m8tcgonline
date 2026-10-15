@@ -87,7 +87,7 @@ function makeCard(meta, idx) {
     c.talents = at.filter(talent).map(a => ({ nom: String(a.nom || 'Talent'), texte: String(a.effet || '') }));
     if (!at.length) c.atks = [{ nom: 'Attaque', cout: { neutre: 2 }, degats: DEFD[rar] || 60, effet: '', plus: false }];
     if (meta.mot_cle && meta.mot_cle.nom) {
-      c.kw = { nom: String(meta.mot_cle.nom), texte: String(meta.mot_cle.texte || ''), icone: meta.mot_cle.icone || null };
+      c.kw = { nom: String(meta.mot_cle.nom), texte: String(meta.mot_cle.texte || '') };
     }
   } else {
     c.fx = Array.isArray(meta.effets) ? meta.effets.map(e => e && e.texte ? String(e.texte) : '').filter(Boolean) : [];
@@ -128,9 +128,8 @@ function makePromo(meta) {
   c.promo = true;
   c.obtention = meta.obtention || 'boutique';
   c.illustrateur = meta.illustrateur || '';
-  c.variante = meta.variante || '';
   /* Version 3.0 : une Promo dont on ne connaît pas encore le contenu. */
-  if (meta.provisoire) { c.provisoire = true; c.section = meta.section || null; c.ambiance = meta.ambiance || ''; }
+  if (meta.provisoire) { c.provisoire = true; c.section = meta.section || null; }
   return c;
 }
 
@@ -142,7 +141,7 @@ function buildPromos() {
 /* ---------- Les Essences Brillantes ---------- */
 /* La version brillante de chaque Essence : même illustration, autre finition
    (le reflet est posé par renderCard). `b` + le numéro de l'Essence, comme
-   côté serveur (supabase/03b_promos.sql). Hors extension, comme les Promos. */
+   côté serveur (supabase/installation/03b_promos.sql). Hors extension, comme les Promos. */
 function buildBrillantes(liste) {
   return liste.filter(c => c.cat === 'essence').map(e => Object.assign({}, e, {
     id: 'b' + e.id.slice(1),
@@ -159,15 +158,15 @@ function buildBrillantes(liste) {
 /* ---------- Les Reverses (version 2.0) ---------- */
 /* Chaque Commune, Peu commune et Rare de l'extension a sa Reverse : la même
    carte, frappée du logo Tout Commence Ici (posé par renderCard). `r` + le
-   numéro, comme côté serveur (supabase/03b_promos.sql). Hors des 122, mais
+   numéro, comme côté serveur (supabase/installation/03b_promos.sql). Hors des 122, mais
    échangeables, recyclables et fabricables — d'où `promo: false` ici : côté
    navigateur, c'est `rev` qui les met à part. */
 function buildReverses(liste) {
   return liste.filter(c => ['C', 'PC', 'R'].includes(c.rar) && c.cat !== 'essence').map(c => Object.assign({}, c, {
     id: 'r' + c.id.slice(1),
-    /* Le même nom : la carte se reconnaît à son reflet, et une petite icône
-       la signale dans les listes où l'on ne voit que le nom (nomH). */
-    nomBase: c.nom,
+    /* Le nom reste celui de la carte : elle se reconnaît à son reflet, et une
+       petite icône la signale dans les listes où l'on ne voit que le nom
+       (nomH). */
     inBoost: false,
     promo: false,
     rev: true,
@@ -210,7 +209,6 @@ function buildSecretes() {
     c.promo = false;
     c.code = '#' + meta.num + '/' + CARD_DATA.length;
     c.illustrateur = meta.illustrateur || '';
-    c.ambiance = meta.ambiance || '';
     if (meta.cachee) { c.cachee = true; c.atks = []; c.kw = null; c.def = null; }
     return c;
   });

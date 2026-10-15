@@ -233,7 +233,7 @@ function rafraichirFicheVw(eclair) {
 }
 
 /* ---------- Combien j'en garde (version 2.1) ---------- */
-/* Réglé ici, carte par carte (supabase/22_garder.sql). Le chiffre change tout
+/* Réglé ici, carte par carte (supabase/installation/22_garder.sql). Le chiffre change tout
    de suite ; le serveur n'est prévenu qu'une fois les appuis finis, et la
    visionneuse ne se rouvre pas : la carte reste où on l'a tournée. */
 function vGardeVw(c) {

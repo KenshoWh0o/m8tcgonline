@@ -1,6 +1,6 @@
 /* Couche d'accès aux données : un seul jeu d'appels pour l'interface, deux
    implantations derrière. Hors ligne, tout se passe dans IndexedDB comme en v1.
-   Connecté, chaque action passe par une fonction du serveur (supabase/03_rpc.sql),
+   Connecté, chaque action passe par une fonction du serveur (supabase/installation/03_rpc.sql),
    la seule à pouvoir toucher aux boosters, à la collection et aux échanges. */
 "use strict";
 
@@ -123,7 +123,7 @@ Backend.apply = function (etat) {
     id: p.id,
     tickets: p.tickets,
     /* Les boosters en plus (boutique, cadeaux) : hors réserve, ils s'ouvrent à
-       part sans toucher au compte à rebours (open_pack, supabase/03_rpc.sql). */
+       part sans toucher au compte à rebours (open_pack, supabase/installation/03_rpc.sql). */
     bonus: p.boosters_bonus || 0,
     lastTick: srvTime(p.last_tick),
     unlimited: false,
@@ -131,7 +131,7 @@ Backend.apply = function (etat) {
     inv: etat.inv || {},
     shards: p.shards,
     /* Ce que rapporte le recyclage, et ce que coûte une carte fabriquée
-       (supabase/12_recyclage.sql). */
+       (supabase/installation/12_recyclage.sql). */
     fragments: p.fragments || 0,
     quetes: etat.quetes || [],
     pseudo: p.pseudo,
@@ -140,7 +140,7 @@ Backend.apply = function (etat) {
     isAdmin: !!p.is_admin,
     /* Avant l'ouverture : le serveur dit si ce compte a accès. C'est la seule
        réponse qu'il accorde à un compte qui ne l'a pas — toutes les autres
-       actions sont refusées (garde_beta, supabase/01_schema.sql).
+       actions sont refusées (garde_beta, supabase/installation/01_schema.sql).
        `=== true` et non `!== false` : un champ absent — une base pas encore
        à jour, une réponse tronquée — valait « invité ». Dans le doute, on
        n'ouvre pas. */
@@ -157,16 +157,16 @@ Backend.apply = function (etat) {
        tant que la boite elle-même n'est pas chargée (js/boite.js). */
     boiteNonLues: etat.boite || 0,
     /* Le recyclage et la fabrication : ce que rapporte chaque rareté en
-       Fragments, et ce que coûte une carte (supabase/12_recyclage.sql). */
+       Fragments, et ce que coûte une carte (supabase/installation/12_recyclage.sql). */
     recyclage: etat.recyclage || null,
     /* Les succès obtenus, l'événement en cours et la chasse à la carte unique
-       (supabase/15_evenements.sql). */
+       (supabase/installation/15_evenements.sql). */
     succes: etat.succes || [],
     evenement: etat.evenement || null,
     /* Version 2.0 : un événement fini depuis moins de trois jours, et son récap. */
     recap: etat.recap || null,
     chasse: etat.chasse || null,
-    /* Version 2.0 (supabase/21_reflets.sql) : le titre, la bannière et la
+    /* Version 2.0 (supabase/installation/21_reflets.sql) : le titre, la bannière et la
        devise du profil, les titres débloqués, les réglages ouverts à la main
        (fabrication des Reverses), les Prismes de l'événement en cours et les
        invitations achetées. */
@@ -177,17 +177,17 @@ Backend.apply = function (etat) {
     parametres: etat.parametres || {},
     prismes: etat.prismes || 0,
     invitations: etat.invitations || [],
-    /* Version 2.1 (supabase/22_garder.sql) : les exemplaires à garder, par
+    /* Version 2.1 (supabase/installation/22_garder.sql) : les exemplaires à garder, par
        rareté et carte par carte. */
     garder: p.garder || {},
     gardes: etat.gardes || {},
     favoris: etat.favoris || [],
     /* Version 2.1 : entré grâce au code d'un autre, il n'invite pas à son tour. */
     filleul: p.filleul === true,
-    /* Version 3.0 (supabase/23_combats.sql) : la Section, les decks, les
+    /* Version 3.0 (supabase/installation/23_combats.sql) : la Section, les decks, les
        cosmétiques de combat, la campagne, les défis. */
     combat: etat.combat || null,
-    /* Version 3.0.7 (supabase/28_maitrise.sql) : le niveau de maîtrise de
+    /* Version 3.0.7 (supabase/installation/28_maitrise.sql) : le niveau de maîtrise de
        chaque carte maîtrisée, et la carte fétiche du profil. */
     maitrises: (etat.maitrise && etat.maitrise.niveaux) || {},
     fetiche: (etat.maitrise && etat.maitrise.fetiche) || null
@@ -217,7 +217,6 @@ Backend.rpc = async function (nom, args) {
 /* Les refus que le serveur signale par un mot-clé, traduits pour le joueur. */
 const MSG_SERVEUR = {
   BETA_FERMEE: "Le jeu n'est pas encore ouvert.",
-  PLAFOND_RECYCLAGE: 'Ça dépasse ton plafond de recyclage de la semaine.',
   RESERVE_VIDE: 'Plus de booster pour le moment.',
   BONUS_VIDE: 'Plus de booster en plus à ouvrir.',
   BOOSTER_VIDE: 'Ce booster est vide : aucune carte à tirer.',
@@ -294,7 +293,7 @@ Backend.favori = async function (id, on) {
 };
 
 /* Version 2.1 : combien d'exemplaires garder, d'une carte (`null` : celui
-   de sa rareté) ou de chaque rareté (supabase/22_garder.sql). */
+   de sa rareté) ou de chaque rareté (supabase/installation/22_garder.sql). */
 Backend.reglerGarde = async (id, n) =>
   Backend.apply(await Backend.rpc('regler_garder', { p_carte: id, p_n: n }));
 Backend.reglerGardeDefaut = async garder =>
@@ -373,7 +372,7 @@ Backend.tradeCancel = async function (id) {
   await Backend.loadTrades();
 };
 
-/* ---- Boite de réception (supabase/11_boite.sql) ---- */
+/* ---- Boite de réception (supabase/installation/11_boite.sql) ---- */
 Backend.loadBoite = async function () {
   if (Backend.mode !== 'cloud') return null;
   Backend.boite = await Backend.rpc('boite');
@@ -413,11 +412,11 @@ Backend.ecouterBoite = function (surNouveau) {
   }
 };
 
-/* ---- Fabrication et historique (supabase/12_recyclage.sql, 15_evenements.sql) ---- */
+/* ---- Fabrication et historique (supabase/installation/12_recyclage.sql, 15_evenements.sql) ---- */
 Backend.fabriquer = async carte => Backend.apply(await Backend.rpc('fabriquer', { p_carte: carte }));
 Backend.mesTirages = () => Backend.rpc('mes_tirages');
 
-/* ---- Version 2.0 (supabase/21_reflets.sql) ---- */
+/* ---- Version 2.0 (supabase/installation/21_reflets.sql) ---- */
 Backend.evenementEtat = () => Backend.rpc('evenement_etat');
 Backend.pisteReclamer = async palier => {
   const r = await Backend.rpc('piste_reclamer', { p_palier: palier });
@@ -434,7 +433,7 @@ Backend.personnaliser = async (titre, banniere, devise) =>
   Backend.apply(await Backend.rpc('personnaliser', { p_titre: titre ?? null, p_banniere: banniere ?? null, p_devise: devise ?? null }));
 Backend.utiliserInvitation = async code => Backend.apply(await Backend.rpc('utiliser_invitation', { p_code: code }));
 
-/* ---- Cadeaux (supabase/18_cadeaux.sql) ---- */
+/* ---- Cadeaux (supabase/installation/18_cadeaux.sql) ---- */
 Backend.mesCadeaux = () => Backend.rpc('mes_cadeaux');
 Backend.ouvrirCadeau = async id => Backend.apply(await Backend.rpc('ouvrir_cadeau', { p_id: id }));
 Backend.adminJoueurs = () => Backend.rpc('admin_joueurs');
@@ -443,10 +442,10 @@ Backend.offrirCadeau = c => Backend.rpc('offrir_cadeau', {
   p_fragments: c.fragments || 0, p_carte: c.carte || null, p_message: c.message || ''
 });
 
-/* ---- Classement (supabase/14_classement.sql) ---- */
+/* ---- Classement (supabase/installation/14_classement.sql) ---- */
 Backend.classement = critere => Backend.rpc('classement', { p_critere: critere });
 
-/* ---- Recyclage (supabase/12_recyclage.sql) ---- */
+/* ---- Recyclage (supabase/installation/12_recyclage.sql) ---- */
 Backend.recycler = async lots =>
   Backend.apply(await Backend.rpc('recycler', { p_lots: lots }));
 
@@ -518,7 +517,7 @@ function traduireAuth(m) {
 }
 
 /* ================================================== Version 3.0 : les combats */
-/* Tout ce qui rapporte passe par le serveur (supabase/23_combats.sql). Hors
+/* Tout ce qui rapporte passe par le serveur (supabase/installation/23_combats.sql). Hors
    ligne, le combat se joue quand même : la Section, les decks et les
    cosmétiques restent dans le navigateur, et il n'y a rien à gagner. */
 const combatLocal = () => {
@@ -601,10 +600,10 @@ Backend.tutorielFini = async function () {
   await Backend.pull();
 };
 
-/* L'événement « Le Choc des Sections » (js/choc.js, supabase/25_choc.sql) :
+/* L'événement « Le Choc des Sections » (js/choc.js, supabase/installation/25_choc.sql) :
    l'Épreuve du jour. */
 Backend.chocEtat = () => Backend.rpc('choc_etat');
-/* Le Raid (js/raid.js, supabase/27_raid.sql) : l'état de la saison, et un
+/* Le Raid (js/raid.js, supabase/installation/27_raid.sql) : l'état de la saison, et un
    coffre (commun : une phase abattue ; personnel : un palier de dégâts). */
 Backend.raidEtat = () => Backend.rpc('raid_etat');
 Backend.raidReclamer = async function (saison, quoi, n) {

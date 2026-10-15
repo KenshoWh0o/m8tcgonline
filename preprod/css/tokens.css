@@ -33,7 +33,6 @@
   --plate:#16151e;
   --plate-2:#1c1b25;
   --plate-3:#2a2837;
-  --veil:rgba(18,17,25,.74);
   --veil-2:rgba(18,17,25,.92);
   --scrim:rgba(8,7,12,.66);
 
@@ -61,14 +60,9 @@
      réclament l'attention sont rouges, comme partout. */
   --brand:#ff5f7e;
   --brand-light:#e6e1ff;
-  --brand-deep:#5d4bd9;
-  --brand-ink:#16122b;
 
   /* Le décor : les icônes au trait, les lavis. La même lavande, en clair. */
-  --violet:#9d8cff;
   --violet-glow:rgba(140,120,255,.3);
-  --cyan:#9d8cff;
-  --cyan-glow:rgba(140,120,255,.18);
   --deco-wash:rgba(157,140,255,.13);
   --deco-ink:#c8bfff;
   --progress:linear-gradient(90deg,#7a68ec,#b3a6ff);
@@ -76,11 +70,9 @@
   /* --- L'or : les récompenses et la rareté Légendaire, rien d'autre. --- */
   --gold:#f5c451;
   --gold-light:#ffdc85;
-  --gold-deep:#a7791a;
   --gold-ink:#2a1d00;
   --gold-wash:rgba(245,196,81,.13);
   --gold-line:rgba(245,196,81,.45);
-  --gold-glow:rgba(245,196,81,.4);
 
   /* --- Signaux --- */
   --ok:#4fd6a0;
@@ -116,11 +108,9 @@
   --sh-2:0 4px 14px rgba(0,0,0,.32);
   --sh-3:0 12px 30px rgba(0,0,0,.4);
   --sh-4:0 24px 60px rgba(0,0,0,.5);
-  --sh-press:#0b0a10;
   --gloss:rgba(255,255,255,.34);
   --gloss-soft:rgba(255,255,255,.14);
   --hover:rgba(255,255,255,.05);
-  --hover-2:rgba(255,255,255,.09);
   /* La tuile : un reflet en haut, une ombre dessous. */
   --tuile:inset 0 1px 0 rgba(255,255,255,.05),0 6px 18px rgba(0,0,0,.24);
 
@@ -137,7 +127,6 @@
   --radius-lg:22px;
   --radius-xl:28px;
 
-  --gap-1:6px;
   --gap-2:10px;
   --gap-3:14px;
   --gap-4:20px;

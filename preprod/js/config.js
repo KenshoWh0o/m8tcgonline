@@ -2,11 +2,14 @@
 
    Identité et mentions légales, palette des essences, échelle de raretés,
    réglages de tirage et de révélation, cadres et avatars, liste des onglets et
-   jeu d'icônes. Aucune logique ici : ce fichier est lu, jamais exécuté.
+   jeu d'icônes. Presque aucune logique ici : des valeurs, que les autres
+   fichiers lisent. Deux exceptions : `PRISMES`, dont le nom suit l'événement
+   en cours (evMonnaieCode), et INTERVAL / TICKET_CAP, que Backend.apply
+   (js/backend.js) réécrit avec les valeurs du serveur.
 
    Les valeurs qui touchent à l'économie — taille d'un booster, plafond de la
    réserve, délai d'échange, palier des Promos — ont toutes un jumeau côté
-   serveur (cfg() dans supabase/01_schema.sql). Celles d'ici ne servent qu'à
+   serveur (cfg() dans supabase/installation/01_schema.sql). Celles d'ici ne servent qu'à
    l'affichage et au mode hors ligne : c'est le serveur qui tranche. */
 "use strict";
 
@@ -32,21 +35,21 @@ const CARD_DIR = 'cards/';
 /* ---------- Habillage ---------- */
 /* Les quatre visuels de booster : un est tiré au sort à chaque paquet, sans effet sur le contenu. */
 const PACK_ARTS = [
-  'assets/boosters/booster-01.webp?v=3.0.7',
-  'assets/boosters/booster-02.webp?v=3.0.7',
-  'assets/boosters/booster-03.webp?v=3.0.7',
-  'assets/boosters/booster-04.webp?v=3.0.7'
+  'assets/boosters/booster-01.webp?v=3.0.8',
+  'assets/boosters/booster-02.webp?v=3.0.8',
+  'assets/boosters/booster-03.webp?v=3.0.8',
+  'assets/boosters/booster-04.webp?v=3.0.8'
 ];
 
-/* Le sceau assets/pack-star.svg?v=3.0.7 sert d'icône au compteur de boosters, directement dans index.html. */
+/* Le sceau assets/pack-star.svg?v=3.0.8 sert d'icône au compteur de boosters, directement dans index.html. */
 const ART = {
-  logo: 'assets/logo-m8.webp?v=3.0.7',         /* logo du jeu, en en-tête */
-  back: 'assets/card-back.webp?v=3.0.7',       /* dos de carte */
-  set: 'assets/extension-logo.svg?v=3.0.7',    /* logo de l'extension */
-  edition: 'assets/1st-edition.svg?v=3.0.7',   /* pastille 1re édition */
-  seal: 'assets/pack-star.svg?v=3.0.7',        /* sceau, icône de la réserve */
-  star: 'assets/star-pink.svg?v=3.0.7',        /* étincelle, repli d'avatar */
-  jeton: 'assets/jeton-echange.webp?v=3.0.7'   /* le jeton d'échange, frappé du M8 */
+  logo: 'assets/logo-m8.webp?v=3.0.8',         /* logo du jeu, en en-tête */
+  back: 'assets/card-back.webp?v=3.0.8',       /* dos de carte */
+  set: 'assets/extension-logo.svg?v=3.0.8',    /* logo de l'extension */
+  edition: 'assets/1st-edition.svg?v=3.0.8',   /* pastille 1re édition */
+  seal: 'assets/pack-star.svg?v=3.0.8',        /* sceau, icône de la réserve */
+  star: 'assets/star-pink.svg?v=3.0.8',        /* étincelle, repli d'avatar */
+  jeton: 'assets/jeton-echange.webp?v=3.0.8'   /* le jeton d'échange, frappé du M8 */
 };
 
 /* Petites icônes en ligne : elles héritent de la couleur du texte qui les entoure.
@@ -62,16 +65,16 @@ const ICON = {
 /* ---------- Référentiels ---------- */
 /* Couleurs officielles des neuf essences ; `ic` est le symbole affiché dans l'interface. */
 const COLORS = {
-  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.7' },
-  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.7' },
-  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.7' },
-  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.7' },
-  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.7' },
-  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.7' },
-  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.7' },
-  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.7' },
-  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.7' },
-  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.7' }
+  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.8' },
+  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.8' },
+  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.8' },
+  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.8' },
+  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.8' },
+  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.8' },
+  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.8' },
+  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.8' },
+  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.8' },
+  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.8' }
 };
 
 /* `PR` n'est pas une rareté de plus dans l'échelle : c'est une case à part.
@@ -103,13 +106,13 @@ const DEFD = { ES: 0, C: 60, PC: 80, R: 100, E: 120, L: 150 };
 
 /* ---------- Réglages des boosters ---------- */
 /* Valeurs de repli, utilisées hors ligne. Connecté, le serveur impose les siennes
-   (fonction cfg() dans supabase/01_schema.sql) : la montre du téléphone n'y peut rien. */
+   (fonction cfg() dans supabase/installation/01_schema.sql) : la montre du téléphone n'y peut rien. */
 let INTERVAL = 4 * 60 * 60 * 1000;
 let TICKET_CAP = 5;
 
 /* Nombre de cartes par booster. La composition case par case est dans
    makeBooster() (js/booster.js) et, pour de vrai, dans open_pack()
-   (supabase/03_rpc.sql). */
+   (supabase/installation/03_rpc.sql). */
 const PACK_SIZE = 6;
 
 
@@ -153,14 +156,14 @@ const CONTACT = 'matetcgonline@gmail.com';
 /* ---------- Économie ---------- */
 const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
 /* La seconde monnaie : ce que rapporte le recyclage, et ce que coûte une
-   carte fabriquée (supabase/12_recyclage.sql). Elle n'achète rien d'autre. */
+   carte fabriquée (supabase/installation/12_recyclage.sql). Elle n'achète rien d'autre. */
 const FRAGMENTS = { nom: 'Fragments', un: 'Fragment' };
 /* Une Essence Brillante une fois sur… Copie de cfg('foil_odds') : ne sert qu'aux
    ouvertures de test du Labo, c'est le serveur qui tire pour de vrai. */
 const FOIL_ODDS = 50;
 
 /* ---------- Les succès ---------- */
-/* Les identifiants viennent du serveur (succes_de, supabase/15_evenements.sql),
+/* Les identifiants viennent du serveur (succes_de, supabase/installation/15_evenements.sql),
    qui décide ; ici, ce qu'on en montre. L'ordre est celui de l'affichage. */
 const SUCCES = [
   { id: 'premier_booster',    nom: 'Premier paquet',     dit: 'Ouvrir un premier booster.',            ico: 'star',    ton: 'C' },
@@ -186,7 +189,7 @@ const SUCCES = [
 
 /* ---------- Les titres (version 2.0) ---------- */
 /* Un titre s'affiche sous le pseudo : profil, fiche, classement. La plupart
-   viennent d'un succès (titres_de, supabase/21_reflets.sql) ; les autres sont
+   viennent d'un succès (titres_de, supabase/installation/21_reflets.sql) ; les autres sont
    gagnés — Pass et boutique de l'événement, quêtes. `ton` : sa couleur, comme
    une rareté. `comment` : ce qu'il faut faire pour l'avoir. */
 const TITRES = {
@@ -222,7 +225,7 @@ const TITRES = {
   t_admin:     { nom: 'Administrateur',            ton: 'ADM', comment: 'Réservé à l\'équipe du jeu' }
 };
 
-/* La monnaie d'un événement (supabase/21_reflets.sql) : elle se gagne en
+/* La monnaie d'un événement (supabase/installation/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
    avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
    de Reflets (2.0), les Étincelles du Choc des Sections (3.0). Le serveur les
@@ -247,7 +250,7 @@ const PRISMES = {
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
    n'est pour l'instant donné par aucune quête : ceux qui l'ont déjà le
    gardent. Pour le rendre de nouveau accessible, le poser en `item_id` d'une
-   quête dans supabase/04_seed.sql. */
+   quête dans supabase/installation/04_seed.sql. */
 const FRAMES = {
   default: { nom: 'Aucun', c1: '#3f3450', c2: '#2e2539' },
   f_azur:  { nom: 'Azur',  c1: '#39b8ff', c2: '#2f7fc9' },
@@ -258,7 +261,7 @@ const FRAMES = {
   f_prisme:{ nom: 'Prisme', fx: 'prisme', c1: '#b7d4ff', c2: '#c9a8ff' },
   f_sceau: { nom: 'Sceau', fx: 'sceau', vente: false, c1: '#ffc73b', c2: '#5b1fc2' },
   /* Celui de la personne qui a tiré la carte unique, et de personne d'autre :
-     posé par le serveur au moment du tirage (open_pack, supabase/03_rpc.sql). */
+     posé par le serveur au moment du tirage (open_pack, supabase/installation/03_rpc.sql). */
   f_unique:{ nom: 'Unique', unique: true, vente: false, c1: '#ffc73b', c2: '#ec8fff' },
   /* Version 2.0 : gagnés en jouant (quêtes, Pass de l'événement). */
   f_master: { nom: 'Maître', fx: 'maitre', vente: false, c1: '#ee0073', c2: '#ff9ad5' },
@@ -288,11 +291,11 @@ const FRAMES = {
    Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
    avatarHTML dans js/ui.js). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.7', ico: true, bg: '#5d4bd9' },
-  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.7', objet: true, pos: '50%' },
-  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.7', objet: true, pos: '40%' },
-  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.7', ico: true, bg: '#5d4bd9' },
-  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.7', ico: true, bg: '#ee0073' }
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.8', ico: true, bg: '#5d4bd9' },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.8', objet: true, pos: '50%' },
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.8', objet: true, pos: '40%' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.8', ico: true, bg: '#5d4bd9' },
+  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.8', ico: true, bg: '#ee0073' }
 };
 
 /* ---------- Échanges ---------- */
@@ -304,35 +307,39 @@ const TRADE_COOLDOWN_H = 6;
 /* `bas` : la barre du bas sur mobile, le rail sur ordinateur. Cinq places, pas une
    de plus : ce sont les cinq endroits où l'on revient tout le temps.
    `tiroir` : le menu qui se déplie sous l'avatar — le compte et ses réglages,
-   pas le jeu. `admin` : réservé aux profils administrateurs. `cache` : une
-   page qui n'apparaît dans aucun menu, et qu'on ouvre d'ailleurs. */
+   pas le jeu. `admin` : réservé aux profils administrateurs. `evenement` :
+   l'onglet d'un événement (son code), en tête du tiroir pendant qu'il dure
+   et les trois jours de son récap. `horsEvenement` : un onglet qui disparaît
+   pendant l'événement de ce code. Une entrée sans `bas` ni `tiroir`
+   n'apparaît dans aucun menu : on l'ouvre d'ailleurs. */
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
   { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Campagne, Arcade, Raid, Versus' },
-  /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, il prend la
-     place de Combats dans la barre (navHTML, js/app.js). */
-  { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets', online: true },
+  /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, et les trois
+     jours de son récap, il passe en tête du tiroir (ongletsTiroir,
+     js/app.js) ; Combats garde sa place dans la barre du bas. */
+  { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets' },
   /* Version 3.0 : « Le Choc des Sections » (js/choc.js). */
-  { id: 'choc',       nom: 'Le Choc',    evenement: 'choc', ico: 'choc', online: true,
+  { id: 'choc',       nom: 'Le Choc',    evenement: 'choc', ico: 'choc',
     desc: 'L\'événement : Raid, Épreuve du jour, Pass' },
-  { id: 'social',     nom: 'Social',     bas: true, ico: 'amis',  online: true },
-  { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest', online: true },
+  { id: 'social',     nom: 'Social',     bas: true, ico: 'amis' },
+  { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest' },
 
-  { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user', online: true,
+  { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user',
     desc: 'Pseudo, avatar, cadre et statistiques' },
-  { id: 'tirages', nom: 'Mes tirages', tiroir: true, ico: 'clock', online: true,
+  { id: 'tirages', nom: 'Mes tirages', tiroir: true, ico: 'clock',
     desc: 'Historique, statistiques et partage' },
   /* Devine l'illu vit dans l'onglet de l'événement tant qu'il dure, puis
      dans le sien (ongletDispo, js/app.js). */
-  { id: 'illu',     nom: 'Devine l\'illu', tiroir: true, ico: 'illu', online: true, horsEvenement: 'reflets',
+  { id: 'illu',     nom: 'Devine l\'illu', tiroir: true, ico: 'illu', horsEvenement: 'reflets',
     desc: 'Une illustration à deviner chaque jour' },
-  { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy', online: true,
+  { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy',
     desc: 'Les meilleurs joueurs, tous confondus' },
-  { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,
+  { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop',
     desc: 'Dépenser tes Éclats' },
-  { id: 'recyclage', nom: 'Recyclage', tiroir: true, ico: 'recycle', online: true,
-    desc: 'Tes doublons contre des Éclats' },
+  { id: 'recyclage', nom: 'Recyclage', tiroir: true, ico: 'recycle',
+    desc: 'Tes doublons contre des Fragments' },
   { id: 'reglages', nom: 'Réglages',   tiroir: true, ico: 'gear',
     desc: 'Son, animations, compte, installation' },
   { id: 'labo',     nom: 'Labo',       tiroir: true, ico: 'flask', admin: true,
@@ -340,7 +347,7 @@ const TABS = [
 
   /* La boite de réception n'est dans aucune barre : on y entre par la cloche
      de l'en-tête, visible partout (voir js/boite.js). */
-  { id: 'boite', nom: 'Boîte de réception', cache: true, ico: 'bell', online: true }
+  { id: 'boite', nom: 'Boîte de réception', ico: 'bell' }
 ];
 
 /* Icônes de navigation : tracées au trait, sauf l'étoile du logo qui est pleine. */
@@ -380,9 +387,6 @@ const NAVICO = {
   menu:  '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></svg>',
   promo: '<svg viewBox="0 0 24 24"><path d="M12 2.6 14.1 9h6.7l-5.4 3.9 2 6.4-5.4-4-5.4 4 2-6.4L3.2 9h6.7Z"/></svg>',
-  sun:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4 17 7M7 17l-1.6 1.6M18.6 18.6 17 17M7 7 5.4 5.4"/></svg>',
-  moon:  '<svg viewBox="0 0 24 24"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/></svg>',
-  auto:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></svg>',
   coeur: '<svg viewBox="0 0 24 24"><path d="M12 20.3s-7.6-4.5-9.4-9.1C1.3 7.9 3.3 4.4 6.9 4.4c2.1 0 3.7 1.1 5.1 3 1.4-1.9 3-3 5.1-3 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.4 9.1-9.4 9.1Z"/></svg>',
   lock:  '<svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
@@ -411,7 +415,7 @@ const NAVICO = {
 
 /* ---------- Cartes Promo ---------- */
 /* Le palier de collection qui accorde la promo « palier ». Doit rester égal à
-   `cfg('promo_palier_pct')` dans supabase/01_schema.sql : c'est le serveur qui
+   `cfg('promo_palier_pct')` dans supabase/installation/01_schema.sql : c'est le serveur qui
    accorde la carte, ceci n'est que l'affichage. */
 const PROMO_PALIER = 75;
 

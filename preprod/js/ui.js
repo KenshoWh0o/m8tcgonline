@@ -11,7 +11,6 @@ function openSheet({ title, body, actions, locked }) {
   const w = $('#sheet');
   w.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${title ? `<h3>${h(title)}</h3>` : ''}${body || ''}<div class="acts">${(actions || []).map((a, i) => `<button class="btn ${a.primary ? '' : 'ghost'}" data-si="${i}" ${a.disabled ? 'disabled' : ''}>${h(a.label)}</button>`).join('')}</div></div>`;
   w.hidden = false;
-  bindTilt(w);
   w.querySelectorAll('[data-si]').forEach(b => {
     b.onclick = e => {
       e.stopPropagation();
@@ -114,7 +113,7 @@ $('#sheet').addEventListener('click', e => {
 /* ---------- Avatars ---------- */
 /* Ma photo Discord à moi, lue dans ma session. À ne passer qu'en dessinant mon
    propre avatar : pour tous les autres, c'est le serveur qui fournit l'adresse
-   (voir photo_discord() dans supabase/01_schema.sql). */
+   (voir photo_discord() dans supabase/installation/01_schema.sql). */
 const maPhoto = () => Backend.photoDiscord;
 
 /* Cinq formes possibles :

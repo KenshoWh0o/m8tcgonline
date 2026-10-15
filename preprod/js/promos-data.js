@@ -7,7 +7,7 @@
    collection ne bouge pas quand on en ajoute une.
 
    Le champ `obtention` n'est là que pour l'affichage : c'est le serveur qui
-   accorde vraiment ces cartes (supabase/09_promos.sql). */
+   accorde vraiment ces cartes (supabase/installation/03b_promos.sql). */
 "use strict";
 
 const PROMO_DATA = [
@@ -78,7 +78,7 @@ const PROMO_DATA = [
 ];
 
 /* La carte unique : un seul exemplaire dans tout le jeu, distribué par la
-   chasse (supabase/15_evenements.sql). Comme les Promos, elle vit hors de
+   chasse (supabase/installation/15_evenements.sql). Comme les Promos, elle vit hors de
    l'extension. Une image refaite change de nom (`_v2`) : le service worker
    garde les images sous leur nom, l'ancienne resterait affichée. */
 const UNIQUE_DATA = [
@@ -100,7 +100,7 @@ const UNIQUE_DATA = [
    total et du pourcentage. Elles s'échangent ; elles ne se recyclent ni ne
    se fabriquent. Trois ne sont pas encore révélées (`cachee`) : leur visuel
    est flouté, et elles n'ont ni nom ni texte connus — on peut les obtenir,
-   pas les jouer. Le serveur les tire dans public.cards (supabase/23_combats.sql). */
+   pas les jouer. Le serveur les tire dans public.cards (supabase/installation/23_combats.sql). */
 const SECRET_DATA = [
   {
     fichier: '123_S_Joueur_Orange_Le-Quatrieme-du-Nom.avif', num: 123, nom: 'Le Quatrième du Nom',

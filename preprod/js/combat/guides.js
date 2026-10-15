@@ -4,7 +4,9 @@
    C'est la version à lire en jouant. La version à vérifier — chaque règle
    avec sa source sur les cartes, ou la mention « maison » — est dans
    docs/regles-3.0.md. Les deux doivent dire la même chose ; les nombres
-   viennent de REGLE (js/combat/moteur.js), jamais écrits en dur ici. */
+   viennent de REGLE (js/combat/moteur.js) — sauf ceux qui sont écrits en
+   toutes lettres (« trois lignes », « un Joueur déployé par tour », « un
+   Coach par tour ») : ceux-là sont à reprendre à la main si REGLE change. */
 "use strict";
 
 const GUIDES = (() => {
