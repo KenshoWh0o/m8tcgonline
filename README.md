@@ -90,12 +90,12 @@ Un README faux est pire que pas de README : en cas de doute, vérifier dans le c
 ### 2.1 Servir le site en local
 
 ```bash
-npx http-server -p 8781 -c-1 -s .        # ou : python3 -m http.server 8765
+npx http-server -p 8781 -c-1 -s .        # ou : python3 -m http.server 8781
 ```
 
 - **`http://localhost:8781/preprod/`** : la 3.0 avec le faux serveur. C'est **l'adresse de travail**. Il faut d'abord `python3 tools/demo.py --preprod` après chaque modification : `preprod/` est une copie construite, pas un lien vers les sources.
 - **`http://localhost:8781/`** : la racine de la branche. Elle parle au **vrai** Supabase (clés réelles dans `js/supabase-config.js`), qui est en 2.1 : on n'y voit que l'écran « Projet annulé ». Ne pas s'en servir pour tester la 3.0.
-- `.claude/launch.json` lance `python3 -m http.server 8765` (configuration « mate-tcg ») : même chose sur un autre port.
+- `.claude/launch.json` lance `python3 -m http.server 8781` (configuration « mate-tcg ») : même adresse, mais ce serveur-là laisse le navigateur garder ses fichiers en cache.
 - `-c-1` coupe le cache du serveur ; un service worker de production ne s'installe pas en local sous `/preprod/`, mais il peut traîner dans un navigateur qui a déjà visité la racine : en cas de doute, navigation privée.
 
 **Remettre la démo à zéro** : ajouter `?reinitialiser` à l'adresse. Cela n'efface que l'état du faux serveur ; les réglages du navigateur (`preprod:mtcg.*` dans `localStorage` : tutoriel vu, fenêtres vues…) restent. Pour tout effacer, vider aussi le stockage du site.
@@ -165,7 +165,7 @@ Contrôle après coup : `git diff --stat origin/main~1 origin/main` ne liste que
 
 ### 2.7 Le jour d'une sortie en production
 
-Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la branche dans `main`, coller `supabase/TOUT.sql` dans Supabase (il passe sur une base 2.x sans rien perdre, testé), régler `PORTE` et `beta_lancement()` ([§ 4.9](#49-porte-bêta-et-connexion)), puis ouvrir l'événement à la main (commande en fin de `supabase/25_choc.sql`). La mise en place d'un serveur neuf est décrite dans [`SETUP.md`](SETUP.md).
+Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la branche dans `main`, coller `supabase/TOUT.sql` dans Supabase (il passe sur une base 2.x sans rien perdre, testé), régler `PORTE` et `beta_lancement()` ([§ 4.9](#49-porte-bêta-et-connexion)), puis ouvrir l'événement à la main (commande en fin de `supabase/installation/25_choc.sql`). La mise en place d'un serveur neuf est décrite dans [`SETUP.md`](SETUP.md).
 
 ---
 
@@ -180,9 +180,10 @@ Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la br
 ├── CNAME                  matetcg.com (ne compte que sur main)
 ├── README.md              Ce fichier
 ├── SETUP.md               Mettre un serveur Supabase en ligne, pas à pas
-├── REPRISE.md             Note de passation de la session précédente (absorbée par ce README)
 ├── CLAUDE.md              Consignes lues d'abord par les agents : renvoi à ce README, règles du propriétaire (copie du § 1.3 : modifier les deux ensemble)
-├── .claude/launch.json    Serveur local pour les agents (port 8765) ; .claude/worktrees/ (ignoré) reçoit les copies de travail des agents
+├── .claude/launch.json    Serveur local pour les agents (port 8781) ; .claude/worktrees/ (ignoré) reçoit les copies de travail des agents
+├── .gitignore             _build/, __pycache__/, .claude/worktrees/
+├── .gitattributes         Fins de ligne normalisées ; les .avif en binaire
 │
 ├── js/                    Le client (scripts classiques, un espace global)
 │   ├── config.js          Configuration : nom, couleurs, raretés, cadres, titres, succès, onglets, icônes
@@ -258,15 +259,15 @@ Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la br
 │   └── choc.css           Le Choc des Sections, cadres 3.0
 │
 ├── supabase/              Le serveur (voir § 9)
-│   ├── 01…28_*.sql        Fichiers d'installation (assemblés), mises à jour historiques, outils
 │   ├── TOUT.sql           Assemblé par tools/build-sql.py : ce qu'on colle dans Supabase
-│   └── gen-cards-sql.py   Régénère 02_cards.sql depuis js/cards-data.js
+│   ├── installation/      01_schema.sql … 28_maitrise.sql : les 21 fichiers assemblés dans TOUT.sql
+│   └── administration/    admin.sql, beta.sql, reset-profil.sql, reset-tout.sql : à jouer à la main
 │
 ├── cards/                 Les images des cartes (.avif 1000 × 1397), promos/ et uniques/
 ├── assets/                Habillage : logos, paquets, essences, cadres, cosmétiques de combat, icônes
 ├── docs/                  design-3.0.md, regles-3.0.md, economie-3.0.md
 ├── tools/                 Scripts de maintenance (§ 12)
-├── _demo/                 Le faux serveur et ses réglages (non publié par GitHub Pages)
+├── _demo/                 Le faux serveur, ses réglages, LISEZMOI.txt de la démo autonome (non publié)
 ├── _sources/              Images d'origine des visuels générés (non publié)
 ├── presse/                Kit presse : visuels, polices, mode d'emploi
 └── preprod/               La pré-prod CONSTRUITE (ne jamais l'éditer à la main)
@@ -615,7 +616,7 @@ L'arène (`#arene`, `css/arene.css`) a ses variables locales : `--ar-act` `#9d8c
 
 - Obligatoires : `fichier`, `num`, `nom`, `categorie` (Joueur, Coach, Moment, Objet, Essence), `couleur` (Rose, Orange, Jade, Violette, Jaune, Mauve, Verte, Bleue, Azur, Neutre), `rarete` (ES, C, PC, R, E, L).
 - Facultatifs : `sous_type` (`Instant`, `Lien`), `def` (alias `pv`), `attaques` (`{nom, cout, degats, effet?, plus?}`), `mot_cle`, `effets: [{texte}]`, `resilience`, `ambiance`, et `booster: false` (ne sort jamais en paquet).
-- **Le format est un contrat** : guillemets doubles et blocs qui commencent par `"\n  {"` (deux espaces). `supabase/gen-cards-sql.py` découpe le fichier ainsi ; `tools/illu-pixels.js` l'exécute après avoir remplacé `const CARD_DATA` par `globalThis.CARD_DATA` ; `tools/combat-sim.js` (et `combat-tests.js`) le charge tel quel dans un contexte `vm`. Une carte mal formée est **ignorée en silence** par le générateur SQL.
+- **Le format est un contrat** : guillemets doubles et blocs qui commencent par `"\n  {"` (deux espaces). `tools/gen-cards-sql.py` découpe le fichier ainsi ; `tools/illu-pixels.js` l'exécute après avoir remplacé `const CARD_DATA` par `globalThis.CARD_DATA` ; `tools/combat-sim.js` (et `combat-tests.js`) le charge tel quel dans un contexte `vm`. Une carte mal formée est **ignorée en silence** par le générateur SQL.
 - **Le numéro est l'identifiant** (`cardId` → `c` + 3 chiffres). Changer le `num` d'une carte possédée la fait repartir à zéro.
 
 **`js/cards.js`** normalise tout en objets carte : `{id, num, nom, cat, col, rar, sous, img, inBoost, atks, talents, kw, fx, def, res}`, plus `code`, `promo`, `foil`, `rev`, `base`, `unique`, `secrete`, `cachee`, `provisoire` selon la famille. Une attaque sans coût (absent, `{}` ou que des zéros) devient un **talent** (`c.talents`), qui ne se paie pas ; dans un coût, une Essence inconnue compte comme `neutre` ; un Joueur sans attaque reçoit une attaque par défaut (`DEFD`, `DEFV` dans `config.js`). Ce fichier est aussi chargé **par Node** (`combat-sim.js`) : il ne touche jamais au DOM.
@@ -631,7 +632,7 @@ L'arène (`#arene`, `css/arene.css`) a ses variables locales : `--ar-act` `#9d8c
 | P05 | Tout Commence Ici | 100 % de l'extension (Master Set) |
 | P06 | Le Marionnettiste | 75 % de l'extension (`cfg('promo_palier_pct')` = `PROMO_PALIER`) |
 
-Les paliers ne donnent **que** la carte. `check_promos()` (`supabase/03b_promos.sql`) les accorde, de façon idempotente, depuis `me()` et `open_pack()`. Le champ `obtention` ne sert qu'à l'affichage ; `PROMOS_A_VENIR` (`config.js`) peut réserver des cases « à venir » (vide aujourd'hui).
+Les paliers ne donnent **que** la carte. `check_promos()` (`supabase/installation/03b_promos.sql`) les accorde, de façon idempotente, depuis `me()` et `open_pack()`. Le champ `obtention` ne sert qu'à l'affichage ; `PROMOS_A_VENIR` (`config.js`) peut réserver des cases « à venir » (vide aujourd'hui).
 
 **Secrètes** : #123 *Le Quatrième du Nom* et #125 *6W26L* sont révélées ; #124, #126, #127 sont `cachee` (nom « Secrète n°NNN », image floutée `NNN_S_Secrete.avif`, pas de texte, injouables). Leur code s'affiche `#123/122`.
 
@@ -641,7 +642,7 @@ Les paliers ne donnent **que** la carte. `check_promos()` (`supabase/03b_promos.
 
 **La réserve** : un booster toutes les 4 h, 5 au plus (`cfg('ticket_minutes')` = 240, `cfg('ticket_cap')` = 5), recalculée par le serveur à chaque `me()` (`regen_tickets`). Un événement peut accélérer le rythme (`evenements.ticket_minutes`, 120 = boosters doublés). Côté client, `TICKET_CAP` et `INTERVAL` (`config.js`) sont des `let` **écrasés** par `Backend.apply`. Les boosters achetés, offerts ou gagnés vont **hors réserve** (`profiles.boosters_bonus`, `save.bonus`), ouverts par `open_pack(true)` : mélangés à la réserve, ils la faisaient déborder et remettaient son compte à rebours à zéro. Parmi eux, ceux d'un cadeau (`tickets_offerts`) partent en premier et ne peuvent pas contenir la carte unique.
 
-**Composition** (`open_pack()` dans `supabase/03_rpc.sql` fait foi ; `makeBooster()` dans `js/booster.js` sert au Labo ; `tirerPaquet()` dans `_demo/serveur.js` à la pré-prod) :
+**Composition** (`open_pack()` dans `supabase/installation/03_rpc.sql` fait foi ; `makeBooster()` dans `js/booster.js` sert au Labo ; `tirerPaquet()` dans `_demo/serveur.js` à la pré-prod) :
 
 | Case | Contenu |
 |---|---|
@@ -672,14 +673,14 @@ Filtres (`vFiltres`) : Essence, rareté, et trois cases « Afficher » (posséd�
 
 ### 6.5 À garder et favoris (2.1)
 
-- **À garder** (`supabase/22_garder.sql`) : par rareté dans Réglages (1 à 4 ; clés `ES`…`L`, et `rC`, `rPC`, `rR` pour les Reverses ; `profiles.garder`), et par carte dans la page Gérer (1 à 10, ou 99 = « Tous » ; table `gardes`). Le réglage d'une carte l'emporte ; revenu à la valeur de sa rareté, il s'efface. Envoi différé de 600 ms (`Backend.reglerGarde`).
+- **À garder** (`supabase/installation/22_garder.sql`) : par rareté dans Réglages (1 à 4 ; clés `ES`…`L`, et `rC`, `rPC`, `rR` pour les Reverses ; `profiles.garder`), et par carte dans la page Gérer (1 à 10, ou 99 = « Tous » ; table `gardes`). Le réglage d'une carte l'emporte ; revenu à la valeur de sa rareté, il s'efface. Envoi différé de 600 ms (`Backend.reglerGarde`).
 - **Ce que ça protège** : les exemplaires gardés échappent au recyclage, à la maîtrise, et aux « doublons » que voient les amis. Un échange qui cède une carte gardée demande une confirmation, sans être interdit.
 - **Favori** : un cœur pour soi (table `favoris`), filtre « Favoris » de la Collection ; possible sur une carte qu'on n'a plus.
 - Trois quêtes saisonnières vont avec : 10 exemplaires d'une même Rare, 5 d'une Épique, 3 d'une Légendaire (métriques `ex_R`, `ex_E`, `ex_L`, classiques seulement).
 
 ### 6.6 Recyclage et fabrication
 
-Les doublons deviennent des **Fragments** (`recycler`, `supabase/12_recyclage.sql`) ; les Fragments **fabriquent une carte qui manque** (`fabriquer`, depuis une case vide de la Collection).
+Les doublons deviennent des **Fragments** (`recycler`, `supabase/installation/12_recyclage.sql`) ; les Fragments **fabriquent une carte qui manque** (`fabriquer`, depuis une case vide de la Collection).
 
 | Rareté | Recycler rapporte | Fabriquer coûte |
 |---|---|---|
@@ -719,7 +720,7 @@ Les doublons deviennent des **Fragments** (`recycler`, `supabase/12_recyclage.sq
 ### 6.8 Échanges et Social
 
 - **On échange avec n'importe quel joueur** : un ami, ou un pseudo exact (`find_player`) ; `trade_create` ne vérifie pas l'amitié. Seules la collection de l'autre (`player_profile`) et la vue « Chez tes amis » sont réservées aux amis. L'onglet Social (`js/social.js`) a deux volets, Amis et Échanges (`js/trade.js`).
-- **Amis** (`supabase/06_social.sql`) : table `friendships` rangée `a < b` ; une demande croisée vaut acceptation ; 25 demandes en attente au plus. La **fiche d'un joueur** (`player_profile`) montre à tous bannière, avatar, titre, devise, niveau, l'Élu, la fétiche, la vitrine, les statistiques et les succès ; **entre amis seulement**, sa collection et ses 12 meilleurs doublons (R ou mieux).
+- **Amis** (`supabase/installation/06_social.sql`) : table `friendships` rangée `a < b` ; une demande croisée vaut acceptation ; 25 demandes en attente au plus. La **fiche d'un joueur** (`player_profile`) montre à tous bannière, avatar, titre, devise, niveau, l'Élu, la fétiche, la vitrine, les statistiques et les succès ; **entre amis seulement**, sa collection et ses 12 meilleurs doublons (R ou mieux).
 - **Règles d'un échange** (`trade_create`, `trade_respond`, `03_rpc.sql`) : une carte contre une carte **de même rareté** ; ni Essence, ni Promo, ni Brillante, ni Unique ; Reverse contre Reverse, Secrète contre Secrète ; posséder ce qu'on offre ; 10 demandes en attente au plus ; une note de 140 caractères. **Coût** : une demande gratuite toutes les 6 h (`cfg('trade_cooldown_h')`), sinon un jeton (`trade_token`, boutique), sinon `ECHANGE_EN_RECHARGE`. À l'acceptation, le serveur revérifie tout et échange dans une seule transaction.
 - **Écran** : à gauche ce qu'on **reçoit**, à droite ce qu'on **donne**, partout. L'étiquette dit combien *j'en ai* (« Nouvelle », « ×n », « Dernière », « Gardée »). « Chez tes amis » liste ce qui te manque et qu'un ami a en double (`amis_doublons`).
 - **La photo Discord des autres** : on stocke le mot `discord`, et le serveur joint l'adresse de la photo (`photo_discord()`) aux profils qu'il renvoie. `avatarHTML(a, cadre, taille, photo)` **ne se rabat jamais sur la session** : sans adresse, on dessine l'étoile (avant, tout le monde portait le visage du spectateur).
@@ -735,7 +736,7 @@ Les doublons deviennent des **Fragments** (`recycler`, `supabase/12_recyclage.sq
 
 - **Portées** : `daily`, `weekly`, `milestone` (« Saisonnières »), et pour un événement `ev_jour` / `ev`. La clé de période est calculée **à l'heure de Paris** (`period_key`) ; l'interface affiche le temps restant avec le même calendrier (`resteAvantRemise`).
 - **La progression n'est jamais envoyée par le navigateur** : le serveur l'avance quand l'événement arrive vraiment (`bump_quests`, appelé par `open_pack`, `trade_respond`, `recycler`, `combat_fin`…). Seule nuance : pour un combat, le serveur croit le navigateur sur le **résultat** (`combat_fin`, `tutoriel_fini`), dans les limites du [§ 7.11](#711-ce-que-le-serveur-vérifie). Les quêtes « d'état » ne reculent pas : pourcentage de collection, raretés complètes `set_*` / `rset_*`, Brillantes et exemplaires `ex_*` sont recalculés par `sync_collection_quests` (`01_schema.sql`) ; le niveau de combattant (métrique `niveau`) l'est par `gagner_xp` (`26_niveaux.sql`).
-- **97 quêtes** dans `supabase/04_seed.sql` (`d_*`, `w_*`, `m_*`, Reflets `e_*`, Choc `c_*`), avec leurs récompenses (Éclats, `item_id`, ou `monnaie = 'prismes'`). Calculs d'équilibrage en tête du fichier.
+- **97 quêtes** dans `supabase/installation/04_seed.sql` (`d_*`, `w_*`, `m_*`, Reflets `e_*`, Choc `c_*`), avec leurs récompenses (Éclats, `item_id`, ou `monnaie = 'prismes'`). Calculs d'équilibrage en tête du fichier.
 - **Signalement** : une carte passe 4 s en haut de l'écran (`notifQuete`), puis la pastille de l'onglet reste tant qu'il y a quelque chose à encaisser. C'est `Backend.apply` qui compare l'état avant / après.
 - L'onglet Quêtes a trois sous-onglets (Quotidiennes, Hebdomadaires, Saisonnières) ; les quêtes de combat vivent aussi dans Combats › Missions (`METRIQUES_COMBAT`).
 
@@ -759,7 +760,7 @@ Trois rayons (`RAYONS`, `js/shop.js`) : **Cartes**, **Cosmétiques**, **Combats*
 
 ### 6.12 Boîte de réception, cadeaux, classement, tirages, partage
 
-- **Boîte** (`js/boite.js`, `supabase/11_boite.sql`) : demandes d'ami et d'échange, réponses, défis, annonces. Le **serveur écrit** l'événement au moment où il a lieu (`notifier()`). Arrivée par le temps réel Supabase, avec une relève toutes les 30 s en secours. Lu / non lu = une date par joueur (`boite_vue_le`). Ping : pastille sur la cloche, « (n) » dans le titre, badge d'app, carte en haut de l'écran — **jamais** pendant une ouverture, une scène de Promo ou un combat (`ecranOccupe()`). Annonces publiées depuis le Labo ; 30 jours d'historique.
+- **Boîte** (`js/boite.js`, `supabase/installation/11_boite.sql`) : demandes d'ami et d'échange, réponses, défis, annonces. Le **serveur écrit** l'événement au moment où il a lieu (`notifier()`). Arrivée par le temps réel Supabase, avec une relève toutes les 30 s en secours. Lu / non lu = une date par joueur (`boite_vue_le`). Ping : pastille sur la cloche, « (n) » dans le titre, badge d'app, carte en haut de l'écran — **jamais** pendant une ouverture, une scène de Promo ou un combat (`ecranOccupe()`). Annonces publiées depuis le Labo ; 30 jours d'historique.
 - **Cadeaux** (`js/cadeaux.js`, `18_cadeaux.sql`) : un administrateur offre Éclats, boosters, Fragments, une carte (pas l'Unique) et un mot ; le joueur ouvre un paquet-cadeau, et c'est `ouvrir_cadeau` qui crédite, une seule fois.
 - **Classement** (`js/classement.js`, `14_classement.sql`) : quatre critères affichés (`CRITERES` : niveau, collection, Secrètes, Versus) ; le serveur en sait huit (aussi Reverses, boosters, échanges, série). Top 50 et ma ligne ; seuls les comptes invités ; cache de 60 s.
 - **Mes tirages** (`js/tirages.js`, table `tirages`) : les 30 derniers boosters, depuis la 1.5.
@@ -778,7 +779,7 @@ Trois rayons (`RAYONS`, `js/shop.js`) : **Cartes**, **Cosmétiques**, **Combats*
 
 ### 6.14 Recettes
 
-- **Ajouter une carte d'extension** : poser l'image, ajouter l'entrée à `CARD_DATA`, puis `python3 supabase/gen-cards-sql.py`, `node tools/illu-pixels.js`, `python3 tools/build-sql.py`. Si la carte a un texte (hors mots-clés lus par le moteur), écrire son script `S.cNNN` dans `js/combat/effets.js` et son test ([§ 7.12](#712-recettes)). Vérifier `starters` / `cle_copie` (`23_combats.sql`), la boutique (`04_seed.sql`) et les textes en dur (« 122 », « 85 », `CADRE_SOURCE`). ⚠ **Les numéros 123 à 127 sont pris par les Secrètes** : un `num: 123` écraserait `c123` des deux côtés.
+- **Ajouter une carte d'extension** : poser l'image, ajouter l'entrée à `CARD_DATA`, puis `python3 tools/gen-cards-sql.py`, `node tools/illu-pixels.js`, `python3 tools/build-sql.py`. Si la carte a un texte (hors mots-clés lus par le moteur), écrire son script `S.cNNN` dans `js/combat/effets.js` et son test ([§ 7.12](#712-recettes)). Vérifier `starters` / `cle_copie` (`23_combats.sql`), la boutique (`04_seed.sql`) et les textes en dur (« 122 », « 85 », `CADRE_SOURCE`). ⚠ **Les numéros 123 à 127 sont pris par les Secrètes** : un `num: 123` écraserait `c123` des deux côtés.
 - **Révéler une Secrète** : compléter son entrée de `SECRET_DATA` et retirer `cachee` ; poser l'image (`tools/cosmetiques.py` ou à la main ; le nom de fichier change, le cache suit) ; corriger dans `24_secretes.sql` son nom **et sa catégorie et sa couleur** (provisoirement `joueur` / `neutre`, lues par `deck_erreur`) ; écrire son script dans `js/combat/effets.js` si elle a un texte.
 - **Ajouter une Promo** : `PROMO_DATA` et l'image dans `cards/promos/` ; la ligne `pNN` dans `03b_promos.sql` ; si elle se vend, l'article dans `04_seed.sql` (effet `carte`, `carte_id`) **et son identifiant dans la liste du `delete … not in (…)`**, puis dans `BOUTIQUE` (`_demo/serveur.js`) ; si elle est jouable, son script dans `js/combat/effets.js`.
 - **Changer les taux** : `open_pack` (SQL), `RATES` / `GOD` (`booster.js`) **et** `tirerPaquet` (`_demo/serveur.js`), ensemble.
@@ -920,7 +921,7 @@ Le serveur **ne fait pas tourner le moteur**. Il fixe la graine de chaque combat
 
 ### 8.1 Le modèle
 
-Un événement est **une ligne de `evenements`** (`supabase/15_evenements.sql`) : `titre`, `texte`, `debut`, `fin`, `ticket_minutes` (facultatif), `code` (facultatif).
+Un événement est **une ligne de `evenements`** (`supabase/installation/15_evenements.sql`) : `titre`, `texte`, `debut`, `fin`, `ticket_minutes` (facultatif), `code` (facultatif).
 
 - **Sans code**, il ne change que le rythme des boosters (`ticket_minutes`, 120 = doublés) et pose un bandeau sur l'écran Boosters.
 - **Avec un code** (`reflets`, `choc`), il active tout ce qui porte ce code : les quêtes (`quests.evenement`), la boutique (`shop_items.evenement`), le Pass (`evt_piste.evenement`), le compte de monnaie (`evt_comptes.evenement`), et l'onglet du même nom.
@@ -956,12 +957,12 @@ Un événement est **une ligne de `evenements`** (`supabase/15_evenements.sql`) 
 
 ### 8.5 Reflets (2.0) et Devine l'illu
 
-- **Reflets** (`js/reflets.js`, `css/reflets.css`, `supabase/21_reflets.sql`) : l'événement de la 2.0, terminé en production. Son onglet a six sous-onglets (Accueil et ses Nouveautés 2.0, Quêtes, Pass, Devine l'illu, Boutique, Classement). Son code et sa CSS servent de **charpente** au Choc. En pré-prod, il est remplacé par le Choc.
+- **Reflets** (`js/reflets.js`, `css/reflets.css`, `supabase/installation/21_reflets.sql`) : l'événement de la 2.0, terminé en production. Son onglet a six sous-onglets (Accueil et ses Nouveautés 2.0, Quêtes, Pass, Devine l'illu, Boutique, Classement). Son code et sa CSS servent de **charpente** au Choc. En pré-prod, il est remplacé par le Choc.
 - **Devine l'illu** survit à l'événement, dans son onglet (`illu`, tiroir) : une illustration par jour de Paris, la même pour tous, dans un ordre secret (cartes triées par `md5(illu_sel || ':' || id)`, cycle de 113 jours ; le sel `parametres.illu_sel` n'est jamais montré). Pixels 36 × 24 à 12 bits dans `illu_pixels` (`21b_illu.sql`, généré par `node tools/illu-pixels.js`) ; le serveur n'envoie que la grille du niveau en cours (9 × 6 → 12 × 8 → 18 × 12 → 36 × 24) et ne révèle la carte qu'à la fin. 4 essais ; gains 120 / 90 / 60 / 30 Éclats, plus 25 / 18 / 12 / 6 Prismes **pendant Reflets seulement** (`illu_gain`). Partage façon Wordle. En pré-prod, les grilles viennent de `preprod/js/demo-illu.js` (`window.DEMO_ILLU`), écrit par `tools/demo.py` à partir de `21b_illu.sql` ; l'ordre des illustrations n'y est pas salé.
 
 ### 8.6 Le Choc des Sections
 
-L'événement de la 3.0 (`code = 'choc'`, trois semaines ; `js/choc.js`, `css/choc.css`, `js/combat/choc-data.js`, `supabase/25_choc.sql`). Il oppose les deux Sections : **Toxique** (vert, Squeezie le Toxique, #012) et **Déter** (violet, Brawks Déter, #077).
+L'événement de la 3.0 (`code = 'choc'`, trois semaines ; `js/choc.js`, `css/choc.css`, `js/combat/choc-data.js`, `supabase/installation/25_choc.sql`). Il oppose les deux Sections : **Toxique** (vert, Squeezie le Toxique, #012) et **Déter** (violet, Brawks Déter, #077).
 
 - **Sept sous-onglets** (`CH_ONGLETS`) : Accueil (l'affiche coupée en biais `chAffiche()`, les Nouveautés de la 3.0), Raid, Épreuve, Quêtes, Pass, Boutique, Classement (Raid ou Étincelles).
 - **L'Épreuve du jour** : un combat imposé, **le même pour tous** (`choc_etat()` donne `jour` et `graine` ; le client en tire la règle du jour parmi 7 — `eclair`, `siege`, `renforts`, `miroir`, `outsider`, `marathon`, `classique` — et les decks de niveau 3 par `epreuveDuJour`). **3 essais**, le meilleur compte (`scoreEpreuve` ↔ `choc_score`). L'essai est enregistré perdu dès le départ. 5 Étincelles par essai joué (plus de 20 s), +25 à la première victoire du jour. Le serveur ne vérifie ni la règle ni les decks.
@@ -1018,7 +1019,7 @@ update public.chasse set active = true, ouvre_le = now() where id = 1;
 
   **`revoke … from public` est obligatoire** : PostgreSQL accorde EXECUTE à PUBLIC par défaut, et `anon` en hérite. RPC qui ne passent pas par `garde_beta` : `porte()` (ouverte à `anon`), `me()` (elle renvoie `invite`), `utiliser_invitation()`, `mes_cadeaux()` (lecture seule), et les quatre RPC d'administration (`annonce_publier`, `annonce_retirer`, `offrir_cadeau`, `admin_joueurs`), qui ne vérifient que `is_admin`.
 - **La bêta est fermée pour toujours** : `beta_lancement()` renvoie `'infinity'` ; seuls les comptes de `beta_invites` (par e-mail ou identifiant Discord, `est_invite`) jouent. `handle_new_user` crée quand même le profil (pour qu'un code d'invitation puisse servir), mais `garde_beta()` refuse tout le reste avec `BETA_FERMEE`. **Même l'administrateur doit être dans `beta_invites`.**
-- **Administrateur** : `profiles.is_admin`, posé **uniquement en SQL** (`05_admin.sql`). `annonce_*`, `offrir_cadeau`, `admin_joueurs` le vérifient côté serveur.
+- **Administrateur** : `profiles.is_admin`, posé **uniquement en SQL** (`supabase/administration/admin.sql`). `annonce_*`, `offrir_cadeau`, `admin_joueurs` le vérifient côté serveur.
 - **Les messages d'erreur sont montrés tels quels** : ils sont en français. Un code en majuscules (`RESERVE_VIDE`, `BONUS_VIDE`, `BOOSTER_VIDE`, `ECHANGE_EN_RECHARGE`, `BETA_FERMEE`) doit être traduit dans `MSG_SERVEUR` (`js/backend.js`).
 - **Jours à l'heure de Paris** partout (`period_key`, `jour_paris`, `illu_jour`, `checkin`).
 - **Ce que l'écran d'attente ne protège pas** : les *fichiers*. Le site est statique et public ; seul le *jeu* est fermé (le serveur ne répond rien sans invitation).
@@ -1028,9 +1029,10 @@ update public.chasse set active = true, ouvre_le = now() where id = 1;
 | Fichiers | Nature | Dans `TOUT.sql` |
 |---|---|---|
 | `01`, `02`, `03`, `03b`, `04`, `06`, `07`, `11`, `12`, `14`, `15`, `18`, `21`, `21b`, `22`, `23`, `24`, `25`, `26`, `27`, `28` | **Installation**, rejouable (`if not exists`, `on conflict`, `create or replace`) | oui, dans cet ordre (`MORCEAUX`, `tools/build-sql.py`) |
-| `02_cards.sql`, `21b_illu.sql` | **Générés** (`supabase/gen-cards-sql.py`, `node tools/illu-pixels.js`) : ne jamais éditer | oui |
-| `13`, `16`, `17`, `19`, `20` | **Mises à jour historiques** (bases 1.4 / 1.5) : **dangereuses aujourd'hui**, ne jamais rejouer | non |
-| `05_admin`, `08_reset-profil`, `09_beta`, `10_reset-tout` | **Outils d'administration** ponctuels ([§ 9.10](#910-outils-dadministration)) | non |
+| `02_cards.sql`, `21b_illu.sql` | **Générés** (`python3 tools/gen-cards-sql.py`, `node tools/illu-pixels.js`) : ne jamais éditer | oui |
+| `administration/admin.sql`, `beta.sql`, `reset-profil.sql`, `reset-tout.sql` | **Outils d'administration** ponctuels ([§ 9.10](#910-outils-dadministration)) | non |
+
+Les fichiers d'installation vivent dans `supabase/installation/` ; leur préfixe numérique est leur ordre dans `TOUT.sql` (les numéros manquants, `05`, `08`–`10`, `13`, `16`, `17`, `19`, `20`, étaient des outils, devenus `administration/`, ou des **mises à jour historiques** des bases 1.4 / 1.5, dangereuses à rejouer et **supprimées en 3.0.8** : elles restent dans l'historique git, commit `80a621f` et avant).
 | `TOUT.sql` | **Assemblé** par `python3 tools/build-sql.py` (~6 100 lignes) : c'est ce qu'on colle dans Supabase | — |
 
 | Fichier | Contenu |
@@ -1140,10 +1142,16 @@ Chaque règle de jeu existe en **trois exemplaires** : le SQL (qui fait foi), le
 
 | Fichier | Rôle | Attention |
 |---|---|---|
-| `05_admin.sql` | Donner `is_admin` à un e-mail | — |
-| `08_reset-profil.sql` | Remettre un joueur à zéro (pseudo en dur) | **Obsolète** : ignore Fragments, boosters bonus, maîtrise, combats, événements… |
-| `09_beta.sql` | Inviter, retirer, lister les comptes de la bêta | La section 2 n'est pas commentée : jouer le fichier entier insère deux invitations factices |
-| `10_reset-tout.sql` | Remettre tout le monde à zéro (confirmation écrite exigée) | **Obsolète**, comme 08 |
+Dans `supabase/administration/`, à coller dans Supabase › SQL Editor (aucun n'entre dans `TOUT.sql`) :
+
+| Fichier | Rôle | Attention |
+|---|---|---|
+| `admin.sql` | Donner `is_admin` à une adresse e-mail (le Labo apparaît) | Remplacer l'adresse d'exemple |
+| `beta.sql` | Lister les comptes de la bêta (partie 1, seule active), inviter, retirer, supprimer un compte (parties 2 à 6, en commentaire) | Décommenter la ligne voulue et la lancer seule |
+| `reset-profil.sql` | Remettre **un** joueur à zéro (pseudo en dur, deux endroits) : collection, monnaies, inventaire, quêtes, événements, combats, maîtrise, fétiche ; garde le compte, le pseudo, la devise, les amis, les droits | Annule ses échanges en attente ; rouvre la chasse s'il avait la carte unique ; ses dégâts au Raid restent dans le total de la saison |
+| `reset-tout.sql` | Remettre **tout le monde** à zéro, le jour d'un vrai lancement (confirmation écrite exigée) | Efface aussi les dégâts du Raid (le boss repart plein) et rouvre la chasse ; fermer le site (`PORTE.active = true`) et sauvegarder avant |
+
+Les deux remises à zéro (réécrites pour la 3.0 en 3.0.8, testées sur PostgreSQL 16) ont un **garde-fou** : elles refusent de tourner si une table du schéma pointe vers `profiles` sans figurer dans leur liste `connues`. **Ajouter une table qui appartient à un joueur, c'est donc aussi l'ajouter à ces deux scripts** (l'effacer, ou la ranger parmi ce qu'on garde).
 
 ---
 
@@ -1175,7 +1183,7 @@ Les clics du Labo passent par `clicPage` (`data-act="t-*"`, `data-apercu`, `data
 
 Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `css/`, `js/`, puis **modifie la copie** :
 
-1. `_demo/serveur.js` devient `js/demo-serveur.js`, `_demo/reglages.js` devient `js/demo-reglages.js` ; `js/demo-illu.js` (`window.DEMO_ILLU`, 113 grilles) est extrait de `supabase/21b_illu.sql`.
+1. `_demo/serveur.js` devient `js/demo-serveur.js`, `_demo/reglages.js` devient `js/demo-reglages.js` ; `js/demo-illu.js` (`window.DEMO_ILLU`, 113 grilles) est extrait de `supabase/installation/21b_illu.sql`.
 2. La balise supabase-js est remplacée par ces trois scripts (chargés **avant** `config.js`) ; `js/supabase-config.js` reçoit de fausses valeurs (`https://demo.invalid`).
 3. `vPorteAttente()` (`js/gate.js`) commence par `return demoPorte()` ; les trois fichiers entrent dans `ESSENTIEL` (`sw.js`).
 
@@ -1218,8 +1226,8 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 | `python3 tools/build-sql.py` | aucune | `supabase/TOUT.sql` |
 | `tools/tester-sql.sh [tests.sql…]` | PostgreSQL 16 | joue la production puis `TOUT.sql` deux fois sur une base locale ([§ 2.3](#23-tester-le-sql-sur-un-postgresql-local)) ; `tools/sql-stub.sql` imite Supabase |
 | `python3 tools/equilibre-fragments.py [joueurs] [jours]` | aucune | les Fragments gagnés par semaine et la fréquence d'une carte : la base du barème de la maîtrise |
-| `python3 supabase/gen-cards-sql.py` | aucune | `supabase/02_cards.sql` |
-| `node tools/illu-pixels.js` | Node, Playwright (Chromium) | `supabase/21b_illu.sql` (puis `build-sql.py` et `demo.py`) |
+| `python3 tools/gen-cards-sql.py` | aucune | `supabase/installation/02_cards.sql` |
+| `node tools/illu-pixels.js` | Node, Playwright (Chromium) | `supabase/installation/21b_illu.sql` (puis `build-sql.py` et `demo.py`) |
 | `node tools/combat-tests.js` | Node | les tests de règles |
 | `node tools/combat-sim.js <mode> N …` | Node | parties simulées (`aleatoire`, `clone`, `ia`, `starters`) |
 | `python3 tools/cadres.py` | aucune | les 7 cadres SVG de la 2.0 (`assets/cadres/`) |
@@ -1303,7 +1311,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 **Serveur**
 
 23. **Ne jamais éditer** `TOUT.sql`, `02_cards.sql`, `21b_illu.sql` (générés).
-24. **Ne jamais rejouer** `13`, `16`, `17`, `19`, `20` (ils réinstallent d'anciennes versions ; `17` supprime les quêtes 2.0 / 3.0 et leur progression), malgré leurs en-têtes « rejouable sans danger ».
+24. **Ne jamais ressortir de l'historique git** les anciennes mises à jour `13`, `16`, `17`, `19`, `20` (supprimées en 3.0.8) : elles réinstallent d'anciennes versions (`17` supprime les quêtes 2.0 / 3.0 et leur progression), malgré leurs en-têtes « rejouable sans danger ».
 25. Rejouer `03_rpc.sql` ou `06_social.sql` seul remplace `me()` / `player_profile()` par des versions tronquées : toujours rejouer `TOUT.sql`.
 26. Une carte créée ailleurs que dans `02_cards.sql` doit être `promo = true`, sinon le ménage de `02` la supprime avec tous ses exemplaires.
 27. Les listes `delete … not in (…)` de `04_seed.sql` : un identifiant oublié efface la quête ou l'article, et sa progression.
@@ -1359,7 +1367,6 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 - **Combat** : `E.pileFace`, `P.enCours`, `vuMain`, `E.cpt.essDesengagees`, `c.tour`, `E.v`, `defiActif.dernier`, `atelier.filtres.rar`, `'c012'` dans `INSTANTS_SURS`, `CB_ALIAS`, trois copies du même mulberry32, une vingtaine d'exports jamais appelés de l'extérieur.
 - **Événements** : `CHOC.code`, la branche `insignes` de `chIco`, les visuels `reverse_R` / `brillante` de `vChBoutique`, `epreuveRegle()` (doublon), `montrerNouveautes21` et les boutons `t-v2-*` (encore joignables depuis le Labo).
 - **CSS** : de nombreux sélecteurs sans producteur (`.soon*`, `.cb-deck*` remplacés par `dk-*`, toute l'ancienne partie Raid de `choc.css`, `.rd-*`, `.gd-une*`, `.ar-atq.ok`…), des neutralisations de `h2::before` qui n'existe plus, et des jetons inutilisés (`--brand-deep`, `--brand-ink`, `--violet`, `--cyan`, `--cyan-glow`, `--gold-deep`, `--gold-glow`, `--hover-2`, `--sh-press`, `--veil`, `--gap-1`).
-- **Dépôt** : `tools/__pycache__/*.pyc` suivi par git ; `assets/logo.webp` et `assets/logo-bw.svg` cités par aucun code ; `presse/polices/Archivo-Black-Italic.ttf` inutilisé.
 
 ### 14.3 Écarts à la DA
 
@@ -1371,12 +1378,11 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 ### 14.4 Documentation et commentaires périmés
 
-- **Fichiers SQL** : en-têtes « rejouable sans danger » de 13 / 16 / 17 / 19 / 20 ; `08_reset-profil.sql` et `10_reset-tout.sql` ignorent tout ce qui est venu après la 1.5 ; `09_beta.sql` insère des invitations factices si on le joue en entier ; l'en-tête de `TOUT.sql` parle de « quatre fichiers » ; l'en-tête de `04_seed.sql` décrit l'ancien booster.
+- **Fichiers SQL** : les médianes de simulation en tête de `04_seed.sql` (boosters pour 25 / 50 / 75 / 90 / 100 % de la collection) datent du booster de la 1.x et n'ont pas été recalculées (l'en-tête le dit).
 - **`SETUP.md`** : Promo « à 10 000 » (5 000), dépannage qui renvoie à l'« étape 7 » (5 et 5 bis), mode hors ligne, ni `beta_invites` ni l'événement Reflets créé à l'installation, `illu-pixels.js` oublié.
 - **`docs/`** : `design-3.0.md` décrit l'en-tête du Choc « avec Gotaga Pose et le VS » et les cadres Arène « laurier, épées, gemmes » (aujourd'hui Brawks Déter sans VS ; anneau, cimier et ailes, sans plaque depuis la 3.0.8) ; `economie-3.0.md` cite une table `combat_parties` qui n'existe pas, oublie `f_foudre` (boutique du Choc : 3 100, pas 2 700) et `d_xp` / `w_xp`.
 - **`presse/`** : « quatre Promos », « thème Sombre » à régler, GIF annoncés « douze images » et « cinq cartes ».
 - **Commentaires de code** : la Reverse décrite comme « quatrième carte » (c'est la 5ᵉ) ; « l'événement remplace Combats dans la barre du bas » (il va en tête du tiroir) ; `shop.js` « deux rayons » (trois) ; « Aucune logique ici » (`config.js`) ; `gate.js` « aucun compte ne se crée » (un profil est créé) ; `supabase-config.js` « vide = hors ligne » ; `verif.html` (« mode hors ligne », « e-mail », `theme-color` 2.x) ; `tutoriel.js` se dit 3.0.6 ; `REGLE` présenté comme « le seul endroit » alors que des valeurs sont recopiées en dur (SQL, guides, tutoriel, arène).
-- `.claude/launch.json` (port 8765) et ce README (8781) ne proposent pas le même port.
 
 ### 14.5 Pistes non engagées
 

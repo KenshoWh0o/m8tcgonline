@@ -1,9 +1,14 @@
 -- =====================================================================
 --  Mate TCG Online — la beta fermee
 --
---  A jouer APRES 01_schema.sql, qui cree la table et pose le controle.
---  Ce fichier-ci est un outil : on y revient pour inviter, retirer, ou
---  regarder qui est entre. Rien ici n'est joue a l'installation.
+--  La table et le controle sont crees par l'installation
+--  (supabase/installation/01_schema.sql, dans TOUT.sql). Ce fichier-ci est
+--  un outil : on y revient pour inviter, retirer, ou regarder qui est
+--  entre. Rien ici n'est joue a l'installation.
+--
+--  Ne pas le jouer en entier : seule la partie 1 (l'etat des lieux) est
+--  active. Les autres sont en commentaire : decommenter la ligne voulue,
+--  la completer, puis la lancer seule.
 --
 --  ------------------------------------------------------------------
 --  POURQUOI CETTE TABLE EXISTE
@@ -15,7 +20,7 @@
 --  serveur — mais il n'arrete pas quelqu'un de decide.
 --
 --  La serrure, c'est cette table. Jusqu'a l'heure d'ouverture fixee dans
---  beta_ouverte() (supabase/01_schema.sql), AUCUNE action du jeu n'aboutit
+--  beta_ouverte() (supabase/installation/01_schema.sql), AUCUNE action du jeu n'aboutit
 --  pour qui ne figure pas dedans : ni ouvrir un booster, ni consulter un
 --  profil, ni meme creer un compte. Le refus tombe cote serveur, il ne se
 --  contourne pas depuis le navigateur.
@@ -57,10 +62,10 @@ select p.pseudo,
 --  Trouver un identifiant Discord : dans Discord, Parametres > Avances >
 --  Mode developpeur, puis clic droit sur la personne > Copier l'identifiant.
 -- =====================================================================
-insert into public.beta_invites (cle, note) values
-  ('quelquun@exemple.com', 'testeur — ami'),
-  ('123456789012345678',   'testeur — Discord')
-on conflict (cle) do update set note = excluded.note;
+-- insert into public.beta_invites (cle, note) values
+--   ('quelquun@exemple.com', 'testeur — ami'),
+--   ('123456789012345678',   'testeur — Discord')
+-- on conflict (cle) do update set note = excluded.note;
 
 
 -- =====================================================================
@@ -92,7 +97,7 @@ on conflict (cle) do update set note = excluded.note;
 --  Deux gestes, du plus doux au plus definitif.
 --
 --  a) Le vider sans le supprimer : la personne garde son compte mais
---     repart de zero. C'est supabase/08_reset-profil.sql.
+--     repart de zero. C'est supabase/administration/reset-profil.sql.
 --
 --  b) Le supprimer pour de bon. Irreversible : la collection, les Eclats,
 --     les echanges et les amities partent avec (tout est en cascade sur
@@ -111,7 +116,8 @@ on conflict (cle) do update set note = excluded.note;
 --  beta_lancement(), et PORTE.active a false dans js/gate.js.
 --
 --  Pour avancer ou reculer la date : beta_lancement() dans
---  supabase/01_schema.sql, puis rejouer TOUT.sql. C'est le seul endroit :
+--  supabase/installation/01_schema.sql, reconstruire TOUT.sql
+--  (python3 tools/build-sql.py), puis le rejouer. C'est le seul endroit :
 --  l'ecran d'attente la demande au serveur (porte()), avec l'heure du
 --  serveur. Rien a pousser sur le site.
 --

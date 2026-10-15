@@ -1,7 +1,6 @@
 -- =====================================================================
 --  Mate TCG Online — les cadeaux
---  A executer apres 15_evenements.sql (ou apres 17_maj-quetes.sql sur une
---  base deja installee). Rejouable sans danger.
+--  A executer apres 15_evenements.sql. Rejouable sans danger.
 --
 --  Un administrateur offre a un ou plusieurs joueurs des Eclats, des
 --  boosters, des Fragments et/ou une carte, avec un mot. Le joueur le

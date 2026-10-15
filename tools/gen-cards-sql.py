@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Regenere supabase/02_cards.sql a partir de js/cards-data.js.
+"""Regenere supabase/installation/02_cards.sql a partir de js/cards-data.js.
 A relancer (puis rejouer le SQL dans Supabase) des qu'une carte est ajoutee ou retiree :
-    python3 supabase/gen-cards-sql.py
+    python3 tools/gen-cards-sql.py
 Le serveur tire les boosters dans cette table ; si elle est en retard sur le jeu,
 les nouvelles cartes ne sortiront jamais."""
 import re, os, unicodedata, sys
@@ -55,7 +55,7 @@ rows.sort(key=lambda r: r[1])
 q = lambda s: "'" + s.replace("'", "''") + "'"
 out = ["""-- =====================================================================
 --  Mate TCG Online — catalogue des cartes (genere, ne pas editer a la main)
---  Source : js/cards-data.js  ·  Regenerer : python3 supabase/gen-cards-sql.py
+--  Source : js/cards-data.js  ·  Regenerer : python3 tools/gen-cards-sql.py
 --  A rejouer dans Supabase apres chaque ajout ou retrait de carte.
 -- =====================================================================
 
@@ -140,10 +140,10 @@ begin
 end $$;
 """.replace('__IDS__', liste))
 
-open(os.path.join(ROOT, 'supabase', '02_cards.sql'), 'w', encoding='utf-8').write('\n'.join(out))
+open(os.path.join(ROOT, 'supabase', 'installation', '02_cards.sql'), 'w', encoding='utf-8').write('\n'.join(out))
 
 from collections import Counter
-print('%d cartes ecrites dans supabase/02_cards.sql' % len(rows))
+print('%d cartes ecrites dans supabase/installation/02_cards.sql' % len(rows))
 print('  raretes :', dict(sorted(Counter(r[5] for r in rows).items())))
 print('  categories :', dict(sorted(Counter(r[3] for r in rows).items())))
 print('  essences :', dict(sorted(Counter(r[4] for r in rows).items())))

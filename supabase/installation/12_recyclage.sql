@@ -9,7 +9,7 @@
 --  exemplaire de chaque carte : recycler ne fait jamais reculer la
 --  collection.
 --
---  Les montants sont dans cfg() (supabase/01_schema.sql) :
+--  Les montants sont dans cfg() (supabase/installation/01_schema.sql) :
 --      recyclage    Essence 1 · Commune 2 · Peu commune 5 · Rare 20
 --                   Epique 80 · Legendaire 250
 --      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400

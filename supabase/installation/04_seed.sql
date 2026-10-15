@@ -10,13 +10,16 @@
 --  L'extension compte 122 cartes : 9 essences, 33 communes, 24 peu
 --  communes, 28 rares, 18 epiques, 10 legendaires.
 --
---  Un booster donne 6 cartes : deux communes, une commune ou peu commune
---  (60/40), une peu commune, une essence, et un dernier tirage a
---  80 % rare / 16 % epique / 4 % legendaire.
+--  Un booster donne 6 cartes (open_pack(), 03_rpc.sql, fait foi) : deux
+--  communes, une peu commune, une essence (Brillante une fois sur 50), une
+--  Reverse (C 50 % / PC 35 % / R 15 %), et le hit : 79 % rare / 16 %
+--  epique / 4,25 % legendaire / 0,75 % Secrete.
 --  La reserve tient 5 boosters et se recharge de 1 toutes les 4 h — six
 --  boosters par jour pour qui passe regulierement.
 --
---  Ce que ca donne, en mediane de simulation :
+--  Ce que ca donnait, en mediane de simulation, avec le booster de la 1.x
+--  (une commune ou peu commune a la place de la Reverse, hit a 80 / 16 / 4,
+--  sans Secrete) ; le calcul n'a pas ete refait depuis :
 --      25 % de la collection ......    7 boosters  (le premier jour)
 --      50 % .......................   17 boosters  (trois jours)
 --      75 % .......................   45 boosters  (une semaine)   -> promo P06

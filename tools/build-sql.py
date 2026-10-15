@@ -3,16 +3,19 @@
 """Assemble les fichiers SQL d'installation en un seul, a coller d'un bloc dans Supabase.
     python3 tools/build-sql.py
 
-Seuls les fichiers d'installation entrent dans TOUT.sql : 05_admin.sql et
-08_reset-profil.sql sont des outils ponctuels, a jouer a la main quand on en
-a besoin.
+Seuls les fichiers de supabase/installation/ entrent dans TOUT.sql, dans
+l'ordre de MORCEAUX. Ceux de supabase/administration/ (droits d'admin,
+invitations, remises a zero) sont des outils ponctuels, a jouer a la main
+quand on en a besoin.
 
 A relancer apres toute modification des fichiers assembles — et notamment apres
-`python3 supabase/gen-cards-sql.py`, quand des cartes ont bouge."""
+`python3 tools/gen-cards-sql.py` (des cartes ont bouge) ou
+`node tools/illu-pixels.js` (Devine l'illu)."""
 import os, datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SB = os.path.join(ROOT, 'supabase')
+INSTALLATION = os.path.join(SB, 'installation')
 
 # L'ordre compte : 03b_promos.sql cree les cartes Promo, et 04_seed.sql en
 # vend deux en boutique — il ne peut pas les referencer avant qu'elles existent.
@@ -47,11 +50,14 @@ entete = """-- =================================================================
 --   Tout colle, tout d'un bloc, dans Supabase > SQL Editor > New query,
 --   puis « Run ». Il n'y a rien a modifier la-dedans.
 --
---   Ce fichier est assemble automatiquement a partir des quatre fichiers
---   du dossier supabase/. Ne pas l'editer a la main : editer les fichiers
---   d'origine, puis relancer `python3 tools/build-sql.py`.
+--   Ce fichier est assemble automatiquement a partir des fichiers du
+--   dossier supabase/installation/. Ne pas l'editer a la main : editer les
+--   fichiers d'origine, puis relancer `python3 tools/build-sql.py`.
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
+--   Il n'a ni BEGIN ni COMMIT. L'editeur de Supabase l'envoie en une seule
+--   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
+--   annule tout.
 --
 --   Assemble le %s
 --
@@ -61,7 +67,7 @@ entete = """-- =================================================================
 
 bloc = []
 for nom, quoi in MORCEAUX:
-    chemin = os.path.join(SB, nom)
+    chemin = os.path.join(INSTALLATION, nom)
     texte = open(chemin, encoding='utf-8').read()
     bloc.append(
         "\n\n-- #####################################################################\n"
@@ -83,8 +89,9 @@ fin = """
 --     - la connexion Discord    (Authentication > Providers > Discord)
 --   Tout est explique dans SETUP.md.
 --
---   Et quand ton compte sera cree, pense a supabase/05_admin.sql pour
---   te donner les droits d'administrateur.
+--   Et quand ton compte sera cree, pense a
+--   supabase/administration/admin.sql pour te donner les droits
+--   d'administrateur.
 -- =====================================================================
 """
 

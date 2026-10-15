@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Combien de Fragments gagne un joueur regulier, et a quelle frequence sort
 une carte precise : les chiffres qui fondent le bareme de la maitrise
-(docs/economie-3.0.md, partie 3 ter ; supabase/28_maitrise.sql).
+(docs/economie-3.0.md, partie 3 ter ; supabase/installation/28_maitrise.sql).
 
     python3 tools/equilibre-fragments.py [joueurs] [jours]
 

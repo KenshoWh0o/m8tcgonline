@@ -70,10 +70,10 @@ shutil.copy2(os.path.join(SRC, 'serveur.js'), os.path.join(OUT, 'js', 'demo-serv
 shutil.copy2(os.path.join(SRC, 'reglages.js'), os.path.join(OUT, 'js', 'demo-reglages.js'))
 shutil.copy2(os.path.join(SRC, 'LISEZMOI.txt'), os.path.join(OUT, 'LISEZMOI.txt'))
 
-# --- Devine l'illu : les grilles de pixels du serveur (supabase/21b_illu.sql).
+# --- Devine l'illu : les grilles de pixels du serveur (supabase/installation/21b_illu.sql).
 #     Une demo n'a rien a cacher : le faux serveur les garde dans la page.
 illu = dict(re.findall(r"\('(c\d+)', decode\('([^']+)', 'base64'\)\)",
-                       open(os.path.join(ROOT, 'supabase', '21b_illu.sql'), encoding='utf-8').read()))
+                       open(os.path.join(ROOT, 'supabase', 'installation', '21b_illu.sql'), encoding='utf-8').read()))
 open(os.path.join(OUT, 'js', 'demo-illu.js'), 'w', encoding='utf-8').write(
     '/* Devine l\'illu : les grilles du serveur, pour le faux serveur de la demo. */\n'
     'window.DEMO_ILLU = ' + json.dumps(illu, separators=(',', ':')) + ';\n')

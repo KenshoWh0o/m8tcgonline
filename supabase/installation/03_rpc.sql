@@ -521,7 +521,7 @@ begin
   values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit)
   returning id into tid;
 
-  -- Dans la boite du destinataire (supabase/11_boite.sql). Les deux cartes
+  -- Dans la boite du destinataire (supabase/installation/11_boite.sql). Les deux cartes
   -- voyagent avec l'evenement : la boite les montre sans autre appel.
   perform notifier(dest.id, 'echange_recu', p, tid::text,
                    jsonb_build_object('offer', p_offer, 'want', p_want));

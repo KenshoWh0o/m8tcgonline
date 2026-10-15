@@ -1,6 +1,6 @@
 -- =====================================================================
 --  Mate TCG Online — catalogue des cartes (genere, ne pas editer a la main)
---  Source : js/cards-data.js  ·  Regenerer : python3 supabase/gen-cards-sql.py
+--  Source : js/cards-data.js  ·  Regenerer : python3 tools/gen-cards-sql.py
 --  A rejouer dans Supabase apres chaque ajout ou retrait de carte.
 -- =====================================================================
 

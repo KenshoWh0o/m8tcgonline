@@ -211,7 +211,7 @@ language sql immutable as $$
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
-    -- Recyclage (supabase/12_recyclage.sql) : ce que rapporte un doublon jete,
+    -- Recyclage (supabase/installation/12_recyclage.sql) : ce que rapporte un doublon jete,
     -- en Fragments. Les Fragments n'achetent qu'une chose — une carte qui
     -- manque (fabriquer) — : ils ne font pas tourner de boucle avec les
     -- boosters, il n'y a donc plus de plafond. Le calcul est en tete de
@@ -236,7 +236,7 @@ language sql immutable as $$
     -- Une Essence Brillante remplace l'Essence du paquet une fois sur 50 :
     -- environ une tous les huit jours pour un joueur regulier.
     when 'foil_odds'         then 50
-    -- La chasse a la carte unique (supabase/15_evenements.sql) : une chance
+    -- La chasse a la carte unique (supabase/installation/15_evenements.sql) : une chance
     -- sur 250 par booster, tant que personne ne l'a trouvee. Avec ~70 boosters
     -- ouverts par jour dans la communaute, elle sort en ~3 a 4 jours.
     when 'chasse_odds'       then 250

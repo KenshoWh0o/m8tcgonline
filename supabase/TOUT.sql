@@ -5,11 +5,14 @@
 --   Tout colle, tout d'un bloc, dans Supabase > SQL Editor > New query,
 --   puis « Run ». Il n'y a rien a modifier la-dedans.
 --
---   Ce fichier est assemble automatiquement a partir des quatre fichiers
---   du dossier supabase/. Ne pas l'editer a la main : editer les fichiers
---   d'origine, puis relancer `python3 tools/build-sql.py`.
+--   Ce fichier est assemble automatiquement a partir des fichiers du
+--   dossier supabase/installation/. Ne pas l'editer a la main : editer les
+--   fichiers d'origine, puis relancer `python3 tools/build-sql.py`.
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
+--   Il n'a ni BEGIN ni COMMIT. L'editeur de Supabase l'envoie en une seule
+--   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
+--   annule tout.
 --
 --   Assemble le 2026-10-15
 --
@@ -235,7 +238,7 @@ language sql immutable as $$
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
-    -- Recyclage (supabase/12_recyclage.sql) : ce que rapporte un doublon jete,
+    -- Recyclage (supabase/installation/12_recyclage.sql) : ce que rapporte un doublon jete,
     -- en Fragments. Les Fragments n'achetent qu'une chose — une carte qui
     -- manque (fabriquer) — : ils ne font pas tourner de boucle avec les
     -- boosters, il n'y a donc plus de plafond. Le calcul est en tete de
@@ -260,7 +263,7 @@ language sql immutable as $$
     -- Une Essence Brillante remplace l'Essence du paquet une fois sur 50 :
     -- environ une tous les huit jours pour un joueur regulier.
     when 'foil_odds'         then 50
-    -- La chasse a la carte unique (supabase/15_evenements.sql) : une chance
+    -- La chasse a la carte unique (supabase/installation/15_evenements.sql) : une chance
     -- sur 250 par booster, tant que personne ne l'a trouvee. Avec ~70 boosters
     -- ouverts par jour dans la communaute, elle sort en ~3 a 4 jours.
     when 'chasse_odds'       then 250
@@ -675,7 +678,7 @@ revoke insert, update, delete on public.profiles, public.collection, public.card
 
 -- =====================================================================
 --  Mate TCG Online — catalogue des cartes (genere, ne pas editer a la main)
---  Source : js/cards-data.js  ·  Regenerer : python3 supabase/gen-cards-sql.py
+--  Source : js/cards-data.js  ·  Regenerer : python3 tools/gen-cards-sql.py
 --  A rejouer dans Supabase apres chaque ajout ou retrait de carte.
 -- =====================================================================
 
@@ -1406,7 +1409,7 @@ begin
   values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit)
   returning id into tid;
 
-  -- Dans la boite du destinataire (supabase/11_boite.sql). Les deux cartes
+  -- Dans la boite du destinataire (supabase/installation/11_boite.sql). Les deux cartes
   -- voyagent avec l'evenement : la boite les montre sans autre appel.
   perform notifier(dest.id, 'echange_recu', p, tid::text,
                    jsonb_build_object('offer', p_offer, 'want', p_want));
@@ -1701,13 +1704,16 @@ revoke all on function public.check_promos from public, anon, authenticated;
 --  L'extension compte 122 cartes : 9 essences, 33 communes, 24 peu
 --  communes, 28 rares, 18 epiques, 10 legendaires.
 --
---  Un booster donne 6 cartes : deux communes, une commune ou peu commune
---  (60/40), une peu commune, une essence, et un dernier tirage a
---  80 % rare / 16 % epique / 4 % legendaire.
+--  Un booster donne 6 cartes (open_pack(), 03_rpc.sql, fait foi) : deux
+--  communes, une peu commune, une essence (Brillante une fois sur 50), une
+--  Reverse (C 50 % / PC 35 % / R 15 %), et le hit : 79 % rare / 16 %
+--  epique / 4,25 % legendaire / 0,75 % Secrete.
 --  La reserve tient 5 boosters et se recharge de 1 toutes les 4 h — six
 --  boosters par jour pour qui passe regulierement.
 --
---  Ce que ca donne, en mediane de simulation :
+--  Ce que ca donnait, en mediane de simulation, avec le booster de la 1.x
+--  (une commune ou peu commune a la place de la Reverse, hit a 80 / 16 / 4,
+--  sans Secrete) ; le calcul n'a pas ete refait depuis :
 --      25 % de la collection ......    7 boosters  (le premier jour)
 --      50 % .......................   17 boosters  (trois jours)
 --      75 % .......................   45 boosters  (une semaine)   -> promo P06
@@ -2177,7 +2183,7 @@ begin
 
   insert into friendships (a, b, demandeur) values (x, y, moi);
 
-  -- Dans la boite de l'autre (supabase/11_boite.sql). Une demande annulee puis
+  -- Dans la boite de l'autre (supabase/installation/11_boite.sql). Une demande annulee puis
   -- renvoyee ne doit pas s'empiler : on retire d'abord l'ancienne annonce.
   delete from notifications where user_id = autre.id and acteur = moi and type = 'ami_demande';
   perform notifier(autre.id, 'ami_demande', moi);
@@ -2348,7 +2354,7 @@ grant execute on function public.set_vitrine to authenticated;
 -- connait pas. Rejouer 03_rpc.sql apres ce fichier l'effacerait — il faut alors
 -- rejouer celui-ci, ou plus simplement recoller TOUT.sql qui les met dans l'ordre.
 -- C'est la derniere version de me() : elle ajoute la vitrine au profil, et
--- c'est donc ici que se pose l'appel a check_promos (supabase/03b_promos.sql).
+-- c'est donc ici que se pose l'appel a check_promos (supabase/installation/03b_promos.sql).
 -- Une carte Promo de palier peut etre debloquee par un echange aussi bien que
 -- par un booster : sans cet appel, elle n'arriverait qu'a la prochaine
 -- ouverture de paquet.
@@ -2392,9 +2398,9 @@ begin
       -- 15_evenements.sql). Le compte a rebours du navigateur suit celui-ci.
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', minutes_recharge(),
       'serveur', now()),
-    -- La pastille de la boite de reception (supabase/11_boite.sql).
+    -- La pastille de la boite de reception (supabase/installation/11_boite.sql).
     'boite', boite_non_lues(p),
-    -- Le recyclage et la fabrication (supabase/12_recyclage.sql) : ce que
+    -- Le recyclage et la fabrication (supabase/installation/12_recyclage.sql) : ce que
     -- rapporte chaque rarete en Fragments, et ce que coute une carte. Les
     -- montants partent d'ici pour que le navigateur n'en garde pas une copie
     -- qui finirait par mentir.
@@ -2764,7 +2770,7 @@ end $$;
 --  exemplaire de chaque carte : recycler ne fait jamais reculer la
 --  collection.
 --
---  Les montants sont dans cfg() (supabase/01_schema.sql) :
+--  Les montants sont dans cfg() (supabase/installation/01_schema.sql) :
 --      recyclage    Essence 1 · Commune 2 · Peu commune 5 · Rare 20
 --                   Epique 80 · Legendaire 250
 --      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
@@ -3294,8 +3300,7 @@ grant execute on function public.mes_tirages to authenticated;
 
 -- =====================================================================
 --  Mate TCG Online — les cadeaux
---  A executer apres 15_evenements.sql (ou apres 17_maj-quetes.sql sur une
---  base deja installee). Rejouable sans danger.
+--  A executer apres 15_evenements.sql. Rejouable sans danger.
 --
 --  Un administrateur offre a un ou plusieurs joueurs des Eclats, des
 --  boosters, des Fragments et/ou une carte, avec un mot. Le joueur le
@@ -6094,6 +6099,7 @@ grant execute on function public.maitriser, public.set_fetiche to authenticated;
 --     - la connexion Discord    (Authentication > Providers > Discord)
 --   Tout est explique dans SETUP.md.
 --
---   Et quand ton compte sera cree, pense a supabase/05_admin.sql pour
---   te donner les droits d'administrateur.
+--   Et quand ton compte sera cree, pense a
+--   supabase/administration/admin.sql pour te donner les droits
+--   d'administrateur.
 -- =====================================================================

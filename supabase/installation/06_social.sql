@@ -57,7 +57,7 @@ begin
 
   insert into friendships (a, b, demandeur) values (x, y, moi);
 
-  -- Dans la boite de l'autre (supabase/11_boite.sql). Une demande annulee puis
+  -- Dans la boite de l'autre (supabase/installation/11_boite.sql). Une demande annulee puis
   -- renvoyee ne doit pas s'empiler : on retire d'abord l'ancienne annonce.
   delete from notifications where user_id = autre.id and acteur = moi and type = 'ami_demande';
   perform notifier(autre.id, 'ami_demande', moi);

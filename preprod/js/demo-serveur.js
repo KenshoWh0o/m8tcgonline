@@ -591,8 +591,9 @@
   }
 
   /* Devine l'illu : l'illustration du jour, tirée par un hachage de la date.
-     Les grilles de pixels sont celles du serveur (supabase/21b_illu.sql),
-     recopiées par tools/demo.py dans window.DEMO_ILLU. */
+     Les grilles de pixels sont celles du serveur
+     (supabase/installation/21b_illu.sql), recopiées par tools/demo.py dans
+     window.DEMO_ILLU. */
   function hacher(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   const illuCartes = () => cards.filter(k => k.cat !== 'essence' && (window.DEMO_ILLU || {})[k.id]);
   /* Un ordre fixe, et chaque jour prend la suivante : jamais deux fois la

@@ -39,7 +39,7 @@ grant execute on function public.set_vitrine to authenticated;
 -- connait pas. Rejouer 03_rpc.sql apres ce fichier l'effacerait — il faut alors
 -- rejouer celui-ci, ou plus simplement recoller TOUT.sql qui les met dans l'ordre.
 -- C'est la derniere version de me() : elle ajoute la vitrine au profil, et
--- c'est donc ici que se pose l'appel a check_promos (supabase/03b_promos.sql).
+-- c'est donc ici que se pose l'appel a check_promos (supabase/installation/03b_promos.sql).
 -- Une carte Promo de palier peut etre debloquee par un echange aussi bien que
 -- par un booster : sans cet appel, elle n'arriverait qu'a la prochaine
 -- ouverture de paquet.
@@ -83,9 +83,9 @@ begin
       -- 15_evenements.sql). Le compte a rebours du navigateur suit celui-ci.
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', minutes_recharge(),
       'serveur', now()),
-    -- La pastille de la boite de reception (supabase/11_boite.sql).
+    -- La pastille de la boite de reception (supabase/installation/11_boite.sql).
     'boite', boite_non_lues(p),
-    -- Le recyclage et la fabrication (supabase/12_recyclage.sql) : ce que
+    -- Le recyclage et la fabrication (supabase/installation/12_recyclage.sql) : ce que
     -- rapporte chaque rarete en Fragments, et ce que coute une carte. Les
     -- montants partent d'ici pour que le navigateur n'en garde pas une copie
     -- qui finirait par mentir.
