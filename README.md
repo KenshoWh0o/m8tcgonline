@@ -856,7 +856,7 @@ Contexte `x = {E, j, c, P, A}` (+ `porteur`, `X` l'attaque en cours, `guet`). Dr
 
 - **`js/combat/decks.js`** (`Decks`) : un deck enregistré vaut `{id, nom, cartes:{id:n}, reserve:{couleur:n}, couverture}` ; `versMoteur()` le met à plat. Limites : **1 exemplaire** pour L, S, UN, PR et les Promos non Reverse, **2 sinon** ; une Reverse compte avec sa classique ; alias `p02 → p01`, `p06 → c121`. `jouable()` exclut les Essences et les Secrètes cachées. `verifier(deck, possede)` renvoie la liste des erreurs.
 - **Starter Decks** (`STARTERS`) : `toxique` (avec `p03`, Réserve rose ×10) et `deter` (avec `p04`, mauve ×10), **prêtés** (on n'a pas besoin d'en posséder les cartes). Les listes sont reconstituées.
-- `aleatoire(rand, {niveau, couleurs})` tire un deck crédible (16 Joueurs, 5 Objets, 9 Instants ; sans jade ni jaune) : decks adverses de l'Arcade, du Raid et de l'Épreuve. `bilan()` note un deck « Solide / Jouable / À revoir » sur trois repères mesurés. Code de partage `M8D1.c012x2.c013|rose10` (`encoder` / `decoder`).
+- `aleatoire(rand, {niveau, couleurs})` tire un deck crédible (16 Joueurs, 5 Objets, 9 Instants) : decks adverses de la campagne (`deckRival`), de l'Arcade, du Raid (`deckSorcier`) et de l'Épreuve. Sans `couleurs`, il les tire par `tirerCouleurs` (une ou deux, ni jade ni jaune : Arcade, Épreuve) ; la campagne impose celles du rival (jaune compris), le Raid Mauve plus un allié du jour (`CHOC_ALLIES`, jaune et jade compris). `bilan()` note un deck « Solide / Jouable / À revoir » sur trois repères mesurés. Code de partage `M8D1.c012x2.c013|rose10` (`encoder` / `decoder`).
 - **L'atelier** (`js/combat/atelier.js`) : filtres, grille, Réserve, « Compléter » (cibles 16 / 5 / 9 triées par `IA.valeurCarte`), import / export du code, enregistrement par `deck_sauver` (le serveur revérifie).
 
 ### 7.6 L'arène (`js/combat/table.js`, `css/arene.css`)
@@ -867,7 +867,7 @@ Contexte `x = {E, j, c, P, A}` (+ `porteur`, `X` l'attaque en cours, `guet`). Dr
 - **`ANIM[e.t]`** : un geste par type d'événement (vol de carte, secousse, bandeau, flèche de visée, éclats, `entreeMaitrisee`). `journaliser` écrit le journal, `historiser` les « cartes jouées ».
 - **La carte agrandie** (`ouvrirFocus`) : la carte intacte, et dessous son état en direct (Défense réelle, Prêt / Engagé, Objets), les attaques jouables (`data-ar="attaque"`), « En ce moment » (bonus, malus). Un Joueur engagé ne pivote pas : il est assombri, avec l'étiquette « Engagé ».
 - **Décisions** : mulligan, choix, cartes, ordre, dans une feuille `.ar-sheet` ; les choix qui portent sur le plateau se font en touchant les éléments `.option`. Échap referme ; `T.bloqueClic` (350 ms) corrige les touchers fantômes de Safari iOS.
-- **Défis** : `minuteur` secondes par tour, 20 s pour une décision pendant le tour adverse ; au-delà, l'adversaire est marqué « Ne répond plus ».
+- **Défis** : `minuteur` secondes par tour (une décision prise pendant son propre tour prend sur ce temps), 20 s (`CHRONO_DECISION`) pour une décision pendant le tour adverse. Son propre temps écoulé, l'arène joue à sa place (`tempsEcoule` : fin du tour, ou choix de l'IA niveau 1) ; l'adversaire, lui, est marqué « Ne répond plus » 20 s après la fin de son temps.
 - **Cosmétiques** : `TAPIS` et `SLEEVES` en bas du fichier (identifiants = articles de `shop_items` ; chaque tapis a sa vignette `-mini.webp`). Les Essences Brillantes possédées brillent en combat.
 - Vitesse : `localStorage['mtcg.jeu'].rapide` (×0,55) ; mouvement réduit ×0,4.
 
@@ -900,14 +900,14 @@ Chaque combat fini rapporte de l'XP, **sans limite** : 50 la victoire, 20 la dé
 
 ### 7.11 Ce que le serveur vérifie
 
-Le serveur **ne fait pas tourner le moteur**. Il fixe la graine de chaque combat (`combat_debut`, table `combats_ouverts`), plafonne ce qu'un combat rapporte, et **croit le navigateur sur le résultat** : un combat de moins de 20 s ne rapporte rien ; 5 victoires payées par jour contre l'IA ; 3 défis payés ; un défi de moins de 12 actions ne paie pas ; les dégâts du Raid sont plafonnés (PV du boss + 1, + 3 si victoire). Un essai d'Épreuve ou une tentative de Raid est **consommé au départ** (abandonner ne le rend pas). Les decks sont revérifiés (`deck_erreur`, qui recopie 30 / 10, les alias et les limites).
+Le serveur **ne fait pas tourner le moteur**. Il fixe la graine de chaque combat (`combat_debut`, table `combats_ouverts`), plafonne ce qu'un combat rapporte, et **croit le navigateur sur le résultat** : un combat de moins de 20 s ne rapporte rien ; 5 victoires payées par jour, partagées entre l'Arcade et la campagne rejouée (les premières victoires de campagne, le Raid et l'Épreuve n'y comptent pas) ; 3 défis payés ; un défi de moins de 12 actions ne paie pas ; les dégâts du Raid sont plafonnés (PV du boss + 1, + 3 si victoire). Un essai d'Épreuve ou une tentative de Raid est **consommé au départ** (abandonner ne le rend pas). **Le deck n'est pas envoyé au début d'un combat contre l'IA** : `deck_erreur` (qui recopie 30 / 10, les alias et les limites) ne vérifie un deck qu'à l'enregistrement (`deck_sauver`, qui accepte un deck incomplet) et pour un défi (`deck_defi_erreur`, deck complet exigé).
 
 ### 7.12 Recettes
 
 - **Ajouter ou modifier l'effet d'une carte** : écrire `S.cNNN = {…}` dans `effets.js` (texte imprimé en commentaire), en ne passant que par `O.*` et `x.E` ; émettre un `O.ev(E, {t:…})` pour tout ce que l'arène doit montrer (et son geste dans `ANIM` si `t` est nouveau) ; ajouter tout nouveau `but` à l'IA ; toujours fournir `jouable` / `resPossible` ; écrire un test dans `tools/combat-tests.js` (`situation()`), puis `combat-sim.js aleatoire 2000` et `clone 200` ; noter toute lecture ambiguë dans `docs/regles-3.0.md` § 10.
 - **Ajouter une étape au tutoriel** : un objet dans `ETAPES` **à sa place chronologique** ; outils `tourDe`, `tuU`, `tuIdDe`, `enMain`, `surPlateau`, `placesLibres` ; mettre à jour le test du tutoriel dans `combat-tests.js` et rejouer le tutoriel dans Chromium.
-- **Changer une valeur de règle** : `REGLE`, **puis** les copies en dur (`deck_erreur` SQL, textes de `guides.js`, du tutoriel et de l'arène, `docs/regles-3.0.md` § 13), et mesurer avec `combat-sim ia`.
-- **Ajouter un mode contre l'IA** : `demarrer({mode, cle, niveau, deck, deckIA, …})` ; le mode doit être accepté par `combat_debut` / `combat_fin` (contrainte `check (mode in (…))`, `23_combats.sql`) et par `_demo/serveur.js`.
+- **Changer une valeur de règle** : `REGLE`, **puis** les copies en dur : SQL (`deck_erreur` pour 30 / 10, `limite_copies` pour 1 / 2, la table `starters` qui recopie `Decks.STARTERS`, tout dans `23_combats.sql`), textes de `guides.js`, du tutoriel et de l'arène, `docs/regles-3.0.md` § 13 ; et mesurer avec `combat-sim ia`.
+- **Ajouter un mode contre l'IA** : `demarrer({mode, cle, niveau, deck, deckIA, …})` ; dans `23_combats.sql`, trois endroits : le test `if p_mode not in (…)` de `combat_debut`, la contrainte `check (mode in (…))` de `combats_ouverts` (dans un `create table if not exists` : sur une base existante, `alter table public.combats_ouverts drop constraint combats_ouverts_mode_check, add constraint …`), et l'aiguillage de `combat_fin` (un mode inconnu y est payé comme l'Arcade) ; `xp_combat` (`26_niveaux.sql`) si l'XP diffère ; enfin `RPC.combat_debut` / `RPC.combat_fin` de `_demo/serveur.js`.
 - **Ajouter un tapis ou une sleeve** : l'image (et sa `-mini`) dans `assets/combat/…` (générée par `tools/cosmetiques.py` ou `choc-visuels.py`), l'entrée dans `TAPIS` / `SLEEVES`, l'article `shop_items` du même identifiant (SQL et `BOUTIQUE` du faux serveur).
 
 ---
@@ -939,7 +939,7 @@ Un événement est **une ligne de `evenements`** (`supabase/15_evenements.sql`) 
 ### 8.3 Quêtes, Pass, boutique
 
 - **Quêtes** : `scope = 'ev_jour'` (chaque jour de Paris) et `'ev'` (une fois pour tout l'événement, clé `'all'`). La quête de visite (`ev_visite`) est validée **en ouvrant l'onglet** (`evenement_etat` et `choc_etat` écrivent). Totaux : Choc 75 Étincelles par jour et 670 une fois ; Reflets 50 par jour et 380 une fois.
-- **Le Pass** (« piste » en base) : `evt_piste(evenement, palier, seuil, type, montant, objet, titre)` et `evt_piste_prises`. `piste_reclamer(p_palier)` exige un événement en cours, `total ≥ seuil` et une prise unique ; il passe par `accorder()` (types `boosters`, `eclats`, `fragments`, `titre`, `cadre`, `tapis`, `sleeve`, `reverse_R`, `brillante`).
+- **Le Pass** (« piste » en base) : `evt_piste(evenement, palier, seuil, type, montant, objet, titre)` et `evt_piste_prises`. `piste_reclamer(p_palier)` exige un événement en cours, `total ≥ seuil` et une prise unique ; il passe par `accorder()` (types `boosters`, `eclats`, `fragments`, `titre`, `cadre`, `tapis`, `sleeve`, `reverse_R`, `brillante`, et `legendaire`, géré mais utilisé par aucun palier).
   - **Pass Reflets** (20 paliers, 15 → 1 100) : 14 boosters, 1 350 Éclats, 1 250 Fragments, 4 Reverses Rares, 1 Brillante, titres `t_eclaireur` et `t_ame`, cadres `f_miroir` et `f_nebuleuse`.
   - **Pass Choc** (30 paliers, 20 → 3 500) : 23 boosters, 2 200 Éclats, 3 750 Fragments, 5 Reverses Rares, la Brillante (palier 15), la sleeve `s_choc` (8), le cadre `f_choc` (12), les titres `t_recrue`, `t_veteran`, `t_maitre_choc`, et **le tapis `t_arene`** (30).
 - **Boutique d'événement** (`categ = 'evenement'`, `devise = 'prismes'`, `limite` par joueur) :
@@ -953,7 +953,7 @@ Un événement est **une ligne de `evenements`** (`supabase/15_evenements.sql`) 
 ### 8.5 Reflets (2.0) et Devine l'illu
 
 - **Reflets** (`js/reflets.js`, `css/reflets.css`, `supabase/21_reflets.sql`) : l'événement de la 2.0, terminé en production. Son onglet a six sous-onglets (Accueil et ses Nouveautés 2.0, Quêtes, Pass, Devine l'illu, Boutique, Classement). Son code et sa CSS servent de **charpente** au Choc. En pré-prod, il est remplacé par le Choc.
-- **Devine l'illu** survit à l'événement, dans son onglet (`illu`, tiroir) : une illustration par jour de Paris, la même pour tous, dans un ordre secret (cartes triées par `md5(illu_sel || ':' || id)`, cycle de 113 jours ; le sel `parametres.illu_sel` n'est jamais montré). Pixels 36 × 24 à 12 bits dans `illu_pixels` (`21b_illu.sql`, généré par `node tools/illu-pixels.js`) ; le serveur n'envoie que la grille du niveau en cours (9 × 6 → 12 × 8 → 18 × 12 → 36 × 24) et ne révèle la carte qu'à la fin. 4 essais ; gains 120 / 90 / 60 / 30 Éclats, plus 25 / 18 / 12 / 6 Prismes **pendant Reflets seulement** (`illu_gain`). Partage façon Wordle. En pré-prod, les grilles viennent de `js/demo-illu.js` (non salé).
+- **Devine l'illu** survit à l'événement, dans son onglet (`illu`, tiroir) : une illustration par jour de Paris, la même pour tous, dans un ordre secret (cartes triées par `md5(illu_sel || ':' || id)`, cycle de 113 jours ; le sel `parametres.illu_sel` n'est jamais montré). Pixels 36 × 24 à 12 bits dans `illu_pixels` (`21b_illu.sql`, généré par `node tools/illu-pixels.js`) ; le serveur n'envoie que la grille du niveau en cours (9 × 6 → 12 × 8 → 18 × 12 → 36 × 24) et ne révèle la carte qu'à la fin. 4 essais ; gains 120 / 90 / 60 / 30 Éclats, plus 25 / 18 / 12 / 6 Prismes **pendant Reflets seulement** (`illu_gain`). Partage façon Wordle. En pré-prod, les grilles viennent de `preprod/js/demo-illu.js` (`window.DEMO_ILLU`), écrit par `tools/demo.py` à partir de `21b_illu.sql` ; l'ordre des illustrations n'y est pas salé.
 
 ### 8.6 Le Choc des Sections
 
@@ -983,10 +983,10 @@ update public.evenements set fin = now() where code = 'choc' and fin > now();
 update public.chasse set active = true, ouvre_le = now() where id = 1;
 ```
 
-- **Ne jamais réutiliser un code** : soldes, paliers pris et quêtes `ev` (clé `'all'`) sont indexés par code. Relancer `reflets` rendrait tout ce qui a été pris.
+- **Ne jamais réutiliser un code** : soldes, paliers pris et quêtes `ev` (clé `'all'`) sont indexés par code. Relancer `reflets` repartirait de la première édition : Prismes restants et Pass déjà avancé, paliers déjà pris impossibles à reprendre, quêtes « ev » déjà encaissées.
 - **Ne pas chevaucher** un événement sans code et un événement codé : le client affiche le dernier commencé (avec ou sans code, `evenement_actif`), le serveur crédite le dernier **codé** (`evenement_en_cours`) — l'onglet du Choc disparaîtrait pendant que le serveur continue de payer.
 - **Ajouter un nouvel événement** : SQL (Pass `evt_piste`, quêtes `evenement = code`, articles `devise = 'prismes'`, ajoutés aux listes `delete … not in` de `04_seed.sql`, message d'erreur de `shop_buy`, éventuellement un `xxx_recap`) ; JS (`MONNAIES_EV`, `evIco`, `TABS`, `VUES`, `RECAPS`, `pastilleOnglet`, chargement dans `aller()`, `vBandeauEvenement`, bandeau de la boutique, `proposerAccueil`, Labo) ; faux serveur (`PISTES`, `QUETES`, `BOUTIQUE`, `S.evenement`).
-- **Changer l'Épreuve ou le Raid** : `CHOC` / `RAID` dans `choc-data.js` **et** les valeurs écrites en dur dans `25_choc.sql` (`>= 3`, `'max', 3`, `insignes := 5`, `+ 25`, `'niveau', 3`) et `27_raid.sql` (`raid_phases()`, `raid_perso()`, `raid_fin()`, `n < 3`).
+- **Changer l'Épreuve ou le Raid** : `CHOC` / `RAID` dans `choc-data.js` **et** les valeurs écrites en dur dans `25_choc.sql` (`>= 3`, `'max', 3`, `insignes := 5`, `+ 25`, `'niveau', 3`, et `choc_score`, copie de `scoreEpreuve`) et `27_raid.sql` (`raid_phases()`, `raid_perso()`, `raid_fin()`, `n < 3`, `raid_combat()` pour la formule de l'Infini, `raid_saison()` / `raid_saison_debut()` pour le départ du 12 octobre 2026 et les 14 jours).
 
 ---
 
@@ -995,7 +995,7 @@ update public.chasse set active = true, ouvre_le = now() where id = 1;
 ### 9.1 Principes et sécurité
 
 - **Le serveur fait foi sur tout ce qui compte** : tirages, monnaies, collection, quêtes, récompenses. Le navigateur affiche et propose ; les copies de règles côté client ne servent qu'à l'affichage, au Labo et à la pré-prod.
-- **Aucune écriture directe.** RLS activée sur les 44 tables ; le navigateur ne peut **rien** écrire, et ne lit directement que `cards`, `quests`, `shop_items` (plus `friendships`, `notifications`, `annonces` une fois connecté, pour le temps réel). Tout passe par des fonctions **`security definer set search_path = public`**.
+- **Aucune écriture directe.** RLS activée sur les 43 tables ; le navigateur ne peut **rien** écrire, et ne lit directement que `cards`, `quests`, `shop_items` (plus `friendships`, `notifications`, `annonces` une fois connecté, pour le temps réel). Tout passe par des fonctions **`security definer set search_path = public`**.
 - **Modèle de chaque RPC joueur** :
 
   ```sql
@@ -1012,7 +1012,7 @@ update public.chasse set active = true, ouvre_le = now() where id = 1;
   grant execute on function public.ma_rpc(text) to authenticated;
   ```
 
-  **`revoke … from public` est obligatoire** : PostgreSQL accorde EXECUTE à PUBLIC par défaut, et `anon` en hérite. Exceptions voulues à `garde_beta` : `me()` (elle renvoie `invite`) et `utiliser_invitation()`.
+  **`revoke … from public` est obligatoire** : PostgreSQL accorde EXECUTE à PUBLIC par défaut, et `anon` en hérite. RPC qui ne passent pas par `garde_beta` : `porte()` (ouverte à `anon`), `me()` (elle renvoie `invite`), `utiliser_invitation()`, `mes_cadeaux()` (lecture seule), et les quatre RPC d'administration (`annonce_publier`, `annonce_retirer`, `offrir_cadeau`, `admin_joueurs`), qui ne vérifient que `is_admin`.
 - **La bêta est fermée pour toujours** : `beta_lancement()` renvoie `'infinity'` ; seuls les comptes de `beta_invites` (par e-mail ou identifiant Discord, `est_invite`) jouent. `handle_new_user` crée quand même le profil (pour qu'un code d'invitation puisse servir), mais `garde_beta()` refuse tout le reste avec `BETA_FERMEE`. **Même l'administrateur doit être dans `beta_invites`.**
 - **Administrateur** : `profiles.is_admin`, posé **uniquement en SQL** (`05_admin.sql`). `annonce_*`, `offrir_cadeau`, `admin_joueurs` le vérifient côté serveur.
 - **Les messages d'erreur sont montrés tels quels** : ils sont en français. Un code en majuscules (`RESERVE_VIDE`, `BONUS_VIDE`, `BOOSTER_VIDE`, `ECHANGE_EN_RECHARGE`, `BETA_FERMEE`) doit être traduit dans `MSG_SERVEUR` (`js/backend.js`).
@@ -1054,7 +1054,7 @@ update public.chasse set active = true, ouvre_le = now() where id = 1;
 
 **Ordre** : `03b` avant `04` (la boutique vend `p01`) ; `21` avant `21b` ; `23` avant `26`. Ailleurs, PL/pgSQL résout les appels à l'exécution : `me()` (07) appelle des fonctions de 11 à 28 — **il faut passer tout `TOUT.sql`**.
 
-### 9.3 Les tables (44)
+### 9.3 Les tables (43)
 
 - **Joueur** : `profiles` (pseudo, avatar, cadre, `shards`, `fragments`, `tickets`, `last_tick`, `boosters_bonus`, `tickets_offerts`, `is_admin`, `garder`, `vitrine`, `titre`, `banniere`, `devise`, `fetiche`…), `collection`, `inventory`, `quest_progress`, `favoris`, `gardes`, `tirages`, `recyclages`, `cadeaux`, `notifications`.
 - **Catalogue et réglages** : `cards`, `quests`, `shop_items`, `parametres` (une ligne : `fabrication_reverse`, `illu_sel`, `raid_echelle`), `pve_campagne`, `pve_difficultes`, `starters`, `niveau_paliers`, `illu_pixels`, `evt_piste`.
@@ -1066,7 +1066,7 @@ update public.chasse set active = true, ouvre_le = now() where id = 1;
 
 Préfixes d'inventaire : `f_` cadres, `t_` titres **et** tapis, `s_` sleeves (et articles), `trade_token`.
 
-### 9.4 Les RPC publiques (58, plus `porte`)
+### 9.4 Les RPC publiques (58, `porte` comprise)
 
 | Domaine | RPC (→ retour) | Appelées par |
 |---|---|---|
@@ -1101,10 +1101,10 @@ La plupart des RPC qui écrivent renvoient `me()`, que `Backend.apply` transform
 
 ### 9.7 Installer, mettre à jour, vérifier
 
-- **Installer ou mettre à jour** : coller **tout** `supabase/TOUT.sql` dans Supabase › SQL Editor › Run. Une seule transaction (une erreur annule tout), idempotent, passe sur une base 2.x sans rien perdre (testé sur PostgreSQL 16). **Règle du propriétaire : aucun SQL 3.0 sur la base de production.**
+- **Installer ou mettre à jour** : coller **tout** `supabase/TOUT.sql` dans Supabase › SQL Editor › Run. Le fichier n'a ni `BEGIN` ni `COMMIT` : c'est l'éditeur, qui l'envoie en une seule requête, qui en fait une seule transaction (une erreur annule tout ; supposé, non vérifié). Avec `psql -f`, ajouter `--single-transaction`, sinon ce qui précède l'erreur reste appliqué. Idempotent, passe sur une base 2.x sans rien perdre (testé sur PostgreSQL 16). **Règle du propriétaire : aucun SQL 3.0 sur la base de production.**
 - **Un serveur neuf** : [`SETUP.md`](SETUP.md) (projet, `TOUT.sql`, clés, URL de retour, Discord, SMTP, administrateur, GitHub Pages, domaine). Ajouter son compte à `beta_invites`. Une installation neuve **lance l'événement Reflets** pour 14 jours.
 - **Vérifier** : ouvrir `verif.html` sur le site (clés, réglages d'authentification, catalogue, présence de chaque RPC jusqu'à `maitriser`, compte administrateur). Une RPC indispensable à une version mérite sa sonde.
-- **Chiffres attendus** après installation : 122 cartes d'extension, 85 Reverses, 9 Brillantes, 5 Secrètes, 6 Promos, 1 Unique, 97 quêtes, 32 articles.
+- **Chiffres attendus** après installation : 122 cartes d'extension, 85 Reverses, 9 Brillantes, 5 Secrètes, 6 Promos, 1 Unique, 97 quêtes, 32 articles. `verif.html` affiche « 122 cartes d'extension et 106 promos » : il range sous « promos » tout ce qui porte `promo = true` (6 Promos + 85 Reverses + 9 Brillantes + 5 Secrètes + l'Unique).
 
 ### 9.8 Une règle, plusieurs copies
 
@@ -1116,7 +1116,7 @@ Chaque règle de jeu existe en **trois exemplaires** : le SQL (qui fait foi), le
 | Réglages d'économie | `cfg()` (01) | `CFG` | `REC_DEFAUT`, `FAB_DEFAUT`, `TRADE_COOLDOWN_H`, `PROMO_PALIER`, `FOIL_ODDS` |
 | Quêtes, boutique | `04_seed.sql`, 21, 23, 25, 26 | `QUETES`, `BOUTIQUE` | `QICO`, `JALON_THEMES` |
 | Pass | `evt_piste` (21, 25) | `PISTE`, `PISTE_CHOC` | — |
-| Maîtrise | `maitrise_fragments(rar, n)`, `maitrise_copies` (28) | `MZ_BASE`, `MZ_MULT`, `MZ_COPIES` | `MAITRISE` (`maitrise.js`) |
+| Maîtrise | `maitrise_fragments(rar, n)`, `maitrise_copies(rar, n)` (28) | `MZ_BASE`, `MZ_MULT`, `MZ_COPIES` | `MAITRISE` (`maitrise.js`) |
 | Limites de deck | `deck_erreur`, `cle_copie`, `limite_copies` (23) | via `Decks` | `REGLE`, `Decks.limite`, `ALIAS` |
 | Campagne, Arcade, défis | `pve_campagne`, `pve_difficultes`, plafonds 5 / 3, 40 / 15 (23) | via `campagne.js` | `RECOMPENSES_CAMPAGNE`, `DIFFICULTES`, `PVE_PLAFOND`, `DEFI_GAIN` |
 | XP | `xp_requis`, `xp_combat`, `niveau_paliers` (26) | via `niveaux.js` | `NIVEAUX` (`niveaux.js`) |
@@ -1184,14 +1184,14 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 
 **Sans option** : la démo autonome, dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git), avec `_demo/LISEZMOI.txt`.
 
-`remplacer()` **arrête la construction** si un motif attendu ne se trouve pas exactement une fois : les chaînes qu'il cherche (la balise supabase-js, `function vPorteAttente() {`, `'js/app.js',` dans `sw.js`, `<head>`, `<title>`, `<body`, `indexedDB.open('premier-lobby'`, `function brancherSW() {`, le nom du manifeste, la création du profil dans `serveur.js`) sont des **contrats**.
+`remplacer()` **arrête la construction** si un motif attendu est introuvable. S'il apparaît plusieurs fois, seule la première occurrence est remplacée, sans avertissement (`count=1`). Les chaînes qu'il cherche (la balise supabase-js, `function vPorteAttente() {`, `'js/app.js',` dans `sw.js`, `<head>`, `<title>`, `<body`, `indexedDB.open('premier-lobby'`, `function brancherSW() {`, le nom du manifeste, la création du profil dans `serveur.js`) sont des **contrats** et doivent rester uniques.
 
 ### 11.2 Le faux serveur (`_demo/serveur.js`)
 
 - Il définit `window.supabase = {createClient: () => client}` : **le code du jeu croit parler à Supabase**. Il implémente les **58 mêmes RPC**, avec les mêmes noms, paramètres et messages d'erreur, et `from('shop_items')`.
 - **Un appel** (`appeler`) : charge l'état, refuse `'non connecte'` sans session, copie l'état, fait vivre les bots, exécute `RPC[nom](MOI, args)`, sauvegarde, attend 60 à 150 ms. **Une exception annule tout l'appel** (bots compris). Un refus s'écrit `refuser('…')` (jamais un `throw` brut : sur `me`, il déclencherait la recréation du monde).
 - **Stockage** : l'état entier `S` dans IndexedDB (`kvSet('demo-serveur', S)`). Le seul numéro de schéma est `S.v === 1` : **ne jamais le changer** (cela effacerait toutes les parties). Les ajouts se font dans `completer()` (`S.x = S.x || …`) ou dans une fonction `mondeXX()` idempotente.
-- **Il ne lit rien du jeu au chargement** (il est chargé avant `config.js`) : seulement à l'intérieur de fonctions (`cards`, `byId`, `Decks`, `Combat`, `IA`, `RAID`, `CHOC`, `NIVEAUX`…).
+- **Il ne lit rien du jeu au chargement** (il est chargé avant `config.js`) : seulement à l'intérieur de fonctions (`cards`, `byId`, `Decks`, `Combat`, `IA`, `RAID`, `CHOC`, `niveauDe`, `recompenseNiveau`…).
 - **Session** : connecté sauf si `localStorage['mtcg.demo.connecte'] === '0'` ; « Discord » pose `'1'`. **`?reinitialiser`** efface l'état du faux serveur (pas le `localStorage` du client : tutoriel vu, accueil, etc.).
 - **Réglages** (`_demo/reglages.js`) : pseudo `Visiteur`, 6 000 Éclats, `ticket_minutes` 240, `raid_echelle` 0,25. Pseudo et Éclats ne valent que pour un monde neuf ; le rythme et l'échelle du Raid s'appliquent tout de suite.
 
@@ -1272,14 +1272,14 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 **JavaScript**
 
-6. **Un seul espace global** : deux `const` / `function` de même nom au niveau d'un script = `SyntaxError`, et tout le second fichier est ignoré. Le code exécuté au chargement doit trouver ses dépendances déjà chargées (ordre d'`index.html`).
+6. **Un seul espace global** : un `const` / `let` qui reprend le nom d'un autre `const`, `let` ou `function` au niveau d'un script = `SyntaxError`, et tout le second fichier est ignoré. Deux `function` de même nom ne lèvent **rien** : la seconde remplace la première sans prévenir. Le code exécuté au chargement doit trouver ses dépendances déjà chargées (ordre d'`index.html`).
 7. **`save` est reconstruit à chaque `pull()`** : n'y ranger aucun état d'interface ; ne pas garder de référence à `save.col` ; les comparaisons avant / après se font dans `Backend.apply`.
-8. **`data-tab` est traité avant tout le reste** dans `clicPage` : un élément qui porte `data-tab` et un autre attribut voit l'autre ignoré. Ne jamais mettre `data-tab` sur `<body>`. Un nouvel attribut `data-x` doit être ajouté au sélecteur `closest()` de `clicPage`. Un `data-act` posé dans la fiche (`#viewer`) ou le théâtre n'est pas traité par `clicPage`.
+8. **`data-tab` est traité avant tout le reste** dans `clicPage` : un élément qui porte `data-tab` et un autre attribut voit l'autre ignoré, sauf `data-colvue`, lu juste avant `aller()` (lien vers une vue précise de la Collection). Ne jamais mettre `data-tab` sur `<body>`. Un nouvel attribut `data-x` doit être ajouté au sélecteur `closest()` de `clicPage`. Un `data-act` posé dans la fiche (`#viewer`) ou le théâtre n'est pas traité par `clicPage`.
 9. **On défile `#main`**, jamais `window` (`body` est en `overflow:hidden`).
 10. **Un champ de saisie** doit être rebranché dans `bindReglages()` et déclaré dans `enTrainDEcrire()`, sinon un rafraîchissement de fond lui vole le focus.
 11. `brancherSW()` reste **avant** le premier `await` du démarrage ; `lireErreurRetour()` **avant** `Backend.init()`.
 12. **Mouvement réduit** : `RM()` ne lit que la préférence système. Une animation en JS teste `RM()` **et** `document.documentElement.classList.contains('rm')`.
-13. `h()` remplace « et » entouré d'espaces par des espaces insécables : en tenir compte pour comparer des chaînes.
+13. `h()` échappe le HTML et remplace l'espace qui suit `«` et celle qui précède `»` par une espace insécable : en tenir compte pour comparer des chaînes.
 14. `toutesCartes()` n'inclut pas les Secrètes.
 
 **CSS et DA**
@@ -1288,7 +1288,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 16. `#main > *` est centré par `margin-inline: auto` : un `margin` raccourci en style en ligne le décentre.
 17. En 3D (`preserve-3d`), `mix-blend-mode` ne s'applique pas et un `filter` sur l'enveloppe floute la carte.
 18. Ne pas toucher `.sheet::before` sans lire `js/ui.js` (il détecte l'ordinateur par son `display`). Plusieurs sélecteurs reposent sur `:empty` : le JS ne doit pas y laisser d'espaces.
-19. Archivo n'existe en italique qu'en 700–900 ; Figtree n'existe pas en 900.
+19. Le lien Google Fonts d'`index.html` ne charge Archivo en italique qu'en 700–900, et Figtree qu'en 400, 600, 700 et 800 : toute autre graisse (Figtree 500 ou 900, par exemple) est simulée par le navigateur.
 
 **Cache et versions**
 
@@ -1350,7 +1350,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 - **Porte** : `vCompteARebours`, `ouvrirLaPorte`, `Porte.lancee`, `Porte.reste` ; l'appel `Porte.lire()` au démarrage ne change rien. **Mode local et `vAuth`** : inatteignables tant que `PORTE.active` vaut `true` (et le mode local l'est toujours).
 - **Navigation** : `combatsAuTiroir()` (toujours faux) et sa branche, la classe `evnav`, `TABS.online` / `.cache`, `body.dataset.onglet`, `body.installsheet`, `PWA.installe`, `NAVICO.sun/moon/auto`.
-- **Données** : `c.nomBase`, `c.variante`, `kw.icone`, le champ `ambiance` (jamais affiché), la branche des talents (aucune carte n'en a), l'effet de boutique `refill`, `MSG_SERVEUR.PLAFOND_RECYCLAGE`, `Backend.erreur`, `profil.bonus_offerts`, `bindTilt()` (aucun `.tilt`), `PROMOS_A_VENIR` vide.
+- **Données** : `c.nomBase`, `c.variante`, `kw.icone`, le champ `ambiance` (jamais affiché), la branche des talents (aucune carte n'en a), l'effet de boutique `refill`, `MSG_SERVEUR.PLAFOND_RECYCLAGE`, `profil.bonus_offerts`, `bindTilt()` (aucun `.tilt`), `PROMOS_A_VENIR` vide. (`Backend.erreur` n'est lu que par l'écran d'entrée de la démo, `demoPorte` dans `_demo/serveur.js` : ne pas le supprimer.)
 - **SQL** : `cfg('pack_size')`, `cfg('shards_per_dup')`, `recyclage_semaine()` / `debut_semaine()`, la branche `'legendaire'` d'`accorder`, `choc_joueurs.victoires`, les critères de classement non affichés.
 - **Combat** : `E.pileFace`, `P.enCours`, `vuMain`, `E.cpt.essDesengagees`, `c.tour`, `E.v`, `defiActif.dernier`, `atelier.filtres.rar`, `'c012'` dans `INSTANTS_SURS`, `CB_ALIAS`, trois copies du même mulberry32, une vingtaine d'exports jamais appelés de l'extérieur.
 - **Événements** : `CHOC.code`, la branche `insignes` de `chIco`, les visuels `reverse_R` / `brillante` de `vChBoutique`, `epreuveRegle()` (doublon), `montrerNouveautes21` et les boutons `t-v2-*` (encore joignables depuis le Labo).
