@@ -149,7 +149,7 @@ const ETAPES = [
   { info: true, quand: (E, d) => tourDe(E, d, 3), titre: 'Attaque contre Défense',
     texte: () => `Une attaque compare son <b>Attaque</b> à la <b>Défense</b> ${TU_DEF} de sa cible. <b>Égale ou plus haute</b> : la cible est <b>vaincue</b>, à la défausse. <b>Plus basse</b> : elle est <b>repoussée</b>. Contre un <b>CEO</b>, la valeur ne compte pas : il est <b>touché</b>, il perd un PV.` },
   { quand: (E, d) => tourDe(E, d, 3), titre: 'Attaque !', pos: 'bas',
-    texte: () => 'Baby Driver s\'est <b>engagé</b> en attaquant : on peut le viser (un Joueur debout, non). Touche <b>Squeezie</b> : sa carte s\'ouvre en grand, et son attaque <b>s\'allume juste dessous</b>. Touche-la, puis <b>Baby Driver</b>. Ta première attaque ouvre la <b>phase de Combat</b> : plus de déploiement ensuite.',
+    texte: () => 'Baby Driver s\'est <b>engagé</b> en attaquant : on peut le viser (un Joueur debout, non). Touche <b>Squeezie</b> : sa carte s\'ouvre en grand, et son attaque <b>s\'allume juste à côté</b>. Touche-la, puis <b>Baby Driver</b>. Ta première attaque ouvre la <b>phase de Combat</b> : plus de déploiement ensuite.',
     attend: (a, E) => a.t === 'attaquer' && a.u === tuU(E, 0, 'c012') && a.cible === tuU(E, 1, 'c059'),
     vise: E => [surPlateau(E, 0, 'c012'), `[data-ar="attaque"][data-u="${tuU(E, 0, 'c012')}"]`, surPlateau(E, 1, 'c059')],
     refus: 'Attaque Baby Driver avec Squeezie : c\'est lui qu\'on vise.' },

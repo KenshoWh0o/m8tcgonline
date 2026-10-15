@@ -553,6 +553,11 @@ const Table = (() => {
   /* ---------- Ce qu'on peut toucher ---------- */
   function surligner() {
     qsa('.jouable,.cible,.choisi,.option,.attaquant').forEach(x => x.classList.remove('jouable', 'cible', 'choisi', 'option', 'attaquant'));
+    allumer();
+    /* Les fantômes des places qui ne sont plus à prendre s'en vont. */
+    qsa('.ar-place:not(.cible)>.ar-place-f').forEach(x => x.remove());
+  }
+  function allumer() {
     if (!T || T.occupe || T.E.fin) return;
     const d = Combat.demande(T.E);
     if (!d || d.qui !== T.moi) return;
@@ -572,12 +577,24 @@ const Table = (() => {
     }
   }
 
-  /* Une carte de la main en grand : les places où elle peut aller. */
+  /* Une carte de la main en grand : les places où elle peut aller. Version
+     3.0.8 : une place libre montre la carte en fantôme (à la place d'un
+     grand « + ») ; il reste d'un rendu à l'autre, sans se redessiner. */
   function marquerPlacesCarte(u) {
     const opts = Combat.optionsTour(T.E).filter(a => a.u === u);
+    const tenue = T.E.j[T.moi].main.find(x => x.u === u);
     qsa('.ar-m').forEach(b => b.classList.toggle('choisi', +b.dataset.mu === u));
     for (const a of opts) {
-      if (a.t === 'deployer') { const p = qs(`.ar-camp.moi .ar-place[data-ligne="${a.ligne}"]`); if (p) p.classList.add('cible'); }
+      if (a.t === 'deployer') {
+        const p = qs(`.ar-camp.moi .ar-place[data-ligne="${a.ligne}"]`);
+        if (!p) continue;
+        p.classList.add('cible');
+        const f = p.querySelector('.ar-place-f');
+        if (tenue && (!f || f.dataset.id !== tenue.id)) {
+          if (f) f.remove();
+          p.insertAdjacentHTML('beforeend', `<div class="ar-place-f" data-id="${tenue.id}" aria-hidden="true">${htmlCarte(tenue.id)}</div>`);
+        }
+      }
       if (a.t === 'lier') { const x = qs(`.ar-camp.moi .ar-j[data-u="${a.cible}"]`); if (x) x.classList.add('cible'); }
     }
   }
@@ -649,7 +666,7 @@ const Table = (() => {
     const sh = e.target.closest('.ar-sheet.voile');
     if (sh) { if (!e.target.closest('.ar-s-in')) fermerSheet(); return; }
     if (e.target.closest('.ar-focus')) {
-      if (!e.target.closest('.ar-fc,.ar-f-texte,.ar-f-bas p,.ar-f-puces,.ar-f-etat,.ar-f-atq,button,a')) fermerFocus();
+      if (!e.target.closest('.ar-fc,.ar-f-bas>*,button,a')) fermerFocus();
       return;
     }
     /* Pendant une animation, on peut toujours lire une carte : le combat
@@ -743,10 +760,18 @@ const Table = (() => {
     const surPlateau = inst && !f.main;
     const vivant = surPlateau && k.cat === 'joueur';
     const monJoueur = vivant && inst.j === T.moi && aMoi;
+    /* Version 3.0.8 : pendant son tour, une carte de sa main ou un de ses
+       Joueurs posés s'ouvre au-dessus de son camp (`garde`), ses trois
+       places visibles dessous ; la carte à gauche, sa zone de détails à
+       droite (zoneDetails). Le retour de la 3.0.6, au propre. Sur un écran
+       large, toute carte s'ouvre ainsi (`large`). Le reste du temps, sur
+       téléphone : la carte en très grand, son état dessous (3.0.7). */
+    const garde = aMoi && (f.main || (surPlateau && inst.j === T.moi));
+    const large = garde || innerWidth >= 900;
     let bas = '', place = 70;
-    if (f.main && aMoi) { bas += panneauMain(inst, k); place += 50; }
+    if (large) bas = zoneDetails(f, inst, k, aMoi);
     else if (f.main && !T.occupe && !E.fin) bas += '<p class="ar-f-aide">Ce n\'est pas ton tour.</p>';
-    if (vivant) {
+    if (vivant && !large) {
       bas += ligneEtat(inst, k) + attaquesEnDirect(inst, k, monJoueur);
       place += 54 + (k.atks || []).length * 66;
       if (monJoueur && E.phase === 'jeu' && Combat.optionsTour(E).some(a => a.t === 'attaquer' && a.u === inst.u)
@@ -757,21 +782,20 @@ const Table = (() => {
       const puces = pucesEnCours(inst, k);
       if (puces) { bas += puces; place += 34; }
     }
-    if (surPlateau && k.cat !== 'joueur') {
-      const porteur = Combat.porteurDe(E, inst);
-      if (porteur) bas += `<p class="ar-f-aide">Lié à <b>${h(carte(porteur.id).nom || '')}</b>.</p>`;
+    if (!large) {
+      if (surPlateau && k.cat !== 'joueur') {
+        const porteur = Combat.porteurDe(E, inst);
+        if (porteur) bas += `<p class="ar-f-aide">Lié à <b>${h(carte(porteur.id).nom || '')}</b>.</p>`;
+      }
+      bas += `<button class="ar-f-lire" data-ar="lire">Lire le texte en grand</button>
+        <div class="ar-f-texte" hidden>${texteCarte(k, vivant ? inst : null, true)}</div>`;
     }
-    bas += `<button class="ar-f-lire" data-ar="lire">Lire le texte en grand</button>
-      <div class="ar-f-texte" hidden>${texteCarte(k, vivant ? inst : null, true)}</div>`;
 
     const z = qs('.ar-focus');
     const r = qs('.ar-camp.moi').getBoundingClientRect();
     const a = T.el.getBoundingClientRect();
-    /* Pendant son tour, une carte de sa main à poser s'arrête au-dessus de
-       son camp : on y voit ses places et ses Joueurs pendant qu'on choisit. */
-    const garde = aMoi && f.main && ['joueur', 'objet'].includes(k.cat);
     z.style.bottom = garde ? `${Math.max(0, a.bottom - r.top + 4)}px` : '0px';
-    z.className = 'ar-focus' + (garde ? ' haut' : '');
+    z.className = 'ar-focus' + (garde ? ' haut' : '') + (large ? ' large' : '');
     z.innerHTML = `<div class="ar-f-in" style="--bas:${place}px">
       <div class="ar-fc">${htmlCarte(id, f.u != null && (f.main || ownerOf(f.u) === T.moi) ? mzDe(id, T.moi) : 0)}</div>
       <div class="ar-f-bas">${bas}</div>
@@ -798,7 +822,10 @@ const Table = (() => {
   /* Les attaques d'un Joueur en jeu, avec leurs valeurs du moment. Pour
      ses propres Joueurs, pendant son tour, ce sont des boutons : celle
      qu'on peut lancer s'allume. */
-  function attaquesEnDirect(c, k, actif) {
+  /* `detail` (zone de détails, 3.0.8) : l'effet de l'attaque est toujours
+     écrit, la raison d'un refus en plus ; celle qu'on peut lancer se
+     reconnaît à sa lavande, sans « Touche pour attaquer ». */
+  function attaquesEnDirect(c, k, actif, detail) {
     const E = T.E;
     const opts = actif ? Combat.optionsTour(E).filter(a => a.t === 'attaquer' && a.u === c.u) : [];
     return `<div class="ar-f-atqs">${(k.atks || []).map((a, i) => {
@@ -808,7 +835,9 @@ const Table = (() => {
       const raison = actif && !possible.length ? pourquoiPas(c, i, inf) : '';
       const val = a.degats == null ? null : inf.val;
       const sens = val == null ? '' : val > a.degats ? 'plus' : val < a.degats ? 'moins' : '';
-      const sous = raison ? `<small class="ar-raison">${h(raison)}</small>` : possible.length ? '<small class="ar-pret">Touche pour attaquer</small>' : a.effet ? `<small>${h(a.effet)}</small>` : '';
+      const sous = detail
+        ? (a.effet ? `<small>${h(a.effet)}</small>` : '') + (raison ? `<small class="ar-raison">${h(raison)}</small>` : '')
+        : raison ? `<small class="ar-raison">${h(raison)}</small>` : possible.length ? '<small class="ar-pret">Touche pour attaquer</small>' : a.effet ? `<small>${h(a.effet)}</small>` : '';
       const corps = `${coutHTML(chev ? { neutre: 2 } : inf.cout)}<span class="ar-f-at"><b>${h(a.nom)}</b>${sous}</span>
         ${val == null ? '' : `<em class="${sens}">${val}${val !== a.degats ? `<s>${a.degats}</s>` : ''}</em>`}`;
       return actif
@@ -817,10 +846,52 @@ const Table = (() => {
     }).join('')}</div>`;
   }
 
+  /* La zone de détails (version 3.0.8), à droite de la carte : sa sorte et
+     sa couleur, son nom, sa Défense (réelle pour un Joueur posé), ses
+     attaques (des boutons pour ses propres Joueurs pendant son tour), son
+     mot-clé, ses talents, son effet, sa Résilience, ce qui agit sur elle, et
+     pour une carte de la main le geste à faire. Tout y est écrit : pas de
+     « Lire le texte ». */
+  function zoneDetails(f, inst, k, aMoi) {
+    const E = T.E;
+    const surPlateau = inst && !f.main;
+    const vivant = surPlateau && k.cat === 'joueur';
+    const monJoueur = vivant && inst.j === T.moi && aMoi;
+    const ty = typeDe(k), co = coulDe(k);
+    const l = [`<header class="ar-f-tete"><b class="ar-f-nom">${h(k.nom || '')}</b><span class="ar-f-type t-${k.cat || ''}" style="--cc:${co.c}">${ty.ico}<span>${ty.nom}</span>${essIcon(k.col || 'neutre', 'ar-f-coul')}<span class="ar-f-cn">${h(co.nom)}</span></span></header>`];
+    if (vivant) l.push(ligneEtat(inst, k));
+    else if (k.cat === 'joueur' && k.def != null) l.push(`<div class="ar-f-etat"><span class="ar-f-defv" aria-label="Défense ${k.def}">${MARQUES.Garde}<small>Déf</small><b>${k.def}</b></span></div>`);
+    if (k.cat === 'joueur') {
+      l.push(vivant ? attaquesEnDirect(inst, k, monJoueur, true)
+        : `<div class="ar-f-atqs">${(k.atks || []).map(a => `<div class="ar-f-atq lu">${coutHTML(a.cout)}<span class="ar-f-at"><b>${h(a.nom)}</b>${a.effet ? `<small>${h(a.effet)}</small>` : ''}</span>${a.degats == null ? '' : `<em>${a.degats}</em>`}</div>`).join('')}</div>`);
+    }
+    const txt = [];
+    if (k.kw) txt.push(`<p><b class="ar-f-kw">${h(k.kw.nom)}</b> ${h(k.kw.texte)}</p>`);
+    (k.talents || []).forEach(t => txt.push(`<p><b class="ar-f-kw">${h(t.nom)}</b> ${h(t.texte)}</p>`));
+    if (k.cat !== 'joueur') (k.fx || []).forEach(t => txt.push(`<p>${h(t)}</p>`));
+    if (k.res) txt.push(`<p><b class="ar-f-kw">Résilience</b> ${h(k.res)}</p>`);
+    if (k.provisoire) txt.push('<p class="ar-tprov">Carte provisoire : son vrai contenu n\'est pas encore connu.</p>');
+    if (txt.length) l.push(`<div class="ar-f-txt">${txt.join('')}</div>`);
+    if (vivant) {
+      if (monJoueur && E.phase === 'jeu' && Combat.optionsTour(E).some(a => a.t === 'attaquer' && a.u === inst.u)
+        && Combat.optionsTour(E).some(a => a.t === 'deployer' || a.t === 'lier')) {
+        l.push('<p class="ar-f-note">Attaquer ouvre la phase de Combat : plus de Joueur à déployer ni d\'Objet à lier ce tour.</p>');
+      }
+      l.push(pucesEnCours(inst, k, true));
+    }
+    if (surPlateau && k.cat !== 'joueur') {
+      const porteur = Combat.porteurDe(E, inst);
+      if (porteur) l.push(`<p class="ar-f-aide">Lié à <b>${h(carte(porteur.id).nom || '')}</b>.</p>`);
+    }
+    if (f.main) l.push(aMoi ? panneauMain(inst, k) : T.occupe || E.fin ? '' : '<p class="ar-f-aide non">Ce n\'est pas ton tour.</p>');
+    return l.join('');
+  }
+
   /* Ce qui agit sur la carte, en quelques mots (les effets du tour, les
      mots-clés et ce qu'ils font). */
-  function pucesEnCours(c, k) {
-    const l = effetsEnCours(c, k).filter(x => !/^Défense [+−]/.test(x.t));
+  /* `detail` : le mot-clé imprimé est déjà écrit dans la zone de détails. */
+  function pucesEnCours(c, k, detail) {
+    const l = effetsEnCours(c, k).filter(x => !/^Défense [+−]/.test(x.t) && !(detail && k.kw && x.t.startsWith(`<b>${k.kw.nom}</b>`)));
     if (!l.length) return '';
     return `<div class="ar-f-puces">${l.map(x => `<span class="ar-puce ${x.s}">${x.t}</span>`).join('')}</div>`;
   }
@@ -850,13 +921,18 @@ const Table = (() => {
     rendre();
   }
 
+  /* Le geste à faire pour une carte de sa main : où la poser (une flèche
+     vers son camp, juste dessous), ou le bouton pour la jouer ; sinon,
+     pourquoi pas. */
   function panneauMain(c, k) {
     const opts = Combat.optionsTour(T.E).filter(a => a.u === c.u);
-    if (k.cat === 'joueur') return `<p class="ar-f-aide">${opts.length ? 'Touche une ligne libre, en bas, pour le déployer.' : h(raisonPasDeploiement())}</p>`;
-    if (k.cat === 'objet') return `<p class="ar-f-aide">${opts.length ? 'Touche un de tes Joueurs pour lui lier cet Objet.' : (T.E.phase === 'combat' ? 'Plus d\'Objet en phase de Combat.' : 'Il te faut un Joueur sur le plateau.')}</p>`;
+    const geste = t => `<p class="ar-f-geste"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg><span>${t}</span></p>`;
+    const non = t => `<p class="ar-f-aide non">${h(t)}</p>`;
+    if (k.cat === 'joueur') return opts.length ? geste('Touche une place libre pour le déployer.') : non(raisonPasDeploiement());
+    if (k.cat === 'objet') return opts.length ? geste('Touche un de tes Joueurs pour lui lier cet Objet.') : non(T.E.phase === 'combat' ? 'Plus d\'Objet en phase de Combat.' : 'Il te faut un Joueur sur le plateau.');
     const a = opts.find(x => x.t === 'jouer');
     if (a) return `<button class="ar-f-jouer" data-ar="jouer" data-u="${c.u}">Jouer ${k.cat === 'coach' ? 'ce Coach' : 'ce Moment'}</button>`;
-    return `<p class="ar-f-aide">${k.cat === 'coach' && T.E.cpt.coachs >= Combat.REGLE.COACHS ? 'Un seul Coach par tour.' : 'Rien à viser pour le moment.'}</p>`;
+    return non(k.cat === 'coach' && T.E.cpt.coachs >= Combat.REGLE.COACHS ? 'Un seul Coach par tour.' : 'Rien à viser pour le moment.');
   }
 
   function raisonPasDeploiement() {

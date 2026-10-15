@@ -165,13 +165,22 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-place::before{content:"";position:absolute;inset:36%;border-radius:50%;opacity:.1;pointer-events:none;filter:grayscale(1) brightness(1.8);
   background:url('../assets/pack-star.svg?v=3.0.7') center/contain no-repeat}
 .ar-place:has(.ar-j)::before{display:none}
-/* Une place libre pour le Joueur qu'on tient : ce qu'on peut faire, donc l'or. */
-.ar-place.cible{cursor:pointer;background:rgba(157,140,255,.12);box-shadow:inset 0 0 0 2px var(--ar-act),0 0 0 4px rgba(157,140,255,.14),0 0 26px rgba(157,140,255,.35);
-  animation:ar-dispo 1.1s ease-in-out infinite}
-.ar-place.cible::before{inset:36%;opacity:.9;border-radius:0;filter:none;
-  background:linear-gradient(var(--ar-act),var(--ar-act)) center/100% 14% no-repeat,linear-gradient(var(--ar-act),var(--ar-act)) center/14% 100% no-repeat}
-.ar-place.survol{background:rgba(157,140,255,.3)}
-@keyframes ar-dispo{50%{box-shadow:inset 0 0 0 2px var(--ar-act),0 0 0 7px rgba(157,140,255,.08),0 0 34px rgba(157,140,255,.45)}}
+/* Une place libre pour le Joueur qu'on tient (version 3.0.8) : ce qu'on
+   peut faire, donc la lavande. Plus de grand « + » : la carte elle-même y
+   est en fantôme (.ar-place-f, posé par marquerPlacesCarte), dans un liseré
+   qui respire lentement. Survolée en glissant, elle se précise. */
+.ar-place.cible{cursor:pointer;background:rgba(157,140,255,.07);
+  box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.62),0 0 0 3px rgba(157,140,255,.08),0 0 18px -4px rgba(157,140,255,.45);
+  animation:ar-dispo 2.4s ease-in-out infinite}
+.ar-place.cible::before{display:none}
+.ar-place-f{position:absolute;inset:5.5%;pointer-events:none;opacity:.3;filter:saturate(.45) brightness(1.05);
+  transition:opacity .2s,filter .2s;animation:ar-fant-entre .35s cubic-bezier(.2,1,.4,1)}
+.ar-place-f>.ar-c{height:100%;border-radius:6cqi/4.4cqi}
+.ar-place.survol{background:rgba(157,140,255,.16);box-shadow:inset 0 0 0 2px #fff,0 0 26px rgba(157,140,255,.55);animation:none}
+.ar-place.survol .ar-place-f{opacity:.78;filter:none}
+@media (hover:hover){.ar-place.cible:hover .ar-place-f{opacity:.55;filter:none}}
+@keyframes ar-dispo{50%{box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.95),0 0 0 4px rgba(157,140,255,.1),0 0 26px -2px rgba(157,140,255,.6)}}
+@keyframes ar-fant-entre{from{opacity:0;transform:translateY(-5%) scale(.95)}}
 
 /* La zone d'un camp : ses Essences, à gauche ; ses piles, à droite. */
 .ar-zone{display:flex;align-items:center;gap:2.4cqi;min-height:9cqi;padding:0 4.2cqi}
@@ -474,13 +483,75 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-tres b{color:#fff}
 .ar-tprov{color:var(--ar-act)}
 .ar-tobj{color:rgba(255,255,255,.62)}
-/* Au-dessus de son camp (une carte à poser) : la carte à gauche, le geste
-   à droite ; le camp reste visible dessous. */
-.ar-focus.haut .ar-f-in{flex-direction:row;gap:14px}
-.ar-focus.haut .ar-fc{width:min(50cqw,calc((100cqh - 16px) * .716),300px)}
-.ar-focus.haut .ar-f-bas{flex:1;align-self:center;max-height:100%}
-.ar-focus.haut .ar-f-aide,.ar-focus.haut .ar-f-lire{text-align:left;align-self:flex-start}
 @media (prefers-reduced-motion:reduce){.ar-f-atq.ok{animation:none}}
+
+/* ============ La zone de détails (version 3.0.8) ============ */
+/* Pendant son tour, une carte de sa main ou un de ses Joueurs posés : la
+   carte à gauche, ce qu'elle fait à droite (zoneDetails), au-dessus de son
+   camp qui reste visible et touchable (.haut). Sur un écran large, toute
+   carte s'ouvre ainsi (.large). Tout est écrit : rien à déplier. */
+.ar-focus.large .ar-f-in{flex-direction:row;align-items:center;gap:clamp(12px,3.4cqw,30px);width:min(100%,780px);margin:0 auto}
+.ar-focus.large .ar-fc{width:min(40cqw,calc((100cqh - 8px) * .716),330px);min-width:0}
+.ar-focus.large .ar-f-bas{flex:1;min-width:0;width:auto;max-height:100%;align-self:center;gap:9px;padding:2px 2px 6px}
+.ar-focus.large .ar-f-etat,.ar-focus.large .ar-f-puces{justify-content:flex-start}
+.ar-focus.large .ar-f-aide,.ar-focus.large .ar-f-note{text-align:left}
+/* L'en-tête : son nom (la croix de fermeture à sa droite), puis sa sorte et
+   sa couleur dans une pastille graphite. */
+.ar-f-tete{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
+.ar-f-type{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 11px 3px 3px;border-radius:999px;white-space:nowrap;line-height:1;
+  font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fff;
+  background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.ar-f-type>svg{flex:none;width:20px;height:20px;padding:4px;border-radius:50%;background:rgba(255,255,255,.14);
+  fill:none;stroke:#fff;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.ar-f-coul{flex:none;width:15px;height:15px;margin-left:4px;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--cc) 70%,transparent))}
+.ar-f-cn{min-width:0;overflow:hidden;text-overflow:ellipsis;text-transform:none;letter-spacing:0;font-size:11.5px;font-weight:700;
+  color:color-mix(in srgb,var(--cc) 55%,#fff)}
+.ar-f-nom{max-width:100%;padding-right:46px;font-family:var(--display);font-style:italic;font-weight:900;font-size:clamp(19px,5.6cqw,27px);line-height:1.04;overflow-wrap:anywhere}
+/* Les attaques, serrées pour la colonne étroite d'un téléphone. */
+.ar-focus.large .ar-f-atqs{gap:7px}
+.ar-focus.large .ar-f-atq{min-height:0;gap:9px;padding:9px 12px;border-radius:15px}
+.ar-focus.large .ar-f-atq .ar-couts{max-width:80px}
+.ar-focus.large .ar-f-atq .ar-cout{width:18px;height:18px}
+.ar-focus.large .ar-f-at b{font-size:14px;overflow-wrap:anywhere;hyphens:auto}
+.ar-focus.large .ar-f-at small{font-size:11.5px}
+.ar-focus.large .ar-f-atq em{font-size:21px}
+/* Le texte : mot-clé, talents, effet, Résilience. */
+.ar-f-txt{display:flex;flex-direction:column;gap:6px;padding:9px 12px;border-radius:14px;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.84);
+  background:rgba(255,255,255,.045);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.ar-f-txt p{margin:0}
+.ar-f-kw{display:inline-block;margin-right:5px;padding:2px 7px;border-radius:999px;vertical-align:1px;line-height:1.2;
+  font-size:9.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(255,255,255,.13)}
+/* Le geste à faire : une flèche vers son camp, juste dessous. */
+.ar-f-geste{display:flex;align-items:center;gap:10px;margin:2px 0 0;padding:10px 13px;border-radius:15px;font-size:13px;font-weight:700;line-height:1.3;
+  color:#e9e5ff;background:rgba(157,140,255,.13);box-shadow:inset 0 0 0 1px rgba(157,140,255,.5)}
+.ar-f-geste svg{flex:none;width:20px;height:20px;fill:none;stroke:#c8bfff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:ar-geste 1.5s ease-in-out infinite}
+@keyframes ar-geste{50%{transform:translateY(3px)}}
+.ar-f-aide.non{font-size:12.5px;color:rgba(255,255,255,.6)}
+.ar-focus.large .ar-f-jouer{align-self:stretch;min-width:0;margin-top:2px}
+/* Le geste reste en vue quand la colonne défile (petit écran) : collé en
+   bas, sur un fond plein. */
+.ar-focus.large .ar-f-geste,.ar-focus.large .ar-f-jouer{position:sticky;bottom:0;z-index:1;flex:none}
+.ar-focus.large .ar-f-geste{background:#211d33}
+.ar-focus.large .ar-f-geste::after{content:"";position:absolute;left:0;right:0;bottom:100%;height:14px;pointer-events:none;
+  background:linear-gradient(transparent,rgba(13,12,19,.9))}
+/* Une colonne étroite (téléphone) : les coûts sur deux par ligne. */
+@container (max-width:560px){.ar-focus.large .ar-f-atq .ar-couts{max-width:42px}}
+/* Peu de hauteur (petit téléphone, la carte au-dessus de son camp) : tout
+   se resserre. */
+@container (max-height:330px){
+  .ar-focus.large .ar-f-bas{gap:6px}
+  .ar-f-tete{gap:5px}
+  .ar-f-nom{font-size:19px}
+  .ar-f-type{padding:2px 9px 2px 2px}
+  .ar-f-type>svg{width:17px;height:17px;padding:3px}
+  .ar-focus.large .ar-f-defv,.ar-focus.large .ar-f-pret,.ar-focus.large .ar-f-obj{height:28px}
+  .ar-focus.large .ar-f-atq{padding:7px 10px}
+  .ar-focus.large .ar-f-atq em{font-size:19px}
+  .ar-f-txt{padding:7px 10px;font-size:11.5px;line-height:1.38}
+  .ar-f-geste{padding:8px 11px;font-size:12.5px}
+}
+html.rm .ar-f-geste svg,html.rm .ar-place-f{animation:none}
+@media (prefers-reduced-motion:reduce){.ar-f-geste svg,.ar-place-f{animation:none}}
 
 /* ============ La feuille du bas : décisions, menu, piles ============ */
 .ar-sheet{position:absolute;left:0;right:0;bottom:0;z-index:14;display:flex;justify-content:center;pointer-events:none;
@@ -732,9 +803,6 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
   .ar-ceo .ava.md{width:48px;height:48px}
   .ar-qui>b{font-size:15px}
   .ar-main{--w:108px}
-  .ar-focus .ar-f-in{flex-direction:row;align-items:center;gap:24px;width:min(100%,760px)}
-  .ar-focus .ar-f-carte{width:min(40cqw,calc((100cqh - 40px) * 63 / 88),300px)}
-  .ar-focus .ar-f-panneau{flex:1;align-self:stretch;justify-content:center}
 }
 /* Sur un téléphone, la main adverse se lit à ses dos de cartes : le nom du
    CEO garde la place. */
