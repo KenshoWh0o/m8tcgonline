@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Vérification — Mate TCG Online</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0c0910">
+<meta name="theme-color" content="#121119">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css?v=3.0.7">
@@ -103,7 +103,7 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
   /* ---- 1. Les deux clés ---- */
   if (!url || !cle) {
     poser({ etat: 'ko', titre: 'Les deux clés ne sont pas encore renseignées',
-      detail: 'Le jeu fonctionne, mais en mode hors ligne : la progression reste dans ce navigateur, sans compte ni échanges.',
+      detail: 'Sans elles, le jeu ne trouve pas de serveur et reste devant son écran d’entrée : il n’y a plus de jeu hors ligne.',
       faire: `Ouvre <code>js/supabase-config.js</code> et colle-y le <b>Project URL</b> et la clé
         <b>Publishable key</b> (ou <b>anon public</b> sur les projets plus anciens),
         que Supabase affiche dans <b>Settings › API</b>.
@@ -145,7 +145,7 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     return conclure();
   }
 
-  /* ---- 3. Inscription et confirmation par e-mail ---- */
+  /* ---- 3. Les inscriptions (Discord, et l'adresse e-mail si elle est rouverte) ---- */
   const emailOuvert = !!(typeof CONNEXION !== 'undefined' && CONNEXION.email);
   if (reglages.disable_signup) {
     poser({ etat: 'ko', titre: 'Les inscriptions sont fermées',
@@ -172,11 +172,16 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
 
   /* ---- 4. Discord ---- */
   const ext = reglages.external || {};
+  /* Discord est la seule connexion du jeu tant que l'adresse e-mail est fermée
+     (CONNEXION.email, js/config.js) : sans lui, personne n'entre. */
+  const faireDiscord = 'Étape 5 de <code>SETUP.md</code> : création de l’application Discord, puis <b>Authentication › Sign In / Providers › Discord</b> dans Supabase.';
   poser(ext.discord
     ? { etat: 'ok', titre: 'La connexion Discord est activée' }
-    : { etat: 'warn', titre: "La connexion Discord n'est pas activée",
-        detail: 'Ce n’est pas bloquant : la création de compte par e-mail suffit pour jouer.',
-        faire: 'Étape 6 de <code>SETUP.md</code> — création de l’application Discord, puis <b>Authentication › Providers › Discord</b> dans Supabase.' });
+    : emailOuvert
+      ? { etat: 'warn', titre: "La connexion Discord n'est pas activée",
+          detail: 'Ce n’est pas bloquant : l’inscription par adresse e-mail est ouverte.', faire: faireDiscord }
+      : { etat: 'ko', titre: "La connexion Discord n'est pas activée",
+          detail: 'C’est la seule façon de se connecter au jeu : personne ne peut entrer.', faire: faireDiscord });
 
   /* ---- 5. Les tables ---- */
   const sb = window.supabase.createClient(url, cle);
@@ -204,7 +209,10 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     const extension = np == null ? nc : nc - np;
     poser(nc > 0
       ? { etat: 'ok', titre: 'La base est installée',
-          detail: `<b>${extension}</b> cartes d'extension${np ? ` et <b>${np}</b> promos` : ''},
+          /* « Autres cartes » : tout ce qui porte promo = true, soit les Promos,
+             les Reverses, les Brillantes, les Secrètes et la carte unique
+             (6 + 85 + 9 + 5 + 1 = 106 aujourd'hui). */
+          detail: `<b>${extension}</b> cartes d'extension${np ? ` et <b>${np}</b> autres cartes (Promos, Reverses, Brillantes, Secrètes, carte unique)` : ''},
             <b>${nq}</b> quêtes, <b>${ns}</b> articles en boutique.`
             + (np == null ? `<br><b>La colonne des promos manque</b> : rejoue
                  <code>supabase/TOUT.sql</code>, il ajoute les cartes Promo.` : '') }
@@ -276,26 +284,26 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     ? { etat: 'ko', titre: 'La version 3.0 n\'est pas installée sur le serveur',
         detail: `Il manque : ${manque30.join(', ')}. Le jeu en 3.0 ne pourra ni ouvrir un combat, ni en payer un.`,
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
-    : { etat: 'ok', titre: 'Combats, défis et événement de la 3.0 sont installés' });
+    : { etat: 'ok', titre: 'Combats, défis, Choc des Sections, Raid et maîtrise de la 3.0 sont installés' });
 
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');
   poser({ etat: 'warn', titre: 'Les adresses de retour sont à vérifier à la main',
     detail: `Cette page est servie depuis <code>${E(ici)}</code>. Sans cette adresse dans la
-      liste, le lien reçu par courriel et le retour de Discord tombent dans le vide.`,
+      liste, le retour de Discord tombe dans le vide.`,
     faire: `Supabase › <b>Authentication › URL Configuration</b> : mets cette adresse en
       <b>Site URL</b>, et ajoute <code>${E(ici)}**</code> dans <b>Redirect URLs</b>.
-      Ajoute aussi <code>http://localhost:8765/**</code> pour développer en local.` });
+      Ajoute aussi <code>http://localhost:8781/**</code> pour développer en local.` });
 
   /* ---- 8. Ton compte ---- */
   if (!session) {
     poser({ etat: 'att', titre: 'Tu n’es pas connecté sur cette page',
-      detail: 'Normal si tu n’as pas encore créé ton compte.',
-      faire: 'Ouvre le jeu, crée ton compte, confirme ton adresse par courriel, puis reviens ici.' });
+      detail: 'Normal si tu ne t’es pas encore connecté au jeu dans ce navigateur.',
+      faire: 'Invite-toi (étape 6 de <code>SETUP.md</code>), ouvre le jeu, connecte-toi avec Discord, puis reviens ici.' });
   } else {
     try {
       /* Par me(), et non par la table : le navigateur n'a pas le droit de lire
-         `profiles` directement (voir la fin de supabase/01_schema.sql). */
+         `profiles` directement (voir la fin de supabase/installation/01_schema.sql). */
       const { data: etat, error } = await sb.rpc('me');
       if (error) throw error;
       const data = etat && etat.profil;
@@ -304,13 +312,13 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
             detail: 'L’onglet Labo t’est accessible dans le jeu.' }
         : { etat: 'warn', titre: `Connecté : ${data ? data.pseudo : session.user.email}`,
             detail: 'Ce compte n’a pas les droits d’administrateur.',
-            faire: `Pour te les donner : ouvre <code>supabase/05_admin.sql</code>, remplace
+            faire: `Pour te les donner : ouvre <code>supabase/administration/admin.sql</code>, remplace
               l’adresse par <code>${E(session.user.email || '')}</code>, et exécute-le dans le
               <b>SQL Editor</b>. Étape 7 de <code>SETUP.md</code>.` });
     } catch (e) {
       poser({ etat: 'warn', titre: 'Connecté, mais le profil est introuvable',
         detail: 'Le compte existe côté authentification, mais pas côté jeu.',
-        faire: 'Rejoue <code>supabase/TOUT.sql</code> : le déclencheur qui crée les profils en fait partie. Puis crée un nouveau compte.' });
+        faire: 'Rejoue <code>supabase/TOUT.sql</code> : le déclencheur qui crée les profils en fait partie. Puis reconnecte-toi avec Discord.' });
     }
   }
 
@@ -330,7 +338,7 @@ function conclure() {
   if (ko) {
     b.className = 'bilan ko';
     b.innerHTML = `<span class="gros">✕</span><div><b>${ko} point${ko > 1 ? 's' : ''} bloquant${ko > 1 ? 's' : ''}</b>
-      <p>Le jeu tourne, mais en hors ligne. Chaque point ci-dessous dit quoi faire.</p></div>`;
+      <p>Le jeu ne peut pas encore fonctionner. Chaque point ci-dessous dit quoi faire.</p></div>`;
   } else if (reste) {
     b.className = 'bilan ok';
     b.innerHTML = `<span class="gros">✓</span><div><b>Le serveur est branché</b>

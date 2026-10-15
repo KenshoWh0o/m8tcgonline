@@ -157,9 +157,10 @@ la teinte de chaque écran.
 - **La difficulté** se lit en **cinq places d'étoiles**, pleines (lavande)
   ou vides : plus de pastille or (l'or reste aux récompenses).
 - **Événement** : un en-tête où les deux Sections se font face —
-  Squeezie le Toxique à gauche, teinté vert, sous le titre ; Gotaga Pose à
-  droite, teinté violet —, une coupe lumineuse en biais entre les deux et le
-  VS dessus ; une rangée d'onglets (Accueil, Raid, Épreuve, Quêtes, Pass,
+  Squeezie le Toxique à gauche, teinté vert, sous le titre ; Brawks Déter à
+  droite, teinté violet (Gotaga Pose en 3.0.5, remplacé en 3.0.6) —, une
+  coupe lumineuse en biais entre les deux, sans VS depuis la 3.0.6 ; une
+  rangée d'onglets (Accueil, Raid, Épreuve, Quêtes, Pass,
   Boutique, Classement). Sur l'Accueil, quatre tuiles « Aujourd'hui », puis
   les nouveautés : les Combats en grand, six tuiles illustrées. Le Pass
   montre d'abord ses trois exclusifs.
@@ -223,7 +224,7 @@ rendait la carte floue.
 
 ## 10 bis. Version 3.0.6 : ce qui a changé après les retours
 
-- **Les cadres** (`tools/cadres-30.py`) adoptent la manière des cadres 2.0 (Maître, Aurore, Nébuleuse) : un anneau fin, à peine là, et le motif dessiné en traînées effilées, en dégradé de couleur et de transparence, avec leur lueur. Toxique et Déter se répondent (le poison monte du bas, la foudre tombe du haut) ; le Choc les fait se heurter en haut, dans un éclat blanc ; la Secrète reprend le reflet irisé des cartes et leur ✦✦. L'Arène s'enrichit par palier (laurier, épées à 20, gemmes à 30, prisme à 50).
+- **Les cadres** (`tools/cadres-30.py`) adoptent la manière des cadres 2.0 (Maître, Aurore, Nébuleuse) : un anneau fin, à peine là, et le motif dessiné en traînées effilées, en dégradé de couleur et de transparence, avec leur lueur. Toxique et Déter se répondent (le poison monte du bas, la foudre tombe du haut) ; le Choc les fait se heurter en haut, dans un éclat blanc ; la Secrète reprend le reflet irisé des cartes et leur ✦✦. L'Arène s'enrichissait par palier (laurier, épées à 20, gemmes à 30, prisme à 50) ; refaite en 3.0.7 (anneau de métal, rivets, cimier et sa gemme, puis des ailes qui grandissent à 20, 30 et 50, couronne et métal irisé à 50), elle a perdu en 3.0.8 sa plaque « NIV » (le niveau se lit sur la pastille de l'avatar). `tools/cadres-30.py` décrit l'état actuel.
 - **L'en-tête mobile** : plus de chevron ni de pastille sur la photo. Une pilule de verre, les trois traits du menu puis l'avatar dans un anneau qui se remplit avec l'XP du niveau.
 - **Le tutoriel** : une bulle sombre bordée de lavande, en haut, ou en bas quand la carte agrandie occupe le haut ; ce qu'il faut toucher a un contour blanc qui respire. Une bulle à lire assombrit légèrement l'arène et retient les doigts ; une bulle à faire les laisse passer.
 - **Fermer d'un geste** : dans l'arène, tout ce qui flotte se referme en touchant à côté (le flou, le vide, le voile). C'est la règle des feuilles du site, étendue à l'arène.

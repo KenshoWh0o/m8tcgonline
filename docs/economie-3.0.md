@@ -7,7 +7,7 @@ Chaque chiffre est classé :
 - **[calcul]** : une conséquence arithmétique des valeurs du jeu ;
 - **[hypothèse]** : une estimation qui dépend du comportement des joueurs, que personne n'a encore mesuré.
 
-Une limite s'applique à tout le document : **aucune donnée réelle de jeu n'existe sur les combats**. Le site ne les a jamais ouverts. Les profils de joueurs ci-dessous sont donc des modèles et non des mesures. Après l'ouverture, il faudra les comparer à `quest_progress`, `combat_parties` et `evt_comptes`.
+Une limite s'applique à tout le document : **aucune donnée réelle de jeu n'existe sur les combats**. Le site ne les a jamais ouverts. Les profils de joueurs ci-dessous sont donc des modèles et non des mesures. Après l'ouverture, il faudra les comparer à `quest_progress`, `combat_joueurs` (victoires, défaites, XP), `combats_ouverts` (les combats lancés du jour), `evt_comptes` et `maitrises_journal`.
 
 ## 1. Le point de départ (avant la 3.0)
 
@@ -31,6 +31,7 @@ Une limite s'applique à tout le document : **aucune donnée réelle de jeu n'ex
 | Défi gagné / perdu (3 par jour) | 50 / 15 | **40 / 15** | `js/battle.js` (`DEFI_GAIN`) |
 | Quêtes du jour combat | 30 + 50 + 40 = 120 | **20 + 40 + 30 = 90** | `d_combat`, `d_victoire`, `d_vaincus` |
 | Quêtes de la semaine combat | 300 + 350 + 200 = 850 | **250 + 300 + 150 = 700** | `w_victoires`, `w_dur`, `w_defi` |
+| Quêtes d'XP, ajoutées avec les niveaux | — | **30 par jour, 200 par semaine** | `d_xp` (150 XP), `w_xp` (1 500 XP) |
 | Campagne, première fois (une seule fois) | 3 400 Éclats, 14 boosters, 2 800 Fragments, une Promo, un titre | inchangé | `RECOMPENSES_CAMPAGNE` |
 
 ### Ce que ça donne par jour [calcul]
@@ -40,6 +41,8 @@ Une limite s'applique à tout le document : **aucune donnée réelle de jeu n'ex
 | Combattant régulier : quêtes combat, 5 victoires en Normal, 1 défi gagné | ≈ 491 | **≈ 355** | **+ 85 %** |
 | Combattant acharné : tout au maximum, Légende, 3 défis gagnés | ≈ 766 | **≈ 560** | + 135 % |
 | Collectionneur qui ne combat pas | 0 | 0 | inchangé |
+
+[calcul] Ces profils datent d'avant les quêtes d'XP : `d_xp` et `w_xp` ajoutent environ **59 Éclats par jour** (30 + 200 / 7) à qui les remplit ; le combattant régulier passe alors à ≈ 414, l'acharné à ≈ 619.
 
 ### Pourquoi ces valeurs
 
@@ -158,8 +161,9 @@ Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière 
 | 500 Fragments | 70 | 8 | 560 |
 | Tapis « The French Sorcerer » | 600 | 1 | 600 |
 | Titre « Supporter du Choc » | 200 | 1 | 200 |
+| Cadre « The French Sorcerer » (`f_foudre`) | 400 | 1 | 400 |
 
-- Tout acheter coûte **2 700 Étincelles** [calcul] (3 140 avant). Retirés à la demande : l'Essence Brillante et la Reverse Rare. Pour que les Étincelles gardent un usage, les boosters et les Fragments y sont un peu moins chers et plus nombreux, et un lot de 5 boosters s'ajoute.
+- Tout acheter coûte **3 100 Étincelles** [calcul] (2 700 avant l'arrivée du cadre `f_foudre`, 3 140 avant le premier rééquilibrage). Retirés à la demande : l'Essence Brillante et la Reverse Rare. Pour que les Étincelles gardent un usage, les boosters et les Fragments y sont un peu moins chers et plus nombreux, et un lot de 5 boosters s'ajoute.
 - [hypothèse] Un joueur engagé (≈ 4 000 Étincelles) peut tout acheter ; un occasionnel (≈ 2 000) prend le tapis, le titre et une partie des boosters.
 - Le Pass compte les Étincelles **gagnées**, la boutique dépense le **solde** : acheter ne fait pas reculer dans le Pass.
 

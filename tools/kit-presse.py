@@ -411,7 +411,8 @@ def gif_ouverture():
     pack = ouvrir('assets/boosters/booster-01.webp', 290)
     logo = ouvrir('assets/logo-m8.webp', 48)
 
-    # Cinq cartes, comme dans un vrai paquet : des communes, et le hit au centre.
+    # Cinq cartes (un vrai paquet en a six : l'eventail reste lisible a 800 px),
+    # le hit au centre.
     tirage = [
         'cards/010_C_Joueur_Rose_Broken-Brawks.avif',
         'cards/047_E_Moment-Instant_Violette_Champions-du-Major.avif',

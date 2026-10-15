@@ -24,10 +24,10 @@ un chiffre.
 | `02-cartes-paysage.png` | 1200 × 675 | Cinq légendaires en éventail. Le visuel qui donne envie d'ouvrir. |
 | `03-chiffres-paysage.png` | 1200 × 675 | 122 cartes, 6 par booster, 6 par jour, 0 €. Pour couper court aux questions. |
 | `04-booster-portrait.png` | 1080 × 1350 | Portrait, occupe toute la hauteur du fil sur mobile. |
-| `05-promos-carre.png` | 1080 × 1080 | Les quatre cartes Promo. Le post « pour les collectionneurs ». |
+| `05-promos-carre.png` | 1080 × 1080 | Quatre des six cartes Promo (P01, P02, P05, P06) ; les deux Promos de Section, encore sans illustration, n'y sont pas. Le post « pour les collectionneurs ». |
 | `06-teaser-paysage.png` | 1200 × 675 | « Coming soon », à poster **avant** l'ouverture. |
 | `teaser-anime.gif` | 800 × 450 | Le paquet qui flotte. Court, léger, en boucle. |
-| `ouverture-anime.gif` | 800 × 450 | **Le meilleur asset du lot.** Un booster s'ouvre, cinq cartes se déploient. |
+| `ouverture-anime.gif` | 800 × 450 | **Le meilleur asset du lot.** Un booster s'ouvre, cinq cartes se déploient en éventail (un vrai booster en a six). |
 
 > Twitter accepte les GIF jusqu'à 15 Mo : les deux passent largement.
 > Un GIF est lu automatiquement dans le fil, sans son et sans clic — c'est
@@ -95,9 +95,10 @@ gratuit, c'est complet, et ça se joue maintenant.
 
 **Les promos**
 
-> Quatre cartes Promo, introuvables en booster.
+> Six cartes Promo, introuvables en booster.
 > Deux s'achètent avec la monnaie du jeu.
 > Deux se méritent : 75 % de la collection, et le Master Set complet.
+> Deux attendent les Combats : une par Section, pour qui la rejoint.
 >
 > matetcg.com
 
@@ -116,8 +117,7 @@ simulation.
 
 1. Ouvre le site sur ton téléphone, ou en mode mobile dans Chrome
    (F12 → l'icône téléphone → iPhone 14 Pro).
-2. Dans **Réglages**, mets le thème sur **Sombre** : les cartes y brillent, et
-   c'est l'ambiance des visuels ci-dessus.
+2. Le site n'a qu'un thème, sombre : c'est l'ambiance des visuels ci-dessus.
 3. Les écrans qui valent le détour :
    - **Boosters** — le paquet et la réserve pleine
    - **l'ouverture** — juste après la révélation d'une légendaire
