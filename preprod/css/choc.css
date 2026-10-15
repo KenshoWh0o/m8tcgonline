@@ -342,6 +342,6 @@ html.rm .ch-ref-tuile{animation:none}
 
 /* ============ Combats : un cosmétique d'événement ============ */
 .cb-cosm-prix.ev{font-size:9.5px;white-space:nowrap;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);color:#fff}
-/* Version 3.0.7 : la maîtrise, une carte couronnée qui dépasse de sa tuile. */
+/* La maîtrise : une carte Légende (son joyau) qui dépasse de sa tuile. */
 .ch-nv.mz .ch-nv-art{background:radial-gradient(70% 90% at 50% 40%,rgba(238,0,115,.28),transparent 70%),var(--surface-2)}
 .ch-nv-mz{position:relative;z-index:1;width:46px;margin-top:22px;transform:rotate(-6deg)}

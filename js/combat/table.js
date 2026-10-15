@@ -63,18 +63,19 @@ const Table = (() => {
      déjà ce qu'elle est. */
   /* Version 3.0.7 : la maîtrise de ses propres cartes (js/maitrise.js) —
      `m`, son niveau, ou 0. Celle de l'adversaire ne se voit pas : on ne la
-     connaît pas. La lumière, la gravure et l'holographique vont dans la
-     carte ; le halo, la bordure et la couronne autour du Joueur posé. */
+     connaît pas. Le reflet, le liseré, la lumière qui court et le reflet
+     irisé vont dans la carte (mzDedans) ; le halo et le joyau autour du
+     Joueur posé (mzAutourDe, js/maitrise.js). */
   const mzDe = (id, j) => (j === T.moi && typeof maitrisable === 'function' && byId[id] && maitrisable(byId[id]) ? niveauMaitrise(byId[id]) : 0);
   const mzCouleur = id => tcol(carteMaitrise(byId[id]));
-  const mzAutour = (id, m) => (m >= 3 ? `<i class="mz-a" aria-hidden="true"></i>${m >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : ''}${m >= 5 ? `<i class="mz-c" aria-hidden="true">${COURONNE}</i>` : ''}` : '');
+  const mzAutour = (id, m) => (m ? mzAutourDe(m) : '');
   function htmlCarte(id, m) {
     const c = carte(id);
     const mz = m ? ` mz mz-${m}" style="--mc:${mzCouleur(id)}` : '';
     const img = c.img
       ? `<img src="${c.img}" alt="" draggable="false" decoding="async">`
       : `<div class="ar-texte r-${c.rar}" style="--tc:${tcol(c)}"><b>${h(c.nom)}</b><small>${h(c.provisoire ? 'Promo provisoire' : (RAR[c.rar] || {}).nom || '')}</small>${c.def != null ? `<em>Déf ${c.def}</em>` : ''}${(c.atks || []).map(a => `<span>${coutHTML(a.cout)} ${h(a.nom)} <i>${a.degats == null ? '' : a.degats}</i></span>`).join('')}</div>`;
-    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' ? ' holo' : ''}${c.rar === 'S' ? ' secrete' : ''}${mz}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}${m ? `<i class="mz-l" aria-hidden="true"></i>${m >= 5 ? '<i class="mz-h" aria-hidden="true"></i>' : ''}` : ''}</div>`;
+    return `<div class="ar-c${c.rev ? ' rev' : ''}${c.rar === 'L' ? ' holo' : ''}${c.rar === 'S' ? ' secrete' : ''}${mz}" data-id="${id}">${img}${c.rev ? '<i class="ar-rev"></i>' : ''}${m ? mzDedans(m) : ''}</div>`;
   }
   const dos = j => `<div class="ar-c dos"><img src="${sleeveDe(j)}" alt="" draggable="false"></div>`;
 

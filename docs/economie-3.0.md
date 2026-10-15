@@ -201,19 +201,34 @@ D'où les trois repères du bilan (`Decks.bilan`) : 16 Joueurs au moins, une Ré
 
 **[mesuré]** Les niveaux bas sont bien plus solides qu'avant, et l'échelle monte à chaque marche (le niveau au-dessus gagne 86 %, 54 %, 56 % et 68 % des parties). **[mesuré]** Les marches Facile → Normal et Normal → Difficile restent courtes, dans la marge d'erreur : à deck égal, ces trois niveaux jouent presque aussi bien ; la difficulté de l'Arcade et de la campagne vient aussi du deck adverse, dont les raretés montent avec le niveau. Le seul levier qui a montré un gain est le nombre d'essais par coup (porté à 3 et 4 pour les niveaux 4 et 5) ; la méfiance envers la riposte n'en a montré aucun. **[inconnu]** La force perçue par un humain : à mesurer avec les taux de victoire réels après l'ouverture.
 
-## 3 ter. La maîtrise des cartes (version 3.0.7)
+## 3 ter. La maîtrise des cartes (version 3.0.7, rééquilibrée en 3.0.8)
 
-Le rôle : donner un usage durable aux Fragments une fois la collection complète. Les règles sont dans l'en-tête de `supabase/28_maitrise.sql` (le serveur décide) et de `js/maitrise.js` (l'affichage) ; les deux portent les mêmes montants.
+Le rôle : donner un usage durable aux Fragments une fois la collection complète, et récompenser les cartes qu'on joue. Les règles sont dans l'en-tête de `supabase/28_maitrise.sql` (le serveur décide), de `js/maitrise.js` (l'affichage) et de `_demo/serveur.js` (la pré-prod) ; les trois portent les mêmes montants.
 
-### Valeurs retenues [fait] `maitrise_fragments`, `maitrise_copies`, `supabase/28_maitrise.sql`
+### Pourquoi la 3.0.8 change les montants [calcul]
 
-| Niveau | Nom | Fragments | Exemplaires en trop pris : Commune et Peu commune / Rare / Épique / Légendaire / Secrète |
-|---|---|---|---|
-| I | Éclat | 300 | 1 / 0 / 0 / 0 / 0 |
-| II | Gravure | 700 | 1 / 1 / 1 / 0 / 0 |
-| III | Aura | 1 500 | 2 / 1 / 1 / 1 / 0 |
-| IV | Arène | 3 000 | 2 / 2 / 1 / 0 / 0 |
-| V | Légende | 6 000 | 3 / 2 / 1 / 1 / 0 |
+En 3.0.7, chaque niveau coûtait 300, 700, 1 500, 3 000 puis 6 000 Fragments **quelle que soit la rareté** (11 500 pour la Légende). Or, simulation (`python3 tools/equilibre-fragments.py` : 40 joueurs, 6 boosters par jour, doublons recyclés au-delà de 2, recyclage seul) :
+
+| Moment | Fragments gagnés par semaine (médiane) |
+|---|---|
+| Fin du 1er mois | ≈ 1 550 |
+| 2e et 3e mois | ≈ 1 800 à 1 900 |
+| 4e mois | ≈ 2 000 |
+
+Une Commune en Légende demandait donc six semaines de tout le recyclage, autant qu'une Légendaire : c'était à la fois trop cher pour les cartes communes et pas assez distinctif pour les rares. Les exemplaires demandés, eux, ignoraient la fréquence réelle des cartes (une Commune précise sort tous les 16 boosters ; une Épique, tous les 112 ; une Légendaire, tous les 235).
+
+### Valeurs retenues [fait] `maitrise_fragments(rar, n)`, `maitrise_copies`, `supabase/28_maitrise.sql`
+
+Un niveau coûte **la base de la rareté, fois 1, 2, 4, 7 puis 11** (25 fois la base pour aller jusqu'à la Légende), plus des exemplaires **en trop** :
+
+| Rareté | Base | I · Éclat | II · Liseré | III · Aura | IV · Arène | V · Légende | Total | Exemplaires en trop (I à V) |
+|---|---|---|---|---|---|---|---|---|
+| Commune | 60 | 60 | 120 | 240 | 420 | 660 | **1 500** | 1 · 1 · 1 · 2 · 2 (7) |
+| Peu commune | 100 | 100 | 200 | 400 | 700 | 1 100 | **2 500** | 1 · 1 · 1 · 1 · 2 (6) |
+| Rare | 200 | 200 | 400 | 800 | 1 400 | 2 200 | **5 000** | 0 · 1 · 1 · 1 · 1 (4) |
+| Épique | 400 | 400 | 800 | 1 600 | 2 800 | 4 400 | **10 000** | 0 · 0 · 1 · 0 · 1 (2) |
+| Légendaire | 600 | 600 | 1 200 | 2 400 | 4 200 | 6 600 | **15 000** | 0 · 0 · 0 · 0 · 1 (1) |
+| Secrète | 600 | 600 | 1 200 | 2 400 | 4 200 | 6 600 | **15 000** | aucun |
 
 - Seuls les exemplaires **en trop** sont pris : au-delà de la limite de deck (2 ; 1 pour une Légendaire ou une Secrète, `limite_copies`), au-delà de ce que le joueur garde (`garde_de`), hors des échanges en attente. Un deck n'est donc jamais privé d'une carte par la maîtrise.
 - Chaque exemplaire qui manque est remplacé par son **prix de fabrication** en Fragments (`cfg('fabrication_…')` : 40, 100, 400, 2 000, 8 000). La maîtrise n'est jamais bloquée par la chance.
@@ -221,18 +236,19 @@ Le rôle : donner un usage durable aux Fragments une fois la collection complèt
 
 ### Ce que coûte une carte jusqu'à la Légende [calcul]
 
-| Rareté | Exemplaires en trop pris en tout | Coût sans aucun exemplaire en trop | Coût avec tous les exemplaires en trop |
-|---|---|---|---|
-| Commune | 9 | 11 860 Fragments | 11 500 Fragments |
-| Peu commune | 9 | 12 400 | 11 500 |
-| Rare | 6 | 13 900 | 11 500 |
-| Épique | 4 | 19 500 | 11 500 |
-| Légendaire | 2 | 27 500 | 11 500 |
-| Secrète | 0 | 11 500 | 11 500 |
+| Rareté | Avec tous les exemplaires en trop | Sans aucun (tout en Fragments) | Pour un joueur régulier (≈ 2 000 Fragments par semaine) | Face à la fabrication |
+|---|---|---|---|---|
+| Commune | 1 500 | 1 780 | moins d'une semaine | 37 fois son prix (40) |
+| Peu commune | 2 500 | 3 100 | 9 à 11 jours | 25 fois (100) |
+| Rare | 5 000 | 6 600 | 2 semaines et demie à 3 semaines | 12 fois (400) |
+| Épique | 10 000 | 14 000 | 5 à 7 semaines | 5 fois (2 000) |
+| Légendaire | 15 000 | 23 000 | 7 semaines et demie à 11 semaines | 2 à 3 fois (8 000) |
+| Secrète | 15 000 | 15 000 | 7 semaines et demie | (ne se fabrique pas) |
 
-- **[calcul]** Un exemplaire en trop vaut bien plus dans la maîtrise qu'au recyclage : une Commune rapporte 2 Fragments recyclée, mais en économise 40 dans une maîtrise ; une Légendaire, 250 contre 8 000. Le recyclage reste utile pour fabriquer les cartes qui manquent ; une fois la collection complète, la maîtrise devient le meilleur usage des doublons.
-- **[calcul]** Les sources de Fragments connues de la 3.0 : 2 800 une fois (campagne), 3 750 pendant le Choc (Pass), 600 par saison de Raid pour qui la finit (coffres et palier), 500 au niveau 25. Une seule carte en Légende (11 500) demande donc l'équivalent de plusieurs saisons : c'est voulu, la maîtrise est un objectif de long terme.
-- **[hypothèse]** Combien de cartes un joueur actif maîtrisera par mois : impossible à dire sans mesurer le recyclage réel après l'ouverture (`maitrises_journal` garde chaque niveau payé : Fragments et exemplaires).
+- **[calcul]** Les premiers niveaux sont à portée de main (une Commune au niveau I : 60 Fragments et un doublon), la Légende d'une Légendaire est un trophée de deux à trois mois. Maîtriser une carte coûte toujours plus que la fabriquer, sans être hors d'atteinte.
+- **[calcul]** Un exemplaire en trop vaut bien plus dans la maîtrise qu'au recyclage : une Commune rapporte 2 Fragments recyclée, mais en économise 40 dans une maîtrise ; une Légendaire, 250 contre 8 000. Une fois la collection complète, la maîtrise devient le meilleur usage des doublons.
+- **[calcul]** S'y ajoutent les sources ponctuelles : 2 800 une fois (campagne), 3 750 pendant le Choc (Pass), 600 par saison de Raid pour qui la finit (coffres et palier), 500 au niveau 25.
+- **[hypothèse]** Combien de cartes un joueur actif maîtrisera par mois : à mesurer après l'ouverture (`maitrises_journal` garde chaque niveau payé : Fragments et exemplaires).
 
 ### La carte fétiche [fait] `profiles.fetiche`, `set_fetiche`, `fetiche_de`
 
@@ -243,5 +259,5 @@ Gratuite : une carte possédée, mise en scène en haut du profil et sur la fich
 1. Le rythme réel de jeu des combats : à mesurer après l'ouverture (voir l'introduction). Il fixe aussi la vitesse de montée en niveau (partie 2 bis).
 2. La valeur de `raid_echelle` au lancement : elle dépend du nombre de joueurs, et décide de la fréquence des coffres du Raid.
 3. Le prix des cosmétiques de combat (4 000 à 5 000 Éclats par tapis) est une proposition. Rien ne permet encore de dire s'il est trop haut ou trop bas.
-4. Les montants de la maîtrise (partie 3 ter) sont une proposition, sans mesure : à revoir avec `maitrises_journal` après l'ouverture.
+4. Les montants de la maîtrise (partie 3 ter, rééquilibrés en 3.0.8 sur la simulation du recyclage) restent une proposition : à revoir avec `maitrises_journal` après l'ouverture.
 5. Les règles du jeu elles-mêmes sont reconstituées (`docs/regles-3.0.md`). Si les vraies règles changent la durée d'une partie, le rythme des gains change avec elle.

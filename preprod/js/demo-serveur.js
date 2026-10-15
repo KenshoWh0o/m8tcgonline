@@ -1101,8 +1101,11 @@
      exemplaires EN TROP (au-delà de la limite de deck, de ce qu'on garde et
      des échanges en attente) ; chaque exemplaire qui manque se remplace par
      son prix de fabrication. Les montants sont ceux du serveur. */
-  const MZ_FRAGMENTS = [300, 700, 1500, 3000, 6000];
-  const MZ_COPIES = { C: [1, 1, 2, 2, 3], PC: [1, 1, 2, 2, 3], R: [0, 1, 1, 2, 2], E: [0, 1, 1, 1, 1], L: [0, 0, 1, 0, 1], S: [0, 0, 0, 0, 0] };
+  /* Version 3.0.8 : la base de Fragments dépend de la rareté, fois 1, 2, 4,
+     7, 11 selon le niveau (maitrise_fragments). */
+  const MZ_BASE = { C: 60, PC: 100, R: 200, E: 400, L: 600, S: 600 };
+  const MZ_MULT = [1, 2, 4, 7, 11];
+  const MZ_COPIES = { C: [1, 1, 1, 2, 2], PC: [1, 1, 1, 1, 2], R: [0, 1, 1, 1, 1], E: [0, 0, 1, 0, 1], L: [0, 0, 0, 0, 1], S: [0, 0, 0, 0, 0] };
   /* maitrise_carte : la carte qui porte la maîtrise (une Reverse : sa carte
      classique), si elle se maîtrise ; null sinon. */
   function maitriseCarte(id) {
@@ -1129,7 +1132,7 @@
     const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
     const copies = MZ_COPIES[k.rar][n - 1];
     const pris = Math.min(copies, dispo);
-    const total = MZ_FRAGMENTS[n - 1] + (copies - pris) * (cfg('fabrication_' + k.rar) || 0);
+    const total = MZ_BASE[k.rar] * MZ_MULT[n - 1] + (copies - pris) * (cfg('fabrication_' + k.rar) || 0);
     const pr = profil(p);
     if ((pr.fragments || 0) < total) refuser(`Pas assez de Fragments : il en faut ${total}.`);
     pr.fragments -= total;

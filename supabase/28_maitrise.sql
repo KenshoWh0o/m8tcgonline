@@ -3,17 +3,25 @@
 --  fetiche. A executer apres 27_raid.sql. Rejouable sans danger.
 --
 --  Ce que deviennent les Fragments quand la collection est complete : une
---  carte qu'on possede s'ameliore, en cinq niveaux (Eclat, Gravure, Aura,
+--  carte qu'on possede s'ameliore, en cinq niveaux (Eclat, Lisere, Aura,
 --  Arene, Legende), et chaque niveau change son allure partout ou elle
 --  apparait, en combat compris (js/maitrise.js, css/maitrise.css).
 --
---  Ce que coute un niveau :
---    · des Fragments : 300, 700, 1 500, 3 000, 6 000 (11 500 en tout) ;
---    · des exemplaires de la carte, d'autant moins qu'elle est rare :
---          Commune, Peu commune   1  1  2  2  3
---          Rare                   0  1  1  2  2
---          Epique                 0  1  1  1  1
---          Legendaire             0  0  1  0  1
+--  Ce que coute un niveau (version 3.0.8, docs/economie-3.0.md partie 3 ter) :
+--    · des Fragments : une base selon la rarete, fois 1, 2, 4, 7 et 11
+--      (25 fois la base pour la Legende) :
+--          Commune      60    120    240    420    660   =  1 500
+--          Peu commune  100   200    400    700  1 100   =  2 500
+--          Rare         200   400    800  1 400  2 200   =  5 000
+--          Epique       400   800  1 600  2 800  4 400   = 10 000
+--          Legendaire,  600 1 200  2 400  4 200  6 600   = 15 000
+--          Secrete
+--    · des exemplaires EN TROP, d'autant moins que la carte est rare :
+--          Commune                1  1  1  2  2
+--          Peu commune            1  1  1  1  2
+--          Rare                   0  1  1  1  1
+--          Epique                 0  0  1  0  1
+--          Legendaire             0  0  0  0  1
 --          Secrete                0  0  0  0  0
 --
 --  Le conflit avec les decks (deux exemplaires pour jouer une carte deux
@@ -61,21 +69,26 @@ revoke all on public.maitrises_journal from anon, authenticated;
 -- La carte fetiche : une carte possedee, mise en scene sur le profil.
 alter table public.profiles add column if not exists fetiche text references public.cards on delete set null;
 
--- Les Fragments du niveau n (1 a 5).
-create or replace function public.maitrise_fragments(n int) returns integer
+-- Les Fragments du niveau n (1 a 5), selon la rarete : la base de la rarete,
+-- fois 1, 2, 4, 7, 11. Version 3.0.8 : la base depend de la rarete (avant,
+-- 300 a 6 000 pour toutes, une Commune coutait autant qu'une Legendaire).
+drop function if exists public.maitrise_fragments(int);
+create or replace function public.maitrise_fragments(rar text, n int) returns integer
 language sql immutable as $$
-  select (array[300, 700, 1500, 3000, 6000])[n]
+  select (case rar when 'C' then 60 when 'PC' then 100 when 'R' then 200 when 'E' then 400
+                   when 'L' then 600 when 'S' then 600 else 0 end)
+         * coalesce((array[1, 2, 4, 7, 11])[n], 0)
 $$;
 
 -- Les exemplaires en trop que prend le niveau n, selon la rarete.
 create or replace function public.maitrise_copies(rar text, n int) returns integer
 language sql immutable as $$
   select coalesce((case rar
-    when 'C'  then array[1, 1, 2, 2, 3]
-    when 'PC' then array[1, 1, 2, 2, 3]
-    when 'R'  then array[0, 1, 1, 2, 2]
-    when 'E'  then array[0, 1, 1, 1, 1]
-    when 'L'  then array[0, 0, 1, 0, 1]
+    when 'C'  then array[1, 1, 1, 2, 2]
+    when 'PC' then array[1, 1, 1, 1, 2]
+    when 'R'  then array[0, 1, 1, 1, 1]
+    when 'E'  then array[0, 0, 1, 0, 1]
+    when 'L'  then array[0, 0, 0, 0, 1]
     when 'S'  then array[0, 0, 0, 0, 0]
   end)[n], 0)
 $$;
@@ -155,7 +168,7 @@ begin
   pris := least(copies, dispo);
   manque := copies - pris;
   prix := coalesce(cfg('fabrication_' || k.rar), 0);
-  total := maitrise_fragments(n) + manque * prix;
+  total := maitrise_fragments(k.rar, n) + manque * prix;
 
   if reste < total then raise exception 'Pas assez de Fragments : il en faut %.', total; end if;
 

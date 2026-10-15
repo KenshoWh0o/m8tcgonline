@@ -114,32 +114,13 @@ Il n'y a pas de tests automatisés de l'interface. **Toute modification visible 
 
 ### 2.3 Tester le SQL sur un PostgreSQL local
 
-PostgreSQL 16 est installé dans l'environnement cloud. Recette vérifiée :
+PostgreSQL 16 est installé dans l'environnement cloud. Une commande fait tout :
 
 ```bash
-mkdir -p /var/tmp/pg && chown postgres /var/tmp/pg
-su postgres -c "/usr/lib/postgresql/16/bin/initdb -D /var/tmp/pg/data -A trust -E UTF8 --locale=C.UTF-8"
-su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pg/data -o '-p 5499 -k /var/tmp/pg' -l /var/tmp/pg/log start"
-P="psql -h /var/tmp/pg -p 5499 -U postgres -v ON_ERROR_STOP=1"
-$P -c "create database m8"
-$P -d m8 -f stub.sql                                     # l'imitation de Supabase, ci-dessous
-git show origin/main:supabase/TOUT.sql > tout-21.sql      # la base de production (2.1)
-$P -d m8 -f tout-21.sql
-$P -d m8 -f supabase/TOUT.sql && $P -d m8 -f supabase/TOUT.sql   # la 3.0, deux fois : doit passer
+tools/tester-sql.sh [test1.sql …]
 ```
 
-`stub.sql` imite ce que Supabase fournit :
-
-```sql
-create role anon nologin; create role authenticated nologin; create role service_role nologin;
-create schema auth;
-create table auth.users (id uuid primary key default gen_random_uuid(), email text,
-  raw_user_meta_data jsonb default '{}'::jsonb, created_at timestamptz default now());
-create function auth.uid() returns uuid language sql stable as
-  $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-grant usage on schema auth to anon, authenticated;
-create publication supabase_realtime;
-```
+Elle démarre un PostgreSQL local (`/var/tmp/pg-m8`, port 5499, laissé allumé), recrée une base `m8`, y joue `tools/sql-stub.sql` (l'imitation de Supabase : rôles `anon` / `authenticated` / `service_role`, schéma `auth`, `auth.users`, `auth.uid()` lu dans `request.jwt.claim.sub`, publication `supabase_realtime`), puis **la base de production** (`supabase/TOUT.sql` d'`origin/main`, la 2.1), puis le `TOUT.sql` de la branche **deux fois** (il doit être rejouable), puis les fichiers de test donnés. Pour l'arrêter : `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pg-m8/data stop"`.
 
 Jouer en tant que joueur : insérer un utilisateur **avec une adresse e-mail** dans `auth.users` (le profil se crée par trigger), puis inscrire **cette adresse** dans `beta_invites` (`insert into beta_invites (cle) values ('moi@exemple.fr');` : la clé est l'e-mail ou le `provider_id` Discord, jamais l'uuid ; sans cela, tout répond `BETA_FERMEE`). Puis :
 
@@ -147,6 +128,7 @@ Jouer en tant que joueur : insérer un utilisateur **avec une adresse e-mail** d
 select set_config('request.jwt.claim.sub', '<uuid>', false);
 set role authenticated;
 select open_pack();
+reset role;   -- pour relire les tables (le rôle authenticated n'y a pas accès)
 ```
 
 ### 2.4 Changer de version
@@ -713,26 +695,26 @@ Les doublons deviennent des **Fragments** (`recycler`, `supabase/12_recyclage.sq
 - Garde-fous de l'interface : « Tout prendre » laisse E et L de côté ; une case à cocher si une E ou une L est sélectionnée ; une dernière confirmation dont le bouton ne répond qu'après 3 s.
 - **Pourquoi des Fragments et pas des Éclats** (1.5) : recycler en Éclats créait une boucle (les Éclats rachètent des boosters). Les Fragments n'achètent qu'une carte manquante : pas de boucle, donc pas de plafond. Le calcul est en tête de `12_recyclage.sql`.
 
-### 6.7 La maîtrise et la carte fétiche (3.0.7)
+### 6.7 La maîtrise et la carte fétiche (3.0.7, refaite en 3.0.8)
 
-> La maîtrise est en cours de refonte (interface, équilibrage, effets, couronne du niveau 5). Cette section décrit l'état de la 3.0.7 ; la mettre à jour avec la refonte.
+- **Cinq niveaux** par carte : I Éclat, II Liseré, III Aura, IV Arène, V Légende. Seules les cartes de l'extension (hors Essence) et les Secrètes se maîtrisent ; **une Reverse partage la maîtrise de sa classique** (`carteMaitrise`, `maitrise_carte`).
+- **Coût (3.0.8)** : la **base de la rareté × 1, 2, 4, 7, 11** Fragments (25 fois la base pour la Légende), plus des exemplaires **en trop** :
 
-- **Cinq niveaux** par carte : Éclat, Gravure, Aura, Arène, Légende. Seules les cartes de l'extension (hors Essence) et les Secrètes se maîtrisent ; **une Reverse partage la maîtrise de sa classique** (`carteMaitrise`, `maitrise_carte`).
-- **Coût** : des Fragments (300 / 700 / 1 500 / 3 000 / 6 000, soit 11 500) et des exemplaires **en trop** :
+| Rareté | Base | Fragments niveaux I → V | Total | Exemplaires en trop (I → V) |
+|---|---|---|---|---|
+| C | 60 | 60 · 120 · 240 · 420 · 660 | 1 500 | 1 · 1 · 1 · 2 · 2 |
+| PC | 100 | 100 · 200 · 400 · 700 · 1 100 | 2 500 | 1 · 1 · 1 · 1 · 2 |
+| R | 200 | 200 · 400 · 800 · 1 400 · 2 200 | 5 000 | 0 · 1 · 1 · 1 · 1 |
+| E | 400 | 400 · 800 · 1 600 · 2 800 · 4 400 | 10 000 | 0 · 0 · 1 · 0 · 1 |
+| L, S | 600 | 600 · 1 200 · 2 400 · 4 200 · 6 600 | 15 000 | L : 0 · 0 · 0 · 0 · 1 ; S : aucun |
 
-| Rareté | Niv. 1 | Niv. 2 | Niv. 3 | Niv. 4 | Niv. 5 |
-|---|---|---|---|---|---|
-| C, PC | 1 | 1 | 2 | 2 | 3 |
-| R | 0 | 1 | 1 | 2 | 2 |
-| E | 0 | 1 | 1 | 1 | 1 |
-| L | 0 | 0 | 1 | 0 | 1 |
-| S | 0 | 0 | 0 | 0 | 0 |
-
-- **« En trop »** = au-delà de `max(limite de deck (1 pour L, S, UN, PR ; 2 sinon), à garder)`, moins les exemplaires engagés dans un échange. Chaque exemplaire qui manque se paie au **prix de fabrication** : la maîtrise n'est jamais bloquée par la chance. Seuls les exemplaires de la classique sont pris.
-- **Rendu** : `renderCard(c, {m, calme})` appelle `maitriseEnveloppe` ; rien n'est déduit tout seul, l'appelant passe le niveau. Dans une grille, `calme: true`. Couches : `.mz .mz-N`, `--mc` (couleur de l'Essence), `i.mz-l`, `i.mz-h` (niveau 5) dans la carte ; autour, `mz-a` (≥ 3), `mz-b` (≥ 4), la couronne `mz-c` (5). En combat (`table.js`) : flash d'entrée au niveau 4, onde de choc au niveau 5, impact coloré dès le 4.
-- **Serveur** : tables `maitrises` et `maitrises_journal`, RPC `maitriser(p_carte)` ; état dans `me().maitrise = {niveaux, fetiche}` → `save.maitrises`, `save.fetiche`.
+- **« En trop »** = au-delà de `max(limite de deck (1 pour L, S, UN, PR ; 2 sinon), à garder)`, moins les exemplaires engagés dans un échange. Chaque exemplaire qui manque se paie au **prix de fabrication** : la maîtrise n'est jamais bloquée par la chance. Seuls les exemplaires de la classique sont pris. Pour un joueur régulier (≈ 2 000 Fragments de recyclage par semaine), une Commune en Légende prend moins d'une semaine, une Légendaire de 7 à 11 semaines (`docs/economie-3.0.md`, 3 ter ; simulation : `python3 tools/equilibre-fragments.py`).
+- **Les effets (3.0.8)** : la carte reste **intacte** (aucun voile sur l'illustration ni le texte), c'est sa finition qui change. Dans la carte (`mzDedans`) : `.mz-l` un reflet qui passe (I), `.mz-e` un liseré de métal à la couleur de l'Essence (II), `.mz-b` une lumière qui court sur ce liseré (IV), `.mz-h` un reflet irisé en `soft-light` (V) ; autour (`mzAutourDe`) : `.mz-a` un halo qui respire (III), `.mz-c` **le joyau** (V, `JOYAU` : une pierre taillée à la couleur de l'Essence, sertie d'or, à cheval sur le bord haut — il remplace la couronne). Au niveau V, le liseré devient irisé (`--mz-irid`). `--mc` porte la couleur de l'Essence ; tout est en `cqi` (la largeur de la carte). L'or n'apparaît qu'à la Légende. `.mz-calme` (grilles) et le mouvement réduit immobilisent tout.
+- **Rendu** : `renderCard(c, {m, calme})` appelle `maitriseEnveloppe` ; rien n'est déduit tout seul, l'appelant passe le niveau. Dans une grille, `calme: true`. En combat (`table.js`, mêmes `mzDedans` / `mzAutourDe`) : seulement ses propres cartes ; flash d'entrée au niveau IV, onde de choc au niveau V, impact coloré dès le IV.
+- **La fiche (3.0.8)** : la page Maîtrise tient sans défiler — la frise des cinq niveaux (atteints à la couleur de l'Essence, le suivant cerclé de lavande ; touché, un niveau s'affiche sur la carte, touché encore il revient : `voirNiveauVw`, `VW.apercu`), le détail du niveau regardé, un bouton « Passer au niveau … » avec le total, et la ligne du coût. La page Gérer n'a plus que « À garder » et « Carte fétiche » (le favori est le cœur en haut). L'insigne (`insigneMaitrise`, « III ») est une pastille graphite ; or pour la Légende.
+- **Serveur** : tables `maitrises` et `maitrises_journal`, RPC `maitriser(p_carte)`, `maitrise_fragments(rar, n)` et `maitrise_copies(rar, n)` ; état dans `me().maitrise = {niveaux, fetiche}` → `save.maitrises`, `save.fetiche`.
 - **La carte fétiche** : une carte possédée, mise en avant en haut du profil et sur la fiche publique (`vFetiche`, `js/maitrise.js` ; `fetiche_de` revérifie la possession). Depuis la 3.0.8, c'est une tuile pleine : le fond est l'illustration floutée de la carte (`.fet-fond`) ; la carte et sa maîtrise à gauche ; à droite, le nom, la rareté à sa couleur (`--r-*`), l'Essence, le numéro, la maîtrise et « Changer ». Sans fétiche, une carte fantôme et « Choisir une carte ». Elle se choisit dans Gérer (`set_fetiche(id|null)`, colonne `profiles.fetiche`). Elle est distincte de la vitrine (4 cartes).
-- **Trois copies des chiffres** : `MAITRISE` (`js/maitrise.js`), `maitrise_fragments` / `maitrise_copies` (`28_maitrise.sql`), `MZ_FRAGMENTS` / `MZ_COPIES` (`_demo/serveur.js`). Justification : `docs/economie-3.0.md`, partie 3 ter.
+- **Trois copies des chiffres** : `MAITRISE.base` / `.mult` / `.copies` (`js/maitrise.js`, `fragmentsMaitrise`), `maitrise_fragments` / `maitrise_copies` (`28_maitrise.sql`), `MZ_BASE` / `MZ_MULT` / `MZ_COPIES` (`_demo/serveur.js`). Justification : `docs/economie-3.0.md`, partie 3 ter.
 
 ### 6.8 Échanges et Social
 
@@ -746,7 +728,7 @@ Les doublons deviennent des **Fragments** (`recycler`, `supabase/12_recyclage.sq
 
 - **Avatar** (`set_profile`) : `'discord'`, `'card:<id>'`, une clé d'`AVATARS`, ou `'ess:<couleur>'`. **Cadre** : un `f_*` possédé (`FRAMES`, `config.js` : `fx` = SVG animé, `vente: false`, `unique`). Les cadres « Arène » (`f_niv10/20/30/50`) se gagnent aux niveaux de combattant.
 - **Titre, bannière, devise** (`personnaliser`, `null` = inchangé, `''` = retirer) : le titre se gagne par les succès, les quêtes jalons, le Pass ou la boutique (`TITRES`, 27 ; `titres_de()` côté serveur) ; la bannière est une carte possédée ; la devise, 80 signes.
-- **Vitrine** : 4 cartes (`set_vitrine`). **L'Élu** : l'écrin du gagnant de la chasse. **Fétiche** : [§ 6.7](#67-la-maîtrise-et-la-carte-fétiche-307).
+- **Vitrine** : 4 cartes (`set_vitrine`). **L'Élu** : l'écrin du gagnant de la chasse. **Fétiche** : [§ 6.7](#67-la-maîtrise-et-la-carte-fétiche-307-refaite-en-308).
 - **Succès** : calculés à la volée par `succes_de()` (`15_evenements.sql`) ; noms dans `SUCCES` (18, `config.js`). Les identifiants doivent rester les mêmes des deux côtés.
 
 ### 6.10 Quêtes
@@ -1134,7 +1116,7 @@ Chaque règle de jeu existe en **trois exemplaires** : le SQL (qui fait foi), le
 | Réglages d'économie | `cfg()` (01) | `CFG` | `REC_DEFAUT`, `FAB_DEFAUT`, `TRADE_COOLDOWN_H`, `PROMO_PALIER`, `FOIL_ODDS` |
 | Quêtes, boutique | `04_seed.sql`, 21, 23, 25, 26 | `QUETES`, `BOUTIQUE` | `QICO`, `JALON_THEMES` |
 | Pass | `evt_piste` (21, 25) | `PISTE`, `PISTE_CHOC` | — |
-| Maîtrise | `maitrise_fragments`, `maitrise_copies` (28) | `MZ_FRAGMENTS`, `MZ_COPIES` | `MAITRISE` (`maitrise.js`) |
+| Maîtrise | `maitrise_fragments(rar, n)`, `maitrise_copies` (28) | `MZ_BASE`, `MZ_MULT`, `MZ_COPIES` | `MAITRISE` (`maitrise.js`) |
 | Limites de deck | `deck_erreur`, `cle_copie`, `limite_copies` (23) | via `Decks` | `REGLE`, `Decks.limite`, `ALIAS` |
 | Campagne, Arcade, défis | `pve_campagne`, `pve_difficultes`, plafonds 5 / 3, 40 / 15 (23) | via `campagne.js` | `RECOMPENSES_CAMPAGNE`, `DIFFICULTES`, `PVE_PLAFOND`, `DEFI_GAIN` |
 | XP | `xp_requis`, `xp_combat`, `niveau_paliers` (26) | via `niveaux.js` | `NIVEAUX` (`niveaux.js`) |
@@ -1230,6 +1212,8 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 | `python3 tools/version.py X.Y.Z` | aucune | `APP_VERSION`, `VERSION` du service worker, `?v=` d'`index.html` / `verif.html`, liste `ESSENTIEL` |
 | `python3 tools/demo.py [--preprod]` | aucune | `preprod/` ou `_build/m8tcg-demo(.zip)` |
 | `python3 tools/build-sql.py` | aucune | `supabase/TOUT.sql` |
+| `tools/tester-sql.sh [tests.sql…]` | PostgreSQL 16 | joue la production puis `TOUT.sql` deux fois sur une base locale ([§ 2.3](#23-tester-le-sql-sur-un-postgresql-local)) ; `tools/sql-stub.sql` imite Supabase |
+| `python3 tools/equilibre-fragments.py [joueurs] [jours]` | aucune | les Fragments gagnés par semaine et la fréquence d'une carte : la base du barème de la maîtrise |
 | `python3 supabase/gen-cards-sql.py` | aucune | `supabase/02_cards.sql` |
 | `node tools/illu-pixels.js` | Node, Playwright (Chromium) | `supabase/21b_illu.sql` (puis `build-sql.py` et `demo.py`) |
 | `node tools/combat-tests.js` | Node | les tests de règles |
@@ -1388,7 +1372,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 - **`docs/`** : `design-3.0.md` décrit l'en-tête du Choc « avec Gotaga Pose et le VS » et les cadres Arène « laurier, épées, gemmes » (aujourd'hui Brawks Déter sans VS ; anneau, cimier et ailes, sans plaque depuis la 3.0.8) ; `economie-3.0.md` cite une table `combat_parties` qui n'existe pas, oublie `f_foudre` (boutique du Choc : 3 100, pas 2 700) et `d_xp` / `w_xp`.
 - **`presse/`** : « quatre Promos », « thème Sombre » à régler, GIF annoncés « douze images » et « cinq cartes ».
 - **Commentaires de code** : la Reverse décrite comme « quatrième carte » (c'est la 5ᵉ) ; « l'événement remplace Combats dans la barre du bas » (il va en tête du tiroir) ; `shop.js` « deux rayons » (trois) ; « Aucune logique ici » (`config.js`) ; `gate.js` « aucun compte ne se crée » (un profil est créé) ; `supabase-config.js` « vide = hors ligne » ; `verif.html` (« mode hors ligne », « e-mail », `theme-color` 2.x) ; `tutoriel.js` se dit 3.0.6 ; `REGLE` présenté comme « le seul endroit » alors que des valeurs sont recopiées en dur (SQL, guides, tutoriel, arène).
-- **Le stub PostgreSQL** du [§ 2.3](#23-tester-le-sql-sur-un-postgresql-local) n'est pas versionné ; `.claude/launch.json` (port 8765) et ce README (8781) ne proposent pas le même port.
+- `.claude/launch.json` (port 8765) et ce README (8781) ne proposent pas le même port.
 
 ### 14.5 Pistes non engagées
 
