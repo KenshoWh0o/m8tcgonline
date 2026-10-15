@@ -1,12 +1,15 @@
 /* Branchement du compte en ligne.
-   Tant que ces deux valeurs restent vides, le jeu tourne en mode hors ligne :
-   la progression reste dans le navigateur, et les onglets qui ont besoin des
-   autres joueurs (Échanges, Quêtes, Boutique) invitent à se connecter.
+   Ces deux valeurs sont indispensables : il n'y a plus de jeu hors ligne.
+   Vides, le jeu ne trouve pas de serveur et s'arrête à l'écran d'entrée
+   (js/gate.js) — ou, porte ouverte, à l'écran de connexion (js/auth.js) —
+   sans rien pouvoir faire. Le mode local existe encore dans le code
+   (Backend.loadLocal), mais on ne peut plus y jouer. Dans la pré-prod,
+   tools/demo.py remplace ce fichier : le faux serveur répond à la place.
 
    Où trouver ces valeurs : Supabase › le projet › Settings › API.
 
    La clé publique est faite pour être publique : elle n'ouvre que ce que les
-   règles de supabase/01_schema.sql autorisent. Selon l'âge du projet, elle
+   règles de supabase/installation/01_schema.sql autorisent. Selon l'âge du projet, elle
    s'appelle « Publishable key » (sb_publishable_…) ou « anon public » (eyJ…) :
    les deux se collent ici de la même façon.
 

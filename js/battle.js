@@ -14,7 +14,7 @@
 
    Le serveur décide de tout ce qui rapporte : la Section rejointe, les
    decks enregistrés, les récompenses et l'XP d'un combat
-   (supabase/23_combats.sql, 26_niveaux.sql). Le combat, lui, se joue dans
+   (supabase/installation/23_combats.sql, 26_niveaux.sql). Le combat, lui, se joue dans
    la page : le serveur fournit la graine, et reçoit le résultat. */
 "use strict";
 
@@ -26,7 +26,8 @@ let cbGuide = null;
 /* L'onglet du Guide : les règles (par défaut) ou le glossaire. */
 let cbGuideOnglet = 'regles';
 const CB_VUES = ['accueil', 'solo', 'campagne', 'arcade', 'raid', 'versus', 'decks', 'missions', 'guides', 'atelier'];
-/* Les anciennes adresses mènent encore quelque part. */
+/* Les anciennes adresses mènent encore quelque part : la boîte de réception
+   ouvre toujours `defis` pour un défi reçu (boiteAller, js/boite.js). */
 const CB_ALIAS = { infini: 'arcade', defis: 'versus' };
 /* La page d'où l'on vient, pour le bouton retour. */
 const CB_PARENT = { campagne: 'solo', arcade: 'solo' };

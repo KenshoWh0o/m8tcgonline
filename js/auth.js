@@ -17,7 +17,7 @@ const porteVisible = () => Backend.mode !== 'cloud';
 
 /* ---------- Retour d'un détour par Discord ---------- */
 /* Quand le serveur refuse l'inscription — le jeu n'est pas encore ouvert et le
-   compte n'a pas d'accès (voir handle_new_user dans supabase/01_schema.sql) —,
+   compte n'a pas d'accès (voir handle_new_user dans supabase/installation/01_schema.sql) —,
    Supabase nous renvoie ici avec l'erreur dans l'adresse. Sans cette lecture,
    l'écran de connexion réapparaissait sans un mot : on croyait que le bouton
    n'avait rien fait.
@@ -36,7 +36,7 @@ function lireErreurRetour() {
 
   /* Avant l'ouverture, un refus à l'inscription vient presque toujours de là :
      le serveur refuse de créer un compte qui n'a pas d'accès (handle_new_user,
-     supabase/01_schema.sql), et Supabase ne renvoie qu'une erreur générique.
+     supabase/installation/01_schema.sql), et Supabase ne renvoie qu'une erreur générique.
      L'écran d'attente le dit, au lieu de revenir sans un mot. */
   porteRefus = PORTE.active
     ? "Ce compte n'a pas encore accès au jeu. Rendez-vous à l'ouverture !"

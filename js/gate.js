@@ -8,7 +8,7 @@
    ligne donnait accès à tout le jeu, sans compte. C'est par là que des
    visiteurs passaient.
 
-   Désormais, l'écran demande au serveur (porte(), supabase/01_schema.sql) si
+   Désormais, l'écran demande au serveur (porte(), supabase/installation/01_schema.sql) si
    c'est ouvert, quand ça ouvre, et quelle heure il est chez lui. Le temps qui
    passe ensuite est compté avec performance.now() : une horloge qui démarre
    avec la page et que l'utilisateur ne peut pas régler. Changer la date de
@@ -21,7 +21,9 @@
    Ce que ça protège, et ce que ça ne protège pas
 
    Le JEU est protégé par le serveur : sans invitation, aucune action
-   n'aboutit (garde_beta) et aucun compte ne se crée (handle_new_user).
+   n'aboutit (garde_beta). La connexion crée bien un profil à tout le monde
+   (handle_new_user), mais tant qu'il n'a pas d'invitation, le serveur
+   refuse ses actions.
 
    L'ÉCRAN, lui, vit dans le navigateur. Il ne se contourne plus en réglant
    une montre, mais quelqu'un qui ouvre la console finira toujours par passer
@@ -31,9 +33,9 @@
 "use strict";
 
 /* Le projet est annulé : le site affiche l'annonce d'arrêt (vAnnonceArret,
-   plus bas), et seuls les comptes invités (supabase/09_beta.sql) entrent
+   plus bas), et seuls les comptes invités (supabase/installation/09_beta.sql) entrent
    encore. Côté serveur, beta_lancement() vaut 'infinity' dans
-   supabase/01_schema.sql : c'est lui qui refuse vraiment les non-invités,
+   supabase/installation/01_schema.sql : c'est lui qui refuse vraiment les non-invités,
    l'écran seul ne suffit pas.
 
    Pour rouvrir à tous : `active` à `false` ici ET une date passée dans
@@ -149,7 +151,7 @@ function vMatepedia() {
 /* ---------- Les invitations (version 2.0) ---------- */
 /* Un lien d'invitation (?invitation=CODE, js/shop.js) garde son code de côté :
    la personne se connecte avec Discord, et le code s'applique tout seul au
-   retour (supabase/21_reflets.sql). */
+   retour (supabase/installation/21_reflets.sql). */
 const INVIT_CLE = 'mtcg.invitation';
 (() => {
   const m = /[?&]invitation=([^&#]+)/.exec(location.search);

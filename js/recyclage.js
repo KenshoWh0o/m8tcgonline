@@ -11,7 +11,7 @@
 
    Plus de plafond : les Fragments n'achètent que des cartes manquantes, ils
    ne font tourner aucune boucle avec les boosters (le calcul est en tête de
-   supabase/12_recyclage.sql). Le serveur revérifie tout. Les montants
+   supabase/installation/12_recyclage.sql). Le serveur revérifie tout. Les montants
    viennent de lui, par me() : la page n'en garde qu'une copie de secours.
 
    ------------------------------------------------------------------------
@@ -38,9 +38,9 @@ const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAU
 const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
 const recPrix = c => recValeurs()[c.rar] || 0;
 /* Les Reverses se recyclent seulement une fois leur fabrication ouverte
-   (parametres.fabrication_reverse, supabase/12_recyclage.sql). */
+   (parametres.fabrication_reverse, supabase/installation/12_recyclage.sql). */
 const recReverses = () => (save.parametres || {}).fabrication_reverse ? reverses : [];
-/* Une Reverse coûte le double (fabriquer, supabase/12_recyclage.sql). */
+/* Une Reverse coûte le double (fabriquer, supabase/installation/12_recyclage.sql). */
 const fabCout = c => (fabCouts()[c.rar] || 0) * (c.rev ? 2 : 1);
 const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
 
@@ -304,7 +304,7 @@ function ouvrirFabrication(id) {
   const c = byId[id];
   if (!c || c.promo || save.col[id] > 0) return;
   /* Les Reverses (version 2.0) : fermées au lancement, ouvertes plus tard par
-     un administrateur (parametres, supabase/21_reflets.sql). */
+     un administrateur (parametres, supabase/installation/21_reflets.sql). */
   if (c.rev && !(save.parametres || {}).fabrication_reverse) {
     return openSheet({
       title: 'Pas encore',

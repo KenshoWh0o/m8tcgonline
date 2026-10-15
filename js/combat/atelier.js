@@ -5,7 +5,7 @@
    elles sont en onglets ; sur ordinateur, côte à côte.
 
    Rien n'est enregistré tant qu'on n'a pas appuyé sur « Enregistrer » : le
-   serveur revérifie le deck (deck_sauver, supabase/23_combats.sql). */
+   serveur revérifie le deck (deck_sauver, supabase/installation/23_combats.sql). */
 "use strict";
 
 let atelier = null;
@@ -23,7 +23,7 @@ function ouvrirAtelier(id) {
   const d = id ? cbDecks().find(x => x.id === id) : null;
   const deck = d ? JSON.parse(JSON.stringify(d)) : { id: null, nom: 'Nouveau deck', cartes: {}, reserve: {}, couverture: null };
   if (d && d.starter) { deck.id = null; deck.nom = d.nom.replace('Starter · ', '') + ' (copie)'; delete deck.starter; }
-  atelier = { deck, original: JSON.stringify(deck), filtres: { q: '', type: 'tous', coul: 'all', rar: 'all', toutes: false }, onglet: 'cartes' };
+  atelier = { deck, original: JSON.stringify(deck), filtres: { q: '', type: 'tous', coul: 'all', toutes: false }, onglet: 'cartes' };
   cbVue = 'atelier';
   if (tab !== 'combats') return aller('combats');
   render();

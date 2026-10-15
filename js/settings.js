@@ -1,6 +1,6 @@
 /* Onglet Réglages : apparence, son, jeu, compte, données.
    Le Labo n'apparaît jamais ici : il est réservé aux profils marqués
-   administrateurs par le serveur (voir supabase/05_admin.sql).
+   administrateurs par le serveur (voir supabase/installation/05_admin.sql).
 
    Tous les réglages de cette page vivent dans le navigateur, pas sur le compte :
    ils décrivent cet appareil-ci — son écran, son haut-parleur, la patience de
@@ -163,7 +163,7 @@ function vReglages() {
 /* ---------- Exemplaires à garder (version 2.1) ---------- */
 /* Le seul réglage de cette page qui vit sur le compte et pas dans le
    navigateur : le serveur s'en sert pour le recyclage et pour ce que voient
-   les amis (supabase/22_garder.sql). Par rareté ici ; carte par carte, dans
+   les amis (supabase/installation/22_garder.sql). Par rareté ici ; carte par carte, dans
    la visionneuse (js/viewer.js). */
 function vGarderReglage() {
   const g = save.garder || {};

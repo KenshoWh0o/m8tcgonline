@@ -6,7 +6,7 @@
    actes, de plus en plus durs. La finir donne la Promo de l'autre Section.
 
    Les récompenses sont ici pour l'affichage ; c'est le serveur qui les
-   accorde (combat_fin, supabase/23_combats.sql), d'après la même table. Les
+   accorde (combat_fin, supabase/installation/23_combats.sql), d'après la même table. Les
    decks adverses sont tirés au sort avec une graine fixe par combat : le
    même combat garde le même adversaire, d'une partie à l'autre. */
 "use strict";

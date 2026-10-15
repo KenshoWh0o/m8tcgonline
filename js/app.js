@@ -1,7 +1,8 @@
 /* Point d'entrée : navigation, en-tête, clics, démarrage. Chargé en dernier.
    Les onglets sont décrits dans TABS (js/config.js) : ceux marqués `bas`
    tiennent dans la barre du bas sur mobile et dans le rail latéral sur
-   ordinateur, les autres sont rangés dans la page « Plus ». */
+   ordinateur ; ceux marqués `tiroir` vivent dans le tiroir du compte sur
+   mobile, et sous un filet du rail sur ordinateur. */
 "use strict";
 
 /* ---------- Quel onglet montrer ---------- */
@@ -19,7 +20,7 @@ function ongletDispo(t) {
    du Labo), événement par événement. */
 const RECAPS = { reflets: () => recapReflets(), choc: () => recapChoc() };
 
-/* Le code de l'événement en cours (supabase/15_evenements.sql), s'il en a un
+/* Le code de l'événement en cours (supabase/installation/15_evenements.sql), s'il en a un
    et qu'il a commencé. */
 const evenementEnCours = () => {
   const ev = save && save.evenement;
@@ -32,7 +33,6 @@ const evenementEnCours = () => {
 function ongletsBas() {
   return TABS.filter(t => t.bas);
 }
-const combatsAuTiroir = () => !ongletsBas().some(t => t.id === 'combats');
 
 function ongletValide(id) {
   const t = TABS.find(x => x.id === id);
@@ -106,7 +106,7 @@ function navHTML() {
   };
   /* Le pied n'existe que sur le rail d'ordinateur : sur mobile, ces destinations
      et cette mention vivent dans le tiroir du compte. */
-  return ongletsBas().map(t => bouton(t, t.evenement ? 'evnav' : '')).join('')
+  return ongletsBas().map(t => bouton(t, '')).join('')
     + '<i class="navsep" aria-hidden="true"></i>'
     + ongletsTiroir().map(t => bouton(t, 'second')).join('')
     + `<div class="navpied">${lienDiscord('discordlien', 'Rejoindre le Discord')}
@@ -152,17 +152,12 @@ function pastilleTiroir() {
    mouvement dit d'où vient le panneau, et où il retournera. */
 let tiroirOuvert = false;
 
-/* Les entrées du tiroir, Combats compris quand l'événement lui a pris sa
-   place : il se range alors sous Recyclage, pas en tête de liste. */
+/* Les entrées du tiroir. L'onglet de l'événement en cours (ou de son récap)
+   passe en tête de liste. */
 function ongletsTiroir() {
   const l = TABS.filter(t => t.tiroir && ongletDispo(t));
   const ev = TABS.find(t => t.evenement && ongletDispo(t));
   if (ev) l.unshift(ev);
-  const c = TABS.find(t => t.id === 'combats');
-  if (c && combatsAuTiroir() && ongletDispo(c)) {
-    const i = l.findIndex(t => t.id === 'recyclage');
-    l.splice(i < 0 ? l.length : i + 1, 0, c);
-  }
   return l;
 }
 
@@ -298,11 +293,6 @@ function render() {
   majBoutonInstall();
 
   tab = ongletValide(tab);
-  /* L'onglet en cours, pour les styles. Pas `data-tab` : c'est l'attribut des
-     liens vers un onglet (clicPage), et posé sur <body> il faisait de chaque
-     clic dans la page un « retour à l'onglet » — page redessinée, remontée
-     en haut, champ de saisie qui perd la main. */
-  document.body.dataset.onglet = tab;
   const vue = VUES[tab] || VUES.boosters;
   const m = $('#main');
   /* Remplacer le contenu remet le défilement à zéro. Sur le même onglet, la
@@ -321,6 +311,11 @@ function render() {
     m.querySelectorAll('details[data-garde]').forEach(d => { gardes[d.dataset.garde] = d.open; });
     m.querySelectorAll('[data-defil]').forEach(x => { defils[x.dataset.defil] = [x.scrollTop, x.scrollLeft]; });
   }
+  /* L'onglet en cours, pour les styles : la classe de #main (`#main.tab-…`).
+     Jamais `data-tab` sur <body> : c'est l'attribut des liens vers un onglet
+     (clicPage), et il y faisait de chaque clic dans la page un « retour à
+     l'onglet » — page redessinée, remontée en haut, champ de saisie qui
+     perd la main. */
   m.className = 'tab-' + tab;
   m.innerHTML = vue();
   m.querySelectorAll('details[data-garde]').forEach(d => { if (d.dataset.garde in gardes) d.open = gardes[d.dataset.garde]; });
@@ -768,7 +763,7 @@ addEventListener('visibilitychange', () => {
    pour qui revient souvent.
 
    La journée est celle de Paris, comme côté serveur (checkin dans
-   supabase/03_rpc.sql) : sans ça, les deux ne changeraient pas de jour au
+   supabase/installation/03_rpc.sql) : sans ça, les deux ne changeraient pas de jour au
    même moment. */
 function visiteDuJourFaite() {
   if (!save || !save.lastCheckin) return false;

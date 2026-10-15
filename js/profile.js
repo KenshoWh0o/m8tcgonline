@@ -187,7 +187,7 @@ function ouvrirChoixBanniere() {
 /* ---------- L'Élu ---------- */
 /* Celui qui a tiré la carte unique : un écrin sur son profil et sur sa fiche,
    en plus du cadre « Unique » sur son avatar, partout où il apparaît. Le
-   succès « unique » (supabase/15_evenements.sql) dit qui c'est. */
+   succès « unique » (supabase/installation/15_evenements.sql) dit qui c'est. */
 function vElu(succes, moi) {
   const u = uniques[0];
   if (!u || !(succes || []).includes('unique')) return '';

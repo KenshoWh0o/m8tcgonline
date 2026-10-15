@@ -15,7 +15,7 @@
    par demarrer() (js/battle.js) ; les règles et les chiffres sont dans
    js/combat/choc-data.js.
 
-   Ce qui compte se décide côté serveur (supabase/25_choc.sql) : la graine
+   Ce qui compte se décide côté serveur (supabase/installation/25_choc.sql) : la graine
    de l'Épreuve, les Étincelles. */
 "use strict";
 
@@ -149,7 +149,7 @@ function vChAccueil() {
   const piste = chEv.piste;
   const atteint = piste.filter(x => chEv.total >= x.seuil).length;
   const prochain = piste.find(x => chEv.total < x.seuil);
-  const regle = epreuveRegle();
+  const regle = regleEpreuve(chEtat.jour);
   const tr = rdTentatives();
   const er = ep.max - ep.essais.length;
   const coffres = rdCoffres();
@@ -256,7 +256,6 @@ function vChSecretes() {
 /* =====================================================================
    L'Épreuve du jour
    ===================================================================== */
-const epreuveRegle = () => CHOC.epreuve.regles[chocMod(chocJourN(chEtat.jour), CHOC.epreuve.regles.length)];
 let chEpreuveCache = { cle: '', v: null };
 function epreuveCourante() {
   const cle = chEtat.jour + ':' + chEtat.epreuve.graine;
@@ -342,7 +341,6 @@ function vChQuetes() {
 function chIco(x, taille) {
   if (x.type === 'tapis' && TAPIS[x.objet]) return `<img class="ch-ico-tapis" src="${TAPIS[x.objet].img.replace('.webp', '-mini.webp')}" alt="">`;
   if (x.type === 'sleeve' && SLEEVES[x.objet]) return `<img class="ch-ico-sleeve" src="${SLEEVES[x.objet].img}" alt="">`;
-  if (x.type === 'insignes') return etincelleIco;
   return rfIco(x, taille);
 }
 
@@ -461,8 +459,7 @@ function vChBoutique() {
       : SLEEVES[it.id] ? `<img class="ch-art-sleeve" src="${SLEEVES[it.id].img}" alt="">`
       : FRAMES[it.id] ? avatarHTML(save.avatar, it.id, 'xl', maPhoto())
       : TITRES[it.id] ? `<span class="qrtitre t${TITRES[it.id].ton}">${h(TITRES[it.id].nom)}</span>`
-      : it.effet === 'reverse_R' ? NAVICO.reflets : it.effet === 'fragments' ? NAVICO.fragment
-      : it.effet === 'brillante' ? NAVICO.promo : `<img class="ch-art-pack" src="${PACK_ARTS[0]}" alt="">`;
+      : it.effet === 'fragments' ? NAVICO.fragment : `<img class="ch-art-pack" src="${PACK_ARTS[0]}" alt="">`;
     return `<article class="rf-art${fini ? ' fini' : ''}">
       <div class="rf-artvis">${visuel}</div>
       <b>${h(it.titre)}</b>

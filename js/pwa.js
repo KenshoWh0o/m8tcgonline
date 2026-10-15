@@ -7,7 +7,7 @@
 
 const APP_VERSION = '3.0.7';
 
-const PWA = { invite: null, installe: false, dejaVu: false };
+const PWA = { invite: null, dejaVu: false };
 const PWA_CLE = 'mtcg.install';
 
 /* Le jeu tourne-t-il déjà depuis l'écran d'accueil ? */
@@ -40,9 +40,8 @@ addEventListener('beforeinstallprompt', e => {
 
 addEventListener('appinstalled', () => {
   PWA.invite = null;
-  PWA.installe = true;
   noterMemoire({ fait: true });
-  fermerInstall();
+  closeSheet();
   toast('Mate TCG est sur ton écran d\'accueil.');
 });
 
@@ -89,12 +88,6 @@ function ouvrirInstall(force) {
   }});
 
   openSheet({ title: 'Ajouter à l\'écran d\'accueil', body: corpsInstall(), actions });
-  document.body.classList.add('installsheet');
-}
-
-function fermerInstall() {
-  document.body.classList.remove('installsheet');
-  closeSheet();
 }
 
 function majBoutonInstall() {

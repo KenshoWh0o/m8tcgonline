@@ -33,7 +33,7 @@ const tradeJetons = () => (save.inv || {}).trade_token || 0;
 /* Mes exemplaires : toujours connus. */
 const mesEx = id => save.col[id] || 0;
 
-/* Version 2.1 : combien j'en garde (supabase/22_garder.sql). Le réglage de
+/* Version 2.1 : combien j'en garde (supabase/installation/22_garder.sql). Le réglage de
    la carte, sinon celui de sa rareté, sinon un : jamais moins. 99 veut dire
    « toutes ». Ce qui dépasse est un doublon — recyclable, cessible. */
 const GARDE_TOUT = 99;
@@ -46,7 +46,7 @@ const aGarder = c => !c ? 1 : Math.max(1, (save.gardes || {})[c.id] || gardeRare
 const sousObjectif = c => aGarder(c) > 1 && mesEx(c.id) <= aGarder(c);
 
 /* Les collections des autres, rangées par pseudo. Le serveur ne les donne
-   qu'entre amis (player_profile dans supabase/06_social.sql) ; une fois
+   qu'entre amis (player_profile dans supabase/installation/06_social.sql) ; une fois
    rapportées, elles ne bougent plus pendant qu'on compose, donc on ne les
    redemande pas à chaque rendu. */
 const trCols = {};
@@ -59,7 +59,7 @@ function sesEx(pseudo, id) {
   return col ? (col[id] || 0) : null;
 }
 
-/* Ce qu'il garde, lui (player_profile, supabase/07_vitrine.sql) : rangé à
+/* Ce qu'il garde, lui (player_profile, supabase/installation/07_vitrine.sql) : rangé à
    côté de sa collection. Ses doublons, ce sont les exemplaires en plus. */
 const trGardes = {};
 const saGarde = (pseudo, id) => Math.max(1, ((pseudo && trGardes[noacc(pseudo)]) || {})[id] || 1);

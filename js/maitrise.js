@@ -24,7 +24,7 @@
    même avec une seule Légendaire. La maîtrise vaut pour la carte (toutes
    ses copies) ; sa Reverse la partage.
 
-   Les montants sont aussi côté serveur (supabase/28_maitrise.sql), qui
+   Les montants sont aussi côté serveur (supabase/installation/28_maitrise.sql), qui
    revérifie tout : les deux doivent rester d'accord. */
 "use strict";
 

@@ -226,7 +226,7 @@ function montrerNouveautes21() {
 
 /* ---------- La fin de la chasse ---------- */
 /* Le jour où quelqu'un tire la carte unique, tous les autres l'apprennent par
-   une annonce dans leur boîte (open_pack, supabase/03_rpc.sql) — et par cette
+   une annonce dans leur boîte (open_pack, supabase/installation/03_rpc.sql) — et par cette
    fenêtre, une fois, à leur prochaine visite. Celui qui l'a tirée a eu sa
    révélation : il ne la voit pas. */
 function chasseFinAVoir() {
