@@ -1,9 +1,9 @@
 /* Branchement du compte en ligne.
    Ces deux valeurs sont indispensables : il n'y a plus de jeu hors ligne.
-   Vides, le jeu ne trouve pas de serveur et s'arrête à l'écran d'entrée
-   (js/gate.js) — ou, porte ouverte, à l'écran de connexion (js/auth.js) —
-   sans rien pouvoir faire. Le mode local existe encore dans le code
-   (Backend.loadLocal), mais on ne peut plus y jouer. Dans la pré-prod,
+   Vides, le jeu ne trouve pas de serveur et bascule en mode local
+   (Backend.loadLocal), que l'écran d'entrée ne laisse pas passer tant que
+   PORTE.active vaut true (js/gate.js) : on reste devant l'écran d'attente.
+   Le mode local n'existe plus que dans le code. Dans la pré-prod,
    tools/demo.py remplace ce fichier : le faux serveur répond à la place.
 
    Où trouver ces valeurs : Supabase › le projet › Settings › API.

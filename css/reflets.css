@@ -262,13 +262,6 @@
   background:rgba(14,8,26,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
 .rfban-fl{font-size:24px;line-height:1;color:rgba(255,255,255,.8);margin-left:-2px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
 
-/* L'onglet dans la barre du bas : il brille. L'icône ne bouge pas — seul
-   son halo respire (une animation de `filter` seule, en aller-retour). */
-#nav button.evnav{color:var(--text)}
-#nav button.evnav svg,#nav button.evnav.on svg{stroke:#d2b8ff;animation:rfnav 2.2s ease-in-out infinite alternate}
-#nav button.evnav span{background:linear-gradient(90deg,#ff7cc8,#b38cff,#7fd8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
-@keyframes rfnav{from{filter:drop-shadow(0 0 2px rgba(179,140,255,.6))}to{filter:drop-shadow(0 0 7px rgba(255,124,200,.95)) drop-shadow(0 0 2px #fff)}}
-
 @media (max-width:480px){
   .rf-tuiles{grid-template-columns:1fr}
   .rf-tuile{flex-direction:row;align-items:center}
@@ -406,9 +399,9 @@
 .nvtrio .nvcarte:nth-child(3){left:40%;rotate:12deg}
 
 @media (prefers-reduced-motion:reduce){
-  .rf-holo,#nav button.evnav svg,.il-pix.net,.il-art,.rfban::before,.rf-tete::before{animation:none}
+  .rf-holo,.il-pix.net,.il-art,.rfban::before,.rf-tete::before{animation:none}
 }
-html.rm .rf-holo,html.rm #nav button.evnav svg,html.rm .il-pix.net,html.rm .il-art,html.rm .rfban::before,html.rm .rf-tete::before{animation:none}
+html.rm .rf-holo,html.rm .il-pix.net,html.rm .il-art,html.rm .rfban::before,html.rm .rf-tete::before{animation:none}
 .segbar.trrev{margin:4px 0 10px}
 .segbar.trrev .revico{margin-left:5px}
 
