@@ -121,7 +121,6 @@
   font-size:clamp(26px,7.4vw,40px);letter-spacing:-.035em;line-height:1.02;color:#fff;
   margin:8px 0 5px;padding:0;text-transform:none;
   text-shadow:0 2px 16px rgba(255,91,176,.6),0 1px 2px rgba(0,0,0,.6)}
-.pr-nom::before{display:none}
 .pr-sous{margin:0 auto;max-width:34ch;font-size:13px;color:rgba(255,255,255,.66);line-height:1.4}
 
 .pr-acts{position:relative;flex:0 0 auto;width:100%;max-width:320px;opacity:0;
@@ -141,7 +140,6 @@
   box-shadow:inset 0 0 0 1px var(--line-2)}
 .promohead>div{flex:1;min-width:0}
 .promohead h2{margin:0;padding:0}
-.promohead h2::before{display:none}
 .promohead p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 .promohead .qpreste b{color:var(--text)}
 

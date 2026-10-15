@@ -50,7 +50,6 @@
 /* Symboles d'essence */
 .ess{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;object-fit:contain}
 .ess.dot{border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
-.ess.big{width:1.6em;height:1.6em}
 
 /* ============ Collection ============ */
 /* L'avancement en tête : le pourcentage en grand, la jauge en dessous. C'est la
@@ -101,7 +100,6 @@
    hors de portée dès que la fenêtre se resserrait. */
 .filcorps .chips,.filcorps .essrow{flex-wrap:wrap;overflow:visible;
   touch-action:auto;padding-bottom:0;row-gap:7px}
-.filtoggle{margin:14px 0 0}
 .filreset{display:block;margin:10px auto 0}
 
 /* Une puce de rareté porte sa couleur en pastille : l'échelle se lit sans

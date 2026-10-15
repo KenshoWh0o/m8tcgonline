@@ -35,10 +35,6 @@ body.inauth main { padding:0 }
   text-shadow:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 10px 24px -8px rgba(88,101,242,.5)}
 .btn.discord svg{width:22px;height:17px}
 
-.authsep{position:relative;margin:20px 0 14px;color:var(--muted);font-size:12px;font-weight:700}
-.authsep::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--line)}
-.authsep span{position:relative;background:var(--bg);padding:0 12px;border-radius:99px}
-
 /* ============ Écran d'attente ============ */
 /* Le site est en ligne mais fermé : on montre l'objet, pas le contenu.
    Un paquet fermé qui flotte, rien de plus — ça suffit à donner envie. */
@@ -104,10 +100,9 @@ body.inlock main { padding:0 }
 .lockcard .locktag.refus{background:var(--surface-2);color:var(--muted);
   box-shadow:inset 0 0 0 1px var(--line-2)}
 
-/* Les deux écrans pleine page n'ont pas de sections : leurs titres ne portent
-   donc pas le filet vertical des h2 du reste du site. */
+/* Les deux écrans pleine page n'ont pas de sections : leurs titres partent
+   du bord, sans retrait. */
 .authtitle,.locktitle{padding-left:0}
-.authtitle::before,.locktitle::before{display:none}
 
 /* L'annonce d'arrêt du projet (js/gate.js) : plusieurs paragraphes, un peu
    plus larges que la phrase d'attente d'avant. */

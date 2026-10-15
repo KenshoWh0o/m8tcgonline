@@ -164,8 +164,6 @@ html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,
   stroke-linecap:round;stroke-linejoin:round}
 
 /* dernière carte : dos réel, rotation propre */
-.scard.final{--fc:rgba(255,255,255,.8)}
-.scard.final.rR{--fc:rgba(57,184,255,.95)}.scard.final.rE{--fc:rgba(170,100,255,.95)}.scard.final.rL{--fc:rgba(255,199,59,1)}
 .lifter,.spinner{position:relative;transform-style:preserve-3d}
 .spinner>.cwrap{backface-visibility:hidden;-webkit-backface-visibility:hidden}
 /* Le reflet vit dans le `.spinner` de la dernière carte : il tourne avec elle,
@@ -249,5 +247,4 @@ html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,
 .op-rar.rS{color:#e8ecff}
 .op-rar.big.rS .slam{background:linear-gradient(180deg,#fff,#c9d6ff 45%,#ff9ad5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .rc-tag.rS{background:linear-gradient(90deg,#ffd0ea,#e6e1ff 50%,#c9ecff);color:#1a1230}
-.scard.final.rS{--fc:rgba(232,236,255,1)}
 .rc-hero.rS{--hc:rgba(232,236,255,.6)}

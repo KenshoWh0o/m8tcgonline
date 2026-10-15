@@ -3,7 +3,6 @@
 
 /* ============ L'onglet Combats ============ */
 .cb{display:flex;flex-direction:column;gap:12px;--sc:#9d8cff;--sc2:#c8bfff}
-.cb-page{display:flex;flex-direction:column;gap:14px;min-height:50vh}
 .champ{width:100%;font:inherit;font-size:16px;padding:12px 14px;border-radius:var(--radius-sm);border:0;color:var(--text);
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
 .champ:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent-soft)}
@@ -76,8 +75,6 @@
   border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);
   box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06),var(--sh-3);transition:transform .18s var(--spring)}
 button.cb-une:active{transform:scale(.98)}
-.cb-une-art{flex:none;width:52px;height:52px;border-radius:50%;background:var(--surface-3) var(--art) 50% 22%/250% auto no-repeat;
-  box-shadow:0 0 0 2px var(--accent-soft),0 0 18px var(--accent-glow)}
 .cb-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .cb-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-soft)}
 .cb-une-t b{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -89,19 +86,14 @@ button.cb-une:active{transform:scale(.98)}
 .cb-reprendre-act{display:flex;flex-direction:column;gap:6px}
 .cb-reprendre-act .btn{width:auto;padding-inline:16px}
 
-/* Solo et Versus : deux portes illustrées. Solo prend le prochain rival ;
-   Versus, les deux Promos des Sections, face à face. */
+/* Solo et Versus : deux portes, chacune illustrée par une carte (COUV,
+   js/battle.js). */
 .cb-portes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cb-porte{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
   min-height:138px;padding:12px 14px 13px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
   background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);transition:transform .18s var(--spring)}
 .cb-porte:active{transform:scale(.97)}
-.cb-porte-art,.cb-porte-art.duo i{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 22%/210% auto no-repeat}
-.cb-porte-art.duo{background:none}
-.cb-porte-art.duo i:first-child{clip-path:polygon(0 0,61% 0,39% 100%,0 100%)}
-.cb-porte-art.duo i:last-child{clip-path:polygon(61% 0,100% 0,100% 100%,39% 100%)}
-.cb-porte-art.duo::after{content:"";position:absolute;left:50%;top:-12%;bottom:-12%;width:2px;margin-left:-1px;z-index:1;transform:rotate(16deg);
-  background:var(--accent-soft);box-shadow:0 0 14px 2px var(--accent)}
+.cb-porte-art{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 22%/210% auto no-repeat}
 .cb-porte::after{content:"";position:absolute;inset:0;z-index:-1;
   background:linear-gradient(180deg,rgba(18,17,25,.05),rgba(18,17,25,.3) 38%,rgba(36,35,47,.97) 80%)}
 .cb-porte-ico{display:grid;place-items:center;width:42px;height:42px;margin-bottom:auto;border-radius:13px;
@@ -110,7 +102,7 @@ button.cb-une:active{transform:scale(.98)}
 .cb-porte-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:23px;line-height:1;letter-spacing:-.01em}
 .cb-porte-t small{font-size:11.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cb-porte .rf-pastille{position:absolute;top:10px;right:10px}
-.cb-porte-ico svg,.cb-petit-ico svg,.cb-mode-ico svg{display:block;fill:none;stroke:var(--deco-ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.cb-porte-ico svg,.cb-petit-ico svg{display:block;fill:none;stroke:var(--deco-ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
 .cb-porte-ico svg{width:30px;height:30px}
 .cb-porte-ico svg .f,.cb-petit-ico svg .f{fill:var(--deco-wash)}
 .cb-porte-ico svg .e,.cb-petit-ico svg .e{fill:var(--accent-soft);stroke:none}
@@ -224,7 +216,7 @@ button.cb-une:active{transform:scale(.98)}
 @media (max-width:380px){
   .cb-hero-titre{font-size:50px}
   .cb-porte-t b{font-size:20px}.cb-etape-t b{font-size:13px}
-  .cb-une{gap:10px}.cb-une-art{width:44px;height:44px}.cb-une-go{padding:10px 14px;font-size:13px}
+  .cb-une{gap:10px}.cb-une-go{padding:10px 14px;font-size:13px}
 }
 /* Sur téléphone, l'accueil remplit l'écran, ni plus ni moins (version
    3.0.7) : la page fait la hauteur de la zone entre l'en-tête et la barre du
@@ -257,7 +249,7 @@ button.cb-une:active{transform:scale(.98)}
   .cb-une{margin:-64px 20px 0;width:auto}
   .cb-portes{gap:14px}
   .cb-porte{min-height:210px;padding:16px 18px}
-  .cb-porte-art,.cb-porte-art.duo i{background-size:125% auto;background-position:50% 30%}
+  .cb-porte-art{background-size:125% auto;background-position:50% 30%}
   .cb-porte-t b{font-size:28px}
   .cb-mode{min-height:230px;padding:22px}
   .cb-acte-tete{padding-top:110px}
@@ -306,7 +298,7 @@ button.cb-une:active{transform:scale(.98)}
 .cb-etape-t em{font-style:normal;font-size:11.5px;color:var(--subtle)}
 .cb-etape.fait .cb-etape-t em{color:var(--ok)}
 .cb-etape.ferme .cb-etape-t{opacity:.55}
-.cb-coche,.cb-cadenas{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,40,28,.45)}
+.cb-coche{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,40,28,.45)}
 /* Un rival pas encore débloqué : une silhouette, un point d'interrogation. */
 .cb-mystere{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-family:var(--display);font-weight:900;font-size:26px;color:var(--muted);
   background:radial-gradient(circle at 50% 38%,var(--surface-3) 0 22%,transparent 23%),radial-gradient(ellipse 60% 40% at 50% 100%,var(--surface-3) 0 98%,transparent 100%),var(--surface-2)}
@@ -314,8 +306,7 @@ button.cb-une:active{transform:scale(.98)}
 /* Sur ordinateur, le chemin est centré dans l'acte (cette règle vient après
    celle de .cb-route, qu'elle doit l'emporter). */
 @media (min-width:900px){.cb-acte .cb-route{max-width:620px;margin:8px auto 12px}}
-.cb-cadenas{background:rgba(18,17,25,.5)}
-.cb-coche svg,.cb-cadenas svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.cb-coche svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .cb-campagne-fin{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-lg);
   background:linear-gradient(120deg,var(--gold-wash),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--gold-line)}
 .cb-campagne-fin>.cwrap{width:78px;flex:none}
@@ -445,15 +436,6 @@ button.cb-une:active{transform:scale(.98)}
 .rd-top-seg{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
 .rd-top-seg button{padding:5px 11px;border:0;border-radius:999px;font:inherit;font-size:12px;font-weight:800;color:var(--muted);background:none;cursor:pointer}
 .rd-top-seg button.on{color:var(--text);background:var(--surface-3)}
-.rd-niv{align-self:flex-start;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(18,17,25,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
-.rd-niv b{font-family:var(--display);font-size:14px}
-.rd-barre{display:flex;flex-direction:column;gap:6px}
-.rd-barre .rd-pv{height:14px}
-.rd-pv-l{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
-.rd-pv-l b{font-family:var(--display);font-weight:900;font-size:18px}
-.rd-pv-l span{font-size:12.5px;color:var(--muted)}
-.rd-pv-l small{margin-left:auto;font-size:12px;color:var(--muted)}
-.rd-regle{margin:0;font-size:13px;line-height:1.45;color:var(--subtle)}
 .rd-coffres{display:flex;flex-direction:column;gap:8px}
 .rd-coffre{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius);background:linear-gradient(110deg,var(--gold-wash),transparent 70%),var(--surface);
   box-shadow:inset 0 0 0 1px var(--gold-line)}
@@ -486,21 +468,9 @@ button.cb-une:active{transform:scale(.98)}
 .cb-defi-act{display:flex;gap:6px}
 
 /* Les decks */
-.cb-decks{display:flex;flex-direction:column;gap:8px}
-.cb-deck{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06)}
-.cb-deck.actif{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7)}
-.cb-deck-art{width:56px;flex:none;padding:0;border:0;background:none;cursor:pointer}
-.cb-deck-txt{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
-.cb-deck-txt b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cb-deck-txt small{font-size:12px;color:var(--muted)}
 .cb-ko{color:#ffb4aa}
 .cb-deck-ess{display:flex;align-items:center;gap:2px;font-size:11px;color:var(--subtle)}
 .cb-deck-ess i{font-style:normal;margin-right:5px;font-weight:800}
-.cb-deck-act{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-.cb-actif{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--text)}
-.cb-deck.nouveau{justify-content:center;gap:10px;border:0;font:inherit;color:var(--subtle);cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1.5px var(--line-2);border-style:dashed}
-.cb-deck.nouveau span{font-size:22px;line-height:1;display:grid;place-items:center;width:24px;height:24px}
-.cb-deck.nouveau svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
 .cb-cosms{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
 .cb-cosms.tapis{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))}
 .cb-cosm{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px;border:0;border-radius:var(--radius-sm);font:inherit;color:var(--text);cursor:pointer;
@@ -659,17 +629,7 @@ button.cb-une:active{transform:scale(.98)}
 }
 
 /* ============ Les guides ============ */
-/* L'accueil du Guide : le prochain à lire en grand, avec l'anneau des guides
-   lus ; puis trois groupes, du plus simple au plus fin. */
-.gd-une{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border:0;border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
-  background:radial-gradient(90% 120% at 100% 0%,rgba(138,120,245,.28),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
-.gd-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.gd-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
-.gd-une-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
-.gd-une-t em{font-style:normal;font-size:12.5px;color:var(--subtle)}
-.gd-anneau{flex:none;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;
-  background:radial-gradient(closest-side,var(--surface) 78%,transparent 80%),conic-gradient(var(--accent-soft) var(--p),var(--surface-3) 0)}
-.gd-anneau b{font-family:var(--display);font-weight:900;font-size:15px}
+/* L'accueil du Guide : trois groupes de chapitres, du plus simple au plus fin. */
 .gd-groupe h3{margin:4px 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .gd-liste{display:flex;flex-direction:column;gap:6px}
 .gd-entree{display:flex;align-items:center;gap:12px;padding:11px 12px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);text-align:left;cursor:pointer;
@@ -688,8 +648,6 @@ button.cb-une:active{transform:scale(.98)}
 .gd{display:flex;flex-direction:column;gap:12px}
 .gd-avance{display:block;height:5px;margin-top:6px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
 .gd-avance i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
-.gd-retour{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 4px;border:0;background:none;font:inherit;font-weight:800;color:var(--muted);cursor:pointer}
-.gd-retour svg{width:18px;height:18px;transform:rotate(90deg);fill:none;stroke:currentColor;stroke-width:2.2}
 .gd-page{padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06);line-height:1.55}
 .gd-page header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .gd-page h2{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:24px}
@@ -828,14 +786,6 @@ button.cb-une:active{transform:scale(.98)}
 .gd-mot dd{margin:2px 0 0;font-size:13px;line-height:1.45;color:var(--subtle)}
 .gd-voir{display:inline;padding:0;margin-left:4px;border:0;background:none;font:inherit;font-size:12px;font-weight:800;color:var(--accent-soft);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .gd-rien{text-align:center;padding:16px}
-.gd-chapitres{margin-top:16px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.gd-chapitres summary{display:flex;align-items:center;gap:10px;padding:12px;list-style:none;cursor:pointer}
-.gd-chapitres summary::-webkit-details-marker{display:none}
-.gd-chapitres summary>span{flex:1;display:flex;flex-direction:column}
-.gd-chapitres summary small{font-size:12px;color:var(--muted)}
-.gd-chapitres summary>svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;transition:transform .2s}
-.gd-chapitres[open] summary>svg{transform:rotate(180deg)}
-.gd-chapitres .gd-groupe{padding:0 12px 12px}
 /* Version 3.0.7 : Règles et Glossaire, deux onglets sous le tutoriel. */
 .gd-ong{margin:14px 0 4px}
 .gd-ong button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}

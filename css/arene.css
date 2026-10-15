@@ -28,10 +28,9 @@
   font-family:var(--body);user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
   /* L'action (ce que tu peux faire) : la lavande. L'adversaire : le rouge.
-     Ton choix : le blanc. La réussite : le vert. */
+     Ton choix : le blanc. La réussite : le vert (#8ff0c8, écrit en dur). */
   --ar-act:#9d8cff;--ar-act2:#c8bfff;--ar-act-encre:#ffffff;--ar-act-lueur:rgba(157,140,255,.6);
   --ar-adv:#ff6b6b;--ar-adv2:#ffb3b3;--ar-adv-lueur:rgba(255,107,107,.55);
-  --ar-vert:#4fd6a0;
   --ar-rouge:var(--ar-adv);
   --ar-verre:rgba(26,25,34,.72);--ar-trait:rgba(255,255,255,.14);
   /* Les quatre sortes de cartes. */
@@ -735,7 +734,6 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 /* ============ La fin ============ */
 .ar-annonce.fin{pointer-events:auto;background:radial-gradient(ellipse at 50% 40%,rgba(30,29,40,.94),rgba(8,7,12,.97))}
 .ar-fin-in{display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,420px)}
-.ar-annonce.fin h2::before,.gd-page h2::before{content:none}
 .ar-annonce.fin h2,.gd-page h2{padding-left:0}
 .ar-annonce.fin h2{margin:0;padding:0 .1em;font-family:var(--display);font-style:italic;font-weight:900;font-size:clamp(46px,14vw,84px);line-height:1;
   animation:ar-pf-res .9s cubic-bezier(.2,.9,.3,1)}
@@ -818,12 +816,12 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 }
 @media (prefers-reduced-motion:reduce){
   .ar-j,.ar-m,.ar-gem{transition:none}
-  .ar-place.cible,.ar-j.cible::after,.ar-j.option::after,.ar-j.attaquant,.ar-fin.pulse,.ar-atq.ok,.ar-info.consigne,.ar-ava.actif::after{animation:none}
+  .ar-place.cible,.ar-j.cible::after,.ar-j.option::after,.ar-j.attaquant,.ar-fin.pulse,.ar-info.consigne,.ar-ava.actif::after{animation:none}
   .ar-piece{animation:none}
   .ar-piece.revers{transform:rotateY(180deg)}
   .ar-pf-res,.ar-pf-sous{animation-delay:0s}
 }
-html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-atq.ok,html.rm .ar-c.holo::after,html.rm .ar-c.secrete::before,html.rm .ar-c.secrete::after,html.rm .ar-gem.brille::after{animation:none}
+html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-c.holo::after,html.rm .ar-c.secrete::before,html.rm .ar-c.secrete::after,html.rm .ar-gem.brille::after{animation:none}
 /* Une feuille sans décision (menu, pile) : un voile qui la referme. */
 .ar-sheet.voile{top:0;align-items:flex-end;pointer-events:auto;background:rgba(8,7,12,.5);animation:ar-voile .2s ease-out}
 @keyframes ar-voile{from{background:rgba(8,7,12,0)}}

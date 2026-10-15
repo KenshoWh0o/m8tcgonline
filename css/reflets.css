@@ -230,10 +230,6 @@
 .il-prop:hover{box-shadow:inset 0 0 0 1.5px #b38cff}
 .il-prop b{flex:1;font-size:14px}
 .il-prop small{color:var(--muted);font-weight:700}
-.il-rates{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.il-rates small{font-size:11.5px;font-weight:800;color:var(--muted);margin-right:2px}
-.il-rates span{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;color:#ff9aa8;background:rgba(194,65,75,.14);
-  text-decoration:line-through;text-decoration-color:rgba(255,154,168,.6)}
 .il-fin{display:flex;align-items:center;gap:14px;padding:12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .il-fin.gagne{box-shadow:inset 0 0 0 2px #55e6a6,0 0 20px rgba(85,230,166,.18)}
 .il-carte{flex:0 0 84px;padding:0;border:0;background:none;cursor:pointer}
