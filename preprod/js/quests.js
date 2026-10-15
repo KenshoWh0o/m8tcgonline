@@ -1,5 +1,5 @@
 /* Onglet Quêtes. Toute la progression est comptée par le serveur au moment où
-   l'événement arrive vraiment (supabase/03_rpc.sql) : rien n'est déclaré par
+   l'événement arrive vraiment (supabase/installation/03_rpc.sql) : rien n'est déclaré par
    le navigateur, donc rien n'est gonflable depuis la console.
 
    Trois périodes, trois sous-onglets. Tout afficher d'un coup faisait une page
@@ -23,7 +23,7 @@ const QICO = {
   checkin: 'clock', packs: 'star', new_cards: 'cards', tutoriel: 'livre',
   rarity_R: 'quest', rarity_E: 'quest', rarity_L: 'coin',
   trades: 'swap', recycle: 'recycle', collection_pct: 'cards',
-  /* Toutes les cartes d'une rareté (supabase/04_seed.sql). */
+  /* Toutes les cartes d'une rareté (supabase/installation/04_seed.sql). */
   set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin',
   /* Version 2.0 : Reverses, Brillantes, Devine l'illu, invitations, personnalisation. */
   rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
@@ -61,7 +61,7 @@ const questesPretesDe = scope => questesDe(scope).filter(questePrete).length;
 
 /* ---------- Remise à zéro ---------- */
 /* Les périodes sont calées sur l'heure de Paris côté serveur (period_key dans
-   supabase/01_schema.sql) : on calcule ici la même frontière, sinon le compte à
+   supabase/installation/01_schema.sql) : on calcule ici la même frontière, sinon le compte à
    rebours du joueur et la remise à zéro réelle ne tomberaient pas ensemble.
 
    `Intl` donne l'heure de Paris quelle que soit celle du téléphone, et gère

@@ -164,7 +164,7 @@ function scoreLien(E, o) {
   const c = O.trouverSurPlateau(E, o.cible);
   return valeurJoueur(E, c) - 10 * c.obj.length + (c.eng ? -5 : 0);
 }
-const INSTANTS_SURS = ['c083', 'c082', 'c107', 'c114', 'c095', 'c031', 'c037', 'c099', 'c014', 'c027', 'c028', 'c016', 'c097', 'c018', 'c026', 'c092', 'c033', 'c020', 'c061', 'c054', 'c104', 'c098', 'c103', 'c115', 'c066', 'c038', 'p01', 'c012'];
+const INSTANTS_SURS = ['c083', 'c082', 'c107', 'c114', 'c095', 'c031', 'c037', 'c099', 'c014', 'c027', 'c028', 'c016', 'c097', 'c018', 'c026', 'c092', 'c033', 'c020', 'c061', 'c054', 'c104', 'c098', 'c103', 'c115', 'c066', 'c038', 'p01'];
 function instantUtile(E, j, o) {
   const c = E.j[j].main.find(x => x.u === o.u);
   return INSTANTS_SURS.includes(Combat.baseId(c.id));

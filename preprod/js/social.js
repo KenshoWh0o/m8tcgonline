@@ -114,8 +114,8 @@ async function ouvrirFiche(pseudo) {
     const sienne = toutesCartes().filter(c => f.col[c.id] > 0);
     /* Un doublon, ici, c'est une carte qu'il peut céder. Les Essences et les
        Promos ne s'échangent pas : les compter promettrait ce que le serveur
-       refusera (voir trade_create dans supabase/03_rpc.sql). Et ce qu'il a
-       choisi de garder n'en est pas un (version 2.1, supabase/22_garder.sql). */
+       refusera (voir trade_create dans supabase/installation/03_rpc.sql). Et ce qu'il a
+       choisi de garder n'en est pas un (version 2.1, supabase/installation/22_garder.sql). */
     const doubles = sienne.filter(c => sesDoublons(f.pseudo, c) > 0 && c.cat !== 'essence' && !c.promo);
     const forts = doubles.filter(c => rk(c) >= 3).sort(parRarete).slice(0, 12);
     const manque = sienne.filter(c => !(save.col[c.id] > 0)).length;

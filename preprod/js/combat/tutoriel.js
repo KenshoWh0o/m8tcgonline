@@ -1,5 +1,6 @@
-/* Le tutoriel (version 3.0.6) : une partie écrite d'avance, pour apprendre
-   en jouant.
+/* Le tutoriel : une partie écrite d'avance, pour apprendre en jouant. Né en
+   3.0.6, réécrit et vérifié dans Chromium en 3.0.7, retouché en 3.0.8 (la
+   bulle de l'attaque suit la zone de détails de l'arène).
 
    Les deux Clubs ne sont pas mélangés (`ordre`, js/combat/moteur.js) : la
    main, les PV et les pioches sont les mêmes à chaque partie. Le Rival joue
@@ -18,7 +19,7 @@
    piocher), Provocation, un Moment, un Coach, payer une attaque (la Neutre),
    Attaque contre Défense (3.0.7), attaquer un Joueur engagé, le vaincre, être touché, la Résilience, Garde,
    Légion. Il se rejoue à l'infini ; la première victoire fait avancer la
-   quête « Premiers pas » (supabase/04_seed.sql, tutoriel_fini). */
+   quête « Premiers pas » (supabase/installation/04_seed.sql, tutoriel_fini). */
 "use strict";
 
 const TUTO_MOI = [
@@ -149,7 +150,7 @@ const ETAPES = [
   { info: true, quand: (E, d) => tourDe(E, d, 3), titre: 'Attaque contre Défense',
     texte: () => `Une attaque compare son <b>Attaque</b> à la <b>Défense</b> ${TU_DEF} de sa cible. <b>Égale ou plus haute</b> : la cible est <b>vaincue</b>, à la défausse. <b>Plus basse</b> : elle est <b>repoussée</b>. Contre un <b>CEO</b>, la valeur ne compte pas : il est <b>touché</b>, il perd un PV.` },
   { quand: (E, d) => tourDe(E, d, 3), titre: 'Attaque !', pos: 'bas',
-    texte: () => 'Baby Driver s\'est <b>engagé</b> en attaquant : on peut le viser (un Joueur debout, non). Touche <b>Squeezie</b> : sa carte s\'ouvre en grand, et son attaque <b>s\'allume juste dessous</b>. Touche-la, puis <b>Baby Driver</b>. Ta première attaque ouvre la <b>phase de Combat</b> : plus de déploiement ensuite.',
+    texte: () => 'Baby Driver s\'est <b>engagé</b> en attaquant : on peut le viser (un Joueur debout, non). Touche <b>Squeezie</b> : sa carte s\'ouvre en grand, et son attaque <b>s\'allume juste à côté</b>. Touche-la, puis <b>Baby Driver</b>. Ta première attaque ouvre la <b>phase de Combat</b> : plus de déploiement ensuite.',
     attend: (a, E) => a.t === 'attaquer' && a.u === tuU(E, 0, 'c012') && a.cible === tuU(E, 1, 'c059'),
     vise: E => [surPlateau(E, 0, 'c012'), `[data-ar="attaque"][data-u="${tuU(E, 0, 'c012')}"]`, surPlateau(E, 1, 'c059')],
     refus: 'Attaque Baby Driver avec Squeezie : c\'est lui qu\'on vise.' },

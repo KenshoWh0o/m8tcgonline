@@ -238,12 +238,13 @@
     ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
     ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
     /* Le Choc des Sections (25_choc.sql), en Étincelles. */
+    // Deux colonnes : le tapis (4) et le cadre (6) du Sorcier l'un sous l'autre.
     ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10],
     ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3],
     ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8],
     ['t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L\'illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l\'événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null],
-    ['f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l\'événement.', 400, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
-    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
+    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
+    ['f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l\'événement.', 400, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
   ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
        devise: devise || 'eclats', evenement: evenement || null, limite: limite == null ? null : limite }));
@@ -590,8 +591,9 @@
   }
 
   /* Devine l'illu : l'illustration du jour, tirée par un hachage de la date.
-     Les grilles de pixels sont celles du serveur (supabase/21b_illu.sql),
-     recopiées par tools/demo.py dans window.DEMO_ILLU. */
+     Les grilles de pixels sont celles du serveur
+     (supabase/installation/21b_illu.sql), recopiées par tools/demo.py dans
+     window.DEMO_ILLU. */
   function hacher(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   const illuCartes = () => cards.filter(k => k.cat !== 'essence' && (window.DEMO_ILLU || {})[k.id]);
   /* Un ordre fixe, et chaque jour prend la suivante : jamais deux fois la
@@ -1100,8 +1102,11 @@
      exemplaires EN TROP (au-delà de la limite de deck, de ce qu'on garde et
      des échanges en attente) ; chaque exemplaire qui manque se remplace par
      son prix de fabrication. Les montants sont ceux du serveur. */
-  const MZ_FRAGMENTS = [300, 700, 1500, 3000, 6000];
-  const MZ_COPIES = { C: [1, 1, 2, 2, 3], PC: [1, 1, 2, 2, 3], R: [0, 1, 1, 2, 2], E: [0, 1, 1, 1, 1], L: [0, 0, 1, 0, 1], S: [0, 0, 0, 0, 0] };
+  /* Version 3.0.8 : la base de Fragments dépend de la rareté, fois 1, 2, 4,
+     7, 11 selon le niveau (maitrise_fragments). */
+  const MZ_BASE = { C: 60, PC: 100, R: 200, E: 400, L: 600, S: 600 };
+  const MZ_MULT = [1, 2, 4, 7, 11];
+  const MZ_COPIES = { C: [1, 1, 1, 2, 2], PC: [1, 1, 1, 1, 2], R: [0, 1, 1, 1, 1], E: [0, 0, 1, 0, 1], L: [0, 0, 0, 0, 1], S: [0, 0, 0, 0, 0] };
   /* maitrise_carte : la carte qui porte la maîtrise (une Reverse : sa carte
      classique), si elle se maîtrise ; null sinon. */
   function maitriseCarte(id) {
@@ -1128,7 +1133,7 @@
     const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
     const copies = MZ_COPIES[k.rar][n - 1];
     const pris = Math.min(copies, dispo);
-    const total = MZ_FRAGMENTS[n - 1] + (copies - pris) * (cfg('fabrication_' + k.rar) || 0);
+    const total = MZ_BASE[k.rar] * MZ_MULT[n - 1] + (copies - pris) * (cfg('fabrication_' + k.rar) || 0);
     const pr = profil(p);
     if ((pr.fragments || 0) < total) refuser(`Pas assez de Fragments : il en faut ${total}.`);
     pr.fragments -= total;

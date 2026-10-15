@@ -113,7 +113,7 @@ function vCarteVw(c) {
 
 function vPageVw(k, c) {
   if (k === 'infos') return vInfosVw(c);
-  if (k === 'maitrise') return `<div class="mz-fiche">${vMaitriseFiche(c)}</div>`;
+  if (k === 'maitrise') return vMaitriseFiche(c);
   return vGererVw(c);
 }
 
@@ -148,17 +148,16 @@ function vInfosVw(c) {
 }
 const VW_DEF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7Z"/></svg>';
 
-/* Gérer : le cœur, combien en garder, la carte fétiche. */
+/* Gérer : combien en garder, la carte fétiche. */
 function vGererVw(c) {
-  const fav = estFavori(c);
+  /* Le favori est le cœur en haut de la fiche (version 3.0.8 : plus de
+     doublon ici). Deux réglages, chacun sur une ligne. */
   const fet = (save.fetiche || null) === c.id;
   const possede = mesEx(c.id) > 0;
   const enLigne = Backend.mode === 'cloud';
   return `<div class="vw-g">
-    <div class="vw-g-ligne"><span><b>Favori</b><small>Retrouve-la avec le filtre « Mes favoris » de la Collection.</small></span>
-      <button class="vw-g-fav${fav ? ' on' : ''}" data-v="fav" aria-pressed="${fav}" aria-label="${fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${NAVICO.coeur}</button></div>
-    ${enLigne && !c.promo && possede ? `<div class="vw-g-ligne col"><span><b>À garder</b><small>Le recyclage et la maîtrise ne touchent jamais à ces exemplaires.</small></span><div class="vw-gardebox">${vGardeVw(c)}</div></div>` : ''}
-    <div class="vw-g-ligne"><span><b>Carte fétiche</b><small>${fet ? 'C\'est elle qu\'on voit en premier sur ton profil.' : 'Mise en scène en haut de ton profil, et sur ta fiche de joueur.'}</small></span>
+    ${enLigne && !c.promo && possede ? `<div class="vw-g-ligne"><span><b>À garder</b><small>Ni recyclés, ni pris par la maîtrise.</small></span><div class="vw-gardebox">${vGardeVw(c)}</div></div>` : ''}
+    <div class="vw-g-ligne"><span><b>Carte fétiche</b><small>${fet ? 'C\'est elle qu\'on voit en premier sur ton profil.' : 'En avant sur ton profil et ta fiche de joueur.'}</small></span>
       ${!enLigne ? '<small class="vw-g-non">En ligne</small>' : possede || fet
         ? `<button class="btn tiny${fet ? ' ghost' : ''}" data-v="fetiche">${fet ? 'Retirer' : 'Choisir'}</button>`
         : '<small class="vw-g-non">Pas dans ta collection</small>'}</div>
@@ -234,7 +233,7 @@ function rafraichirFicheVw(eclair) {
 }
 
 /* ---------- Combien j'en garde (version 2.1) ---------- */
-/* Réglé ici, carte par carte (supabase/22_garder.sql). Le chiffre change tout
+/* Réglé ici, carte par carte (supabase/installation/22_garder.sql). Le chiffre change tout
    de suite ; le serveur n'est prévenu qu'une fois les appuis finis, et la
    visionneuse ne se rouvre pas : la carte reste où on l'a tournée. */
 function vGardeVw(c) {
@@ -242,7 +241,6 @@ function vGardeVw(c) {
   const g = aGarder(c);
   const perso = (save.gardes || {})[c.id] != null;
   return `<div class="vw-garde">
-    <span class="vw-glab">Garder</span>
     <button data-v="g-" aria-label="Garder un exemplaire de moins" ${g <= 1 ? 'disabled' : ''}>−</button>
     <b class="tnum">${g === GARDE_TOUT ? 'Tous' : g}</b>
     <button data-v="g+" aria-label="Garder un exemplaire de plus" ${g >= GARDE_TOUT ? 'disabled' : ''}>+</button>
@@ -327,7 +325,8 @@ $('#viewer').addEventListener('click', e => {
   const o = e.target.closest('[data-v="ong"]');
   if (o) return allerOngletVw(o.dataset.o);
   if (e.target.closest('[data-v="maitriser"]')) return maitriserVw();
-  if (e.target.closest('[data-v="mz-apercu"]')) return apercuMaitriseVw();
+  const mv = e.target.closest('[data-v="mz-voir"]');
+  if (mv) return voirNiveauVw(+mv.dataset.n);
   if (e.target.closest('[data-v="fetiche"]')) return choisirFeticheVw();
   const g = e.target.closest('[data-v^="g"]');
   if (g) changerGardeVw(g.dataset.v === 'g+' ? 1 : g.dataset.v === 'g-' ? -1 : 0);

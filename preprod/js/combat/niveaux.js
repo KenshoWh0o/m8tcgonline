@@ -9,7 +9,7 @@
 
    Ce fichier est lu par la page et par le serveur de démo
    (_demo/serveur.js). Le serveur réel en a la copie dans
-   supabase/26_niveaux.sql : les deux doivent rester d'accord. L'équilibrage
+   supabase/installation/26_niveaux.sql : les deux doivent rester d'accord. L'équilibrage
    est expliqué dans docs/economie-3.0.md. */
 "use strict";
 

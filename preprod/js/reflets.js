@@ -1,14 +1,15 @@
 /* Version 2.0 : l'événement « Reflets » et Devine l'illu.
 
    L'onglet de l'événement sert deux buts : faire jouer — quêtes, Pass,
-   boutique, Devine l'illu — et faire découvrir ce que la 2.0 apporte. Il
-   remplace Combats dans la barre du bas tant qu'il dure (js/app.js), et un
-   bandeau l'annonce en tête de l'écran Boosters (js/booster.js).
+   boutique, Devine l'illu — et faire découvrir ce que la 2.0 apporte. Tant
+   qu'il dure, il passe en tête du tiroir du compte (ongletsTiroir,
+   js/app.js), et un bandeau l'annonce en tête de l'écran Boosters
+   (js/booster.js).
 
    Un en-tête, et des sous-onglets qui ont chacun leur page : rien ne
    s'empile. Le sous-onglet ouvert vit dans `rfVue`.
 
-   Tout ce qui compte se décide côté serveur (supabase/21_reflets.sql) : le
+   Tout ce qui compte se décide côté serveur (supabase/installation/21_reflets.sql) : le
    solde de Prismes, les paliers, l'illustration du jour — que le navigateur
    ne reçoit qu'en pixels, et ne connaît qu'une fois la partie finie. */
 "use strict";
@@ -52,7 +53,7 @@ const rfQuetesPretes = () => (save.quetes || [])
 const rfPaliersPrets = () => rfData ? rfData.piste.filter(x => !x.pris && rfData.total >= x.seuil).length : 0;
 const rfIlluAJouer = () => !!(illuData && !illuData.fini);
 
-/* La pastille de l'onglet, dans la barre du bas. */
+/* La pastille de l'onglet, dans le tiroir et le rail. */
 function evQuetesPretes() {
   if (!evenementEnCours()) return 0;
   return rfQuetesPretes() + rfPaliersPrets() + (rfIlluAJouer() ? 1 : 0);
@@ -528,7 +529,7 @@ function vIlluPage() {
 /* =====================================================================
    Après l'événement : le récap (trois jours)
    ===================================================================== */
-/* L'événement fini depuis moins de trois jours (me(), supabase/21_reflets.sql),
+/* L'événement fini depuis moins de trois jours (me(), supabase/installation/21_reflets.sql),
    ou l'aperçu du Labo. */
 let rfRecap = null;
 let rfRecapApercu = null;

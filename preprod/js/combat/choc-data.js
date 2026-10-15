@@ -17,7 +17,7 @@
 
    Ce fichier est lu par la page et par le serveur de démo
    (_demo/serveur.js). Le serveur réel en a la copie dans
-   supabase/25_choc.sql et 27_raid.sql : ils doivent rester d'accord. */
+   supabase/installation/25_choc.sql et 27_raid.sql : ils doivent rester d'accord. */
 "use strict";
 
 const RAID = {
@@ -80,7 +80,6 @@ function raidSaison(j) {
 }
 
 const CHOC = {
-  code: 'choc',
   nom: 'Le Choc des Sections',
   /* La monnaie de l'événement (evt_comptes, comme les Prismes de Reflets). */
   monnaie: { nom: 'Étincelles', un: 'Étincelle' },
@@ -133,10 +132,14 @@ function deckSorcier(j, cle) {
 /* Le Sorcier au milieu de ses trois lignes, dès le début. */
 const posesBoss = () => [[], [{ id: RAID.boss, ligne: 1 }]];
 
+/* La règle de l'Épreuve du jour `j` : une par jour, à tour de rôle. Seule,
+   sans les decks, pour l'accueil de l'événement (js/choc.js). */
+const regleEpreuve = j => CHOC.epreuve.regles[chocMod(chocJourN(j), CHOC.epreuve.regles.length)];
+
 /* L'Épreuve du jour `j` : sa règle, et les deux decks imposés. La graine
    du jour vient du serveur (choc_etat) ; tout le reste s'en déduit. */
 function epreuveDuJour(j, graine) {
-  const regle = CHOC.epreuve.regles[chocMod(chocJourN(j), CHOC.epreuve.regles.length)];
+  const regle = regleEpreuve(j);
   const moi = Decks.aleatoire(aleaGraine(graine ^ 0x1b873593), { niveau: 3, nom: 'Deck imposé' });
   const adv = regle.miroir ? JSON.parse(JSON.stringify(moi))
     : Decks.aleatoire(aleaGraine(graine ^ 0x85ebca6b), { niveau: 3, nom: 'L\'adversaire du jour' });

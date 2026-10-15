@@ -9,7 +9,15 @@
    justifiées dans docs/regles-3.0.md : ce qui est imprimé sur les cartes, ce
    qui s'en déduit, et ce qui est « maison » en attendant les vraies règles.
    Les valeurs de la partie (taille du Club, nombre de PV…) sont dans REGLE,
-   juste en dessous : c'est le seul endroit où les changer.
+   juste en dessous. C'est là qu'on les change, mais ce n'est pas le seul
+   endroit à reprendre : plusieurs sont recopiées en dur ailleurs. Le serveur
+   (supabase/installation/23_combats.sql) écrit le Club de 30 et la Réserve
+   de 10 dans deck_erreur, les exemplaires dans limite_copies, et la table
+   starters recopie les deux Starter Decks. Des textes les disent en toutes
+   lettres : le Guide (js/combat/guides.js : « trois lignes », « un Coach par
+   tour »…), le tutoriel (js/combat/tutoriel.js : « 5 PV », « 3 Objets au
+   plus »), les refus de l'arène (js/combat/table.js : « Un seul Joueur
+   déployé par tour »…). Et docs/regles-3.0.md (§ 13) les reprend toutes.
 
    Trois principes :
    - Déterministe. Le hasard vient d'une graine rangée dans l'état : la même
@@ -104,7 +112,7 @@ function joueurVide(o, i) {
 
 const compteursVides = () => ({
   attaques: 0, pvRecup: [0, 0], deploie: 0, coachs: 0,
-  combatFini: false, doitAttaquer: 0, essDesengagees: 0
+  combatFini: false, doitAttaquer: 0
 });
 
 /* Une partie. `o` : {
@@ -113,7 +121,7 @@ const compteursVides = () => ({
      pv: [5, 6] et essDepart: [0, 1] (facultatifs, pour la campagne) } */
 function creer(o) {
   const E = {
-    v: 1, rng: (o.graine >>> 0) || 1, seq: 0, tour: 0, actif: 0, premier: 0,
+    rng: (o.graine >>> 0) || 1, seq: 0, tour: 0, actif: 0, premier: 0,
     phase: 'mise', fin: null, temp: [], cpt: compteursVides(),
     j: [0, 1].map(i => joueurVide(o, i))
   };
@@ -137,7 +145,6 @@ function creer(o) {
   });
   /* Pile ou face : le jeton de l'écran de combat le montre (js/combat/table.js). */
   E.premier = o.premier === 0 || o.premier === 1 ? o.premier : (alea(E) < 0.5 ? 0 : 1);
-  E.pileFace = E.premier;
   E.actif = E.premier;
   E.gen = partie(E, false);
   avancer(E);
@@ -389,7 +396,7 @@ function* miseEnPlace(E) {
     for (let k = 0; k < P.essDepart; k++) jouerReserve(E, i, false);
     for (const { ligne, c } of poses[i]) {
       if (P.lignes[ligne]) { P.club.push(c); continue; }
-      Object.assign(c, { j: i, eng: false, obj: [], tour: 0, shieldUse: false, nAtt: 0 });
+      Object.assign(c, { j: i, eng: false, obj: [], shieldUse: false, nAtt: 0 });
       P.lignes[ligne] = c;
       ev(E, { t: 'deploie', j: i, u: c.u, id: c.id, ligne, eng: false, pose: true });
     }
@@ -578,7 +585,7 @@ function* deployer(E, j, c, ligne, o) {
     ligne = P.lignes.findIndex(x => !x);
     if (ligne < 0) { P.main.push(c); return null; }
   }
-  Object.assign(c, { j, eng: !!o.engage, obj: [], tour: E.tour, shieldUse: false, nAtt: 0 });
+  Object.assign(c, { j, eng: !!o.engage, obj: [], shieldUse: false, nAtt: 0 });
   P.lignes[ligne] = c;
   ev(E, { t: 'deploie', j, u: c.u, id: c.id, ligne, eng: c.eng });
   yield* declencher(E, 'deploie', { j, c });
@@ -606,9 +613,7 @@ function* jouerInstant(E, j, u) {
   if (!c) return;
   if (estCat(c, 'coach')) E.cpt.coachs++;
   ev(E, { t: 'joue', j, u: c.u, id: c.id });
-  P.enCours = c;
   yield* scr(c.id).effet(ctxDe(E, j, c));
-  P.enCours = null;
   /* Un Instant joué va à la défausse — sauf s'il a déjà été déplacé. */
   if (!ou(E, c)) P.defausse.push(c);
 }
@@ -747,9 +752,7 @@ function* toucher(E, j, par) {
       if (ok) {
         utilisee = true;
         ev(E, { t: 'resilience', j, u: c.u, id: c.id });
-        P.enCours = c;
         yield* s.resilience(x);
-        P.enCours = null;
         if (!ou(E, c)) P.defausse.push(c);
       }
     }
@@ -870,7 +873,6 @@ function* desengager(E, c) {
 function* desengagerEssence(E, e) {
   if (!e || !e.eng) return;
   e.eng = false;
-  E.cpt.essDesengagees++;
   ev(E, { t: 'essDesengage', j: e.j, u: e.u });
   yield* declencher(E, 'desengageEss', { e, j: e.j });
 }

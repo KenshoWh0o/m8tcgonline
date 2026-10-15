@@ -841,7 +841,7 @@ S.c071 = {
 /* 072 Leakof — Regardez la main de votre adversaire. Résilience : jouez
    cette carte. */
 S.c072 = Object.assign({
-  *effet(x) { O.ev(x.E, { t: 'regarde', j: x.j, de: adv(x.j), cartes: x.A.main.map(c => ({ u: c.u, id: c.id })) }); x.E.j[x.j].vuMain = x.E.tour; }
+  *effet(x) { O.ev(x.E, { t: 'regarde', j: x.j, de: adv(x.j), cartes: x.A.main.map(c => ({ u: c.u, id: c.id })) }); }
 }, JOUER);
 
 /* 073 L'Héritier — ⚡ Lorsque le CEO adverse lie un Objet à un Joueur, ce

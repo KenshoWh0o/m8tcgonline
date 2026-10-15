@@ -15,6 +15,8 @@
 .vw-stage{position:relative;perspective:1100px;animation:vwin .65s cubic-bezier(.2,1.3,.4,1) both}
 @keyframes vwin{from{transform:translateY(60px) scale(.55) rotate(-8deg);opacity:0}}
 .vw-card{position:relative;width:min(300px,66vw,46vh);transform-style:preserve-3d;will-change:transform;touch-action:none;cursor:grab;border-radius:5.5%}
+/* Petit écran (375 × 667) : la carte cède un peu de place aux pages. */
+@media (max-height:720px) and (max-width:899px){.vw-card{width:min(300px,58vw,40vh)}}
 .vw-card:active{cursor:grabbing}
 .vw-card .cwrap{box-shadow:none;filter:drop-shadow(0 26px 30px rgba(0,0,0,.6))}
 .vw-card.rR .cwrap{filter:drop-shadow(0 0 8px rgba(57,184,255,.7)) drop-shadow(0 0 22px rgba(57,184,255,.7)) drop-shadow(0 26px 30px rgba(0,0,0,.5))}
@@ -43,6 +45,15 @@
 .vw-col{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.75);
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:4px 12px 4px 8px}
 .vw-num{font-weight:700;font-size:12.5px;color:rgba(255,255,255,.55);letter-spacing:.04em}
+/* La rareté, à sa couleur (version 3.0.8) : plus de pastille blanche — le
+   blanc veut dire « choisi » dans la DA. */
+.vw-meta .rc-tag{font-family:inherit;font-style:normal;font-weight:800;font-size:12.5px;padding:4px 11px;background:var(--surface-2);
+  color:var(--subtle);box-shadow:inset 0 0 0 1px var(--line-2)}
+.vw-meta .rc-tag.rES{color:var(--r-es)}.vw-meta .rc-tag.rC{color:var(--r-c)}.vw-meta .rc-tag.rPC{color:var(--r-pc)}
+.vw-meta .rc-tag.rR{color:var(--r-r)}.vw-meta .rc-tag.rE{color:var(--r-e)}.vw-meta .rc-tag.rL{color:var(--r-l)}
+.vw-meta .rc-tag.rPR,.vw-meta .rc-tag.rBR,.vw-meta .rc-tag.rUN{color:var(--r-pr)}
+.vw-meta .rc-tag.rS{color:#e6e1ff;background:linear-gradient(90deg,rgba(255,208,234,.16),rgba(201,236,255,.16))}
+.vw-meta .rc-tag.rev{color:#fff;background:linear-gradient(110deg,rgba(255,91,176,.35),rgba(179,140,255,.35),rgba(127,216,255,.35))}
 .vw-own{font-weight:800;font-size:12.5px;background:rgba(255,255,255,.1);border-radius:999px;padding:4px 11px}
 .vw-hint{position:relative;color:rgba(255,255,255,.4);font-size:12px;font-weight:600;margin:14px 0 auto}
 
@@ -61,7 +72,6 @@
 .vw-gardebox:empty{display:none}
 .vw-garde{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.07);
   border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:4px 6px 4px 14px;font-size:12.5px;font-weight:700}
-.vw-glab{color:rgba(255,255,255,.75)}
 .vw-garde>button:not(.vw-gdef){width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.1);color:#fff;font-size:17px;font-weight:800;line-height:1}
 .vw-garde>button:not(.vw-gdef):disabled{opacity:.35}
@@ -123,20 +133,15 @@ html.rm .vw-ong-barre,html.rm .vw-pages{transition:none}
 
 /* Gérer : des lignes, un réglage chacune. */
 .vw-g{display:flex;flex-direction:column;gap:8px}
-.vw-g-ligne{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px 11px 14px;border-radius:16px;
-  background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
-.vw-g-ligne.col{flex-direction:column;align-items:stretch;gap:8px}
+.vw-g-ligne{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px;padding:11px 12px 11px 14px;border-radius:16px;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.vw-g-ligne>span{flex:1 1 150px}
 .vw-g-ligne>span{display:flex;flex-direction:column;gap:2px;min-width:0}
 .vw-g-ligne b{font-size:14px;font-weight:800}
 .vw-g-ligne small{font-size:11.5px;line-height:1.35;color:rgba(255,255,255,.6)}
-.vw-g-ligne .vw-gardebox{margin:0}
+.vw-g-ligne .vw-gardebox{margin:0 0 0 auto}
+.vw-g-ligne .vw-garde{padding-left:6px}
 .vw-g-non{flex:none;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.45)}
-.vw-g-fav{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
-  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}
-.vw-g-fav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
-.vw-g-fav.on{color:var(--r-pr);border-color:rgba(255,91,176,.45);background:rgba(255,91,176,.14)}
-.vw-g-fav.on svg{fill:currentColor}
-.vw-g-fav.pop svg{animation:coeurpop .42s cubic-bezier(.3,1.6,.5,1)}
 
 /* Un niveau de maîtrise gagné : un éclair traverse la carte. */
 .vw-card.vw-eclair::after{content:'';position:absolute;inset:-6%;z-index:9;pointer-events:none;border-radius:8%;

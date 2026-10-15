@@ -53,10 +53,10 @@ function tickPct() {
 /* ---------- Tirage ---------- */
 /* Les cases tirées au sort du paquet. Le reste est fixe.
    Ces tables doivent rester identiques à celles de open_pack() dans
-   supabase/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux ouvertures de
+   supabase/installation/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux ouvertures de
    test du Labo, mais deux tables divergentes rendraient le Labo menteur. */
 const RATES = {
-  /* Quatrième carte, la Reverse (version 2.0). */
+  /* Cinquième carte, la Reverse (version 2.0). */
   REVERSE: { C: 50, PC: 35, R: 15 },
   /* La dernière, celle qu'on attend. */
   /* Version 3.0 : la Légendaire passe à 4,25 %, la Secrète arrive à 0,75 %
@@ -399,25 +399,4 @@ function bindPack() {
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
-}
-
-function bindTilt(root) {
-  (root || document).querySelectorAll('.tilt').forEach(el => {
-    const set = (x, y) => {
-      el.style.setProperty('--rx', ((.5 - y) * 16).toFixed(2) + 'deg');
-      el.style.setProperty('--ry', ((x - .5) * 20).toFixed(2) + 'deg');
-      el.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
-      el.style.setProperty('--my', (y * 100).toFixed(1) + '%');
-      el.style.setProperty('--ga', '1');
-    };
-    el.addEventListener('pointermove', e => {
-      const r = el.getBoundingClientRect();
-      set((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
-    });
-    el.addEventListener('pointerleave', () => {
-      el.style.setProperty('--rx', '0deg');
-      el.style.setProperty('--ry', '0deg');
-      el.style.setProperty('--ga', '0');
-    });
-  });
 }

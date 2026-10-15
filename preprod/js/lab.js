@@ -1,6 +1,6 @@
 /* Onglet Labo : tout ce qu'on veut voir sans avoir à le mériter.
    Réservé aux administrateurs — il n'apparaît que si le serveur a marqué le
-   profil is_admin (voir supabase/05_admin.sql). Le cacher côté navigateur ne
+   profil is_admin (voir supabase/installation/05_admin.sql). Le cacher côté navigateur ne
    suffirait pas : c'est le serveur qui refuse les actions, pas l'interface qui
    les masque.
 
@@ -68,7 +68,7 @@ function vTest() {
       : ''}
     <p class="muted small" style="margin-top:12px">Pour les obtenir <b>pour de vrai</b> sur ton
       compte — et vérifier la détection, la boutique et les paliers — les requêtes sont
-      en bas de <code>supabase/03b_promos.sql</code>.</p>
+      en bas de <code>supabase/installation/03b_promos.sql</code>.</p>
   </section>
 
   ${vLabCadeau()}
@@ -107,7 +107,7 @@ function vTest() {
       <button class="btn ghost" data-act="t-v3-recap-pop">Fenêtre de fin</button>
       <button class="btn ghost" data-act="t-v3-recap-ban">Bandeau récap</button>
     </div>
-    <p class="muted small" style="margin-top:8px">L'événement s'ouvre côté serveur (supabase/25_choc.sql, en fin de fichier) ;
+    <p class="muted small" style="margin-top:8px">L'événement s'ouvre côté serveur (supabase/installation/25_choc.sql, en fin de fichier) ;
       la barre de vie du Raid se règle avec <code>update public.parametres set raid_echelle = 0.5 where id = 1;</code></p>
   </section>
 
@@ -174,8 +174,8 @@ function vTest() {
   <section class="panel">
     <h2>Équilibrage</h2>
     <p class="muted small">Les taux de tirage, le prix des articles et les objectifs des
-      quêtes vivent côté serveur, dans <code>supabase/04_seed.sql</code> et la fonction
-      <code>cfg()</code> de <code>supabase/01_schema.sql</code>. Les modifier là-bas, puis
+      quêtes vivent côté serveur, dans <code>supabase/installation/04_seed.sql</code> et la fonction
+      <code>cfg()</code> de <code>supabase/installation/01_schema.sql</code>. Les modifier là-bas, puis
       rejouer le fichier.</p>
     <div class="labfacts">
       ${fait('Cartes par booster', PACK_SIZE)}
@@ -368,7 +368,7 @@ function testRemplir(pct) {
 /* Des Éclats, des boosters, des Fragments, une carte, un mot : le joueur le
    trouve à sa visite suivante, dans un paquet à ouvrir (js/cadeaux.js). Le
    serveur vérifie que c'est bien un administrateur qui offre
-   (supabase/18_cadeaux.sql). La liste aide à doser : depuis quand chacun
+   (supabase/installation/18_cadeaux.sql). La liste aide à doser : depuis quand chacun
    joue, et combien de boosters le sépare de la médiane. */
 let labJoueurs = null;
 
@@ -475,7 +475,7 @@ function labOffrirCadeau() {
       <p class="muted small">À ${h(noms.join(', '))}.</p>
       ${c.message ? `<blockquote class="cdmot">${h(c.message)}</blockquote>` : ''}
       <p class="muted small">Il ne se reprend plus une fois ouvert. Avant, il se retire à la main
-        (en bas de <code>supabase/18_cadeaux.sql</code>).</p>`,
+        (en bas de <code>supabase/installation/18_cadeaux.sql</code>).</p>`,
     actions: [
       { label: 'Offrir', primary: true, fn: async () => {
         closeSheet();

@@ -50,7 +50,6 @@
 /* Symboles d'essence */
 .ess{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;object-fit:contain}
 .ess.dot{border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
-.ess.big{width:1.6em;height:1.6em}
 
 /* ============ Collection ============ */
 /* L'avancement en tête : le pourcentage en grand, la jauge en dessous. C'est la
@@ -101,7 +100,6 @@
    hors de portée dès que la fenêtre se resserrait. */
 .filcorps .chips,.filcorps .essrow{flex-wrap:wrap;overflow:visible;
   touch-action:auto;padding-bottom:0;row-gap:7px}
-.filtoggle{margin:14px 0 0}
 .filreset{display:block;margin:10px auto 0}
 
 /* Une puce de rareté porte sa couleur en pastille : l'échelle se lit sans
@@ -321,7 +319,7 @@ html.rm .card.rev::before,html.rm .card.rev::after,html.rm .card.rev .revlueur,h
   background:radial-gradient(ellipse 90% 60% at 50% 0%,color-mix(in srgb,var(--tc) 55%,transparent),transparent 70%),
     linear-gradient(170deg,#23222e,#14131b 70%)}
 .card.textuel::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
-  background:url('../assets/pack-star.svg?v=3.0.7') 50% 46%/58% no-repeat}
+  background:url('../assets/pack-star.svg?v=3.0.8') 50% 46%/58% no-repeat}
 .tx-tete{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:2cqi}
 .tx-tete b{font-family:var(--display);font-style:italic;font-weight:900;font-size:10.5cqi;line-height:1}
 .tx-tete i{font-style:normal;font-size:5.5cqi;opacity:.7}
