@@ -265,7 +265,7 @@ const TRADE_COOLDOWN_H = 6;
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
-  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Quelque chose se prépare' },
+  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Bientôt : la version 3.0' },
   /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, il prend la
      place de Combats dans la barre (navHTML, js/app.js). */
   { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets', online: true },
