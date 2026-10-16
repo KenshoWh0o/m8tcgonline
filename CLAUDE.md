@@ -4,7 +4,7 @@
 
 ## Règles du propriétaire (non négociables)
 
-1. **Rien sur le vrai site.** Sur `main`, seul le dossier `preprod/` peut changer. Aucun SQL 3.0 n'est joué sur la base Supabase de production. La branche de travail ne se fusionne jamais dans `main` (procédure de publication : README § 2.5).
+1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `preprod/` sur `main` ; aucun SQL 3.0 n'est joué sur la base Supabase de production ; la branche `version-3.0` ne se fusionne jamais dans `main` (procédure de publication : README § 2.5). Le vrai site (la 2.x), lui, peut évoluer quand le propriétaire le demande (README § 1.3).
 2. **Pas de pull request** sans demande explicite.
 3. **Français partout** : interface, commentaires, documentation, messages de commit, réponses.
 4. **Mode sombre uniquement.** La DA « Graphite et lavande » (README § 5) s'applique à tout écran nouveau ou retouché.

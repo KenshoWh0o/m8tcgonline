@@ -53,7 +53,7 @@ Autres documents : [`SETUP.md`](SETUP.md) (mettre un serveur Supabase en ligne, 
 
 ### 1.3 Les règles du propriétaire (non négociables)
 
-1. **Rien sur le vrai site.** Aucun fichier hors de `preprod/` ne change sur `main` ; aucun SQL 3.0 n'est joué sur la base de production.
+1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `preprod/` sur `main`, et aucun SQL 3.0 n'est joué sur la base de production. Le vrai site (la 2.x) peut, lui, évoluer à la demande du propriétaire : on travaille alors sur une branche partie de `main` (par exemple `teaser-2.x`), et on ne publie qu'après son accord.
 2. **Pas de pull request** sans demande explicite.
 3. **Français**, partout : interface, commentaires, documentation, messages de commit.
 4. **Mode sombre uniquement.** Il n'y a qu'un thème.
@@ -1276,7 +1276,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 **Production et branches**
 
-1. **Rien sur le vrai site** : aucun fichier hors `preprod/` sur `main`, aucun SQL 3.0 en production. **Ne jamais fusionner la branche dans `main`.**
+1. **Rien de la 3.0 sur le vrai site** : le travail 3.0 ne touche que `preprod/` sur `main`, aucun SQL 3.0 en production. **Ne jamais fusionner `version-3.0` dans `main`.** Une évolution de la 2.x se fait sur une branche partie de `main`, publiée seulement avec l'accord du propriétaire.
 2. La racine de la branche parle au **vrai** Supabase (clés réelles dans `js/supabase-config.js`) : on n'y voit que « Projet annulé ». La 3.0 se teste dans `/preprod/` ([§ 2.1](#21-servir-le-site-en-local)).
 3. La branche `main` locale peut être en retard : toujours comparer avec `origin/main` après un `fetch`.
 4. `preprod/` est **construit** : on modifie `js/`, `css/`, `_demo/`, puis `python3 tools/demo.py --preprod`. Une retouche faite dans `preprod/` est écrasée à la prochaine construction.
