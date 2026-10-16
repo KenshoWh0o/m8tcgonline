@@ -41,6 +41,14 @@
 .pack-foil{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.5;
   background:linear-gradient(112deg,transparent 33%,rgba(255,255,255,.55) 48%,transparent 63%);background-size:280% 100%;
   background-position:var(--fx,50%) 0}
+/* Version 2.1.3, un teaser : de temps en temps, un éclat lavande (la
+   couleur de la version suivante) traverse le paquet, découpé à sa forme. */
+.pack-eclat{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(112deg,transparent 40%,rgba(200,191,255,.75) 50%,transparent 60%) 140% 0/300% 100% no-repeat;
+  -webkit-mask:var(--art) center/contain no-repeat;mask:var(--art) center/contain no-repeat;animation:pack-eclat 11s ease-in-out 3s infinite}
+@keyframes pack-eclat{0%,82%{background-position:140% 0}100%{background-position:-40% 0}}
+html.rm .pack-eclat{display:none}
+@media (prefers-reduced-motion:reduce){.pack-eclat{display:none}}
 /* Paquet ouvrable : un halo respire derrière lui, le geste est évident sans ligne d'explication. */
 .pack.ready::after{content:'';position:absolute;inset:-8% -10%;border-radius:22px;pointer-events:none;
   background:radial-gradient(closest-side,var(--accent-glow),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}

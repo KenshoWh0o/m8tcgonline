@@ -1,21 +1,18 @@
-/* Onglet Combats. Les règles ne sont pas écrites : la page annonce la couleur
-   et ne promet rien d'autre. Elle réutilise les vraies cartes pour la mise en scène. */
+/* Onglet Combats. Version 2.1.3 : un teaser, sans rien d'explicite. On ne
+   promet ni date ni règle : on laisse entrevoir une arène dans l'ombre, et
+   une lumière qui n'est pas celle du reste du site (le graphite et la
+   lavande de la version suivante). Trois places attendent leurs cartes. */
 "use strict";
 
 function vCombats() {
-  const vedettes = cards
-    .filter(c => c.cat === 'joueur' && (c.rar === 'L' || c.rar === 'E'))
-    .slice(0, 3);
-
   return `<div class="pagehead"><div><h1>Combats</h1></div></div>
-    <section class="soon">
-      <div class="soonart" aria-hidden="true">
-        ${vedettes.map((c, i) => `<div class="soondeck d${i}">${renderCard(c)}</div>`).join('')}
+    <section class="teaser" aria-label="Bientôt">
+      <div class="tz-scene" aria-hidden="true">
+        <div class="tz-ombre" style="background-image:url('assets/combat/arene-ombre.webp')"></div>
+        <i class="tz-trait"></i>
+        <div class="tz-places"><i></i><i></i><i></i></div>
       </div>
-      <span class="soontag">Bientôt disponible</span>
-      <h2 class="soontitle">Coming soon</h2>
-      <p class="muted">Le mode combat arrivera dans une prochaine mise à jour,
-        lorsque les règles seront connues.</p>
-      <p class="muted small">En attendant, remplis ta collection : elle servira de deck.</p>
+      <p class="tz-mot">Prépare ton deck.</p>
+      <p class="tz-sous">Ta collection ne fait que commencer.</p>
     </section>`;
 }

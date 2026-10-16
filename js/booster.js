@@ -260,6 +260,7 @@ function vBoosters() {
       <div class="pack${can ? ' ready' : ''}" id="pack" role="button" tabindex="0" aria-label="Ouvrir un booster">
         <img class="pack-art" src="${packArt}" alt="">
         <div class="pack-foil" aria-hidden="true"></div>
+        <div class="pack-eclat" aria-hidden="true" style="--art:url('${new URL(packArt, document.baseURI).href}')"></div>
       </div>
     </div>
     <div class="packshadow" aria-hidden="true"></div>
