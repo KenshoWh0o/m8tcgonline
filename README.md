@@ -125,6 +125,7 @@ mate-tcg-online/
 │   ├── bienvenue.js    Fenêtres d'accueil et lien vers le Discord
 │   ├── pwa.js          Ajout à l'écran d'accueil, service worker
 │   ├── lab.js          Onglet Labo (administrateurs)
+│   ├── signal.js       Teaser de la 3.0 : la capsule « Signal capté » (2.1.3, à retirer à la sortie)
 │   ├── cadeaux.js      Les cadeaux : le paquet à ouvrir
 │   └── app.js          Navigation, clics, démarrage (chargé en dernier)
 ```
@@ -451,6 +452,17 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 **Échanges · Chez tes amis** : les cartes qui te manquent et qu'un ami a en double (`amis_doublons()`), une pression sur l'ami prépare la demande.
 
 **Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
+
+## Version 2.1.3 · le signal (teaser de la 3.0)
+
+Un teaser de la version suivante, sans rien d'explicite : ni date, ni numéro, ni mot « combat » (`js/signal.js`, styles `.sg-*` en fin de `css/hub.css`, images `assets/signal/`).
+
+- **Quand** : une visite sur deux, entre 8 et 25 s après l'arrivée, une capsule « Signal capté » apparaît sous l'en-tête et repart au bout de 12 s. Jamais sur l'écran d'attente ni sur la porte de connexion, jamais par-dessus une feuille, une ouverture de booster, une scène de Promo ou une quête accomplie ; si l'une d'elles s'ouvre pendant que la capsule est là, la capsule s'efface et revient une fois la place libre (trois fois au plus par visite).
+- **Ce qu'elle montre** : la toucher ouvre un « signal » — une vraie capture de la 3.0 qui arrive brouillée, puis nette — et une phrase : la nouvelle interface (« Une autre lumière. »), un combat (« Trois lignes. Cinq vies. »), une Secrète floutée (« Au-delà de 122. »), une carte maîtrisée (« Certaines cartes s'en souviendront. »), les deux camps de l'événement (« Deux camps. Bientôt. »). Toucher n'importe où, ou Échap, referme.
+- **Rythme** : un signal par jour au plus, cinq en tout, dans le même ordre pour tous ; une fois les cinq vus, il se tait. Une capsule ratée ne compte pas.
+- **Rien ne passe par le serveur** : ce qui a été vu reste sur l'appareil (`localStorage`, clé `mtcg.signal`). Changer d'appareil recommence la série.
+- **Pour essayer** : `?signal` dans l'adresse fait venir la capsule tout de suite (après les fenêtres d'arrivée).
+- **À la sortie de la 3.0** : retirer `js/signal.js` (et sa ligne dans `index.html` et `sw.js`), les styles `.sg-*` et `assets/signal/`.
 
 ## Succès, historique et partage
 

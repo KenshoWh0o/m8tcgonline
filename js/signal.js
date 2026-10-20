@@ -33,15 +33,17 @@ function signalNoter(e) {
 }
 const signalJour = () => new Date().toISOString().slice(0, 10);
 
-/* Le signal ne se montre jamais par-dessus une ouverture de booster, une
-   feuille ou une scène de Promo. */
+/* Le signal ne se montre que dans le jeu (ni sur l'écran d'attente, ni sur
+   la porte de connexion), et jamais par-dessus une ouverture de booster, une
+   feuille, une scène de Promo ou une quête accomplie (même place à l'écran). */
 function signalLibre() {
   const sheet = document.getElementById('sheet');
-  return !document.body.classList.contains('intheater') && !(sheet && !sheet.hidden)
-    && !(typeof promoEnCours !== 'undefined' && promoEnCours) && !document.querySelector('.sg-voile');
+  const cl = document.body.classList;
+  return !cl.contains('intheater') && !cl.contains('inlock') && !cl.contains('inauth') && !(sheet && !sheet.hidden)
+    && !(typeof promoEnCours !== 'undefined' && promoEnCours) && !document.querySelector('.sg-voile, .qn');
 }
 
-function signalCapsule(e) {
+function signalCapsule(e, reprendre) {
   const b = document.createElement('button');
   b.className = 'sg-capsule';
   b.setAttribute('aria-label', 'Signal capté');
@@ -49,9 +51,18 @@ function signalCapsule(e) {
   document.body.appendChild(b);
   requestAnimationFrame(() => b.classList.add('on'));
   if (typeof SFX === 'object' && SFX.jouer) SFX.jouer('tap');
-  /* Il ne reste pas : qui le rate le reverra peut-être un autre jour. */
-  const perdu = setTimeout(() => { b.classList.add('perdu'); setTimeout(() => b.remove(), 700); }, 12000);
-  b.onclick = () => { clearTimeout(perdu); b.remove(); signalOuvrir(e); };
+  /* Il ne reste pas : qui le rate le reverra peut-être un autre jour. Une
+     feuille ou une quête qui s'ouvre pendant qu'il est là le coupe (sinon il
+     resterait caché dessous) : il revient une fois la place libre. Un signal
+     perdu ne compte pas. */
+  const perdre = (coupe) => {
+    clearTimeout(perdu); clearInterval(veille);
+    b.classList.add('perdu'); setTimeout(() => b.remove(), 700);
+    if (coupe && reprendre) reprendre();
+  };
+  const perdu = setTimeout(perdre, 12000);
+  const veille = setInterval(() => { if (!signalLibre()) perdre(true); }, 400);
+  b.onclick = () => { clearTimeout(perdu); clearInterval(veille); b.remove(); signalOuvrir(e); };
 }
 
 function signalOuvrir(e) {
@@ -61,9 +72,9 @@ function signalOuvrir(e) {
   const v = document.createElement('div');
   v.className = 'sg-voile';
   v.setAttribute('role', 'dialog');
-  v.setAttribute('aria-label', 'Fragment ' + e.vus + ' sur ' + SIGNAUX.length);
+  v.setAttribute('aria-label', 'Signal ' + e.vus + ' sur ' + SIGNAUX.length);
   v.innerHTML = `<div class="sg-in">
-      <small class="sg-num">Fragment ${e.vus} / ${SIGNAUX.length}</small>
+      <small class="sg-num">Signal ${e.vus} / ${SIGNAUX.length}</small>
       <div class="sg-fen${s.carte ? ' carte' : ''}"><img src="${s.img}" alt=""><i class="sg-lignes"></i><i class="sg-balaye"></i></div>
       <p class="sg-mot">${s.mot}</p>
       <div class="sg-suite" aria-hidden="true">${SIGNAUX.map((x, i) => `<i class="${i < e.vus ? 'vu' : ''}${i === n ? ' ici' : ''}"></i>`).join('')}</div>
@@ -71,7 +82,10 @@ function signalOuvrir(e) {
     </div>`;
   document.body.appendChild(v);
   requestAnimationFrame(() => v.classList.add('on'));
-  v.onclick = () => { v.classList.remove('on'); setTimeout(() => v.remove(), 300); };
+  const fermer = () => { document.removeEventListener('keydown', echap); v.classList.remove('on'); setTimeout(() => v.remove(), 300); };
+  const echap = ev => { if (ev.key === 'Escape') fermer(); };
+  v.onclick = fermer;
+  document.addEventListener('keydown', echap);
 }
 
 /* Au démarrage : faut-il émettre aujourd'hui ? */
@@ -79,8 +93,14 @@ function signalOuvrir(e) {
   const force = /[?&]signal\b/.test(location.search);
   const e = signalEtat();
   if (!force && (e.vus >= SIGNAUX.length || e.jour === signalJour() || Math.random() >= SIGNAL_CHANCE)) return;
+  /* Une place libre est attendue une minute ; coupé trois fois, il renonce
+     pour cette visite. */
+  let coupures = 0;
   const tenter = (essais) => {
-    if (signalLibre() && document.querySelector('#main')) return signalCapsule(force && e.vus >= SIGNAUX.length ? { vus: 0, jour: '' } : e);
+    if (signalLibre() && document.querySelector('#main')) {
+      return signalCapsule(force && e.vus >= SIGNAUX.length ? { vus: 0, jour: '' } : e,
+        () => { if (++coupures < 3) setTimeout(() => tenter(15), 4000); });
+    }
     if (essais > 0) setTimeout(() => tenter(essais - 1), 4000);
   };
   setTimeout(() => tenter(15), force ? 1500 : 8000 + Math.random() * 17000);
