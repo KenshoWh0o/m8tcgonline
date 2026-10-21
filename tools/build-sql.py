@@ -86,6 +86,17 @@ fin = """
 sortie = os.path.join(SB, 'TOUT.sql')
 open(sortie, 'w', encoding='utf-8').write(entete + ''.join(bloc) + fin)
 
+# La mise a jour de la 2.1.4, d'un bloc, pour une base deja installee :
+# L'Echauffement, puis son calendrier.
+maj = os.path.join(SB, 'MAJ-2.1.4.sql')
+open(maj, 'w', encoding='utf-8').write(
+    "-- Mate TCG Online — mise a jour 2.1.4, assemblee par tools/build-sql.py le %s.\n"
+    "-- A coller d'un bloc dans Supabase > SQL Editor, AVANT vendredi 23 octobre midi.\n"
+    "-- Ne pas editer : editer 22b_echauffement.sql et calendrier-2.1.4.sql.\n\n" % datetime.date.today().isoformat()
+    + open(os.path.join(SB, '22b_echauffement.sql'), encoding='utf-8').read() + '\n\n'
+    + open(os.path.join(SB, 'calendrier-2.1.4.sql'), encoding='utf-8').read())
+print('supabase/MAJ-2.1.4.sql assemble.')
+
 n = sum(1 for _ in open(sortie, encoding='utf-8'))
 print('supabase/TOUT.sql assemble : %d lignes, %.0f Ko' % (n, os.path.getsize(sortie) / 1024))
 print('A coller d\'un bloc dans Supabase > SQL Editor.')

@@ -1205,8 +1205,11 @@
   };
   /* ---------- L'Échauffement (22b_echauffement.sql) ---------- */
   /* Sept défis, un par jour, après Reflets. Le combat est le même que
-     ech_simuler, à la ligne près. `?echauffement` dans l'adresse ouvre la
-     saison tout de suite, trois défis ouverts (pour essayer). */
+     ech_simuler, à la ligne près. Pour essayer : `?echauffement` dans
+     l'adresse ouvre la saison tout de suite avec trois défis ouverts,
+     `?echauffement=7` les sept ; Reflets est alors fini, et le visiteur
+     reçoit des Joueurs s'il en a moins de neuf. Le prébuild
+     (tools/demo.py --prebuild) pose DEMO_ECHAUFFEMENT pour l'ouvrir d'office. */
   const ECH_DEFIS = [
     { jour: 1, adversaire: 'c010', pv: 800, regle: 'aucune', param: {}, titre: 'Premier contact', texte: 'Pas de règle aujourd\'hui : fais connaissance.' },
     { jour: 2, adversaire: 'c044', pv: 1200, regle: 'carapace', param: { seuil: 100 }, titre: 'Carapace', texte: 'Il ignore les coups de moins de 100.' },
@@ -1217,6 +1220,17 @@
     { jour: 7, adversaire: 'c116', pv: 1100, regle: 'final', param: { seuil: 80, plus: 20 }, titre: 'Le dernier défi', texte: 'Il ignore les coups de moins de 80, et les siens gagnent 20 à chaque fois.' }
   ];
   const ECH_PRIX = [80, 80, 140];
+  /* ech_indices : trois étoiles au défi n, l'indice n ; les sept, le jour 0. */
+  const ECH_INDICES = [
+    { jour: 0, titre: 'Tout est prêt', texte: 'Rendez-vous quand tu auras les cartes en main.', visuel: { type: 'mot', valeur: 'Bientôt' } },
+    { jour: 1, titre: 'Trente', texte: 'Trente cartes. Pas une de plus.', visuel: { type: 'nombre', valeur: '30' } },
+    { jour: 2, titre: 'Trois et cinq', texte: 'Trois lignes à tenir. Cinq vies à défendre.', visuel: { type: 'nombre', valeur: '3·5' } },
+    { jour: 3, titre: 'Cent vingt-trois', texte: 'La collection ne s\'arrête pas à 122.', visuel: { type: 'nombre', valeur: '123' } },
+    { jour: 4, titre: 'Deux', texte: 'Deux camps. Il faudra choisir le tien.', visuel: { type: 'mot', valeur: 'Deux' } },
+    { jour: 5, titre: 'Plus loin', texte: 'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.', visuel: { type: 'etoiles', valeur: 5 } },
+    { jour: 6, titre: 'Face à face', texte: 'Un jour, ce sera contre tes amis.', visuel: { type: 'mot', valeur: 'VS' } },
+    { jour: 7, titre: 'Il reviendra', texte: 'Et la prochaine fois, vous l\'affronterez tous ensemble.', visuel: { type: 'carte', carte: 'c116' } }
+  ];
   /* ech_joueurs : la Défense, la couleur et les attaques à dégâts d'un Joueur. */
   function echStats(id) {
     const k = carte(id);
@@ -1229,8 +1243,18 @@
       const d = Math.max(now(), r);
       S.ech = { debut: d, fin: d + 9 * 86400000, scores: {}, paliers: {} };
     }
-    if (/[?&]echauffement\b/.test(location.search) && !S.ech.force) {
-      S.ech.debut = now() - 2 * 86400000 - 3600000; S.ech.fin = now() + 7 * 86400000; S.ech.force = true;
+    const m = location.search.match(/[?&]echauffement(?:=(\d))?/);
+    const f = m ? Math.min(7, Math.max(1, +(m[1] || 3))) : (typeof DEMO_ECHAUFFEMENT === 'number' ? DEMO_ECHAUFFEMENT : 0);
+    if (f && S.ech.force !== f) {
+      S.ech.debut = now() - (f - 1) * 86400000 - 3600000; S.ech.fin = S.ech.debut + 9 * 86400000; S.ech.force = f;
+      /* Reflets et son récap sont finis. */
+      if (S.evenement && S.evenement.code === 'reflets' && S.evenement.fin > now() - 3 * 86400000) {
+        S.evenement.fin = now() - 3 * 86400000 - 3600000; S.evenement.debut = Math.min(S.evenement.debut, S.evenement.fin - 14 * 86400000);
+      }
+      /* De quoi composer des équipes : deux tiers des Joueurs. */
+      const col = colDe(MOI);
+      const js = cards.filter(c => c.cat === 'joueur' && !c.promo);
+      if (js.filter(c => col[c.id] > 0).length < 9) js.forEach((c, i) => { if (i % 3 !== 2 && !(col[c.id] > 0)) col[c.id] = 1; });
     }
     return S.ech;
   }
@@ -1281,7 +1305,9 @@
       defis: ECH_DEFIS.filter(d => d.jour <= o).map(d => Object.assign({}, d, { etoiles: sc(d.jour) ? sc(d.jour).etoiles : 0, equipe: sc(d.jour) ? sc(d.jour).equipe : null, essais: sc(d.jour) ? sc(d.jour).essais : 0 })),
       etoiles: ECH_DEFIS.reduce((n, d) => n + (sc(d.jour) ? sc(d.jour).etoiles : 0), 0),
       gagnes: ECH_DEFIS.filter(d => sc(d.jour) && sc(d.jour).etoiles > 0).length,
-      paliers: Object.keys(s.paliers[p] || {})
+      paliers: Object.keys(s.paliers[p] || {}),
+      indices: ECH_INDICES.filter(x => (x.jour > 0 && sc(x.jour) && sc(x.jour).etoiles === 3)
+        || (x.jour === 0 && ECH_DEFIS.every(d => sc(d.jour) && sc(d.jour).etoiles === 3)))
     };
   }
   RPC.ech_etat = p => echEtat(p);
@@ -1319,7 +1345,8 @@
     const notes = ECH_DEFIS.map(d => (s.scores[p + '|' + d.jour] || {}).etoiles || 0);
     if (notes.filter(x => x > 0).length === 7 && !pal.sept) { pal.sept = true; gain.boosters = 3; accorder(p, 'boosters', 3, null); }
     if (notes.reduce((x, y) => x + y, 0) === 21 && !pal.parfait) { pal.parfait = true; gain.titre = 't_echauffe'; accorder(p, 'titre', 0, 't_echauffe'); }
-    return { resultat: r, avant, gain, etat: echEtat(p), me: me(p) };
+    const indice = r.etoiles === 3 && avant < 3 ? ECH_INDICES.find(x => x.jour === p_jour) : null;
+    return { resultat: r, avant, gain, indice, etat: echEtat(p), me: me(p) };
   };
   RPC.personnaliser = (p, { p_titre, p_banniere, p_devise }) => {
     const pr = profil(p);
@@ -1553,6 +1580,8 @@
         S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
         chasseTerminee();
         monde20();
+        /* L'Échauffement : en mode essai, la saison s'ouvre dès le chargement. */
+        echSaison();
       })();
     }
     return pret;

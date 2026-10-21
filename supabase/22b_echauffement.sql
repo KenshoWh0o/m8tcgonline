@@ -25,6 +25,14 @@
 --  defi (300 par defi, 2 100 en tout) ; 3 boosters quand les sept defis sont
 --  gagnes ; le titre « Echauffe » pour les 21 etoiles.
 --
+--  LES INDICES : trois etoiles au defi n debloquent l'indice n — une phrase
+--  sur ce qui vient, sans rien montrer. Leur texte n'est que dans la base
+--  (ech_indices) : le navigateur ne le recoit qu'une fois l'indice gagne.
+--
+--  LE CALENDRIER : la saison commence a la fin du recap de Reflets. Les
+--  dates exactes de 2026 sont posees par calendrier-2.1.4.sql (a jouer une
+--  fois, apres ce fichier).
+--
 --  L'EQUILIBRAGE (simulation sur les 51 Joueurs, toutes les equipes) : chaque
 --  defi a une equipe a trois etoiles ; une collection aux deux tiers les
 --  trouve presque toujours, une collection au tiers gagne presque toujours.
@@ -36,8 +44,64 @@
 --  Les noms commencent tous par `ech_` : la version 3.0 a deja ses `defis`.
 -- =====================================================================
 
--- La saison : une seule ligne. Elle commence a la fin de Reflets (ou tout de
--- suite si Reflets est deja fini) et dure neuf jours : un defi de plus
+-- ------------------------------------------------ la fin du recap, reglable
+-- Jusqu'ici, le recap d'un evenement durait trois jours apres sa fin, en dur
+-- (21_reflets.sql). `recap_jusqua` permet de le fixer ; vide, rien ne change.
+-- Les deux fonctions sont redefinies ici, a l'identique sauf cette date.
+alter table public.evenements add column if not exists recap_jusqua timestamptz;
+
+create or replace function public.evenement_recent() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
+                            'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'))
+    from evenements e
+   where e.code is not null and now() >= e.fin and now() < coalesce(e.recap_jusqua, e.fin + interval '3 days')
+     and evenement_en_cours() is null
+   order by e.fin desc limit 1;
+$$;
+
+create or replace function public.evenement_recap() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); e evenements; cpt evt_comptes; rang int; nb int;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into e from evenements
+   where code is not null and now() >= fin and now() < coalesce(recap_jusqua, fin + interval '3 days')
+   order by fin desc limit 1;
+  if not found then return 'null'::jsonb; end if;
+  select * into cpt from evt_comptes where user_id = p and evenement = e.code;
+  select count(*) + 1 into rang from evt_comptes
+   where evenement = e.code and total > coalesce(cpt.total, 0);
+  select count(*) into nb from evt_comptes where evenement = e.code and total > 0;
+  return jsonb_build_object(
+    'code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
+    'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'),
+    'total', coalesce(cpt.total, 0),
+    'paliers', (select count(*) from evt_piste pa where pa.evenement = e.code and pa.seuil <= coalesce(cpt.total, 0)),
+    'paliers_max', (select count(*) from evt_piste pa where pa.evenement = e.code),
+    'pris', (select count(*) from evt_piste_prises x where x.user_id = p and x.evenement = e.code),
+    'illus', (select count(*) from devine_illu d where d.user_id = p and d.trouve
+               and d.jour between (e.debut at time zone 'Europe/Paris')::date and (e.fin at time zone 'Europe/Paris')::date),
+    'reverses', (select count(*) from collection c join cards k on k.id = c.card_id
+                  where c.user_id = p and c.qty > 0 and k.reverse),
+    'reverses_max', (select count(*) from cards where reverse),
+    'quetes', (select count(*) from quest_progress qp join quests q on q.id = qp.quest_id
+                where qp.user_id = p and qp.claimed and q.evenement = e.code),
+    'rang', case when coalesce(cpt.total, 0) > 0 then rang end,
+    'joueurs', nb,
+    'top', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
+             order by c.total desc, lower(pr.pseudo))
+        from (select * from evt_comptes where evenement = e.code and total > 0
+               order by total desc limit 3) c
+        join profiles pr on pr.id = c.user_id), '[]'::jsonb));
+end $$;
+
+-- La saison : une seule ligne. Elle commence a la fin du recap de Reflets
+-- (ou tout de suite s'il est deja fini) et dure neuf jours : un defi de plus
 -- chaque jour pendant sept jours, puis deux jours pour rattraper.
 --   Avancer ou reculer :  update public.ech_saison set debut = ..., fin = ... where id = 1;
 create table if not exists public.ech_saison (
@@ -47,7 +111,8 @@ create table if not exists public.ech_saison (
 );
 insert into public.ech_saison (id, debut, fin)
 select 1, d, d + interval '9 days'
-  from (select greatest(now(), coalesce((select max(fin) from public.evenements where code = 'reflets'), now())) as d) x
+  from (select greatest(now(), coalesce((select max(coalesce(recap_jusqua, fin + interval '3 days'))
+                                           from public.evenements where code = 'reflets'), now())) as d) x
 on conflict (id) do nothing;
 
 -- Les Joueurs et leurs valeurs imprimees (genere depuis js/cards-data.js).
@@ -133,6 +198,26 @@ insert into public.ech_defis (jour, adversaire, pv, regle, param, titre, texte) 
 on conflict (jour) do update set adversaire = excluded.adversaire, pv = excluded.pv, regle = excluded.regle,
   param = excluded.param, titre = excluded.titre, texte = excluded.texte;
 
+-- Les indices : un par defi, gagne avec ses trois etoiles. `visuel` dit
+-- comment l'afficher : un nombre, un mot, des etoiles. Le dernier message
+-- (jour 0) vient quand les sept sont gagnes.
+create table if not exists public.ech_indices (
+  jour   integer primary key check (jour between 0 and 7),
+  titre  text not null,
+  texte  text not null,
+  visuel jsonb not null default '{}'
+);
+insert into public.ech_indices (jour, titre, texte, visuel) values
+  (1, 'Trente',           'Trente cartes. Pas une de plus.',                                      '{"type": "nombre", "valeur": "30"}'),
+  (2, 'Trois et cinq',    'Trois lignes à tenir. Cinq vies à défendre.',                          '{"type": "nombre", "valeur": "3·5"}'),
+  (3, 'Cent vingt-trois', 'La collection ne s''arrête pas à 122.',                                '{"type": "nombre", "valeur": "123"}'),
+  (4, 'Deux',             'Deux camps. Il faudra choisir le tien.',                               '{"type": "mot", "valeur": "Deux"}'),
+  (5, 'Plus loin',        'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.',   '{"type": "etoiles", "valeur": 5}'),
+  (6, 'Face à face',      'Un jour, ce sera contre tes amis.',                                    '{"type": "mot", "valeur": "VS"}'),
+  (7, 'Il reviendra',     'Et la prochaine fois, vous l''affronterez tous ensemble.',             '{"type": "carte", "carte": "c116"}'),
+  (0, 'Tout est prêt',    'Rendez-vous quand tu auras les cartes en main.',                       '{"type": "mot", "valeur": "Bientôt"}')
+on conflict (jour) do update set titre = excluded.titre, texte = excluded.texte, visuel = excluded.visuel;
+
 -- La meilleure note de chaque joueur, defi par defi.
 create table if not exists public.ech_scores (
   user_id uuid not null references public.profiles on delete cascade,
@@ -156,8 +241,9 @@ alter table public.ech_joueurs enable row level security;
 alter table public.ech_defis   enable row level security;
 alter table public.ech_scores  enable row level security;
 alter table public.ech_paliers enable row level security;
-revoke all on public.ech_saison, public.ech_joueurs, public.ech_defis, public.ech_scores, public.ech_paliers
-  from anon, authenticated;
+alter table public.ech_indices enable row level security;
+revoke all on public.ech_saison, public.ech_joueurs, public.ech_defis, public.ech_scores, public.ech_paliers,
+  public.ech_indices from anon, authenticated;
 
 -- Le dernier defi ouvert : 0 avant le debut, 1 le premier jour, 7 au plus.
 create or replace function public.ech_jour_ouvert() returns integer
@@ -278,7 +364,13 @@ language sql stable security definer set search_path = public as $$
        where d.jour <= ech_jour_ouvert()), '[]'::jsonb),
     'etoiles', coalesce((select sum(etoiles) from ech_scores where user_id = p), 0),
     'gagnes', (select count(*) from ech_scores where user_id = p and etoiles > 0),
-    'paliers', coalesce((select jsonb_agg(palier) from ech_paliers where user_id = p), '[]'::jsonb))
+    'paliers', coalesce((select jsonb_agg(palier) from ech_paliers where user_id = p), '[]'::jsonb),
+    -- Seulement ceux qu'on a gagnes : le texte des autres ne sort pas de la base.
+    'indices', coalesce((
+      select jsonb_agg(jsonb_build_object('jour', i.jour, 'titre', i.titre, 'texte', i.texte, 'visuel', i.visuel) order by i.jour)
+        from ech_indices i
+       where (i.jour > 0 and exists (select 1 from ech_scores sc where sc.user_id = p and sc.jour = i.jour and sc.etoiles = 3))
+          or (i.jour = 0 and (select count(*) from ech_scores sc where sc.user_id = p and sc.etoiles = 3) = 7)), '[]'::jsonb))
   from ech_saison s where s.id = 1
 $$;
 
@@ -298,7 +390,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); s ech_saison; e jsonb; cid text; nb int; vus text[] := '{}';
   propre jsonb := '[]'; a int; natt int; r jsonb; avant int; nouv int; k int;
-  eclats int := 0; boosters int := 0; titre text := null;
+  eclats int := 0; boosters int := 0; titre text := null; indice jsonb := null;
   prix int[] := array[80, 80, 140];
 begin
   if p is null then raise exception 'non connecte'; end if;
@@ -350,6 +442,12 @@ begin
     on conflict (user_id, jour) do update set essais = ech_scores.essais + 1;
   end if;
 
+  -- Un indice : les trois etoiles, pour la premiere fois.
+  if nouv = 3 and avant < 3 then
+    select jsonb_build_object('jour', i.jour, 'titre', i.titre, 'texte', i.texte, 'visuel', i.visuel) into indice
+      from ech_indices i where i.jour = p_jour;
+  end if;
+
   -- Les paliers.
   if (select count(*) from ech_scores where user_id = p and etoiles > 0) = 7 then
     insert into ech_paliers (user_id, palier) values (p, 'sept') on conflict do nothing;
@@ -362,6 +460,7 @@ begin
 
   return jsonb_build_object('resultat', r, 'avant', avant,
     'gain', jsonb_build_object('eclats', eclats, 'boosters', boosters, 'titre', titre),
+    'indice', indice,
     'etat', ech_etat_de(p), 'me', me());
 end $$;
 

@@ -1,0 +1,188 @@
+/* Jetons de design : couleurs, typos, rythme, profondeur. Tout part d'ici.
+
+   Un seul thème, sombre : c'est là que les cartes brillent. Le thème clair a
+   été retiré en version 2.0. Aucune couleur n'est écrite en dur ailleurs quand
+   un jeton existe : changer une teinte se fait ici. */
+
+/* ============ Le thème ============ */
+:root{
+  box-sizing:border-box;
+  color-scheme:dark;
+
+  /* --- Fonds : noir teinté prune, pour s'accorder au rose sans virer au gris froid --- */
+  --bg:#0b0810;
+  --bg-2:#120e19;
+  --surface:#181320;
+  --surface-2:#211a2c;
+  --surface-3:#2a2137;
+  /* Le voile posé sur les barres fixes : la page défile dessous sans la traverser. */
+  --veil:rgba(11,8,16,.86);
+  --veil-2:rgba(18,14,25,.94);
+  --scrim:rgba(5,3,8,.72);
+
+  --line:#2e2539;
+  --line-2:#3f3450;
+  --line-3:#554566;
+
+  /* --- Texte --- */
+  --text:#f4eef7;
+  --subtle:#bcb0c6;
+  --muted:#8a7f96;
+  /* Ce qui se pose sur un aplat de la couleur d'action. */
+  --on-accent:#fff;
+
+  /* --- Marque : l'orchidée et le rose du logo ne servent qu'aux halos et au
+     lettrage. Toute l'interface est en violet, pour ne garder qu'une couleur
+     active. --- */
+  --brand:#df6de8;
+  --brand-light:#ffd7f0;
+  --brand-deep:#7b0c84;
+  --brand-ink:#1a0a1e;
+  --accent:#8936ff;
+  --accent-soft:#a95cf2;
+  --accent-deep:#57189e;
+  /* Le violet dilué : fonds de pastilles, halos, lignes sélectionnées. */
+  --accent-wash:rgba(137,54,255,.18);
+  --accent-wash-2:rgba(137,54,255,.30);
+  --accent-glow:rgba(169,92,242,.42);
+
+  /* --- Signaux --- */
+  --ok:#55e6a6;
+  --ok-deep:#3fbf8c;
+  --ok-wash:rgba(85,230,166,.15);
+  --ok-line:rgba(85,230,166,.42);
+  --warn:#ffc73b;
+  --danger:#ff4d8d;
+  --danger-wash:rgba(238,0,115,.13);
+  --danger-line:rgba(238,0,115,.42);
+
+  /* --- Raretés --- */
+  --r-es:#90b2a5;
+  --r-c:#9d93a8;
+  --r-pc:#7bd6b4;
+  --r-r:#39b8ff;
+  --r-e:#a05cff;
+  --r-l:#ffc73b;
+  --r-pr:#ff5bb0;
+
+  /* --- Profondeur : cinq niveaux, jamais une ombre inventée sur place --- */
+  --sh-1:0 1px 2px rgba(0,0,0,.34);
+  --sh-2:0 3px 10px rgba(0,0,0,.4);
+  --sh-3:0 10px 26px rgba(0,0,0,.46);
+  --sh-4:0 20px 48px rgba(0,0,0,.55);
+  /* Le rebord plein sous les boutons pressables. */
+  --sh-press:#100c15;
+  /* Le reflet haut qui donne du relief aux surfaces bombées. */
+  --gloss:rgba(255,255,255,.4);
+  --gloss-soft:rgba(255,255,255,.16);
+  /* Le survol : un voile clair sur fond sombre. */
+  --hover:rgba(255,255,255,.055);
+  --hover-2:rgba(255,255,255,.1);
+
+  /* --- Typo --- */
+  --display:'Archivo','Arial Black',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+
+  /* --- Rayons : une seule échelle, du jeton au panneau --- */
+  --radius-xs:8px;
+  --radius-sm:12px;
+  --radius:16px;
+  --radius-lg:22px;
+
+  /* --- Rythme vertical : les marges entre blocs sortent d'ici --- */
+  --gap-1:6px;
+  --gap-2:10px;
+  --gap-3:14px;
+  --gap-4:20px;
+  --gap-5:28px;
+}
+
+/* ============ Réinitialisation ============ */
+*,*::before,*::after{box-sizing:inherit}
+
+/* La page elle-meme ne defile jamais : seule la zone de contenu le fait. Sans
+   ces trois lignes, un doigt qui glisse sur l'en-tete ou sur la barre du bas
+   fait rebondir tout l'ecran et decouvre le fond nu derriere — le genre de
+   detail qui trahit une page web deguisee en application.
+
+   `overscroll-behavior:none` coupe aussi le « tirer pour recharger » d'Android
+   et l'elastique d'iOS jusque dans la zone de contenu, qui a par ailleurs son
+   propre `overscroll-behavior:contain`. */
+html{height:100%;overflow:hidden;overscroll-behavior:none;
+  scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+
+/* `dvh` mesure l'écran entier, encoches comprises. `height:100%` ne le fait pas
+   toujours quand l'app tourne depuis l'écran d'accueil : la page s'arrêtait avant
+   le bas, d'où la bande vide sous la barre. La règle en pourcentage reste en
+   premier comme repli pour les navigateurs qui ignorent `dvh`. */
+body{position:relative;height:100%;height:100dvh;margin:0;display:flex;flex-direction:column;
+  overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+  color:var(--text);font-family:var(--body);font-size:15px;line-height:1.45;
+  -webkit-tap-highlight-color:transparent;background:var(--bg);isolation:isolate;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+/* Dans l'app installée, la hauteur mesurée par js/cadrage.js. */
+html.cadre-app body{height:var(--app-h)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent-soft);outline-offset:3px;border-radius:6px}
+img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
+
+/* Les chiffres qui changent en place — compteurs, comptes à rebours, scores —
+   ne doivent pas faire sautiller la ligne autour d'eux. */
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ============ Les scènes qui restent noires ============ */
+/* Trois surfaces ne suivent pas le thème : le théâtre d'ouverture, la
+   visionneuse, la scène des Promos. Ce sont des salles obscures — on y regarde
+   une carte, et une carte se regarde sur du noir, comme au cinéma.
+
+   Elles doivent donc rétablir la palette sombre pour tout ce qu'elles
+   contiennent. Sans ça, une couleur de rareté calculée pour du papier blanc —
+   l'or à `#a06b00`, le bleu à `#0d74c4` — se retrouverait posée sur du noir,
+   où elle disparaît. Redéclarer les jetons ici suffit : ils redescendent à tous
+   les descendants, sans qu'aucune règle ait à connaître le thème en cours. */
+#theater,#viewer,.promoscene{
+  color-scheme:dark;
+
+  --bg:#0b0810;
+  --bg-2:#120e19;
+  --surface:#181320;
+  --surface-2:#211a2c;
+  --surface-3:#2a2137;
+  --line:#2e2539;
+  --line-2:#3f3450;
+  --line-3:#554566;
+
+  --text:#f4eef7;
+  --subtle:#bcb0c6;
+  --muted:#8a7f96;
+  --on-accent:#fff;
+
+  --brand:#df6de8;
+  --brand-light:#ffd7f0;
+  --accent:#8936ff;
+  --accent-soft:#a95cf2;
+  --accent-deep:#57189e;
+  --accent-wash:rgba(137,54,255,.18);
+  --accent-wash-2:rgba(137,54,255,.30);
+  --accent-glow:rgba(169,92,242,.42);
+
+  --ok:#55e6a6;
+  --ok-wash:rgba(85,230,166,.15);
+  --ok-line:rgba(85,230,166,.42);
+  --danger:#ff4d8d;
+
+  --r-es:#90b2a5;
+  --r-c:#9d93a8;
+  --r-pc:#7bd6b4;
+  --r-r:#39b8ff;
+  --r-e:#a05cff;
+  --r-l:#ffc73b;
+  --r-pr:#ff5bb0;
+
+  --sh-press:#100c15;
+  --gloss:rgba(255,255,255,.4);
+  --gloss-soft:rgba(255,255,255,.16);
+  --hover:rgba(255,255,255,.055);
+  --hover-2:rgba(255,255,255,.1);
+}

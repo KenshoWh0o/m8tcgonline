@@ -76,6 +76,8 @@ mate-tcg-online/
 │   ├── 20_maj-boosters-hors-reserve.sql  Mise à jour 1.5.6 : boosters achetés et offerts hors réserve, cadre Unique
 │   ├── 22_garder.sql     Version 2.1 : les exemplaires à garder (aussi dans TOUT.sql)
 │   ├── 22b_echauffement.sql  Version 2.1.4 : L'Échauffement, sept défis (aussi dans TOUT.sql)
+│   ├── calendrier-2.1.4.sql  Les dates de fin octobre 2026 (à jouer une fois)
+│   ├── MAJ-2.1.4.sql     Les deux précédents d'un bloc, pour la vraie base (généré)
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -461,13 +463,17 @@ Un mini-événement juste après Reflets, qui prépare la suite sans rien en dir
 - **Le jeu** : on compose une équipe de trois Joueurs de sa collection, dans l'ordre (celui de devant encaisse), et on choisit l'attaque de ceux qui en ont deux. Le combat se déroule tout seul **sur le serveur** (`ech_simuler`), à partir des valeurs imprimées sur les cartes : Défense, coût des attaques (l'élan : chacun frappe dès qu'il en a autant que le coût), dégâts. Deux Joueurs de la même couleur partent avec 1 élan d'avance. La page ne fait que rejouer le journal du combat, coup par coup. Les règles complètes sont en tête du fichier SQL.
 - **Les défis** (`ech_defis`) : un adversaire et une règle par jour — aucune, Carapace (coups < 100 ignorés), Frappe éclair, Affinité Rose (×2), Riposte (30 par coup porté), Fureur (+30 par coup subi), puis The French Sorcerer (Carapace 80 + Fureur 20). Un défi s'ouvre toutes les 24 h depuis le début de la saison ; on peut rattraper les jours manqués.
 - **Les étoiles** : ★ gagner (avant la fin du 10ᵉ tour), ★★ en perdant au plus un Joueur, ★★★ sans perte. Rejouable à volonté, la meilleure note compte.
+- **Les indices** : trois étoiles au défi n débloquent l'indice n — une phrase sur ce qui vient, sans rien montrer (un nombre, un mot, des étoiles, une ombre) ; les sept débloquent un dernier mot. Leur texte n'est que dans la base (`ech_indices`) : le navigateur ne le reçoit qu'une fois gagné, et ne peut donc pas le dévoiler en avance. Ils se retournent comme une carte à la fin du combat, et se relisent dans le carnet « Ce qui se prépare ».
 - **Les récompenses** : 80 / 80 / 140 Éclats pour les étoiles 1, 2, 3 de chaque défi (2 100 en tout) ; **3 boosters** quand les sept sont gagnés ; le titre **« Échauffé »** (`t_echauffe`) pour les 21 étoiles. Tout est versé par le serveur (`accorder`), une seule fois.
 - **L'équilibrage** : simulé sur les 51 Joueurs et toutes les équipes possibles — chaque défi a une équipe à trois étoiles ; une collection aux deux tiers les trouve, une collection au tiers gagne presque toujours. Les Défenses des adversaires (`pv`) sont dans `ech_defis`.
-- **La saison** (`ech_saison`, une ligne) commence à la fin de Reflets (ou à l'installation si Reflets est fini) et dure neuf jours. Ce n'est volontairement **pas** une ligne de `evenements` : elle masquerait le récap de Reflets (`evenement_recent`).
+- **La saison** (`ech_saison`, une ligne) commence à la fin du récap de Reflets (ou à l'installation s'il est fini) et dure neuf jours. Ce n'est volontairement **pas** une ligne de `evenements` : elle masquerait le récap de Reflets (`evenement_recent`).
+- **La fin du récap, réglable** : la colonne `evenements.recap_jusqua` (vide : trois jours après la fin, comme avant) ; `evenement_recent()` et `evenement_recap()` sont redéfinies dans `22b_echauffement.sql`.
+- **Le calendrier de 2026** (`supabase/calendrier-2.1.4.sql`, à jouer une fois, pas dans `TOUT.sql`) : Reflets jusqu'au vendredi 23 octobre minuit, son récap jusqu'au dimanche 25 minuit, L'Échauffement du lundi 26, 0 h, au mercredi 4 novembre, 0 h (heure de Paris ; le changement d'heure tombe la nuit du 24 au 25).
 - **Où ça se voit** : une fenêtre d'annonce, une fois (file de `proposerAccueil`) ; un bandeau sur Boosters (après le récap de Reflets) ; la pastille de Combats compte les défis ouverts pas encore gagnés.
 - **Tests** : `ech_simuler` et la copie de la démo donnent le même combat, au coup près, sur 840 combats tirés au hasard (banc Postgres local) ; refus vérifiés (Joueur non possédé, doublon, jour fermé, hors saison, anonyme) ; une Reverse joue comme sa carte.
 - **Dans la démo** : `?echauffement` dans l'adresse ouvre la saison tout de suite, trois défis ouverts.
-- **Mise en ligne** : jouer `supabase/22b_echauffement.sql` sur la base (il est aussi dans `TOUT.sql`), puis publier le site. Tous les noms commencent par `ech_` : la 3.0 a déjà ses `defis`.
+- **Mise en ligne** : coller `supabase/MAJ-2.1.4.sql` (assemblé par `tools/build-sql.py` : `22b_echauffement.sql` puis `calendrier-2.1.4.sql`) dans Supabase **avant le vendredi 23 octobre midi** ; puis publier le site 2.1.4 **avant le lundi 26, 0 h**. Tous les noms commencent par `ech_` : la 3.0 a déjà ses `defis`.
+- **Le prébuild** : `python3 tools/demo.py --prebuild` construit la démo de cette version dans `prebuild/` (stockage à part, pas de service worker, Labo ouvert, L'Échauffement ouvert d'office avec ses sept défis, Reflets fini, des Joueurs offerts) ; publié sur `main`, il se teste à **matetcg.com/prebuild/**. Ne jamais lancer `--preprod` depuis une branche 2.x : `preprod/` est la 3.0.
 
 ## Succès, historique et partage
 
@@ -762,7 +768,7 @@ Pour obtenir une Promo **pour de vrai** sur son compte — et vérifier la déte
 
 ## La pré-prod
 
-La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site, sans le toucher :
+La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site, sans le toucher (et une version 2.x en préparation à **matetcg.com/prebuild/**, construite par `python3 tools/demo.py --prebuild` depuis sa branche) :
 
     python3 tools/demo.py --preprod
 
