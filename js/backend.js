@@ -409,6 +409,13 @@ Backend.pisteReclamer = async palier => {
   return r.cartes || [];
 };
 Backend.illuEtat = () => Backend.rpc('illu_etat');
+/* L'Échauffement (supabase/22b_echauffement.sql). */
+Backend.echEtat = () => Backend.rpc('ech_etat');
+Backend.echJouer = async (jour, equipe) => {
+  const r = await Backend.rpc('ech_jouer', { p_jour: jour, p_equipe: equipe });
+  Backend.apply(r.me);
+  return r;
+};
 Backend.illuEssai = async id => {
   const r = await Backend.rpc('illu_essai', { p_carte: id });
   Backend.apply(r.etat);

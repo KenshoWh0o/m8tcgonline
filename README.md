@@ -75,6 +75,7 @@ mate-tcg-online/
 │   ├── 19_maj-boosters-offerts.sql  Mise à jour 1.5.5 : boosters offerts sans carte unique
 │   ├── 20_maj-boosters-hors-reserve.sql  Mise à jour 1.5.6 : boosters achetés et offerts hors réserve, cadre Unique
 │   ├── 22_garder.sql     Version 2.1 : les exemplaires à garder (aussi dans TOUT.sql)
+│   ├── 22b_echauffement.sql  Version 2.1.4 : L'Échauffement, sept défis (aussi dans TOUT.sql)
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -119,13 +120,13 @@ mate-tcg-online/
 │   ├── boite.js        Boîte de réception, pings, relève et temps réel
 │   ├── shop.js         Onglet Boutique
 │   ├── recyclage.js    Onglet Recyclage
-│   ├── battle.js       Onglet Combats (le teaser de la 3.0, en attendant)
+│   ├── battle.js       Onglet Combats (L'Échauffement pendant sa saison, sinon l'annonce)
 │   ├── profile.js      Onglet Profil
 │   ├── settings.js     Onglet Réglages
 │   ├── bienvenue.js    Fenêtres d'accueil et lien vers le Discord
 │   ├── pwa.js          Ajout à l'écran d'accueil, service worker
 │   ├── lab.js          Onglet Labo (administrateurs)
-│   ├── teaser30.js     Teaser de la 3.0 dans l'onglet Combats (à retirer à la sortie)
+│   ├── echauffement.js L'Échauffement : sept défis dans l'onglet Combats (2.1.4)
 │   ├── cadeaux.js      Les cadeaux : le paquet à ouvrir
 │   └── app.js          Navigation, clics, démarrage (chargé en dernier)
 ```
@@ -453,15 +454,20 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 
 **Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
 
-## Le teaser de la 3.0 : l'onglet Combats
+## Version 2.1.4 · L'Échauffement
 
-Tant que la 3.0 n'est pas sortie, l'onglet Combats (qui n'a rien d'autre à montrer) est son teaser (`js/teaser30.js`, appelé par `vCombats()` dans `js/battle.js` ; styles `.t30-*` en fin de `css/hub.css`).
+Un mini-événement juste après Reflets, qui prépare la suite sans rien en dire : **sept défis, un par jour**, dans l'onglet **Combats** (`js/echauffement.js`, styles `.ech-*` en fin de `css/hub.css` ; serveur `supabase/22b_echauffement.sql` ; démo : `RPC.ech_etat` / `RPC.ech_jouer` dans `_demo/serveur.js`).
 
-- **Il annonce la refonte sans rien en montrer** : ni capture, ni couleur de la 3.0, ni fonctionnalité. Un croquis d'écran générique (des formes que n'importe quelle appli pourrait avoir) se dessine trait par trait sur du papier quadrillé, aux couleurs du site d'aujourd'hui, puis s'efface et recommence.
-- **Le texte** : « Le jeu se redessine. Chaque écran est repris de zéro. On ne te montre rien : tu découvriras tout d'un coup. Et cet onglet ne restera pas vide. » Le seul lien avec les vraies cartes, implicite : « Rendez-vous quand tu auras les cartes en main. »
-- **Une pastille** sur Combats (ou sur l'avatar, quand un événement a envoyé Combats dans le tiroir) tant qu'on ne l'a pas ouvert, une fois par appareil. Changer `TEASER30_CLE` la fait revenir chez tout le monde.
-- Rien ne passe par le serveur.
-- **À la sortie de la 3.0** : retirer `js/teaser30.js` (et sa ligne dans `index.html` et `sw.js`), le bloc `.t30-*` de `css/hub.css`, la pastille dans `pastilleOnglet()` / `pastilleTiroir()` et l'appel à `teaser30Vu()` dans `render()` (`js/app.js`).
+- **Le jeu** : on compose une équipe de trois Joueurs de sa collection, dans l'ordre (celui de devant encaisse), et on choisit l'attaque de ceux qui en ont deux. Le combat se déroule tout seul **sur le serveur** (`ech_simuler`), à partir des valeurs imprimées sur les cartes : Défense, coût des attaques (l'élan : chacun frappe dès qu'il en a autant que le coût), dégâts. Deux Joueurs de la même couleur partent avec 1 élan d'avance. La page ne fait que rejouer le journal du combat, coup par coup. Les règles complètes sont en tête du fichier SQL.
+- **Les défis** (`ech_defis`) : un adversaire et une règle par jour — aucune, Carapace (coups < 100 ignorés), Frappe éclair, Affinité Rose (×2), Riposte (30 par coup porté), Fureur (+30 par coup subi), puis The French Sorcerer (Carapace 80 + Fureur 20). Un défi s'ouvre toutes les 24 h depuis le début de la saison ; on peut rattraper les jours manqués.
+- **Les étoiles** : ★ gagner (avant la fin du 10ᵉ tour), ★★ en perdant au plus un Joueur, ★★★ sans perte. Rejouable à volonté, la meilleure note compte.
+- **Les récompenses** : 80 / 80 / 140 Éclats pour les étoiles 1, 2, 3 de chaque défi (2 100 en tout) ; **3 boosters** quand les sept sont gagnés ; le titre **« Échauffé »** (`t_echauffe`) pour les 21 étoiles. Tout est versé par le serveur (`accorder`), une seule fois.
+- **L'équilibrage** : simulé sur les 51 Joueurs et toutes les équipes possibles — chaque défi a une équipe à trois étoiles ; une collection aux deux tiers les trouve, une collection au tiers gagne presque toujours. Les Défenses des adversaires (`pv`) sont dans `ech_defis`.
+- **La saison** (`ech_saison`, une ligne) commence à la fin de Reflets (ou à l'installation si Reflets est fini) et dure neuf jours. Ce n'est volontairement **pas** une ligne de `evenements` : elle masquerait le récap de Reflets (`evenement_recent`).
+- **Où ça se voit** : une fenêtre d'annonce, une fois (file de `proposerAccueil`) ; un bandeau sur Boosters (après le récap de Reflets) ; la pastille de Combats compte les défis ouverts pas encore gagnés.
+- **Tests** : `ech_simuler` et la copie de la démo donnent le même combat, au coup près, sur 840 combats tirés au hasard (banc Postgres local) ; refus vérifiés (Joueur non possédé, doublon, jour fermé, hors saison, anonyme) ; une Reverse joue comme sa carte.
+- **Dans la démo** : `?echauffement` dans l'adresse ouvre la saison tout de suite, trois défis ouverts.
+- **Mise en ligne** : jouer `supabase/22b_echauffement.sql` sur la base (il est aussi dans `TOUT.sql`), puis publier le site. Tous les noms commencent par `ech_` : la 3.0 a déjà ses `defis`.
 
 ## Succès, historique et partage
 

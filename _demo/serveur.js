@@ -1203,6 +1203,124 @@
     }
     return { illu: illuEtat(p), etat: me(p) };
   };
+  /* ---------- L'Échauffement (22b_echauffement.sql) ---------- */
+  /* Sept défis, un par jour, après Reflets. Le combat est le même que
+     ech_simuler, à la ligne près. `?echauffement` dans l'adresse ouvre la
+     saison tout de suite, trois défis ouverts (pour essayer). */
+  const ECH_DEFIS = [
+    { jour: 1, adversaire: 'c010', pv: 800, regle: 'aucune', param: {}, titre: 'Premier contact', texte: 'Pas de règle aujourd\'hui : fais connaissance.' },
+    { jour: 2, adversaire: 'c044', pv: 1200, regle: 'carapace', param: { seuil: 100 }, titre: 'Carapace', texte: 'Il ignore les coups de moins de 100.' },
+    { jour: 3, adversaire: 'c102', pv: 500, regle: 'eclair', param: {}, titre: 'Frappe éclair', texte: 'Il frappe à chaque tour.' },
+    { jour: 4, adversaire: 'c060', pv: 1700, regle: 'affinite', param: { couleur: 'rose' }, titre: 'Affinité Rose', texte: 'Tes Joueurs Roses frappent deux fois plus fort.' },
+    { jour: 5, adversaire: 'c081', pv: 800, regle: 'riposte', param: { degats: 30 }, titre: 'Riposte', texte: 'Chaque coup que tu lui portes te coûte 30 de Défense.' },
+    { jour: 6, adversaire: 'c120', pv: 900, regle: 'fureur', param: { plus: 30 }, titre: 'Fureur', texte: 'Ses coups gagnent 30 de dégâts à chaque fois.' },
+    { jour: 7, adversaire: 'c116', pv: 1100, regle: 'final', param: { seuil: 80, plus: 20 }, titre: 'Le dernier défi', texte: 'Il ignore les coups de moins de 80, et les siens gagnent 20 à chaque fois.' }
+  ];
+  const ECH_PRIX = [80, 80, 140];
+  /* ech_joueurs : la Défense, la couleur et les attaques à dégâts d'un Joueur. */
+  function echStats(id) {
+    const k = carte(id);
+    if (!k || k.cat !== 'joueur' || k.promo || k.rev) return null;
+    return { def: k.def, couleur: k.col, attaques: (k.atks || []).filter(a => a.degats).map(a => ({ nom: a.nom, cout: Object.values(a.cout || {}).reduce((x, y) => x + y, 0), degats: a.degats })) };
+  }
+  function echSaison() {
+    if (!S.ech) {
+      const r = S.evenement && S.evenement.code === 'reflets' ? S.evenement.fin : now();
+      const d = Math.max(now(), r);
+      S.ech = { debut: d, fin: d + 9 * 86400000, scores: {}, paliers: {} };
+    }
+    if (/[?&]echauffement\b/.test(location.search) && !S.ech.force) {
+      S.ech.debut = now() - 2 * 86400000 - 3600000; S.ech.fin = now() + 7 * 86400000; S.ech.force = true;
+    }
+    return S.ech;
+  }
+  const echOuvert = () => { const s = echSaison(); return now() < s.debut ? 0 : Math.min(7, Math.floor((now() - s.debut) / 86400000) + 1); };
+  function echSimuler(jour, equipe) {
+    const d = ECH_DEFIS[jour - 1], P = d.param, R = d.regle;
+    const aB = echStats(d.adversaire).attaques.reduce((m, a) => (a.degats > m.degats ? a : m));
+    const coutB = R === 'eclair' ? 1 : aB.cout;
+    const al = equipe.map(e => { const j = echStats(e.carte); const at = j.attaques[e.a || 0]; return { pv: j.def, col: j.couleur, cout: at ? at.cout : null, deg: at ? at.degats : null, elan: 0 }; });
+    al.forEach(a => { if (al.filter(b => b.col === a.col).length > 1) a.elan = 1; });
+    let pvB = d.pv, elanB = 0, ko = 0, fureur = 0;
+    const log = [];
+    const fin = (g, t) => ({ gagne: g, tours: t, ko, etoiles: g ? (ko === 0 ? 3 : ko === 1 ? 2 : 1) : 0, log });
+    for (let t = 1; t <= 10; t++) {
+      elanB++;
+      for (let i = 0; i < al.length; i++) {
+        const a = al[i];
+        if (a.pv <= 0) continue;
+        a.elan++;
+        if (a.cout == null || a.elan < a.cout) continue;
+        a.elan -= a.cout;
+        let dd = a.deg;
+        if (R === 'affinite' && a.col === P.couleur) dd *= 2;
+        if ((R === 'carapace' || R === 'final') && dd < P.seuil) { log.push([t, 'bloque', i, dd]); continue; }
+        pvB -= dd; log.push([t, 'frappe', i, dd, Math.max(0, pvB)]);
+        if (pvB <= 0) return fin(true, t);
+        if (R === 'riposte') {
+          a.pv -= P.degats; log.push([t, 'riposte', i, P.degats, Math.max(0, a.pv)]);
+          if (a.pv <= 0) { ko++; log.push([t, 'ko', i]); if (al.every(x => x.pv <= 0)) return fin(false, t); }
+        }
+      }
+      if (elanB >= coutB) {
+        elanB -= coutB;
+        const i = al.findIndex(x => x.pv > 0);
+        const dd = aB.degats + fureur;
+        if (R === 'fureur' || R === 'final') fureur += P.plus;
+        al[i].pv -= dd; log.push([t, 'subit', i, dd, Math.max(0, al[i].pv)]);
+        if (al[i].pv <= 0) { ko++; log.push([t, 'ko', i]); if (al.every(x => x.pv <= 0)) return fin(false, t); }
+      }
+    }
+    return fin(false, 10);
+  }
+  function echEtat(p) {
+    const s = echSaison(), o = echOuvert();
+    const sc = j => s.scores[p + '|' + j];
+    return {
+      debut: new Date(s.debut).toISOString(), fin: new Date(s.fin).toISOString(), ouvert: o, serveur: new Date(now()).toISOString(), total: 7,
+      defis: ECH_DEFIS.filter(d => d.jour <= o).map(d => Object.assign({}, d, { etoiles: sc(d.jour) ? sc(d.jour).etoiles : 0, equipe: sc(d.jour) ? sc(d.jour).equipe : null, essais: sc(d.jour) ? sc(d.jour).essais : 0 })),
+      etoiles: ECH_DEFIS.reduce((n, d) => n + (sc(d.jour) ? sc(d.jour).etoiles : 0), 0),
+      gagnes: ECH_DEFIS.filter(d => sc(d.jour) && sc(d.jour).etoiles > 0).length,
+      paliers: Object.keys(s.paliers[p] || {})
+    };
+  }
+  RPC.ech_etat = p => echEtat(p);
+  RPC.ech_jouer = (p, { p_jour, p_equipe }) => {
+    const s = echSaison();
+    if (now() < s.debut) refuser('L\'Échauffement n\'a pas commencé.');
+    if (now() >= s.fin) refuser('L\'Échauffement est terminé.');
+    if (!(p_jour >= 1 && p_jour <= echOuvert())) refuser('Ce défi n\'est pas encore ouvert.');
+    if (!Array.isArray(p_equipe)) refuser('Équipe invalide.');
+    if (p_equipe.length < 1 || p_equipe.length > 3) refuser('Une équipe compte un à trois Joueurs.');
+    const propre = [];
+    for (const e of p_equipe) {
+      let cid = e && e.carte;
+      if (/^r[0-9]/.test(cid || '')) cid = 'c' + cid.slice(1);
+      const st = cid && echStats(cid);
+      if (!st) refuser('Ce n\'est pas un Joueur.');
+      if (propre.some(x => x.carte === cid)) refuser('Un Joueur apparaît deux fois.');
+      if (!possede(p, cid) && !possede(p, 'r' + cid.slice(1))) refuser('Tu ne possèdes pas un des Joueurs choisis.');
+      const a = e.a == null ? 0 : e.a;
+      if (a < 0 || (st.attaques.length && a >= st.attaques.length) || (!st.attaques.length && a !== 0)) refuser('Attaque inconnue.');
+      propre.push({ carte: cid, a });
+    }
+    const r = echSimuler(p_jour, propre);
+    const cle = p + '|' + p_jour;
+    const vieux = s.scores[cle];
+    const avant = vieux ? vieux.etoiles : 0;
+    const gain = { eclats: 0, boosters: 0, titre: null };
+    if (r.etoiles > avant) {
+      for (let k = avant + 1; k <= r.etoiles; k++) gain.eclats += ECH_PRIX[k - 1];
+      s.scores[cle] = { etoiles: r.etoiles, equipe: propre, tours: r.tours, essais: (vieux ? vieux.essais : 0) + 1 };
+      accorder(p, 'eclats', gain.eclats, null);
+    } else if (vieux) vieux.essais++;
+    else s.scores[cle] = { etoiles: 0, equipe: propre, tours: r.tours, essais: 1 };
+    const pal = (s.paliers[p] = s.paliers[p] || {});
+    const notes = ECH_DEFIS.map(d => (s.scores[p + '|' + d.jour] || {}).etoiles || 0);
+    if (notes.filter(x => x > 0).length === 7 && !pal.sept) { pal.sept = true; gain.boosters = 3; accorder(p, 'boosters', 3, null); }
+    if (notes.reduce((x, y) => x + y, 0) === 21 && !pal.parfait) { pal.parfait = true; gain.titre = 't_echauffe'; accorder(p, 'titre', 0, 't_echauffe'); }
+    return { resultat: r, avant, gain, etat: echEtat(p), me: me(p) };
+  };
   RPC.personnaliser = (p, { p_titre, p_banniere, p_devise }) => {
     const pr = profil(p);
     if (p_titre != null) {

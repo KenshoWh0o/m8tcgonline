@@ -96,8 +96,8 @@ function pastilleOnglet(id) {
   if (id === 'reflets') return evQuetesPretes();
   if (id === 'illu') return illuData && !illuData.fini ? 1 : 0;
   if (id === 'social') return socNotifs();
-  /* Le teaser de la 3.0 (js/teaser30.js), tant qu'on ne l'a pas regardé. */
-  if (id === 'combats') return teaser30Nouveau() ? 1 : 0;
+  /* L'Échauffement (js/echauffement.js) : les défis ouverts pas encore gagnés. */
+  if (id === 'combats') return echPastille();
   return 0;
 }
 
@@ -250,8 +250,6 @@ function render() {
     return;
   }
 
-  /* Le teaser de la 3.0 : l'ouvrir éteint la pastille de Combats. */
-  if (ongletValide(tab) === 'combats') teaser30Vu();
   header();
   $('#nav').innerHTML = navHTML();
   majBoutonInstall();
@@ -298,6 +296,8 @@ function aller(id) {
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     /* Version 2.0 : l'événement se charge en arrivant. */
     if (tab === 'illu') chargerIllu();
+    /* L'Échauffement : un défi de plus chaque jour, on relit en arrivant. */
+    if (tab === 'combats') chargerEch();
     if (tab === 'reflets' && recapReflets()) chargerRecap();
     else if (tab === 'reflets') {
       passPlace = false;
@@ -631,6 +631,7 @@ addEventListener('visibilitychange', () => {
   releverBoite();
   relireCadeaux();
   chargerIllu();
+  chargerEch();
 });
 
 /* Ce qui arrive des autres joueurs — demandes d'ami, d'échange, réponses — et
@@ -699,6 +700,8 @@ function visiteDuJourFaite() {
          qu'on ouvre l'onglet (elle n'apparaissait qu'après une visite de
          l'événement). */
       chargerIllu();
+      /* L'Échauffement (js/echauffement.js) : son bandeau, sa pastille. */
+      chargerEch();
     } catch (e) {
       toast(e.message || 'Le serveur a répondu de travers.');
     }

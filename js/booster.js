@@ -154,6 +154,9 @@ function vBandeauEvenement() {
      mène au récap. */
   if (recapReflets()) return vBandeauRecap();
   if (ev && ev.code === 'reflets' && !ev.a_venir) return vBandeauReflets(ev);
+  /* Version 2.1.4 : L'Échauffement, qui mène à l'onglet Combats. */
+  const ech = vBandeauEch();
+  if (ech) return ech;
   const ch = save.chasse || {};
   const u = uniques[0];
   const nomU = u ? u.nom : 'la carte unique';

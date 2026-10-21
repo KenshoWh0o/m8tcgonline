@@ -206,6 +206,8 @@ function proposerAccueil() {
   if (bienvenueAVoir()) return quandCalme(montrerBienvenue);
   if (chasseFinAVoir()) return quandCalme(montrerChasseFin);
   if (recapAVoir()) return quandCalme(montrerRecap);
+  /* L'Échauffement (js/echauffement.js) : annoncé une fois. */
+  if (echAnnonceAVoir()) return quandCalme(montrerEchAnnonce);
   if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
   if (discordAVoir()) return quandCalme(montrerDiscord);
 }
