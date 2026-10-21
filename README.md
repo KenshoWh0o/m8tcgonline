@@ -119,13 +119,13 @@ mate-tcg-online/
 │   ├── boite.js        Boîte de réception, pings, relève et temps réel
 │   ├── shop.js         Onglet Boutique
 │   ├── recyclage.js    Onglet Recyclage
-│   ├── battle.js       Onglet Combats (le teaser de la 3.0 en grand)
+│   ├── battle.js       Onglet Combats (le teaser de la 3.0, en attendant)
 │   ├── profile.js      Onglet Profil
 │   ├── settings.js     Onglet Réglages
 │   ├── bienvenue.js    Fenêtres d'accueil et lien vers le Discord
 │   ├── pwa.js          Ajout à l'écran d'accueil, service worker
 │   ├── lab.js          Onglet Labo (administrateurs)
-│   ├── teaser30.js     Teaser de la 3.0 : le colis et son suivi (à retirer à la sortie)
+│   ├── teaser30.js     Teaser de la 3.0 dans l'onglet Combats : la refonte en avant/après (à retirer à la sortie)
 │   ├── cadeaux.js      Les cadeaux : le paquet à ouvrir
 │   └── app.js          Navigation, clics, démarrage (chargé en dernier)
 ```
@@ -453,15 +453,16 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 
 **Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
 
-## Le teaser de la 3.0 : le colis
+## Le teaser de la 3.0 : l'onglet Combats
 
-La 3.0 sortira à peu près quand les vraies cartes arriveront chez les joueurs. On ne le dit pas en toutes lettres, on le montre (`js/teaser30.js`, styles `.t30-*` et `.teaser30` en fin de `css/booster.css`) : un colis ouvert d'où montent trois dos de carte, et le suivi d'expédition des vraies cartes en quatre étapes — *En préparation*, *Expédiées*, *En route*, *Chez toi* — la dernière ajoutant « et ici ».
+Tant que la 3.0 n'est pas sortie, l'onglet Combats (qui n'a rien d'autre à montrer) est son teaser (`js/teaser30.js`, appelé par `vCombats()` dans `js/battle.js` ; styles `.t30-*` en fin de `css/hub.css` ; images `assets/teaser30/`).
 
-- **Le bandeau** au-dessus du paquet (écran Boosters) : « Version 3.0 · *étape* — Elle arrive avec les vraies cartes. » Il ouvre la fenêtre.
-- **La fenêtre** « Bientôt » : le colis, « Tes cartes vont se battre. », le suivi, quatre nouveautés (combats, cartes au-delà des 122, cartes qui évoluent, événement et boss commun), « Pas encore de date : elle suit le colis. » Montrée **une fois par appareil et par étape**, dans la file des fenêtres d'arrivée (`proposerAccueil`, `js/bienvenue.js`), après les nouveautés.
-- **L'onglet Combats** montre la même chose en grand, à la place de l'ancien « Coming soon ».
-- **Faire avancer le colis** : changer `TEASER30_ETAPE` (0 à 3) en tête de `js/teaser30.js`, poser une version (`tools/version.py`), pousser. La fenêtre revient alors une fois chez tout le monde. Rien ne passe par le serveur.
-- **À la sortie de la 3.0** : retirer `js/teaser30.js` (et sa ligne dans `index.html` et `sw.js`), le bloc de `css/booster.css`, l'appel dans `vBoosters()` et dans `proposerAccueil()`.
+- **La refonte visuelle en avant/après** : un téléphone, et dedans le même écran deux fois — aujourd'hui à gauche, la 3.0 à droite. On tire la séparation du doigt (un glissé de côté la tire, un glissé vertical fait défiler la page, un appui la pose) ; au clavier, un curseur caché. À l'ouverture, elle fait un aller-retour pour montrer qu'elle se tire. Quatre écrans : Boosters, Collection, Profil, Combats (le « Coming soon » d'aujourd'hui face à l'accueil des Combats de la 3.0).
+- **Les images** sont de vraies captures (390 × 844, réduites à 720 px de large) : la démo de la 2.1.2 et celle de la 3.0 (`version-3.0`), avec la même collection. À refaire si l'un des deux écrans change.
+- **Le texte** : « Une nouvelle allure. », quatre points (graphite et lavande, le verre, la lisibilité, « Et cet onglet prend vie. »), et le seul lien avec les vraies cartes, implicite : « Rendez-vous quand tu auras les cartes en main. »
+- **Une pastille** sur Combats (ou sur l'avatar, quand un événement a envoyé Combats dans le tiroir) tant qu'on ne l'a pas ouvert, une fois par appareil. Changer `TEASER30_CLE` la fait revenir chez tout le monde.
+- Rien ne passe par le serveur.
+- **À la sortie de la 3.0** : retirer `js/teaser30.js` (et sa ligne dans `index.html` et `sw.js`), le bloc `.t30-*` de `css/hub.css`, `assets/teaser30/`, la pastille dans `pastilleOnglet()` / `pastilleTiroir()` et l'appel à `teaser30Vu()` dans `render()` (`js/app.js`).
 
 ## Succès, historique et partage
 

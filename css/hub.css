@@ -1411,3 +1411,56 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
 .garde-seg button{min-width:0;min-height:0;padding:6px 0;font-variant-numeric:tabular-nums}
 .garde-groupe{display:flex;align-items:center;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   color:var(--muted);margin:14px 0 0}
+
+/* ============ Combats : le teaser de la 3.0 (js/teaser30.js) ============ */
+/* La refonte en avant/après : un téléphone, le même écran deux fois, une
+   séparation qu'on tire. Les couleurs sont celles de la 3.0 (graphite et
+   lavande), pas celles du site : c'est voulu. */
+.t30{display:flex;flex-direction:column;align-items:center;max-width:900px;margin:0 auto;padding:0 0 30px}
+.t30-tete{display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 0 18px;text-align:center}
+.t30-kick{font-size:10.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:4px 11px;border-radius:999px;
+  color:#e9e5ff;background:rgba(138,120,245,.22);box-shadow:inset 0 0 0 1px rgba(179,166,255,.5)}
+.t30-titre{margin:4px 0 0;padding:0;font-family:var(--display);font-stretch:114%;font-weight:900;font-style:italic;font-size:32px;
+  line-height:1.05;letter-spacing:-.03em;text-transform:none;padding-right:.1em;
+  background:linear-gradient(100deg,#fff 30%,#c8bfff 80%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.t30-titre::before{display:none}
+.t30-sous{margin:0;font-size:14px;color:var(--subtle)}
+.t30-app{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 0 20px}
+.t30-leg{display:flex;justify-content:space-between;width:100%;padding:0 6px;font-size:10.5px;font-weight:900;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted)}
+.t30-leg span:last-child{color:#c8bfff}
+.t30-tel{position:relative;width:min(72vw,290px);aspect-ratio:720/1558;border-radius:34px;overflow:hidden;background:#121119;
+  touch-action:pan-y;-webkit-user-select:none;user-select:none;cursor:ew-resize;--p:50%;
+  box-shadow:0 0 0 7px #0c0b10,0 0 0 8px rgba(255,255,255,.16),0 30px 60px rgba(0,0,0,.55),0 0 70px rgba(138,120,245,.28)}
+.t30-tel:focus-within{outline:2px solid #b3a6ff;outline-offset:12px}
+.t30-cal{position:absolute;inset:0}
+.t30-avant{clip-path:inset(0 calc(100% - var(--p)) 0 0)}
+.t30-img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.t30-sep{position:absolute;top:0;bottom:0;left:var(--p);width:2px;margin-left:-1px;pointer-events:none;background:#fff;
+  box-shadow:0 0 14px rgba(179,166,255,.95)}
+.t30-sep i{position:absolute;top:50%;left:50%;display:grid;place-items:center;width:40px;height:40px;transform:translate(-50%,-50%);
+  border-radius:50%;font-style:normal;font-weight:900;font-size:14px;letter-spacing:-1px;color:#fff;background:rgba(18,17,25,.88);
+  box-shadow:0 0 0 2px #fff,0 0 18px rgba(138,120,245,.8),0 6px 16px rgba(0,0,0,.5)}
+.t30-range{position:absolute;left:0;bottom:0;width:100%;opacity:0;pointer-events:none}
+.t30-cote{width:100%;max-width:400px}
+.t30-ecrans{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.t30-ec{padding:8px 13px;border:0;border-radius:999px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:800;color:var(--subtle);
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.t30-ec.on{color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:0 6px 16px rgba(93,75,217,.4)}
+.t30-points{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.t30-points li{display:flex;flex-direction:column;gap:2px;padding:11px 13px;border-radius:16px;font-size:13px;line-height:1.4;
+  color:var(--subtle);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.t30-points b{font-size:14px;color:var(--text)}
+.t30-pied{margin:18px 0 0;text-align:center;font-family:var(--display);font-stretch:110%;font-weight:900;font-style:italic;font-size:17px;
+  color:#c8bfff}
+/* Sur grand écran : le téléphone à gauche, le texte à droite. */
+@media (min-width:760px){
+  .t30{display:grid;grid-template-columns:auto minmax(0,420px);grid-template-areas:"app tete" "app cote";
+    column-gap:52px;justify-content:center;align-content:start}
+  .t30-app{grid-area:app;margin:0}
+  .t30-tel{width:270px}
+  .t30-tete{grid-area:tete;align-self:end;align-items:flex-start;text-align:left;margin:0 0 16px}
+  .t30-cote{grid-area:cote;align-self:start}
+  .t30-ecrans{justify-content:flex-start}
+  .t30-pied{text-align:left}
+}

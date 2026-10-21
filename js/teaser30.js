@@ -1,131 +1,163 @@
-/* Le teaser de la version 3.0 : le colis.
+/* Le teaser de la version 3.0, dans l'onglet Combats (qui n'a rien d'autre à
+   montrer d'ici là).
 
-   La 3.0 sortira à peu près quand les vraies cartes arriveront chez les
-   joueurs. On ne le dit pas en toutes lettres : on le montre. Un colis
-   ouvert d'où montent trois dos de carte, et un suivi d'expédition en quatre
-   étapes — celles des vraies cartes. La dernière, « Chez toi », ajoute
-   « et ici » : c'est tout le message.
+   Ce qu'il montre surtout : la refonte visuelle. Un téléphone, et dedans le
+   même écran deux fois — tel qu'il est aujourd'hui, et tel qu'il sera. On
+   fait glisser la séparation pour passer de l'un à l'autre. Quatre écrans :
+   Boosters, Collection, Profil, et Combats (le « Coming soon » d'aujourd'hui
+   face à l'accueil des Combats de la 3.0). Ce sont de vraies captures, prises
+   sur la démo de la 2.1.2 et sur celle de la 3.0 avec la même collection
+   (assets/teaser30/, 720 px de large).
 
-   Où il se voit :
-     · un bandeau au-dessus du paquet, sur l'écran Boosters, tant que la 3.0
-       n'est pas là ;
-     · une fenêtre, montrée une fois par appareil à chaque étape franchie
-       (file d'attente de js/bienvenue.js : jamais par-dessus autre chose) ;
-     · l'onglet Combats, qui le montre en grand.
+   Le lien avec les vraies cartes reste implicite : « quand tu auras les
+   cartes en main ».
 
-   Faire avancer le colis : changer TEASER30_ETAPE, poser une version
-   (tools/version.py), pousser. La fenêtre revient alors une fois chez tout
-   le monde, avec la nouvelle étape. Rien ne passe par le serveur. */
+   Une pastille sur l'onglet Combats tant qu'on ne l'a pas ouvert (une fois
+   par appareil). Rien ne passe par le serveur. */
 "use strict";
 
-/* 0 : en préparation · 1 : expédiées · 2 : en route · 3 : chez toi. */
-const TEASER30_ETAPE = 0;
-const TEASER30_ETAPES = ['En préparation', 'Expédiées', 'En route', 'Chez toi'];
+/* Changer cette clé fait revenir la pastille chez tout le monde. */
+const TEASER30_CLE = 'refonte';
+const TEASER30_ECRANS = [
+  { id: 'boosters', nom: 'Boosters' },
+  { id: 'collection', nom: 'Collection' },
+  { id: 'profil', nom: 'Profil' },
+  { id: 'combats', nom: 'Combats' }
+];
+const teaser30Img = (id, v) => `assets/teaser30/${id}-${v}.webp`;
 
-/* ---------- Le colis ---------- */
-/* Deux calques autour des cartes : le fond de la boîte et ses rabats arrière
-   derrière, ses faces avant devant — les cartes sortent de la boîte. */
-function colisArt(mini) {
-  const fond = `<svg class="t30-svg" viewBox="0 0 240 180" aria-hidden="true">
-    <defs>
-      <radialGradient id="t30lueur${mini ? 'm' : ''}" cx="50%" cy="58%" r="55%">
-        <stop offset="0" stop-color="#d9c7ff" stop-opacity=".95"/>
-        <stop offset=".35" stop-color="#9b6bff" stop-opacity=".55"/>
-        <stop offset="1" stop-color="#5b2bb8" stop-opacity="0"/>
-      </radialGradient>
-      <linearGradient id="t30rab${mini ? 'm' : ''}" x1="0" y1="1" x2="0" y2="0">
-        <stop offset="0" stop-color="#7a5536"/><stop offset="1" stop-color="#c79b6c"/>
-      </linearGradient>
-    </defs>
-    <ellipse class="t30-halo" cx="120" cy="70" rx="110" ry="74" fill="url(#t30lueur${mini ? 'm' : ''})"/>
-    <path d="M40 92 120 68 108 30 24 52Z" fill="url(#t30rab${mini ? 'm' : ''})"/>
-    <path d="M120 68 200 92 216 52 132 30Z" fill="url(#t30rab${mini ? 'm' : ''})"/>
-    <path d="M40 92 120 68 200 92 120 116Z" fill="#20160f"/>
-    <path d="M40 92 120 68 200 92 120 116Z" fill="url(#t30lueur${mini ? 'm' : ''})" opacity=".8"/>
-  </svg>`;
-  const face = `<svg class="t30-svg t30-face" viewBox="0 0 240 180" aria-hidden="true">
-    <defs>
-      <linearGradient id="t30g${mini ? 'm' : ''}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#b8875a"/><stop offset="1" stop-color="#7d5638"/>
-      </linearGradient>
-      <linearGradient id="t30d${mini ? 'm' : ''}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#946843"/><stop offset="1" stop-color="#5e3f27"/>
-      </linearGradient>
-    </defs>
-    <path d="M40 92 120 116 120 174 40 150Z" fill="url(#t30g${mini ? 'm' : ''})"/>
-    <path d="M120 116 200 92 200 150 120 174Z" fill="url(#t30d${mini ? 'm' : ''})"/>
-    <path d="M40 92 120 116 104 140 22 112Z" fill="#c4956a"/>
-    <path d="M120 116 200 92 220 112 138 140Z" fill="#a87a50"/>
-    <path d="M40 92 120 116 200 92" fill="none" stroke="#e7d6ff" stroke-opacity=".7" stroke-width="1.6" stroke-linejoin="round"/>
-    ${mini ? '' : `<g transform="matrix(1,-.3,0,1,120,116)">
-      <rect x="18" y="30" width="48" height="22" rx="2" fill="#f3ede4"/>
-      ${[0, 3, 5, 9, 11, 14, 18, 20, 23, 26, 28].map((x, i) => `<rect x="${22 + x}" y="34" width="${i % 3 ? 1.2 : 2}" height="9" fill="#2a2033"/>`).join('')}
-      <text x="22" y="49" font-size="4.6" font-weight="800" fill="#5b2bb8" letter-spacing=".4">M8 TCG · 3.0</text>
-    </g>`}
-  </svg>`;
-  const dos = [0, 2, 1].map(i => `<img class="t30-dos d${i}" src="${ART.back}" alt="">`).join('');
-  const etincelles = mini ? '' : '<i class="t30-et e0"></i><i class="t30-et e1"></i><i class="t30-et e2"></i><i class="t30-et e3"></i>';
-  return `<span class="t30-colis${mini ? ' mini' : ''}" aria-hidden="true">${fond}${dos}${etincelles}${face}</span>`;
-}
+let t30Ecran = 'boosters';
+/* La séparation, en % depuis la gauche : à gauche d'elle, aujourd'hui ; à
+   droite, la 3.0. */
+let t30Pos = 50;
+let t30Montre = false;
 
-/* ---------- Le suivi ---------- */
-function vSuivi30() {
-  return `<div class="t30-suivi" role="list" aria-label="Les vraies cartes : ${h(TEASER30_ETAPES[TEASER30_ETAPE])}">
-    ${TEASER30_ETAPES.map((nom, i) => {
-      const etat = i < TEASER30_ETAPE ? 'fait' : i === TEASER30_ETAPE ? 'ici' : '';
-      return `<span class="t30-et-${i} t30-pas ${etat}" role="listitem">
-        <i class="t30-pt">${i < TEASER30_ETAPE ? NAVICO.check : ''}</i>
-        <b>${nom}</b>${i === TEASER30_ETAPES.length - 1 ? '<small>et ici</small>' : ''}
-      </span>`;
-    }).join('')}
-  </div>`;
-}
-
-/* Le corps commun à la fenêtre et à l'onglet Combats. */
-function vTeaser30Corps() {
-  const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span><span><b>${titre}</b> ${texte}</span></li>`;
-  return `<div class="t30-hero">
-      ${colisArt(false)}
-      <span class="t30-kick">Version 3.0</span>
-      <b class="t30-titre">Tes cartes vont se battre.</b>
-      <small class="t30-sous">Elle arrive avec les vraies cartes.</small>
-    </div>
-    <div class="t30-bloc">
-      <small class="t30-lab">Les vraies cartes</small>
-      ${vSuivi30()}
-    </div>
-    <ol class="bvpoints nvpoints t30-points">
-      ${point('sword', 'Des combats.', 'Construis ton deck avec ta collection, et affronte l\'ordinateur, une campagne ou tes amis.')}
-      ${point('star', 'Au-delà des 122.', 'Des cartes plus rares que tout ce que tu as tiré jusqu\'ici.')}
-      ${point('prisme', 'Tes cartes préférées évoluent.', 'Fais briller celles que tu aimes le plus.')}
-      ${point('trophy', 'Un nouvel événement.', 'Et un boss à abattre tous ensemble.')}
-    </ol>
-    <p class="muted small t30-pied">Pas encore de date : elle suit le colis.</p>`;
-}
-
-/* ---------- Le bandeau de l'écran Boosters ---------- */
-function vTeaser30() {
-  return `<button class="teaser30" data-act="teaser30" aria-label="Version 3.0 : en savoir plus">
-    ${colisArt(true)}
-    <span class="t30-txt">
-      <small>Version 3.0 · <b>${TEASER30_ETAPES[TEASER30_ETAPE]}</b></small>
-      <b>Elle arrive avec les vraies cartes.</b>
-    </span>
-    <span class="t30-fl" aria-hidden="true">›</span>
-  </button>`;
-}
-
-/* ---------- La fenêtre ---------- */
-function teaser30AVoir() {
+/* ---------- La pastille ---------- */
+function teaser30Nouveau() {
   if (Backend.mode !== 'cloud' || !save) return false;
-  return accueilMemoire().teaser30 !== String(TEASER30_ETAPE);
+  return accueilMemoire().teaser30 !== TEASER30_CLE;
+}
+function teaser30Vu() {
+  if (teaser30Nouveau()) accueilNoter({ teaser30: TEASER30_CLE });
 }
 
-function montrerTeaser30() {
-  accueilNoter({ teaser30: String(TEASER30_ETAPE) });
-  openSheet({
-    title: 'Bientôt',
-    body: `<div class="t30-fen">${vTeaser30Corps()}</div>`,
-    actions: [{ label: 'J\'ai hâte', primary: true, fn: closeSheet }]
-  });
+/* ---------- La page ---------- */
+function vTeaser30() {
+  const e = TEASER30_ECRANS.find(x => x.id === t30Ecran) || TEASER30_ECRANS[0];
+  const point = (titre, texte) => `<li><b>${titre}</b><span>${texte}</span></li>`;
+  /* Après le rendu : la séparation fait un aller-retour, une fois par
+     visite, pour montrer qu'elle se tire. */
+  if (!t30Montre) setTimeout(t30Montrer, 900);
+  return `<section class="t30">
+    <div class="t30-tete">
+      <span class="t30-kick">Version 3.0</span>
+      <h2 class="t30-titre">Une nouvelle allure.</h2>
+      <p class="t30-sous">Tout le jeu a été redessiné. Fais glisser pour voir.</p>
+    </div>
+    <div class="t30-app">
+      <div class="t30-leg" aria-hidden="true"><span>‹ Aujourd'hui</span><span>Version 3.0 ›</span></div>
+      <div class="t30-tel" style="--p:${t30Pos}%" role="group" aria-label="${h(e.nom)} : aujourd'hui et en version 3.0">
+        <div class="t30-cal"><img class="t30-img" src="${teaser30Img(e.id, 'apres')}" alt="L'écran ${h(e.nom)} en version 3.0" draggable="false"></div>
+        <div class="t30-cal t30-avant"><img class="t30-img" src="${teaser30Img(e.id, 'avant')}" alt="L'écran ${h(e.nom)} aujourd'hui" draggable="false"></div>
+        <span class="t30-sep" aria-hidden="true"><i>‹ ›</i></span>
+        <input class="t30-range" type="range" min="0" max="100" value="${t30Pos}" aria-label="Comparer aujourd'hui et la version 3.0">
+      </div>
+    </div>
+    <div class="t30-cote">
+        <div class="t30-ecrans" role="tablist">
+          ${TEASER30_ECRANS.map(x => `<button class="t30-ec${x.id === e.id ? ' on' : ''}" data-t30="${x.id}" role="tab" aria-selected="${x.id === e.id}">${x.nom}</button>`).join('')}
+        </div>
+        <ul class="t30-points">
+          ${point('Graphite et lavande.', 'Un fond neutre : ce sont tes cartes qui donnent la couleur à l\'écran.')}
+          ${point('Du verre, là où ça flotte.', 'La barre des onglets, l\'en-tête et les fenêtres, en verre dépoli.')}
+          ${point('Plus lisible.', 'Une seule couleur pour agir, des contrastes revus partout.')}
+          ${point('Et cet onglet prend vie.', 'Tes cartes vont se battre.')}
+        </ul>
+        <p class="t30-pied">Rendez-vous quand tu auras les cartes en main.</p>
+    </div>
+  </section>`;
 }
+
+/* ---------- Le glissé ---------- */
+function t30Poser(tel, pct) {
+  t30Pos = Math.max(0, Math.min(100, pct));
+  tel.style.setProperty('--p', t30Pos + '%');
+  const r = tel.querySelector('.t30-range');
+  if (r) r.value = Math.round(t30Pos);
+}
+
+/* L'aller-retour d'invitation : vers la 3.0, vers aujourd'hui, au milieu.
+   Un doigt posé l'interrompt. */
+function t30Montrer() {
+  const tel = document.querySelector('.t30-tel');
+  if (!tel || t30Montre) return;
+  t30Montre = true;
+  if (document.documentElement.classList.contains('rm') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const etapes = [[50, 82, 700], [82, 22, 1000], [22, 50, 700]];
+  let i = 0, t0 = 0;
+  const pas = t => {
+    if (tel.dataset.touche || !tel.isConnected) return;
+    if (!t0) t0 = t;
+    const [a, b, d] = etapes[i];
+    const k = Math.min(1, (t - t0) / d);
+    t30Poser(tel, a + (b - a) * (0.5 - Math.cos(Math.PI * k) / 2));
+    if (k < 1) return requestAnimationFrame(pas);
+    if (++i < etapes.length) { t0 = 0; requestAnimationFrame(pas); }
+  };
+  requestAnimationFrame(pas);
+}
+
+/* Un doigt qui glisse de côté tire la séparation ; un doigt qui monte ou
+   descend fait défiler la page (touch-action: pan-y) ; un simple appui la
+   pose où il touche. */
+let t30Tire = null;
+document.addEventListener('pointerdown', ev => {
+  const tel = ev.target.closest && ev.target.closest('.t30-tel');
+  if (!tel) return;
+  tel.dataset.touche = '1';
+  t30Tire = { tel, x: ev.clientX, y: ev.clientY, actif: false };
+});
+const t30Suivre = ev => {
+  const r = t30Tire.tel.getBoundingClientRect();
+  t30Poser(t30Tire.tel, (ev.clientX - r.left) / r.width * 100);
+};
+document.addEventListener('pointermove', ev => {
+  if (!t30Tire) return;
+  if (!t30Tire.actif) {
+    const dx = Math.abs(ev.clientX - t30Tire.x), dy = Math.abs(ev.clientY - t30Tire.y);
+    if (dx < 6 || dx < dy) return;
+    t30Tire.actif = true;
+  }
+  t30Suivre(ev);
+});
+document.addEventListener('pointerup', ev => {
+  if (t30Tire && !t30Tire.actif && Math.abs(ev.clientY - t30Tire.y) < 10) t30Suivre(ev);
+  t30Tire = null;
+});
+document.addEventListener('pointercancel', () => { t30Tire = null; });
+/* Au clavier : le curseur caché. */
+document.addEventListener('input', ev => {
+  if (!ev.target.classList || !ev.target.classList.contains('t30-range')) return;
+  const tel = ev.target.closest('.t30-tel');
+  tel.dataset.touche = '1';
+  t30Poser(tel, +ev.target.value);
+});
+/* Les quatre écrans : on change d'images sans redessiner la page. */
+document.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-t30]');
+  if (!b) return;
+  t30Ecran = b.dataset.t30;
+  const e = TEASER30_ECRANS.find(x => x.id === t30Ecran);
+  const tel = document.querySelector('.t30-tel');
+  if (!tel || !e) return;
+  const [apres, avant] = tel.querySelectorAll('.t30-img');
+  apres.src = teaser30Img(e.id, 'apres'); apres.alt = `L'écran ${e.nom} en version 3.0`;
+  avant.src = teaser30Img(e.id, 'avant'); avant.alt = `L'écran ${e.nom} aujourd'hui`;
+  tel.setAttribute('aria-label', `${e.nom} : aujourd'hui et en version 3.0`);
+  document.querySelectorAll('.t30-ec').forEach(x => {
+    const on = x.dataset.t30 === e.id;
+    x.classList.toggle('on', on);
+    x.setAttribute('aria-selected', on);
+  });
+  if (typeof SFX === 'object' && SFX.jouer) SFX.jouer('tap');
+});

@@ -96,12 +96,15 @@ function pastilleOnglet(id) {
   if (id === 'reflets') return evQuetesPretes();
   if (id === 'illu') return illuData && !illuData.fini ? 1 : 0;
   if (id === 'social') return socNotifs();
+  /* Le teaser de la 3.0 (js/teaser30.js), tant qu'on ne l'a pas regardé. */
+  if (id === 'combats') return teaser30Nouveau() ? 1 : 0;
   return 0;
 }
 
 /* Sur l'avatar : ce qui attend derrière le tiroir, pour qu'on pense à l'ouvrir. */
 function pastilleTiroir() {
-  return TABS.filter(t => t.tiroir).reduce((n, t) => n + pastilleOnglet(t.id), 0);
+  return TABS.filter(t => t.tiroir).reduce((n, t) => n + pastilleOnglet(t.id), 0)
+    + (combatsAuTiroir() ? pastilleOnglet('combats') : 0);
 }
 
 /* ---------- Tiroir du compte ---------- */
@@ -247,6 +250,8 @@ function render() {
     return;
   }
 
+  /* Le teaser de la 3.0 : l'ouvrir éteint la pastille de Combats. */
+  if (ongletValide(tab) === 'combats') teaser30Vu();
   header();
   $('#nav').innerHTML = navHTML();
   majBoutonInstall();
@@ -396,7 +401,6 @@ async function clicPage(e) {
     case 'open': return openBooster();
     case 'open-bonus': return openBooster({ bonus: true });
     case 'nouveautes': return montrerNouveautes();
-    case 'teaser30': return montrerTeaser30();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
     case 'vers-garder': return versGarder();

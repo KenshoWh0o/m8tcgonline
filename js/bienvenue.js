@@ -207,7 +207,5 @@ function proposerAccueil() {
   if (chasseFinAVoir()) return quandCalme(montrerChasseFin);
   if (recapAVoir()) return quandCalme(montrerRecap);
   if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
-  /* Le teaser de la 3.0 (js/teaser30.js) : une fois par étape du colis. */
-  if (teaser30AVoir()) return quandCalme(montrerTeaser30);
   if (discordAVoir()) return quandCalme(montrerDiscord);
 }
