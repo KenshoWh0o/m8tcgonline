@@ -396,6 +396,7 @@ async function clicPage(e) {
     case 'open': return openBooster();
     case 'open-bonus': return openBooster({ bonus: true });
     case 'nouveautes': return montrerNouveautes();
+    case 'teaser30': return montrerTeaser30();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
     case 'vers-garder': return versGarder();

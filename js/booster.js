@@ -248,6 +248,7 @@ function vBoosters() {
 
   return `<section class="packzone">
   ${vBandeauEvenement()}
+  ${vTeaser30()}
   <header class="setbar">
     <img class="setlogo" src="${ART.set}" alt="${h(SET_NAME)}">
     <img class="edition" src="${ART.edition}" alt="Première édition">
