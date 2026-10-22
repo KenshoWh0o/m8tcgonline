@@ -79,7 +79,7 @@ Un README faux est pire que pas de README : en cas de doute, vérifier dans le c
 
 ### 1.5 Premiers pas (liste de reprise)
 
-1. Lire ce README en entier, puis [`docs/design-3.0.md`](docs/design-3.0.md) avant de toucher à un écran, et [`docs/regles-3.0.md`](docs/regles-3.0.md) avant de toucher aux combats.
+1. Lire ce README en entier, puis [`docs/design-3.0.md`](docs/design-3.0.md) avant de toucher à un écran, et [`docs/regles-3.0.md`](docs/regles-3.0.md) avant de toucher aux combats. Dans Claude Code, `CLAUDE.md` les importe tous (`@README.md`, `@docs/…`) : ils sont déjà dans le contexte, mais il faut les lire.
 2. `git fetch origin` : la branche `main` locale peut être en retard sur `origin/main`. Toujours comparer avec `origin/main`.
 3. `node tools/combat-tests.js` : les tests de règles doivent tous passer.
 4. `python3 tools/demo.py --preprod`, puis servir le dépôt ([§ 2.1](#21-servir-le-site-en-local)) et ouvrir `/preprod/` : c'est là que la 3.0 se teste.
@@ -183,7 +183,7 @@ Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la br
 ├── CNAME                  matetcg.com (ne compte que sur main)
 ├── README.md              Ce fichier
 ├── SETUP.md               Mettre un serveur Supabase en ligne, pas à pas
-├── CLAUDE.md              Consignes lues d'abord par les agents : renvoi à ce README, règles du propriétaire (copie du § 1.3 : modifier les deux ensemble)
+├── CLAUDE.md              Consignes lues d'abord par les agents : règles du propriétaire (copie du § 1.3 : modifier les deux ensemble), et import (`@…`) de toute la documentation, chargée d'office à chaque session
 ├── .claude/launch.json    Serveur local pour les agents (port 8781) ; .claude/worktrees/ (ignoré) reçoit les copies de travail des agents
 ├── .gitignore             _build/, __pycache__/, .claude/worktrees/
 ├── .gitattributes         Fins de ligne normalisées ; les .avif en binaire
@@ -1408,7 +1408,7 @@ Le gros du code mort a été retiré en 3.0.8 (navigation, données, combat, év
 | 3.0.6 | 13–14 oct. | **Raid par saisons et phases** (`27_raid.sql`) ; **tutoriel jouable** ; Guide en glossaire ; IA sans coups au hasard (mesurée) ; Decks avec bilan ; Classement Niveau / Secrètes / Versus ; bannière Squeezie le Toxique contre Brawks Déter, sans VS ; Insignes renommées **Étincelles** ; cadres 3.0 redessinés ; le Labo montre tout. |
 | **3.0.7** | 14 oct. | **Maîtrise des cartes** (`28_maitrise.sql`) et **carte fétiche** ; fiche de carte en trois pages (Infos, Maîtrise, Gérer) ; arène : carte agrandie intacte avec son état dessous, Joueur engagé qui ne pivote plus, animations rejouées depuis l'état de chaque instant, flèche de visée, touchers iOS ; tutoriel réécrit et vérifié dans Chromium (390, 375, 360) ; récap de booster sans défilement, pastille Boosters, niveau dans l'en-tête, Classement à quatre critères. |
 | **3.0.8** | 14–15 oct. | **README réécrit de zéro** et `CLAUDE.md` ; bandeau et tapis « Le Choc des Sections » recadrés sur Brawks Déter, Nouveautés sans « Deux Sections » ; tapis et cadre du Sorcier dans la même colonne de la boutique du Choc ; « Apprendre d'abord » ouvre le Guide ; liens `data-colvue` réparés ; cadres Arène sans plaque « NIV » ; **carte fétiche** refaite dans la DA ; **maîtrise refaite** (barème par rareté, effets sans voile, un joyau à la place de la couronne, fiche qui tient sans défiler) ; arène : **zone de détails** au-dessus de son camp pour sa main et ses Joueurs, **fantôme de la carte** dans les places libres à la place du « + » ; **dépôt rangé** (SQL en `installation/` et `administration/`, remises à zéro réécrites pour la 3.0 et protégées par un garde-fou, mises à jour historiques supprimées, code et CSS morts retirés, `SETUP.md` et docs remis d'accord avec le code) ; solde du Choc à jour après un achat. ; branches rangées : la branche de travail s'appelle désormais `version-3.0`. |
-| **3.0.9** | 22 oct. | **Labo réorganisé** en cinq sous-onglets (Maintenant, Combats, Scènes, Joueurs, Affichage), sans les aperçus de la chasse 1.5 ni le panneau Reflets (`montrerNouveautes21`, `apercuRecap` retirés) ; remises à zéro compatibles avec une base qui a reçu la 2.1.4 (tables `ech_*`) ; README et `CLAUDE.md` à jour des trois lignes (racine de `main`, `prebuild/`, `preprod/`). |
+| **3.0.9** | 22 oct. | **Labo réorganisé** en cinq sous-onglets (Maintenant, Combats, Scènes, Joueurs, Affichage), sans les aperçus de la chasse 1.5 ni le panneau Reflets (`montrerNouveautes21`, `apercuRecap` retirés) ; remises à zéro compatibles avec une base qui a reçu la 2.1.4 (tables `ech_*`) ; README et `CLAUDE.md` à jour des trois lignes (racine de `main`, `prebuild/`, `preprod/`) ; `CLAUDE.md` importe toute la documentation (`@README.md`, `@docs/…`, `@SETUP.md`, `@presse/README.md`). |
 
 **Choix d'interprétation de la 3.0.7, à connaître** : « Éclats » dans la demande sur la maîtrise a été lu comme **Fragments** ; le conflit entre exemplaires et decks est résolu par les exemplaires **en trop** seulement (le manque se paie en Fragments) ; la carte fétiche est distincte de la vitrine ; le Classement est réduit à quatre critères. Non vérifié sur un vrai appareil iOS (zones sûres, glissé des pages de la fiche).
 
