@@ -398,7 +398,8 @@
       evenement: evenementActif(),
       recap: evenementRecent(),
       chasse: chasseEtat(),
-      parametres: { fabrication_reverse: !!S.parametres.fabrication_reverse },
+      parametres: { reverses: { ouvertes: revOuvertes(), des: revDes() == null ? null : iso(revDes()),
+        couts: { C: prixReverse('C'), PC: prixReverse('PC'), R: prixReverse('R') } } },
       prismes: compte(p).solde,
       invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
@@ -1055,7 +1056,7 @@
       const k = carte(cid);
       if (!k) refuser('Carte inconnue.');
       if (k.promo) refuser('Cette carte ne se recycle pas.');
-      if (k.rev && !(S.parametres || {}).fabrication_reverse) refuser('Les Reverses ne se recyclent pas encore.');
+      if (k.rev && !revOuvertes()) refuser('Les Reverses ne se recyclent pas encore.');
       const prix = cfg('recyclage_' + k.rar);
       if (prix == null) refuser('Cette carte ne se recycle pas.');
       const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === cid && t.status === 'pending').length;
@@ -1075,6 +1076,17 @@
     return me(p);
   };
 
+  /* Version 2.1.4, 22c_reverses.sql : reverses_ouvertes et prix_reverse.
+     Ouvertes à la main, ou passé la date. Dans la vraie base, la date est
+     parametres.reverses_des, posée par calendrier-2.1.4.sql à la fin de
+     Reflets ; ici, c'est la fin de Reflets elle-même, qui suit ?echauffement. */
+  function revDes() {
+    if (S.parametres.reverses_des != null) return S.parametres.reverses_des;
+    return S.evenement && S.evenement.code === 'reflets' ? S.evenement.fin : null;
+  }
+  function revOuvertes() { const d = revDes(); return !!S.parametres.fabrication_reverse || (d != null && now() >= d); }
+  function prixReverse(r) { return { C: 400, PC: 500, R: 2400 }[r]; }
+
   /* fabriquer, 12_recyclage.sql */
   RPC.fabriquer = (p, { p_carte }) => {
     const k = carte(p_carte);
@@ -1083,8 +1095,8 @@
     let cout = cfg('fabrication_' + k.rar);
     if (cout == null) refuser('Cette carte ne se fabrique pas.');
     if (k.rev) {
-      if (!S.parametres.fabrication_reverse) refuser('La fabrication des Reverses n\'est pas encore ouverte.');
-      cout *= 2;
+      if (!revOuvertes()) refuser('La fabrication des Reverses n\'est pas encore ouverte.');
+      cout = prixReverse(k.rar);
     }
     if (possede(p, p_carte)) refuser('Tu possèdes déjà cette carte.');
     const pr = profil(p);
@@ -1202,6 +1214,162 @@
       bump(p, 'illu', 1);
     }
     return { illu: illuEtat(p), etat: me(p) };
+  };
+  /* ---------- L'Échauffement (22b_echauffement.sql) ---------- */
+  /* Sept défis, un par jour, après Reflets. Le combat est echSimuler, celui
+     du jeu (js/echauffement.js), lui-même copie de ech_simuler : une seule
+     copie en JavaScript. Pour essayer : `?echauffement` dans
+     l'adresse ouvre la saison tout de suite avec trois défis ouverts,
+     `?echauffement=7` les sept ; Reflets est alors fini, et le visiteur
+     reçoit des Joueurs s'il en a moins de neuf. Le prébuild
+     (tools/demo.py --prebuild) pose DEMO_ECHAUFFEMENT pour l'ouvrir d'office. */
+  const ECH_DEFIS = [
+    { jour: 1, adversaire: 'c010', pv: 900, regle: 'aucune', param: {}, titre: 'Premier contact', texte: 'Pas de règle aujourd\'hui : fais connaissance.' },
+    { jour: 2, adversaire: 'c044', pv: 1350, regle: 'carapace', param: { seuil: 100 }, titre: 'Carapace', texte: 'Il ignore les coups de moins de 100.' },
+    { jour: 3, adversaire: 'c102', pv: 600, regle: 'eclair', param: {}, titre: 'Frappe éclair', texte: 'Il frappe à chaque tour.' },
+    { jour: 4, adversaire: 'c060', pv: 1900, regle: 'affinite', param: { couleur: 'rose' }, titre: 'Affinité Rose', texte: 'Tes Joueurs Roses frappent deux fois plus fort.' },
+    { jour: 5, adversaire: 'c081', pv: 900, regle: 'riposte', param: { degats: 30 }, titre: 'Riposte', texte: 'Chaque coup que tu lui portes te coûte 30 de Défense.' },
+    { jour: 6, adversaire: 'c120', pv: 1000, regle: 'fureur', param: { plus: 30 }, titre: 'Fureur', texte: 'Ses coups gagnent 30 de dégâts à chaque fois.' },
+    { jour: 7, adversaire: 'c116', pv: 1150, regle: 'final', param: { seuil: 80, plus: 20 }, titre: 'Le dernier défi', texte: 'Il ignore les coups de moins de 80, et les siens gagnent 20 à chaque fois.' }
+  ];
+  const ECH_PRIX = [80, 80, 140];
+  /* ech_indices : trois étoiles au défi n, l'indice n ; les sept, le jour 0. */
+  const ECH_INDICES = [
+    { jour: 0, titre: 'Tout est prêt', texte: 'Rendez-vous quand tu auras les cartes en main.', visuel: { type: 'mot', valeur: 'Bientôt' } },
+    { jour: 1, titre: 'Nouveau visage', texte: 'Tout le jeu va changer de visage. Les couleurs de cette page en sont un avant-goût.', visuel: { type: 'teinte' } },
+    { jour: 2, titre: 'Ton deck', texte: 'Tes cartes ne resteront pas dans un classeur : tu en feras ton deck.', visuel: { type: 'eventail' } },
+    { jour: 3, titre: 'Cent vingt-huit', texte: 'La collection ne s\'arrête pas à 122 : elle comptera 128 cartes.', visuel: { type: 'nombre', valeur: '128' } },
+    { jour: 4, titre: 'Deux', texte: 'Deux camps. Il faudra choisir le tien.', visuel: { type: 'mot', valeur: 'Deux' } },
+    { jour: 5, titre: 'Plus loin', texte: 'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.', visuel: { type: 'etoiles', valeur: 5 } },
+    { jour: 6, titre: 'Face à face', texte: 'Un jour, ce sera contre tes amis.', visuel: { type: 'mot', valeur: 'VS' } },
+    { jour: 7, titre: 'Il reviendra', texte: 'Et la prochaine fois, vous l\'affronterez tous ensemble.', visuel: { type: 'carte', carte: 'c116' } }
+  ];
+
+  /* ech_joueurs : la Défense, la couleur et les attaques à dégâts d'un Joueur. */
+  function echStats(id) {
+    const k = carte(id);
+    if (!k || k.cat !== 'joueur' || k.promo || k.rev) return null;
+    return { def: k.def, couleur: k.col, attaques: (k.atks || []).filter(a => a.degats).map(a => ({ nom: a.nom, cout: Object.values(a.cout || {}).reduce((x, y) => x + y, 0), degats: a.degats })) };
+  }
+  function echSaison() {
+    if (!S.ech) {
+      const r = S.evenement && S.evenement.code === 'reflets' ? S.evenement.fin : now();
+      const d = Math.max(now(), r);
+      S.ech = { debut: d, fin: d + 9 * 86400000, scores: {}, paliers: {}, essais: {}, seq: 0 };
+    }
+    const m = location.search.match(/[?&]echauffement(?:=(\d))?/);
+    const f = m ? Math.min(7, Math.max(1, +(m[1] || 3))) : (typeof DEMO_ECHAUFFEMENT === 'number' ? DEMO_ECHAUFFEMENT : 0);
+    if (f && S.ech.force !== f) {
+      S.ech.debut = now() - (f - 1) * 86400000 - 3600000; S.ech.fin = S.ech.debut + 9 * 86400000; S.ech.force = f;
+      /* Reflets et son récap sont finis. */
+      if (S.evenement && S.evenement.code === 'reflets' && S.evenement.fin > now() - 3 * 86400000) {
+        S.evenement.fin = now() - 3 * 86400000 - 3600000; S.evenement.debut = Math.min(S.evenement.debut, S.evenement.fin - 14 * 86400000);
+      }
+      /* De quoi composer des équipes : deux tiers des Joueurs. */
+      const col = colDe(MOI);
+      const js = cards.filter(c => c.cat === 'joueur' && !c.promo);
+      if (js.filter(c => col[c.id] > 0).length < 9) js.forEach((c, i) => { if (i % 3 !== 2 && !(col[c.id] > 0)) col[c.id] = 1; });
+    }
+    return S.ech;
+  }
+  const echOuvert = () => { const s = echSaison(); return now() < s.debut ? 0 : Math.min(7, Math.floor((now() - s.debut) / 86400000) + 1); };
+  /* ech_essais_du_jour : trois par défi et par jour de Paris. */
+  function echEssaisDuJour(p, jour) {
+    const s = echSaison(), j = jourParis(now());
+    return Object.values(s.essais || {}).filter(e => e.p === p && e.jour === jour && jourParis(e.le) === j).length;
+  }
+  function echEtat(p) {
+    const s = echSaison(), o = echOuvert();
+    const sc = j => s.scores[p + '|' + j];
+    return {
+      debut: new Date(s.debut).toISOString(), fin: new Date(s.fin).toISOString(), ouvert: o, serveur: new Date(now()).toISOString(), total: 7, essais_max: 3,
+      defis: ECH_DEFIS.filter(d => d.jour <= o).map(d => Object.assign({}, d, { etoiles: sc(d.jour) ? sc(d.jour).etoiles : 0, equipe: sc(d.jour) ? sc(d.jour).equipe : null, essais_jour: echEssaisDuJour(p, d.jour) })),
+      etoiles: ECH_DEFIS.reduce((n, d) => n + (sc(d.jour) ? sc(d.jour).etoiles : 0), 0),
+      gagnes: ECH_DEFIS.filter(d => sc(d.jour) && sc(d.jour).etoiles > 0).length,
+      paliers: Object.keys(s.paliers[p] || {}),
+      indices: ECH_INDICES.filter(x => (x.jour > 0 && sc(x.jour) && sc(x.jour).etoiles === 3)
+        || (x.jour === 0 && ECH_DEFIS.every(d => sc(d.jour) && sc(d.jour).etoiles === 3)))
+    };
+  }
+  RPC.ech_etat = p => echEtat(p);
+  RPC.ech_commencer = (p, { p_jour, p_equipe }) => {
+    const s = echSaison();
+    if (now() < s.debut) refuser('L\'Échauffement n\'a pas commencé.');
+    if (now() >= s.fin) refuser('L\'Échauffement est terminé.');
+    if (!(p_jour >= 1 && p_jour <= echOuvert())) refuser('Ce défi n\'est pas encore ouvert.');
+    if (!Array.isArray(p_equipe)) refuser('Équipe invalide.');
+    if (p_equipe.length < 1 || p_equipe.length > 3) refuser('Une équipe compte un à trois Joueurs.');
+    const deja = echEssaisDuJour(p, p_jour);
+    if (deja >= 3) refuser('Plus d\'essai pour ce défi aujourd\'hui : reviens demain.');
+    const propre = [];
+    for (const e of p_equipe) {
+      let cid = e && e.carte;
+      if (/^r[0-9]/.test(cid || '')) cid = 'c' + cid.slice(1);
+      const st = cid && echStats(cid);
+      if (!st) refuser('Ce n\'est pas un Joueur.');
+      if (propre.some(x => x.carte === cid)) refuser('Un Joueur apparaît deux fois.');
+      if (!possede(p, cid) && !possede(p, 'r' + cid.slice(1))) refuser('Tu ne possèdes pas un des Joueurs choisis.');
+      const a = e.a == null ? 0 : e.a;
+      if (a < 0 || (st.attaques.length && a >= st.attaques.length) || (!st.attaques.length && a !== 0)) refuser('Attaque inconnue.');
+      propre.push({ carte: cid, a });
+    }
+    s.essais = s.essais || {};
+    const id = s.seq = (s.seq || 0) + 1;
+    s.essais[id] = { p, jour: p_jour, equipe: propre, le: now(), fini: false };
+    return { essai: id, equipe: propre, restants: 2 - deja };
+  };
+  RPC.ech_terminer = (p, { p_essai, p_eclat }) => {
+    const s = echSaison();
+    if (now() >= s.fin + 3600000) refuser('L\'Échauffement est terminé.');
+    const es = (s.essais || {})[p_essai];
+    if (!es || es.p !== p) refuser('Essai inconnu.');
+    if (es.fini) refuser('Cet essai est déjà joué.');
+    let ec = null;
+    if (p_eclat != null) {
+      if (typeof p_eclat !== 'object' || !Number.isInteger(p_eclat.tour) || !Number.isInteger(p_eclat.i)
+        || p_eclat.tour < 1 || p_eclat.tour > 10 || p_eclat.i < 0 || p_eclat.i >= es.equipe.length) refuser('Coup d\'éclat invalide.');
+      ec = { tour: p_eclat.tour, i: p_eclat.i };
+    }
+    const d = ECH_DEFIS[es.jour - 1];
+    const r = echSimuler(d, es.equipe, echStats, ec);
+    es.fini = true; es.eclat = ec; es.etoiles = r.etoiles;
+    const cle = p + '|' + es.jour;
+    const vieux = s.scores[cle];
+    const avant = vieux ? vieux.etoiles : 0;
+    const gain = { eclats: 0, boosters: 0, titre: null };
+    if (r.etoiles > avant) {
+      for (let k = avant + 1; k <= r.etoiles; k++) gain.eclats += ECH_PRIX[k - 1];
+      s.scores[cle] = { etoiles: r.etoiles, equipe: es.equipe, tours: r.tours };
+      accorder(p, 'eclats', gain.eclats, null);
+    } else if (!vieux) s.scores[cle] = { etoiles: 0, equipe: es.equipe, tours: r.tours };
+    const indice = r.etoiles === 3 && avant < 3 ? ECH_INDICES.find(x => x.jour === es.jour) : null;
+    const pal = (s.paliers[p] = s.paliers[p] || {});
+    const notes = ECH_DEFIS.map(x => (s.scores[p + '|' + x.jour] || {}).etoiles || 0);
+    if (notes.filter(x => x > 0).length === 7 && !pal.sept) { pal.sept = true; gain.boosters = 3; accorder(p, 'boosters', 3, null); }
+    if (notes.reduce((x, y) => x + y, 0) === 21 && !pal.parfait) { pal.parfait = true; gain.titre = 't_echauffe'; accorder(p, 'titre', 0, 't_echauffe'); }
+    return { resultat: r, avant, gain, indice, etat: echEtat(p), me: me(p) };
+  };
+  /* ech_admin, ech_admin_rejouer : le Labo. */
+  RPC.ech_admin = p => {
+    estAdmin(p);
+    const s = echSaison(), es = Object.values(s.essais || {}), sc = Object.entries(s.scores);
+    const notes = j => sc.filter(([k]) => k.endsWith('|' + j)).map(([, v]) => v.etoiles);
+    const pal = x => Object.values(s.paliers).filter(v => v[x]).length;
+    return {
+      debut: new Date(s.debut).toISOString(), fin: new Date(s.fin).toISOString(), ouvert: echOuvert(), serveur: new Date(now()).toISOString(),
+      total: 7, essais_max: 3,
+      defis: ECH_DEFIS.map(d => Object.assign({}, d, { essais: es.filter(e => e.jour === d.jour).length,
+        gagnes: notes(d.jour).filter(x => x > 0).length, parfaits: notes(d.jour).filter(x => x === 3).length })),
+      indices: ECH_INDICES.slice().sort((a, b) => a.jour - b.jour),
+      joueurs: new Set(es.map(e => e.p)).size, sept: pal('sept'), parfait: pal('parfait')
+    };
+  };
+  RPC.ech_admin_rejouer = p => {
+    estAdmin(p);
+    const s = echSaison(), j = jourParis(now());
+    let n = 0;
+    Object.keys(s.essais || {}).forEach(k => { const e = s.essais[k]; if (e.p === p && jourParis(e.le) === j) { delete s.essais[k]; n++; } });
+    return { effaces: n, etat: echEtat(p) };
   };
   RPC.personnaliser = (p, { p_titre, p_banniere, p_devise }) => {
     const pr = profil(p);
@@ -1435,6 +1603,8 @@
         S.chasse = S.chasse || { carte: 'u01', active: true, gagnant: null, trouvee_le: null };
         chasseTerminee();
         monde20();
+        /* L'Échauffement : en mode essai, la saison s'ouvre dès le chargement. */
+        echSaison();
       })();
     }
     return pret;

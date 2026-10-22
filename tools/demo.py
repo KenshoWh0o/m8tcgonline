@@ -32,8 +32,13 @@ import json, os, re, shutil, sys, zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, '_demo')
 BUILD = os.path.join(ROOT, '_build')
-PREPROD = '--preprod' in sys.argv
-OUT = os.path.join(ROOT, 'preprod') if PREPROD else os.path.join(BUILD, 'm8tcg-demo')
+PREBUILD = '--prebuild' in sys.argv
+PREPROD = '--preprod' in sys.argv or PREBUILD
+# Le prebuild : la meme chose que la pre-prod, mais pour la version 2.x en
+# cours (une branche partie de main), dans prebuild/, avec son propre
+# stockage — la pre-prod de la 3.0 et lui vivent cote a cote sur main.
+DOSSIER = 'prebuild' if PREBUILD else 'preprod'
+OUT = os.path.join(ROOT, DOSSIER) if PREPROD else os.path.join(BUILD, 'm8tcg-demo')
 
 # Ce qui part dans la demo. Tout le reste (serveur SQL, outils, kit presse,
 # page de diagnostic, adresse du site) n'a rien a y faire.
@@ -110,12 +115,13 @@ ecrire('sw.js', sw)
 # --- la pre-prod : isolee du vrai site qui partage son adresse
 TETE_PREPROD = """<head>
 <meta name="robots" content="noindex, nofollow">
+@@ECH@@
 <script>
 /* Pre-prod : tout ce que la page range porte le prefixe « preprod: ». Le
    vrai site partage cette adresse (matetcg.com) : sans ce prefixe, les deux
    se liraient et s'ecraseraient leurs reglages. */
 (function () {
-  var P = 'preprod:', S = Storage.prototype, g = S.getItem, s = S.setItem, r = S.removeItem, k = S.key;
+  var P = '@@DOSSIER@@:', S = Storage.prototype, g = S.getItem, s = S.setItem, r = S.removeItem, k = S.key;
   S.getItem = function (x) { return g.call(this, P + x); };
   S.setItem = function (x, v) { return s.call(this, P + x, v); };
   S.removeItem = function (x) { return r.call(this, P + x); };
@@ -134,23 +140,28 @@ TETE_PREPROD = """<head>
 if PREPROD:
     page = lire('index.html')
     # En tout premier : le stockage du navigateur passe sous un prefixe.
-    page = remplacer(page, r'<head>\n', lambda m: TETE_PREPROD, "la balise <head> d'index.html")
-    page = remplacer(page, r'<title>[^<]*</title>', lambda m: f'<title>PRÉ-PROD {v} · Mate TCG Online</title>',
+    # Le prebuild ouvre L'Echauffement d'office, ses sept defis (_demo/serveur.js).
+    tete = TETE_PREPROD.replace('@@DOSSIER@@', DOSSIER).replace('@@ECH@@',
+        '<script>var DEMO_ECHAUFFEMENT = 7;</script>\n' if PREBUILD else '')
+    page = remplacer(page, r'<head>\n', lambda m: tete, "la balise <head> d'index.html")
+    nomv = 'PRÉBUILD' if PREBUILD else 'PRÉ-PROD'
+    page = remplacer(page, r'<title>[^<]*</title>', lambda m: f'<title>{nomv} {v} · Mate TCG Online</title>',
                      'le titre de la page')
     page = remplacer(page, r'<body([^>]*)>',
-                     lambda m: m.group(0) + "\n<div class=\"preprod-bandeau\">Pré-prod · démo, rien n'est réel</div>",
+                     lambda m: m.group(0) + "\n<div class=\"preprod-bandeau\">" + ('Prébuild ' + v if PREBUILD else 'Pré-prod') + " · démo, rien n'est réel</div>",
                      "la balise <body> d'index.html")
     ecrire('index.html', page)
     # Une base IndexedDB a part.
     ecrire('js/storage.js', remplacer(lire('js/storage.js'), r"indexedDB\.open\('premier-lobby'",
-                                      lambda m: "indexedDB.open('premier-lobby-preprod'", 'la base IndexedDB de js/storage.js'))
+                                      lambda m: "indexedDB.open('premier-lobby-" + DOSSIER + "'", 'la base IndexedDB de js/storage.js'))
     # Pas de service worker.
     ecrire('js/pwa.js', remplacer(lire('js/pwa.js'), r'function brancherSW\(\) \{',
                                   lambda m: m.group(0) + '\n  return; /* pre-prod : pas de service worker (tools/demo.py) */',
                                   'brancherSW dans js/pwa.js'))
     # Installee sur l'ecran d'accueil, elle ne se confond pas avec le vrai jeu.
     ecrire('manifest.webmanifest', remplacer(lire('manifest.webmanifest'), r'"name": "[^"]*",\s*"short_name": "[^"]*"',
-        lambda m: '"name": "Mate TCG Pré-prod",\n  "short_name": "TCG Pré-prod"', 'les noms du manifeste'))
+        lambda m: ('"name": "Mate TCG Prébuild",\n  "short_name": "TCG Prébuild"' if PREBUILD
+                   else '"name": "Mate TCG Pré-prod",\n  "short_name": "TCG Pré-prod"'), 'les noms du manifeste'))
     os.remove(os.path.join(OUT, 'sw.js'))
     os.remove(os.path.join(OUT, 'LISEZMOI.txt'))
     # Le joueur de la pre-prod est administrateur : le Labo sert a tout tester.
@@ -158,7 +169,7 @@ if PREPROD:
         r"S\.profils\[MOI\] = nouveauProfil\(MOI, D\.pseudo, \{ shards: D\.eclats \}\);",
         lambda m: m.group(0) + '\n    S.profils[MOI].is_admin = true; /* pre-prod : le Labo est ouvert */',
         'la creation du joueur dans demo-serveur.js'))
-    print(f'Pre-prod prete : preprod/ (version {v}), publiee a matetcg.com/preprod/ une fois poussee sur main')
+    print(f'{"Prebuild" if PREBUILD else "Pre-prod"} pret(e) : {DOSSIER}/ (version {v}), publie(e) a matetcg.com/{DOSSIER}/ une fois pousse(e) sur main')
     sys.exit(0)
 
 # --- l'archive a envoyer

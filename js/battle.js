@@ -1,8 +1,10 @@
-/* Onglet Combats. Les règles ne sont pas écrites : la page annonce la couleur
-   et ne promet rien d'autre. Elle réutilise les vraies cartes pour la mise en scène. */
+/* Onglet Combats. Pendant L'Échauffement (js/echauffement.js), ses défis ;
+   le reste du temps, l'annonce : les règles ne sont pas écrites, la page ne
+   promet rien d'autre. Elle réutilise les vraies cartes pour la mise en scène. */
 "use strict";
 
 function vCombats() {
+  if (echActif()) return vEchauffement();
   const vedettes = cards
     .filter(c => c.cat === 'joueur' && (c.rar === 'L' || c.rar === 'E'))
     .slice(0, 3);

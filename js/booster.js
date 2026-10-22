@@ -154,6 +154,9 @@ function vBandeauEvenement() {
      mène au récap. */
   if (recapReflets()) return vBandeauRecap();
   if (ev && ev.code === 'reflets' && !ev.a_venir) return vBandeauReflets(ev);
+  /* Version 2.1.4 : L'Échauffement, qui mène à l'onglet Combats. */
+  const ech = vBandeauEch();
+  if (ech) return ech;
   const ch = save.chasse || {};
   const u = uniques[0];
   const nomU = u ? u.nom : 'la carte unique';
@@ -234,6 +237,9 @@ function prochaineBascule() {
   const ev = save.evenement;
   if (ev) t.push(srvTime(ev.a_venir ? ev.debut : ev.fin));
   if (chasseAnnoncee(save.chasse)) t.push(srvTime(save.chasse.ouvre_le));
+  /* Version 2.1.4 : l'ouverture des Reverses (supabase/22c_reverses.sql). */
+  const rv = (save.parametres || {}).reverses;
+  if (rv && !rv.ouvertes && rv.des) t.push(srvTime(rv.des));
   return t.length ? Math.min(...t) : 0;
 }
 

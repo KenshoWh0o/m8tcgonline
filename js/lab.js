@@ -4,13 +4,18 @@
    suffirait pas : c'est le serveur qui refuse les actions, pas l'interface qui
    les masque.
 
-   Ce que le Labo peut faire : rejouer n'importe quelle mise en scène, poser
-   l'interface dans un état d'événement ou de chasse, et modifier l'affichage
-   local. Ce qu'il ne peut pas faire : accorder une carte,
-   des Éclats ou un booster sur le compte — ça, seul le serveur le décide, et il
-   ne prend d'ordre de personne. Les boutons d'aperçu le disent en toutes
-   lettres. */
+   Presque tout y est local : rejouer une mise en scène, poser l'interface
+   dans l'état d'un événement, modifier l'affichage. Les seules actions réelles
+   (annonce, cadeau, et « Rejouer mes essais du jour » de L'Échauffement)
+   passent par des fonctions du serveur qui vérifient elles-mêmes le droit
+   d'administrateur ; l'onglet Joueurs le dit en tête. */
 "use strict";
+
+/* Quatre sous-onglets : ce qui se passe maintenant (l'événement du jour et
+   ses outils), les mises en scène à rejouer, les actions réelles sur les
+   joueurs, et l'affichage local. */
+let labVue = 'maintenant';
+const LAB_VUES = [['maintenant', 'Maintenant'], ['scenes', 'Scènes'], ['joueurs', 'Joueurs'], ['affichage', 'Affichage']];
 
 function vTest() {
   if (!save.isAdmin) {
@@ -20,22 +25,191 @@ function vTest() {
     return `<div class="pagehead"><div><h1>Labo</h1></div></div>
       ${vide('Aucune carte', 'Le fichier js/cards-data.js ne contient aucune carte.')}`;
   }
+  const corps = labVue === 'scenes' ? vLabScenes() : labVue === 'joueurs' ? vLabJoueurs()
+    : labVue === 'affichage' ? vLabAffichage() : vLabMaintenant();
+  return `<div class="pagehead"><div><h1>Labo</h1>
+      <p>Voir ce qu'on ne peut pas provoquer. Tout est local, sauf l'onglet Joueurs.</p></div></div>
+    <div class="segbar labvues">${LAB_VUES.map(([k, n]) => `<button data-labv="${k}" class="${labVue === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+    ${corps}`;
+}
 
-  const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
+/* ---------- Maintenant ---------- */
+/* L'état du serveur, puis l'événement du moment et ses outils. Un aperçu ne
+   change que l'affichage : « Revenir à l'état réel » redemande tout. */
+let labEch = null;
+let labEchCharge = false;
 
-  return `<div class="pagehead">
-    <div>
-      <h1>Labo</h1>
-      <p>Rejouer les mises en scène, et regarder l'interface dans des états
-        qu'on ne croise pas tous les jours.</p>
+async function labChargerEch() {
+  if (labEchCharge) return;
+  labEchCharge = true;
+  try { labEch = await Backend.echAdmin(); } catch (e) { labEch = { erreur: e.message || 'Le serveur n\'a pas répondu.' }; }
+  if (tab === 'labo') render();
+}
+
+function vLabMaintenant() {
+  if (!labEch && Backend.mode === 'cloud') labChargerEch();
+  const ev = save.evenement;
+  const ch = save.chasse || {};
+  const u = uniques[0];
+  const quand = iso => jourHeure(srvTime(iso));
+  const recap = typeof recapReflets === 'function' && !rfRecapApercu ? recapReflets() : null;
+  const etatEv = ev ? (ev.a_venir ? `« ${ev.titre} » commence ${quand(ev.debut)}, finit ${quand(ev.fin)}.` : `« ${ev.titre} » en cours, finit ${quand(ev.fin)}.`)
+    : recap ? `Récap de « ${recap.titre} » ${jourHeure(srvTime(recap.jusqua), 'jusqu\'à')}.` : 'Aucun.';
+  const E = labEch && !labEch.erreur ? labEch : null;
+  const etatEch = !E ? (labEch ? labEch.erreur : 'Chargement…')
+    : Date.now() < srvTime(E.debut) ? `Commence ${quand(E.debut)}, finit ${quand(E.fin)}.`
+    : Date.now() < srvTime(E.fin) ? `Défi ${E.ouvert} sur 7 ouvert, finit ${quand(E.fin)}.`
+    : `Terminée ${quand(E.fin)}.`;
+  const etatCh = !ch.carte ? 'Inconnue.'
+    : ch.trouvee ? `Terminée : tirée par ${ch.gagnant || 'un joueur'}.`
+    : ch.active ? 'Ouverte : une chance sur 250 par booster.' : 'Fermée.';
+  const apercu = (echData && echData.apercu) || rfRecapApercu;
+  /* Les Reverses (version 2.1.4, supabase/22c_reverses.sql). */
+  const rv = revEtat();
+  const etatRev = revOuvertes() ? `Recyclage et fabrication ouverts : ${revCoutsTexte()}.`
+    : rv.des ? `Fermés : ouvrent ${jourParis(rv.des)}.` : 'Fermés, sans date.';
+
+  return `${apercu ? `<p class="labalerte">Un aperçu est affiché : ce n'est pas l'état du serveur.
+      <button class="linkbtn" data-act="t-ev-reel">Revenir à l'état réel</button></p>` : ''}
+    <section class="panel">
+      <h2>Le serveur</h2>
+      <div class="labetat">
+        <div><span>Événement</span><b>${h(etatEv)}</b></div>
+        <div><span>L'Échauffement</span><b>${h(etatEch)}</b></div>
+        <div><span>Recharge</span><b>Un booster toutes les ${h(String(Math.round(INTERVAL / 360000) / 10).replace('.', ','))} h</b></div>
+        <div><span>${h(u ? u.nom : 'Carte unique')}</span><b>${h(etatCh)}</b></div>
+        <div><span>Reverses</span><b>${h(etatRev)}</b></div>
+      </div>
+    </section>
+    ${vLabEch(E)}
+    ${ev && ev.code === 'reflets' || recap || rfRecapApercu ? vLabRecap() : ''}
+    <section class="panel">
+      <h2>Requêtes SQL</h2>
+      <p class="muted small">Le Labo ne lance rien : ça se fait dans le SQL Editor de Supabase.</p>
+      <pre class="labsql">-- Un événement de recharge (ici : maintenant, pour 3 jours)
+insert into public.evenements (titre, texte, debut, fin, ticket_minutes) values
+  ('Boosters doublés', 'Un booster toutes les 2 h au lieu de 4.',
+   now(), now() + interval '3 days', 120);
+-- L'arrêter avant l'heure
+update public.evenements set fin = now() where fin > now() and code is null;
+
+-- L'Échauffement : déplacer la saison (heure de Paris)
+update public.ech_saison set debut = timestamptz '2026-10-26 00:00:00+01',
+  fin = timestamptz '2026-11-04 00:00:00+01' where id = 1;
+-- Les meilleures notes, défi par défi
+select p.pseudo, s.jour, s.etoiles, s.tours from public.ech_scores s
+  join public.profiles p on p.id = s.user_id order by s.jour, s.etoiles desc;
+
+-- Les Reverses : déplacer l'ouverture, ou ouvrir tout de suite
+update public.parametres set reverses_des = timestamptz '2026-10-24 00:00:00+02' where id = 1;
+update public.parametres set fabrication_reverse = true where id = 1;</pre>
+    </section>`;
+}
+
+/* L'Échauffement : la saison, la participation, les aperçus de la page, et
+   les huit indices — que seul le Labo peut lire avant de les gagner. */
+function vLabEch(E) {
+  if (!E) return '';
+  const ici = echData && echData.apercu;
+  return `<section class="panel">
+    <h2>L'Échauffement</h2>
+    <p class="muted small">${fmtN(E.joueurs)} ${E.joueurs > 1 ? 'joueurs ont' : 'joueur a'} tenté un défi ;
+      ${fmtN(E.sept)} ${E.sept > 1 ? 'ont' : 'a'} gagné les sept, ${fmtN(E.parfait)} ${E.parfait > 1 ? 'ont' : 'a'} les 21 étoiles.</p>
+    <div class="labech">
+      <span></span><b>Règle</b><b>Déf.</b><b>Essais</b><b>Gagnés</b><b>★★★</b>
+      ${E.defis.map(d => `<span><i class="tnum">${d.jour}</i>${h((byId[d.adversaire] || {}).nom || d.adversaire)}</span>
+        <span>${h(d.titre)}</span><span class="tnum">${fmtN(d.pv)}</span><span class="tnum">${fmtN(d.essais)}</span>
+        <span class="tnum">${fmtN(d.gagnes)}</span><span class="tnum">${fmtN(d.parfaits)}</span>`).join('')}
     </div>
-  </div>
+    <h3 class="labsous">Aperçus</h3>
+    <div class="labgrid">
+      <button class="labbtn" data-act="t-ech-debut"><b>La page</b><span>au premier jour, rien de gagné</span></button>
+      <button class="labbtn" data-act="t-ech-complet"><b>Tout gagné</b><span>21 étoiles, les huit indices</span></button>
+      <button class="labbtn" data-act="t-ech-annonce"><b>La fenêtre</b><span>l'annonce, une fois par joueur</span></button>
+      <button class="labbtn" data-act="t-ech-indices"><b>Les indices</b><span>les huit, avec leur texte</span></button>
+    </div>
+    <p class="muted small" style="margin-top:9px">Dans l'aperçu, les sept défis sont ouverts et se jouent avec ta
+      collection, sans limite d'essais : rien n'est envoyé au serveur.</p>
+    ${ici ? `<h3 class="labsous">Le bandeau de l'écran Boosters</h3>${vBandeauEch()}` : ''}
+    <h3 class="labsous">Sur ton compte, pour de vrai</h3>
+    <div class="row"><button class="btn ghost" data-act="t-ech-rejouer">Rejouer mes essais du jour</button></div>
+    <p class="muted small" style="margin-top:8px">Efface tes essais d'aujourd'hui (pas tes notes ni tes gains),
+      pour retester sans attendre demain. Seulement pendant la saison.</p>
+  </section>`;
+}
 
-  <section class="panel">
+/* L'état d'aperçu : les sept défis ouverts, et, pour « complet », les
+   21 étoiles et les huit indices. */
+function labEchApercu(complet) {
+  const E = labEch;
+  if (!E || E.erreur) return toast('Les données de L\'Échauffement ne sont pas chargées.');
+  const t = Date.now();
+  echData = {
+    apercu: true, debut: new Date(t - 6 * 86400000).toISOString(), fin: new Date(t + 3 * 86400000 - 3600000).toISOString(),
+    ouvert: 7, total: 7, essais_max: 3, serveur: new Date(t).toISOString(),
+    defis: E.defis.map(d => Object.assign({}, d, { etoiles: complet ? 3 : 0, equipe: null, essais_jour: 0 })),
+    etoiles: complet ? 21 : 0, gagnes: complet ? 7 : 0, paliers: complet ? ['sept', 'parfait'] : [],
+    indices: complet ? E.indices.slice() : [], apercuIndices: E.indices.slice()
+  };
+  if (!complet) echData.defis = echData.defis.slice(0, 1);
+  echVue = 'accueil';
+  aller('combats');
+}
+
+function labEchIndices() {
+  const E = labEch;
+  if (!E || E.erreur) return toast('Les données de L\'Échauffement ne sont pas chargées.');
+  const l = E.indices.slice().sort((a, b) => (a.jour || 8) - (b.jour || 8));
+  openSheet({
+    title: 'Les huit indices',
+    body: `<p class="muted small">Trois étoiles au défi n donnent l'indice n ; les sept, le dernier mot.
+        Les joueurs ne reçoivent le texte qu'une fois gagné.</p>
+      <div class="labinds">${l.map(x => `<div class="labind"><span class="ech-ind ouvert">${vIndiceVisuel(x)}</span>
+        <span><small>${x.jour ? 'Défi ' + x.jour : 'Les sept'}</small><b>${h(x.titre)}</b><em>${h(x.texte)}</em></span></div>`).join('')}</div>`,
+    actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
+  });
+}
+
+async function labEchRejouer() {
+  try {
+    const r = await Backend.echAdminRejouer();
+    if (!(echData && echData.apercu)) echData = r.etat;
+    toast(r.effaces ? `${r.effaces} essai${r.effaces > 1 ? 's' : ''} effacé${r.effaces > 1 ? 's' : ''}.` : 'Aucun essai aujourd\'hui.');
+  } catch (e) {
+    toast(e.message || 'Le serveur n\'a pas répondu.');
+  }
+}
+
+/* Le récap de Reflets : tant qu'il dure (ou qu'il va venir). */
+function vLabRecap() {
+  return `<section class="panel">
+    <h2>Reflets · le récap</h2>
+    <p class="muted small">Après l'événement, son onglet devient un récap jusqu'au dimanche 25 octobre minuit.
+      Aperçu avec des chiffres inventés.</p>
+    <div class="row">
+      <button class="btn ghost" data-act="t-v2-recap">Onglet récap</button>
+      <button class="btn ghost" data-act="t-v2-recap-pop">Fenêtre de fin</button>
+      <button class="btn ghost" data-act="t-v2-recap-ban">Bandeau</button>
+    </div>
+  </section>`;
+}
+
+async function labEtatReel() {
+  if (echData && echData.apercu) echData = null;
+  if (rfRecapApercu) { rfRecapApercu = null; rfRecap = null; }
+  try { await Backend.pull(); } catch (e) { /* le prochain rafraîchissement s'en chargera */ }
+  await chargerEch();
+  render();
+  toast('État du serveur rétabli.');
+}
+
+/* ---------- Scènes ---------- */
+function vLabScenes() {
+  const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
+  return `<section class="panel">
     <h2>Ouvertures</h2>
-    <p class="muted small">Elles ne consomment pas de booster et n'ajoutent rien à ta
-      collection. Le tirage se fait dans ce navigateur, pas sur le serveur : ça règle
-      la mise en scène, pas les probabilités réelles.</p>
+    <p class="muted small">Tirées dans ce navigateur : elles ne consomment rien et n'ajoutent rien. Elles
+      règlent la mise en scène, pas les probabilités réelles.</p>
     <div class="labgrid">
       <button class="labbtn" data-act="t-open"><b>Booster normal</b><span>Tirage réel</span></button>
       <button class="labbtn tR" data-act="t-R" ${has('R') ? '' : 'disabled'}><b>Rare</b><span>en dernière carte</span></button>
@@ -46,98 +220,71 @@ function vTest() {
       <button class="labbtn tG" data-act="t-god"><b>Godpack</b><span>1 sur 2 000 en vrai</span></button>
       <button class="labbtn tREV" data-act="t-REV" ${reverses.length ? '' : 'disabled'}><b>Reverse Rare</b><span>en 5ᵉ carte, 15 % en vrai</span></button>
     </div>
-    <div class="row" style="margin-top:9px">
-      <button class="btn ghost" data-act="t-partage">Image de partage d'un booster</button>
-    </div>
+    <div class="row" style="margin-top:9px"><button class="btn ghost" data-act="t-partage">Image de partage d'un booster</button></div>
   </section>
-
-  ${vLabEvenement()}
 
   <section class="panel">
     <h2>Cartes Promo</h2>
-    <p class="muted small">L'animation d'obtention, en entier, sans toucher au compte.
-      C'est exactement ce que verra un joueur qui achète la carte ou qui franchit
-      le palier — seule l'écriture dans la collection est sautée.</p>
+    <p class="muted small">L'obtention en entier, sans l'écriture dans la collection. Pour les obtenir pour de
+      vrai : requêtes en bas de <code>supabase/03b_promos.sql</code>.</p>
     <div class="labgrid">
-      ${promos.map(p => `<button class="labbtn tPR" data-promo="${h(p.id)}">
-        <b>${h(p.code)}</b><span>${h(p.nom)}</span></button>`).join('')}
+      ${promos.map(p => `<button class="labbtn tPR" data-promo="${h(p.id)}"><b>${h(p.code)}</b><span>${h(p.nom)}</span></button>`).join('')}
     </div>
-    ${promos.length > 1
-      ? '<div class="row" style="margin-top:9px"><button class="btn ghost" data-act="t-promo-file">Les enchaîner toutes</button></div>'
-      : ''}
-    <p class="muted small" style="margin-top:12px">Pour les obtenir <b>pour de vrai</b> sur ton
-      compte — et vérifier la détection, la boutique et les paliers — les requêtes sont
-      en bas de <code>supabase/03b_promos.sql</code>.</p>
+    ${promos.length > 1 ? '<div class="row" style="margin-top:9px"><button class="btn ghost" data-act="t-promo-file">Les enchaîner toutes</button></div>' : ''}
   </section>
 
-  ${vLabCadeau()}
-
   <section class="panel">
-    <h2>Version 2.0 · Reflets</h2>
-    <p class="muted small">Les fenêtres de la 2.0, sans rien réclamer ni dépenser.</p>
+    <h2>Fenêtres</h2>
     <div class="row">
-      <button class="btn ghost" data-act="t-v2-nouveautes">Nouveautés 2.0</button>
-      <button class="btn ghost" data-act="t-v2-palier">Palier : une carte</button>
-      <button class="btn ghost" data-act="t-v2-palier-titre">Palier : un titre</button>
-    </div>
-    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" data-act="nouveautes">Nouveautés ${h(NOUVEAUTES_VERSION)}</button>
       <button class="btn ghost" data-act="t-v2-invitation">Invitation achetée</button>
-      <button class="btn ghost" data-act="t-v2-reflets">Onglet de l'événement</button>
-      <button class="btn ghost" data-act="t-v2-illu">Devine l'illu</button>
+      <button class="btn ghost" data-act="t-cadeau">Cadeau reçu</button>
     </div>
-    <p class="muted small" style="margin-top:10px">La fin de l'événement : pendant trois jours, son onglet devient un récap.
-      Aperçu avec des chiffres inventés — rien n'est enregistré.</p>
-    <div class="row" style="margin-top:6px">
-      <button class="btn ghost" data-act="t-v2-recap">Onglet récap</button>
-      <button class="btn ghost" data-act="t-v2-recap-pop">Fenêtre de fin</button>
-      <button class="btn ghost" data-act="t-v2-recap-ban">Bandeau récap</button>
-    </div>
-    <p class="muted small" style="margin-top:8px">La fabrication des Reverses s'ouvre côté serveur :
-      <code>update public.parametres set fabrication_reverse = true where id = 1;</code></p>
-  </section>
-
-  <section class="panel">
-    <h2>Annonce à tous les joueurs</h2>
-    <p class="muted small">Elle arrive dans la boîte de réception de chacun, avec un ping
-      pour ceux qui sont en jeu. Pour la retirer : « Retirer l'annonce » dans ta boîte.</p>
-    <label class="field"><span>Titre</span>
-      <input id="an-titre" type="text" maxlength="80" placeholder="Le jeu est ouvert !"></label>
-    <label class="field"><span>Texte <small class="muted">(facultatif)</small></span>
-      <textarea id="an-texte" maxlength="600" rows="3"
-        placeholder="Quelques lignes, 600 caractères au plus."></textarea></label>
-    <button class="btn" data-act="annonce-publier">Publier l'annonce</button>
   </section>
 
   <section class="panel">
     <h2>Notifications</h2>
-    <p class="muted small">Les bandeaux qui passent en haut de l'écran, pour vérifier
-      qu'ils ne recouvrent rien.</p>
+    <p class="muted small">Les bandeaux du haut de l'écran, pour vérifier qu'ils ne recouvrent rien.</p>
     <div class="row">
       <button class="btn ghost" data-act="t-quete">Quête accomplie</button>
       <button class="btn ghost" data-act="t-ping">Ping de la boîte</button>
       <button class="btn ghost" data-act="t-toast">Message court</button>
     </div>
-  </section>
+  </section>`;
+}
 
+/* ---------- Joueurs (réel) ---------- */
+function vLabJoueurs() {
+  return `<p class="labalerte">Ici, tout est réel : ce qui part arrive chez les joueurs.</p>
   <section class="panel">
+    <h2>Annonce à tous les joueurs</h2>
+    <p class="muted small">Dans la boîte de réception de chacun, avec un ping pour ceux qui sont en jeu.
+      Pour la retirer : « Retirer l'annonce » dans ta boîte.</p>
+    <label class="field"><span>Titre</span>
+      <input id="an-titre" type="text" maxlength="80" placeholder="Le jeu est ouvert !"></label>
+    <label class="field"><span>Texte <small class="muted">(facultatif)</small></span>
+      <textarea id="an-texte" maxlength="600" rows="3" placeholder="Quelques lignes, 600 caractères au plus."></textarea></label>
+    <button class="btn" data-act="annonce-publier">Publier l'annonce</button>
+  </section>
+  ${vLabCadeau()}`;
+}
+
+/* ---------- Affichage (local) ---------- */
+function vLabAffichage() {
+  return `<section class="panel">
     <h2>Aperçu de la collection</h2>
-    <p class="muted small">Ces boutons ne touchent qu'à l'affichage local. En ligne, la
-      collection et la réserve restent celles du serveur : la page les récupérera telles
-      quelles au prochain rafraîchissement.</p>
+    <p class="muted small">Seulement l'affichage de ce navigateur : le prochain rafraîchissement remet
+      la collection et la réserve du serveur.</p>
     <div class="row">
       <button class="btn ghost" data-act="t-all">Tout débloquer</button>
       <button class="btn ghost" data-act="t-clear">Vider</button>
-    </div>
-    <div class="row" style="margin-top:8px">
       <button class="btn ghost" data-act="t-90">Monter à 90 %</button>
-      <button class="btn ghost" data-act="t-10">+10 boosters</button>
     </div>
     <div class="row" style="margin-top:8px">
+      <button class="btn ghost" data-act="t-10">+10 boosters</button>
       <button class="btn ghost" data-act="t-fragments">+5 000 ${h(FRAGMENTS.nom)}</button>
       <button class="btn ghost" data-act="t-succes">Tous les succès</button>
     </div>
-    <p class="muted small" style="margin-top:8px">Les ${h(FRAGMENTS.nom)} affichés permettent d'ouvrir la
-      fenêtre de fabrication ; la fabrication elle-même, le serveur la refusera.</p>
     <label class="toggle" style="margin-top:10px">
       <span>Boosters illimités<small>Le bouton d'ouverture ne s'épuise plus</small></span>
       <input type="checkbox" id="unl" ${save.unlimited ? 'checked' : ''}></label>
@@ -145,10 +292,8 @@ function vTest() {
 
   <section class="panel">
     <h2>Équilibrage</h2>
-    <p class="muted small">Les taux de tirage, le prix des articles et les objectifs des
-      quêtes vivent côté serveur, dans <code>supabase/04_seed.sql</code> et la fonction
-      <code>cfg()</code> de <code>supabase/01_schema.sql</code>. Les modifier là-bas, puis
-      rejouer le fichier.</p>
+    <p class="muted small">Les valeurs vivent côté serveur (<code>supabase/04_seed.sql</code>, <code>cfg()</code>
+      de <code>supabase/01_schema.sql</code>) : les modifier là-bas, puis rejouer le fichier.</p>
     <div class="labfacts">
       ${fait('Cartes par booster', PACK_SIZE)}
       ${fait('Réserve (boosters)', TICKET_CAP)}
@@ -165,110 +310,16 @@ function vTest() {
       ${['ES', 'C', 'PC', 'R', 'E', 'L'].map(r => `<span><i class="rardot r${r}"></i>${h((RAR[r] || RAR.C).nom)}</span>
         <span class="tnum">+${fmtN(recValeurs()[r])}</span><span class="tnum">${fmtN(fabCouts()[r])}</span>`).join('')}
     </div>
-    <p class="muted small" style="margin-top:8px">Recycler garde toujours un exemplaire ; on ne fabrique
-      qu'une carte de l'extension qui manque. Promos, Brillantes et carte unique : ni l'un ni l'autre.</p>
+    <h3 class="labsous">Reverses</h3>
+    <div class="labtable">
+      <span></span><b>Recycler</b><b>Fabriquer</b>
+      ${['C', 'PC', 'R'].map(r => `<span><i class="rardot r${r}"></i>${h((RAR[r] || RAR.C).nom)}</span>
+        <span class="tnum">+${fmtN(recValeurs()[r])}</span><span class="tnum">${fmtN(revCouts()[r])}</span>`).join('')}
+    </div>
+    <p class="muted small" style="margin-top:8px">${revOuvertes() ? 'Ouverts.' : 'Fermés.'} Le prix des Reverses est dans
+      <code>prix_reverse()</code>, la date d'ouverture dans <code>parametres.reverses_des</code>
+      (<code>supabase/22c_reverses.sql</code>).</p>
   </section>`;
-}
-
-/* ---------- Événement et chasse ---------- */
-/* Ce que le serveur dit en ce moment, puis des aperçus : poser l'interface
-   dans chacun des états qu'un joueur croisera — avant le départ, pendant,
-   chasse terminée, carte unique en main. Les aperçus ne changent que
-   l'affichage ; « Revenir à l'état réel » redemande tout au serveur. */
-let labApercu = '';
-
-function vLabEvenement() {
-  const ev = save.evenement;
-  const ch = save.chasse || {};
-  const u = uniques[0];
-  const quand = iso => jourHeure(srvTime(iso));
-  const etatEv = !ev ? 'Aucun événement en cours ni dans les quinze jours.'
-    : ev.a_venir ? `« ${ev.titre} » commence ${quand(ev.debut)} et finit ${quand(ev.fin)}.`
-    : `« ${ev.titre} » est en cours, jusqu'à ${quand(ev.fin)}.`;
-  const etatCh = !ch.carte ? 'Inconnue (le serveur n\'a pas la version 1.5 ?).'
-    : ch.trouvee ? `Terminée : tirée par ${ch.gagnant || 'un joueur'}${ch.trouvee_le ? ' ' + quand(ch.trouvee_le) : ''}.`
-    : ch.active ? 'Ouverte : chaque booster a une chance sur 250.'
-    : ch.ouvre_le ? `Programmée : elle ouvre ${quand(ch.ouvre_le)}.`
-    : 'Fermée.';
-
-  return `<section class="panel">
-    <h2>Événement et chasse</h2>
-    ${labApercu ? `<p class="labalerte">Aperçu « ${h(labApercu)} » affiché : ce n'est pas l'état du serveur.
-      <button class="linkbtn" data-act="t-ev-reel">Revenir à l'état réel</button></p>` : ''}
-    <div class="labetat">
-      <div><span>Événement</span><b>${h(etatEv)}</b></div>
-      <div><span>Recharge</span><b>Un booster toutes les ${h(String(Math.round(INTERVAL / 360000) / 10).replace('.', ','))} h</b></div>
-      <div><span>${h(u ? u.nom : 'Carte unique')}</span><b>${h(etatCh)}</b></div>
-    </div>
-
-    <h3 class="labsous">Aperçus</h3>
-    <div class="labgrid">
-      <button class="labbtn" data-apercu="avant"><b>Avant le départ</b><span>compte à rebours</span></button>
-      <button class="labbtn" data-apercu="pendant"><b>Pendant</b><span>chasse ouverte</span></button>
-      <button class="labbtn" data-apercu="trouvee"><b>Chasse terminée</b><span>vue des autres joueurs</span></button>
-      <button class="labbtn tUN" data-apercu="mienne"><b>Carte unique en main</b><span>vue de son détenteur</span></button>
-    </div>
-    <div class="row" style="margin-top:9px">
-      <button class="btn ghost" data-act="nouveautes">Fenêtre des nouveautés</button>
-      <button class="btn ghost" data-act="t-chasse-fin">Fenêtre de fin de chasse</button>
-    </div>
-
-    <h3 class="labsous">Dans le SQL Editor de Supabase</h3>
-    <p class="muted small">Le Labo ne lance rien : un événement et la chasse se règlent côté serveur.</p>
-    <pre class="labsql">-- Lancer un événement (ici : maintenant, pour 3 jours)
-insert into public.evenements (titre, texte, debut, fin, ticket_minutes) values
-  ('Boosters doublés', 'Un booster toutes les 2 h au lieu de 4.',
-   now(), now() + interval '3 days', 120);
-
--- L'arrêter avant l'heure
-update public.evenements set fin = now() where fin > now();
-
--- Ouvrir la chasse tout de suite, ou à une heure donnée
-update public.chasse set active = true, ouvre_le = null where id = 1;
-update public.chasse set active = true,
-  ouvre_le = timestamptz '2026-10-04 12:00:00+02' where id = 1;
-
--- La refermer (tant que personne ne l'a tirée)
-update public.chasse set active = false where id = 1;</pre>
-  </section>`;
-}
-
-/* Un instant ISO tel que le serveur l'écrirait, à `ms` d'ici. */
-const isoDans = ms => new Date(Date.now() - Backend.skew + ms).toISOString();
-
-function labMontrerApercu(nom) {
-  const u = uniques[0];
-  const H = 3600000;
-  const ev = (a_venir, debut, fin) => ({ titre: 'Boosters doublés', texte: 'Un booster toutes les 2 h au lieu de 4.',
-    debut: isoDans(debut), fin: isoDans(fin), ticket_minutes: 120, a_venir });
-  const ch = o => Object.assign({ carte: u ? u.id : 'u01', active: true, trouvee: false, gagnant: null,
-    trouvee_le: null, ouvre_le: null }, o);
-  if (u) delete save.col[u.id];
-
-  if (nom === 'avant') {
-    save.evenement = ev(true, 10.5 * H, 82.5 * H);
-    save.chasse = ch({ active: false, ouvre_le: isoDans(10.5 * H) });
-  } else if (nom === 'pendant') {
-    save.evenement = ev(false, -2 * H, 70 * H);
-    save.chasse = ch({ ouvre_le: isoDans(-2 * H) });
-  } else if (nom === 'trouvee') {
-    save.evenement = ev(false, -26 * H, 46 * H);
-    save.chasse = ch({ trouvee: true, gagnant: 'Quelqu\'un', trouvee_le: isoDans(-H) });
-  } else if (nom === 'mienne') {
-    save.evenement = ev(false, -26 * H, 46 * H);
-    save.chasse = ch({ trouvee: true, gagnant: save.pseudo, trouvee_le: isoDans(-H) });
-    if (u) save.col[u.id] = 1;
-  }
-  labApercu = { avant: 'Avant le départ', pendant: 'Pendant', trouvee: 'Chasse terminée', mienne: 'Carte unique en main' }[nom];
-  toast('Aperçu affiché. Va voir Boosters et Collection.');
-  render();
-}
-
-async function labEtatReel() {
-  labApercu = '';
-  try { await Backend.pull(); } catch (e) { /* le prochain rafraîchissement s'en chargera */ }
-  render();
-  toast('État du serveur rétabli.');
 }
 
 const fait = (l, v) => `<div class="labfait"><span>${h(l)}</span><b>${h(String(v))}</b></div>`;

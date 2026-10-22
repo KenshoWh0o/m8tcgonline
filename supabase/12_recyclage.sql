@@ -14,6 +14,9 @@
 --                   Epique 80 · Legendaire 250
 --      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
 --                   Epique 2 000 · Legendaire 8 000
+--  Les Reverses (version 2.0, ouvertes en 2.1.4) : recyclees comme leur
+--  classique, fabriquees au prix de prix_reverse (22c_reverses.sql) :
+--                   Commune 400 · Peu commune 500 · Rare 2 400
 --
 --  ------------------------------------------------------------------
 --  POURQUOI DES FRAGMENTS, ET PLUS D'ECLATS
@@ -112,9 +115,10 @@ begin
     select * into k from cards where id = cid;
     if not found then raise exception 'Carte inconnue.'; end if;
     if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
-    -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, le
-    -- jour ou un administrateur ouvre parametres.fabrication_reverse.
-    if k.reverse and not coalesce((select fabrication_reverse from parametres where id = 1), false) then
+    -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, a
+    -- partir de la date d'ouverture (reverses_ouvertes, 22c_reverses.sql).
+    -- Une Reverse rapporte comme sa classique.
+    if k.reverse and not reverses_ouvertes() then
       raise exception 'Les Reverses ne se recyclent pas encore.';
     end if;
     prix := cfg('recyclage_' || k.rar);
@@ -161,14 +165,15 @@ begin
   if not found then raise exception 'Carte inconnue.'; end if;
   if k.promo and not k.reverse then raise exception 'Cette carte ne se fabrique pas.'; end if;
   cout := cfg('fabrication_' || k.rar);
-  -- Les Reverses (version 2.0) : le double, et seulement une fois la
-  -- fabrication ouverte (parametres, 21_reflets.sql) — fermee au lancement,
-  -- sinon les Fragments accumules rempliraient la collection Reverse d'un coup.
+  -- Les Reverses (version 2.0) : fermees au lancement, sinon les Fragments
+  -- accumules rempliraient la collection Reverse d'un coup ; ouvertes a la
+  -- fin de Reflets, au prix de leur vraie rarete (version 2.1.4 :
+  -- reverses_ouvertes et prix_reverse, 22c_reverses.sql).
   if k.reverse then
-    if not coalesce((select fabrication_reverse from parametres where id = 1), false) then
+    if not reverses_ouvertes() then
       raise exception 'La fabrication des Reverses n''est pas encore ouverte.';
     end if;
-    cout := cout * 2;
+    cout := prix_reverse(k.rar);
   end if;
   if cout is null then raise exception 'Cette carte ne se fabrique pas.'; end if;
 

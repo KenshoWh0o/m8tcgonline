@@ -116,8 +116,8 @@ simulation.
 
 1. Ouvre le site sur ton téléphone, ou en mode mobile dans Chrome
    (F12 → l'icône téléphone → iPhone 14 Pro).
-2. Dans **Réglages**, mets le thème sur **Sombre** : les cartes y brillent, et
-   c'est l'ambiance des visuels ci-dessus.
+2. Le site n'a qu'un thème, sombre (depuis la 2.0) : c'est l'ambiance des visuels
+   ci-dessus.
 3. Les écrans qui valent le détour :
    - **Boosters** — le paquet et la réserve pleine
    - **l'ouverture** — juste après la révélation d'une légendaire
@@ -127,8 +127,8 @@ simulation.
    - **les Promos** — le bas de l'onglet Collection
 
 Si ton compte est administrateur, l'onglet **Labo** prépare la mise en scène en un
-clic : « Monter à 90 % » remplit la collection, et les boutons d'ouverture rejouent
-n'importe quelle révélation sans attendre la chance.
+clic : « Monter à 90 % » (sous-onglet Affichage) remplit la collection, et les boutons
+d'ouverture (sous-onglet Scènes) rejouent n'importe quelle révélation sans attendre la chance.
 
 ---
 
