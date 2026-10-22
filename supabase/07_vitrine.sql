@@ -103,10 +103,15 @@ begin
     -- 21_reflets.sql). Fonction resolue a l'execution : elle est creee plus loin.
     'recap', evenement_recent(),
     'chasse', chasse_etat(),
-    -- Version 2.0 : les reglages ouverts a la main, le solde de Prismes de
-    -- l'evenement en cours, et les invitations achetees.
-    'parametres', (select jsonb_build_object('fabrication_reverse', fabrication_reverse)
-                     from parametres where id = 1),
+    -- Version 2.0 : les reglages, le solde de Prismes de l'evenement en
+    -- cours, et les invitations achetees. Les Reverses (version 2.1.4,
+    -- 22c_reverses.sql) : ouvertes ou non, a partir de quand, et leur prix.
+    -- Plus de `fabrication_reverse` ici : le site 2.1.3 l'aurait affiche au
+    -- double, il garde donc les Reverses fermees.
+    'parametres', jsonb_build_object('reverses', jsonb_build_object(
+      'ouvertes', reverses_ouvertes(),
+      'des', (select reverses_des from parametres where id = 1),
+      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R')))),
     'prismes', coalesce((select solde from evt_comptes
                           where user_id = p and evenement = evenement_en_cours()), 0),
     'invitations', coalesce((

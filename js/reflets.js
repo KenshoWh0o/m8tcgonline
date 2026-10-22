@@ -596,7 +596,9 @@ function vRfRecap() {
       <h2>Ce qui reste</h2>
       <div class="rr-cartes">
         <button class="rr-lien" data-tab="illu"><span class="rr-ico">${NAVICO.illu}</span><b>Devine l'illu continue</b><small>Une illustration par jour, dans son propre onglet.</small></button>
-        <button class="rr-lien" data-colvue="reverses" data-tab="collection"><span class="rr-ico">${NAVICO.reflets}</span><b>Les Reverses restent</b><small>Toujours une par booster.</small></button>
+        <button class="rr-lien" data-colvue="reverses" data-tab="collection"><span class="rr-ico">${NAVICO.reflets}</span>${revOuvertes()
+          ? '<b>Les Reverses se fabriquent</b><small>Recycle tes doublons, fabrique celles qui manquent.</small>'
+          : '<b>Les Reverses restent</b><small>Toujours une par booster.</small>'}</button>
       </div>
     </section>
     <section class="rr-suite">
@@ -644,7 +646,9 @@ async function montrerRecap() {
           <div><b class="tnum">${r.reverses}</b><small>Reverses</small></div>
           ${r.rang ? `<div><b class="tnum">${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup></b><small>sur ${r.joueurs}</small></div>` : ''}
         </div>
-        <p class="muted small">Le récap complet reste trois jours dans l'onglet de l'événement. Devine l'illu, lui, continue.</p>
+        ${revOuvertes() ? `<p class="rr-popneuf">${NAVICO.reflets}<span><b>Nouveau : les Reverses se recyclent et se fabriquent.</b>
+          Fabriquer une Reverse coûte ${revCoutsTexte()} ${FRAGMENTS.nom}.</span></p>` : ''}
+        <p class="muted small">Le récap complet reste ${a && a.jusqua ? 'jusqu\'à ' + h(jourParis(a.jusqua)) : 'quelques jours'} dans l'onglet de l'événement. Devine l'illu, lui, continue.</p>
       </div>`,
     actions: [{ label: 'Voir le récap', primary: true, fn: () => { closeSheet(); aller('reflets'); } },
               { label: 'Plus tard', fn: closeSheet }]

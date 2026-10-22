@@ -2233,10 +2233,15 @@ begin
     -- 21_reflets.sql). Fonction resolue a l'execution : elle est creee plus loin.
     'recap', evenement_recent(),
     'chasse', chasse_etat(),
-    -- Version 2.0 : les reglages ouverts a la main, le solde de Prismes de
-    -- l'evenement en cours, et les invitations achetees.
-    'parametres', (select jsonb_build_object('fabrication_reverse', fabrication_reverse)
-                     from parametres where id = 1),
+    -- Version 2.0 : les reglages, le solde de Prismes de l'evenement en
+    -- cours, et les invitations achetees. Les Reverses (version 2.1.4,
+    -- 22c_reverses.sql) : ouvertes ou non, a partir de quand, et leur prix.
+    -- Plus de `fabrication_reverse` ici : le site 2.1.3 l'aurait affiche au
+    -- double, il garde donc les Reverses fermees.
+    'parametres', jsonb_build_object('reverses', jsonb_build_object(
+      'ouvertes', reverses_ouvertes(),
+      'des', (select reverses_des from parametres where id = 1),
+      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R')))),
     'prismes', coalesce((select solde from evt_comptes
                           where user_id = p and evenement = evenement_en_cours()), 0),
     'invitations', coalesce((
@@ -2579,6 +2584,9 @@ end $$;
 --                   Epique 80 · Legendaire 250
 --      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
 --                   Epique 2 000 · Legendaire 8 000
+--  Les Reverses (version 2.0, ouvertes en 2.1.4) : recyclees comme leur
+--  classique, fabriquees au prix de prix_reverse (22c_reverses.sql) :
+--                   Commune 400 · Peu commune 500 · Rare 2 400
 --
 --  ------------------------------------------------------------------
 --  POURQUOI DES FRAGMENTS, ET PLUS D'ECLATS
@@ -2677,9 +2685,10 @@ begin
     select * into k from cards where id = cid;
     if not found then raise exception 'Carte inconnue.'; end if;
     if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
-    -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, le
-    -- jour ou un administrateur ouvre parametres.fabrication_reverse.
-    if k.reverse and not coalesce((select fabrication_reverse from parametres where id = 1), false) then
+    -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, a
+    -- partir de la date d'ouverture (reverses_ouvertes, 22c_reverses.sql).
+    -- Une Reverse rapporte comme sa classique.
+    if k.reverse and not reverses_ouvertes() then
       raise exception 'Les Reverses ne se recyclent pas encore.';
     end if;
     prix := cfg('recyclage_' || k.rar);
@@ -2726,14 +2735,15 @@ begin
   if not found then raise exception 'Carte inconnue.'; end if;
   if k.promo and not k.reverse then raise exception 'Cette carte ne se fabrique pas.'; end if;
   cout := cfg('fabrication_' || k.rar);
-  -- Les Reverses (version 2.0) : le double, et seulement une fois la
-  -- fabrication ouverte (parametres, 21_reflets.sql) — fermee au lancement,
-  -- sinon les Fragments accumules rempliraient la collection Reverse d'un coup.
+  -- Les Reverses (version 2.0) : fermees au lancement, sinon les Fragments
+  -- accumules rempliraient la collection Reverse d'un coup ; ouvertes a la
+  -- fin de Reflets, au prix de leur vraie rarete (version 2.1.4 :
+  -- reverses_ouvertes et prix_reverse, 22c_reverses.sql).
   if k.reverse then
-    if not coalesce((select fabrication_reverse from parametres where id = 1), false) then
+    if not reverses_ouvertes() then
       raise exception 'La fabrication des Reverses n''est pas encore ouverte.';
     end if;
-    cout := cout * 2;
+    cout := prix_reverse(k.rar);
   end if;
   if cout is null then raise exception 'Cette carte ne se fabrique pas.'; end if;
 
@@ -4786,6 +4796,116 @@ revoke all on function public.ech_etat, public.ech_commencer, public.ech_termine
   public.ech_admin, public.ech_admin_rejouer from public, anon;
 grant execute on function public.ech_etat, public.ech_commencer, public.ech_terminer,
   public.ech_admin, public.ech_admin_rejouer to authenticated;
+
+
+-- #####################################################################
+-- ###  22c_reverses.sql
+-- ###  Version 2.1.4 : les Reverses se recyclent et se fabriquent
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 2.1.4 : les Reverses se recyclent et se
+--  fabriquent. A executer apres 22b_echauffement.sql. Rejouable sans danger.
+--
+--  Fermes depuis la 2.0 (21_reflets.sql : parametres.fabrication_reverse),
+--  le recyclage et la fabrication des Reverses ouvrent a la fin de Reflets.
+--
+--   1. L'ouverture est datee : parametres.reverses_des. Passe cet instant,
+--      recycler et fabriquer (12_recyclage.sql) acceptent les Reverses, et
+--      me() (07_vitrine.sql) le dit au navigateur, qui bascule tout seul.
+--      Sur la vraie base, la date est posee par calendrier-2.1.4.sql : le
+--      vendredi 23 octobre 2026 a minuit, heure de Paris, la minute ou
+--      Reflets finit. Vide (une installation neuve) : ferme.
+--      `fabrication_reverse = true` ouvre tout de suite, comme avant.
+--
+--   2. Le prix n'est plus le double d'une classique, mais celui de leur
+--      vraie rarete (prix_reverse, plus bas).
+--
+--  me() n'envoie plus `parametres.fabrication_reverse` : le site 2.1.3,
+--  encore en ligne jusqu'a la publication de la 2.1.4, afficherait le
+--  double au lieu du vrai prix. Il garde donc les Reverses fermees ; la
+--  2.1.4 lit `parametres.reverses`.
+--
+--  ------------------------------------------------------------------
+--  LE PRIX
+--
+--  Ce qu'on attend d'une carte precise, en boosters (un booster : deux
+--  Communes, une Peu commune, une Essence, une Reverse, un hit) :
+--      classiques   Commune 16,5 · Peu commune 24 · Rare 35 · Epique 112
+--                   Legendaire 250
+--      Reverses     Commune 66 · Peu commune 69 · Rare 187
+--  Une Reverse Commune est plus rare qu'une Rare classique ; une Reverse
+--  Rare, plus rare qu'une Epique. Le double (80, 200, 800) les vendait
+--  moins cher que des cartes deux fois plus faciles a tirer.
+--
+--  Deux regles :
+--    · jamais moins cher qu'une classique plus facile a tirer : Commune et
+--      Peu commune reverses au moins 400 (une Rare), Rare reverse au moins
+--      2 000 (une Epique) ; et l'ordre des raretes respecte ;
+--    · le meme effet que la fabrication des classiques sur la fin de
+--      collection : -33 % sur la mediane, -41 % sur le quart le plus lent
+--      (cfg() de 01_schema.sql, en-tete de 12_recyclage.sql).
+--
+--  Simulation (python3 tools/equilibre-reverses.py : 600 joueurs par
+--  ligne, presents depuis l'ouverture du 24 septembre ; Reverses en booster
+--  depuis la 2.0 ; ouvertes le 24 octobre ; doublons recycles chaque soir ;
+--  classiques fabriquees d'abord), date des 85 Reverses, mediane (quart le
+--  plus lent) :
+--                              sans fabrication      400 / 500 / 2 400
+--      regulier (6 par jour)    30 janvier (23 fevrier)  25 decembre (5 janvier)
+--      occasionnel (4 par jour,  5 juin (8 aout)         28 mars (18 avril)
+--        5 jours sur 7)
+--  Gain compte depuis l'ouverture : -37 % / -40 % pour le regulier,
+--  -31 % / -39 % pour l'occasionnel ; en moyenne, celui des classiques.
+--  A titre de comparaison : le double faisait gagner -46 % / -49 % et
+--  finissait les Reverses cinq jours apres les 122 ; ces prix, deux semaines
+--  apres (quatre pour l'occasionnel) — les Fragments gardent un usage une
+--  fois l'extension complete. Au prix de leur rarete exacte (1 000 / 1 000 /
+--  4 800), le gain tombait a -24 % / -31 %.
+--  Le revers : un joueur qui met ses Fragments dans les Reverses avant
+--  d'avoir les 122 finit l'extension environ trois semaines plus tard
+--  (jour 98 au lieu de 78 ; au double, 83). La fiche de fabrication d'une Reverse le
+--  rappelle (js/recyclage.js).
+--  Pas d'avalanche : il faut 92 400 Fragments pour les 85 (29 840 au
+--  double) ; un joueur qui en aurait garde 16 000 sans jamais rien fabriquer
+--  comble le premier soir entre le tiers et la moitie de ce qui lui manque,
+--  selon le nombre de boosters qu'il a ouverts.
+--
+--  Le recyclage ne change pas : une Reverse rapporte comme sa classique
+--  (2, 5, 20). L'aligner sur ces prix (un vingtieme, comme les classiques :
+--  20, 25, 120) donnerait +57 % de Fragments a un joueur avance et
+--  raccourcirait d'un tiers la fabrication des classiques ; et un
+--  doublon de Reverse garde sa valeur d'echange (contre une Reverse).
+--
+--  Ce que la simulation ignore : les echanges, les boosters achetes ou
+--  offerts, les godpacks, les Reverses du Pass et de la boutique de Reflets.
+-- =====================================================================
+
+alter table public.parametres add column if not exists reverses_des timestamptz;
+
+-- Ouvert a la main, ou passe la date.
+create or replace function public.reverses_ouvertes() returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select fabrication_reverse or coalesce(now() >= reverses_des, false)
+                     from parametres where id = 1), false);
+$$;
+
+-- Fabriquer une Reverse, en Fragments (le calcul est en tete du fichier).
+-- A garder egal a REV_DEFAUT (js/recyclage.js, l'affichage hors ligne) et a
+-- prixReverse (_demo/serveur.js).
+create or replace function public.prix_reverse(p_rar text) returns integer
+language sql immutable as $$
+  select case p_rar when 'C' then 400 when 'PC' then 500 when 'R' then 2400 end;
+$$;
+
+revoke all on function public.reverses_ouvertes, public.prix_reverse from public, anon, authenticated;
+
+-- Pour verifier :
+--   select reverses_ouvertes(), reverses_des at time zone 'Europe/Paris' from public.parametres;
+-- Ouvrir tout de suite :
+--   update public.parametres set fabrication_reverse = true where id = 1;
+-- Deplacer l'ouverture :
+--   update public.parametres set reverses_des = timestamptz '2026-10-24 00:00:00+02' where id = 1;
 
 
 -- =====================================================================

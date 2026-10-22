@@ -300,6 +300,18 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
             faire: `Pour te les donner : ouvre <code>supabase/05_admin.sql</code>, remplace
               l’adresse par <code>${E(session.user.email || '')}</code>, et exécute-le dans le
               <b>SQL Editor</b>. Étape 7 de <code>SETUP.md</code>.` });
+      /* La version 2.1.4 : les Reverses (supabase/22c_reverses.sql). Une
+         MAJ-2.1.4.sql collée avant leur ajout installe L'Échauffement mais pas
+         elles : seul me() le dit, et seulement à un compte connecté. */
+      const rv = etat && etat.parametres && etat.parametres.reverses;
+      poser(rv
+        ? { etat: 'ok', titre: rv.ouvertes ? 'Reverses : recyclage et fabrication ouverts'
+              : rv.des ? `Reverses : ouverture le ${E(new Date(rv.des).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' }))}`
+              : 'Reverses : installées, fermées, sans date d\'ouverture',
+            detail: `Fabriquer : ${rv.couts.C} (Commune), ${rv.couts.PC} (Peu commune), ${rv.couts.R} (Rare) Fragments.` }
+        : { etat: 'ko', titre: 'Les Reverses (2.1.4) ne sont pas installées',
+            detail: '<code>me()</code> ne renvoie pas <code>parametres.reverses</code> : la <code>supabase/MAJ-2.1.4.sql</code> collée date d\'avant les Reverses.',
+            faire: 'Recolle la dernière <code>supabase/MAJ-2.1.4.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' });
     } catch (e) {
       poser({ etat: 'warn', titre: 'Connecté, mais le profil est introuvable',
         detail: 'Le compte existe côté authentification, mais pas côté jeu.',

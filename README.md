@@ -56,7 +56,8 @@ mate-tcg-online/
 │   ├── demo.py         Fabrique la démo autonome dans _build/ (ou prebuild/ avec --prebuild)
 │   ├── version.py      Pose le numéro de version et marque les fichiers
 │   ├── gen-icons.py    Régénère icônes, favicons et image de partage
-│   └── kit-presse.py   Régénère les visuels de presse/visuels/
+│   ├── kit-presse.py   Régénère les visuels de presse/visuels/
+│   └── equilibre-reverses.py  Simule le prix de fabrication des Reverses (2.1.4)
 ├── supabase/           Tout le code serveur : tables, sécurité, actions du jeu
 │   ├── TOUT.sql        Les fichiers d'installation ci-dessous, en un seul (assemblé)
 │   ├── 01_schema.sql   Tables, règles d'accès, recharge des boosters
@@ -78,8 +79,9 @@ mate-tcg-online/
 │   ├── 20_maj-boosters-hors-reserve.sql  Mise à jour 1.5.6 : boosters achetés et offerts hors réserve, cadre Unique
 │   ├── 22_garder.sql     Version 2.1 : les exemplaires à garder (aussi dans TOUT.sql)
 │   ├── 22b_echauffement.sql  Version 2.1.4 : L'Échauffement, sept défis (aussi dans TOUT.sql)
+│   ├── 22c_reverses.sql  Version 2.1.4 : les Reverses se recyclent et se fabriquent (aussi dans TOUT.sql)
 │   ├── calendrier-2.1.4.sql  Les dates de fin octobre 2026 (à jouer une fois)
-│   ├── MAJ-2.1.4.sql     Les deux précédents d'un bloc, pour la vraie base (généré)
+│   ├── MAJ-2.1.4.sql     La mise à jour 2.1.4 d'un bloc, pour la vraie base (générée : 22b, 22c, 07, 12, calendrier)
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
@@ -174,6 +176,8 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Regénérer l'image de partage et les icônes | `python3 tools/gen-icons.py` |
 | Donner les droits d'administrateur | `supabase/05_admin.sql` |
 | Changer ce que rapporte le recyclage, ou le coût d'une carte fabriquée | `cfg()` dans `supabase/01_schema.sql` (clés `recyclage_*` et `fabrication_*`) |
+| Changer le prix d'une Reverse fabriquée | `prix_reverse()` dans `supabase/22c_reverses.sql` (+ `REV_DEFAUT`, `js/recyclage.js`, et `prixReverse`, `_demo/serveur.js`) ; le calcul : `python3 tools/equilibre-reverses.py` |
+| Déplacer l'ouverture des Reverses, ou les ouvrir tout de suite | `parametres.reverses_des` (posée par `supabase/calendrier-2.1.4.sql`) ou `parametres.fabrication_reverse` ; requêtes dans le Labo › Maintenant |
 | Changer la fréquence des Essences Brillantes ou de la carte unique | `cfg('foil_odds')`, `cfg('chasse_odds')` dans `supabase/01_schema.sql` (+ `FOIL_ODDS` dans `js/config.js` pour le Labo) |
 | Lancer un événement, ouvrir la chasse | requêtes en bas de `supabase/15_evenements.sql` |
 | Ajouter ou modifier un succès | `succes_de()` dans `supabase/15_evenements.sql` **et** `SUCCES` dans `js/config.js` |
@@ -410,6 +414,11 @@ Les doublons deviennent des **Fragments**, et les Fragments **fabriquent une car
 | Rare | 20 | 400 |
 | Épique | 80 | 2 000 |
 | Légendaire | 250 | 8 000 |
+| Reverse Commune | 2 | 400 |
+| Reverse Peu commune | 5 | 500 |
+| Reverse Rare | 20 | 2 400 |
+
+Les Reverses se recyclent et se fabriquent depuis la version 2.1.4 (« Version 2.1.4 », point « Les Reverses ») : elles rapportent comme leur classique, et coûtent le prix de leur vraie rareté.
 
 **Pourquoi des Fragments, et plus d'Éclats.** Recycler contre des Éclats n'avait pas de bon réglage : un joueur régulier produit ~6 300 Éclats de doublons par semaine une fois sa collection avancée. Plafonné, le recyclage ne permettait pas de se débarrasser de ses cartes ; déplafonné, il triplait les Éclats, qui rachètent des boosters. Les Fragments n'achètent qu'une carte manquante : aucune boucle possible, donc **plus de plafond**.
 
@@ -441,9 +450,7 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 
 ## Version 2.0 · Reflets
 
-**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 5ᵉ carte. Elles ne s'échangent que contre une autre Reverse. Leur recyclage et leur fabrication (au double du prix d'une classique) restent **fermés** tant que `parametres.fabrication_reverse` ne vaut pas `true` :
-
-    update public.parametres set fabrication_reverse = true where id = 1;
+**Les Reverses** (`r001`…) : chaque Commune, Peu commune et Rare de l'extension existe aussi en Reverse — 85 cartes, même illustration, avec un reflet sur tout ce qui n'est pas l'image et le logo *Tout Commence Ici* frappé dans le coin de l'illustration (`.card.rev`, `css/cards.css`). Côté serveur ce sont des lignes de `cards` avec `reverse = true` (`supabase/03b_promos.sql`), côté navigateur des copies construites au démarrage (`buildReverses()`, `js/cards.js`). Une par booster, en 5ᵉ carte. Elles ne s'échangent que contre une autre Reverse. Leur recyclage et leur fabrication, fermés au lancement de la 2.0 (sinon les Fragments accumulés auraient rempli la collection Reverse d'un coup), **ouvrent à la fin de Reflets**, le vendredi 23 octobre 2026 à minuit, au prix de leur vraie rareté : voir « Version 2.1.4 », point « Les Reverses ».
 
 **La Collection** a trois vues : Classiques (les 122), Reverses (les 85) et Spéciales (Promos, Brillantes, carte unique), sous une jauge commune. Une classique dont on a aussi la Reverse porte un petit éclat nacré à côté de son numéro. Dans les listes sans image, une Reverse garde le nom de sa carte, suivi du même éclat (`nomH()`, `js/utils.js`).
 
@@ -461,7 +468,7 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 
 **Sortie de la 2.0.** Fusionner la branche dans `main`, puis coller `supabase/TOUT.sql` dans Supabase : il passe sur une base existante sans rien perdre, et lance l'événement Reflets pour 14 jours à partir de ce moment-là.
 
-## Version 2.1.4 · L'Échauffement
+## Version 2.1.4 · L'Échauffement, et les Reverses
 
 Un mini-événement juste après Reflets, qui prépare la suite sans rien en dire : **sept défis, un par jour**, dans l'onglet **Combats** (`js/echauffement.js`, styles `.ech-*` en fin de `css/hub.css` ; serveur `supabase/22b_echauffement.sql` ; démo : `RPC.ech_etat`, `RPC.ech_commencer`, `RPC.ech_terminer` dans `_demo/serveur.js`).
 
@@ -496,7 +503,15 @@ Un mini-événement juste après Reflets, qui prépare la suite sans rien en dir
 - **Le Labo** : `ech_admin()` (administrateurs) rend la saison, les sept défis, la participation et les huit indices ; `ech_admin_rejouer()` efface les essais du jour de l'administrateur lui-même (pas ses notes) ; des aperçus locaux de la page, de la fenêtre, du bandeau et d'un combat (voir « Administrateurs »).
 - **Tests** (banc PostgreSQL local : la base de `main`, puis `MAJ-2.1.4.sql` deux fois, puis `TOUT.sql`) : `ech_simuler` et la copie JS donnent le même combat, au coup près, sur 1 050 combats tirés au hasard dont 812 avec un coup d'éclat ; dates du calendrier exactes ; refus vérifiés (Joueur non possédé, doublon, plus de trois, attaque inconnue, 4ᵉ essai du jour, essai terminé deux fois ou d'un autre joueur, coup d'éclat hors limites, avant le début, après la fin et l'heure de grâce, anonyme, Labo sans droit) ; une Reverse joue comme sa carte ; les sept défis à 3★ paient 2 100 Éclats, 3 boosters et le titre. Interface vérifiée dans Chromium à 390 × 844, 375 × 667, 360 × 740 et 1 280 × 800 : aucune des neuf vues (trois sous-onglets, vides et tout gagné, écran du défi vide, plein, sous la Carapace) ne fait défiler `#main`.
 - **Dans la démo** : `?echauffement` dans l'adresse ouvre la saison tout de suite, trois défis ouverts (`?echauffement=7` : les sept).
-- **Mise en ligne** : coller `supabase/MAJ-2.1.4.sql` (assemblé par `tools/build-sql.py` : `22b_echauffement.sql` puis `calendrier-2.1.4.sql`) dans Supabase **avant le vendredi 23 octobre midi** ; puis publier le site 2.1.4 **avant le lundi 26, 0 h**. Tous les noms commencent par `ech_` : la 3.0 a déjà ses `defis`.
+- **Mise en ligne** : coller `supabase/MAJ-2.1.4.sql` (assemblé par `tools/build-sql.py` : `22b_echauffement.sql`, `22c_reverses.sql`, `07_vitrine.sql` et `12_recyclage.sql` rejoués entiers pour `me()`, `recycler` et `fabriquer`, puis `calendrier-2.1.4.sql`) dans Supabase **avant le vendredi 23 octobre midi** ; puis publier le site 2.1.4 **avant le vendredi 23 octobre minuit**, pour que l'ouverture des Reverses se voie à la minute dite (L'Échauffement, lui, n'apparaît qu'à sa saison : `echActif()` demande une saison ouverte). Tous les noms commencent par `ech_` : la 3.0 a déjà ses `defis`.
+- **Les Reverses** (`supabase/22c_reverses.sql`) : leur recyclage et leur fabrication ouvrent à la fin de Reflets, le vendredi 23 octobre à minuit.
+  - **L'ouverture est datée** : `parametres.reverses_des`, posée par `calendrier-2.1.4.sql` ; `reverses_ouvertes()` vaut vrai passé cette date, ou si `fabrication_reverse` est vrai (ouverture à la main, comme avant). Sans date (installation neuve) : fermé. Rien à jouer à minuit.
+  - **Le prix** n'est plus le double d'une classique (80, 200, 800), qui vendait une Reverse moins cher qu'une classique deux fois plus facile à tirer (une carte précise sort en moyenne au bout de 66 boosters pour une Reverse Commune, 35 pour une Rare classique ; 187 pour une Reverse Rare, 112 pour une Épique). Deux règles : jamais moins cher qu'une classique plus facile à tirer, et le même effet que la fabrication des classiques sur la fin de collection (−33 % sur la médiane, −41 % sur le quart le plus lent). Résultat : **400 (Commune), 500 (Peu commune), 2 400 (Rare)** (`prix_reverse()`). Simulation (`python3 tools/equilibre-reverses.py`, 600 joueurs par ligne) : les 85 Reverses le 25 décembre au lieu du 30 janvier pour un joueur régulier (−37 % ; le quart le plus lent −40 %), le 28 mars au lieu du 5 juin pour un occasionnel (−31 % / −39 %) ; elles finissent deux semaines après les 122, ce qui laisse un usage aux Fragments une fois l'extension complète (au double : cinq jours après). Le revers : qui met ses Fragments dans les Reverses avant d'avoir les 122 finit l'extension environ trois semaines plus tard ; la fiche de fabrication d'une Reverse le rappelle. Le détail, et ce que la simulation ignore, est en tête du fichier SQL.
+  - **Le recyclage** ne change pas : une Reverse rapporte comme sa classique (2, 5, 20). L'aligner sur ces prix donnerait +57 % de Fragments à un joueur avancé.
+  - **Le site 2.1.3 garde les Reverses fermées** : `me()` n'envoie plus `parametres.fabrication_reverse`, qu'il aurait affiché au double ; la 2.1.4 lit `parametres.reverses` (ouvertes, date, prix). Il faut donc que le site 2.1.4 soit en ligne pour que les joueurs voient l'ouverture.
+  - **Où ça se voit** : la Collection › Reverses dit quand ça ouvre (avec un compte à rebours), puis les prix ; une case vide se touche pour fabriquer ; le Recyclage propose les doublons de Reverses ; la fenêtre de fin de Reflets et la carte « Ce qui reste » du récap l'annoncent. À la minute dite, la page bascule toute seule (`revOuvertes()`, `js/recyclage.js`) et redemande l'état au serveur (`prochaineBascule()`, `js/booster.js`). `verif.html` dit, à un compte connecté, si `me()` renvoie `parametres.reverses`.
+  - **Tests** : sur la base de `main`, la mise à jour (deux fois) refuse le recyclage et la fabrication d'une Reverse avant la date, les accepte après au bon prix (400, 500, 2 400), refuse une carte déjà possédée et un solde insuffisant ; une classique se recycle et se fabrique comme avant ; `fabrication_reverse` ouvre même avant la date ; ni `anon` ni `authenticated` n'appellent `prix_reverse()` et `reverses_ouvertes()` ; après la seule mise à jour, la base a exactement les fonctions, les colonnes et les droits d'une installation neuve. Dans Chromium, aux quatre tailles : fermé avec sa date, ouvert avec ses prix, fabrication et recyclage, fenêtre et récap de Reflets, Labo ; et la bascule toute seule, page ouverte, en moins de 32 s.
+  - **Dans la démo** : la date est la fin de Reflets de la démo (`revDes()`, `_demo/serveur.js`) ; le prébuild, où Reflets est fini, les a donc ouvertes.
 - **Le prébuild** : `python3 tools/demo.py --prebuild` construit la démo de cette version dans `prebuild/` (stockage à part, pas de service worker, Labo ouvert, L'Échauffement ouvert d'office avec ses sept défis, Reflets fini, des Joueurs offerts) ; publié sur `main`, il se teste à **matetcg.com/prebuild/**. Ne jamais lancer `--preprod` depuis une branche 2.x : `preprod/` est la 3.0. Le prébuild contient le faux serveur, donc **le texte des indices** : il n'est pas plus secret que la pré-prod 3.0, publiée au même endroit.
 
 ## Succès, historique et partage
@@ -781,10 +796,10 @@ Cacher un bouton ne protège rien — ce qui protège, c'est que le serveur refu
 
 Le Labo sert à **voir ce qu'on ne peut pas provoquer**. Il a quatre sous-onglets (`labVue`, `js/lab.js` ; la barre passe à la ligne plutôt que de cacher un onglet hors de l'écran) :
 
-- **Maintenant** — ce que dit le serveur (l'événement ou son récap, la saison de L'Échauffement, le rythme de recharge, la carte unique), puis l'événement du moment et ses outils. Pour **L'Échauffement** : la participation défi par défi (essais, gagnés, trois étoiles), quatre aperçus (la page au premier jour ; tout gagné, avec les huit indices ; la fenêtre d'annonce ; les huit indices avec leur texte) et, pendant l'aperçu, le bandeau de l'écran Boosters ; dans l'aperçu, les sept défis se jouent avec sa collection, sans limite d'essais et sans rien envoyer. Un seul bouton réel : **Rejouer mes essais du jour** (`ech_admin_rejouer`), pour retester sans attendre le lendemain. Pour **Reflets**, tant qu'il dure ou que son récap court : l'onglet récap, la fenêtre de fin et le bandeau, avec des chiffres inventés. Enfin les requêtes SQL du moment (un événement de recharge, déplacer la saison, lire les scores). « Revenir à l'état réel » efface tout aperçu.
+- **Maintenant** — ce que dit le serveur (l'événement ou son récap, la saison de L'Échauffement, le rythme de recharge, la carte unique), puis l'événement du moment et ses outils. La ligne **Reverses** dit si leur recyclage et leur fabrication sont ouverts, et sinon quand ils ouvrent. Pour **L'Échauffement** : la participation défi par défi (essais, gagnés, trois étoiles), quatre aperçus (la page au premier jour ; tout gagné, avec les huit indices ; la fenêtre d'annonce ; les huit indices avec leur texte) et, pendant l'aperçu, le bandeau de l'écran Boosters ; dans l'aperçu, les sept défis se jouent avec sa collection, sans limite d'essais et sans rien envoyer. Un seul bouton réel : **Rejouer mes essais du jour** (`ech_admin_rejouer`), pour retester sans attendre le lendemain. Pour **Reflets**, tant qu'il dure ou que son récap court : l'onglet récap, la fenêtre de fin et le bandeau, avec des chiffres inventés. Enfin les requêtes SQL du moment (un événement de recharge, déplacer la saison, lire les scores, déplacer ou avancer l'ouverture des Reverses). « Revenir à l'état réel » efface tout aperçu.
 - **Scènes** — les huit ouvertures de test (normale, rare, épique, légendaire, Essence Brillante, carte unique, godpack, Reverse Rare) et l'image de partage d'un booster ; **l'obtention de chaque carte Promo**, une par une ou toutes à la suite ; les fenêtres (nouveautés de la version, invitation achetée, cadeau reçu) ; les notifications du haut de l'écran.
 - **Joueurs** — **ce qui est réel**, et le bandeau le dit : publier une annonce dans la boîte de tous les joueurs ; **offrir un cadeau** à un ou plusieurs joueurs : des Éclats, des boosters, des Fragments, une carte (sauf la carte unique) et un mot. La liste montre, pour chacun, sa date d'inscription, ses boosters ouverts, ses cartes et son retard sur la médiane, de quoi doser un rattrapage. Le joueur le découvre à sa visite suivante, dans un paquet qu'il ouvre lui-même : c'est l'ouverture, côté serveur, qui crédite le compte, une seule fois (`supabase/18_cadeaux.sql`, `js/cadeaux.js`). Une Promo offerte compte comme achetée : la boutique ne la revend pas. Les boosters offerts, comme ceux de la boutique, **ne vont pas dans la réserve** : ils s'ouvrent à part (`open_pack(true)`, colonne `boosters_bonus`), tout de suite après l'achat ou l'ouverture du cadeau, ou plus tard par « Ouvrir un booster en plus » sur l'écran Boosters. Mélangés à la réserve, ils la faisaient déborder du plafond, et une réserve pleine remet son compte à rebours à zéro : on perdait des boosters gratuits en en achetant. Parmi eux, ceux d'un cadeau (`tickets_offerts`) partent en premier et **ne peuvent pas contenir la carte unique**. *Voir un cadeau reçu* montre le paquet tel que le verra le joueur, sans rien envoyer.
-- **Affichage** — la collection remplie, vidée ou à 90 %, +10 boosters, des Fragments, tous les succès, boosters illimités (tout local) ; les valeurs d'équilibrage en cours, telles que le serveur les impose, avec ce que rapporte et coûte chaque rareté en Fragments.
+- **Affichage** — la collection remplie, vidée ou à 90 %, +10 boosters, des Fragments, tous les succès, boosters illimités (tout local) ; les valeurs d'équilibrage en cours, telles que le serveur les impose, avec ce que rapporte et coûte chaque rareté en Fragments, Reverses comprises.
 
 Ce qui a été retiré en 2.1.4, parce que plus rien ne s'en sert : les quatre aperçus de la chasse à la carte unique (version 1.5) et ses requêtes, la fenêtre de fin de chasse, les fenêtres de palier du Pass de Reflets, les nouveautés 2.0, et les boutons qui ne faisaient qu'ouvrir un onglet.
 

@@ -33,6 +33,7 @@ MORCEAUX = [
     ('21b_illu.sql',   'Devine l\'illu : les illustrations en pixels'),
     ('22_garder.sql',  'Version 2.1 : les exemplaires a garder, et les favoris'),
     ('22b_echauffement.sql', 'Version 2.1.4 : L\'Echauffement, sept defis avant la suite'),
+    ('22c_reverses.sql', 'Version 2.1.4 : les Reverses se recyclent et se fabriquent'),
 ]
 
 entete = """-- =====================================================================
@@ -87,14 +88,17 @@ sortie = os.path.join(SB, 'TOUT.sql')
 open(sortie, 'w', encoding='utf-8').write(entete + ''.join(bloc) + fin)
 
 # La mise a jour de la 2.1.4, d'un bloc, pour une base deja installee :
-# L'Echauffement, puis son calendrier.
+# L'Echauffement ; les Reverses, avec les deux fichiers dont elles changent
+# des fonctions (me, recycler, fabriquer — rejoues entiers, ils ne contiennent
+# rien d'autre qu'une version plus recente redefinirait) ; puis le calendrier.
+MAJ_214 = ['22b_echauffement.sql', '22c_reverses.sql', '07_vitrine.sql', '12_recyclage.sql',
+           'calendrier-2.1.4.sql']
 maj = os.path.join(SB, 'MAJ-2.1.4.sql')
 open(maj, 'w', encoding='utf-8').write(
     "-- Mate TCG Online — mise a jour 2.1.4, assemblee par tools/build-sql.py le %s.\n"
     "-- A coller d'un bloc dans Supabase > SQL Editor, AVANT vendredi 23 octobre midi.\n"
-    "-- Ne pas editer : editer 22b_echauffement.sql et calendrier-2.1.4.sql.\n\n" % datetime.date.today().isoformat()
-    + open(os.path.join(SB, '22b_echauffement.sql'), encoding='utf-8').read() + '\n\n'
-    + open(os.path.join(SB, 'calendrier-2.1.4.sql'), encoding='utf-8').read())
+    "-- Ne pas editer : editer %s.\n\n" % (datetime.date.today().isoformat(), ', '.join(MAJ_214))
+    + '\n\n'.join(open(os.path.join(SB, f), encoding='utf-8').read() for f in MAJ_214))
 print('supabase/MAJ-2.1.4.sql assemble.')
 
 n = sum(1 for _ in open(sortie, encoding='utf-8'))

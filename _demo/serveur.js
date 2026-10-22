@@ -398,7 +398,8 @@
       evenement: evenementActif(),
       recap: evenementRecent(),
       chasse: chasseEtat(),
-      parametres: { fabrication_reverse: !!S.parametres.fabrication_reverse },
+      parametres: { reverses: { ouvertes: revOuvertes(), des: revDes() == null ? null : iso(revDes()),
+        couts: { C: prixReverse('C'), PC: prixReverse('PC'), R: prixReverse('R') } } },
       prismes: compte(p).solde,
       invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
@@ -1055,7 +1056,7 @@
       const k = carte(cid);
       if (!k) refuser('Carte inconnue.');
       if (k.promo) refuser('Cette carte ne se recycle pas.');
-      if (k.rev && !(S.parametres || {}).fabrication_reverse) refuser('Les Reverses ne se recyclent pas encore.');
+      if (k.rev && !revOuvertes()) refuser('Les Reverses ne se recyclent pas encore.');
       const prix = cfg('recyclage_' + k.rar);
       if (prix == null) refuser('Cette carte ne se recycle pas.');
       const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === cid && t.status === 'pending').length;
@@ -1075,6 +1076,17 @@
     return me(p);
   };
 
+  /* Version 2.1.4, 22c_reverses.sql : reverses_ouvertes et prix_reverse.
+     Ouvertes à la main, ou passé la date. Dans la vraie base, la date est
+     parametres.reverses_des, posée par calendrier-2.1.4.sql à la fin de
+     Reflets ; ici, c'est la fin de Reflets elle-même, qui suit ?echauffement. */
+  function revDes() {
+    if (S.parametres.reverses_des != null) return S.parametres.reverses_des;
+    return S.evenement && S.evenement.code === 'reflets' ? S.evenement.fin : null;
+  }
+  function revOuvertes() { const d = revDes(); return !!S.parametres.fabrication_reverse || (d != null && now() >= d); }
+  function prixReverse(r) { return { C: 400, PC: 500, R: 2400 }[r]; }
+
   /* fabriquer, 12_recyclage.sql */
   RPC.fabriquer = (p, { p_carte }) => {
     const k = carte(p_carte);
@@ -1083,8 +1095,8 @@
     let cout = cfg('fabrication_' + k.rar);
     if (cout == null) refuser('Cette carte ne se fabrique pas.');
     if (k.rev) {
-      if (!S.parametres.fabrication_reverse) refuser('La fabrication des Reverses n\'est pas encore ouverte.');
-      cout *= 2;
+      if (!revOuvertes()) refuser('La fabrication des Reverses n\'est pas encore ouverte.');
+      cout = prixReverse(k.rar);
     }
     if (possede(p, p_carte)) refuser('Tu possèdes déjà cette carte.');
     const pr = profil(p);

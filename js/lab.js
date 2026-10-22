@@ -64,6 +64,10 @@ function vLabMaintenant() {
     : ch.trouvee ? `Terminée : tirée par ${ch.gagnant || 'un joueur'}.`
     : ch.active ? 'Ouverte : une chance sur 250 par booster.' : 'Fermée.';
   const apercu = (echData && echData.apercu) || rfRecapApercu;
+  /* Les Reverses (version 2.1.4, supabase/22c_reverses.sql). */
+  const rv = revEtat();
+  const etatRev = revOuvertes() ? `Recyclage et fabrication ouverts : ${revCoutsTexte()}.`
+    : rv.des ? `Fermés : ouvrent ${jourParis(rv.des)}.` : 'Fermés, sans date.';
 
   return `${apercu ? `<p class="labalerte">Un aperçu est affiché : ce n'est pas l'état du serveur.
       <button class="linkbtn" data-act="t-ev-reel">Revenir à l'état réel</button></p>` : ''}
@@ -74,6 +78,7 @@ function vLabMaintenant() {
         <div><span>L'Échauffement</span><b>${h(etatEch)}</b></div>
         <div><span>Recharge</span><b>Un booster toutes les ${h(String(Math.round(INTERVAL / 360000) / 10).replace('.', ','))} h</b></div>
         <div><span>${h(u ? u.nom : 'Carte unique')}</span><b>${h(etatCh)}</b></div>
+        <div><span>Reverses</span><b>${h(etatRev)}</b></div>
       </div>
     </section>
     ${vLabEch(E)}
@@ -93,7 +98,11 @@ update public.ech_saison set debut = timestamptz '2026-10-26 00:00:00+01',
   fin = timestamptz '2026-11-04 00:00:00+01' where id = 1;
 -- Les meilleures notes, défi par défi
 select p.pseudo, s.jour, s.etoiles, s.tours from public.ech_scores s
-  join public.profiles p on p.id = s.user_id order by s.jour, s.etoiles desc;</pre>
+  join public.profiles p on p.id = s.user_id order by s.jour, s.etoiles desc;
+
+-- Les Reverses : déplacer l'ouverture, ou ouvrir tout de suite
+update public.parametres set reverses_des = timestamptz '2026-10-24 00:00:00+02' where id = 1;
+update public.parametres set fabrication_reverse = true where id = 1;</pre>
     </section>`;
 }
 
@@ -301,8 +310,15 @@ function vLabAffichage() {
       ${['ES', 'C', 'PC', 'R', 'E', 'L'].map(r => `<span><i class="rardot r${r}"></i>${h((RAR[r] || RAR.C).nom)}</span>
         <span class="tnum">+${fmtN(recValeurs()[r])}</span><span class="tnum">${fmtN(fabCouts()[r])}</span>`).join('')}
     </div>
-    <p class="muted small" style="margin-top:8px">La fabrication des Reverses s'ouvre côté serveur :
-      <code>update public.parametres set fabrication_reverse = true where id = 1;</code></p>
+    <h3 class="labsous">Reverses</h3>
+    <div class="labtable">
+      <span></span><b>Recycler</b><b>Fabriquer</b>
+      ${['C', 'PC', 'R'].map(r => `<span><i class="rardot r${r}"></i>${h((RAR[r] || RAR.C).nom)}</span>
+        <span class="tnum">+${fmtN(recValeurs()[r])}</span><span class="tnum">${fmtN(revCouts()[r])}</span>`).join('')}
+    </div>
+    <p class="muted small" style="margin-top:8px">${revOuvertes() ? 'Ouverts.' : 'Fermés.'} Le prix des Reverses est dans
+      <code>prix_reverse()</code>, la date d'ouverture dans <code>parametres.reverses_des</code>
+      (<code>supabase/22c_reverses.sql</code>).</p>
   </section>`;
 }
 

@@ -237,6 +237,9 @@ function prochaineBascule() {
   const ev = save.evenement;
   if (ev) t.push(srvTime(ev.a_venir ? ev.debut : ev.fin));
   if (chasseAnnoncee(save.chasse)) t.push(srvTime(save.chasse.ouvre_le));
+  /* Version 2.1.4 : l'ouverture des Reverses (supabase/22c_reverses.sql). */
+  const rv = (save.parametres || {}).reverses;
+  if (rv && !rv.ouvertes && rv.des) t.push(srvTime(rv.des));
   return t.length ? Math.min(...t) : 0;
 }
 
