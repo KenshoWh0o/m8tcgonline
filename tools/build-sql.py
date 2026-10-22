@@ -87,12 +87,20 @@ fin = """
 sortie = os.path.join(SB, 'TOUT.sql')
 open(sortie, 'w', encoding='utf-8').write(entete + ''.join(bloc) + fin)
 
-# La mise a jour de la 2.1.4, d'un bloc, pour une base deja installee :
-# L'Echauffement ; les Reverses, avec les deux fichiers dont elles changent
-# des fonctions (me, recycler, fabriquer — rejoues entiers, ils ne contiennent
-# rien d'autre qu'une version plus recente redefinirait) ; puis le calendrier.
-MAJ_214 = ['22b_echauffement.sql', '22c_reverses.sql', '07_vitrine.sql', '12_recyclage.sql',
-           'calendrier-2.1.4.sql']
+# La mise a jour de la 2.1.4, d'un bloc, pour une base deja installee, dans
+# l'ordre de TOUT.sql :
+#   · la 2.1.1, que la vraie base n'avait pas recue (elle etait en 2.1.0 le
+#     22 octobre) : est_filleul, shop_buy et creer_invitation (03_rpc.sql,
+#     21_reflets.sql) ;
+#   · les Reverses : me, recycler, fabriquer (07_vitrine.sql, 12_recyclage.sql)
+#     et 22c_reverses.sql ;
+#   · L'Echauffement (22b_echauffement.sql), puis le calendrier.
+# Les fichiers sont rejoues entiers : ils ne contiennent rien qu'une version
+# plus recente redefinirait ailleurs, et leurs donnees sont des mises a jour
+# idempotentes (verifie : le Pass de Reflets de la vraie base est celui du
+# fichier ; le remboursement des codes de filleuls n'y trouve rien).
+MAJ_214 = ['03_rpc.sql', '07_vitrine.sql', '12_recyclage.sql', '21_reflets.sql',
+           '22b_echauffement.sql', '22c_reverses.sql', 'calendrier-2.1.4.sql']
 maj = os.path.join(SB, 'MAJ-2.1.4.sql')
 open(maj, 'w', encoding='utf-8').write(
     "-- Mate TCG Online — mise a jour 2.1.4, assemblee par tools/build-sql.py le %s.\n"
