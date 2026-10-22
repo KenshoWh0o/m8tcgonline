@@ -4,7 +4,7 @@
 "use strict";
 
 function vCombats() {
-  if (echActif()) return `<div class="pagehead"><div><h1>Combats</h1></div></div>${vEchauffement()}`;
+  if (echActif()) return vEchauffement();
   const vedettes = cards
     .filter(c => c.cat === 'joueur' && (c.rar === 'L' || c.rar === 'E'))
     .slice(0, 3);

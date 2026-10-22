@@ -1,36 +1,45 @@
-/* L'Échauffement (version 2.1.4) : sept défis, un par jour, juste après le
-   récap de Reflets, dans l'onglet Combats.
+/* L'Échauffement (version 2.1.4) : sept défis, un par jour, après le récap
+   de Reflets, dans l'onglet Combats.
 
    On compose une équipe de trois Joueurs de sa collection, dans l'ordre :
-   celui de devant encaisse. Le combat se déroule tout seul, sur le serveur
-   (ech_simuler, supabase/22b_echauffement.sql), à partir des valeurs
-   imprimées sur les cartes ; la page ne fait que le rejouer coup par coup.
-   Les règles et l'équilibrage sont en tête du fichier SQL.
+   celui de devant encaisse. Le combat se déroule tout seul, à partir des
+   valeurs imprimées sur les cartes, avec un seul geste : le coup d'éclat
+   (une fois par combat, toucher un Joueur qui va frapper double son coup).
 
-   Trois étoiles à un défi débloquent un indice sur ce qui se prépare. Leur
-   texte n'est pas ici : le serveur ne l'envoie qu'une fois l'indice gagné.
-   Les couleurs sont celles du site d'aujourd'hui. */
+   Le déroulé : ech_commencer compte l'essai (trois par défi et par jour), le
+   combat se joue ici, en direct, avec echCombat ; puis ech_terminer le
+   rejoue côté serveur avec le même coup d'éclat, et c'est son résultat qui
+   compte. echCombat et ech_simuler (supabase/22b_echauffement.sql) doivent
+   rester identiques, à la ligne près ; le faux serveur se sert de echSimuler.
+
+   Trois étoiles à un défi débloquent un indice sur ce qui se prépare : leur
+   texte n'est pas ici, le serveur ne l'envoie qu'une fois gagné.
+
+   La page prend les couleurs de la suite (graphite et lavande, jetons
+   `--e-*` posés sur .ech, en fin de css/hub.css) : une fenêtre sur ce qui
+   vient. Le reste du site ne change pas. */
 "use strict";
 
 let echData = null;
+let echVue = 'accueil';
 let echJour = 0;
 let echTri = 'def';
 let echOccupe = false;
+let echPlace = 0;
 /* L'équipe en préparation, défi par défi : [{ carte, a }]. */
 const echEquipes = {};
 
 const ECH_POS = ['Devant', 'Milieu', 'Derrière'];
 const ECH_PRIX = [80, 80, 140];
 const ECH_ASTUCES = {
-  aucune: 'Mets devant le Joueur qui encaisse le mieux, derrière ceux qui frappent fort.',
-  carapace: 'Les petits coups ne passent pas : il faut des attaques d\'au moins 100.',
-  eclair: 'Il frappe à chaque tour : il te faut un Joueur solide devant, et vite.',
-  affinite: 'Des Joueurs Roses, et ils frappent deux fois plus fort.',
+  aucune: 'Devant, celui qui encaisse le mieux ; derrière, ceux qui frappent fort.',
+  carapace: 'Les coups de moins de 100 ne passent pas : un coup d\'éclat peut les doubler.',
+  eclair: 'Il frappe à chaque tour : un Joueur solide devant, et finir vite.',
+  affinite: 'Des Joueurs Roses : leurs coups comptent double.',
   riposte: 'Chaque coup te coûte 30 : peu de coups, mais des gros.',
   fureur: 'Il frappe de plus en plus fort : il faut le battre vite.',
-  final: 'Des coups d\'au moins 80, et le plus vite possible.'
+  final: 'Des coups d\'au moins 80, le plus vite possible, et le coup d\'éclat au bon moment.'
 };
-/* L'icône de la règle du jour. */
 const ECH_ICO = {
   aucune: '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5"/>',
   carapace: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>',
@@ -42,21 +51,80 @@ const ECH_ICO = {
 };
 const echIco = r => `<svg class="ech-ico" viewBox="0 0 24 24" aria-hidden="true">${ECH_ICO[r] || ECH_ICO.aucune}</svg>`;
 
-/* ---------- Ce qu'on sait d'un Joueur ---------- */
+/* ---------- Les valeurs d'un Joueur ---------- */
 /* Les attaques qui font des dégâts (celles qui n'ont qu'un effet ne
-   comptent pas ici, comme côté serveur), avec leur coût en élan. */
+   comptent pas, comme côté serveur), avec leur coût en élan. */
 const echAttaques = c => (c.atks || []).filter(a => a.degats).map(a => ({
   nom: a.nom, degats: a.degats, cout: Object.values(a.cout || {}).reduce((x, y) => x + y, 0)
 }));
+/* ech_joueurs, côté navigateur. */
+const echStats = id => { const c = byId[id]; return c ? { def: c.def, couleur: c.col, attaques: echAttaques(c) } : null; };
 const echRythme = n => (n <= 1 ? 'à chaque tour' : `tous les ${n} tours`);
 const echPossede = c => mesEx(c.id) > 0 || mesEx('r' + c.id.slice(1)) > 0;
 const echJoueurs = () => cards.filter(c => c.cat === 'joueur' && !c.promo && echPossede(c));
 
-/* L'illustration seule d'une carte, recadrée dans son conteneur (le cadre
-   de la carte ne se voit jamais) : fx, fy, le point à garder au centre. */
-const echIllu = (c, fx, fy, cls) => (c && c.img
-  ? `<span class="ech-illu ${cls || ''}" style="--fx:${fx == null ? .5 : fx};--fy:${fy == null ? .35 : fy}" aria-hidden="true"><img src="${c.img}" alt="" decoding="async"></span>`
-  : '');
+/* ---------- Le combat (copie de ech_simuler) ---------- */
+/* Pas à pas : c.prets() dit qui frappera au prochain tour, c.tour(i) le joue
+   (i : le Joueur qui reçoit le coup d'éclat, ou null) et rend ses lignes de
+   journal ; c.fin est posé à la dernière. */
+function echCombat(d, equipe, stats) {
+  const P = d.param || {}, R = d.regle;
+  const aB = stats(d.adversaire).attaques.reduce((m, a) => (a.degats > m.degats ? a : m));
+  const coutB = R === 'eclair' ? 1 : aB.cout;
+  const al = equipe.map(e => {
+    const j = stats(e.carte); const at = j.attaques[e.a || 0];
+    return { pv: j.def, def: j.def, col: j.couleur, cout: at ? at.cout : null, deg: at ? at.degats : null, elan: 0 };
+  });
+  al.forEach(a => { if (al.filter(b => b.col === a.col).length > 1) a.elan = 1; });
+  const c = { t: 0, pvB: d.pv, elanB: 0, ko: 0, fureur: 0, eclat: false, fin: null, log: [], al, coutB, aB };
+  const finir = g => { c.fin = { gagne: g, tours: c.t, ko: c.ko, etoiles: g ? (c.ko === 0 ? 3 : c.ko === 1 ? 2 : 1) : 0 }; };
+  const tombe = (i, ev) => {
+    c.ko++; ev.push([c.t, 'ko', i]);
+    if (al.every(x => x.pv <= 0)) finir(false);
+  };
+  c.prets = () => al.map((a, i) => (a.pv > 0 && a.cout != null && a.elan + 1 >= a.cout ? i : -1)).filter(i => i >= 0);
+  c.tour = eclatI => {
+    if (c.fin) return [];
+    const ev = [];
+    const t = ++c.t;
+    c.elanB++;
+    for (let i = 0; i < al.length && !c.fin; i++) {
+      const a = al[i];
+      if (a.pv <= 0) continue;
+      a.elan++;
+      if (a.cout == null || a.elan < a.cout) continue;
+      a.elan -= a.cout;
+      let dd = a.deg;
+      if (R === 'affinite' && a.col === P.couleur) dd *= 2;
+      if (eclatI === i && !c.eclat) { dd *= 2; c.eclat = true; ev.push([t, 'eclat', i]); }
+      if ((R === 'carapace' || R === 'final') && dd < P.seuil) { ev.push([t, 'bloque', i, dd]); continue; }
+      c.pvB -= dd; ev.push([t, 'frappe', i, dd, Math.max(0, c.pvB)]);
+      if (c.pvB <= 0) { finir(true); break; }
+      if (R === 'riposte') {
+        a.pv -= P.degats; ev.push([t, 'riposte', i, P.degats, Math.max(0, a.pv)]);
+        if (a.pv <= 0) tombe(i, ev);
+      }
+    }
+    if (!c.fin && c.elanB >= coutB) {
+      c.elanB -= coutB;
+      const i = al.findIndex(x => x.pv > 0);
+      const dd = aB.degats + c.fureur;
+      if (R === 'fureur' || R === 'final') c.fureur += P.plus;
+      al[i].pv -= dd; ev.push([t, 'subit', i, dd, Math.max(0, al[i].pv)]);
+      if (al[i].pv <= 0) tombe(i, ev);
+    }
+    if (!c.fin && t >= 10) finir(false);
+    c.log.push(...ev);
+    return ev;
+  };
+  return c;
+}
+/* Le combat d'une traite, avec un coup d'éclat décidé d'avance. */
+function echSimuler(d, equipe, stats, eclat) {
+  const c = echCombat(d, equipe, stats);
+  while (!c.fin) c.tour(eclat && eclat.tour === c.t + 1 ? eclat.i : null);
+  return Object.assign({}, c.fin, { log: c.log });
+}
 
 /* ---------- L'état ---------- */
 function echActif() {
@@ -68,33 +136,34 @@ function echPastille() {
   if (!echActif()) return 0;
   return echData.defis.filter(d => !d.etoiles).length;
 }
-
 async function chargerEch() {
-  if (Backend.mode !== 'cloud' || !save) return;
+  /* L'aperçu du Labo garde son état inventé jusqu'à « Revenir à l'état réel ». */
+  if (Backend.mode !== 'cloud' || !save || (echData && echData.apercu)) return;
   try { echData = await Backend.echEtat(); } catch (e) { return; }
-  if (tab === 'combats' || tab === 'boosters') render();
+  if ((tab === 'combats' || tab === 'boosters') && !echOccupe) render();
   else if (typeof majDiscrete === 'function') majDiscrete(false);
 }
-
+const echDuJour = () => echData.defis[echData.defis.length - 1];
 function echDefi() {
   const l = echData.defis;
-  if (!echJour || !l.some(d => d.jour === echJour)) {
-    /* Le premier défi pas encore à trois étoiles, sinon le dernier ouvert. */
-    const d = l.find(x => x.etoiles < 3) || l[l.length - 1];
-    echJour = d ? d.jour : 1;
-  }
+  if (!l.some(d => d.jour === echJour)) echJour = (echDuJour() || {}).jour || 1;
   return l.find(d => d.jour === echJour);
 }
 function echEquipe(d) {
   if (!echEquipes[d.jour]) echEquipes[d.jour] = (d.equipe || []).filter(e => byId[e.carte] && echPossede(byId[e.carte])).map(e => ({ carte: e.carte, a: e.a || 0 }));
   return echEquipes[d.jour];
 }
+const echRestants = d => Math.max(0, (echData.essais_max || 3) - (d.essais_jour || 0));
 const echEtoiles = (n, cls) => `<span class="ech-et ${cls || ''}" role="img" aria-label="${n} étoile${n > 1 ? 's' : ''} sur 3">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</span>`;
 const echAdvAttaque = (d, adv) => {
   const a = echAttaques(adv).reduce((m, x) => (x.degats > m.degats ? x : m));
   return Object.assign({}, a, { cout: d.regle === 'eclair' ? 1 : a.cout });
 };
 const echIndice = j => (echData.indices || []).find(x => x.jour === j);
+/* L'illustration seule d'une carte, recadrée : le cadre ne se voit jamais. */
+const echIllu = (c, fx, fy, cls) => (c && c.img
+  ? `<span class="ech-illu ${cls || ''}" style="--fx:${fx == null ? .5 : fx};--fy:${fy == null ? .3 : fy}" aria-hidden="true"><img src="${c.img}" alt="" decoding="async"></span>`
+  : '');
 
 /* ---------- Un indice ---------- */
 function vIndiceVisuel(x) {
@@ -102,9 +171,6 @@ function vIndiceVisuel(x) {
   if (v.type === 'etoiles') return `<span class="ech-iv etoiles">${Array.from({ length: v.valeur || 5 }, (_, i) => `<i class="${i >= 3 ? 'au-dela' : ''}">★</i>`).join('')}</span>`;
   if (v.type === 'carte' && byId[v.carte]) return `<span class="ech-iv carte">${echIllu(byId[v.carte], .5, .3)}</span>`;
   return `<span class="ech-iv ${v.type === 'nombre' ? 'nombre' : 'mot'}">${h(String(v.valeur || ''))}</span>`;
-}
-function vIndiceFace(x) {
-  return `<span class="ech-ind-face">${vIndiceVisuel(x)}<b>${h(x.titre)}</b></span>`;
 }
 function montrerIndice(j) {
   const x = echIndice(j);
@@ -116,131 +182,148 @@ function montrerIndice(j) {
   });
 }
 
-/* ---------- La page ---------- */
+/* ---------- L'accueil ---------- */
+/* Le bandeau : le chevalier de « La Luxueuse III » (#122), le même que celui
+   qui ouvrira l'onglet Combats de la suite — un clin d'œil, rien de plus. */
 function vEchauffement() {
+  return echVue === 'defi' ? vEchDefi() : vEchAccueil();
+}
+
+function vEchAccueil() {
   const s = echData;
+  const dj = echDuJour();
+  const adv = byId[dj.adversaire];
+  const reste = Date.parse(s.fin) - Date.now();
+  const etoiles = s.etoiles || 0;
+  const total = s.total || 7;
+
+  const jours = Array.from({ length: total }, (_, i) => {
+    const j = i + 1;
+    const x = s.defis.find(y => y.jour === j);
+    if (!x) return `<span class="ech-jour ferme" aria-label="Défi ${j}, pas encore ouvert"><i>${NAVICO.lock}</i></span>`;
+    return `<button class="ech-jour ${x.etoiles === 3 ? 'fini' : x.etoiles ? 'gagne' : ''}" data-ech="defi" data-j="${j}" aria-label="Défi ${j}">
+      <i>${j}</i>${echEtoiles(x.etoiles)}</button>`;
+  }).join('');
+
+  const nInd = (s.indices || []).filter(x => x.jour > 0).length;
+  const carnet = Array.from({ length: total }, (_, i) => {
+    const x = echIndice(i + 1);
+    return x
+      ? `<button class="ech-ind ouvert" data-ech="indice" data-j="${i + 1}" aria-label="Indice ${i + 1} : ${h(x.titre)}">${vIndiceVisuel(x)}</button>`
+      : `<span class="ech-ind" aria-label="Indice ${i + 1}, à gagner"><img src="${ART.back}" alt="">${NAVICO.lock}</span>`;
+  }).join('');
+  const final = echIndice(0);
+
+  return `<section class="ech">
+    <header class="ech-hero">
+      ${echIllu(byId.c122, .6, .4, 'fond')}
+      <span class="ech-hero-haut"><span class="ech-kick">Événement · encore ${h(dureeCourte(reste))}</span>
+        <span class="ech-anneau" style="--p:${Math.round(etoiles / 21 * 100)}%" aria-label="${etoiles} étoiles sur 21"><b class="tnum">${etoiles}</b><small>/21</small></span></span>
+      <span class="ech-hero-bas"><h2 class="ech-titre">L'Échauffement</h2><small>Sept défis, un par jour.</small></span>
+    </header>
+
+    <button class="ech-porte" data-ech="defi" data-j="${dj.jour}">
+      ${echIllu(adv, .55, .3, 'fond')}
+      <span class="ech-porte-txt">
+        <small>Défi ${dj.jour} · aujourd'hui</small>
+        <b>${h(adv.nom)}</b>
+        <span class="ech-porte-regle">${echIco(dj.regle)}${h(dj.titre)}</span>
+        ${echEtoiles(dj.etoiles)}
+      </span>
+      <span class="ech-porte-cta">${dj.etoiles === 3 ? 'Revoir' : 'Relever'}</span>
+    </button>
+
+    <section class="ech-bloc">
+      <h3>Les sept défis</h3>
+      <div class="ech-jours">${jours}</div>
+    </section>
+
+    <section class="ech-bloc">
+      <h3>Ce qui se prépare <small class="tnum">${nInd}/7</small></h3>
+      <p class="ech-mini">Trois étoiles à un défi : un indice.</p>
+      <div class="ech-inds" data-defil="ech-inds">${carnet}</div>
+      ${final ? `<button class="ech-final" data-ech="indice" data-j="0"><b>${h(final.titre)}</b><span>${h(final.texte)}</span></button>` : ''}
+    </section>
+  </section>`;
+}
+
+/* ---------- Le défi ---------- */
+function vEchDefi() {
   const d = echDefi();
   const adv = byId[d.adversaire];
   const aA = echAdvAttaque(d, adv);
   const eq = echEquipe(d);
-  const reste = Date.parse(s.fin) - Date.now();
-  const total = s.total || 7;
+  const restants = echRestants(d);
 
-  /* La piste des sept défis. */
-  const piste = Array.from({ length: total }, (_, i) => {
-    const j = i + 1;
-    const x = s.defis.find(y => y.jour === j);
-    if (!x) {
-      const ouvre = Date.parse(s.debut) + i * 86400000;
-      return `<span class="ech-pas ferme" title="Ouvre dans ${h(dureeCourte(ouvre - Date.now()))}"><i class="ech-rond">${NAVICO.lock}</i><small>${h(dureeCourte(ouvre - Date.now()).split(' ').slice(0, 2).join(' '))}</small></span>`;
-    }
-    const cls = [j === d.jour ? 'on' : '', x.etoiles === 3 ? 'fini' : x.etoiles ? 'gagne' : ''].join(' ');
-    return `<button class="ech-pas ${cls}" data-ech-jour="${j}" aria-label="Défi ${j}, ${x.etoiles} étoile${x.etoiles > 1 ? 's' : ''}"><i class="ech-rond">${j}</i>${echEtoiles(x.etoiles)}</button>`;
-  }).join('');
-
-  /* L'équipe, en ligne. */
   const couleurs = {};
   eq.forEach(e => { const c = byId[e.carte]; couleurs[c.col] = (couleurs[c.col] || 0) + 1; });
-  const ensemble = Object.keys(couleurs).filter(k => couleurs[k] > 1);
   const places = [0, 1, 2].map(i => {
     const e = eq[i];
-    const tete = `<span class="ech-pos">${i === 0 ? ECH_ICO.carapace && echIco('carapace') : ''}${ECH_POS[i]}</span>`;
     if (!e) {
       const libre = i <= eq.length;
-      return `<div class="ech-place">${tete}<button class="ech-vide" data-ech-choisir="${Math.min(i, eq.length)}" ${libre ? '' : 'disabled'} aria-label="Choisir un Joueur"><i>+</i><small>${i === 0 ? 'Celui qui encaisse' : 'Un Joueur'}</small></button></div>`;
+      return `<div class="ech-place"><small>${ECH_POS[i]}</small>
+        <button class="ech-vide" data-ech="choisir" data-i="${Math.min(i, eq.length)}" ${libre ? '' : 'disabled'} aria-label="Choisir un Joueur"><i>+</i></button></div>`;
     }
     const c = byId[e.carte];
     const at = echAttaques(c);
     const a = at[e.a] || null;
     let dg = a ? a.degats : 0;
-    const marques = [];
-    if (a && d.regle === 'affinite' && c.col === d.param.couleur) { dg *= 2; marques.push('<em class="bon">×2</em>'); }
-    if (a && (d.regle === 'carapace' || d.regle === 'final') && dg < d.param.seuil) marques.push('<em class="mal">Bloqué</em>');
-    if (ensemble.includes(c.col)) marques.push('<em class="bon">+1 élan</em>');
-    return `<div class="ech-place plein">${tete}
-      <div class="ech-carte">
-        <button class="ech-carte-b" data-ech-choisir="${i}" aria-label="Changer ${h(c.nom)}">${renderCard(c)}</button>
-        <button class="ech-x" data-ech-retirer="${i}" aria-label="Retirer ${h(c.nom)}">×</button>
-        ${marques.length ? `<span class="ech-marques">${marques.join('')}</span>` : ''}
-      </div>
-      <span class="ech-chiffres"><span><small>Déf</small><b class="tnum">${c.def}</b></span><span><small>Coup</small><b class="tnum">${a ? dg : '—'}</b></span></span>
-      <small class="ech-rythme">${a ? echRythme(a.cout) : 'Ne frappe pas'}</small>
-      ${at.length > 1 ? `<button class="ech-att" data-ech-att="${i}">Autre attaque</button>` : ''}
+    let marque = '';
+    if (a && d.regle === 'affinite' && c.col === d.param.couleur) { dg *= 2; marque = '<em class="bon">×2</em>'; }
+    else if (a && (d.regle === 'carapace' || d.regle === 'final') && dg < d.param.seuil) marque = '<em class="mal">Bloqué</em>';
+    else if (couleurs[c.col] > 1) marque = '<em class="bon">+1 élan</em>';
+    return `<div class="ech-place plein"><small>${ECH_POS[i]}</small>
+      <span class="ech-carte">
+        <button class="ech-carte-b" data-ech="choisir" data-i="${i}" aria-label="Changer ${h(c.nom)}">${renderCard(c)}</button>
+        <button class="ech-x" data-ech="retirer" data-i="${i}" aria-label="Retirer ${h(c.nom)}">×</button>
+        ${marque}
+      </span>
+      <span class="ech-val"><b class="tnum">${c.def}</b><i></i><b class="tnum">${a ? dg : '—'}</b></span>
+      ${at.length > 1 ? `<button class="ech-att" data-ech="attaque" data-i="${i}">${h(a.nom)} ›</button>` : `<small class="ech-ryt">${a ? echRythme(a.cout) : 'ne frappe pas'}</small>`}
     </div>`;
   }).join('');
 
-  /* Le carnet des indices. */
-  const nInd = (s.indices || []).filter(x => x.jour > 0).length;
-  const carnet = Array.from({ length: total }, (_, i) => {
-    const j = i + 1;
-    const x = echIndice(j);
-    if (x) return `<button class="ech-ind ouvert" data-ech-indice="${j}" aria-label="Indice ${j} : ${h(x.titre)}">${vIndiceFace(x)}</button>`;
-    const ouvert = s.defis.some(y => y.jour === j);
-    return `<span class="ech-ind" aria-label="Indice ${j}, verrouillé"><img src="${ART.back}" alt=""><span class="ech-ind-verrou">${NAVICO.lock}<small>${ouvert ? `★★★ au défi ${j}` : `Défi ${j}`}</small></span></span>`;
-  }).join('');
-  const final = echIndice(0);
+  return `<section class="ech ech-ecran">
+    <div class="ech-barre-haut">
+      <button class="ech-retour" data-ech="accueil">‹ L'Échauffement</button>
+      <button class="ech-q" data-ech="regles" aria-label="Comment ça marche">?</button>
+    </div>
 
-  const gagnes = s.gagnes || 0, etoiles = s.etoiles || 0, pal = s.paliers || [];
-  return `<section class="ech">
-    <header class="ech-hero">
-      ${echIllu(adv, .5, .3, 'fond')}
-      <span class="ech-hero-haut"><span class="ech-chip">Événement · encore ${h(dureeCourte(reste))}</span><span class="ech-chip or">★ <b class="tnum">${etoiles}</b>/21</span></span>
-      <span class="ech-hero-bas">
-        <small>Sept défis, un par jour</small>
-        <h2 class="ech-titre">L'Échauffement</h2>
-        <span class="ech-objectifs">
-          <span class="${pal.includes('sept') ? 'fait' : ''}"><b class="tnum">${gagnes}/7</b> victoires · 3 boosters</span>
-          <span class="${pal.includes('parfait') ? 'fait' : ''}"><b class="tnum">${etoiles}/21</b> ★ · titre « Échauffé »</span>
-        </span>
+    <div class="ech-adv">
+      <button class="ech-adv-carte" data-show="${adv.id}" aria-label="Voir ${h(adv.nom)}">${renderCard(adv)}</button>
+      <small class="ech-kick">Défi ${d.jour}</small>
+      <b class="ech-adv-nom">${h(adv.nom)}</b>
+      <span class="ech-adv-val">
+        <span><small>Défense</small><b class="tnum">${fmtN(d.pv)}</b></span>
+        <span><small>Frappe</small><b class="tnum">${aA.degats}</b><em>${echRythme(aA.cout)}</em></span>
       </span>
-    </header>
+      <span class="ech-regle">${echIco(d.regle)}<span><b>${d.regle === 'aucune' ? 'Sans règle' : h(d.titre)}</b>${d.regle === 'aucune' ? '' : h(d.texte)}</span></span>
+    </div>
 
-    <nav class="ech-piste" aria-label="Les sept défis">${piste}</nav>
-
-    <article class="ech-defi">
-      <div class="ech-face">
-        <button class="ech-adv" data-show="${adv.id}" aria-label="Voir ${h(adv.nom)}">${renderCard(adv)}</button>
-        <div class="ech-adv-txt">
-          <small>Défi ${d.jour} · ${h(d.titre)}</small>
-          <b class="ech-adv-nom">${h(adv.nom)}</b>
-          <span class="ech-adv-stats">
-            <span><small>Défense</small><b class="tnum">${fmtN(d.pv)}</b></span>
-            <span><small>${h(aA.nom)}</small><b class="tnum">${aA.degats}</b><em>${echRythme(aA.cout)}</em></span>
-          </span>
-        </div>
-      </div>
-      <p class="ech-regle r-${d.regle}">${echIco(d.regle)}<span><b>${d.regle === 'aucune' ? 'Pas de règle' : h(d.titre)}</b>${h(d.texte)}</span></p>
-
+    <div class="ech-equipe">
+      <h3>Ton équipe</h3>
       <div class="ech-ligne">${places}</div>
-      <p class="ech-note">${ensemble.length ? 'Même couleur : 1 élan d\'avance au départ.' : 'Deux Joueurs de la même couleur partent avec 1 élan d\'avance.'}</p>
+    </div>
 
-      <button class="btn ech-lancer" data-ech="lancer" ${eq.length && !echOccupe ? '' : 'disabled'}>Lancer le défi</button>
-      <div class="ech-prix">
-        ${ECH_PRIX.map((p, i) => `<span class="${d.etoiles > i ? 'fait' : ''}">${echEtoiles(i + 1)}<b>+${p}</b>${i === 2 ? '<em>+ un indice</em>' : ''}</span>`).join('')}
-      </div>
-    </article>
-
-    <section class="ech-carnet">
-      <div class="ech-carnet-tete"><h3>Ce qui se prépare</h3><small><b class="tnum">${nInd}/7</b> indices · trois étoiles à un défi, un indice</small></div>
-      <div class="ech-inds">${carnet}</div>
-      ${final ? `<button class="ech-final" data-ech-indice="0"><b>${h(final.titre)}</b><span>${h(final.texte)}</span></button>` : ''}
-    </section>
-
-    <details class="ech-regles">
-      <summary>Comment ça marche</summary>
-      <ul>
-        <li>Tes trois Joueurs combattent ensemble ; l'adversaire frappe celui de devant. À 0 de Défense, un Joueur est KO, et le suivant passe devant.</li>
-        <li>À chaque tour, chacun gagne 1 élan, et frappe dès qu'il en a autant que le coût de son attaque (les Essences dessinées sur la carte) : plus une attaque coûte, plus elle tarde.</li>
-        <li>Deux Joueurs de la même couleur partent avec 1 élan d'avance.</li>
-        <li>Il faut le battre avant la fin du 10ᵉ tour. ★ : gagner. ★★ : en perdant au plus un Joueur. ★★★ : sans en perdre aucun.</li>
-        <li>Rejoue autant que tu veux : ta meilleure note compte, et chaque nouvelle étoile rapporte des Éclats.</li>
-      </ul>
-    </details>
+    <button class="btn ech-lancer" data-ech="lancer" ${eq.length && restants && !echOccupe ? '' : 'disabled'}>${restants ? 'Lancer le défi' : 'Plus d\'essai aujourd\'hui'}</button>
+    <p class="ech-pied">${echEtoiles(d.etoiles)}<span>${restants} essai${restants > 1 ? 's' : ''} aujourd'hui</span>${d.etoiles < 3 ? '<span>★★★ : un indice</span>' : ''}</p>
   </section>`;
 }
 
+function montrerRegles() {
+  openSheet({
+    title: 'Comment ça marche',
+    body: `<ol class="bvpoints nvpoints">
+      <li><span class="bvico">${NAVICO.cards}</span><span><b>Trois Joueurs, dans l'ordre.</b> L'adversaire frappe celui de devant ; à 0 de Défense, il est KO et le suivant avance.</span></li>
+      <li><span class="bvico">${NAVICO.clock}</span><span><b>L'élan.</b> À chaque tour, chacun gagne 1 élan et frappe dès qu'il en a autant que le coût de son attaque (les Essences dessinées sur la carte). Deux Joueurs de la même couleur partent avec 1 élan d'avance.</span></li>
+      <li><span class="bvico">${NAVICO.star}</span><span><b>Le coup d'éclat.</b> Une fois par combat, touche un Joueur qui brille : son coup compte double.</span></li>
+      <li><span class="bvico">${NAVICO.trophy}</span><span><b>Les étoiles.</b> ★ gagner avant le 10ᵉ tour, ★★ en perdant au plus un Joueur, ★★★ sans perte. Trois essais par défi et par jour ; ta meilleure note compte.</span></li>
+    </ol>`,
+    actions: [{ label: 'Compris', primary: true, fn: closeSheet }]
+  });
+}
+
 /* ---------- Composer l'équipe ---------- */
-let echPlace = 0;
 function echChoisir(i) {
   const d = echDefi();
   echPlace = i;
@@ -254,24 +337,21 @@ function echChoisir(i) {
       : vite(x) - vite(y) || meilleur(y) - meilleur(x)) || x.c.num - y.c.num);
   const tri = [['def', 'Défense'], ['deg', 'Dégâts'], ['vite', 'Rapidité']];
   openSheet({
-    title: `${ECH_POS[i]} : quel Joueur ?`,
-    body: `<p class="muted small">${i === 0 ? 'Celui de devant encaisse les coups.' : 'Il frappe depuis l\'arrière, et passe devant si ceux de devant tombent.'}</p>
-      <div class="segbar ech-tri">${tri.map(([k, n]) => `<button data-ech-tri="${k}" class="${echTri === k ? 'on' : ''}">${n}</button>`).join('')}</div>
-      ${l.length ? `<div class="pickgrid">${l.map(({ c, at }) => {
+    title: i === 0 ? 'Devant' : i === 1 ? 'Au milieu' : 'Derrière',
+    body: `<div class="segbar ech-tri">${tri.map(([k, n]) => `<button data-ech="tri" data-c="${k}" class="${echTri === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      ${l.length ? `<div class="pickgrid ech-picks">${l.map(({ c, at }) => {
         const a = at.reduce((m, x) => (x.degats > m.degats ? x : m), at[0] || null);
-        const deja = pris.includes(c.id) && eq[i] && eq[i].carte !== c.id;
-        return `<button class="pick ech-pick" data-ech-pick="${c.id}" ${deja ? 'disabled' : ''}>
-          <span class="pickimg">${renderCard(c)}</span>
-          <span class="ech-pick-st"><span><small>Déf</small><b>${c.def}</b></span>${a ? `<span><small>${a.cout <= 1 ? '1 tour' : a.cout + ' tours'}</small><b>${a.degats}</b></span>` : '<span>—</span>'}</span></button>`;
+        const deja = pris.includes(c.id) && !(eq[i] && eq[i].carte === c.id);
+        return `<button class="pick ech-pick" data-ech="pick" data-c="${c.id}" ${deja ? 'disabled' : ''}>
+          <span class="pickimg">${renderCard(c, { calme: true })}</span>
+          <span class="ech-val"><b>${c.def}</b><i></i><b>${a ? a.degats : '—'}</b></span></button>`;
       }).join('')}</div>` : '<p class="muted">Tu n\'as encore aucun Joueur : ouvre quelques boosters !</p>'}`,
     actions: [{ label: 'Fermer', fn: closeSheet }]
   });
 }
 function echPrendre(id) {
-  const d = echDefi();
-  const eq = echEquipe(d);
-  const c = byId[id];
-  const at = echAttaques(c);
+  const eq = echEquipe(echDefi());
+  const at = echAttaques(byId[id]);
   /* Par défaut, sa plus forte attaque. */
   const a = at.length ? at.indexOf(at.reduce((m, x) => (x.degats > m.degats ? x : m))) : 0;
   const ailleurs = eq.findIndex(e => e.carte === id);
@@ -282,38 +362,51 @@ function echPrendre(id) {
   render();
 }
 
-/* ---------- Le combat, rejoué ---------- */
+/* ---------- Les clics (data-ech, via clicPage, js/app.js) ---------- */
+function echAction(act, el) {
+  const x = el.dataset;
+  if (act === 'defi') { echJour = +x.j; echVue = 'defi'; $('#main').scrollTop = 0; return render(); }
+  if (act === 'accueil') { echVue = 'accueil'; return render(); }
+  if (act === 'regles') return montrerRegles();
+  if (act === 'indice') return montrerIndice(+x.j);
+  if (act === 'choisir') return echChoisir(+x.i);
+  if (act === 'pick') return echPrendre(x.c);
+  if (act === 'tri') { echTri = x.c; return echChoisir(echPlace); }
+  if (act === 'retirer') { echEquipe(echDefi()).splice(+x.i, 1); return render(); }
+  if (act === 'attaque') {
+    const e = echEquipe(echDefi())[+x.i];
+    e.a = (e.a + 1) % echAttaques(byId[e.carte]).length;
+    return render();
+  }
+  if (act === 'lancer') return echLancer();
+  if (act === 'annonce') return montrerEchAnnonce();
+}
+
+/* ---------- Le combat, en direct ---------- */
 async function echLancer() {
   const d = echDefi();
   const eq = echEquipe(d).slice();
-  if (!eq.length || echOccupe) return;
+  if (!eq.length || echOccupe || !echRestants(d)) return;
   echOccupe = true;
-  let r;
+  /* Aperçu du Labo : le combat se joue ici seulement, sans essai ni gain. */
+  if (echData.apercu) return echScene(d, eq, null);
+  let dep;
   try {
-    r = await Backend.echJouer(d.jour, eq);
+    dep = await Backend.echCommencer(d.jour, eq);
   } catch (e) {
     echOccupe = false;
-    toast(e.message || 'Le défi n\'a pas pu être lancé.');
-    return render();
+    toast(e.message || 'Le défi n\'a pas pu commencer.');
+    return chargerEch();
   }
-  echData = r.etat;
-  echScene(d, eq, r);
+  d.essais_jour = (d.essais_jour || 0) + 1;
+  echScene(d, dep.equipe, dep.essai);
 }
 
-/* Le journal du serveur, rejoué : chaque ligne est un coup. L'élan se
-   déduit du journal (un par tour, le coût dépensé à chaque coup) : il
-   s'affiche en pastilles sous chaque carte. */
-function echScene(d, eq, r) {
+function echScene(d, equipe, essai) {
   const adv = byId[d.adversaire];
-  const aA = echAdvAttaque(d, adv);
-  const res = r.resultat;
-  const allies = eq.map(e => {
-    const c = byId[e.carte];
-    const a = echAttaques(c)[e.a] || null;
-    return { c, cout: a ? a.cout : 0, def: c.def, pv: c.def, elan: 0 };
-  });
-  allies.forEach(a => { if (allies.filter(b => b.c.col === a.c.col).length > 1) a.elan = 1; });
-  let elanB = 0, tour = 0;
+  const c = echCombat(d, equipe, echStats);
+  const reduit = RM() || document.documentElement.classList.contains('rm');
+  let eclat = null;
 
   const pips = (n, plein) => Array.from({ length: n }, (_, i) => `<i class="${i < plein ? 'on' : ''}"></i>`).join('');
   const v = document.createElement('div');
@@ -324,14 +417,15 @@ function echScene(d, eq, r) {
       <div class="ech-sc-haut"><span class="ech-sc-tour">Tour 1</span><span class="ech-sc-regle">${echIco(d.regle)}${h(d.titre)}</span><button class="ech-passer">Passer ›</button></div>
       <div class="ech-sc-adv ech-sc-u">
         <div class="ech-sc-carte">${renderCard(adv)}<i class="ech-flot"></i><i class="ech-eclat"></i></div>
-        <div class="ech-barre adv"><i style="width:100%"></i><span class="tnum">${fmtN(d.pv)}</span></div>
-        <div class="ech-pips adv">${pips(aA.cout, 0)}</div>
+        <div class="ech-jauge adv"><i style="width:100%"></i><span class="tnum">${fmtN(d.pv)}</span></div>
+        <div class="ech-pips adv">${pips(c.coutB, 0)}</div>
       </div>
-      <div class="ech-sc-eq">${allies.map((a, i) => `<div class="ech-sc-j ech-sc-u" data-i="${i}">
-          <div class="ech-sc-carte">${renderCard(a.c)}<i class="ech-flot"></i><i class="ech-eclat"></i><i class="ech-ko">KO</i></div>
-          <div class="ech-barre"><i style="width:100%"></i><span class="tnum">${a.def}</span></div>
-          <div class="ech-pips">${pips(a.cout, a.elan)}</div>
-        </div>`).join('')}</div>
+      <p class="ech-sc-aide">Touche un Joueur qui brille : coup d'éclat, une fois.</p>
+      <div class="ech-sc-eq">${c.al.map((a, i) => `<button class="ech-sc-j ech-sc-u" data-i="${i}" aria-label="${h(byId[equipe[i].carte].nom)}">
+          <span class="ech-sc-carte">${renderCard(byId[equipe[i].carte])}<i class="ech-flot"></i><i class="ech-eclat"></i><i class="ech-ko">KO</i></span>
+          <span class="ech-jauge"><i style="width:100%"></i><span class="tnum">${a.def}</span></span>
+          <span class="ech-pips">${pips(a.cout || 0, a.elan)}</span>
+        </button>`).join('')}</div>
       <div class="ech-sc-fin" hidden></div>
     </div>`;
   document.body.appendChild(v);
@@ -339,13 +433,17 @@ function echScene(d, eq, r) {
 
   const advEl = v.querySelector('.ech-sc-adv');
   const jEl = i => v.querySelector(`.ech-sc-j[data-i="${i}"]`);
-  const majPips = () => {
-    allies.forEach((a, i) => { jEl(i).querySelector('.ech-pips').innerHTML = pips(a.cout, Math.min(a.cout, a.elan)); });
-    advEl.querySelector('.ech-pips').innerHTML = pips(aA.cout, Math.min(aA.cout, elanB));
+  const aide = v.querySelector('.ech-sc-aide');
+  const majPips = (avance) => {
+    c.al.forEach((a, i) => {
+      const n = a.pv > 0 ? Math.min(a.cout || 0, a.elan + (avance ? 1 : 0)) : 0;
+      jEl(i).querySelector('.ech-pips').innerHTML = pips(a.cout || 0, n);
+    });
+    advEl.querySelector('.ech-pips').innerHTML = pips(c.coutB, Math.min(c.coutB, c.elanB + (avance ? 1 : 0)));
   };
-  const barre = (el, reste, max) => {
-    el.querySelector('.ech-barre i').style.width = Math.max(0, reste / max * 100) + '%';
-    el.querySelector('.ech-barre span').textContent = fmtN(Math.max(0, reste));
+  const jauge = (el, reste, max) => {
+    el.querySelector('.ech-jauge i').style.width = Math.max(0, reste / max * 100) + '%';
+    el.querySelector('.ech-jauge span').textContent = fmtN(Math.max(0, reste));
   };
   const rejouer = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
   const flotte = (el, txt, cls) => {
@@ -353,100 +451,138 @@ function echScene(d, eq, r) {
     f.textContent = txt; f.className = 'ech-flot ' + (cls || '');
     rejouer(f, 'go');
   };
-  const nouveauTour = t => {
-    for (; tour < t; tour++) {
-      allies.forEach(a => { if (a.pv > 0) a.elan++; });
-      elanB++;
-    }
-    v.querySelector('.ech-sc-tour').textContent = `Tour ${t}`;
-    majPips();
-  };
-
-  const pas = ev => {
-    const [t, type, i, dg, reste] = ev;
-    if (t > tour) nouveauTour(t);
-    const a = allies[i];
-    if (type === 'frappe') {
-      a.elan -= a.cout; majPips();
+  const ligne = ev => {
+    const [, type, i, dg, reste] = ev;
+    const a = c.al[i];
+    if (type === 'eclat') { rejouer(jEl(i), 'eclate'); if (typeof SFX === 'object') SFX.jouer('rare'); }
+    else if (type === 'frappe') {
       rejouer(jEl(i), 'frappe'); rejouer(advEl, 'touche'); flotte(advEl, '−' + dg, dg >= 150 ? 'gros' : '');
-      barre(advEl, reste, d.pv);
-      if (typeof SFX === 'object') SFX.jouer('tap');
-    } else if (type === 'bloque') {
-      a.elan -= a.cout; majPips();
-      rejouer(jEl(i), 'frappe'); rejouer(advEl, 'bloque'); flotte(advEl, 'Bloqué', 'gris');
-    } else if (type === 'riposte') {
-      a.pv = reste; flotte(jEl(i), '−' + dg, 'petit'); barre(jEl(i), reste, a.def);
-    } else if (type === 'subit') {
-      elanB -= aA.cout; majPips();
-      a.pv = reste;
-      rejouer(advEl, 'attaque'); rejouer(jEl(i), 'touche'); flotte(jEl(i), '−' + dg, 'rouge');
-      barre(jEl(i), reste, a.def);
-    } else if (type === 'ko') {
-      a.pv = 0; jEl(i).classList.add('ko');
-      if (typeof vibrer === 'function') vibrer(25);
-    }
+      jauge(advEl, reste, d.pv); if (typeof SFX === 'object') SFX.jouer('tap');
+    } else if (type === 'bloque') { rejouer(jEl(i), 'frappe'); rejouer(advEl, 'bloque'); flotte(advEl, 'Bloqué', 'gris'); }
+    else if (type === 'riposte') { flotte(jEl(i), '−' + dg, 'petit'); jauge(jEl(i), reste, a.def); }
+    else if (type === 'subit') { rejouer(advEl, 'attaque'); rejouer(jEl(i), 'touche'); flotte(jEl(i), '−' + dg, 'rouge'); jauge(jEl(i), reste, a.def); }
+    else if (type === 'ko') { jEl(i).classList.add('ko'); if (typeof vibrer === 'function') vibrer(25); }
   };
 
-  let k = 0, minuteur = null;
-  const finir = () => {
-    clearTimeout(minuteur);
-    for (; k < res.log.length; k++) pas(res.log[k]);
-    if (res.gagne) advEl.classList.add('vaincu');
-    v.querySelector('.ech-passer').hidden = true;
-    const g = r.gain || {};
-    const gains = [];
-    if (g.eclats) gains.push(`<span>+${fmtN(g.eclats)} Éclats</span>`);
-    if (g.boosters) gains.push(`<span>+${g.boosters} boosters</span>`);
-    if (g.titre) gains.push(`<span>Titre « ${h((TITRES[g.titre] || {}).nom || 'Échauffé')} »</span>`);
-    const fin = v.querySelector('.ech-sc-fin');
-    fin.innerHTML = `<b class="ech-sc-verdict">${res.gagne ? 'Victoire !' : 'Pas cette fois'}</b>
-      <small class="ech-sc-tours">${res.gagne ? `En ${res.tours} tour${res.tours > 1 ? 's' : ''}${res.ko ? `, ${res.ko} Joueur${res.ko > 1 ? 's' : ''} KO` : ', sans perte'}` : res.tours >= 10 ? 'Le temps est écoulé.' : 'Ton équipe est tombée.'}</small>
-      ${echEtoiles(res.etoiles, 'grand')}
-      ${gains.length ? `<div class="ech-gains">${gains.join('')}</div>` : res.gagne && res.etoiles <= r.avant ? '<small>Pas mieux que ton meilleur résultat.</small>' : ''}
-      ${r.indice ? `<button class="ech-sc-indice" data-ech-reveler="1"><span class="ech-flip"><span class="dos"><img src="${ART.back}" alt=""></span><span class="face">${vIndiceFace(r.indice)}</span></span><span class="ech-sc-ind-txt"><b>Indice débloqué</b><small>Touche pour le retourner</small></span></button>` : ''}
-      ${!res.gagne || res.etoiles < 3 ? `<small class="ech-astuce">${h(ECH_ASTUCES[d.regle] || '')}</small>` : ''}
-      <button class="btn" data-ech="fermer-scene">${res.gagne ? 'Continuer' : 'Changer d\'équipe'}</button>`;
-    fin.hidden = false;
-    requestAnimationFrame(() => fin.classList.add('on'));
-    if (res.gagne && typeof SFX === 'object') SFX.jouer(res.etoiles === 3 ? 'legend' : 'gagne');
-    if (typeof vibrer === 'function') vibrer(res.gagne ? [20, 40, 20] : 30);
-  };
-  const suivant = () => {
-    if (k >= res.log.length) return finir();
-    const ev = res.log[k++];
-    const changeTour = ev[0] > tour;
-    pas(ev);
-    minuteur = setTimeout(suivant, changeTour ? 760 : 600);
-  };
-  minuteur = setTimeout(suivant, 800);
-  v.querySelector('.ech-passer').onclick = finir;
+  /* Le tour : les Joueurs qui vont frapper brillent ; s'ils peuvent encore
+     recevoir le coup d'éclat, on leur laisse un moment pour être touchés. */
+  let passer = false, attente = null, reveil = null, choix = null;
+  const pause = ms => new Promise(r => { reveil = r; attente = setTimeout(r, passer ? 0 : ms); });
   v.addEventListener('click', ev => {
-    const rev = ev.target.closest('[data-ech-reveler]');
-    if (rev) {
-      if (!rev.classList.contains('vu')) {
-        rev.classList.add('vu');
-        rev.querySelector('.ech-sc-ind-txt').innerHTML = `<b>${h(r.indice.titre)}</b><small>${h(r.indice.texte)}</small>`;
-        if (typeof SFX === 'object') SFX.jouer('rare');
-      }
+    const j = ev.target.closest('.ech-sc-j.pret');
+    if (j && choix) { const f = choix; choix = null; f(+j.dataset.i); return; }
+    if (ev.target.closest('.ech-passer')) {
+      // Passer coupe aussi la pause en cours : sans le réveil, le combat resterait figé.
+      passer = true; clearTimeout(attente);
+      if (reveil) reveil();
+      if (choix) { const f = choix; choix = null; f(null); }
+    }
+  });
+  const attendreChoix = prets => new Promise(r => {
+    prets.forEach(i => jEl(i).classList.add('pret'));
+    aide.classList.add('on');
+    choix = r;
+    attente = setTimeout(() => { if (choix) { choix = null; r(null); } }, passer ? 0 : 1700);
+  });
+
+  const jouer = async () => {
+    await pause(650);
+    while (!c.fin) {
+      v.querySelector('.ech-sc-tour').textContent = `Tour ${c.t + 1}`;
+      majPips(true);
+      let i = null;
+      const prets = c.eclat || eclat ? [] : c.prets();
+      if (prets.length && !passer) i = await attendreChoix(prets);
+      v.querySelectorAll('.ech-sc-j.pret').forEach(x => x.classList.remove('pret'));
+      aide.classList.remove('on');
+      if (i != null) eclat = { tour: c.t + 1, i };
+      if (!prets.length) await pause(reduit ? 150 : 380);
+      const evs = c.tour(i);
+      majPips(false);
+      for (const e of evs) { ligne(e); await pause(reduit ? 200 : e[1] === 'eclat' ? 380 : 560); }
+    }
+    if (c.fin.gagne) advEl.classList.add('vaincu');
+    v.querySelector('.ech-passer').hidden = true;
+    aide.remove();
+    await terminer();
+  };
+
+  const fin = v.querySelector('.ech-sc-fin');
+  const terminer = async () => {
+    fin.innerHTML = '<b class="ech-sc-verdict">…</b>';
+    fin.hidden = false; requestAnimationFrame(() => fin.classList.add('on'));
+    let r;
+    try {
+      r = essai == null ? echTerminerApercu(d, c.fin) : await Backend.echTerminer(essai, eclat);
+    } catch (e) {
+      fin.innerHTML = `<b class="ech-sc-verdict">Pas enregistré</b><small>${h(e.message || 'Le serveur n\'a pas répondu.')}</small>
+        <button class="btn" data-sc="reessayer">Réessayer</button><button class="btn ghost" data-sc="fermer">Fermer</button>`;
       return;
     }
-    if (!ev.target.closest('[data-ech="fermer-scene"]')) return;
-    v.classList.remove('on');
-    setTimeout(() => v.remove(), 250);
-    echOccupe = false;
-    render();
+    echData = r.etat;
+    const res = r.resultat;
+    if (res.etoiles !== c.fin.etoiles) console.warn('Échauffement : le serveur et la page ne sont pas d\'accord', res, c.fin);
+    const g = r.gain || {};
+    const gains = [];
+    if (g.eclats) gains.push(`+${fmtN(g.eclats)} Éclats`);
+    if (g.boosters) gains.push(`+${g.boosters} boosters`);
+    if (g.titre) gains.push(`Titre « ${h((TITRES[g.titre] || {}).nom || 'Échauffé')} »`);
+    fin.innerHTML = `<b class="ech-sc-verdict">${res.gagne ? 'Victoire' : 'Pas cette fois'}</b>
+      ${echEtoiles(res.etoiles, 'grand')}
+      <small class="ech-sc-tours">${res.gagne ? `En ${res.tours} tour${res.tours > 1 ? 's' : ''}${res.ko ? `, ${res.ko} KO` : ', sans perte'}` : res.tours >= 10 ? 'Le temps est écoulé.' : 'Ton équipe est tombée.'}</small>
+      ${gains.length ? `<div class="ech-gains">${gains.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+      ${r.indice ? `<button class="ech-sc-indice" data-sc="indice"><span class="ech-flip"><span class="dos"><img src="${ART.back}" alt=""></span><span class="face">${vIndiceVisuel(r.indice)}</span></span><span class="ech-sc-ind-txt"><b>Un indice</b><small>Touche pour le retourner</small></span></button>` : ''}
+      ${res.etoiles < 3 ? `<small class="ech-astuce">${h(ECH_ASTUCES[d.regle] || '')}</small>` : ''}
+      ${essai == null ? '<small class="ech-astuce">Aperçu du Labo : rien n\'est enregistré.</small>' : ''}
+      <button class="btn" data-sc="fermer">${res.gagne ? 'Continuer' : 'Changer d\'équipe'}</button>`;
+    if (res.gagne && typeof SFX === 'object') SFX.jouer(res.etoiles === 3 ? 'legend' : 'gagne');
+    if (typeof vibrer === 'function') vibrer(res.gagne ? [20, 40, 20] : 30);
+    fin.onclick = e2 => {
+      const b = e2.target.closest('[data-sc]');
+      if (!b) return;
+      if (b.dataset.sc === 'indice' && !b.classList.contains('vu')) {
+        b.classList.add('vu');
+        b.querySelector('.ech-sc-ind-txt').innerHTML = `<b>${h(r.indice.titre)}</b><small>${h(r.indice.texte)}</small>`;
+        if (typeof SFX === 'object') SFX.jouer('rare');
+      }
+    };
+  };
+  fin.addEventListener('click', e2 => {
+    const b = e2.target.closest('[data-sc]');
+    if (!b) return;
+    if (b.dataset.sc === 'reessayer') return terminer();
+    if (b.dataset.sc === 'fermer') {
+      v.classList.remove('on');
+      setTimeout(() => v.remove(), 250);
+      echOccupe = false;
+      render();
+    }
   });
+  jouer();
+}
+
+/* La fin d'un combat d'aperçu, comme ech_terminer la rendrait, sans serveur :
+   la note et l'indice restent dans l'état inventé. */
+function echTerminerApercu(d, res) {
+  const avant = d.etoiles || 0;
+  const gain = { eclats: 0, boosters: 0, titre: null };
+  for (let k = avant + 1; k <= res.etoiles; k++) gain.eclats += ECH_PRIX[k - 1];
+  d.etoiles = Math.max(avant, res.etoiles);
+  const indice = res.etoiles === 3 && avant < 3 ? (echData.apercuIndices || []).find(x => x.jour === d.jour) || null : null;
+  if (indice && !echIndice(d.jour)) echData.indices.push(indice);
+  echData.etoiles = echData.defis.reduce((n, x) => n + (x.etoiles || 0), 0);
+  return { resultat: res, avant, gain, indice, etat: echData };
 }
 
 /* ---------- Le bandeau de l'écran Boosters ---------- */
 function vBandeauEch() {
   if (!echActif()) return '';
   const n = echPastille();
-  const d = echData.defis[echData.defis.length - 1];
+  const d = echDuJour();
   const adv = d && byId[d.adversaire];
-  return `<button class="ech-ban" data-tab="combats" aria-label="L'Échauffement : aller aux défis">
-    ${echIllu(adv, .5, .3, 'fond')}
-    <span class="ech-ban-txt"><small>Événement · encore ${h(dureeCourte(Date.parse(echData.fin) - Date.now()))}</small><b>L'Échauffement</b><span>Défi ${d ? d.jour : 1} : ${h(d ? d.titre : '')}</span></span>
+  return `<button class="ech-ban" data-tab="combats" aria-label="L'Échauffement : aller au défi du jour">
+    ${echIllu(adv, .55, .3, 'fond')}
+    <span class="ech-ban-txt"><small>Événement · encore ${h(dureeCourte(Date.parse(echData.fin) - Date.now()))}</small><b>L'Échauffement</b></span>
     ${n ? `<i class="ech-ban-n">${n}</i>` : ''}<span class="ech-ban-fl" aria-hidden="true">›</span>
   </button>`;
 }
@@ -456,40 +592,19 @@ function echAnnonceAVoir() {
   return echActif() && accueilMemoire().echauffement !== 'vu';
 }
 function montrerEchAnnonce() {
-  accueilNoter({ echauffement: 'vu' });
+  if (!echData.apercu) accueilNoter({ echauffement: 'vu' });
   const d = echData.defis[0];
   const adv = d && byId[d.adversaire];
   openSheet({
-    title: 'L\'Échauffement',
-    body: `<div class="ech-annonce">${echIllu(adv, .5, .3, 'fond')}<span><small>Nouvel événement</small><b>Sept défis, un par jour</b></span></div>
+    title: '',
+    body: `<div class="ech-annonce">${echIllu(adv, .5, .25, 'fond')}<span><small>Nouvel événement</small><b>L'Échauffement</b><span>Sept défis, un par jour, dans l'onglet Combats.</span></span></div>
       <ol class="bvpoints nvpoints">
-        <li><span class="bvico">${NAVICO.cards}</span><span><b>Compose une équipe.</b> Trois Joueurs de ta collection, dans l'ordre : celui de devant encaisse.</span></li>
-        <li><span class="bvico">${NAVICO.sword}</span><span><b>Le combat se joue tout seul</b>, avec la Défense, les dégâts et le coût imprimés sur tes cartes.</span></li>
-        <li><span class="bvico">${NAVICO.star}</span><span><b>Trois étoiles, un indice</b> sur ce qui se prépare. Et des Éclats à chaque étoile.</span></li>
+        <li><span class="bvico">${NAVICO.cards}</span><span><b>Trois Joueurs de ta collection</b>, et le combat se joue avec les valeurs de tes cartes.</span></li>
+        <li><span class="bvico">${NAVICO.star}</span><span><b>Trois étoiles, un indice</b> sur ce qui se prépare.</span></li>
       </ol>`,
     actions: [
       { label: 'Plus tard', fn: closeSheet },
-      { label: 'Premier défi', primary: true, fn: () => { closeSheet(); aller('combats'); } }
+      { label: 'Premier défi', primary: true, fn: () => { closeSheet(); echVue = 'accueil'; aller('combats'); } }
     ]
   });
 }
-
-/* ---------- Les clics ---------- */
-document.addEventListener('click', ev => {
-  const b = ev.target.closest && ev.target.closest('[data-ech],[data-ech-jour],[data-ech-choisir],[data-ech-pick],[data-ech-retirer],[data-ech-att],[data-ech-tri],[data-ech-indice]');
-  if (!b || b.disabled || b.closest('.ech-scene')) return;
-  const x = b.dataset;
-  if (x.ech === 'lancer') return echLancer();
-  if (x.echJour) { echJour = +x.echJour; return render(); }
-  if (x.echChoisir) return echChoisir(+x.echChoisir);
-  if (x.echPick) return echPrendre(x.echPick);
-  if (x.echTri) { echTri = x.echTri; return echChoisir(echPlace); }
-  if (x.echIndice != null) return montrerIndice(+x.echIndice);
-  if (x.echRetirer) { echEquipe(echDefi()).splice(+x.echRetirer, 1); return render(); }
-  if (x.echAtt) {
-    const e = echEquipe(echDefi())[+x.echAtt];
-    const n = echAttaques(byId[e.carte]).length;
-    e.a = (e.a + 1) % n;
-    return render();
-  }
-});

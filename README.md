@@ -41,6 +41,8 @@ mate-tcg-online/
 ├── manifest.webmanifest  Identité de l'application installée (nom, icônes, couleurs)
 ├── sw.js               Service worker : le jeu s'ouvre hors réseau
 ├── SETUP.md            Mettre le jeu en ligne, pas à pas
+├── CLAUDE.md           Consignes pour les agents (règles du propriétaire, quoi lire, quoi tenir à jour)
+├── prebuild/           La démo de la prochaine 2.x, construite (tools/demo.py --prebuild), publiée sur main
 ├── cards/              Les images des cartes (une par carte, .avif)
 ├── assets/             Habillage : logos, visuels de booster, dos de carte, essences
 │   ├── boosters/       Les quatre visuels de paquet
@@ -51,7 +53,7 @@ mate-tcg-online/
 ├── _demo/              La démo autonome : faux serveur, réglages, mode d'emploi (non publié)
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
-│   ├── demo.py         Fabrique la démo autonome dans _build/
+│   ├── demo.py         Fabrique la démo autonome dans _build/ (ou prebuild/ avec --prebuild)
 │   ├── version.py      Pose le numéro de version et marque les fichiers
 │   ├── gen-icons.py    Régénère icônes, favicons et image de partage
 │   └── kit-presse.py   Régénère les visuels de presse/visuels/
@@ -179,6 +181,9 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Fabriquer la démo autonome à envoyer | `python3 tools/demo.py` — voir « La démo autonome » |
 | Régler la démo (pseudo, Éclats de départ, recharge) | `_demo/reglages.js` |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
+| Déplacer la saison de L'Échauffement | `ech_saison` (requête prête dans le Labo › En ce moment) ; en démo, `echSaison()` dans `_demo/serveur.js` |
+| Changer un défi, une Défense ou un indice de L'Échauffement | `ech_defis` / `ech_indices` dans `supabase/22b_echauffement.sql` **et** `ECH_DEFIS` / `ECH_INDICES` dans `_demo/serveur.js` |
+| Changer une règle du combat de L'Échauffement | `ech_simuler` (SQL) **et** `echCombat` (`js/echauffement.js`) : à la ligne près, puis refaire le test de parité |
 
 ## La démo autonome
 
@@ -458,22 +463,27 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 
 ## Version 2.1.4 · L'Échauffement
 
-Un mini-événement juste après Reflets, qui prépare la suite sans rien en dire : **sept défis, un par jour**, dans l'onglet **Combats** (`js/echauffement.js`, styles `.ech-*` en fin de `css/hub.css` ; serveur `supabase/22b_echauffement.sql` ; démo : `RPC.ech_etat` / `RPC.ech_jouer` dans `_demo/serveur.js`).
+Un mini-événement juste après Reflets, qui prépare la suite sans rien en dire : **sept défis, un par jour**, dans l'onglet **Combats** (`js/echauffement.js`, styles `.ech-*` en fin de `css/hub.css` ; serveur `supabase/22b_echauffement.sql` ; démo : `RPC.ech_etat`, `RPC.ech_commencer`, `RPC.ech_terminer` dans `_demo/serveur.js`).
 
-- **Le jeu** : on compose une équipe de trois Joueurs de sa collection, dans l'ordre (celui de devant encaisse), et on choisit l'attaque de ceux qui en ont deux. Le combat se déroule tout seul **sur le serveur** (`ech_simuler`), à partir des valeurs imprimées sur les cartes : Défense, coût des attaques (l'élan : chacun frappe dès qu'il en a autant que le coût), dégâts. Deux Joueurs de la même couleur partent avec 1 élan d'avance. La page ne fait que rejouer le journal du combat, coup par coup. Les règles complètes sont en tête du fichier SQL.
-- **Les défis** (`ech_defis`) : un adversaire et une règle par jour — aucune, Carapace (coups < 100 ignorés), Frappe éclair, Affinité Rose (×2), Riposte (30 par coup porté), Fureur (+30 par coup subi), puis The French Sorcerer (Carapace 80 + Fureur 20). Un défi s'ouvre toutes les 24 h depuis le début de la saison ; on peut rattraper les jours manqués.
-- **Les étoiles** : ★ gagner (avant la fin du 10ᵉ tour), ★★ en perdant au plus un Joueur, ★★★ sans perte. Rejouable à volonté, la meilleure note compte.
-- **Les indices** : trois étoiles au défi n débloquent l'indice n — une phrase sur ce qui vient, sans rien montrer (un nombre, un mot, des étoiles, une ombre) ; les sept débloquent un dernier mot. Leur texte n'est que dans la base (`ech_indices`) : le navigateur ne le reçoit qu'une fois gagné, et ne peut donc pas le dévoiler en avance. Ils se retournent comme une carte à la fin du combat, et se relisent dans le carnet « Ce qui se prépare ».
+- **Le jeu** : on compose une équipe de trois Joueurs de sa collection, dans l'ordre (celui de devant encaisse), et on choisit l'attaque de ceux qui en ont deux. Le combat se joue avec les valeurs imprimées sur les cartes : Défense, coût des attaques (l'élan : chacun gagne 1 élan par tour et frappe dès qu'il en a autant que le coût), dégâts. Deux Joueurs de la même couleur partent avec 1 élan d'avance. Les règles complètes sont en tête du fichier SQL.
+- **Le coup d'éclat**, le seul geste pendant le combat : quand un Joueur va frapper, il brille pendant 1,7 s ; le toucher double son coup, **une fois par combat**, avant la Carapace (c'est ce qui permet de la percer). « Passer » déroule la fin sans pause.
+- **Le déroulé** : `ech_commencer(jour, équipe)` vérifie l'équipe et **compte l'essai** ; le combat se joue dans la page (`echCombat`, pas à pas) ; puis `ech_terminer(essai, coup d'éclat)` le **rejoue côté serveur** avec le même geste (`ech_simuler`), et c'est ce résultat qui compte. Les deux copies doivent rester identiques à la ligne près ; le faux serveur se sert de `echSimuler`, celle du jeu.
+- **Les essais** : **trois par défi et par jour** (jour de Paris), comptés au départ comme l'Épreuve du jour de la 3.0 — un essai abandonné est perdu. Les **jours passés restent jouables**, avec le même plafond : sans rattrapage, un jour manqué ferait perdre son indice pour de bon. Une heure de grâce après la fin de la saison pour terminer un essai commencé.
+- **Les défis** (`ech_defis`) : un adversaire et une règle par jour — aucune, Carapace (coups < 100 ignorés), Frappe éclair (il frappe à chaque tour), Affinité Rose (×2), Riposte (30 par coup porté), Fureur (+30 par coup subi), puis The French Sorcerer (Carapace 80 + Fureur 20). Défenses : 900, 1 350, 600, 1 900, 900, 1 000, 1 150. Un défi s'ouvre toutes les 24 h depuis le début de la saison.
+- **Les étoiles** : ★ gagner (avant la fin du 10ᵉ tour), ★★ en perdant au plus un Joueur, ★★★ sans perte. La meilleure note compte.
+- **Les indices** : trois étoiles au défi n débloquent l'indice n — une phrase sur ce qui vient, sans rien montrer (un nombre, un mot, des étoiles, une ombre) ; les sept débloquent un dernier mot. Leur texte n'est que dans la base (`ech_indices`) : le navigateur ne le reçoit qu'une fois gagné. Ils se retournent comme une carte à la fin du combat, et se relisent dans « Ce qui se prépare ». Les huit textes sont en tête de `ech_indices` (et dans le Labo).
 - **Les récompenses** : 80 / 80 / 140 Éclats pour les étoiles 1, 2, 3 de chaque défi (2 100 en tout) ; **3 boosters** quand les sept sont gagnés ; le titre **« Échauffé »** (`t_echauffe`) pour les 21 étoiles. Tout est versé par le serveur (`accorder`), une seule fois.
-- **L'équilibrage** : simulé sur les 51 Joueurs et toutes les équipes possibles — chaque défi a une équipe à trois étoiles ; une collection aux deux tiers les trouve, une collection au tiers gagne presque toujours. Les Défenses des adversaires (`pv`) sont dans `ech_defis`.
+- **L'équilibrage** (simulé sur les 51 Joueurs, toutes les équipes et chaque coup d'éclat possible) : chaque défi a une équipe à trois étoiles, qui demande le coup d'éclat au bon moment les jours 3 et 7 ; une équipe au hasard, même avec le meilleur coup d'éclat, ne fait trois étoiles qu'une fois sur trente à cent ; une collection aux deux tiers trouve presque toujours ses trois étoiles, une collection au tiers deux ou trois.
+- **L'interface** prend les couleurs de la suite (graphite et lavande, jetons `--e-*` posés sur `.ech` et ses voisins en fin de `css/hub.css`), sans en reprendre les écrans : accueil (bandeau, défi du jour, sept médaillons, carnet d'indices), écran du défi (l'adversaire, sa règle, trois places), scène de combat plein écran. Les clics passent par `data-ech` → `echAction()` (`clicPage`, `js/app.js`).
 - **La saison** (`ech_saison`, une ligne) commence à la fin du récap de Reflets (ou à l'installation s'il est fini) et dure neuf jours. Ce n'est volontairement **pas** une ligne de `evenements` : elle masquerait le récap de Reflets (`evenement_recent`).
 - **La fin du récap, réglable** : la colonne `evenements.recap_jusqua` (vide : trois jours après la fin, comme avant) ; `evenement_recent()` et `evenement_recap()` sont redéfinies dans `22b_echauffement.sql`.
 - **Le calendrier de 2026** (`supabase/calendrier-2.1.4.sql`, à jouer une fois, pas dans `TOUT.sql`) : Reflets jusqu'au vendredi 23 octobre minuit, son récap jusqu'au dimanche 25 minuit, L'Échauffement du lundi 26, 0 h, au mercredi 4 novembre, 0 h (heure de Paris ; le changement d'heure tombe la nuit du 24 au 25).
 - **Où ça se voit** : une fenêtre d'annonce, une fois (file de `proposerAccueil`) ; un bandeau sur Boosters (après le récap de Reflets) ; la pastille de Combats compte les défis ouverts pas encore gagnés.
-- **Tests** : `ech_simuler` et la copie de la démo donnent le même combat, au coup près, sur 840 combats tirés au hasard (banc Postgres local) ; refus vérifiés (Joueur non possédé, doublon, jour fermé, hors saison, anonyme) ; une Reverse joue comme sa carte.
-- **Dans la démo** : `?echauffement` dans l'adresse ouvre la saison tout de suite, trois défis ouverts.
+- **Le Labo** : `ech_admin()` (administrateurs) rend la saison, les sept défis, la participation et les huit indices ; `ech_admin_rejouer()` efface les essais du jour de l'administrateur lui-même (pas ses notes) ; des aperçus locaux de la page, de la fenêtre, du bandeau et d'un combat (voir « Administrateurs »).
+- **Tests** (banc PostgreSQL local : la base de `main`, puis `MAJ-2.1.4.sql` deux fois, puis `TOUT.sql`) : `ech_simuler` et la copie JS donnent le même combat, au coup près, sur 1 050 combats tirés au hasard dont 812 avec un coup d'éclat ; dates du calendrier exactes ; refus vérifiés (Joueur non possédé, doublon, plus de trois, attaque inconnue, 4ᵉ essai du jour, essai terminé deux fois ou d'un autre joueur, coup d'éclat hors limites, avant le début, après la fin et l'heure de grâce, anonyme, Labo sans droit) ; une Reverse joue comme sa carte ; les sept défis à 3★ paient 2 100 Éclats, 3 boosters et le titre. Interface vérifiée dans Chromium à 390, 375, 360 et 1 280 px de large.
+- **Dans la démo** : `?echauffement` dans l'adresse ouvre la saison tout de suite, trois défis ouverts (`?echauffement=7` : les sept).
 - **Mise en ligne** : coller `supabase/MAJ-2.1.4.sql` (assemblé par `tools/build-sql.py` : `22b_echauffement.sql` puis `calendrier-2.1.4.sql`) dans Supabase **avant le vendredi 23 octobre midi** ; puis publier le site 2.1.4 **avant le lundi 26, 0 h**. Tous les noms commencent par `ech_` : la 3.0 a déjà ses `defis`.
-- **Le prébuild** : `python3 tools/demo.py --prebuild` construit la démo de cette version dans `prebuild/` (stockage à part, pas de service worker, Labo ouvert, L'Échauffement ouvert d'office avec ses sept défis, Reflets fini, des Joueurs offerts) ; publié sur `main`, il se teste à **matetcg.com/prebuild/**. Ne jamais lancer `--preprod` depuis une branche 2.x : `preprod/` est la 3.0.
+- **Le prébuild** : `python3 tools/demo.py --prebuild` construit la démo de cette version dans `prebuild/` (stockage à part, pas de service worker, Labo ouvert, L'Échauffement ouvert d'office avec ses sept défis, Reflets fini, des Joueurs offerts) ; publié sur `main`, il se teste à **matetcg.com/prebuild/**. Ne jamais lancer `--preprod` depuis une branche 2.x : `preprod/` est la 3.0. Le prébuild contient le faux serveur, donc **le texte des indices** : il n'est pas plus secret que la pré-prod 3.0, publiée au même endroit.
 
 ## Succès, historique et partage
 
@@ -722,6 +732,8 @@ monde ouvre cinq boosters le jour de l'ouverture.
 > carte qu'on ne possède plus, et le joueur se retrouverait avec un profil qu'il
 > ne peut plus modifier.
 
+Ni l'un ni l'autre ne touche aux tables des événements (`evt_*` de Reflets, `ech_*` de L'Échauffement) : un joueur remis à zéro garde ses Prismes et ses étoiles. À ajouter aux deux fichiers si on s'en sert un jour.
+
 Les invitations de la bêta, elles, ne sont pas touchées : la remise à zéro vide
 les collections, pas la table `beta_invites`. Pour retirer quelqu'un de la liste,
 c'est `supabase/09_beta.sql`.
@@ -753,16 +765,14 @@ L'onglet **Labo** n'est plus accessible à tout le monde. Il n'apparaît que pou
 
 Cacher un bouton ne protège rien — ce qui protège, c'est que le serveur refuse les actions. Les boutons du Labo qui touchent à la collection ne modifient que l'affichage local : en ligne, la vérité reste celle du serveur, et la page la récupère telle quelle au rafraîchissement suivant.
 
-Le Labo sert à **voir ce qu'on ne peut pas provoquer** :
+Le Labo sert à **voir ce qu'on ne peut pas provoquer**. Il a quatre sous-onglets (`labVue`, `js/lab.js`) :
 
-- les sept ouvertures de test (normale, rare, épique, légendaire, Essence Brillante, carte unique, godpack), et l'image de partage d'un booster ;
-- **l'événement et la chasse** : ce que le serveur dit en ce moment (événement, rythme de recharge, état de la chasse), quatre aperçus de l'interface (avant le départ, pendant, chasse terminée, carte unique en main), les fenêtres des nouveautés et de fin de chasse, et les requêtes SQL pour lancer ou arrêter un événement et ouvrir la chasse ;
-- **l'animation d'obtention de chaque carte Promo**, une par une ou toutes à la suite — c'est exactement ce que verra un joueur, seule l'écriture dans la collection est sautée ;
-- les notifications qui passent en haut de l'écran, dont le ping de la boîte de réception ;
-- **publier une annonce** dans la boîte de réception de tous les joueurs ;
-- **offrir un cadeau** à un ou plusieurs joueurs : des Éclats, des boosters, des Fragments, une carte (sauf la carte unique) et un mot. La liste montre, pour chacun, sa date d'inscription, ses boosters ouverts, ses cartes et son retard sur la médiane, de quoi doser un rattrapage. Le joueur le découvre à sa visite suivante, dans un paquet qu'il ouvre lui-même : c'est l'ouverture, côté serveur, qui crédite le compte, une seule fois (`supabase/18_cadeaux.sql`, `js/cadeaux.js`). Une Promo offerte compte comme achetée : la boutique ne la revend pas. Les boosters offerts, comme ceux de la boutique, **ne vont pas dans la réserve** : ils s'ouvrent à part (`open_pack(true)`, colonne `boosters_bonus`), tout de suite après l'achat ou l'ouverture du cadeau, ou plus tard par « Ouvrir un booster en plus » sur l'écran Boosters. Mélangés à la réserve, ils la faisaient déborder du plafond, et une réserve pleine remet son compte à rebours à zéro : on perdait des boosters gratuits en en achetant. Parmi eux, ceux d'un cadeau (`tickets_offerts`) partent en premier et **ne peuvent pas contenir la carte unique**. Le bouton *Voir un cadeau reçu* montre le paquet et son ouverture tels que les verra le joueur, avec ce qui est saisi (ou un exemple), sans rien envoyer ni créditer ;
-- la collection remplie à 90 %, des Fragments et tous les succès en affichage, pour regarder la grille, la fabrication et le profil dans des états qu'on ne croise pas tous les jours ;
-- un tableau des valeurs d'équilibrage en cours, telles que le serveur les impose, avec ce que rapporte et coûte chaque rareté en Fragments.
+- **En ce moment** — ce que dit le serveur (l'événement ou son récap, la saison de L'Échauffement, le rythme de recharge, la carte unique), puis l'événement du moment et ses outils. Pour **L'Échauffement** : la participation défi par défi (essais, gagnés, trois étoiles), quatre aperçus (la page au premier jour ; tout gagné, avec les huit indices ; la fenêtre d'annonce ; les huit indices avec leur texte) et, pendant l'aperçu, le bandeau de l'écran Boosters ; dans l'aperçu, les sept défis se jouent avec sa collection, sans limite d'essais et sans rien envoyer. Un seul bouton réel : **Rejouer mes essais du jour** (`ech_admin_rejouer`), pour retester sans attendre le lendemain. Pour **Reflets**, tant qu'il dure ou que son récap court : l'onglet récap, la fenêtre de fin et le bandeau, avec des chiffres inventés. Enfin les requêtes SQL du moment (un événement de recharge, déplacer la saison, lire les scores). « Revenir à l'état réel » efface tout aperçu.
+- **Mises en scène** — les huit ouvertures de test (normale, rare, épique, légendaire, Essence Brillante, carte unique, godpack, Reverse Rare) et l'image de partage d'un booster ; **l'obtention de chaque carte Promo**, une par une ou toutes à la suite ; les fenêtres (nouveautés de la version, invitation achetée, cadeau reçu) ; les notifications du haut de l'écran.
+- **Joueurs** — **ce qui est réel**, et le bandeau le dit : publier une annonce dans la boîte de tous les joueurs ; **offrir un cadeau** à un ou plusieurs joueurs : des Éclats, des boosters, des Fragments, une carte (sauf la carte unique) et un mot. La liste montre, pour chacun, sa date d'inscription, ses boosters ouverts, ses cartes et son retard sur la médiane, de quoi doser un rattrapage. Le joueur le découvre à sa visite suivante, dans un paquet qu'il ouvre lui-même : c'est l'ouverture, côté serveur, qui crédite le compte, une seule fois (`supabase/18_cadeaux.sql`, `js/cadeaux.js`). Une Promo offerte compte comme achetée : la boutique ne la revend pas. Les boosters offerts, comme ceux de la boutique, **ne vont pas dans la réserve** : ils s'ouvrent à part (`open_pack(true)`, colonne `boosters_bonus`), tout de suite après l'achat ou l'ouverture du cadeau, ou plus tard par « Ouvrir un booster en plus » sur l'écran Boosters. Mélangés à la réserve, ils la faisaient déborder du plafond, et une réserve pleine remet son compte à rebours à zéro : on perdait des boosters gratuits en en achetant. Parmi eux, ceux d'un cadeau (`tickets_offerts`) partent en premier et **ne peuvent pas contenir la carte unique**. *Voir un cadeau reçu* montre le paquet tel que le verra le joueur, sans rien envoyer.
+- **Affichage** — la collection remplie, vidée ou à 90 %, +10 boosters, des Fragments, tous les succès, boosters illimités (tout local) ; les valeurs d'équilibrage en cours, telles que le serveur les impose, avec ce que rapporte et coûte chaque rareté en Fragments.
+
+Ce qui a été retiré en 2.1.4, parce que plus rien ne s'en sert : les quatre aperçus de la chasse à la carte unique (version 1.5) et ses requêtes, la fenêtre de fin de chasse, les fenêtres de palier du Pass de Reflets, les nouveautés 2.0, et les boutons qui ne faisaient qu'ouvrir un onglet.
 
 Pour obtenir une Promo **pour de vrai** sur son compte — et vérifier la détection, la boutique et les paliers de bout en bout — les requêtes sont commentées en bas de `supabase/03b_promos.sql`.
 
@@ -774,7 +784,17 @@ La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site
 
 C'est la démo autonome (faux serveur, `_demo/serveur.js`) publiée dans `preprod/` : pas de compte, pas de vrai serveur, des joueurs simulés, et le Labo ouvert. Un bandeau « Pré-prod » le rappelle, et la page n'est pas indexée. Tout ce qu'elle range dans le navigateur porte un préfixe à part (`preprod:` pour le stockage local, une base IndexedDB à son nom) : elle ne lit ni n'écrase les réglages ou la session du vrai site, qui partage l'adresse. Elle n'a pas de service worker, pour ne pas vider les caches de celui du vrai site.
 
-Le développement se fait sur une branche à part ; `main` reste le site public. Pour publier une pré-prod : construire `preprod/` sur la branche, puis le reporter seul sur `main`. Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
+Le développement se fait sur une branche à part ; `main` reste le site public. Trois lignes coexistent :
+
+| Lieu | Contenu |
+|---|---|
+| `main`, à la racine | le vrai site, en 2.1.3 au 22 octobre 2026 (le teaser « le signal » dans Combats) |
+| `main`, `prebuild/` | la démo de la prochaine 2.x (2.1.4, L'Échauffement), construite depuis sa branche |
+| `main`, `preprod/` | la démo de la 3.0, construite depuis la branche `version-3.0` (qui a son propre README et son `CLAUDE.md`) |
+| branche `claude/interface-ux-fixes-o92u4a` | la ligne 2.x (ce README), partie de `main` ; publiée sur `main` seulement avec l'accord du propriétaire |
+| branche `version-3.0` | la 3.0 ; **ne se fusionne jamais dans `main`** |
+
+Pour publier une pré-prod ou un prébuild : le construire sur sa branche, puis reporter **ce seul dossier** sur `main` (un `git worktree` d'`origin/main`, copier le dossier, `git status` ne doit lister que lui). Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
 
 ## Mettre à jour le site
 

@@ -339,6 +339,8 @@ Editor**, et c'est pris en compte immédiatement, sans toucher au site.
 | Quêtes : objectifs et récompenses | `supabase/04_seed.sql` |
 | Boutique : articles et prix | `supabase/04_seed.sql` |
 | Cartes Promo : catalogue et paliers d'obtention | `supabase/03b_promos.sql` |
+| L'Échauffement (2.1.4) : dates de la saison, défis, indices | tables `ech_saison`, `ech_defis`, `ech_indices` (`supabase/22b_echauffement.sql`) ; la requête des dates est aussi dans le Labo |
+| Fin du récap d'un événement | colonne `recap_jusqua` de `evenements` (vide : trois jours après la fin) |
 
 Modifie le fichier, colle-le dans le SQL Editor, **Run**. C'est tout.
 

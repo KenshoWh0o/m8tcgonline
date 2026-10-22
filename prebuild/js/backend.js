@@ -411,8 +411,9 @@ Backend.pisteReclamer = async palier => {
 Backend.illuEtat = () => Backend.rpc('illu_etat');
 /* L'Échauffement (supabase/22b_echauffement.sql). */
 Backend.echEtat = () => Backend.rpc('ech_etat');
-Backend.echJouer = async (jour, equipe) => {
-  const r = await Backend.rpc('ech_jouer', { p_jour: jour, p_equipe: equipe });
+Backend.echCommencer = (jour, equipe) => Backend.rpc('ech_commencer', { p_jour: jour, p_equipe: equipe });
+Backend.echTerminer = async (essai, eclat) => {
+  const r = await Backend.rpc('ech_terminer', { p_essai: essai, p_eclat: eclat || null });
   Backend.apply(r.me);
   return r;
 };
@@ -429,6 +430,9 @@ Backend.utiliserInvitation = async code => Backend.apply(await Backend.rpc('util
 Backend.mesCadeaux = () => Backend.rpc('mes_cadeaux');
 Backend.ouvrirCadeau = async id => Backend.apply(await Backend.rpc('ouvrir_cadeau', { p_id: id }));
 Backend.adminJoueurs = () => Backend.rpc('admin_joueurs');
+/* L'Échauffement, côté Labo : tout voir, et rejouer ses propres essais du jour. */
+Backend.echAdmin = () => Backend.rpc('ech_admin');
+Backend.echAdminRejouer = () => Backend.rpc('ech_admin_rejouer');
 Backend.offrirCadeau = c => Backend.rpc('offrir_cadeau', {
   p_joueurs: c.joueurs, p_eclats: c.eclats || 0, p_boosters: c.boosters || 0,
   p_fragments: c.fragments || 0, p_carte: c.carte || null, p_message: c.message || ''
