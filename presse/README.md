@@ -127,8 +127,8 @@ simulation.
    - **les Promos** — le bas de l'onglet Collection
 
 Si ton compte est administrateur, l'onglet **Labo** prépare la mise en scène en un
-clic : « Monter à 90 % » remplit la collection, et les boutons d'ouverture rejouent
-n'importe quelle révélation sans attendre la chance.
+clic : « Monter à 90 % » (sous-onglet Affichage) remplit la collection, et les boutons
+d'ouverture (sous-onglet Scènes) rejouent n'importe quelle révélation sans attendre la chance.
 
 ---
 

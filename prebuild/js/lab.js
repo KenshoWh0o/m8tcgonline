@@ -11,11 +11,11 @@
    d'administrateur ; l'onglet Joueurs le dit en tête. */
 "use strict";
 
-/* Quatre sous-onglets : ce qui se passe en ce moment (l'événement du jour et
+/* Quatre sous-onglets : ce qui se passe maintenant (l'événement du jour et
    ses outils), les mises en scène à rejouer, les actions réelles sur les
    joueurs, et l'affichage local. */
 let labVue = 'maintenant';
-const LAB_VUES = [['maintenant', 'En ce moment'], ['scenes', 'Mises en scène'], ['joueurs', 'Joueurs'], ['affichage', 'Affichage']];
+const LAB_VUES = [['maintenant', 'Maintenant'], ['scenes', 'Scènes'], ['joueurs', 'Joueurs'], ['affichage', 'Affichage']];
 
 function vTest() {
   if (!save.isAdmin) {
@@ -33,7 +33,7 @@ function vTest() {
     ${corps}`;
 }
 
-/* ---------- En ce moment ---------- */
+/* ---------- Maintenant ---------- */
 /* L'état du serveur, puis l'événement du moment et ses outils. Un aperçu ne
    change que l'affichage : « Revenir à l'état réel » redemande tout. */
 let labEch = null;
@@ -194,7 +194,7 @@ async function labEtatReel() {
   toast('État du serveur rétabli.');
 }
 
-/* ---------- Mises en scène ---------- */
+/* ---------- Scènes ---------- */
 function vLabScenes() {
   const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
   return `<section class="panel">
