@@ -2,7 +2,8 @@
 
 > **Règle du propriétaire, avant tout.** Aucun SQL de la 3.0 ne se joue sur la
 > base de **production** tant que le propriétaire ne l'a pas décidé. La
-> production (`matetcg.com`) est en **2.1.2** ; la 3.0 ne vit qu'en pré-prod
+> production (`matetcg.com`) est en **2.x** (2.1.3 au 22 octobre 2026, 2.1.4 en
+> préparation sur la ligne 2.x) ; la 3.0 ne vit qu'en pré-prod
 > (`matetcg.com/preprod/`), avec un faux serveur dans le navigateur
 > (README § 1.2).
 >

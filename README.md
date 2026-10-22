@@ -42,18 +42,20 @@ Autres documents : [`SETUP.md`](SETUP.md) (mettre un serveur Supabase en ligne, 
 
 | Lieu | Contenu | Version |
 |---|---|---|
-| **`main`, à la racine** | **Le vrai site**, servi à `matetcg.com` par GitHub Pages (`CNAME`). | **2.1.2** |
+| **`main`, à la racine** | **Le vrai site**, servi à `matetcg.com` par GitHub Pages (`CNAME`). | **2.1.3** (teaser « le signal ») |
+| **`main`, dossier `prebuild/`** | La démo de la prochaine 2.x, construite depuis la branche 2.x et servie à `matetcg.com/prebuild/` (faux serveur, comme la pré-prod). | 2.1.4 (L'Échauffement) |
 | **`main`, dossier `preprod/`** | La pré-prod : une copie *construite* de la version suivante, servie à `matetcg.com/preprod/`, qui tourne avec un **faux serveur** dans le navigateur (aucun compte, aucune base). | 3.0.x |
 | **Branche de travail `version-3.0`** | Le **code source** de la version suivante, à la racine. `preprod/` y est aussi versionné : identique à `main` juste après une publication, en avance entre deux (`git diff --stat origin/main HEAD -- preprod`). | 3.0.8 |
-| **Base Supabase de production** | Installée en 2.1. **Aucun SQL 3.0 n'y a été joué.** | 2.1 |
+| **Branche `claude/interface-ux-fixes-o92u4a`** | La **ligne 2.x** (le vrai site), partie de `main`, avec son propre `README.md` et son `CLAUDE.md`. Elle ne se publie à la racine de `main` qu'avec l'accord du propriétaire. | 2.1.4 |
+| **Base Supabase de production** | Installée en 2.1 ; `MAJ-2.1.4.sql` (tables `ech_*`) à coller par le propriétaire avant le 23 octobre 2026 à midi. **Aucun SQL 3.0 n'y a été joué.** | 2.1 (→ 2.1.4) |
 
-**État du projet.** Le 24 septembre 2026, le lancement public a été **annulé** après échange avec Gentle Mates (`vAnnonceArret()`, `js/gate.js`) : l'écran d'entrée du vrai site affiche « Projet annulé · Merci ». Les comptes déjà invités jouent toujours à la 2.1.2. Le développement de la 3.0 continue **uniquement en pré-prod**.
+**État du projet.** Le 24 septembre 2026, le lancement public a été **annulé** après échange avec Gentle Mates (`vAnnonceArret()`, `js/gate.js`) : l'écran d'entrée du vrai site affiche « Projet annulé · Merci ». Les comptes déjà invités jouent toujours à la 2.x (2.1.3, puis 2.1.4 et son mini-événement L'Échauffement, du 26 octobre au 4 novembre 2026). Le développement de la 3.0 continue **uniquement en pré-prod**.
 
 **Conséquence pratique.** On développe sur la branche, on construit `preprod/` avec `python3 tools/demo.py --preprod`, et on ne reporte **que `preprod/`** sur `main` ([§ 2.5](#25-construire-et-publier-la-pré-prod)). **La branche ne se fusionne jamais dans `main`** : sa racine est la 3.0, qui appelle des RPC absentes de la base de production.
 
 ### 1.3 Les règles du propriétaire (non négociables)
 
-1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `preprod/` sur `main`, et aucun SQL 3.0 n'est joué sur la base de production. Le vrai site (la 2.x) peut, lui, évoluer à la demande du propriétaire : on travaille alors sur une branche partie de `main` (par exemple `teaser-2.x`), et on ne publie qu'après son accord.
+1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `preprod/` sur `main`, et aucun SQL 3.0 n'est joué sur la base de production. Le vrai site (la 2.x) peut, lui, évoluer à la demande du propriétaire : on travaille alors sur la branche de la ligne 2.x (`claude/interface-ux-fixes-o92u4a`, partie de `main`), et on ne publie qu'après son accord.
 2. **Pas de pull request** sans demande explicite.
 3. **Français**, partout : interface, commentaires, documentation, messages de commit.
 4. **Mode sombre uniquement.** Il n'y a qu'un thème.
@@ -82,6 +84,7 @@ Un README faux est pire que pas de README : en cas de doute, vérifier dans le c
 3. `node tools/combat-tests.js` : les tests de règles doivent tous passer.
 4. `python3 tools/demo.py --preprod`, puis servir le dépôt ([§ 2.1](#21-servir-le-site-en-local)) et ouvrir `/preprod/` : c'est là que la 3.0 se teste.
 5. Regarder [§ 14](#14-dette-connue) : ce qui est connu pour être faux ou mort.
+6. Si le travail touche à `main` (la racine ou `prebuild/`), lire aussi le `README.md` et le `CLAUDE.md` de la ligne 2.x : `git show origin/claude/interface-ux-fixes-o92u4a:README.md`.
 
 ---
 
@@ -953,7 +956,7 @@ Un événement est **une ligne de `evenements`** (`supabase/installation/15_even
 
 ### 8.4 Le récap
 
-`evenement_recap()` renvoie le total, les paliers atteints / pris, les illus trouvées, les Reverses, les quêtes réclamées, le rang, le nombre de joueurs et le podium ; pour le Choc s'ajoutent les dégâts au Raid, les phases tombées et les Épreuves (`choc_recap`). Le Labo en montre un aperçu factice (`apercuRecap`, `apercuRecapChoc`), sans rien enregistrer.
+`evenement_recap()` renvoie le total, les paliers atteints / pris, les illus trouvées, les Reverses, les quêtes réclamées, le rang, le nombre de joueurs et le podium ; pour le Choc s'ajoutent les dégâts au Raid, les phases tombées et les Épreuves (`choc_recap`). Le Labo montre celui du Choc avec des chiffres inventés (`apercuRecapChoc`), sans rien enregistrer ; l'aperçu de celui de Reflets a été retiré en 3.0.9.
 
 ### 8.5 Reflets (2.0) et Devine l'illu
 
@@ -1159,21 +1162,19 @@ Les deux remises à zéro (réécrites pour la 3.0 en 3.0.8, testées sur Postgr
 
 L'onglet **Labo** (`js/lab.js`, `css/lab.css`) n'apparaît que pour `save.isAdmin` (posé en SQL, [§ 9.1](#91-principes-et-sécurité)). En pré-prod, le faux serveur rend le visiteur administrateur : **le Labo y est toujours ouvert**. Il sert à **voir ce qu'on ne peut pas provoquer**. Presque tout y est local : les boutons qui touchent la collection ne modifient que l'affichage, et le `pull` suivant remet l'état du serveur. Le Labo n'est jamais redessiné en arrière-plan (`enTrainDEcrire()`).
 
-| Panneau | Ce qu'il permet |
-|---|---|
-| Ouvertures de test | normale, R / E / L / Secrète forcées, Essence Brillante, carte unique, godpack, Reverse Rare (tirage local `makeBooster`, rien n'est écrit) ; l'image de partage d'un booster |
-| Événement et chasse | l'état serveur (événement, rythme, chasse) ; 4 aperçus (`avant`, `pendant`, `trouvee`, `mienne`) ; « Revenir à l'état réel » ; les fenêtres de nouveautés et de fin de chasse ; les requêtes SQL à copier |
-| Promos | la scène d'obtention de chaque Promo, ou toutes à la suite |
-| **Offrir un cadeau** (réel) | Éclats, boosters, Fragments, une carte et un mot à un ou plusieurs joueurs (liste avec leur retard sur la médiane) ; aperçu sans rien envoyer |
-| Version 2.0 · Reflets | Nouveautés 2.1, fenêtres de palier, invitation achetée (`M8-TEST-0000`), l'onglet (si Reflets est en cours), Devine l'illu, le récap (onglet, fenêtre, bandeau) |
-| Version 3.0 · Choc | Nouveautés 3.0, l'onglet (si le Choc est en cours), le récap |
-| Version 3.0 · Combats | campagnes dévoilées, **toutes les récompenses** (`laboRecompenses` : campagne, Arcade, niveaux 2 → 60, Raid, Pass), une fin de combat à deux niveaux, la fiche de niveau, le bilan d'un Starter |
-| **Annonce à tous** (réelle) | `annonce_publier`, avec confirmation |
-| Notifications | quête accomplie, ping de la boîte, message court |
-| Aperçu de la collection (local) | tout débloquer, vider, 90 %, +10 boosters, +5 000 Fragments, tous les succès, boosters illimités |
-| Équilibrage | les valeurs en vigueur (lecture seule), barèmes de recyclage et de fabrication |
+Il a **cinq sous-onglets** (`labVue`, barre `.labvues` qui passe à la ligne plutôt que de cacher un onglet hors de l'écran) :
 
-Les clics du Labo passent par `clicPage` (`data-act="t-*"`, `data-apercu`, `data-promo`).
+| Sous-onglet | Ce qu'il permet |
+|---|---|
+| **Maintenant** | l'état du serveur (événement, rythme de recharge, carte unique) ; **le Choc** : Nouveautés 3.0, le récap avec des chiffres inventés (onglet, fenêtre, bandeau) ; « Revenir à l'état réel » quand un aperçu est posé ; les requêtes SQL du moment (un événement de recharge, l'échelle du Raid) |
+| **Combats** | campagnes dévoilées (Toxique, Déter), **toutes les récompenses** (`laboRecompenses` : campagne, Arcade, niveaux 2 → 60, Raid, Pass), une fin de combat à deux niveaux, la fiche de niveau, le bilan d'un Starter |
+| **Scènes** | ouvertures de test : normale, R / E / L / Secrète forcées, Essence Brillante, carte unique, Reverse Rare, godpack (tirage local `makeBooster`, rien n'est écrit) ; l'image de partage d'un booster ; la scène d'obtention de chaque Promo ; les fenêtres (invitation achetée `M8-TEST-0000`, cadeau reçu) ; les notifications |
+| **Joueurs** (réel) | `annonce_publier`, avec confirmation ; **offrir un cadeau** : Éclats, boosters, Fragments, une carte et un mot à un ou plusieurs joueurs (liste avec leur retard sur la médiane) ; aperçu sans rien envoyer |
+| **Affichage** (local) | tout débloquer, vider, 90 %, +10 boosters, +5 000 Fragments, tous les succès, boosters illimités ; les valeurs d'équilibrage en vigueur, barèmes de recyclage et de fabrication |
+
+Retiré en 3.0.9, parce que plus rien ne s'en servait : les quatre aperçus de la chasse à la carte unique (1.5) et leurs requêtes, la fenêtre de fin de chasse, tout le panneau « Version 2.0 · Reflets » (Nouveautés 2.1, fenêtres de palier, onglet, Devine l'illu, récap de Reflets, avec `montrerNouveautes21` et `apercuRecap`), et le bouton qui ne faisait qu'ouvrir l'onglet du Choc.
+
+Les clics du Labo passent par `clicPage` (`data-labv`, `data-act="t-*"`, `data-promo`).
 
 ---
 
@@ -1318,22 +1319,23 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 28. Toute règle a trois copies ([§ 9.8](#98-une-règle-plusieurs-copies)).
 29. `revoke … from public` sur chaque nouvelle fonction ; les messages d'erreur sont en français et montrés tels quels.
 30. Une installation neuve lance Reflets pour 14 jours ; l'administrateur lui-même doit être dans `beta_invites`.
+31. **La base de production a reçu (ou recevra) la 2.1.4** : tables `ech_*` de L'Échauffement et colonne `evenements.recap_jusqua` (ligne 2.x, `supabase/22b_echauffement.sql`). `TOUT.sql` de la 3.0 passe par-dessus sans erreur (testé deux fois sur 2.1.3 + `MAJ-2.1.4.sql`, le 22 octobre 2026) mais **redéfinit `evenement_recent()` et `evenement_recap()` sans `recap_jusqua`** : après la 3.0, le récap d'un événement redure trois jours. Les deux remises à zéro connaissent les tables `ech_*` depuis la 3.0.9 et ne les vident que si elles existent.
 
 **Pré-prod**
 
-31. Dans `_demo/serveur.js` : rien lu du jeu au niveau du module ; `refuser()` plutôt que `throw` ; ne jamais changer `S.v`.
-32. Le Choc de la démo expire (21 jours après le début, posé 4 jours avant la première visite) ; les bots ne vivent que page ouverte.
-33. Le préfixe `preprod:` ne réécrit que `getItem`, `setItem`, `removeItem`, `clear` : `key()` et `length` voient aussi les clés du vrai site.
+32. Dans `_demo/serveur.js` : rien lu du jeu au niveau du module ; `refuser()` plutôt que `throw` ; ne jamais changer `S.v`.
+33. Le Choc de la démo expire (21 jours après le début, posé 4 jours avant la première visite) ; les bots ne vivent que page ouverte.
+34. Le préfixe `preprod:` ne réécrit que `getItem`, `setItem`, `removeItem`, `clear` : `key()` et `length` voient aussi les clés du vrai site.
 
 **Combats et événements**
 
-34. **Déterminisme** : aucun `Math.random` ni `Date` dans le moteur et les effets ; l'état reste du JSON sans référence.
-35. Une action doit être **exactement** l'une de `optionsTour` (`chevaliere` n'existe que s'il vaut `true`).
-36. Pendant une animation, `T.E` est déjà à l'état final : dessiner `vue()`, décider sur `T.E`.
-37. Tout nouveau `but` de décision doit être connu de l'IA **et** de l'interface.
-38. Le tutoriel dépend des classes de l'arène : le rejouer après toute retouche de `table.js` / `arene.css`.
-39. Un défi ne tolère aucun trou dans la numérotation des actions (« Actions désynchronisées »).
-40. Ne jamais réutiliser un code d'événement ; ne pas chevaucher un événement sans code et un événement codé.
+35. **Déterminisme** : aucun `Math.random` ni `Date` dans le moteur et les effets ; l'état reste du JSON sans référence.
+36. Une action doit être **exactement** l'une de `optionsTour` (`chevaliere` n'existe que s'il vaut `true`).
+37. Pendant une animation, `T.E` est déjà à l'état final : dessiner `vue()`, décider sur `T.E`.
+38. Tout nouveau `but` de décision doit être connu de l'IA **et** de l'interface.
+39. Le tutoriel dépend des classes de l'arène : le rejouer après toute retouche de `table.js` / `arene.css`.
+40. Un défi ne tolère aucun trou dans la numérotation des actions (« Actions désynchronisées »).
+41. Ne jamais réutiliser un code d'événement ; ne pas chevaucher un événement sans code et un événement codé.
 
 ---
 
@@ -1364,7 +1366,6 @@ Le gros du code mort a été retiré en 3.0.8 (navigation, données, combat, év
 - **Données** : la branche des **talents** (une attaque sans coût) est vivante dans le code (`k.talents`, lu par l'arène et la fiche) mais aucune carte n'en a ; `PROMOS_A_VENIR` est vide mais c'est un réglage ([§ 6.2](#62-données-et-images)) ; `profil.bonus_offerts` est envoyé par le serveur (`07_vitrine.sql`, `_demo/serveur.js`) et lu par personne. `Backend.erreur` n'est lu que par l'écran d'entrée de la démo (`demoPorte`, `_demo/serveur.js`) : ne pas le supprimer.
 - **SQL** : `cfg('pack_size')`, `cfg('shards_per_dup')`, `recyclage_semaine()` / `debut_semaine()`, la branche `'legendaire'` d'`accorder`, `choc_joueurs.victoires`, les critères de classement non affichés, l'effet de boutique `refill` (plus aucun article ne s'en sert ; retiré côté client).
 - **Combat** : trois copies du même mulberry32 (moteur, IA, campagne), une vingtaine d'exports jamais appelés de l'extérieur. `CB_ALIAS` n'est **pas** mort : la boîte de réception ouvre encore `defis` pour un défi reçu.
-- **Événements** : `montrerNouveautes21` et les boutons `t-v2-*` du Labo (joignables, ils rejouent les fenêtres de la 2.0).
 
 ### 14.3 Écarts à la DA
 
@@ -1398,13 +1399,16 @@ Le gros du code mort a été retiré en 3.0.8 (navigation, données, combat, év
 | **1.5** | 3 oct. | Fragments (le recyclage ne paie plus en Éclats), fabrication, Essences Brillantes, succès, historique des tirages, partage d'un booster, **chasse à la carte unique** ; puis cadeaux d'administrateur et boosters offerts ou achetés **hors réserve**. 1.5.8 : teaser de la 2.0. |
 | **2.0 « Reflets »** | 8 oct. | **Reverses**, Collection en trois vues, titres / bannière / devise, cadres décorés animés, l'événement Reflets (Prismes, Pass, boutique, récap), **Devine l'illu**, invitations, « Chez tes amis » ; la pré-prod à `matetcg.com/preprod/`. |
 | **2.1** | 9 oct. | Exemplaires **à garder** (par rareté et par carte), **favoris**, quêtes « Dix fois la même ». 2.1.1 : un invité n'invite pas à son tour. |
-| **2.1.2** | 13 oct. | Cadre Maître refait, flèche du menu, pastille Devine l'illu, cadrage de l'app installée. **C'est la version en production.** |
+| **2.1.2** | 13 oct. | Cadre Maître refait, flèche du menu, pastille Devine l'illu, cadrage de l'app installée. |
+| **2.1.3** | 20 oct. | Teaser de la 3.0 dans l'onglet Combats (« le signal »). **C'est la version en production** au 22 octobre. Faite sur la ligne 2.x (`claude/interface-ux-fixes-o92u4a`). |
+| 2.1.4 | 21–22 oct. | Ligne 2.x, **pas encore à la racine de `main`** (prébuild à `matetcg.com/prebuild/`) : **L'Échauffement**, sept défis du 26 octobre au 4 novembre 2026 dans l'onglet Combats, avec un indice sur la suite par défi réussi à trois étoiles ; Labo de la 2.x réorganisé. Détail dans le README de cette branche. |
 | 3.0.0 – 3.0.1 | 11–12 oct. | Pré-build : moteur de combat, effets, IA, règles reconstituées, arène, onglet Combats, atelier, guides, défis, cosmétiques ; Secrètes et nouveaux taux ; l'événement « Le Choc des Sections » (Raid, Épreuve du jour, Pass) ; XP et niveaux ; SQL `23`–`26`. |
 | 3.0.2 – 3.0.4 | 12 oct. | Refonte visuelle complète, puis la palette **« Graphite et lavande »** (verre réservé à ce qui flotte) ; la « Guerre » des Sections et la première maîtrise retirées ; la pré-prod ne reste plus bloquée sur « Merci ». |
 | 3.0.5 | 12 oct. | Onglet Combats refait (bannière du Chevalier, portes Solo et Versus, campagne en chemin, Arcade) ; Raid permanent ; événement refait (bannière, Nouveautés, Pass et boutique rééquilibrés). |
 | 3.0.6 | 13–14 oct. | **Raid par saisons et phases** (`27_raid.sql`) ; **tutoriel jouable** ; Guide en glossaire ; IA sans coups au hasard (mesurée) ; Decks avec bilan ; Classement Niveau / Secrètes / Versus ; bannière Squeezie le Toxique contre Brawks Déter, sans VS ; Insignes renommées **Étincelles** ; cadres 3.0 redessinés ; le Labo montre tout. |
 | **3.0.7** | 14 oct. | **Maîtrise des cartes** (`28_maitrise.sql`) et **carte fétiche** ; fiche de carte en trois pages (Infos, Maîtrise, Gérer) ; arène : carte agrandie intacte avec son état dessous, Joueur engagé qui ne pivote plus, animations rejouées depuis l'état de chaque instant, flèche de visée, touchers iOS ; tutoriel réécrit et vérifié dans Chromium (390, 375, 360) ; récap de booster sans défilement, pastille Boosters, niveau dans l'en-tête, Classement à quatre critères. |
 | **3.0.8** | 14–15 oct. | **README réécrit de zéro** et `CLAUDE.md` ; bandeau et tapis « Le Choc des Sections » recadrés sur Brawks Déter, Nouveautés sans « Deux Sections » ; tapis et cadre du Sorcier dans la même colonne de la boutique du Choc ; « Apprendre d'abord » ouvre le Guide ; liens `data-colvue` réparés ; cadres Arène sans plaque « NIV » ; **carte fétiche** refaite dans la DA ; **maîtrise refaite** (barème par rareté, effets sans voile, un joyau à la place de la couronne, fiche qui tient sans défiler) ; arène : **zone de détails** au-dessus de son camp pour sa main et ses Joueurs, **fantôme de la carte** dans les places libres à la place du « + » ; **dépôt rangé** (SQL en `installation/` et `administration/`, remises à zéro réécrites pour la 3.0 et protégées par un garde-fou, mises à jour historiques supprimées, code et CSS morts retirés, `SETUP.md` et docs remis d'accord avec le code) ; solde du Choc à jour après un achat. ; branches rangées : la branche de travail s'appelle désormais `version-3.0`. |
+| **3.0.9** | 22 oct. | **Labo réorganisé** en cinq sous-onglets (Maintenant, Combats, Scènes, Joueurs, Affichage), sans les aperçus de la chasse 1.5 ni le panneau Reflets (`montrerNouveautes21`, `apercuRecap` retirés) ; remises à zéro compatibles avec une base qui a reçu la 2.1.4 (tables `ech_*`) ; README et `CLAUDE.md` à jour des trois lignes (racine de `main`, `prebuild/`, `preprod/`). |
 
 **Choix d'interprétation de la 3.0.7, à connaître** : « Éclats » dans la demande sur la maîtrise a été lu comme **Fragments** ; le conflit entre exemplaires et decks est résolu par les exemplaires **en trop** seulement (le manque se paie en Fragments) ; la carte fétiche est distincte de la vitrine ; le Classement est réduit à quatre critères. Non vérifié sur un vrai appareil iOS (zones sûres, glissé des pages de la fiche).
 

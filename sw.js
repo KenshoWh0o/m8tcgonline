@@ -7,7 +7,7 @@
    Rien de ce qui touche au compte n'est mis en cache. */
 "use strict";
 
-const VERSION = 'mtcg-v3.0.8';
+const VERSION = 'mtcg-v3.0.9';
 const COQUILLE = VERSION + '-coquille';
 const MEDIAS = VERSION + '-medias';
 

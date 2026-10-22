@@ -19,6 +19,7 @@
 --    · la progression des quetes, les compteurs, les boites de reception ;
 --    · tous les echanges, y compris ceux en attente ;
 --    · les evenements : soldes, Pass, Devine l'illu ;
+--      et les etoiles et essais de L'Echauffement (2.1.4) s'il est installe ;
 --    · les Combats : Sections, XP et niveaux, decks, campagnes, combats en
 --      cours, defis, Epreuves du Choc, Raid (participations ET degats de la
 --      saison : le boss repart avec tous ses PV) ;
@@ -70,6 +71,8 @@ declare
     'combat_joueurs', 'decks', 'combats_ouverts', 'defis', 'choc_joueurs',
     'choc_epreuves', 'raid_participants', 'raid_pris', 'raid_tentatives',
     'trades', 'chasse',
+    -- L'Echauffement (2.1.4), s'il a ete installe sur cette base :
+    'ech_scores', 'ech_essais', 'ech_paliers',
     -- gardees :
     'friendships', 'invitations', 'annonces'];
   inconnues text;
@@ -126,6 +129,12 @@ begin
   delete from public.raid_participants;
   delete from public.raid_pris;
   delete from public.raid_tentatives;
+  -- L'Echauffement (2.1.4) : ses tables n'existent que sur une base qui l'a recu.
+  if to_regclass('public.ech_scores') is not null then
+    execute 'delete from public.ech_scores';
+    execute 'delete from public.ech_essais';
+    execute 'delete from public.ech_paliers';
+  end if;
   -- Le boss du Raid repart avec tous ses PV : les degats de chaque saison
   -- et les phases abattues s'effacent (raid_saisons se recree tout seul).
   delete from public.raid_tombees;

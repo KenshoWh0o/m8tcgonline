@@ -4,13 +4,17 @@
    suffirait pas : c'est le serveur qui refuse les actions, pas l'interface qui
    les masque.
 
-   Ce que le Labo peut faire : rejouer n'importe quelle mise en scène, poser
-   l'interface dans un état d'événement ou de chasse, et modifier l'affichage
-   local. Ce qu'il ne peut pas faire : accorder une carte,
-   des Éclats ou un booster sur le compte — ça, seul le serveur le décide, et il
-   ne prend d'ordre de personne. Les boutons d'aperçu le disent en toutes
-   lettres. */
+   Presque tout y est local : rejouer une mise en scène, poser l'interface
+   dans l'état d'un événement, modifier l'affichage. Les seules actions réelles
+   (annonce, cadeau) passent par des fonctions du serveur qui vérifient
+   elles-mêmes le droit d'administrateur ; l'onglet Joueurs le dit en tête. */
 "use strict";
+
+/* Cinq sous-onglets : ce qui se passe en ce moment, les Combats (ce que le
+   jeu cache), les mises en scène à rejouer, les actions réelles sur les
+   joueurs, et l'affichage local. */
+let labVue = 'maintenant';
+const LAB_VUES = [['maintenant', 'Maintenant'], ['combats', 'Combats'], ['scenes', 'Scènes'], ['joueurs', 'Joueurs'], ['affichage', 'Affichage']];
 
 function vTest() {
   if (!save.isAdmin) {
@@ -20,152 +24,171 @@ function vTest() {
     return `<div class="pagehead"><div><h1>Labo</h1></div></div>
       ${vide('Aucune carte', 'Le fichier js/cards-data.js ne contient aucune carte.')}`;
   }
+  const corps = labVue === 'combats' ? vLabCombats() : labVue === 'scenes' ? vLabScenes()
+    : labVue === 'joueurs' ? vLabJoueurs() : labVue === 'affichage' ? vLabAffichage() : vLabMaintenant();
+  return `<div class="pagehead"><div><h1>Labo</h1>
+      <p>Voir ce qu'on ne peut pas provoquer. Tout est local, sauf l'onglet Joueurs.</p></div></div>
+    <div class="segbar labvues">${LAB_VUES.map(([k, n]) => `<button data-labv="${k}" class="${labVue === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+    ${corps}`;
+}
 
-  const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
+/* ---------- En ce moment ---------- */
+/* L'état du serveur, puis l'événement et ses aperçus. Un aperçu ne change que
+   l'affichage : « Revenir à l'état réel » redemande tout au serveur. */
+function vLabMaintenant() {
+  const ev = save.evenement;
+  const ch = save.chasse || {};
+  const u = uniques[0];
+  const quand = iso => jourHeure(srvTime(iso));
+  const etatEv = !ev ? 'Aucun événement en cours ni dans les quinze jours.'
+    : ev.a_venir ? `« ${ev.titre} » commence ${quand(ev.debut)}, finit ${quand(ev.fin)}.`
+    : `« ${ev.titre} » en cours, finit ${quand(ev.fin)}.`;
+  const etatCh = !ch.carte ? 'Inconnue.'
+    : ch.trouvee ? `Terminée : tirée par ${ch.gagnant || 'un joueur'}.`
+    : ch.active ? 'Ouverte : une chance sur 250 par booster.' : 'Fermée.';
+  return `${chRecapApercu ? `<p class="labalerte">Un aperçu est affiché : ce n'est pas l'état du serveur.
+      <button class="linkbtn" data-act="t-ev-reel">Revenir à l'état réel</button></p>` : ''}
+    <section class="panel">
+      <h2>Le serveur</h2>
+      <div class="labetat">
+        <div><span>Événement</span><b>${h(etatEv)}</b></div>
+        <div><span>Recharge</span><b>Un booster toutes les ${h(String(Math.round(INTERVAL / 360000) / 10).replace('.', ','))} h</b></div>
+        <div><span>${h(u ? u.nom : 'Carte unique')}</span><b>${h(etatCh)}</b></div>
+      </div>
+    </section>
 
-  return `<div class="pagehead">
-    <div>
-      <h1>Labo</h1>
-      <p>Rejouer les mises en scène, et regarder l'interface dans des états
-        qu'on ne croise pas tous les jours.</p>
+    <section class="panel">
+      <h2>Le Choc des Sections</h2>
+      <p class="muted small">La fenêtre des nouveautés, et le récap de fin avec des chiffres inventés : rien n'est enregistré.</p>
+      <div class="row">
+        <button class="btn ghost" data-act="t-v3-nouveautes">Nouveautés 3.0</button>
+        <button class="btn ghost" data-act="t-v3-recap">Onglet récap</button>
+        <button class="btn ghost" data-act="t-v3-recap-pop">Fenêtre de fin</button>
+        <button class="btn ghost" data-act="t-v3-recap-ban">Bandeau récap</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Requêtes SQL</h2>
+      <p class="muted small">Le Labo ne lance rien : ça se fait dans le SQL Editor de Supabase. L'ouverture du Choc est
+        en fin de <code>supabase/installation/25_choc.sql</code>.</p>
+      <pre class="labsql">-- Un événement de recharge (ici : maintenant, pour 3 jours)
+insert into public.evenements (titre, texte, debut, fin, ticket_minutes) values
+  ('Boosters doublés', 'Un booster toutes les 2 h au lieu de 4.',
+   now(), now() + interval '3 days', 120);
+-- L'arrêter avant l'heure
+update public.evenements set fin = now() where fin > now() and code is null;
+
+-- La barre de vie du Raid (échelle des seuils)
+update public.parametres set raid_echelle = 0.5 where id = 1;</pre>
+    </section>`;
+}
+
+async function labEtatReel() {
+  if (chRecapApercu) { chRecapApercu = null; chRecap = null; }
+  try { await Backend.pull(); } catch (e) { /* le prochain rafraîchissement s'en chargera */ }
+  render();
+  toast('État du serveur rétabli.');
+}
+
+/* ---------- Combats ---------- */
+function vLabCombats() {
+  return `<section class="panel">
+    <h2>Ce que le jeu cache</h2>
+    <p class="muted small">En lecture seule : rien ne se joue ni ne s'enregistre.</p>
+    <div class="labgrid">
+      <button class="labbtn" data-act="t-v3-camp" data-v="toxique"><b>Campagne Toxique</b><span>dévoilée, actes compris</span></button>
+      <button class="labbtn" data-act="t-v3-camp" data-v="deter"><b>Campagne Déter</b><span>dévoilée, actes compris</span></button>
+      <button class="labbtn" data-act="t-v3-recompenses"><b>Les récompenses</b><span>campagne, Arcade, niveaux, Raid, Pass</span></button>
+      <button class="labbtn" data-act="t-v3-fin"><b>Fin de combat</b><span>victoire qui passe deux niveaux</span></button>
+      <button class="labbtn" data-act="t-v3-niveau"><b>Fiche du niveau</b><span>XP et paliers</span></button>
+      <button class="labbtn" data-act="t-v3-bon-deck"><b>Bilan d'un deck</b><span>le Starter Toxique</span></button>
     </div>
-  </div>
+  </section>`;
+}
 
-  <section class="panel">
+/* ---------- Mises en scène ---------- */
+function vLabScenes() {
+  const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
+  return `<section class="panel">
     <h2>Ouvertures</h2>
-    <p class="muted small">Elles ne consomment pas de booster et n'ajoutent rien à ta
-      collection. Le tirage se fait dans ce navigateur, pas sur le serveur : ça règle
-      la mise en scène, pas les probabilités réelles.</p>
+    <p class="muted small">Tirées dans ce navigateur : elles ne consomment rien et n'ajoutent rien. Elles
+      règlent la mise en scène, pas les probabilités réelles.</p>
     <div class="labgrid">
       <button class="labbtn" data-act="t-open"><b>Booster normal</b><span>Tirage réel</span></button>
       <button class="labbtn tR" data-act="t-R" ${has('R') ? '' : 'disabled'}><b>Rare</b><span>en dernière carte</span></button>
       <button class="labbtn tE" data-act="t-E" ${has('E') ? '' : 'disabled'}><b>Épique</b><span>en dernière carte</span></button>
       <button class="labbtn tL" data-act="t-L" ${has('L') ? '' : 'disabled'}><b>Légendaire</b><span>en dernière carte</span></button>
-      <button class="labbtn tBR" data-act="t-BR" ${brillantes.length ? '' : 'disabled'}><b>Essence Brillante</b><span>1 Essence sur ${FOIL_ODDS} en vrai</span></button>
       <button class="labbtn tL" data-act="t-S" ${secretes.length ? '' : 'disabled'}><b>Secrète</b><span>en dernière carte</span></button>
+      <button class="labbtn tBR" data-act="t-BR" ${brillantes.length ? '' : 'disabled'}><b>Essence Brillante</b><span>1 Essence sur ${FOIL_ODDS} en vrai</span></button>
       <button class="labbtn tUN" data-act="t-UN" ${uniques.length ? '' : 'disabled'}><b>Carte unique</b><span>à la place de la dernière carte</span></button>
-      <button class="labbtn tG" data-act="t-god"><b>Godpack</b><span>1 sur 2 000 en vrai</span></button>
       <button class="labbtn tREV" data-act="t-REV" ${reverses.length ? '' : 'disabled'}><b>Reverse Rare</b><span>en 5ᵉ carte, 15 % en vrai</span></button>
+      <button class="labbtn tG" data-act="t-god"><b>Godpack</b><span>1 sur 2 000 en vrai</span></button>
     </div>
-    <div class="row" style="margin-top:9px">
-      <button class="btn ghost" data-act="t-partage">Image de partage d'un booster</button>
-    </div>
+    <div class="row" style="margin-top:9px"><button class="btn ghost" data-act="t-partage">Image de partage d'un booster</button></div>
   </section>
-
-  ${vLabEvenement()}
 
   <section class="panel">
     <h2>Cartes Promo</h2>
-    <p class="muted small">L'animation d'obtention, en entier, sans toucher au compte.
-      C'est exactement ce que verra un joueur qui achète la carte ou qui franchit
-      le palier — seule l'écriture dans la collection est sautée.</p>
+    <p class="muted small">L'obtention en entier, sans l'écriture dans la collection. Pour les obtenir pour de
+      vrai : requêtes en bas de <code>supabase/installation/03b_promos.sql</code>.</p>
     <div class="labgrid">
-      ${promos.map(p => `<button class="labbtn tPR" data-promo="${h(p.id)}">
-        <b>${h(p.code)}</b><span>${h(p.nom)}</span></button>`).join('')}
+      ${promos.map(p => `<button class="labbtn tPR" data-promo="${h(p.id)}"><b>${h(p.code)}</b><span>${h(p.nom)}</span></button>`).join('')}
     </div>
-    ${promos.length > 1
-      ? '<div class="row" style="margin-top:9px"><button class="btn ghost" data-act="t-promo-file">Les enchaîner toutes</button></div>'
-      : ''}
-    <p class="muted small" style="margin-top:12px">Pour les obtenir <b>pour de vrai</b> sur ton
-      compte — et vérifier la détection, la boutique et les paliers — les requêtes sont
-      en bas de <code>supabase/installation/03b_promos.sql</code>.</p>
+    ${promos.length > 1 ? '<div class="row" style="margin-top:9px"><button class="btn ghost" data-act="t-promo-file">Les enchaîner toutes</button></div>' : ''}
   </section>
 
-  ${vLabCadeau()}
-
   <section class="panel">
-    <h2>Version 2.0 · Reflets</h2>
-    <p class="muted small">Les fenêtres de la 2.0, sans rien réclamer ni dépenser.</p>
+    <h2>Fenêtres</h2>
     <div class="row">
-      <button class="btn ghost" data-act="t-v2-nouveautes">Nouveautés 2.1</button>
-      <button class="btn ghost" data-act="t-v2-palier">Palier : une carte</button>
-      <button class="btn ghost" data-act="t-v2-palier-titre">Palier : un titre</button>
-    </div>
-    <div class="row" style="margin-top:8px">
       <button class="btn ghost" data-act="t-v2-invitation">Invitation achetée</button>
-      <button class="btn ghost" data-act="t-v2-reflets">Onglet de l'événement</button>
-      <button class="btn ghost" data-act="t-v2-illu">Devine l'illu</button>
+      <button class="btn ghost" data-act="t-cadeau">Cadeau reçu</button>
     </div>
-    <p class="muted small" style="margin-top:10px">La fin de l'événement : pendant trois jours, son onglet devient un récap.
-      Aperçu avec des chiffres inventés — rien n'est enregistré.</p>
-    <div class="row" style="margin-top:6px">
-      <button class="btn ghost" data-act="t-v2-recap">Onglet récap</button>
-      <button class="btn ghost" data-act="t-v2-recap-pop">Fenêtre de fin</button>
-      <button class="btn ghost" data-act="t-v2-recap-ban">Bandeau récap</button>
-    </div>
-    <p class="muted small" style="margin-top:8px">La fabrication des Reverses s'ouvre côté serveur :
-      <code>update public.parametres set fabrication_reverse = true where id = 1;</code></p>
-  </section>
-
-  <section class="panel">
-    <h2>Version 3.0 · Le Choc des Sections</h2>
-    <p class="muted small">L'onglet de l'événement (s'il est en cours), et son récap avec des chiffres inventés — rien n'est enregistré.</p>
-    <div class="row">
-      <button class="btn ghost" data-act="t-v3-nouveautes">Nouveautés 3.0</button>
-      <button class="btn ghost" data-act="t-v3-choc">Onglet de l'événement</button>
-      <button class="btn ghost" data-act="t-v3-recap">Onglet récap</button>
-      <button class="btn ghost" data-act="t-v3-recap-pop">Fenêtre de fin</button>
-      <button class="btn ghost" data-act="t-v3-recap-ban">Bandeau récap</button>
-    </div>
-    <p class="muted small" style="margin-top:8px">L'événement s'ouvre côté serveur (supabase/installation/25_choc.sql, en fin de fichier) ;
-      la barre de vie du Raid se règle avec <code>update public.parametres set raid_echelle = 0.5 where id = 1;</code></p>
-  </section>
-
-  <section class="panel">
-    <h2>Version 3.0 · Les Combats, tout voir</h2>
-    <p class="muted small">Ce que le jeu cache, ou ne montre qu'au bon moment. En lecture seule : rien ne se joue ni ne s'enregistre.</p>
-    <div class="row">
-      <button class="btn ghost" data-act="t-v3-camp" data-v="toxique">Campagne de la Section Toxique</button>
-      <button class="btn ghost" data-act="t-v3-camp" data-v="deter">Campagne de la Section Déter</button>
-      <button class="btn ghost" data-act="t-v3-recompenses">Toutes les récompenses</button>
-      <button class="btn ghost" data-act="t-v3-fin">Fin de combat (victoire, deux niveaux)</button>
-      <button class="btn ghost" data-act="t-v3-niveau">Fiche du niveau</button>
-      <button class="btn ghost" data-act="t-v3-bon-deck">Bilan d'un deck</button>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Annonce à tous les joueurs</h2>
-    <p class="muted small">Elle arrive dans la boîte de réception de chacun, avec un ping
-      pour ceux qui sont en jeu. Pour la retirer : « Retirer l'annonce » dans ta boîte.</p>
-    <label class="field"><span>Titre</span>
-      <input id="an-titre" type="text" maxlength="80" placeholder="Le jeu est ouvert !"></label>
-    <label class="field"><span>Texte <small class="muted">(facultatif)</small></span>
-      <textarea id="an-texte" maxlength="600" rows="3"
-        placeholder="Quelques lignes, 600 caractères au plus."></textarea></label>
-    <button class="btn" data-act="annonce-publier">Publier l'annonce</button>
   </section>
 
   <section class="panel">
     <h2>Notifications</h2>
-    <p class="muted small">Les bandeaux qui passent en haut de l'écran, pour vérifier
-      qu'ils ne recouvrent rien.</p>
+    <p class="muted small">Les bandeaux du haut de l'écran, pour vérifier qu'ils ne recouvrent rien.</p>
     <div class="row">
       <button class="btn ghost" data-act="t-quete">Quête accomplie</button>
       <button class="btn ghost" data-act="t-ping">Ping de la boîte</button>
       <button class="btn ghost" data-act="t-toast">Message court</button>
     </div>
-  </section>
+  </section>`;
+}
 
+/* ---------- Joueurs (réel) ---------- */
+function vLabJoueurs() {
+  return `<p class="labalerte">Ici, tout est réel : ce qui part arrive chez les joueurs.</p>
   <section class="panel">
+    <h2>Annonce à tous les joueurs</h2>
+    <p class="muted small">Dans la boîte de réception de chacun, avec un ping pour ceux qui sont en jeu.
+      Pour la retirer : « Retirer l'annonce » dans ta boîte.</p>
+    <label class="field"><span>Titre</span>
+      <input id="an-titre" type="text" maxlength="80" placeholder="Le jeu est ouvert !"></label>
+    <label class="field"><span>Texte <small class="muted">(facultatif)</small></span>
+      <textarea id="an-texte" maxlength="600" rows="3" placeholder="Quelques lignes, 600 caractères au plus."></textarea></label>
+    <button class="btn" data-act="annonce-publier">Publier l'annonce</button>
+  </section>
+  ${vLabCadeau()}`;
+}
+
+/* ---------- Affichage (local) ---------- */
+function vLabAffichage() {
+  return `<section class="panel">
     <h2>Aperçu de la collection</h2>
-    <p class="muted small">Ces boutons ne touchent qu'à l'affichage local. En ligne, la
-      collection et la réserve restent celles du serveur : la page les récupérera telles
-      quelles au prochain rafraîchissement.</p>
+    <p class="muted small">Seulement l'affichage de ce navigateur : le prochain rafraîchissement remet
+      la collection et la réserve du serveur.</p>
     <div class="row">
       <button class="btn ghost" data-act="t-all">Tout débloquer</button>
       <button class="btn ghost" data-act="t-clear">Vider</button>
-    </div>
-    <div class="row" style="margin-top:8px">
       <button class="btn ghost" data-act="t-90">Monter à 90 %</button>
-      <button class="btn ghost" data-act="t-10">+10 boosters</button>
     </div>
     <div class="row" style="margin-top:8px">
+      <button class="btn ghost" data-act="t-10">+10 boosters</button>
       <button class="btn ghost" data-act="t-fragments">+5 000 ${h(FRAGMENTS.nom)}</button>
       <button class="btn ghost" data-act="t-succes">Tous les succès</button>
     </div>
-    <p class="muted small" style="margin-top:8px">Les ${h(FRAGMENTS.nom)} affichés permettent d'ouvrir la
-      fenêtre de fabrication ; la fabrication elle-même, le serveur la refusera.</p>
     <label class="toggle" style="margin-top:10px">
       <span>Boosters illimités<small>Le bouton d'ouverture ne s'épuise plus</small></span>
       <input type="checkbox" id="unl" ${save.unlimited ? 'checked' : ''}></label>
@@ -173,10 +196,8 @@ function vTest() {
 
   <section class="panel">
     <h2>Équilibrage</h2>
-    <p class="muted small">Les taux de tirage, le prix des articles et les objectifs des
-      quêtes vivent côté serveur, dans <code>supabase/installation/04_seed.sql</code> et la fonction
-      <code>cfg()</code> de <code>supabase/installation/01_schema.sql</code>. Les modifier là-bas, puis
-      rejouer le fichier.</p>
+    <p class="muted small">Les valeurs vivent côté serveur (<code>supabase/installation/04_seed.sql</code>, <code>cfg()</code>
+      de <code>supabase/installation/01_schema.sql</code>) : les modifier là-bas, puis rejouer le fichier.</p>
     <div class="labfacts">
       ${fait('Cartes par booster', PACK_SIZE)}
       ${fait('Réserve (boosters)', TICKET_CAP)}
@@ -193,110 +214,9 @@ function vTest() {
       ${['ES', 'C', 'PC', 'R', 'E', 'L'].map(r => `<span><i class="rardot r${r}"></i>${h((RAR[r] || RAR.C).nom)}</span>
         <span class="tnum">+${fmtN(recValeurs()[r])}</span><span class="tnum">${fmtN(fabCouts()[r])}</span>`).join('')}
     </div>
-    <p class="muted small" style="margin-top:8px">Recycler garde toujours un exemplaire ; on ne fabrique
-      qu'une carte de l'extension qui manque. Promos, Brillantes et carte unique : ni l'un ni l'autre.</p>
+    <p class="muted small" style="margin-top:8px">La fabrication des Reverses s'ouvre côté serveur :
+      <code>update public.parametres set fabrication_reverse = true where id = 1;</code></p>
   </section>`;
-}
-
-/* ---------- Événement et chasse ---------- */
-/* Ce que le serveur dit en ce moment, puis des aperçus : poser l'interface
-   dans chacun des états qu'un joueur croisera — avant le départ, pendant,
-   chasse terminée, carte unique en main. Les aperçus ne changent que
-   l'affichage ; « Revenir à l'état réel » redemande tout au serveur. */
-let labApercu = '';
-
-function vLabEvenement() {
-  const ev = save.evenement;
-  const ch = save.chasse || {};
-  const u = uniques[0];
-  const quand = iso => jourHeure(srvTime(iso));
-  const etatEv = !ev ? 'Aucun événement en cours ni dans les quinze jours.'
-    : ev.a_venir ? `« ${ev.titre} » commence ${quand(ev.debut)} et finit ${quand(ev.fin)}.`
-    : `« ${ev.titre} » est en cours, jusqu'à ${quand(ev.fin)}.`;
-  const etatCh = !ch.carte ? 'Inconnue (le serveur n\'a pas la version 1.5 ?).'
-    : ch.trouvee ? `Terminée : tirée par ${ch.gagnant || 'un joueur'}${ch.trouvee_le ? ' ' + quand(ch.trouvee_le) : ''}.`
-    : ch.active ? 'Ouverte : chaque booster a une chance sur 250.'
-    : ch.ouvre_le ? `Programmée : elle ouvre ${quand(ch.ouvre_le)}.`
-    : 'Fermée.';
-
-  return `<section class="panel">
-    <h2>Événement et chasse</h2>
-    ${labApercu ? `<p class="labalerte">Aperçu « ${h(labApercu)} » affiché : ce n'est pas l'état du serveur.
-      <button class="linkbtn" data-act="t-ev-reel">Revenir à l'état réel</button></p>` : ''}
-    <div class="labetat">
-      <div><span>Événement</span><b>${h(etatEv)}</b></div>
-      <div><span>Recharge</span><b>Un booster toutes les ${h(String(Math.round(INTERVAL / 360000) / 10).replace('.', ','))} h</b></div>
-      <div><span>${h(u ? u.nom : 'Carte unique')}</span><b>${h(etatCh)}</b></div>
-    </div>
-
-    <h3 class="labsous">Aperçus</h3>
-    <div class="labgrid">
-      <button class="labbtn" data-apercu="avant"><b>Avant le départ</b><span>compte à rebours</span></button>
-      <button class="labbtn" data-apercu="pendant"><b>Pendant</b><span>chasse ouverte</span></button>
-      <button class="labbtn" data-apercu="trouvee"><b>Chasse terminée</b><span>vue des autres joueurs</span></button>
-      <button class="labbtn tUN" data-apercu="mienne"><b>Carte unique en main</b><span>vue de son détenteur</span></button>
-    </div>
-    <div class="row" style="margin-top:9px">
-      <button class="btn ghost" data-act="nouveautes">Fenêtre des nouveautés</button>
-      <button class="btn ghost" data-act="t-chasse-fin">Fenêtre de fin de chasse</button>
-    </div>
-
-    <h3 class="labsous">Dans le SQL Editor de Supabase</h3>
-    <p class="muted small">Le Labo ne lance rien : un événement et la chasse se règlent côté serveur.</p>
-    <pre class="labsql">-- Lancer un événement (ici : maintenant, pour 3 jours)
-insert into public.evenements (titre, texte, debut, fin, ticket_minutes) values
-  ('Boosters doublés', 'Un booster toutes les 2 h au lieu de 4.',
-   now(), now() + interval '3 days', 120);
-
--- L'arrêter avant l'heure
-update public.evenements set fin = now() where fin > now();
-
--- Ouvrir la chasse tout de suite, ou à une heure donnée
-update public.chasse set active = true, ouvre_le = null where id = 1;
-update public.chasse set active = true,
-  ouvre_le = timestamptz '2026-10-04 12:00:00+02' where id = 1;
-
--- La refermer (tant que personne ne l'a tirée)
-update public.chasse set active = false where id = 1;</pre>
-  </section>`;
-}
-
-/* Un instant ISO tel que le serveur l'écrirait, à `ms` d'ici. */
-const isoDans = ms => new Date(Date.now() - Backend.skew + ms).toISOString();
-
-function labMontrerApercu(nom) {
-  const u = uniques[0];
-  const H = 3600000;
-  const ev = (a_venir, debut, fin) => ({ titre: 'Boosters doublés', texte: 'Un booster toutes les 2 h au lieu de 4.',
-    debut: isoDans(debut), fin: isoDans(fin), ticket_minutes: 120, a_venir });
-  const ch = o => Object.assign({ carte: u ? u.id : 'u01', active: true, trouvee: false, gagnant: null,
-    trouvee_le: null, ouvre_le: null }, o);
-  if (u) delete save.col[u.id];
-
-  if (nom === 'avant') {
-    save.evenement = ev(true, 10.5 * H, 82.5 * H);
-    save.chasse = ch({ active: false, ouvre_le: isoDans(10.5 * H) });
-  } else if (nom === 'pendant') {
-    save.evenement = ev(false, -2 * H, 70 * H);
-    save.chasse = ch({ ouvre_le: isoDans(-2 * H) });
-  } else if (nom === 'trouvee') {
-    save.evenement = ev(false, -26 * H, 46 * H);
-    save.chasse = ch({ trouvee: true, gagnant: 'Quelqu\'un', trouvee_le: isoDans(-H) });
-  } else if (nom === 'mienne') {
-    save.evenement = ev(false, -26 * H, 46 * H);
-    save.chasse = ch({ trouvee: true, gagnant: save.pseudo, trouvee_le: isoDans(-H) });
-    if (u) save.col[u.id] = 1;
-  }
-  labApercu = { avant: 'Avant le départ', pendant: 'Pendant', trouvee: 'Chasse terminée', mienne: 'Carte unique en main' }[nom];
-  toast('Aperçu affiché. Va voir Boosters et Collection.');
-  render();
-}
-
-async function labEtatReel() {
-  labApercu = '';
-  try { await Backend.pull(); } catch (e) { /* le prochain rafraîchissement s'en chargera */ }
-  render();
-  toast('État du serveur rétabli.');
 }
 
 const fait = (l, v) => `<div class="labfait"><span>${h(l)}</span><b>${h(String(v))}</b></div>`;

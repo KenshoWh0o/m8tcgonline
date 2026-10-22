@@ -127,10 +127,8 @@ function nouveautesAVoir() {
 function montrerNouveautes() {
   const ev = save.evenement;
   accueilNoter({ nouveautes: NOUVEAUTES_VERSION, evenement: cleEvenement(ev) });
-  /* Version 3.0 : les Combats. Les nouveautés de la 2.1 restent plus bas
-     (montrerNouveautes21), pour le Labo. */
-  if (NOUVEAUTES_VERSION === '3.0') return montrerNouveautes30();
-  montrerNouveautes21();
+  /* Version 3.0 : les Combats. */
+  montrerNouveautes30();
 }
 
 function montrerNouveautes30() {
@@ -184,43 +182,6 @@ function montrerNouveautes30() {
          { label: 'Aux Combats', fn: () => { closeSheet(); aller('combats'); } }]
       : [{ label: 'Aux Combats', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('combats'); } },
          { label: 'Plus tard', fn: closeSheet }]
-  });
-}
-
-/* Les nouveautés de la 2.1. */
-function montrerNouveautes21() {
-  const reflets = evenementEnCours() === 'reflets';
-  const rv = reverses.filter(c => c.rar === 'R');
-  const trio = rv.length ? [0, 1, 2].map(i => rv[(i * 7 + new Date().getDate()) % rv.length]) : [];
-
-  const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico]}</span>
-    <span><b>${titre}</b> ${texte}</span></li>`;
-
-  openSheet({
-    title: 'Version 2.1 · Reflets',
-    body: `<div class="nvhero v2">
-        <div class="rf-holo" aria-hidden="true"></div>
-        <div class="nvtrio">${trio.map(c => `<div class="nvcarte">${renderCard(c)}</div>`).join('')}</div>
-        <div class="nvtexte">
-          <span class="nvkicker">${reflets ? 'Événement en cours' : 'Nouveau'}</span>
-          <b>Les Reverses</b>
-          <small>Frappées du logo Tout Commence Ici. Une dans chaque booster.</small>
-        </div>
-      </div>
-      <ol class="bvpoints nvpoints">
-        ${point('lock', 'Exemplaires à garder.', 'Dis combien tu en gardes, par rareté dans les Réglages ou carte par carte : le recyclage n\'y touche plus, et tes amis ne les voient plus comme des doublons.')}
-        ${point('coeur', 'Tes favoris.', 'Un cœur sur tes cartes préférées, et un filtre pour les retrouver dans ta Collection.')}
-        ${point('quest', 'Dix fois la même.', '10 exemplaires d\'une même Rare, 5 d\'une Épique, 3 d\'une Légendaire : trois nouvelles quêtes saisonnières.')}
-        ${point('cards', 'La Collection repensée.', 'Classiques, Reverses et Spéciales, chacune sa page, et une jauge pour tout.')}
-        ${point('user', 'Cadres, titres, profil.', `De nouveaux cadres à gagner, ${Object.keys(TITRES).length} titres à porter, une bannière et une devise sur ta fiche.`)}
-        ${point('illu', 'Devine l\'illu.', 'Une illustration pixelisée par jour, la même pour tout le monde. Quatre essais.')}
-        ${save.filleul ? '' : point('amis', 'Les invitations.', `Fais entrer un ami depuis la boutique : 2 000 ${MONNAIE.nom}, trois au maximum.`)}
-        ${reflets ? point('reflets', 'L\'événement Reflets.', `Des quêtes en ${PRISMES.nom}, un Pass de vingt paliers et une boutique, pendant deux semaines.`) : ''}
-      </ol>`,
-    actions: reflets
-      ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('reflets'); } },
-         { label: 'Plus tard', fn: closeSheet }]
-      : [{ label: 'C\'est parti', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); } }]
   });
 }
 

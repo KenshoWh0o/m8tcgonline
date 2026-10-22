@@ -404,7 +404,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes]');
   if (!el) return;
   const d = el.dataset;
 
@@ -417,7 +417,7 @@ async function clicPage(e) {
   if (d.ch) return chAction(d.ch, el);
   /* Version 3.0 : le Raid (js/raid.js). */
   if (d.rd) return raidAction(d.rd, el);
-  if (d.apercu) return labMontrerApercu(d.apercu);
+  if (d.labv) { labVue = d.labv; return render(); }
   /* Version 2.0 */
   if (d.succes) {
     const x = SUCCES.find(y => y.id === d.succes);
@@ -554,7 +554,6 @@ async function clicPage(e) {
     case 't-UN': return openBooster({ test: true, god: false, unique: true });
     case 't-S': return openBooster({ test: true, force: 'S', god: false });
     case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
-    case 't-v2-nouveautes': return montrerNouveautes21();
     case 't-v3-nouveautes': return montrerNouveautes30();
     case 't-v3-camp': cbLabo = { section: el.dataset.v }; cbChoix.acte = 0; aller('combats'); cbVue = 'campagne'; cbChoix.acte = 0; return render();
     case 't-v3-recompenses': return openSheet({ title: 'Toutes les récompenses', body: laboRecompenses(), actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
@@ -568,26 +567,8 @@ async function clicPage(e) {
       return openSheet({ title: 'Victoire · aperçu', body: `<div class="ar-fin-apercu">${htmlRecompense({ recompense: { xp: x, eclats: 50, boosters: 2, fragments: 300 } })}</div>`,
         actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
     }
-    case 't-v2-palier': {
-      const x = { palier: 7, type: 'reverse_R', titre: 'Une Reverse Rare' };
-      return montrerPalier(7, x, reverses.filter(c => c.rar === 'R').slice(0, 1));
-    }
-    case 't-v2-palier-titre':
-      return montrerPalier(3, { palier: 3, type: 'titre', titre: 'Titre « Éclaireur des Reflets »' }, []);
     case 't-v2-invitation': return montrerInvitation('M8-TEST-0000');
-    case 't-v2-reflets':
-      if (evenementEnCours() !== 'reflets') return toast('L\'événement Reflets n\'est pas en cours.');
-      return aller('reflets');
-    case 't-v2-illu':
-      return evenementEnCours() === 'reflets' ? allerRf('illu') : aller('illu');
-    case 't-v2-recap': apercuRecap(); return aller('reflets');
-    case 't-v2-recap-pop': apercuRecap(); return montrerRecap();
-    case 't-v2-recap-ban': apercuRecap(); return aller('boosters');
-    case 'recap-quitter': return quitterApercuRecap();
     /* Version 3.0 : le Choc des Sections. */
-    case 't-v3-choc':
-      if (evenementEnCours() !== 'choc') return toast('L\'événement Le Choc des Sections n\'est pas en cours.');
-      return aller('choc');
     case 't-v3-recap': apercuRecapChoc(); return aller('choc');
     case 't-v3-recap-pop': apercuRecapChoc(); return montrerRecapChoc();
     case 't-v3-recap-ban': apercuRecapChoc(); return aller('boosters');
@@ -603,9 +584,6 @@ async function clicPage(e) {
     case 't-joueurs': return labChargerJoueurs();
     case 'cadeau-offrir': return labOffrirCadeau();
     case 't-cadeau': return labApercuCadeau();
-    case 't-chasse-fin':
-      if (!(save.chasse && save.chasse.trouvee)) labMontrerApercu('trouvee');
-      return montrerChasseFin();
     case 't-all':
       cards.concat(brillantes).forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
       persist(); toast('Toutes les cartes sont débloquées (affichage seulement).');

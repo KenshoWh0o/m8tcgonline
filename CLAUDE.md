@@ -1,6 +1,8 @@
 # Consignes pour les agents
 
-**Lire [`README.md`](README.md) en entier avant toute modification.** C'est la documentation de référence du projet : où vit quoi, architecture, direction artistique, serveur, pièges, dette connue.
+**Lire [`README.md`](README.md) en entier avant toute modification**, puis les autres `.md` qui concernent le travail : `docs/design-3.0.md` avant un écran, `docs/regles-3.0.md` avant les combats, `docs/economie-3.0.md` avant un montant, `SETUP.md` pour le serveur. Ils existent pour que le propriétaire n'ait pas à se répéter. C'est la documentation de référence du projet : où vit quoi, architecture, direction artistique, serveur, pièges, dette connue.
+
+**La ligne 2.x** (le vrai site) vit sur la branche `claude/interface-ux-fixes-o92u4a`, avec son propre `README.md` et son `CLAUDE.md` : les lire avant de toucher à la racine de `main` ou à `prebuild/` (`git show origin/claude/interface-ux-fixes-o92u4a:README.md`).
 
 ## Règles du propriétaire (non négociables)
 
@@ -13,7 +15,7 @@
 
 ## À chaque modification
 
-- **Mettre `README.md` à jour dans le même commit** (README § 1.4 dit quelles sections toucher). Un README faux est pire que pas de README.
+- **Mettre les `.md` à jour dans le même commit** : `README.md` (README § 1.4 dit quelles sections toucher), `docs/*.md` si leur sujet change, ce fichier si une règle change. Un README faux est pire que pas de README.
 - Modifier les sources (`js/`, `css/`, `_demo/`, `supabase/`), jamais `preprod/` à la main : reconstruire avec `python3 tools/demo.py --preprod`.
 - Une règle de jeu a trois copies : SQL, `_demo/serveur.js`, constante JS (README § 9.8).
 - Vérifier : `node tools/combat-tests.js` ; toute modification visible se regarde dans Chromium (Playwright) aux largeurs 390, 375, 360 et sur ordinateur ; le SQL se teste sur PostgreSQL local (README § 2.3).

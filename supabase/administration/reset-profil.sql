@@ -20,6 +20,7 @@
 --    · la progression des quetes, les compteurs (boosters ouverts,
 --      echanges, fabrications, serie de jours), la boite de reception ;
 --    · les evenements : soldes (Prismes, Etincelles…), Pass, Devine l'illu ;
+--      et les etoiles et essais de L'Echauffement (2.1.4) s'il est installe ;
 --    · les Combats : Section, XP et niveau, decks, campagne, combats en
 --      cours, defis (les siens ET ceux qu'on lui a lances), Epreuve du
 --      Choc, participation au Raid ;
@@ -59,6 +60,8 @@ declare
     'combat_joueurs', 'decks', 'combats_ouverts', 'defis', 'choc_joueurs',
     'choc_epreuves', 'raid_participants', 'raid_pris', 'raid_tentatives',
     'trades', 'chasse',
+    -- L'Echauffement (2.1.4), s'il a ete installe sur cette base :
+    'ech_scores', 'ech_essais', 'ech_paliers',
     -- gardees :
     'friendships', 'invitations', 'annonces'];
   inconnues text;
@@ -109,6 +112,12 @@ begin
   delete from public.raid_participants where user_id = uid;
   delete from public.raid_pris         where user_id = uid;
   delete from public.raid_tentatives   where user_id = uid;
+  -- L'Echauffement (2.1.4) : ses tables n'existent que sur une base qui l'a recu.
+  if to_regclass('public.ech_scores') is not null then
+    execute 'delete from public.ech_scores  where user_id = $1' using uid;
+    execute 'delete from public.ech_essais  where user_id = $1' using uid;
+    execute 'delete from public.ech_paliers where user_id = $1' using uid;
+  end if;
 
   -- Les demandes d'echange en cours n'ont plus d'objet sans collection.
   update public.trades set status = 'cancelled', resolved_at = now()

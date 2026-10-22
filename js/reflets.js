@@ -529,34 +529,15 @@ function vIlluPage() {
 /* =====================================================================
    Après l'événement : le récap (trois jours)
    ===================================================================== */
-/* L'événement fini depuis moins de trois jours (me(), supabase/installation/21_reflets.sql),
-   ou l'aperçu du Labo. */
+/* L'événement fini depuis moins de trois jours (me(), supabase/installation/21_reflets.sql). */
 let rfRecap = null;
-let rfRecapApercu = null;
-const recapReflets = () => rfRecapApercu
-  || (save && save.recap && save.recap.code === 'reflets' && !evenementEnCours() ? save.recap : null);
+const recapReflets = () => (save && save.recap && save.recap.code === 'reflets' && !evenementEnCours() ? save.recap : null);
 
 async function chargerRecap() {
-  if (rfRecapApercu) { rfRecap = rfRecapApercu; return rfRecap; }
   try { rfRecap = await Backend.rpc('evenement_recap'); } catch (e) { rfRecap = null; }
   if (tab === 'reflets') render();
   return rfRecap;
 }
-
-/* L'aperçu du Labo : des chiffres plausibles, et rien d'enregistré. */
-function apercuRecap() {
-  const t = Date.now();
-  const bots = [['Nova.92', 't_elu', 1130], ['Lumen', 't_centurion', 1064], ['Mira', null, 980]];
-  rfRecapApercu = {
-    code: 'reflets', titre: 'Reflets', debut: new Date(t - 14 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
-    jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), apercu: true,
-    total: 870, paliers: 16, paliers_max: 20, pris: 16, illus: 9, reverses: 52, reverses_max: reverses.length || 85,
-    quetes: 41, rang: 5, joueurs: 37,
-    top: bots.map(([pseudo, titre, total]) => ({ pseudo, titre, total, avatar: 'star', frame: 'f_prisme', photo: null, moi: false }))
-  };
-  rfRecap = rfRecapApercu;
-}
-function quitterApercuRecap() { rfRecapApercu = null; rfRecap = null; aller('labo'); }
 
 function vRfRecap() {
   const r = rfRecap;
@@ -570,7 +551,6 @@ function vRfRecap() {
         ${reste ? `<span class="rf-fin">${NAVICO.clock}<span>encore <b data-rebours="${reste}">${h(dureeCourte(reste - Date.now()))}</b></span></span>` : ''}
       </div>
     </div>
-    ${r && r.apercu ? '<button class="btn tiny ghost rf-quitter" data-act="recap-quitter">Quitter l\'aperçu</button>' : ''}
   </header>`;
   if (!r) { chargerRecap(); return `<div class="rf">${tete}<p class="muted boitecharge">Chargement du récap…</p></div>`; }
 
@@ -632,8 +612,8 @@ function recapAVoir() {
 }
 async function montrerRecap() {
   const a = recapReflets();
-  if (a && !a.apercu) accueilNoter({ recap: a.fin });
-  const r = rfRecapApercu || await chargerRecap();
+  if (a) accueilNoter({ recap: a.fin });
+  const r = await chargerRecap();
   if (!r) return;
   openSheet({
     title: 'Reflets, c\'est fini',
