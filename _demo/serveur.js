@@ -1224,14 +1224,15 @@
   /* ech_indices : trois étoiles au défi n, l'indice n ; les sept, le jour 0. */
   const ECH_INDICES = [
     { jour: 0, titre: 'Tout est prêt', texte: 'Rendez-vous quand tu auras les cartes en main.', visuel: { type: 'mot', valeur: 'Bientôt' } },
-    { jour: 1, titre: 'Trente', texte: 'Trente cartes. Pas une de plus.', visuel: { type: 'nombre', valeur: '30' } },
-    { jour: 2, titre: 'Trois et cinq', texte: 'Trois lignes à tenir. Cinq vies à défendre.', visuel: { type: 'nombre', valeur: '3·5' } },
-    { jour: 3, titre: 'Cent vingt-trois', texte: 'La collection ne s\'arrête pas à 122.', visuel: { type: 'nombre', valeur: '123' } },
+    { jour: 1, titre: 'Nouveau visage', texte: 'Tout le jeu va changer de visage. Les couleurs de cette page en sont un avant-goût.', visuel: { type: 'teinte' } },
+    { jour: 2, titre: 'Ton deck', texte: 'Tes cartes ne resteront pas dans un classeur : tu en feras ton deck.', visuel: { type: 'eventail' } },
+    { jour: 3, titre: 'Cent vingt-huit', texte: 'La collection ne s\'arrête pas à 122 : elle comptera 128 cartes.', visuel: { type: 'nombre', valeur: '128' } },
     { jour: 4, titre: 'Deux', texte: 'Deux camps. Il faudra choisir le tien.', visuel: { type: 'mot', valeur: 'Deux' } },
     { jour: 5, titre: 'Plus loin', texte: 'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.', visuel: { type: 'etoiles', valeur: 5 } },
     { jour: 6, titre: 'Face à face', texte: 'Un jour, ce sera contre tes amis.', visuel: { type: 'mot', valeur: 'VS' } },
     { jour: 7, titre: 'Il reviendra', texte: 'Et la prochaine fois, vous l\'affronterez tous ensemble.', visuel: { type: 'carte', carte: 'c116' } }
   ];
+
   /* ech_joueurs : la Défense, la couleur et les attaques à dégâts d'un Joueur. */
   function echStats(id) {
     const k = carte(id);

@@ -116,8 +116,8 @@ simulation.
 
 1. Ouvre le site sur ton téléphone, ou en mode mobile dans Chrome
    (F12 → l'icône téléphone → iPhone 14 Pro).
-2. Dans **Réglages**, mets le thème sur **Sombre** : les cartes y brillent, et
-   c'est l'ambiance des visuels ci-dessus.
+2. Le site n'a qu'un thème, sombre (depuis la 2.0) : c'est l'ambiance des visuels
+   ci-dessus.
 3. Les écrans qui valent le détour :
    - **Boosters** — le paquet et la réserve pleine
    - **l'ouverture** — juste après la révélation d'une légendaire

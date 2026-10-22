@@ -213,8 +213,14 @@ on conflict (jour) do update set adversaire = excluded.adversaire, pv = excluded
   param = excluded.param, titre = excluded.titre, texte = excluded.texte;
 
 -- Les indices : un par defi, gagne avec ses trois etoiles. `visuel` dit
--- comment l'afficher : un nombre, un mot, des etoiles. Le dernier message
--- (jour 0) vient quand les sept sont gagnes.
+-- comment l'afficher : un nombre, un mot, des etoiles, l'ombre d'une carte,
+-- la teinte de la suite, un eventail de dos de cartes. Le dernier message
+-- (jour 0) vient quand les sept sont gagnes. Rien de ce qu'ils disent ne
+-- repose sur une regle de combat reconstituee (taille du deck, nombre de
+-- lignes ou de PV : des choix « maison », docs/regles-3.0.md de la 3.0) ;
+-- seulement sur ce que la suite contient : la refonte, les decks, les
+-- Secretes (122 + les Secretes = 128, chiffre donne par le proprietaire),
+-- les Sections, la maitrise, le Versus, le Raid.
 create table if not exists public.ech_indices (
   jour   integer primary key check (jour between 0 and 7),
   titre  text not null,
@@ -222,14 +228,14 @@ create table if not exists public.ech_indices (
   visuel jsonb not null default '{}'
 );
 insert into public.ech_indices (jour, titre, texte, visuel) values
-  (1, 'Trente',           'Trente cartes. Pas une de plus.',                                      '{"type": "nombre", "valeur": "30"}'),
-  (2, 'Trois et cinq',    'Trois lignes à tenir. Cinq vies à défendre.',                          '{"type": "nombre", "valeur": "3·5"}'),
-  (3, 'Cent vingt-trois', 'La collection ne s''arrête pas à 122.',                                '{"type": "nombre", "valeur": "123"}'),
-  (4, 'Deux',             'Deux camps. Il faudra choisir le tien.',                               '{"type": "mot", "valeur": "Deux"}'),
-  (5, 'Plus loin',        'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.',   '{"type": "etoiles", "valeur": 5}'),
-  (6, 'Face à face',      'Un jour, ce sera contre tes amis.',                                    '{"type": "mot", "valeur": "VS"}'),
-  (7, 'Il reviendra',     'Et la prochaine fois, vous l''affronterez tous ensemble.',             '{"type": "carte", "carte": "c116"}'),
-  (0, 'Tout est prêt',    'Rendez-vous quand tu auras les cartes en main.',                       '{"type": "mot", "valeur": "Bientôt"}')
+  (1, 'Nouveau visage',   'Tout le jeu va changer de visage. Les couleurs de cette page en sont un avant-goût.', '{"type": "teinte"}'),
+  (2, 'Ton deck',         'Tes cartes ne resteront pas dans un classeur : tu en feras ton deck.',               '{"type": "eventail"}'),
+  (3, 'Cent vingt-huit',  'La collection ne s''arrête pas à 122 : elle comptera 128 cartes.',                  '{"type": "nombre", "valeur": "128"}'),
+  (4, 'Deux',             'Deux camps. Il faudra choisir le tien.',                                            '{"type": "mot", "valeur": "Deux"}'),
+  (5, 'Plus loin',        'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.',                '{"type": "etoiles", "valeur": 5}'),
+  (6, 'Face à face',      'Un jour, ce sera contre tes amis.',                                                 '{"type": "mot", "valeur": "VS"}'),
+  (7, 'Il reviendra',     'Et la prochaine fois, vous l''affronterez tous ensemble.',                          '{"type": "carte", "carte": "c116"}'),
+  (0, 'Tout est prêt',    'Rendez-vous quand tu auras les cartes en main.',                                    '{"type": "mot", "valeur": "Bientôt"}')
 on conflict (jour) do update set titre = excluded.titre, texte = excluded.texte, visuel = excluded.visuel;
 
 -- La meilleure note de chaque joueur, defi par defi.

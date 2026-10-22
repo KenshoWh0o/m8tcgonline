@@ -259,6 +259,18 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
     : { etat: 'ok', titre: 'Écran d\'attente, boîte de réception, recyclage, fabrication, classement et historique sont installés' });
 
+  /* ---- 6 ter. La version 2.1.4 : L'Échauffement ---- */
+  /* Sans supabase/MAJ-2.1.4.sql, l'onglet Combats garde son annonce et
+     l'événement n'apparaît jamais : rien ne le signale ailleurs. */
+  {
+    const { error } = await sb.rpc('ech_etat');
+    poser(error && error.code === 'PGRST202'
+      ? { etat: 'ko', titre: 'L\'Échauffement (2.1.4) n\'est pas installé',
+          detail: 'La fonction <code>ech_etat()</code> manque : <code>supabase/MAJ-2.1.4.sql</code> n\'a pas été joué.',
+          faire: `Colle <code>supabase/MAJ-2.1.4.sql</code> dans le <b>SQL Editor</b> (ou <code>supabase/TOUT.sql</code> en entier).` }
+      : { etat: 'ok', titre: 'L\'Échauffement (2.1.4) est installé' });
+  }
+
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');
   poser({ etat: 'warn', titre: 'Les adresses de retour sont à vérifier à la main',

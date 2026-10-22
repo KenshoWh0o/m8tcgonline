@@ -166,11 +166,17 @@ const echIllu = (c, fx, fy, cls) => (c && c.img
   : '');
 
 /* ---------- Un indice ---------- */
+/* Le visuel d'un indice, dans une case de carte ou en grand : un nombre, un
+   mot (sa taille suit sa longueur, --l, pour tenir dans la case), des
+   étoiles, l'ombre d'une carte, la teinte de la suite, un éventail de dos. */
 function vIndiceVisuel(x) {
   const v = x.visuel || {};
   if (v.type === 'etoiles') return `<span class="ech-iv etoiles">${Array.from({ length: v.valeur || 5 }, (_, i) => `<i class="${i >= 3 ? 'au-dela' : ''}">★</i>`).join('')}</span>`;
   if (v.type === 'carte' && byId[v.carte]) return `<span class="ech-iv carte">${echIllu(byId[v.carte], .5, .3)}</span>`;
-  return `<span class="ech-iv ${v.type === 'nombre' ? 'nombre' : 'mot'}">${h(String(v.valeur || ''))}</span>`;
+  if (v.type === 'teinte') return '<span class="ech-iv teinte"><i>✦</i></span>';
+  if (v.type === 'eventail') return `<span class="ech-iv eventail">${[0, 1, 2].map(() => `<img src="${ART.back}" alt="">`).join('')}</span>`;
+  const t = String(v.valeur || '');
+  return `<span class="ech-iv ${v.type === 'nombre' ? 'nombre' : 'mot'}" style="--l:${Math.max(2, [...t].length)}">${h(t)}</span>`;
 }
 function montrerIndice(j) {
   const x = echIndice(j);
@@ -183,37 +189,24 @@ function montrerIndice(j) {
 }
 
 /* ---------- L'accueil ---------- */
-/* Le bandeau : le chevalier de « La Luxueuse III » (#122), le même que celui
-   qui ouvrira l'onglet Combats de la suite — un clin d'œil, rien de plus. */
+/* Règle du propriétaire : chaque vue de l'événement tient dans l'écran, sans
+   défiler, de 360 × 740 à l'ordinateur en passant par 375 × 667. La page
+   prend toute la hauteur de #main (.ech, height:100%), le bandeau une part
+   fixe, et chaque sous-onglet mesure ses tuiles sur la place qui reste
+   (container queries, css/hub.css). Le bandeau : l'illustration de « La
+   Luxueuse III » (#122), le médaillon d'or au bout de sa chaîne. */
+let echOnglet = 'defis';
+const ECH_ONGLETS = [['defis', 'Défis'], ['indices', 'Indices'], ['recompenses', 'Récompenses']];
+
 function vEchauffement() {
   return echVue === 'defi' ? vEchDefi() : vEchAccueil();
 }
 
 function vEchAccueil() {
   const s = echData;
-  const dj = echDuJour();
-  const adv = byId[dj.adversaire];
   const reste = Date.parse(s.fin) - Date.now();
   const etoiles = s.etoiles || 0;
-  const total = s.total || 7;
-
-  const jours = Array.from({ length: total }, (_, i) => {
-    const j = i + 1;
-    const x = s.defis.find(y => y.jour === j);
-    if (!x) return `<span class="ech-jour ferme" aria-label="Défi ${j}, pas encore ouvert"><i>${NAVICO.lock}</i></span>`;
-    return `<button class="ech-jour ${x.etoiles === 3 ? 'fini' : x.etoiles ? 'gagne' : ''}" data-ech="defi" data-j="${j}" aria-label="Défi ${j}">
-      <i>${j}</i>${echEtoiles(x.etoiles)}</button>`;
-  }).join('');
-
-  const nInd = (s.indices || []).filter(x => x.jour > 0).length;
-  const carnet = Array.from({ length: total }, (_, i) => {
-    const x = echIndice(i + 1);
-    return x
-      ? `<button class="ech-ind ouvert" data-ech="indice" data-j="${i + 1}" aria-label="Indice ${i + 1} : ${h(x.titre)}">${vIndiceVisuel(x)}</button>`
-      : `<span class="ech-ind" aria-label="Indice ${i + 1}, à gagner"><img src="${ART.back}" alt="">${NAVICO.lock}</span>`;
-  }).join('');
-  const final = echIndice(0);
-
+  const corps = echOnglet === 'indices' ? vEchIndices() : echOnglet === 'recompenses' ? vEchRecompenses() : vEchDefis();
   return `<section class="ech">
     <header class="ech-hero">
       ${echIllu(byId.c122, .6, .4, 'fond')}
@@ -221,8 +214,24 @@ function vEchAccueil() {
         <span class="ech-anneau" style="--p:${Math.round(etoiles / 21 * 100)}%" aria-label="${etoiles} étoiles sur 21"><b class="tnum">${etoiles}</b><small>/21</small></span></span>
       <span class="ech-hero-bas"><h2 class="ech-titre">L'Échauffement</h2><small>Sept défis, un par jour.</small></span>
     </header>
+    <nav class="ech-onglets" role="tablist">${ECH_ONGLETS.map(([k, n]) => `<button role="tab" data-ech="onglet" data-o="${k}" class="${echOnglet === k ? 'on' : ''}" aria-selected="${echOnglet === k}">${n}</button>`).join('')}</nav>
+    <div class="ech-corps">${corps}</div>
+  </section>`;
+}
 
-    <button class="ech-porte" data-ech="defi" data-j="${dj.jour}">
+/* Le défi du jour, puis les sept. */
+function vEchDefis() {
+  const s = echData;
+  const dj = echDuJour();
+  const adv = byId[dj.adversaire];
+  const jours = Array.from({ length: s.total || 7 }, (_, i) => {
+    const j = i + 1;
+    const x = s.defis.find(y => y.jour === j);
+    if (!x) return `<span class="ech-jour ferme" aria-label="Défi ${j}, pas encore ouvert"><i>${NAVICO.lock}</i><span class="ech-et"></span></span>`;
+    return `<button class="ech-jour ${x.etoiles === 3 ? 'fini' : x.etoiles ? 'gagne' : ''}" data-ech="defi" data-j="${j}" aria-label="Défi ${j}">
+      <i>${j}</i>${echEtoiles(x.etoiles)}</button>`;
+  }).join('');
+  return `<button class="ech-porte" data-ech="defi" data-j="${dj.jour}">
       ${echIllu(adv, .55, .3, 'fond')}
       <span class="ech-porte-txt">
         <small>Défi ${dj.jour} · aujourd'hui</small>
@@ -232,22 +241,74 @@ function vEchAccueil() {
       </span>
       <span class="ech-porte-cta">${dj.etoiles === 3 ? 'Revoir' : 'Relever'}</span>
     </button>
+    <div class="ech-jours">${jours}</div>
+    <p class="ech-mini">Trois essais par défi et par jour ; les jours passés restent ouverts.</p>`;
+}
 
-    <section class="ech-bloc">
-      <h3>Les sept défis</h3>
-      <div class="ech-jours">${jours}</div>
-    </section>
+/* Le carnet : huit cases de carte, en deux rangées de quatre — un indice par
+   défi réussi à trois étoiles, et le dernier mot, quand les sept le sont. */
+function vEchIndices() {
+  const s = echData;
+  const total = s.total || 7;
+  const n = (s.indices || []).filter(x => x.jour > 0).length;
+  const cas = (j, x, verrou) => (x
+    ? `<button class="ech-case" data-ech="indice" data-j="${j}" aria-label="${j ? 'Indice ' + j : 'Le dernier mot'} : ${h(x.titre)}"><span class="ech-ind ouvert">${vIndiceVisuel(x)}</span><small>${h(x.titre)}</small></button>`
+    : `<span class="ech-case" aria-label="${verrou}"><span class="ech-ind"><img src="${ART.back}" alt="">${NAVICO.lock}</span><small>${j ? 'Défi ' + j : 'Les sept'}</small></span>`);
+  const tuiles = Array.from({ length: total }, (_, i) => cas(i + 1, echIndice(i + 1), `Indice ${i + 1}, à gagner`)).join('')
+    + cas(0, echIndice(0), 'Le dernier mot, quand les sept sont à trois étoiles');
+  return `<p class="ech-mini">Trois étoiles à un défi : son indice sur ce qui se prépare. <b class="tnum">${n}/${total}</b></p>
+    <div class="ech-inds">${tuiles}</div>`;
+}
 
-    <section class="ech-bloc">
-      <h3>Ce qui se prépare <small class="tnum">${nInd}/7</small></h3>
-      <p class="ech-mini">Trois étoiles à un défi : un indice.</p>
-      <div class="ech-inds" data-defil="ech-inds">${carnet}</div>
-      ${final ? `<button class="ech-final" data-ech="indice" data-j="0"><b>${h(final.titre)}</b><span>${h(final.texte)}</span></button>` : ''}
-    </section>
-  </section>`;
+/* Les récompenses, toutes écrites, avec où on en est. */
+function vEchRecompenses() {
+  const s = echData;
+  const total = s.total || 7;
+  const etoiles = s.etoiles || 0;
+  const gagnes = s.gagnes || 0;
+  const pris = s.paliers || [];
+  const eclats = s.defis.reduce((m, d) => m + ECH_PRIX.slice(0, d.etoiles || 0).reduce((a, b) => a + b, 0), 0);
+  const maxEclats = total * ECH_PRIX.reduce((a, b) => a + b, 0);
+  const nInd = (s.indices || []).filter(x => x.jour > 0).length;
+  const jauge = (v, max) => `<span class="ech-rj"><i style="width:${Math.min(100, Math.round(v / max * 100))}%"></i></span>`;
+  const etat = (ok, v, max) => (ok ? '<em class="ok">Obtenu</em>' : `<em class="tnum">${v}/${max}</em>`);
+  return `<div class="ech-r-tete">
+      <span><small>Éclats gagnés</small><b class="tnum">${fmtN(eclats)}<i> / ${fmtN(maxEclats)}</i></b></span>
+      ${jauge(eclats, maxEclats)}
+    </div>
+    <div class="ech-rs">
+      <div class="ech-r"><span class="ech-r-ico">${echEtoiles(3)}</span><b>Chaque étoile</b>
+        <span class="ech-r-quoi">★ 80 · ★★ 80 · ★★★ 140 Éclats, par défi</span>${etat(false, etoiles, total * 3)}</div>
+      <button class="ech-r" data-ech="onglet" data-o="indices"><span class="ech-r-ico">${NAVICO.cards}</span><b>Trois étoiles</b>
+        <span class="ech-r-quoi">un indice sur ce qui se prépare</span>${etat(nInd === total, nInd, total)}</button>
+      <div class="ech-r"><span class="ech-r-ico"><img src="${ART.seal}" alt=""></span><b>Les sept défis gagnés</b>
+        <span class="ech-r-quoi">3 boosters</span>${etat(pris.includes('sept'), gagnes, total)}${jauge(gagnes, total)}</div>
+      <div class="ech-r"><span class="ech-r-ico titre">${h((TITRES.t_echauffe || {}).nom || 'Échauffé')}</span><b>Les 21 étoiles</b>
+        <span class="ech-r-quoi">le titre « ${h((TITRES.t_echauffe || {}).nom || 'Échauffé')} »</span>${etat(pris.includes('parfait'), etoiles, total * 3)}${jauge(etoiles, total * 3)}</div>
+    </div>`;
 }
 
 /* ---------- Le défi ---------- */
+/* Une attaque, dans une place : ses dégâts (doublés par l'Affinité, barrés si
+   la Carapace les arrête) et son coût en élan, un point par tour. */
+function echChoixAttaque(d, c, e, i) {
+  const at = echAttaques(c);
+  if (!at.length) return '<span class="ech-atq"><span class="ech-a seule"><b>—</b></span></span><small class="ech-ryt">ne frappe pas</small>';
+  const affin = d.regle === 'affinite' && c.col === d.param.couleur;
+  const pastille = (a, k) => {
+    const dg = affin ? a.degats * 2 : a.degats;
+    const bloque = (d.regle === 'carapace' || d.regle === 'final') && dg < d.param.seuil;
+    const pips = '<i>' + '●'.repeat(Math.min(a.cout, 5)) + '</i>';
+    const cls = `ech-a${bloque ? ' bloque' : ''}${affin ? ' double' : ''}`;
+    return at.length > 1
+      ? `<button class="${cls}${k === e.a ? ' on' : ''}" data-ech="attaque" data-i="${i}" data-k="${k}" aria-pressed="${k === e.a}" aria-label="${h(a.nom)} : ${dg} dégâts, ${echRythme(a.cout)}"><b class="tnum">${dg}</b>${pips}</button>`
+      : `<span class="${cls} seule" aria-label="${h(a.nom)} : ${dg} dégâts, ${echRythme(a.cout)}"><b class="tnum">${dg}</b>${pips}</span>`;
+  };
+  const choisie = at[e.a] || at[0];
+  return `<span class="ech-atq${at.length > 1 ? ' deux' : ''}">${at.map(pastille).join('')}</span>
+    <small class="ech-ryt">${echRythme(choisie.cout)}</small>`;
+}
+
 function vEchDefi() {
   const d = echDefi();
   const adv = byId[d.adversaire];
@@ -261,25 +322,21 @@ function vEchDefi() {
     const e = eq[i];
     if (!e) {
       const libre = i <= eq.length;
-      return `<div class="ech-place"><small>${ECH_POS[i]}</small>
+      return `<div class="ech-place"><span class="ech-place-tete"><small>${ECH_POS[i]}</small></span>
         <button class="ech-vide" data-ech="choisir" data-i="${Math.min(i, eq.length)}" ${libre ? '' : 'disabled'} aria-label="Choisir un Joueur"><i>+</i></button></div>`;
     }
     const c = byId[e.carte];
-    const at = echAttaques(c);
-    const a = at[e.a] || null;
-    let dg = a ? a.degats : 0;
     let marque = '';
-    if (a && d.regle === 'affinite' && c.col === d.param.couleur) { dg *= 2; marque = '<em class="bon">×2</em>'; }
-    else if (a && (d.regle === 'carapace' || d.regle === 'final') && dg < d.param.seuil) marque = '<em class="mal">Bloqué</em>';
+    if (d.regle === 'affinite' && c.col === d.param.couleur) marque = '<em class="bon">×2</em>';
     else if (couleurs[c.col] > 1) marque = '<em class="bon">+1 élan</em>';
-    return `<div class="ech-place plein"><small>${ECH_POS[i]}</small>
+    return `<div class="ech-place plein"><span class="ech-place-tete"><small>${ECH_POS[i]}</small></span>
       <span class="ech-carte">
         <button class="ech-carte-b" data-ech="choisir" data-i="${i}" aria-label="Changer ${h(c.nom)}">${renderCard(c)}</button>
+        <b class="ech-def tnum" aria-label="Défense ${c.def}">${c.def}</b>
         <button class="ech-x" data-ech="retirer" data-i="${i}" aria-label="Retirer ${h(c.nom)}">×</button>
         ${marque}
       </span>
-      <span class="ech-val"><b class="tnum">${c.def}</b><i></i><b class="tnum">${a ? dg : '—'}</b></span>
-      ${at.length > 1 ? `<button class="ech-att" data-ech="attaque" data-i="${i}">${h(a.nom)} ›</button>` : `<small class="ech-ryt">${a ? echRythme(a.cout) : 'ne frappe pas'}</small>`}
+      ${echChoixAttaque(d, c, e, i)}
     </div>`;
   }).join('');
 
@@ -291,22 +348,24 @@ function vEchDefi() {
 
     <div class="ech-adv">
       <button class="ech-adv-carte" data-show="${adv.id}" aria-label="Voir ${h(adv.nom)}">${renderCard(adv)}</button>
-      <small class="ech-kick">Défi ${d.jour}</small>
-      <b class="ech-adv-nom">${h(adv.nom)}</b>
-      <span class="ech-adv-val">
-        <span><small>Défense</small><b class="tnum">${fmtN(d.pv)}</b></span>
-        <span><small>Frappe</small><b class="tnum">${aA.degats}</b><em>${echRythme(aA.cout)}</em></span>
+      <span class="ech-adv-txt">
+        <small class="ech-kick">Défi ${d.jour}</small>
+        <b class="ech-adv-nom">${h(adv.nom)}</b>
+        <span class="ech-adv-val">
+          <span class="def" aria-label="Défense ${d.pv}"><b class="tnum">${fmtN(d.pv)}</b></span>
+          <span class="frappe" aria-label="Frappe ${aA.degats}, ${echRythme(aA.cout)}"><b class="tnum">${aA.degats}</b><em>${echRythme(aA.cout)}</em></span>
+        </span>
       </span>
-      <span class="ech-regle">${echIco(d.regle)}<span><b>${d.regle === 'aucune' ? 'Sans règle' : h(d.titre)}</b>${d.regle === 'aucune' ? '' : h(d.texte)}</span></span>
     </div>
+    <span class="ech-regle">${echIco(d.regle)}<span><b>${d.regle === 'aucune' ? 'Sans règle' : h(d.titre)}</b>${d.regle === 'aucune' ? ' Fais connaissance.' : ' ' + h(d.texte)}</span></span>
 
     <div class="ech-equipe">
-      <h3>Ton équipe</h3>
+      <h3>Ton équipe <small>dans l'ordre : devant, celui qui encaisse</small></h3>
       <div class="ech-ligne">${places}</div>
     </div>
 
     <button class="btn ech-lancer" data-ech="lancer" ${eq.length && restants && !echOccupe ? '' : 'disabled'}>${restants ? 'Lancer le défi' : 'Plus d\'essai aujourd\'hui'}</button>
-    <p class="ech-pied">${echEtoiles(d.etoiles)}<span>${restants} essai${restants > 1 ? 's' : ''} aujourd'hui</span>${d.etoiles < 3 ? '<span>★★★ : un indice</span>' : ''}</p>
+    <p class="ech-pied">${echEtoiles(d.etoiles)}<span>${restants} essai${restants > 1 ? 's' : ''} aujourd'hui</span><span class="ech-pied-prix">★ 80 · ★★ 80 · ★★★ 140 + l'indice</span></p>
   </section>`;
 }
 
@@ -373,11 +432,8 @@ function echAction(act, el) {
   if (act === 'pick') return echPrendre(x.c);
   if (act === 'tri') { echTri = x.c; return echChoisir(echPlace); }
   if (act === 'retirer') { echEquipe(echDefi()).splice(+x.i, 1); return render(); }
-  if (act === 'attaque') {
-    const e = echEquipe(echDefi())[+x.i];
-    e.a = (e.a + 1) % echAttaques(byId[e.carte]).length;
-    return render();
-  }
+  if (act === 'attaque') { echEquipe(echDefi())[+x.i].a = +x.k; return render(); }
+  if (act === 'onglet') { echOnglet = x.o; echVue = 'accueil'; return render(); }
   if (act === 'lancer') return echLancer();
   if (act === 'annonce') return montrerEchAnnonce();
 }
@@ -575,13 +631,12 @@ function echTerminerApercu(d, res) {
 }
 
 /* ---------- Le bandeau de l'écran Boosters ---------- */
+/* La même couverture que l'onglet : le médaillon de « La Luxueuse III ». */
 function vBandeauEch() {
   if (!echActif()) return '';
   const n = echPastille();
-  const d = echDuJour();
-  const adv = d && byId[d.adversaire];
   return `<button class="ech-ban" data-tab="combats" aria-label="L'Échauffement : aller au défi du jour">
-    ${echIllu(adv, .55, .3, 'fond')}
+    ${echIllu(byId.c122, .6, .4, 'fond')}
     <span class="ech-ban-txt"><small>Événement · encore ${h(dureeCourte(Date.parse(echData.fin) - Date.now()))}</small><b>L'Échauffement</b></span>
     ${n ? `<i class="ech-ban-n">${n}</i>` : ''}<span class="ech-ban-fl" aria-hidden="true">›</span>
   </button>`;
@@ -601,6 +656,7 @@ function montrerEchAnnonce() {
       <ol class="bvpoints nvpoints">
         <li><span class="bvico">${NAVICO.cards}</span><span><b>Trois Joueurs de ta collection</b>, et le combat se joue avec les valeurs de tes cartes.</span></li>
         <li><span class="bvico">${NAVICO.star}</span><span><b>Trois étoiles, un indice</b> sur ce qui se prépare.</span></li>
+        <li><span class="bvico">${NAVICO.trophy}</span><span><b>Jusqu'à 2 100 Éclats</b>, 3 boosters pour les sept défis gagnés, et un titre pour les 21 étoiles.</span></li>
       </ol>`,
     actions: [
       { label: 'Plus tard', fn: closeSheet },

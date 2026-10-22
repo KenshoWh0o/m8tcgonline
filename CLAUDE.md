@@ -2,7 +2,7 @@
 
 Cette branche porte le **vrai site** (la 2.x). La 3.0 vit sur la branche `version-3.0`, avec son propre `README.md` et son propre `CLAUDE.md`.
 
-**Avant toute modification, lire tous les `.md` du dépôt** : `README.md` (en entier), `SETUP.md`, `presse/README.md`. Si le travail touche à la 3.0 ou à `preprod/`, lire aussi `README.md` et `CLAUDE.md` de `origin/version-3.0` (`git show origin/version-3.0:README.md`). Ils sont là pour que le propriétaire n'ait pas à se répéter.
+**La documentation de cette branche est chargée d'office** : les fichiers importés en bas de ce document (syntaxe `@chemin` de Claude Code) entrent dans le contexte au démarrage de chaque session, sans qu'il faille penser à les ouvrir. Les lire vraiment, en entier, avant toute modification : ils sont là pour que le propriétaire n'ait pas à se répéter. Si le travail touche à la 3.0 ou à `preprod/`, lire aussi `README.md`, `CLAUDE.md` et `docs/*.md` de `origin/version-3.0` (`git show origin/version-3.0:README.md`), qui ne peuvent pas être importés d'ici.
 
 ## Règles du propriétaire (non négociables)
 
@@ -13,6 +13,8 @@ Cette branche porte le **vrai site** (la 2.x). La 3.0 vit sur la branche `versio
 5. **Aucun identifiant de modèle d'IA** dans les messages de commit (pas de ligne `Co-Authored-By` qui nomme un modèle), le code ou la documentation.
 6. **Comptes rendus honnêtes et exhaustifs** : ce qui est sûr, ce qui est supposé, ce qui n'a pas été testé.
 7. **Ne jamais jouer de SQL sur la vraie base** sans l'action ou l'accord explicite du propriétaire : on livre le fichier (par exemple `supabase/MAJ-2.1.4.sql`), il le colle.
+8. **L'Échauffement tient dans l'écran, sans défiler** : ses trois sous-onglets, l'écran du défi et la scène de combat, aux quatre tailles de référence (README, « Version 2.1.4 »).
+9. **Un indice ne promet rien d'incertain** : pas de règle de combat de la 3.0 qui soit un choix « maison » (taille du deck, lignes, PV : `docs/regles-3.0.md` de la 3.0).
 
 ## À chaque modification
 
@@ -20,4 +22,10 @@ Cette branche porte le **vrai site** (la 2.x). La 3.0 vit sur la branche `versio
 - Ne jamais modifier `prebuild/` à la main : `python3 tools/demo.py --prebuild`. Ne jamais lancer `--preprod` ici (`preprod/` est la 3.0).
 - Une règle de jeu a plusieurs copies : SQL, `_demo/serveur.js`, et parfois une constante JS (pour L'Échauffement : `ech_simuler` et `echCombat`, à la ligne près).
 - `TOUT.sql` et `MAJ-*.sql` sont générés : `python3 tools/build-sql.py`.
-- Vérifier : le SQL sur un PostgreSQL local (la base de `main` d'abord, puis la mise à jour, deux fois) ; toute modification visible dans Chromium (Playwright) à 390 × 844, 375 × 667, 360 × 740 et 1280 × 800, captures regardées.
+- Vérifier : le SQL sur un PostgreSQL local (la base de `main` d'abord, puis la mise à jour, deux fois) ; toute modification visible dans Chromium (Playwright) à 390 × 844, 375 × 667, 360 × 740 et 1280 × 800, captures regardées ; pour L'Échauffement, `#main` ne défile pas.
+
+## La documentation importée
+
+@README.md
+@SETUP.md
+@presse/README.md
