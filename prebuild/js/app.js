@@ -323,12 +323,14 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-apercu],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-ech]');
   if (!el) return;
   const d = el.dataset;
 
   if (d.tab) return aller(d.tab);
-  if (d.apercu) return labMontrerApercu(d.apercu);
+  /* L'Échauffement (js/echauffement.js). */
+  if (d.ech) return echAction(d.ech, el);
+  if (d.labv) { labVue = d.labv; return render(); }
   /* Version 2.0 */
   if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
   if (d.palier) return reclamerPalier(+d.palier);
@@ -457,19 +459,14 @@ async function clicPage(e) {
     case 't-BR': return openBooster({ test: true, god: false, brillante: true });
     case 't-UN': return openBooster({ test: true, god: false, unique: true });
     case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
-    case 't-v2-nouveautes': return montrerNouveautes();
-    case 't-v2-palier': {
-      const x = { palier: 7, type: 'reverse_R', titre: 'Une Reverse Rare' };
-      return montrerPalier(7, x, reverses.filter(c => c.rar === 'R').slice(0, 1));
-    }
-    case 't-v2-palier-titre':
-      return montrerPalier(3, { palier: 3, type: 'titre', titre: 'Titre « Éclaireur des Reflets »' }, []);
     case 't-v2-invitation': return montrerInvitation('M8-TEST-0000');
-    case 't-v2-reflets':
-      if (evenementEnCours() !== 'reflets') return toast('L\'événement Reflets n\'est pas en cours.');
-      return aller('reflets');
-    case 't-v2-illu':
-      return evenementEnCours() === 'reflets' ? allerRf('illu') : aller('illu');
+    case 't-ech-debut': return labEchApercu(false);
+    case 't-ech-complet': return labEchApercu(true);
+    case 't-ech-annonce':
+      if (!(echData && echData.apercu) && !echActif()) labEchApercu(false);
+      return echData && montrerEchAnnonce();
+    case 't-ech-indices': return labEchIndices();
+    case 't-ech-rejouer': return labEchRejouer();
     case 't-v2-recap': apercuRecap(); return aller('reflets');
     case 't-v2-recap-pop': apercuRecap(); return montrerRecap();
     case 't-v2-recap-ban': apercuRecap(); return aller('boosters');
@@ -486,9 +483,6 @@ async function clicPage(e) {
     case 't-joueurs': return labChargerJoueurs();
     case 'cadeau-offrir': return labOffrirCadeau();
     case 't-cadeau': return labApercuCadeau();
-    case 't-chasse-fin':
-      if (!(save.chasse && save.chasse.trouvee)) labMontrerApercu('trouvee');
-      return montrerChasseFin();
     case 't-all':
       cards.concat(brillantes).forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
       persist(); toast('Toutes les cartes sont débloquées (affichage seulement).');
