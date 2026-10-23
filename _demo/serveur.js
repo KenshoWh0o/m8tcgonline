@@ -402,7 +402,7 @@
         couts: { C: prixReverse('C'), PC: prixReverse('PC'), R: prixReverse('R') } },
         /* Version 2.5 (22d_admin.sql) : la date de sortie de chaque version.
            Ici, la 2.5 sort avec L'Échauffement, sauf date posée par le Labo. */
-        sorties: Object.assign({ '2.5': iso(echSaison().debut) }, S.parametres.sorties || {}) },
+        sorties: sortiesDe() },
       prismes: compte(p).solde,
       invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
@@ -1087,7 +1087,8 @@
      parametres.reverses_des, posée par calendrier-2.5.sql à la sortie de la
      2.5 ; ici, c'est le début de L'Échauffement, qui suit ?echauffement. */
   function revDes() {
-    if (S.parametres.reverses_des != null) return S.parametres.reverses_des;
+    /* Posée (même à vide, par le Labo), elle compte ; sinon, la sortie de la 2.5. */
+    if ('reverses_des' in S.parametres) return S.parametres.reverses_des;
     return echSaison().debut;
   }
   function revOuvertes() { const d = revDes(); return !!S.parametres.fabrication_reverse || (d != null && now() >= d); }
@@ -1377,6 +1378,208 @@
     let n = 0;
     Object.keys(s.essais || {}).forEach(k => { const e = s.essais[k]; if (e.p === p && jourParis(e.le) === j) { delete s.essais[k]; n++; } });
     return { effaces: n, etat: echEtat(p) };
+  };
+  /* ------------------------------------------ le Labo, 22d_admin.sql */
+  /* Les mêmes gestes que la vraie base, sur le monde de la démo : naviguer
+     le calendrier, régler son compte, le mettre de côté. Le calendrier
+     officiel est celui de la vraie base (calendrier_officiel). */
+  const CAL_OFFICIEL = {
+    reflets_fin: Date.parse('2026-10-24T00:00:00+02:00'), recap_jusqua: Date.parse('2026-10-26T00:00:00+01:00'),
+    saison_debut: Date.parse('2026-10-26T00:00:00+01:00'), saison_fin: Date.parse('2026-11-04T00:00:00+01:00'),
+    reverses_des: Date.parse('2026-10-26T00:00:00+01:00'), sortie_25: Date.parse('2026-10-26T00:00:00+01:00')
+  };
+  /* poser_calendrier */
+  function poserCalendrier(refletsFin, recap, saison, saisonFin, rev, sortie) {
+    const e = S.evenement;
+    if (e && e.code === 'reflets') { e.debut = Math.min(e.debut, refletsFin - 86400000); e.fin = refletsFin; e.recap_jusqua = recap; }
+    const s = echSaison();
+    s.debut = saison; s.fin = saisonFin;
+    S.parametres.reverses_des = rev; S.parametres.fabrication_reverse = false;
+    S.parametres.sorties = Object.assign({}, S.parametres.sorties, { '2.5': iso(sortie) });
+  }
+  const sortiesDe = () => Object.assign({ '2.5': iso(echSaison().debut) }, S.parametres.sorties || {});
+  function laboEtat(p) {
+    const e = S.evenement && S.evenement.code === 'reflets' ? S.evenement : null;
+    const s = echSaison(), sv = (S.labo || {})[p];
+    return {
+      serveur: iso(now()),
+      officiel: Object.fromEntries(Object.entries(CAL_OFFICIEL).map(([k, v]) => [k, iso(v)])),
+      reflets: e ? { debut: iso(e.debut), fin: iso(e.fin), recap_jusqua: iso(recapFin(e)) } : null,
+      sortie: sortiesDe()['2.5'],
+      saison: { debut: iso(s.debut), fin: iso(s.fin), ouvert: echOuvert() },
+      reverses: { des: revDes() == null ? null : iso(revDes()), manuel: !!S.parametres.fabrication_reverse, ouvertes: revOuvertes() },
+      chasse: chasseEtat(),
+      recharge: { minutes: cfg('ticket_minutes'), cap: cfg('ticket_cap') },
+      recharges: [],
+      echauffement: RPC.ech_admin(p),
+      joueurs: Object.keys(S.profils).length,
+      sauvegarde: sv ? { le: iso(sv.le), cartes: Object.keys(sv.contenu.col || {}).length } : null
+    };
+  }
+  RPC.labo_etat = p => { estAdmin(p); return laboEtat(p); };
+  RPC.labo_calendrier = (p, { p_etat, p_n }) => {
+    estAdmin(p);
+    const t = now(), J = 86400000, O = CAL_OFFICIEL;
+    if (p_etat === 'officiel') {
+      poserCalendrier(O.reflets_fin, O.recap_jusqua, O.saison_debut, O.saison_fin, O.reverses_des, O.sortie_25);
+    } else if (p_etat === 'avant') {
+      const n = p_n == null ? 2 : p_n;
+      if (!(n >= 1 && n <= 10080)) refuser('Entre 1 minute et 7 jours.');
+      const d = t + n * 60000;
+      poserCalendrier(t - J, d, d, d + 9 * J, d, d);
+    } else if (['defi', 'rattrapage', 'fini'].includes(p_etat)) {
+      const n = p_etat === 'defi' ? (p_n == null ? 1 : p_n) : p_etat === 'rattrapage' ? 8 : 10;
+      if (p_etat === 'defi' && !(n >= 1 && n <= 7)) refuser('Un défi de 1 à 7.');
+      const d = t - (n - 1) * J - 3600000;
+      poserCalendrier(d - 2 * J, d, d, d + 9 * J, d, d);
+    } else refuser('État inconnu.');
+    return laboEtat(p);
+  };
+  RPC.labo_decaler = (p, { p_heures }) => {
+    estAdmin(p);
+    if (!p_heures || Math.abs(p_heures) > 336) refuser('De 1 à 336 heures.');
+    const s = echSaison();
+    s.debut -= p_heures * 3600000; s.fin -= p_heures * 3600000;
+    return laboEtat(p);
+  };
+  RPC.labo_reverses = (p, { p_ouvertes }) => {
+    estAdmin(p);
+    if (p_ouvertes) S.parametres.fabrication_reverse = true;
+    else { S.parametres.fabrication_reverse = false; S.parametres.reverses_des = null; }
+    return laboEtat(p);
+  };
+  RPC.labo_ech_raz = (p, { p_confirmation }) => {
+    estAdmin(p);
+    if (p_confirmation !== 'EFFACER') refuser('Confirmation manquante.');
+    const s = echSaison();
+    const r = { essais: Object.keys(s.essais || {}).length, notes: Object.keys(s.scores).length,
+      paliers: Object.values(s.paliers).reduce((n, v) => n + Object.keys(v).length, 0) };
+    s.essais = {}; s.scores = {}; s.paliers = {};
+    return Object.assign(r, { etat: laboEtat(p) });
+  };
+  RPC.labo_cartes = (p, { p_quoi }) => {
+    estAdmin(p);
+    const col = colDe(p);
+    if (p_quoi === 'vider') {
+      S.trades.filter(x => x.status === 'pending' && (x.from_user === p || x.to_user === p))
+        .forEach(x => { x.status = 'cancelled'; x.resolved_at = now(); });
+      Object.keys(col).forEach(k => delete col[k]);
+    } else if (['master', 'classiques', 'joueurs'].includes(p_quoi)) {
+      const liste = p_quoi === 'master' ? cards.concat(reverses, promos, brillantes)
+        : p_quoi === 'classiques' ? cards : cards.filter(k => echStats(k.id));
+      liste.forEach(k => { col[k.id] = Math.max(col[k.id] || 0, 1); });
+    } else refuser('Choix inconnu.');
+    syncCollection(p); checkPromos(p);
+    return me(p);
+  };
+  RPC.labo_monnaies = (p, { p_valeurs }) => {
+    estAdmin(p);
+    if (!p_valeurs || typeof p_valeurs !== 'object') refuser('Valeurs invalides.');
+    const lim = { eclats: 1e7, fragments: 1e7, boosters: 999, reserve: 99, prismes: 1e7 };
+    Object.entries(p_valeurs).forEach(([k, v]) => {
+      if (!(k in lim)) refuser(`Valeur inconnue : ${k}.`);
+      if (typeof v !== 'number') refuser('Un nombre est attendu.');
+      if (v < 0 || v > lim[k]) refuser(`Valeur hors limites : ${k}.`);
+    });
+    const pr = profil(p), V = k => Math.round(p_valeurs[k]);
+    if ('eclats' in p_valeurs) pr.shards = V('eclats');
+    if ('fragments' in p_valeurs) pr.fragments = V('fragments');
+    if ('boosters' in p_valeurs) { pr.boosters_bonus = V('boosters'); pr.tickets_offerts = Math.min(pr.tickets_offerts || 0, V('boosters')); }
+    if ('reserve' in p_valeurs) { pr.tickets = V('reserve'); pr.last_tick = now(); }
+    if ('prismes' in p_valeurs) {
+      const ev = evenementEnCours() || (S.evenement && S.evenement.code);
+      if (!ev) refuser('Aucun événement : pas de Prismes à poser.');
+      const c = (S.evt.comptes[p + '|' + ev] = S.evt.comptes[p + '|' + ev] || { solde: 0, total: 0 });
+      c.solde = V('prismes'); c.total = Math.max(c.total, c.solde);
+    }
+    return me(p);
+  };
+  RPC.labo_cosmetiques = (p, { p_ids }) => {
+    estAdmin(p);
+    if (!Array.isArray(p_ids) || !p_ids.length || p_ids.length > 200) refuser('Liste vide ou trop longue.');
+    const inv = invDe(p);
+    p_ids.forEach(x => {
+      if (!/^[ft]_[a-z0-9_]{1,40}$/.test(x)) refuser(`Identifiant invalide : ${x}.`);
+      inv[x] = Math.max(inv[x] || 0, 1);
+    });
+    return me(p);
+  };
+  RPC.labo_ech_moi = (p, { p_action, p_jour, p_etoiles }) => {
+    estAdmin(p);
+    const s = echSaison(), j = jourParis(now());
+    if (p_action === 'etoiles') {
+      if (!(p_jour >= 1 && p_jour <= 7)) refuser('Un défi de 1 à 7.');
+      if (!(p_etoiles >= 0 && p_etoiles <= 3)) refuser('De 0 à 3 étoiles.');
+      if (p_etoiles === 0) delete s.scores[p + '|' + p_jour];
+      else s.scores[p + '|' + p_jour] = Object.assign({ equipe: [], tours: 0 }, s.scores[p + '|' + p_jour], { etoiles: p_etoiles });
+    } else if (p_action === 'essais' || p_action === 'raz') {
+      Object.keys(s.essais || {}).forEach(k => { const e = s.essais[k]; if (e.p === p && (p_action === 'raz' || jourParis(e.le) === j)) delete s.essais[k]; });
+      if (p_action === 'raz') { Object.keys(s.scores).forEach(k => { if (k.startsWith(p + '|')) delete s.scores[k]; }); delete s.paliers[p]; }
+    } else refuser('Action inconnue.');
+    return echEtat(p);
+  };
+  /* labo_tables : ce qui est à soi, sauf les amis, la boîte et les échanges. */
+  function laboCompte(p) {
+    const s = echSaison(), a = x => k => k.startsWith(x);
+    const de = (o, f) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => f(k)));
+    return JSON.parse(JSON.stringify({
+      profil: profil(p), col: colDe(p), inv: invDe(p), qp: de(S.qp, a(p + '|')),
+      comptes: de(S.evt.comptes, a(p + '|')), prises: S.evt.prises[p] || [],
+      gardes: (S.gardes || {})[p] || {}, favoris: (S.favoris || {})[p] || [], illu: de(S.illu, a(p + '|')),
+      scores: de(s.scores, a(p + '|')), paliers: s.paliers[p] || {},
+      essais: de(s.essais, k => s.essais[k].p === p),
+      tirages: S.tirages.filter(t => t.user_id === p), recyclages: S.recyclages.filter(t => t.user_id === p)
+    }));
+  }
+  function laboEffacer(p) {
+    const s = echSaison(), pas = x => k => !k.startsWith(x);
+    const garder = (o, f) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => f(k)));
+    S.col[p] = {}; S.inv[p] = {};
+    S.qp = garder(S.qp, pas(p + '|')); S.evt.comptes = garder(S.evt.comptes, pas(p + '|')); delete S.evt.prises[p];
+    if (S.gardes) delete S.gardes[p];
+    if (S.favoris) delete S.favoris[p];
+    S.illu = garder(S.illu, pas(p + '|'));
+    s.scores = garder(s.scores, pas(p + '|')); delete s.paliers[p];
+    s.essais = garder(s.essais, k => s.essais[k].p !== p);
+    S.tirages = S.tirages.filter(t => t.user_id !== p); S.recyclages = S.recyclages.filter(t => t.user_id !== p);
+  }
+  RPC.labo_sauver = p => {
+    estAdmin(p);
+    S.labo = S.labo || {};
+    S.labo[p] = { le: now(), contenu: laboCompte(p) };
+    return laboEtat(p);
+  };
+  RPC.labo_restaurer = p => {
+    estAdmin(p);
+    const sv = (S.labo || {})[p];
+    if (!sv) refuser('Aucune sauvegarde.');
+    const c = JSON.parse(JSON.stringify(sv.contenu)), s = echSaison();
+    laboEffacer(p);
+    const pr = profil(p);
+    ['shards', 'fragments', 'tickets', 'last_tick', 'trade_free_at', 'boosters_bonus', 'tickets_offerts', 'packs_opened',
+     'trades_done', 'streak', 'last_checkin', 'serie_max', 'fabrications', 'avatar', 'frame', 'titre', 'banniere',
+     'devise', 'vitrine', 'garder'].forEach(k => { if (k in c.profil) pr[k] = c.profil[k]; });
+    S.col[p] = c.col; S.inv[p] = c.inv;
+    Object.assign(S.qp, c.qp); Object.assign(S.evt.comptes, c.comptes);
+    if (c.prises.length) S.evt.prises[p] = c.prises;
+    S.gardes = S.gardes || {}; S.gardes[p] = c.gardes;
+    S.favoris = S.favoris || {}; S.favoris[p] = c.favoris;
+    Object.assign(S.illu, c.illu); Object.assign(s.scores, c.scores);
+    if (Object.keys(c.paliers).length) s.paliers[p] = c.paliers;
+    s.essais = Object.assign(s.essais || {}, c.essais);
+    S.tirages.push(...c.tirages); S.recyclages.push(...c.recyclages);
+    return me(p);
+  };
+  RPC.labo_raz_moi = p => {
+    estAdmin(p);
+    S.trades.filter(x => x.status === 'pending' && (x.from_user === p || x.to_user === p))
+      .forEach(x => { x.status = 'cancelled'; x.resolved_at = now(); });
+    laboEffacer(p);
+    Object.assign(profil(p), { shards: 0, fragments: 0, tickets: cfg('ticket_cap'), last_tick: now(), trade_free_at: now(),
+      boosters_bonus: 0, tickets_offerts: 0, packs_opened: 0, trades_done: 0, streak: 0, last_checkin: null,
+      serie_max: 0, fabrications: 0, avatar: 'star', frame: 'default', titre: null, banniere: null, devise: null,
+      vitrine: [], garder: {} });
+    return me(p);
   };
   RPC.personnaliser = (p, { p_titre, p_banniere, p_devise }) => {
     const pr = profil(p);

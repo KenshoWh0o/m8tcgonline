@@ -36,7 +36,8 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - la sortie datée : le site se montre en « 2.1.3 » jusqu'à la minute dite, puis bascule seul (README, « Version 2.5 · La sortie datée ») ;
 - la fenêtre des nouveautés de la 2.5 ; le teasing de la 2.5 dans le récap de Reflets ;
 - l'indice 3 corrigé : 127 cartes (122 + 5 Secrètes), et non 128 ;
-- les marques de cache à empreinte (`tools/version.py`).
+- les marques de cache à empreinte (`tools/version.py`) ;
+- **le Labo refait** (README, « Administrateurs ») : le serveur (le calendrier en frise, aller à un état, avancer d'un jour, les Reverses, remettre L'Échauffement à zéro), son compte (sauvegarde et restauration, master set, ressources, cosmétiques, ses étoiles), les joueurs, les aperçus. Il est sur `version-2.5` et dans le prébuild ; sur le vrai site, il arrive avec la publication de dimanche, et ses fonctions avec `MAJ-2.5.sql` (§ 6).
 
 **Prévu par le propriétaire, pas encore fait :**
 - « quelques petits trucs pour pas tourner uniquement la version autour de l'event » : le propriétaire compte les ajouter avant dimanche soir. Chacun s'ajoute aussi à la fenêtre des nouveautés (`NOUVEAUTES_25`, `js/bienvenue.js`) et au README.
@@ -89,4 +90,5 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - **23 oct.** La 2.1.4 devient la **2.5**, une mise à jour à part entière (fenêtre, numéro), qui sort à la fin du récap de Reflets.
 - **23 oct.** Les Reverses ouvrent avec la 2.5, et non à la fin de Reflets.
 - **23 oct.** L'indice 3 dit **127** (122 + 5 Secrètes).
-- **23 oct.** Branches : `version-2.5` remplace `claude/interface-ux-fixes-o92u4a` et `teaser-2.x`.
+- **23 oct.** Branches : `version-2.5` remplace `claude/interface-ux-fixes-o92u4a` et `teaser-2.x` (toutes deux contenues dans `version-2.5` et `main`). Leur suppression est à faire par le propriétaire : le proxy GitHub des sessions Claude Code refuse de supprimer une branche.
+- **23 oct.** Le Labo est refait : ce qui touche le serveur est réel et se confirme, ce qui touche son compte se sauvegarde et se restaure, les aperçus restent locaux. L'onglet « Affichage » (des changements « affichage seulement ») disparaît.
