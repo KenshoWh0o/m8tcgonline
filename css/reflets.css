@@ -461,6 +461,16 @@ html.rm .rf-holo,html.rm #nav button.evnav svg,html.rm .il-pix.net,html.rm .il-a
 .rr-teaser small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65)}
 .rr-teaser b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px}
 .rr-teaser p{margin:3px 0 0;font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.8)}
+/* Version 2.5 : le teasing de la sortie, sur le médaillon de L'Échauffement
+   (graphite et lavande, comme sa page). */
+.rr-teaser.maj25{background:#121119;box-shadow:inset 0 0 0 1px rgba(179,166,255,.22)}
+.rr-teaser.maj25 .ech-illu.fond{left:38%}
+.rr-teaser.maj25::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(90deg,#121119 40%,rgba(18,17,25,.78) 62%,rgba(18,17,25,.2))}
+.rr-teaser.maj25 small{color:#b3a6ff}
+.rr-teaser.maj25 strong{font-weight:800;color:#fff;white-space:nowrap}
+.rr-teaser.maj25 .rr-tico svg{stroke:#c8bfff}
+.rr-popneuf.maj25 svg{stroke:#c8bfff}
 .rr-tico{flex:0 0 46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
 .rr-tico svg{width:24px;height:24px;fill:none;stroke:#ff8a9a;stroke-width:1.9;stroke-linejoin:round}
 .rr-secrets{position:relative;flex:0 0 46px;height:52px}
@@ -478,7 +488,7 @@ html.rm .rf-holo,html.rm #nav button.evnav svg,html.rm .il-pix.net,html.rm .il-a
 .rr-popstats div{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:12px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
 .rr-popstats b{font-family:var(--display);font-weight:900;font-size:20px}
 .rr-popstats small{font-size:11px;font-weight:800;color:var(--muted)}
-/* Version 2.1.4 : les Reverses ouvrent avec le récap. */
+/* La fenêtre de fin : ce qui est nouveau (les Reverses ouvertes, la 2.5 qui arrive). */
 .rr-popneuf{display:flex;align-items:flex-start;gap:10px;margin:0;padding:10px 12px;border-radius:12px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);font-size:12.5px;color:var(--muted)}
 .rr-popneuf svg{flex:none;width:18px;height:18px;margin-top:1px;fill:none;stroke:#b38cff;stroke-width:2;stroke-linejoin:round}
 .rr-popneuf b{display:block;color:var(--text);font-size:13px}

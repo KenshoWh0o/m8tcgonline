@@ -1,6 +1,8 @@
 # Consignes pour les agents (ligne 2.x)
 
-Cette branche porte le **vrai site** (la 2.x). La 3.0 vit sur la branche `version-3.0`, avec son propre `README.md` et son propre `CLAUDE.md`.
+Cette branche, `version-2.5`, porte le **vrai site** (la 2.x, aujourd'hui la 2.5) ; `main` en est la copie publiée, plus `prebuild/` et `preprod/`. La 3.0 vit sur la branche `version-3.0`, avec son propre `README.md` et son propre `CLAUDE.md`. Où on en est, ce qui vient, et le calendrier précis : `docs/feuille-de-route.md` (importé plus bas, et en copie identique sur `version-3.0`).
+
+**La branche de travail.** Le travail de la 2.x se fait sur `version-2.5`. Une session qui impose sa propre branche (`claude/…`) la part de `version-2.5`, y travaille, puis la fusionne dans `version-2.5` à la fin (sans réécrire l'historique), avec l'accord du propriétaire ; rien ne va sur `main` sans son accord explicite (règle 1).
 
 **La documentation de cette branche est chargée d'office** : les fichiers importés en bas de ce document (syntaxe `@chemin` de Claude Code) entrent dans le contexte au démarrage de chaque session, sans qu'il faille penser à les ouvrir. Les lire vraiment, en entier, avant toute modification : ils sont là pour que le propriétaire n'ait pas à se répéter. Si le travail touche à la 3.0 ou à `preprod/`, lire aussi `README.md`, `CLAUDE.md` et `docs/*.md` de `origin/version-3.0` (`git show origin/version-3.0:README.md`), qui ne peuvent pas être importés d'ici.
 
@@ -12,12 +14,13 @@ Cette branche porte le **vrai site** (la 2.x). La 3.0 vit sur la branche `versio
 4. **Mode sombre uniquement.**
 5. **Aucun identifiant de modèle d'IA** dans les messages de commit (pas de ligne `Co-Authored-By` qui nomme un modèle), le code ou la documentation.
 6. **Comptes rendus honnêtes et exhaustifs** : ce qui est sûr, ce qui est supposé, ce qui n'a pas été testé.
-7. **Ne jamais jouer de SQL sur la vraie base** sans l'action ou l'accord explicite du propriétaire : on livre le fichier (par exemple `supabase/MAJ-2.1.4.sql`), il le colle.
-8. **L'Échauffement tient dans l'écran, sans défiler** : ses trois sous-onglets, l'écran du défi et la scène de combat, aux quatre tailles de référence (README, « Version 2.1.4 »).
+7. **Ne jamais jouer de SQL sur la vraie base** sans l'action ou l'accord explicite du propriétaire : on livre le fichier (par exemple `supabase/MAJ-2.5.sql`), il le colle.
+8. **L'Échauffement tient dans l'écran, sans défiler** : ses trois sous-onglets, l'écran du défi et la scène de combat, aux quatre tailles de référence (README, « Version 2.5 »).
 9. **Un indice ne promet rien d'incertain** : pas de règle de combat de la 3.0 qui soit un choix « maison » (taille du deck, lignes, PV : `docs/regles-3.0.md` de la 3.0).
 
 ## À chaque modification
 
+- **Reporter dans la 3.0** ce qui n'est pas propre à la 2.x (une règle d'économie, un correctif, un outil) : dans la même session si possible, sinon l'inscrire dans le registre de `docs/feuille-de-route.md` (§ 5), « à reporter ». Les deux lignes ne se fusionnent pas l'une dans l'autre : on reporte à la main et on teste dans la 3.0.
 - **Mettre les `.md` à jour dans le même commit** : `README.md` (la section du domaine, l'arborescence si un fichier change, « Où modifier quoi », « Administrateurs » si le Labo change), et ce fichier si une règle change. Un README faux est pire que pas de README.
 - Ne jamais modifier `prebuild/` à la main : `python3 tools/demo.py --prebuild`. Ne jamais lancer `--preprod` ici (`preprod/` est la 3.0).
 - Une règle de jeu a plusieurs copies : SQL, `_demo/serveur.js`, et parfois une constante JS (pour L'Échauffement : `ech_simuler` et `echCombat`, à la ligne près).
@@ -28,5 +31,6 @@ Cette branche porte le **vrai site** (la 2.x). La 3.0 vit sur la branche `versio
 ## La documentation importée
 
 @README.md
+@docs/feuille-de-route.md
 @SETUP.md
 @presse/README.md

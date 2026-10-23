@@ -173,7 +173,7 @@ function vTiroir() {
           : `<p class="muted small">Le serveur n'est pas encore branché sur ce site :
                ta progression reste dans ce navigateur.</p>`}
       ${lienDiscord('discordlien', 'Rejoindre le Discord')}
-      <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${APP_VERSION}</p>
+      <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${h(versionJeu())}</p>
       <p class="mentions courtes">${MENTIONS_COURT}</p>
     </footer>
   </nav>`;
@@ -403,6 +403,8 @@ async function clicPage(e) {
     case 'open': return openBooster();
     case 'open-bonus': return openBooster({ bonus: true });
     case 'nouveautes': return montrerNouveautes();
+    case 't-nouveautes-25': return montrerNouveautes25();
+    case 't-nouveautes-21': return montrerNouveautes21();
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
     case 'vers-garder': return versGarder();
@@ -553,6 +555,7 @@ let attenteServeur = false;
    js/booster.js) : on redemande l'état, au plus toutes les trente secondes si
    le serveur n'a pas encore basculé. */
 let derniereBascule = 0;
+let sortieVue = sortieFaite();
 setInterval(() => {
   if (!save || !porteOuverte() || porteVisible()) return;
 
@@ -566,9 +569,12 @@ setInterval(() => {
     if (bascule && Date.now() >= bascule + 1000 && Date.now() - derniereBascule > 30000 && !attenteServeur) {
       attenteServeur = true;
       derniereBascule = Date.now();
-      Backend.pull().then(() => { attenteServeur = false; majDiscrete(true); })
+      Backend.pull().then(() => { attenteServeur = false; majDiscrete(true); chargerEch(); })
                     .catch(() => { attenteServeur = false; });
     }
+    /* La sortie de la version (SORTIE, js/config.js) : le numéro, la fenêtre
+       des nouveautés et le teasing du récap changent à la minute dite. */
+    if (sortieFaite() !== sortieVue) { sortieVue = sortieFaite(); majDiscrete(true); }
     document.querySelectorAll('[data-rebours]').forEach(el => {
       el.textContent = dureeCourte(+el.dataset.rebours - Date.now());
     });

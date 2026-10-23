@@ -1,4 +1,4 @@
-/* L'Échauffement (version 2.1.4) : sept défis, un par jour, après le récap
+/* L'Échauffement (version 2.5) : sept défis, un par jour, après le récap
    de Reflets, dans l'onglet Combats.
 
    On compose une équipe de trois Joueurs de sa collection, dans l'ordre :

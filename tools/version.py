@@ -2,24 +2,31 @@
 # -*- coding: utf-8 -*-
 """Pose un numero de version partout, et l'accroche aux fichiers du site.
 
-    python3 tools/version.py 2.3.1
+    python3 tools/version.py 2.5        (ou 2.5.1, etc.)
 
 Ce que ca fait :
-  - ecrit la version dans js/pwa.js (APP_VERSION) et sw.js (VERSION du cache)
-  - ajoute ?v=<version> a chaque css et js de index.html et verif.html
+  - ecrit la version dans js/pwa.js (APP_VERSION, le numero que lit le joueur)
+  - accroche a chaque css et js de index.html et verif.html la marque
+    ?v=<version>-<empreinte>, et la meme dans sw.js (VERSION du cache)
+
+L'empreinte : six caracteres tires du contenu de tous ces fichiers. Deux mises
+en ligne de la meme version avec un code different ont donc des adresses
+differentes (avant la 2.5, republier la meme version servait l'ancienne copie
+pendant dix minutes) ; relancer le script sans rien changer ne change rien.
 
 A quoi ca sert : GitHub Pages sert les fichiers avec un cache de dix minutes.
-Sans marque de version, une correction poussee peut mettre ce temps-la a
-arriver — voire ne jamais arriver sur un navigateur qui a garde l'ancienne
-copie. Avec le ?v=, chaque version est une adresse differente : le navigateur
-ne peut pas servir l'ancienne par erreur.
+Sans marque, une correction poussee peut mettre ce temps-la a arriver — voire
+ne jamais arriver sur un navigateur qui a garde l'ancienne copie, ou melanger
+un fichier neuf et un vieux. Avec le ?v=, chaque etat du code est une adresse
+differente : le navigateur ne peut pas servir l'ancien par erreur.
 
-A lancer avant chaque mise en ligne qui touche au code."""
-import os, re, sys
+A lancer avant chaque mise en ligne qui touche au code, en dernier (apres
+toute autre modification des css et des js)."""
+import hashlib, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-if len(sys.argv) < 2 or not re.fullmatch(r'\d+\.\d+\.\d+', sys.argv[1]):
+if len(sys.argv) < 2 or not re.fullmatch(r'\d+\.\d+(\.\d+)?', sys.argv[1]):
     print(__doc__)
     raise SystemExit(1)
 V = sys.argv[1]
@@ -32,11 +39,21 @@ def ecrire(rel, fn):
         open(chemin, 'w', encoding='utf-8').write(apres)
     return apres != avant
 
-# --- les deux constantes ---
+# --- le numero lu par le joueur ---
 ecrire('js/pwa.js', lambda s: re.sub(r"const APP_VERSION = '[^']*'",
                                      "const APP_VERSION = '%s'" % V, s))
+
+# --- l'empreinte du code (apres le numero : js/pwa.js en fait partie) ---
+FICHIER = re.compile(r'(?:href|src)="((?!https?:|//)[^"?]+\.(?:css|js))')
+pages = ''.join(open(os.path.join(ROOT, p), encoding='utf-8').read() for p in ('index.html', 'verif.html'))
+empreinte = hashlib.sha1()
+for f in sorted(set(FICHIER.findall(pages))):
+    empreinte.update(f.encode('utf-8'))
+    empreinte.update(open(os.path.join(ROOT, f), 'rb').read())
+T = '%s-%s' % (V, empreinte.hexdigest()[:6])
+
 ecrire('sw.js', lambda s: re.sub(r"const VERSION = 'mtcg-v[^']*'",
-                                 "const VERSION = 'mtcg-v%s'" % V, s))
+                                 "const VERSION = 'mtcg-v%s'" % T, s))
 
 # --- la marque sur chaque fichier local ---
 MARQUE = re.compile(r'((?:href|src)=")((?!https?:|//)[^"?]+\.(?:css|js))(?:\?v=[^"]*)?(")')
@@ -45,12 +62,12 @@ for page in ('index.html', 'verif.html'):
     compteur = [0]
     def poser(m):
         compteur[0] += 1
-        return '%s%s?v=%s%s' % (m.group(1), m.group(2), V, m.group(3))
+        return '%s%s?v=%s%s' % (m.group(1), m.group(2), T, m.group(3))
     ecrire(page, lambda s: MARQUE.sub(poser, s))
     print('  %-12s %d fichiers marques' % (page, compteur[0]))
     n += compteur[0]
 
-print('Version %s posee sur %d references.' % (V, n))
+print('Version %s posee (marque %s) sur %d references.' % (V, T, n))
 
 
 # --- le cache hors reseau suit la page, automatiquement ---

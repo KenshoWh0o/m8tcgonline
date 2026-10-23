@@ -339,9 +339,10 @@ Editor**, et c'est pris en compte immédiatement, sans toucher au site.
 | Quêtes : objectifs et récompenses | `supabase/04_seed.sql` |
 | Boutique : articles et prix | `supabase/04_seed.sql` |
 | Cartes Promo : catalogue et paliers d'obtention | `supabase/03b_promos.sql` |
-| L'Échauffement (2.1.4) : dates de la saison, défis, indices | tables `ech_saison`, `ech_defis`, `ech_indices` (`supabase/22b_echauffement.sql`) ; la requête des dates est aussi dans le Labo |
+| L'Échauffement (2.5) : dates de la saison, défis, indices | tables `ech_saison`, `ech_defis`, `ech_indices` (`supabase/22b_echauffement.sql`) ; la requête des dates est aussi dans le Labo |
+| La sortie datée d'une version (2.5) : la minute où le site bascule | colonne `sorties` de `parametres` (`supabase/22d_admin.sql`), et `SORTIE` dans `js/config.js` |
 | Fin du récap d'un événement | colonne `recap_jusqua` de `evenements` (vide : trois jours après la fin) |
-| Les Reverses (2.1.4) : date d'ouverture du recyclage et de la fabrication, prix | colonne `reverses_des` de `parametres` (ou `fabrication_reverse = true` pour ouvrir tout de suite) ; `prix_reverse()` dans `supabase/22c_reverses.sql` |
+| Les Reverses (2.5) : date d'ouverture du recyclage et de la fabrication, prix | colonne `reverses_des` de `parametres` (ou `fabrication_reverse = true` pour ouvrir tout de suite) ; `prix_reverse()` dans `supabase/22c_reverses.sql` |
 
 Modifie le fichier, colle-le dans le SQL Editor, **Run**. C'est tout.
 

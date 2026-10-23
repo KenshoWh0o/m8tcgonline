@@ -26,6 +26,18 @@ const MENTIONS = 'Projet non affilié à Gentle Mates. Toutes les images présen
 const MENTIONS_COURT = 'Projet non affilié à Gentle Mates. '
   + 'Marques et images appartenant à leurs détenteurs respectifs.';
 
+/* ---------- La sortie de la version ---------- */
+/* Une version peut être en ligne avant sa sortie : jusqu'à `le` (heure du
+   serveur), le jeu se montre tel qu'avant — le numéro lu par les joueurs est
+   `avant`, la fenêtre des nouveautés attend — puis bascule tout seul, page
+   ouverte ou non (sortieFaite, js/pwa.js). Si le serveur donne une date pour
+   cette version (me() › parametres.sorties), c'est la sienne qui compte :
+   le Labo la déplace avec le reste du calendrier. Ce qui se joue côté
+   serveur (L'Échauffement, les Reverses) a ses propres dates, posées à la
+   même minute par supabase/calendrier-2.5.sql. `le: null` : la version est
+   sortie dès sa mise en ligne. */
+const SORTIE = { version: '2.5', le: '2026-10-26T00:00:00+01:00', avant: '2.1.3' };
+
 /* Dossier des images, ajouté devant le champ "fichier" de chaque carte de js/cards-data.js. */
 const CARD_DIR = 'cards/';
 

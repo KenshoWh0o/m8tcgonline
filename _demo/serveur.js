@@ -399,7 +399,10 @@
       recap: evenementRecent(),
       chasse: chasseEtat(),
       parametres: { reverses: { ouvertes: revOuvertes(), des: revDes() == null ? null : iso(revDes()),
-        couts: { C: prixReverse('C'), PC: prixReverse('PC'), R: prixReverse('R') } } },
+        couts: { C: prixReverse('C'), PC: prixReverse('PC'), R: prixReverse('R') } },
+        /* Version 2.5 (22d_admin.sql) : la date de sortie de chaque version.
+           Ici, la 2.5 sort avec L'Échauffement, sauf date posée par le Labo. */
+        sorties: Object.assign({ '2.5': iso(echSaison().debut) }, S.parametres.sorties || {}) },
       prismes: compte(p).solde,
       invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
@@ -426,10 +429,13 @@
     return e && now() >= e.debut && now() < e.fin ? e.code : null;
   }
   /* evenement_recent, 21_reflets.sql : fini depuis moins de trois jours. */
+  /* La fin du récap : evenements.recap_jusqua, ou trois jours après la fin
+     (evenement_recent, 22b_echauffement.sql). */
+  const recapFin = e => (e.recap_jusqua != null ? e.recap_jusqua : e.fin + 3 * 86400000);
   function evenementRecent() {
     const e = S.evenement;
-    if (!e || !e.code || now() < e.fin || now() >= e.fin + 3 * 86400000) return null;
-    return { code: e.code, titre: e.titre, debut: iso(e.debut), fin: iso(e.fin), jusqua: iso(e.fin + 3 * 86400000) };
+    if (!e || !e.code || now() < e.fin || now() >= recapFin(e)) return null;
+    return { code: e.code, titre: e.titre, debut: iso(e.debut), fin: iso(e.fin), jusqua: iso(recapFin(e)) };
   }
   function evenementActif() {
     const e = S.evenement;
@@ -1076,13 +1082,13 @@
     return me(p);
   };
 
-  /* Version 2.1.4, 22c_reverses.sql : reverses_ouvertes et prix_reverse.
+  /* Version 2.5, 22c_reverses.sql : reverses_ouvertes et prix_reverse.
      Ouvertes à la main, ou passé la date. Dans la vraie base, la date est
-     parametres.reverses_des, posée par calendrier-2.1.4.sql à la fin de
-     Reflets ; ici, c'est la fin de Reflets elle-même, qui suit ?echauffement. */
+     parametres.reverses_des, posée par calendrier-2.5.sql à la sortie de la
+     2.5 ; ici, c'est le début de L'Échauffement, qui suit ?echauffement. */
   function revDes() {
     if (S.parametres.reverses_des != null) return S.parametres.reverses_des;
-    return S.evenement && S.evenement.code === 'reflets' ? S.evenement.fin : null;
+    return echSaison().debut;
   }
   function revOuvertes() { const d = revDes(); return !!S.parametres.fabrication_reverse || (d != null && now() >= d); }
   function prixReverse(r) { return { C: 400, PC: 500, R: 2400 }[r]; }
@@ -1238,7 +1244,7 @@
     { jour: 0, titre: 'Tout est prêt', texte: 'Rendez-vous quand tu auras les cartes en main.', visuel: { type: 'mot', valeur: 'Bientôt' } },
     { jour: 1, titre: 'Nouveau visage', texte: 'Tout le jeu va changer de visage. Les couleurs de cette page en sont un avant-goût.', visuel: { type: 'teinte' } },
     { jour: 2, titre: 'Ton deck', texte: 'Tes cartes ne resteront pas dans un classeur : tu en feras ton deck.', visuel: { type: 'eventail' } },
-    { jour: 3, titre: 'Cent vingt-huit', texte: 'La collection ne s\'arrête pas à 122 : elle comptera 128 cartes.', visuel: { type: 'nombre', valeur: '128' } },
+    { jour: 3, titre: 'Cent vingt-sept', texte: 'La collection ne s\'arrête pas à 122 : elle comptera 127 cartes.', visuel: { type: 'nombre', valeur: '127' } },
     { jour: 4, titre: 'Deux', texte: 'Deux camps. Il faudra choisir le tien.', visuel: { type: 'mot', valeur: 'Deux' } },
     { jour: 5, titre: 'Plus loin', texte: 'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.', visuel: { type: 'etoiles', valeur: 5 } },
     { jour: 6, titre: 'Face à face', texte: 'Un jour, ce sera contre tes amis.', visuel: { type: 'mot', valeur: 'VS' } },
@@ -1253,7 +1259,8 @@
   }
   function echSaison() {
     if (!S.ech) {
-      const r = S.evenement && S.evenement.code === 'reflets' ? S.evenement.fin : now();
+      /* Comme calendrier-2.5.sql : à la fin du récap de Reflets. */
+      const r = S.evenement && S.evenement.code === 'reflets' ? recapFin(S.evenement) : now();
       const d = Math.max(now(), r);
       S.ech = { debut: d, fin: d + 9 * 86400000, scores: {}, paliers: {}, essais: {}, seq: 0 };
     }

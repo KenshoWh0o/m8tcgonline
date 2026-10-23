@@ -109,9 +109,13 @@ function montrerDiscord() {
 
 /* ---------- Les nouveautés d'une version ---------- */
 /* Une fois par version et par appareil, à ceux qui jouaient déjà. Elle annonce
-   aussi l'événement en cours, et se rouvre depuis son bandeau (js/booster.js).
-   Changer NOUVEAUTES_VERSION la remontre à tout le monde. */
-const NOUVEAUTES_VERSION = '2.1';
+   aussi l'événement en cours, et se rouvre depuis son bandeau (js/booster.js)
+   et depuis Réglages › À propos. Changer NOUVEAUTES_VERSION la remontre à
+   tout le monde. Une version en ligne avant sa sortie (SORTIE, js/config.js)
+   garde la fenêtre de la précédente jusque-là : c'est sortieFaite() qui
+   choisit. */
+const NOUVEAUTES_VERSION = '2.5';
+const nouveautesVersion = () => (sortieFaite() ? NOUVEAUTES_VERSION : '2.1');
 
 /* Un événement se signale aussi : une fois annoncé, une fois commencé — même
    à qui a déjà vu les nouveautés de la version. */
@@ -120,13 +124,45 @@ const cleEvenement = ev => (ev ? `${ev.titre}|${ev.debut}|${ev.a_venir ? 'avant'
 function nouveautesAVoir() {
   if (Backend.mode !== 'cloud' || !save) return false;
   const m = accueilMemoire();
-  return m.nouveautes !== NOUVEAUTES_VERSION
+  return m.nouveautes !== nouveautesVersion()
     || (!!save.evenement && m.evenement !== cleEvenement(save.evenement));
 }
 
-function montrerNouveautes() {
+const montrerNouveautes = () => (sortieFaite() ? montrerNouveautes25() : montrerNouveautes21());
+
+/* ---------- Version 2.5 ---------- */
+/* Une mise à jour, pas seulement un événement : la fenêtre dit tout ce qui
+   change, L'Échauffement en tête. Une ligne par nouveauté — icône (NAVICO),
+   titre, phrase — à tenir en accord avec le README (« Version 2.5 »). Elle
+   vaut aussi l'annonce de L'Échauffement (js/echauffement.js), qu'elle
+   remplace : deux fenêtres pour la même chose, ce serait une de trop. */
+const NOUVEAUTES_25 = () => [
+  ['sword', 'L\'Échauffement.', 'Sept défis, un par jour, dans l\'onglet Combats, avec trois Joueurs de ta collection.'],
+  ['star', 'Trois étoiles, un indice', 'sur ce qui se prépare, à chaque défi gagné sans perte.'],
+  ['trophy', `Jusqu'à ${fmtN(2100)} ${MONNAIE.nom},`, '3 boosters pour les sept défis, un titre pour les 21 étoiles.'],
+  ['reflets', 'Les Reverses se fabriquent.', `Recycle leurs doublons, fabrique celles qui manquent : de ${fmtN(revCouts().C)} à ${fmtN(revCouts().R)} ${FRAGMENTS.nom}.`]
+];
+
+function montrerNouveautes25() {
+  accueilNoter({ nouveautes: NOUVEAUTES_VERSION, echauffement: 'vu' });
+  const actif = typeof echActif === 'function' && echActif();
+  openSheet({
+    title: '',
+    body: `<div class="ech-annonce maj25">${echIllu(byId.c122, .6, .4, 'fond')}<span><small>Mise à jour</small><b>Version 2.5</b><span>L'Échauffement, et les Reverses qui se fabriquent.</span></span></div>
+      <ol class="bvpoints nvpoints">${NOUVEAUTES_25().map(([ico, titre, texte]) => `<li><span class="bvico">${NAVICO[ico] || NAVICO.star}</span>
+        <span><b>${h(titre)}</b> ${h(texte)}</span></li>`).join('')}</ol>`,
+    actions: actif
+      ? [{ label: 'Plus tard', fn: closeSheet },
+         { label: 'Premier défi', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); echVue = 'accueil'; aller('combats'); } }]
+      : [{ label: 'C\'est parti', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); } }]
+  });
+}
+
+/* ---------- Version 2.1 ---------- */
+/* La fenêtre d'avant, tant que la 2.5 n'est pas sortie. */
+function montrerNouveautes21() {
   const ev = save.evenement;
-  accueilNoter({ nouveautes: NOUVEAUTES_VERSION, evenement: cleEvenement(ev) });
+  accueilNoter({ nouveautes: '2.1', evenement: cleEvenement(ev) });
   const reflets = evenementEnCours() === 'reflets';
   const rv = reverses.filter(c => c.rar === 'R');
   const trio = rv.length ? [0, 1, 2].map(i => rv[(i * 7 + new Date().getDate()) % rv.length]) : [];
@@ -206,8 +242,9 @@ function proposerAccueil() {
   if (bienvenueAVoir()) return quandCalme(montrerBienvenue);
   if (chasseFinAVoir()) return quandCalme(montrerChasseFin);
   if (recapAVoir()) return quandCalme(montrerRecap);
+  /* Version 2.5 : ses nouveautés annoncent aussi L'Échauffement. */
+  if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
   /* L'Échauffement (js/echauffement.js) : annoncé une fois. */
   if (echAnnonceAVoir()) return quandCalme(montrerEchAnnonce);
-  if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
   if (discordAVoir()) return quandCalme(montrerDiscord);
 }

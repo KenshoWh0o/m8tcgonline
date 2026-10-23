@@ -155,7 +155,8 @@ function vReglages() {
     <h2>À propos</h2>
     <p class="muted small">${h(GAME_NAME)} — Jeu de collection sans argent réel :
       les ${MONNAIE.nom} se gagnent en jouant.</p>
-    <p class="muted small">Version ${APP_VERSION}</p>
+    <p class="muted small">Version ${h(versionJeu())}${enLigne
+      ? ` · <button class="linkbtn" data-act="nouveautes">ses nouveautés</button>` : ''}</p>
     <p class="mentions">${MENTIONS}</p>
   </section>`;
 }

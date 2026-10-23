@@ -1698,6 +1698,9 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-annonce small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--e-acc2)}
 .ech-annonce b{font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:30px;line-height:1}
 .ech-annonce span span{font-size:14px;color:var(--e-sub)}
+/* La fenêtre de la 2.5 (js/bienvenue.js) : la même couverture, plus basse,
+   pour que la fenêtre tienne sans défiler à 375 × 667. */
+.ech-annonce.maj25{min-height:132px}
 
 /* La scène du combat. */
 .ech-scene{position:fixed;inset:0;z-index:70;isolation:isolate;display:grid;place-items:center;padding:14px;overflow:hidden;background:var(--e-bg);

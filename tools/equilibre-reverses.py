@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Le prix de fabrication des Reverses (version 2.1.4), simule.
+"""Le prix de fabrication des Reverses (version 2.5), simule.
     python3 tools/equilibre-reverses.py [joueurs par ligne, 600 par defaut]
 
 La fabrication des classiques fait gagner ~33 % sur la mediane du temps pour

@@ -38,7 +38,7 @@ const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAU
 const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
 const recPrix = c => recValeurs()[c.rar] || 0;
 /* Les Reverses (version 2.0) se recyclent et se fabriquent à partir d'une
-   date que donne le serveur (version 2.1.4, supabase/22c_reverses.sql) :
+   date que donne le serveur (version 2.5, supabase/22c_reverses.sql) :
    la page bascule toute seule à l'heure dite, et prochaineBascule()
    (js/booster.js) redemande l'état au serveur. Elles rapportent comme leur
    classique, et coûtent le prix de leur vraie rareté (REV_DEFAUT). */
@@ -66,6 +66,9 @@ const revQuand = () => {
   const r = revEtat();
   return r.des ? `${jourParis(r.des)}, dans <b data-rebours="${srvTime(r.des)}">${h(dureeCourte(srvTime(r.des) - Date.now()))}</b>` : '';
 };
+/* L'ouverture tombe-t-elle avec la sortie de la version (SORTIE, js/config.js) ? */
+const revAvec25 = () => { const r = revEtat();
+  return !!(r.des && sortieLe() && !sortieFaite() && Math.abs(Date.parse(r.des) - Date.parse(sortieLe())) < 60000); };
 const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
 
 /* Les exemplaires proposés dans une de mes demandes d'échange en attente. */

@@ -14,7 +14,7 @@
 --                   Epique 80 · Legendaire 250
 --      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
 --                   Epique 2 000 · Legendaire 8 000
---  Les Reverses (version 2.0, ouvertes en 2.1.4) : recyclees comme leur
+--  Les Reverses (version 2.0, ouvertes en 2.5) : recyclees comme leur
 --  classique, fabriquees au prix de prix_reverse (22c_reverses.sql) :
 --                   Commune 400 · Peu commune 500 · Rare 2 400
 --
@@ -167,7 +167,7 @@ begin
   cout := cfg('fabrication_' || k.rar);
   -- Les Reverses (version 2.0) : fermees au lancement, sinon les Fragments
   -- accumules rempliraient la collection Reverse d'un coup ; ouvertes a la
-  -- fin de Reflets, au prix de leur vraie rarete (version 2.1.4 :
+  -- sortie de la 2.5, au prix de leur vraie rarete (version 2.5 :
   -- reverses_ouvertes et prix_reverse, 22c_reverses.sql).
   if k.reverse then
     if not reverses_ouvertes() then

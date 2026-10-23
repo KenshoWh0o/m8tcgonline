@@ -11,7 +11,7 @@
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
 --
---   Assemble le 2026-10-22
+--   Assemble le 2026-10-23
 --
 -- =====================================================================
 
@@ -2234,14 +2234,17 @@ begin
     'recap', evenement_recent(),
     'chasse', chasse_etat(),
     -- Version 2.0 : les reglages, le solde de Prismes de l'evenement en
-    -- cours, et les invitations achetees. Les Reverses (version 2.1.4,
+    -- cours, et les invitations achetees. Les Reverses (version 2.5,
     -- 22c_reverses.sql) : ouvertes ou non, a partir de quand, et leur prix.
     -- Plus de `fabrication_reverse` ici : le site 2.1.3 l'aurait affiche au
     -- double, il garde donc les Reverses fermees.
     'parametres', jsonb_build_object('reverses', jsonb_build_object(
       'ouvertes', reverses_ouvertes(),
       'des', (select reverses_des from parametres where id = 1),
-      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R')))),
+      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R'))),
+      -- Version 2.5 (22d_admin.sql) : la date de sortie de chaque version,
+      -- que le site suit plutot que la sienne (SORTIE, js/config.js).
+      'sorties', coalesce((select sorties from parametres where id = 1), '{}'::jsonb)),
     'prismes', coalesce((select solde from evt_comptes
                           where user_id = p and evenement = evenement_en_cours()), 0),
     'invitations', coalesce((
@@ -2584,7 +2587,7 @@ end $$;
 --                   Epique 80 · Legendaire 250
 --      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
 --                   Epique 2 000 · Legendaire 8 000
---  Les Reverses (version 2.0, ouvertes en 2.1.4) : recyclees comme leur
+--  Les Reverses (version 2.0, ouvertes en 2.5) : recyclees comme leur
 --  classique, fabriquees au prix de prix_reverse (22c_reverses.sql) :
 --                   Commune 400 · Peu commune 500 · Rare 2 400
 --
@@ -2737,7 +2740,7 @@ begin
   cout := cfg('fabrication_' || k.rar);
   -- Les Reverses (version 2.0) : fermees au lancement, sinon les Fragments
   -- accumules rempliraient la collection Reverse d'un coup ; ouvertes a la
-  -- fin de Reflets, au prix de leur vraie rarete (version 2.1.4 :
+  -- sortie de la 2.5, au prix de leur vraie rarete (version 2.5 :
   -- reverses_ouvertes et prix_reverse, 22c_reverses.sql).
   if k.reverse then
     if not reverses_ouvertes() then
@@ -4185,11 +4188,11 @@ grant execute on function public.favori to authenticated;
 
 -- #####################################################################
 -- ###  22b_echauffement.sql
--- ###  Version 2.1.4 : L'Echauffement, sept defis avant la suite
+-- ###  Version 2.5 : L'Echauffement, sept defis avant la suite
 -- #####################################################################
 
 -- =====================================================================
---  Mate TCG Online — version 2.1.4 : L'Echauffement, un mini-evenement
+--  Mate TCG Online — version 2.5 : L'Echauffement, un mini-evenement
 --  A executer apres 22_garder.sql. Rejouable sans danger.
 --
 --  Sept defis, un par jour, juste apres l'evenement Reflets. Chaque defi
@@ -4231,7 +4234,7 @@ grant execute on function public.favori to authenticated;
 --  (ech_indices) : le navigateur ne le recoit qu'une fois l'indice gagne.
 --
 --  LE CALENDRIER : la saison commence a la fin du recap de Reflets. Les
---  dates exactes de 2026 sont posees par calendrier-2.1.4.sql (a jouer une
+--  dates exactes de 2026 sont posees par calendrier-2.5.sql (a jouer une
 --  fois, apres ce fichier).
 --
 --  L'EQUILIBRAGE (simulation sur les 51 Joueurs, toutes les equipes, et
@@ -4409,7 +4412,8 @@ on conflict (jour) do update set adversaire = excluded.adversaire, pv = excluded
 -- repose sur une regle de combat reconstituee (taille du deck, nombre de
 -- lignes ou de PV : des choix « maison », docs/regles-3.0.md de la 3.0) ;
 -- seulement sur ce que la suite contient : la refonte, les decks, les
--- Secretes (122 + les Secretes = 128, chiffre donne par le proprietaire),
+-- Secretes (122 + cinq Secretes = 127, chiffre confirme par le proprietaire
+-- le 23 octobre 2026 ; l'indice disait 128 auparavant),
 -- les Sections, la maitrise, le Versus, le Raid.
 create table if not exists public.ech_indices (
   jour   integer primary key check (jour between 0 and 7),
@@ -4420,7 +4424,7 @@ create table if not exists public.ech_indices (
 insert into public.ech_indices (jour, titre, texte, visuel) values
   (1, 'Nouveau visage',   'Tout le jeu va changer de visage. Les couleurs de cette page en sont un avant-goût.', '{"type": "teinte"}'),
   (2, 'Ton deck',         'Tes cartes ne resteront pas dans un classeur : tu en feras ton deck.',               '{"type": "eventail"}'),
-  (3, 'Cent vingt-huit',  'La collection ne s''arrête pas à 122 : elle comptera 128 cartes.',                  '{"type": "nombre", "valeur": "128"}'),
+  (3, 'Cent vingt-sept',  'La collection ne s''arrête pas à 122 : elle comptera 127 cartes.',                  '{"type": "nombre", "valeur": "127"}'),
   (4, 'Deux',             'Deux camps. Il faudra choisir le tien.',                                            '{"type": "mot", "valeur": "Deux"}'),
   (5, 'Plus loin',        'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.',                '{"type": "etoiles", "valeur": 5}'),
   (6, 'Face à face',      'Un jour, ce sera contre tes amis.',                                                 '{"type": "mot", "valeur": "VS"}'),
@@ -4800,31 +4804,32 @@ grant execute on function public.ech_etat, public.ech_commencer, public.ech_term
 
 -- #####################################################################
 -- ###  22c_reverses.sql
--- ###  Version 2.1.4 : les Reverses se recyclent et se fabriquent
+-- ###  Version 2.5 : les Reverses se recyclent et se fabriquent
 -- #####################################################################
 
 -- =====================================================================
---  Mate TCG Online — version 2.1.4 : les Reverses se recyclent et se
+--  Mate TCG Online — version 2.5 : les Reverses se recyclent et se
 --  fabriquent. A executer apres 22b_echauffement.sql. Rejouable sans danger.
+--  (La 2.5 s'appelait 2.1.4 jusqu'au 23 octobre 2026.)
 --
 --  Fermes depuis la 2.0 (21_reflets.sql : parametres.fabrication_reverse),
---  le recyclage et la fabrication des Reverses ouvrent a la fin de Reflets.
+--  le recyclage et la fabrication des Reverses ouvrent avec la 2.5.
 --
 --   1. L'ouverture est datee : parametres.reverses_des. Passe cet instant,
 --      recycler et fabriquer (12_recyclage.sql) acceptent les Reverses, et
 --      me() (07_vitrine.sql) le dit au navigateur, qui bascule tout seul.
---      Sur la vraie base, la date est posee par calendrier-2.1.4.sql : le
---      vendredi 23 octobre 2026 a minuit, heure de Paris, la minute ou
---      Reflets finit. Vide (une installation neuve) : ferme.
---      `fabrication_reverse = true` ouvre tout de suite, comme avant.
+--      Sur la vraie base, la date est posee par calendrier-2.5.sql : le
+--      lundi 26 octobre 2026 a 0 h, heure de Paris (dimanche soir minuit),
+--      la sortie de la 2.5 et la fin du recap de Reflets. Vide (une
+--      installation neuve) : ferme. `fabrication_reverse = true` ouvre tout
+--      de suite, comme avant.
 --
 --   2. Le prix n'est plus le double d'une classique, mais celui de leur
 --      vraie rarete (prix_reverse, plus bas).
 --
---  me() n'envoie plus `parametres.fabrication_reverse` : le site 2.1.3,
---  encore en ligne jusqu'a la publication de la 2.1.4, afficherait le
---  double au lieu du vrai prix. Il garde donc les Reverses fermees ; la
---  2.1.4 lit `parametres.reverses`.
+--  me() n'envoie plus `parametres.fabrication_reverse` : un site 2.1.3
+--  afficherait le double au lieu du vrai prix. Il garde donc les Reverses
+--  fermees ; la 2.5 lit `parametres.reverses`.
 --
 --  ------------------------------------------------------------------
 --  LE PRIX
@@ -4906,6 +4911,27 @@ revoke all on function public.reverses_ouvertes, public.prix_reverse from public
 --   update public.parametres set fabrication_reverse = true where id = 1;
 -- Deplacer l'ouverture :
 --   update public.parametres set reverses_des = timestamptz '2026-10-24 00:00:00+02' where id = 1;
+
+
+-- #####################################################################
+-- ###  22d_admin.sql
+-- ###  Version 2.5 : le Labo (comptes et serveur), la date de sortie
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 2.5 : le Labo refait, et la date de sortie
+--  d'une version. A executer apres 22c_reverses.sql. Rejouable sans danger.
+--
+--  LA DATE DE SORTIE
+--  Le site peut etre en ligne avant sa sortie (SORTIE, js/config.js) : il
+--  se montre tel qu'avant, puis bascule a la minute dite. Cette minute est
+--  ecrite dans le code ; si parametres.sorties en donne une pour la version
+--  (cle : son numero, valeur : l'instant, ou null pour « deja sortie »),
+--  c'est celle du serveur qui compte. me() l'envoie (07_vitrine.sql), et le
+--  Labo la deplace avec le reste du calendrier.
+-- =====================================================================
+
+alter table public.parametres add column if not exists sorties jsonb not null default '{}'::jsonb;
 
 
 -- =====================================================================

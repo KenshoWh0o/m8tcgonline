@@ -113,7 +113,7 @@ function vColReverses() {
   const quand = revQuand();
   return `<p class="colsous revfab">${NAVICO.fragment}<span>${revOuvertes()
       ? `Recyclage et fabrication ouverts. Fabriquer coûte ${revCoutsTexte()}.`
-      : quand ? `Recyclage et fabrication : ouverture ${quand}.`
+      : quand ? `Recyclage et fabrication : ouverture ${revAvec25() ? 'avec la 2.5, ' : ''}${quand}.`
       : 'La fabrication des Reverses ouvrira plus tard.'}</span></p>
     ${vFiltres(all)}
     ${list.length
