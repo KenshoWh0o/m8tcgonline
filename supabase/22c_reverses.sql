@@ -1,25 +1,26 @@
 -- =====================================================================
---  Mate TCG Online — version 2.1.4 : les Reverses se recyclent et se
+--  Mate TCG Online — version 2.5 : les Reverses se recyclent et se
 --  fabriquent. A executer apres 22b_echauffement.sql. Rejouable sans danger.
+--  (La 2.5 s'appelait 2.1.4 jusqu'au 23 octobre 2026.)
 --
 --  Fermes depuis la 2.0 (21_reflets.sql : parametres.fabrication_reverse),
---  le recyclage et la fabrication des Reverses ouvrent a la fin de Reflets.
+--  le recyclage et la fabrication des Reverses ouvrent avec la 2.5.
 --
 --   1. L'ouverture est datee : parametres.reverses_des. Passe cet instant,
 --      recycler et fabriquer (12_recyclage.sql) acceptent les Reverses, et
 --      me() (07_vitrine.sql) le dit au navigateur, qui bascule tout seul.
---      Sur la vraie base, la date est posee par calendrier-2.1.4.sql : le
---      vendredi 23 octobre 2026 a minuit, heure de Paris, la minute ou
---      Reflets finit. Vide (une installation neuve) : ferme.
---      `fabrication_reverse = true` ouvre tout de suite, comme avant.
+--      Sur la vraie base, la date est posee par calendrier-2.5.sql : le
+--      lundi 26 octobre 2026 a 0 h, heure de Paris (dimanche soir minuit),
+--      la sortie de la 2.5 et la fin du recap de Reflets. Vide (une
+--      installation neuve) : ferme. `fabrication_reverse = true` ouvre tout
+--      de suite, comme avant.
 --
 --   2. Le prix n'est plus le double d'une classique, mais celui de leur
 --      vraie rarete (prix_reverse, plus bas).
 --
---  me() n'envoie plus `parametres.fabrication_reverse` : le site 2.1.3,
---  encore en ligne jusqu'a la publication de la 2.1.4, afficherait le
---  double au lieu du vrai prix. Il garde donc les Reverses fermees ; la
---  2.1.4 lit `parametres.reverses`.
+--  me() n'envoie plus `parametres.fabrication_reverse` : un site 2.1.3
+--  afficherait le double au lieu du vrai prix. Il garde donc les Reverses
+--  fermees ; la 2.5 lit `parametres.reverses`.
 --
 --  ------------------------------------------------------------------
 --  LE PRIX

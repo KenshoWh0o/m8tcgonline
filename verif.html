@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#0c0910">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=2.1.4">
-<link rel="stylesheet" href="css/base.css?v=2.1.4">
+<link rel="stylesheet" href="css/tokens.css?v=2.5-1c8c4c">
+<link rel="stylesheet" href="css/base.css?v=2.5-1c8c4c">
 <style>
 /* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
 body{display:block;height:auto;min-height:100%}
@@ -71,8 +71,8 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="js/config.js?v=2.1.4"></script>
-<script src="js/supabase-config.js?v=2.1.4"></script>
+<script src="js/config.js?v=2.5-1c8c4c"></script>
+<script src="js/supabase-config.js?v=2.5-1c8c4c"></script>
 <script>
 "use strict";
 
@@ -259,16 +259,16 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
     : { etat: 'ok', titre: 'Écran d\'attente, boîte de réception, recyclage, fabrication, classement et historique sont installés' });
 
-  /* ---- 6 ter. La version 2.1.4 : L'Échauffement ---- */
-  /* Sans supabase/MAJ-2.1.4.sql, l'onglet Combats garde son annonce et
+  /* ---- 6 ter. La version 2.5 : L'Échauffement ---- */
+  /* Sans supabase/MAJ-2.5.sql, l'onglet Combats garde son annonce et
      l'événement n'apparaît jamais : rien ne le signale ailleurs. */
   {
     const { error } = await sb.rpc('ech_etat');
     poser(error && error.code === 'PGRST202'
-      ? { etat: 'ko', titre: 'L\'Échauffement (2.1.4) n\'est pas installé',
-          detail: 'La fonction <code>ech_etat()</code> manque : <code>supabase/MAJ-2.1.4.sql</code> n\'a pas été joué.',
-          faire: `Colle <code>supabase/MAJ-2.1.4.sql</code> dans le <b>SQL Editor</b> (ou <code>supabase/TOUT.sql</code> en entier).` }
-      : { etat: 'ok', titre: 'L\'Échauffement (2.1.4) est installé' });
+      ? { etat: 'ko', titre: 'L\'Échauffement (2.5) n\'est pas installé',
+          detail: 'La fonction <code>ech_etat()</code> manque : <code>supabase/MAJ-2.5.sql</code> n\'a pas été joué.',
+          faire: `Colle <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> (ou <code>supabase/TOUT.sql</code> en entier).` }
+      : { etat: 'ok', titre: 'L\'Échauffement (2.5) est installé' });
   }
 
   /* ---- 7. L'adresse de retour ---- */
@@ -300,8 +300,8 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
             faire: `Pour te les donner : ouvre <code>supabase/05_admin.sql</code>, remplace
               l’adresse par <code>${E(session.user.email || '')}</code>, et exécute-le dans le
               <b>SQL Editor</b>. Étape 7 de <code>SETUP.md</code>.` });
-      /* La version 2.1.4 : les Reverses (supabase/22c_reverses.sql). Une
-         MAJ-2.1.4.sql collée avant leur ajout installe L'Échauffement mais pas
+      /* La version 2.5 : les Reverses (supabase/22c_reverses.sql). Une
+         MAJ-2.5.sql collée avant leur ajout installe L'Échauffement mais pas
          elles : seul me() le dit, et seulement à un compte connecté. */
       const rv = etat && etat.parametres && etat.parametres.reverses;
       poser(rv
@@ -309,9 +309,9 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
               : rv.des ? `Reverses : ouverture le ${E(new Date(rv.des).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' }))}`
               : 'Reverses : installées, fermées, sans date d\'ouverture',
             detail: `Fabriquer : ${rv.couts.C} (Commune), ${rv.couts.PC} (Peu commune), ${rv.couts.R} (Rare) Fragments.` }
-        : { etat: 'ko', titre: 'Les Reverses (2.1.4) ne sont pas installées',
-            detail: '<code>me()</code> ne renvoie pas <code>parametres.reverses</code> : la <code>supabase/MAJ-2.1.4.sql</code> collée date d\'avant les Reverses.',
-            faire: 'Recolle la dernière <code>supabase/MAJ-2.1.4.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' });
+        : { etat: 'ko', titre: 'Les Reverses (2.5) ne sont pas installées',
+            detail: '<code>me()</code> ne renvoie pas <code>parametres.reverses</code> : la <code>supabase/MAJ-2.5.sql</code> collée date d\'avant les Reverses.',
+            faire: 'Recolle la dernière <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' });
     } catch (e) {
       poser({ etat: 'warn', titre: 'Connecté, mais le profil est introuvable',
         detail: 'Le compte existe côté authentification, mais pas côté jeu.',

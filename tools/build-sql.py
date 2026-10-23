@@ -32,8 +32,9 @@ MORCEAUX = [
     ('21_reflets.sql', 'Version 2.0 : evenement Reflets, Devine l\'illu, invitations, titres'),
     ('21b_illu.sql',   'Devine l\'illu : les illustrations en pixels'),
     ('22_garder.sql',  'Version 2.1 : les exemplaires a garder, et les favoris'),
-    ('22b_echauffement.sql', 'Version 2.1.4 : L\'Echauffement, sept defis avant la suite'),
-    ('22c_reverses.sql', 'Version 2.1.4 : les Reverses se recyclent et se fabriquent'),
+    ('22b_echauffement.sql', 'Version 2.5 : L\'Echauffement, sept defis avant la suite'),
+    ('22c_reverses.sql', 'Version 2.5 : les Reverses se recyclent et se fabriquent'),
+    ('22d_admin.sql',  'Version 2.5 : le Labo (comptes et serveur), la date de sortie'),
 ]
 
 entete = """-- =====================================================================
@@ -87,27 +88,33 @@ fin = """
 sortie = os.path.join(SB, 'TOUT.sql')
 open(sortie, 'w', encoding='utf-8').write(entete + ''.join(bloc) + fin)
 
-# La mise a jour de la 2.1.4, d'un bloc, pour une base deja installee, dans
-# l'ordre de TOUT.sql :
+# La mise a jour de la 2.5 (appelee 2.1.4 jusqu'au 23 octobre 2026), d'un
+# bloc, pour une base deja installee en 2.1.0 ou plus, dans l'ordre de
+# TOUT.sql :
 #   · la 2.1.1, que la vraie base n'avait pas recue (elle etait en 2.1.0 le
 #     22 octobre) : est_filleul, shop_buy et creer_invitation (03_rpc.sql,
 #     21_reflets.sql) ;
 #   · les Reverses : me, recycler, fabriquer (07_vitrine.sql, 12_recyclage.sql)
 #     et 22c_reverses.sql ;
-#   · L'Echauffement (22b_echauffement.sql), puis le calendrier.
+#   · L'Echauffement (22b_echauffement.sql) ;
+#   · le Labo de la 2.5 et la date de sortie (22d_admin.sql), puis le
+#     calendrier.
 # Les fichiers sont rejoues entiers : ils ne contiennent rien qu'une version
 # plus recente redefinirait ailleurs, et leurs donnees sont des mises a jour
 # idempotentes (verifie : le Pass de Reflets de la vraie base est celui du
 # fichier ; le remboursement des codes de filleuls n'y trouve rien).
-MAJ_214 = ['03_rpc.sql', '07_vitrine.sql', '12_recyclage.sql', '21_reflets.sql',
-           '22b_echauffement.sql', '22c_reverses.sql', 'calendrier-2.1.4.sql']
-maj = os.path.join(SB, 'MAJ-2.1.4.sql')
+# La vraie base en a recu la premiere partie le 22 octobre 2026 (tout sauf
+# ech_admin_rejouer, 22d_admin.sql et la date de sortie dans me() : voir le
+# README, « Version 2.5 », Mise en ligne).
+MAJ_25 = ['03_rpc.sql', '07_vitrine.sql', '12_recyclage.sql', '21_reflets.sql',
+          '22b_echauffement.sql', '22c_reverses.sql', '22d_admin.sql', 'calendrier-2.5.sql']
+maj = os.path.join(SB, 'MAJ-2.5.sql')
 open(maj, 'w', encoding='utf-8').write(
-    "-- Mate TCG Online — mise a jour 2.1.4, assemblee par tools/build-sql.py le %s.\n"
-    "-- A coller d'un bloc dans Supabase > SQL Editor, AVANT vendredi 23 octobre midi.\n"
-    "-- Ne pas editer : editer %s.\n\n" % (datetime.date.today().isoformat(), ', '.join(MAJ_214))
-    + '\n\n'.join(open(os.path.join(SB, f), encoding='utf-8').read() for f in MAJ_214))
-print('supabase/MAJ-2.1.4.sql assemble.')
+    "-- Mate TCG Online — mise a jour 2.5, assemblee par tools/build-sql.py le %s.\n"
+    "-- A coller d'un bloc dans Supabase > SQL Editor ; rejouable sans danger.\n"
+    "-- Ne pas editer : editer %s.\n\n" % (datetime.date.today().isoformat(), ', '.join(MAJ_25))
+    + '\n\n'.join(open(os.path.join(SB, f), encoding='utf-8').read() for f in MAJ_25))
+print('supabase/MAJ-2.5.sql assemble.')
 
 n = sum(1 for _ in open(sortie, encoding='utf-8'))
 print('supabase/TOUT.sql assemble : %d lignes, %.0f Ko' % (n, os.path.getsize(sortie) / 1024))

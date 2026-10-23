@@ -603,6 +603,7 @@ function vRfRecap() {
     </section>
     <section class="rr-suite">
       <h2>À suivre</h2>
+      ${vTeaser25()}
       <article class="rr-teaser combats">
         <span class="rr-tico">${NAVICO.sword}</span>
         <div><small>Version 3.0</small><b>Les Combats</b><p>Tes cartes vont bientôt quitter le classeur. Prépare ton deck.</p></div>
@@ -613,6 +614,21 @@ function vRfRecap() {
       </article>
     </section>
   </div></div>`;
+}
+
+/* Version 2.5 : ce qui arrive à la fin du récap (SORTIE, js/config.js), sur
+   le médaillon de L'Échauffement. Rien une fois la version sortie. */
+const sortieAVenir = () => (!sortieFaite() && sortieLe() ? srvTime(sortieLe()) : 0);
+function vTeaser25() {
+  const t = sortieAVenir();
+  if (!t) return '';
+  return `<article class="rr-teaser maj25">
+      ${typeof echIllu === 'function' ? echIllu(byId.c122, .6, .4, 'fond') : ''}
+      <span class="rr-tico">${NAVICO.sword}</span>
+      <div><small>Version 2.5 · ${h(jourParis(sortieLe()))}</small><b>L'Échauffement</b>
+        <p>Sept défis, un par jour, avec tes Joueurs. Et les Reverses se recyclent et se fabriquent.
+          Dans <strong data-rebours="${t}">${h(dureeCourte(t - Date.now()))}</strong>.</p></div>
+    </article>`;
 }
 
 /* Le bandeau de l'écran Boosters, en version récap. */
@@ -648,6 +664,8 @@ async function montrerRecap() {
         </div>
         ${revOuvertes() ? `<p class="rr-popneuf">${NAVICO.reflets}<span><b>Nouveau : les Reverses se recyclent et se fabriquent.</b>
           Fabriquer une Reverse coûte ${revCoutsTexte()} ${FRAGMENTS.nom}.</span></p>` : ''}
+        ${sortieAVenir() ? `<p class="rr-popneuf maj25">${NAVICO.sword}<span><b>La 2.5 arrive ${h(jourParis(sortieLe()))}.</b>
+          L'Échauffement : sept défis avec tes Joueurs. Et les Reverses se recyclent et se fabriquent.</span></p>` : ''}
         <p class="muted small">Le récap complet reste ${a && a.jusqua ? 'jusqu\'à ' + h(jourParis(a.jusqua)) : 'quelques jours'} dans l'onglet de l'événement. Devine l'illu, lui, continue.</p>
       </div>`,
     actions: [{ label: 'Voir le récap', primary: true, fn: () => { closeSheet(); aller('reflets'); } },

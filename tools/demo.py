@@ -95,13 +95,17 @@ const SUPABASE_ANON_KEY = 'demo-locale-aucune-cle-necessaire';
 
 # --- la page charge le faux client a la place de la bibliotheque Supabase
 page = lire('index.html')
-version = re.search(r'js/config\.js\?v=([\d.]+)', page)
-v = version.group(1) if version else 'demo'
+# La marque des fichiers (version et empreinte, tools/version.py), et le
+# numero que lit le joueur (APP_VERSION), pour le titre et le bandeau.
+version = re.search(r'js/config\.js\?v=([^"]+)"', page)
+marque = version.group(1) if version else 'demo'
+num = re.search(r"const APP_VERSION = '([^']+)'", open(os.path.join(ROOT, 'js', 'pwa.js'), encoding='utf-8').read())
+v = num.group(1) if num else marque
 page = remplacer(page,
     r'<script src="https://cdn\.jsdelivr\.net/npm/@supabase/supabase-js[^"]*"[^>]*></script>',
-    f'<script src="js/demo-reglages.js?v={v}"></script>\n'
-    f'<script src="js/demo-illu.js?v={v}"></script>\n'
-    f'<script src="js/demo-serveur.js?v={v}"></script>',
+    f'<script src="js/demo-reglages.js?v={marque}"></script>\n'
+    f'<script src="js/demo-illu.js?v={marque}"></script>\n'
+    f'<script src="js/demo-serveur.js?v={marque}"></script>',
     'la balise de la bibliotheque Supabase dans index.html')
 ecrire('index.html', page)
 

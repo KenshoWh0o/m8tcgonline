@@ -154,7 +154,7 @@ function vBandeauEvenement() {
      mène au récap. */
   if (recapReflets()) return vBandeauRecap();
   if (ev && ev.code === 'reflets' && !ev.a_venir) return vBandeauReflets(ev);
-  /* Version 2.1.4 : L'Échauffement, qui mène à l'onglet Combats. */
+  /* Version 2.5 : L'Échauffement, qui mène à l'onglet Combats. */
   const ech = vBandeauEch();
   if (ech) return ech;
   const ch = save.chasse || {};
@@ -237,9 +237,13 @@ function prochaineBascule() {
   const ev = save.evenement;
   if (ev) t.push(srvTime(ev.a_venir ? ev.debut : ev.fin));
   if (chasseAnnoncee(save.chasse)) t.push(srvTime(save.chasse.ouvre_le));
-  /* Version 2.1.4 : l'ouverture des Reverses (supabase/22c_reverses.sql). */
+  /* Version 2.5 : l'ouverture des Reverses (supabase/22c_reverses.sql), la
+     fin du récap de Reflets et le début de L'Échauffement — la sortie de la
+     2.5 tombe à la même minute. */
   const rv = (save.parametres || {}).reverses;
   if (rv && !rv.ouvertes && rv.des) t.push(srvTime(rv.des));
+  if (save.recap && save.recap.jusqua) t.push(srvTime(save.recap.jusqua));
+  if (typeof echData !== 'undefined' && echData && !echData.apercu && !echData.ouvert && echData.debut) t.push(srvTime(echData.debut));
   return t.length ? Math.min(...t) : 0;
 }
 

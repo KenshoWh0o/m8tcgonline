@@ -64,7 +64,7 @@ function vLabMaintenant() {
     : ch.trouvee ? `Terminée : tirée par ${ch.gagnant || 'un joueur'}.`
     : ch.active ? 'Ouverte : une chance sur 250 par booster.' : 'Fermée.';
   const apercu = (echData && echData.apercu) || rfRecapApercu;
-  /* Les Reverses (version 2.1.4, supabase/22c_reverses.sql). */
+  /* Les Reverses (version 2.5, supabase/22c_reverses.sql). */
   const rv = revEtat();
   const etatRev = revOuvertes() ? `Recyclage et fabrication ouverts : ${revCoutsTexte()}.`
     : rv.des ? `Fermés : ouvrent ${jourParis(rv.des)}.` : 'Fermés, sans date.';
@@ -236,7 +236,8 @@ function vLabScenes() {
   <section class="panel">
     <h2>Fenêtres</h2>
     <div class="row">
-      <button class="btn ghost" data-act="nouveautes">Nouveautés ${h(NOUVEAUTES_VERSION)}</button>
+      <button class="btn ghost" data-act="t-nouveautes-25">Nouveautés 2.5</button>
+      <button class="btn ghost" data-act="t-nouveautes-21">Nouveautés 2.1</button>
       <button class="btn ghost" data-act="t-v2-invitation">Invitation achetée</button>
       <button class="btn ghost" data-act="t-cadeau">Cadeau reçu</button>
     </div>

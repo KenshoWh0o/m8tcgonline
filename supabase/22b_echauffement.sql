@@ -1,5 +1,5 @@
 -- =====================================================================
---  Mate TCG Online — version 2.1.4 : L'Echauffement, un mini-evenement
+--  Mate TCG Online — version 2.5 : L'Echauffement, un mini-evenement
 --  A executer apres 22_garder.sql. Rejouable sans danger.
 --
 --  Sept defis, un par jour, juste apres l'evenement Reflets. Chaque defi
@@ -41,7 +41,7 @@
 --  (ech_indices) : le navigateur ne le recoit qu'une fois l'indice gagne.
 --
 --  LE CALENDRIER : la saison commence a la fin du recap de Reflets. Les
---  dates exactes de 2026 sont posees par calendrier-2.1.4.sql (a jouer une
+--  dates exactes de 2026 sont posees par calendrier-2.5.sql (a jouer une
 --  fois, apres ce fichier).
 --
 --  L'EQUILIBRAGE (simulation sur les 51 Joueurs, toutes les equipes, et
@@ -219,7 +219,8 @@ on conflict (jour) do update set adversaire = excluded.adversaire, pv = excluded
 -- repose sur une regle de combat reconstituee (taille du deck, nombre de
 -- lignes ou de PV : des choix « maison », docs/regles-3.0.md de la 3.0) ;
 -- seulement sur ce que la suite contient : la refonte, les decks, les
--- Secretes (122 + les Secretes = 128, chiffre donne par le proprietaire),
+-- Secretes (122 + cinq Secretes = 127, chiffre confirme par le proprietaire
+-- le 23 octobre 2026 ; l'indice disait 128 auparavant),
 -- les Sections, la maitrise, le Versus, le Raid.
 create table if not exists public.ech_indices (
   jour   integer primary key check (jour between 0 and 7),
@@ -230,7 +231,7 @@ create table if not exists public.ech_indices (
 insert into public.ech_indices (jour, titre, texte, visuel) values
   (1, 'Nouveau visage',   'Tout le jeu va changer de visage. Les couleurs de cette page en sont un avant-goût.', '{"type": "teinte"}'),
   (2, 'Ton deck',         'Tes cartes ne resteront pas dans un classeur : tu en feras ton deck.',               '{"type": "eventail"}'),
-  (3, 'Cent vingt-huit',  'La collection ne s''arrête pas à 122 : elle comptera 128 cartes.',                  '{"type": "nombre", "valeur": "128"}'),
+  (3, 'Cent vingt-sept',  'La collection ne s''arrête pas à 122 : elle comptera 127 cartes.',                  '{"type": "nombre", "valeur": "127"}'),
   (4, 'Deux',             'Deux camps. Il faudra choisir le tien.',                                            '{"type": "mot", "valeur": "Deux"}'),
   (5, 'Plus loin',        'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.',                '{"type": "etoiles", "valeur": 5}'),
   (6, 'Face à face',      'Un jour, ce sera contre tes amis.',                                                 '{"type": "mot", "valeur": "VS"}'),

@@ -104,14 +104,17 @@ begin
     'recap', evenement_recent(),
     'chasse', chasse_etat(),
     -- Version 2.0 : les reglages, le solde de Prismes de l'evenement en
-    -- cours, et les invitations achetees. Les Reverses (version 2.1.4,
+    -- cours, et les invitations achetees. Les Reverses (version 2.5,
     -- 22c_reverses.sql) : ouvertes ou non, a partir de quand, et leur prix.
     -- Plus de `fabrication_reverse` ici : le site 2.1.3 l'aurait affiche au
     -- double, il garde donc les Reverses fermees.
     'parametres', jsonb_build_object('reverses', jsonb_build_object(
       'ouvertes', reverses_ouvertes(),
       'des', (select reverses_des from parametres where id = 1),
-      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R')))),
+      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R'))),
+      -- Version 2.5 (22d_admin.sql) : la date de sortie de chaque version,
+      -- que le site suit plutot que la sienne (SORTIE, js/config.js).
+      'sorties', coalesce((select sorties from parametres where id = 1), '{}'::jsonb)),
     'prismes', coalesce((select solde from evt_comptes
                           where user_id = p and evenement = evenement_en_cours()), 0),
     'invitations', coalesce((

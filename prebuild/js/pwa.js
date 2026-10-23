@@ -5,7 +5,18 @@
    marche à suivre, une seule fois, et seulement après quelques minutes de jeu. */
 "use strict";
 
-const APP_VERSION = '2.1.4';
+const APP_VERSION = '2.5';
+
+/* La version est-elle sortie (SORTIE, js/config.js) ? À l'heure du serveur :
+   la montre de l'appareil n'avance pas une mise à jour. La date du serveur
+   passe avant celle du code, quand il en donne une (null : sortie). */
+const sortieLe = () => {
+  const s = (typeof save !== 'undefined' && save && save.parametres && save.parametres.sorties) || {};
+  return Object.prototype.hasOwnProperty.call(s, SORTIE.version) ? s[SORTIE.version] : SORTIE.le;
+};
+const sortieFaite = () => { const le = sortieLe(); return !le || Date.now() >= srvTime(le); };
+/* Le numéro que lit le joueur (tiroir, Réglages). */
+const versionJeu = () => (sortieFaite() ? APP_VERSION : SORTIE.avant);
 
 const PWA = { invite: null, installe: false, dejaVu: false };
 const PWA_CLE = 'mtcg.install';
