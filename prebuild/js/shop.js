@@ -36,7 +36,7 @@ let shopVue = 'cartes';
 const DEVISES = {
   eclats:    { ico: () => shardIco, nom: () => MONNAIE.nom, solde: () => save.shards || 0 },
   fragments: { ico: () => `<span class="fragico">${NAVICO.fragment}</span>`, nom: () => FRAGMENTS.nom, solde: () => save.fragments || 0 },
-  prismes:   { ico: () => prismeIco, nom: () => PRISMES.nom, solde: () => save.prismes || 0 }
+  prismes:   { ico: () => evIco(), nom: () => PRISMES.nom, solde: () => save.prismes || 0 }
 };
 const deviseDe = it => DEVISES[it.devise] || DEVISES.eclats;
 /* Ce qui reste à acheter d'un article limité (`limite`, par joueur). */
@@ -96,7 +96,7 @@ function vBoutique() {
       <span class="wallet">${shardIco}<b>${fmtN(save.shards)}</b> ${MONNAIE.nom}</span>
       ${jetons ? `<span class="wallet"><img class="wjeton" src="${ART.jeton}" alt=""><b>${jetons}</b> jeton${jetons > 1 ? 's' : ''}</span>` : ''}
       <span class="wallet"><span class="fragico">${NAVICO.fragment}</span><b>${fmtN(save.fragments || 0)}</b></span>
-      ${evenementEnCours() ? `<span class="wallet">${prismeIco}<b>${fmtN(save.prismes || 0)}</b></span>` : ''}
+      ${evenementEnCours() ? `<span class="wallet">${evIco()}<b>${fmtN(save.prismes || 0)}</b></span>` : ''}
     </div>`;
 
   if (!items.length) {
@@ -113,7 +113,9 @@ function vBoutique() {
         <span class="rfban-txt"><b>Boutique Reflets</b><small>En ${PRISMES.nom}, pendant l'événement</small></span>
         <span class="rfban-solde">${prismeIco}${fmtN(save.prismes || 0)}</span>
         <span class="rfban-fl" aria-hidden="true">›</span>
-      </button>` : '';
+      </button>`
+    /* Version 2.5 : celle de L'Échauffement vit dans l'onglet Combats. */
+    : evenementEnCours() === 'echauffement' ? vBandeauEchBoutique() : '';
   return tete + ev + `<div class="segbar">${onglets}</div>${vRayon(shopVue, items)}`;
 }
 
@@ -375,7 +377,8 @@ async function acheter(it) {
     if (inv) montrerInvitation(inv.code);
     return;
   }
-  if (it.evenement && typeof chargerReflets === 'function') chargerReflets();
+  if (it.evenement === 'echauffement') chargerEch(true);
+  else if (it.evenement && typeof chargerReflets === 'function') chargerReflets();
   toast(it.unique_buy ? `${it.titre} débloqué.` : `${it.titre} : c'est dans ta réserve.`);
   SFX.jouer('gagne');
 }

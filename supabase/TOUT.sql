@@ -1219,14 +1219,17 @@ begin
     raise exception 'Tu as atteint la limite pour cet article.';
   end if;
 
-  -- La devise (version 2.0) : Eclats, Fragments, ou Prismes de l'evenement.
+  -- La devise (version 2.0) : Eclats, Fragments, ou la monnaie de l'evenement
+  -- (les Prismes de Reflets, les Braises de L'Echauffement en 2.5).
   if it.devise = 'fragments' then
     if pr.fragments < it.prix then raise exception 'Pas assez de Fragments.'; end if;
     update profiles set fragments = fragments - it.prix where id = p;
   elsif it.devise = 'prismes' then
     update evt_comptes set solde = solde - it.prix
      where user_id = p and evenement = it.evenement and solde >= it.prix;
-    if not found then raise exception 'Pas assez de Prismes.'; end if;
+    if not found then
+      raise exception 'Pas assez de %.', case when it.evenement = 'echauffement' then 'Braises' else 'Prismes' end;
+    end if;
   else
     if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
     update profiles set shards = shards - it.prix where id = p;
@@ -3549,6 +3552,10 @@ begin
     'code', ev,
     'solde', coalesce(cpt.solde, 0),
     'total', coalesce(cpt.total, 0),
+    -- Version 2.5 : sa place, pour qui n'est pas dans les dix.
+    'rang', case when coalesce(cpt.total, 0) > 0 then
+      (select count(*) + 1 from evt_comptes x where x.evenement = ev and x.total > cpt.total) end,
+    'joueurs', (select count(*) from evt_comptes x where x.evenement = ev and x.total > 0),
     'piste', coalesce((
       select jsonb_agg(jsonb_build_object(
                'palier', pa.palier, 'seuil', pa.seuil, 'type', pa.type, 'montant', pa.montant,

@@ -148,7 +148,7 @@ function vTiroir() {
         <small>booster${save.tickets > 1 ? 's' : ''}</small></span>
       <span class="sac">${shardIco}<b>${fmtN(save.shards)}</b><small>${MONNAIE.nom}</small></span>
       ${jetons ? `<span class="sac"><img src="${ART.jeton}" alt=""><b>${jetons}</b><small>jeton${jetons > 1 ? 's' : ''}</small></span>` : ''}
-      ${evenementEnCours() ? `<span class="sac prismes">${prismeIco}<b>${fmtN(save.prismes || 0)}</b><small>${PRISMES.nom}</small></span>` : ''}
+      ${evenementEnCours() ? `<span class="sac prismes">${evIco()}<b>${fmtN(save.prismes || 0)}</b><small>${PRISMES.nom}</small></span>` : ''}
     </div>
 
     <ul class="tiroir-liste">
@@ -382,7 +382,7 @@ async function clicPage(e) {
 
   /* Quêtes, boutique, échanges */
   if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.')
-    .then(ok => { if (ok && tab === 'reflets') chargerReflets(); });
+    .then(ok => { if (ok && tab === 'reflets') chargerReflets(); if (ok && tab === 'combats') chargerEch(); });
   if (d.trep) return trRepondre(d.trep, d.ok === '1');
   if (d.gdef) return reglerGardeDefaut(d.gdef, +d.n);
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
@@ -470,6 +470,8 @@ async function clicPage(e) {
       if (!(echData && echData.apercu) && !echActif()) labEchApercu(false);
       return echData && montrerEchAnnonce();
     case 't-ech-indices': return labEchIndices();
+    case 't-ech-sf': return labEchApercuApres(false);
+    case 't-ech-recap': return labEchApercuApres(true);
     case 't-v2-recap': apercuRecap(); return aller('reflets');
     case 't-v2-recap-pop': apercuRecap(); return montrerRecap();
     case 't-v2-recap-ban': apercuRecap(); return aller('boosters');

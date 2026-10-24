@@ -366,14 +366,17 @@ begin
     raise exception 'Tu as atteint la limite pour cet article.';
   end if;
 
-  -- La devise (version 2.0) : Eclats, Fragments, ou Prismes de l'evenement.
+  -- La devise (version 2.0) : Eclats, Fragments, ou la monnaie de l'evenement
+  -- (les Prismes de Reflets, les Braises de L'Echauffement en 2.5).
   if it.devise = 'fragments' then
     if pr.fragments < it.prix then raise exception 'Pas assez de Fragments.'; end if;
     update profiles set fragments = fragments - it.prix where id = p;
   elsif it.devise = 'prismes' then
     update evt_comptes set solde = solde - it.prix
      where user_id = p and evenement = it.evenement and solde >= it.prix;
-    if not found then raise exception 'Pas assez de Prismes.'; end if;
+    if not found then
+      raise exception 'Pas assez de %.', case when it.evenement = 'echauffement' then 'Braises' else 'Prismes' end;
+    end if;
   else
     if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
     update profiles set shards = shards - it.prix where id = p;

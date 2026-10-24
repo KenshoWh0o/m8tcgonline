@@ -1,10 +1,13 @@
 /* Onglet Combats. Pendant L'Échauffement (js/echauffement.js), ses défis ;
-   le reste du temps, l'annonce : les règles ne sont pas écrites, la page ne
-   promet rien d'autre. Elle réutilise les vraies cartes pour la mise en scène. */
+   après lui, son mode sans fin (le défi du jour) ; avant, l'annonce : les
+   règles de la 3.0 ne sont pas écrites, la page ne promet rien d'autre. Elle
+   réutilise les vraies cartes pour la mise en scène. */
 "use strict";
 
 function vCombats() {
   if (echActif()) return vEchauffement();
+  /* Après la saison : le défi du jour, et trois jours de récap (version 2.5). */
+  if (echSfActif() || echRecapEnCours()) return vEchSansFin();
   const vedettes = cards
     .filter(c => c.cat === 'joueur' && (c.rar === 'L' || c.rar === 'E'))
     .slice(0, 3);

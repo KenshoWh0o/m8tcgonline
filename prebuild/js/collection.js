@@ -91,9 +91,7 @@ function vColClassiques() {
   const noFilter = !filtresActifs();
   const secretFrom = all.reduce((m, c) => Math.max(m, c.num || 0), 0) + 1;
 
-  return `${Backend.mode === 'cloud' && owned < all.length
-      ? `<div class="colsous"><span class="colfab">${NAVICO.fragment}<b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom} · touche une case vide pour la fabriquer</span></div>`
-      : ''}
+  return `${vLigneFragments(owned >= all.length)}
 
     ${noFilter && uniques[0] && save.col[uniques[0].id] > 0 ? vUniqueVitrine() : ''}
 
@@ -105,16 +103,25 @@ function vColClassiques() {
           <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}`;
 }
 
+/* La ligne des Fragments, la même en tête des Classiques et des Reverses : le
+   solde, et ce qu'une case vide permet. Rien hors ligne ni une fois tout
+   possédé. `quoi` remplace la fin de la phrase (les Reverses, tant que leur
+   fabrication n'est pas ouverte). */
+function vLigneFragments(complet, quoi) {
+  if (Backend.mode !== 'cloud' || complet) return '';
+  return `<div class="colsous"><span class="colfab">${NAVICO.fragment}<b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom} · ${quoi || 'touche une case vide pour la fabriquer'}</span></div>`;
+}
+
 /* ---------- Les 85 Reverses ---------- */
 function vColReverses() {
   const all = reverses.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
   const list = filtrer(all);
-  /* Ouverte à la date donnée par le serveur (revOuvertes, js/recyclage.js). */
+  /* Ouverte à la date donnée par le serveur (revOuvertes, js/recyclage.js) ;
+     avant, la ligne dit quand. */
   const quand = revQuand();
-  return `<p class="colsous revfab">${NAVICO.fragment}<span>${revOuvertes()
-      ? `Recyclage et fabrication ouverts. Fabriquer coûte ${revCoutsTexte()}.`
-      : quand ? `Recyclage et fabrication : ouverture ${revAvec25() ? 'avec la 2.5, ' : ''}${quand}.`
-      : 'La fabrication des Reverses ouvrira plus tard.'}</span></p>
+  const ferme = revOuvertes() ? null
+    : quand ? `fabrication ${revAvec25() ? 'avec la 2.5, ' : ''}${quand}` : 'fabrication pas encore ouverte';
+  return `${vLigneFragments(possedees(all) >= all.length, ferme)}
     ${vFiltres(all)}
     ${list.length
       ? `<div class="grid">${list.map(vCase).join('')}</div>`

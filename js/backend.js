@@ -417,6 +417,14 @@ Backend.echTerminer = async (essai, eclat) => {
   Backend.apply(r.me);
   return r;
 };
+/* Le mode sans fin (supabase/22f_sans-fin.sql) : le défi du jour, après la saison. */
+Backend.echSfEtat = () => Backend.rpc('ech_sf_etat');
+Backend.echSfCommencer = equipe => Backend.rpc('ech_sf_commencer', { p_equipe: equipe });
+Backend.echSfTerminer = async (essai, eclat) => {
+  const r = await Backend.rpc('ech_sf_terminer', { p_essai: essai, p_eclat: eclat || null });
+  Backend.apply(r.me);
+  return r;
+};
 Backend.illuEssai = async id => {
   const r = await Backend.rpc('illu_essai', { p_carte: id });
   Backend.apply(r.etat);

@@ -154,9 +154,12 @@ function vBandeauEvenement() {
      mène au récap. */
   if (recapReflets()) return vBandeauRecap();
   if (ev && ev.code === 'reflets' && !ev.a_venir) return vBandeauReflets(ev);
-  /* Version 2.5 : L'Échauffement, qui mène à l'onglet Combats. */
+  /* Version 2.5 : L'Échauffement, qui mène à l'onglet Combats — pendant la
+     saison, son récap, puis le défi du jour. C'est aussi un événement (code
+     `echauffement`) : il n'a jamais le bandeau générique, même avant de
+     commencer (le récap de Reflets l'annonce déjà). */
   const ech = vBandeauEch();
-  if (ech) return ech;
+  if (ech || (ev && ev.code === 'echauffement')) return ech;
   const ch = save.chasse || {};
   const u = uniques[0];
   const nomU = u ? u.nom : 'la carte unique';
@@ -244,6 +247,10 @@ function prochaineBascule() {
   if (rv && !rv.ouvertes && rv.des) t.push(srvTime(rv.des));
   if (save.recap && save.recap.jusqua) t.push(srvTime(save.recap.jusqua));
   if (typeof echData !== 'undefined' && echData && !echData.apercu && !echData.ouvert && echData.debut) t.push(srvTime(echData.debut));
+  /* La fin de la saison (le mode sans fin commence), puis chaque minuit : un
+     nouvel adversaire (chargerEch, js/echauffement.js). */
+  if (typeof echActif === 'function' && echActif() && !echData.apercu) t.push(srvTime(echData.fin));
+  if (typeof echSf !== 'undefined' && echSf && echSf._fin) t.push(echSf._fin);
   return t.length ? Math.min(...t) : 0;
 }
 

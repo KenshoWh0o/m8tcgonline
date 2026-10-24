@@ -118,14 +118,17 @@ const NOUVEAUTES_VERSION = '2.5';
 const nouveautesVersion = () => (sortieFaite() ? NOUVEAUTES_VERSION : '2.1');
 
 /* Un événement se signale aussi : une fois annoncé, une fois commencé — même
-   à qui a déjà vu les nouveautés de la version. */
-const cleEvenement = ev => (ev ? `${ev.titre}|${ev.debut}|${ev.a_venir ? 'avant' : 'pendant'}` : '');
+   à qui a déjà vu les nouveautés de la version. Sauf L'Échauffement avant son
+   départ : il sort avec la 2.5, dont la fenêtre l'annonce (et le récap de
+   Reflets d'ici là) ; la fenêtre de la 2.1 n'a rien à en dire. */
+const cleEvenement = ev => (ev && !(ev.code === 'echauffement' && ev.a_venir)
+  ? `${ev.titre}|${ev.debut}|${ev.a_venir ? 'avant' : 'pendant'}` : '');
 
 function nouveautesAVoir() {
   if (Backend.mode !== 'cloud' || !save) return false;
   const m = accueilMemoire();
-  return m.nouveautes !== nouveautesVersion()
-    || (!!save.evenement && m.evenement !== cleEvenement(save.evenement));
+  const cle = cleEvenement(save.evenement);
+  return m.nouveautes !== nouveautesVersion() || (!!cle && m.evenement !== cle);
 }
 
 const montrerNouveautes = () => (sortieFaite() ? montrerNouveautes25() : montrerNouveautes21());
@@ -137,14 +140,14 @@ const montrerNouveautes = () => (sortieFaite() ? montrerNouveautes25() : montrer
    vaut aussi l'annonce de L'Échauffement (js/echauffement.js), qu'elle
    remplace : deux fenêtres pour la même chose, ce serait une de trop. */
 const NOUVEAUTES_25 = () => [
-  ['sword', 'L\'Échauffement.', 'Sept défis, un par jour, dans l\'onglet Combats, avec trois Joueurs de ta collection.'],
-  ['star', 'Trois étoiles, un indice', 'sur ce qui se prépare, à chaque défi gagné sans perte.'],
-  ['trophy', `Jusqu'à ${fmtN(2100)} ${MONNAIE.nom},`, '3 boosters pour les sept défis, un titre pour les 21 étoiles.'],
+  ['sword', 'L\'Échauffement, l\'événement.', 'Sept défis, un par jour, dans l\'onglet Combats, avec trois Joueurs de ta collection ; trois étoiles, un indice sur ce qui se prépare.'],
+  ['trophy', `Des ${MONNAIES_EV.echauffement.nom}, un Pass de vingt paliers`, `et une boutique, en plus des ${fmtN(2100)} ${MONNAIE.nom} des défis. Deux cadres et trois titres à gagner.`],
+  ['clock', 'Et après, un défi par jour.', `${typeof echData !== 'undefined' && echData && echData.fin ? `Dès ${jourParis(echData.fin)}` : 'Dès le 4 novembre'}, L'Échauffement continue : un adversaire par jour, le même pour tous.`],
   ['reflets', 'Les Reverses se fabriquent.', `Recycle leurs doublons, fabrique celles qui manquent : de ${fmtN(revCouts().C)} à ${fmtN(revCouts().R)} ${FRAGMENTS.nom}.`]
 ];
 
 function montrerNouveautes25() {
-  accueilNoter({ nouveautes: NOUVEAUTES_VERSION, echauffement: 'vu' });
+  accueilNoter({ nouveautes: NOUVEAUTES_VERSION, echauffement: 'vu', evenement: cleEvenement(save.evenement) });
   const actif = typeof echActif === 'function' && echActif();
   openSheet({
     title: '',
@@ -242,6 +245,8 @@ function proposerAccueil() {
   if (bienvenueAVoir()) return quandCalme(montrerBienvenue);
   if (chasseFinAVoir()) return quandCalme(montrerChasseFin);
   if (recapAVoir()) return quandCalme(montrerRecap);
+  /* Version 2.5 : la fin de L'Échauffement, et ce qui continue. */
+  if (echRecapAVoir()) return quandCalme(montrerEchRecap);
   /* Version 2.5 : ses nouveautés annoncent aussi L'Échauffement. */
   if (nouveautesAVoir()) return quandCalme(montrerNouveautes);
   /* L'Échauffement (js/echauffement.js) : annoncé une fois. */

@@ -54,7 +54,7 @@ function vTest() {
     ${corps}`;
 }
 
-const apercuEnCours = () => !!((typeof echData !== 'undefined' && echData && echData.apercu) || rfRecapApercu);
+const apercuEnCours = () => !!((typeof echData !== 'undefined' && echData && echData.apercu) || rfRecapApercu || echRecapApercu);
 
 /* « dimanche 25 octobre à minuit · dans 2 j 3 h » */
 const labQuand = iso => {
@@ -93,12 +93,15 @@ function vLabFrise() {
     ['Fin du récap de Reflets', E.reflets && E.reflets.recap_jusqua, O.recap_jusqua],
     ['Sortie de la 2.5', E.sortie, O.sortie_25],
     ['L\'Échauffement commence', s.debut, O.saison_debut],
-    ['L\'Échauffement se termine', s.fin, O.saison_fin],
+    ['L\'Échauffement se termine, le défi du jour commence', s.fin, O.saison_fin],
+    ['Fin du récap de L\'Échauffement', E.ech_recap, O.ech_recap],
     ['Les Reverses ouvrent', rv.des, O.reverses_des]
   ].filter(j => j[1]).sort((a, b) => Date.parse(a[1]) - Date.parse(b[1]));
   const maintenant = Date.now();
+  const sf = E.sans_fin || {};
   const etatEch = !s.debut ? 'pas de saison' : maintenant < srvTime(s.debut) ? 'à venir'
-    : maintenant < srvTime(s.fin) ? `défi ${s.ouvert} sur 7` : 'terminé';
+    : maintenant < srvTime(s.fin) ? `défi ${s.ouvert} sur 7`
+    : `sans fin · ${ECH_NIVEAUX[sf.niveau] || '?'} (n° ${sf.ordre || '?'})`;
   const etatRev = rv.ouvertes ? (rv.manuel ? 'ouvertes à la main' : 'ouvertes') : rv.des ? 'fermées' : 'fermées, sans date';
   const sortie = !E.sortie || maintenant >= srvTime(E.sortie);
   const ligne = ([titre, iso, off]) => `<li class="labjalon ${srvTime(iso) <= maintenant ? 'passe' : 'avenir'}">
@@ -137,7 +140,8 @@ function vLabEtats() {
         class="${enSaison && s.ouvert === j ? 'on' : ''}" aria-label="Défi ${j} ouvert">${j}</button>`).join('')}</div>
     <div class="labgrid" style="margin-top:8px">
       <button class="labbtn" data-lab="cal" data-etat="rattrapage"><b>Rattrapage</b><span>les sept ouverts, deux jours avant la fin</span></button>
-      <button class="labbtn" data-lab="cal" data-etat="fini"><b>Saison finie</b><span>L'Échauffement terminé</span></button>
+      <button class="labbtn" data-lab="cal" data-etat="fini"><b>Saison finie</b><span>depuis une heure : son récap, le défi du jour</span></button>
+      <button class="labbtn" data-lab="cal" data-etat="sans_fin" data-n="4"><b>Mode sans fin</b><span>son quatrième jour, le récap fini</span></button>
     </div>
     <button class="btn labofficiel" data-lab="cal" data-etat="officiel">Revenir au calendrier officiel</button>
   </section>`;
@@ -170,6 +174,10 @@ function vLabEchServeur() {
         <span>${h(d.titre)}</span><span class="tnum">${fmtN(d.pv)}</span><span class="tnum">${fmtN(d.essais)}</span>
         <span class="tnum">${fmtN(d.gagnes)}</span><span class="tnum">${fmtN(d.parfaits)}</span>`).join('')}
     </div>
+    ${labEtat.sans_fin ? `<p class="muted small" style="margin-top:8px">Le défi du jour (mode sans fin, après la saison) :
+      n° ${labEtat.sans_fin.ordre}, ${h((byId[labEtat.sans_fin.adversaire] || {}).nom || labEtat.sans_fin.adversaire)}, ${h(labEtat.sans_fin.titre)}
+      (${h(ECH_NIVEAUX[labEtat.sans_fin.niveau] || '')}) ; ${fmtN(labEtat.sans_fin.joueurs)} joueur${labEtat.sans_fin.joueurs > 1 ? 's' : ''}
+      l'ont déjà tenté, ${fmtN(labEtat.sans_fin.gagnes)} l'ont gagné aujourd'hui.</p>` : ''}
     <div class="row" style="margin-top:10px">
       <button class="btn ghost" data-act="t-ech-indices">Les indices</button>
       <button class="btn ghost labdanger" data-lab="ech-raz">Remettre à zéro…</button>
@@ -228,7 +236,8 @@ const LAB_EFFETS = {
   avant: n => `Reflets est fini et son récap court ; la 2.5 sort dans ${n >= 60 ? n / 60 + ' h' : n + ' min'}. D'ici là, tout le monde voit le jeu « 2.1.3 », sans L'Échauffement, Reverses fermées.`,
   defi: n => `La 2.5 est sortie ; L'Échauffement est au défi ${n} (les ${n} premiers ouverts), les Reverses ouvertes.`,
   rattrapage: () => 'La 2.5 est sortie ; les sept défis sont ouverts, deux jours de rattrapage avant la fin.',
-  fini: () => 'La saison de L\'Échauffement est terminée : l\'onglet Combats revient à son annonce.',
+  fini: () => 'La saison de L\'Échauffement est terminée depuis une heure : trois jours de récap (bandeau de l\'écran Boosters, fenêtre de fin), et le défi du jour dans l\'onglet Combats.',
+  sans_fin: n => `La saison de L'Échauffement est finie depuis ${n - 1} jour${n > 2 ? 's' : ''} : son récap aussi, le défi du jour en est à son ${n}ᵉ jour.`,
   officiel: () => 'Les dates de la 2.5 : récap jusqu\'au dimanche 25 octobre minuit, puis la 2.5, L\'Échauffement (jusqu\'au 4 novembre) et les Reverses.'
 };
 
@@ -441,6 +450,8 @@ function vLabApercus() {
       <button class="labbtn" data-act="t-ech-complet"><b>Tout gagné</b><span>21 étoiles, les huit indices</span></button>
       <button class="labbtn" data-act="t-ech-annonce"><b>Son annonce</b><span>la fenêtre de l'événement</span></button>
       <button class="labbtn" data-act="t-ech-indices"><b>Les indices</b><span>les huit, avec leur texte</span></button>
+      <button class="labbtn" data-act="t-ech-sf"><b>Le défi du jour</b><span>après la saison, sans limite d'essais</span></button>
+      <button class="labbtn" data-act="t-ech-recap"><b>Son récap</b><span>la page et la fenêtre de fin, chiffres inventés</span></button>
     </div>
     ${echData && echData.apercu ? `<h3 class="labsous">Le bandeau de l'écran Boosters</h3>${vBandeauEch()}` : ''}
   </section>
@@ -493,7 +504,7 @@ function labAction(a, el) {
     case 'cal': {
       const etat = d.etat;
       const titres = { avant: 'Revenir avant la 2.5 ?', defi: `Aller au défi ${n} ?`, rattrapage: 'Aller au rattrapage ?',
-        fini: 'Finir la saison ?', officiel: 'Revenir au calendrier officiel ?' };
+        fini: 'Finir la saison ?', sans_fin: 'Aller au mode sans fin ?', officiel: 'Revenir au calendrier officiel ?' };
       return labPourTous(titres[etat], LAB_EFFETS[etat](n), () =>
         labServeurFaire('labo_calendrier', { p_etat: etat, p_n: n }, etat === 'officiel' ? 'Calendrier officiel rétabli.' : 'Le serveur a changé d\'état.'));
     }
@@ -558,8 +569,42 @@ async function labEchApercu(complet) {
     indices: complet ? E.indices.slice() : [], apercuIndices: E.indices.slice()
   };
   if (!complet) echData.defis = echData.defis.slice(0, 1);
-  echVue = 'accueil';
+  /* L'événement : un Pass à moitié fait, des quêtes, la boutique (Backend.shop), un classement inventé. */
+  const tot = complet ? 1050 : 312;
+  echEv = { code: 'echauffement', apercu: true, solde: Math.round(tot / 2), total: tot, rang: 5, joueurs: 37,
+    piste: ECH_PISTE.map(x => Object.assign({}, x, { pris: x.seuil <= (complet ? 1050 : 220) })),
+    top: [['Nova.92', 't_elu', 1140], ['Lumen', 't_centurion', 980], ['Mira', null, 640], ['Kairo', null, 410]]
+      .map(([pseudo, titre, total]) => ({ pseudo, titre, total, avatar: 'star', frame: 'f_braise', photo: null, moi: false })) };
+  echSf = null; echRecapApercu = null;
+  echVue = 'accueil'; echOnglet = 'defis';
+  if (!Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
   aller('combats');
+}
+
+/* Après la saison : le défi du jour (le premier de la saison, en Facile), ou
+   le récap et sa fenêtre, avec des chiffres inventés. */
+async function labEchApercuApres(recap) {
+  if (!labEtat || !labEtat.echauffement) { await labCharger(); }
+  const E = labEtat && labEtat.echauffement;
+  if (!E) return toast('Les données de L\'Échauffement ne sont pas chargées.');
+  const t = Date.now(), d = E.defis[0];
+  echData = { apercu: true, debut: new Date(t - 10 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
+    ouvert: 7, total: 7, essais_max: 3, serveur: new Date(t).toISOString(),
+    defis: E.defis.map(x => Object.assign({}, x, { etoiles: 2, equipe: null, essais_jour: 0 })), etoiles: 14, gagnes: 7, paliers: ['sept'],
+    indices: E.indices.filter(x => x.jour > 0 && x.jour <= 3), apercuIndices: E.indices.slice() };
+  echEv = null;
+  echSf = { ouvert: true, apercu: true, debut: echData.fin, serveur: echData.serveur, jour: '', n: recap ? 1 : 4, essais_max: 99, prix: ECH_SF_PRIX,
+    defi: { adversaire: d.adversaire, pv: d.pv, regle: d.regle, param: d.param, titre: d.titre, texte: d.texte, niveau: 1,
+      etoiles: 0, equipe: null, essais_jour: 0 }, demain: 4, victoires: recap ? 0 : 3, etoiles: recap ? 0 : 7, serie: recap ? 0 : 2, rang: recap ? null : 4,
+    top: [['Nova.92', 11], ['Lumen', 9], ['Mira', 8], [save.pseudo, 7, true]].map(([pseudo, total, moi]) => ({ pseudo, total, moi: !!moi,
+      titre: null, avatar: moi ? save.avatar : 'star', frame: moi ? save.frame : 'f_ardeur', photo: moi ? maPhoto() : null })) };
+  echRecapApercu = recap ? { code: 'echauffement', titre: 'L\'Échauffement', apercu: true, debut: echData.debut, fin: echData.fin,
+    jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), total: 815, paliers: 15, paliers_max: 20, pris: 15, quetes: 27,
+    rang: 6, joueurs: 37, etoiles: 14, gagnes: 7, parfaits: 3, defis: 7, combats: 23,
+    top: [['Nova.92', 1180], ['Lumen', 1010], ['Mira', 905]].map(([pseudo, total]) => ({ pseudo, total, titre: null, avatar: 'star', frame: 'f_ardeur', photo: null, moi: false })) } : null;
+  echVue = 'accueil'; echSfOnglet = recap ? 'recap' : 'jour';
+  aller('combats');
+  if (recap) setTimeout(montrerEchRecap, 350);
 }
 
 async function labEchIndices() {
@@ -578,7 +623,8 @@ async function labEchIndices() {
 }
 
 async function labEtatReel() {
-  if (echData && echData.apercu) echData = null;
+  if (echData && echData.apercu) { echData = null; echEv = null; echSf = null; }
+  echRecapApercu = null;
   if (rfRecapApercu) { rfRecapApercu = null; rfRecap = null; }
   try { await Backend.pull(); } catch (e) { /* le prochain rafraîchissement s'en chargera */ }
   await chargerEch();
