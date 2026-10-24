@@ -296,8 +296,6 @@
 .colsous b{color:var(--text)}
 .colsous .colfab{display:inline-flex;align-items:center;gap:5px}
 .colsous .colfab svg{width:14px;height:14px;fill:none;stroke:var(--accent-soft);stroke-width:2}
-.revfab{gap:6px;flex-wrap:nowrap;align-items:flex-start}
-.revfab svg{flex:none;width:14px;height:14px;margin-top:2px;fill:none;stroke:#b38cff;stroke-width:2}
 .gcell .num .revico{margin-left:.25em}
 
 /* ============ Les titres ============ */
