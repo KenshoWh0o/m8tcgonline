@@ -3674,6 +3674,11 @@ grant execute on function public.ech_sf_etat, public.ech_sf_commencer, public.ec
 --         plus d'ouverture a la main (fabrication_reverse) ;
 --       - le site lui-meme bascule (parametres.sorties ; la meme minute est
 --         ecrite dans le code, SORTIE dans js/config.js).
+--   · L'Echauffement est aussi un evenement (22e_echauffement-evenement.sql) :
+--     sa ligne `evenements` suit la saison toute seule (un declencheur), et
+--     son recap court trois jours de plus, jusqu'au samedi 7 novembre, 0 h ;
+--   · a la fin de la saison (mercredi 4 novembre, 0 h) commence le mode sans
+--     fin (22f_sans-fin.sql) : un defi par jour, sans date de fin.
 --
 --  Les dates elles-memes sont dans calendrier_officiel() (22d_admin.sql),
 --  leur seule copie cote serveur : le Labo (« Calendrier officiel ») et ce
@@ -3695,5 +3700,8 @@ select public.calendrier_officiel_poser();
 select code, fin at time zone 'Europe/Paris' as fin_paris, recap_jusqua at time zone 'Europe/Paris' as recap_jusqua_paris
   from public.evenements where code = 'reflets';
 select debut at time zone 'Europe/Paris' as debut_paris, fin at time zone 'Europe/Paris' as fin_paris from public.ech_saison;
+select code, debut at time zone 'Europe/Paris' as debut_paris, fin at time zone 'Europe/Paris' as fin_paris,
+       recap_jusqua at time zone 'Europe/Paris' as recap_jusqua_paris
+  from public.evenements where code = 'echauffement';
 select reverses_des at time zone 'Europe/Paris' as reverses_paris, reverses_ouvertes() as ouvertes,
        fabrication_reverse, sorties from public.parametres;
