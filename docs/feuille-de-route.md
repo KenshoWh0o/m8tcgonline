@@ -2,7 +2,7 @@
 
 > **Ce fichier existe en deux copies identiques**, une sur `version-2.5` (donc aussi sur `main`) et une sur `version-3.0`. Toute modification se fait dans les deux, dans la même session : copier le fichier d'une branche à l'autre (`git show origin/version-2.5:docs/feuille-de-route.md > docs/feuille-de-route.md`, ou l'inverse), puis vérifier que `git diff origin/version-2.5 origin/version-3.0 -- docs/feuille-de-route.md` est vide une fois les deux poussées.
 
-Mise à jour : vendredi 23 octobre 2026.
+Mise à jour : samedi 24 octobre 2026.
 
 ## 1. Ce que le propriétaire a dicté (23 octobre 2026)
 
@@ -50,7 +50,7 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 
 ## 4. La 3.0
 
-**Où elle en est** : branche `version-3.0`, démo publiée sur `main` dans `preprod/` (matetcg.com/preprod/), version 3.0.9. Son README dit tout ce qui est fait.
+**Où elle en est** : branche `version-3.0`, démo publiée sur `main` dans `preprod/` (matetcg.com/preprod/), version 3.0.10 (24 octobre : les reports de la 2.5, et son propre Labo refait — le Choc d'un état à l'autre, le Raid à une phase, son compte, sa sauvegarde, le master set à la limite de deck pour tester les combats). Son README dit tout ce qui est fait.
 
 **Prévu par le propriétaire** (§ 1) :
 - peaufiner l'onglet d'événement et l'interface en général ;
@@ -65,11 +65,13 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 
 | Changement de la 2.x | Date | Dans la 3.0 |
 |---|---|---|
-| Reverses : recyclage et fabrication datés (`parametres.reverses_des`, `reverses_ouvertes()`), prix 400 / 500 / 2 400 (`prix_reverse()`), `me()` › `parametres.reverses`, la page | 22-23 oct. | à reporter |
-| Marques de cache à empreinte (`tools/version.py`) | 23 oct. | à reporter |
+| Reverses : recyclage et fabrication datés (`parametres.reverses_des`, `reverses_ouvertes()`), prix 400 / 500 / 2 400 (`prix_reverse()`), `me()` › `parametres.reverses`, la page | 22-23 oct. | **reporté** (3.0.10, 24 oct.) : `supabase/installation/22c_reverses.sql`, même corps de fichier |
+| Fin du récap réglable (`evenements.recap_jusqua`) | 22 oct. | **reporté** (3.0.10) |
+| Marques de cache à empreinte (`tools/version.py`) | 23 oct. | **reporté** (3.0.10) |
+| Les milliers en espace insécable (`fmtN`) | 22 oct. | **reporté** (3.0.10) |
 | Sortie datée d'une version (`SORTIE`, `parametres.sorties`) | 23 oct. | à décider : la 3.0 sortira après une maintenance, pas forcément ainsi |
 | L'Échauffement (`ech_*`), l'indice 127 | 22-23 oct. | propre à la 2.x : la 3.0 a ses propres combats. Sa base doit seulement ne pas casser les tables `ech_*` à la sortie (README de la 3.0, « Pièges ») |
-| Labo de la 2.5 | 23 oct. | la 3.0 a son propre Labo, refait à part |
+| Labo de la 2.5 | 23 oct. | la 3.0 a son propre Labo, refait sur le même modèle (3.0.10, `29_labo.sql`) : il remplace celui de la 2.5 sur la base le jour de la sortie |
 
 ## 6. Dimanche 25 octobre : publier la 2.5
 
@@ -92,3 +94,4 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - **23 oct.** L'indice 3 dit **127** (122 + 5 Secrètes).
 - **23 oct.** Branches : `version-2.5` remplace `claude/interface-ux-fixes-o92u4a` et `teaser-2.x` (toutes deux contenues dans `version-2.5` et `main`). Leur suppression est à faire par le propriétaire : le proxy GitHub des sessions Claude Code refuse de supprimer une branche.
 - **23 oct.** Le Labo est refait : ce qui touche le serveur est réel et se confirme, ce qui touche son compte se sauvegarde et se restaure, les aperçus restent locaux. L'onglet « Affichage » (des changements « affichage seulement ») disparaît.
+- **24 oct.** La 3.0 reçoit les reports de la 2.5 et son Labo refait (3.0.10). La session de travail tournait dans un conteneur remplacé sans prévenir : le travail de la 3.0, testé mais pas encore commité, a été perdu puis refait. Règle ajoutée aux deux `CLAUDE.md` : commiter et pousser au fur et à mesure.

@@ -26,6 +26,7 @@ Cette branche, `version-2.5`, porte le **vrai site** (la 2.x, aujourd'hui la 2.5
 - Une règle de jeu a plusieurs copies : SQL, `_demo/serveur.js`, et parfois une constante JS (pour L'Échauffement : `ech_simuler` et `echCombat`, à la ligne près).
 - `TOUT.sql` et `MAJ-*.sql` sont générés : `python3 tools/build-sql.py`.
 - **Avant toute mise à jour de la vraie base, comparer ses fonctions** (empreintes de `pg_get_functiondef`, droits, colonnes) à une installation locale du SQL qu'on croit en place : elle peut être en retard sur le site (le 22 octobre 2026, elle était restée au SQL 2.1.0 alors que le site était en 2.1.3). Avec l'outil Supabase : envoyer par morceaux, chacun terminé par un contrôle d'empreintes qui l'annule en cas d'écart ; un envoi qui contient `delete from` attend une confirmation du propriétaire.
+- **Commiter et pousser au fur et à mesure** : la session tourne dans un conteneur qui peut être remplacé sans prévenir (le 24 octobre 2026, un travail testé mais pas commité a été perdu et refait).
 - Vérifier : le SQL sur un PostgreSQL local (la base de `main` d'abord, puis la mise à jour, deux fois) ; toute modification visible dans Chromium (Playwright) à 390 × 844, 375 × 667, 360 × 740 et 1280 × 800, captures regardées ; pour L'Échauffement, `#main` ne défile pas.
 
 ## La documentation importée

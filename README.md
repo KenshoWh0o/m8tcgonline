@@ -13,6 +13,36 @@ Le jeu bascule tout seul : tant que `js/supabase-config.js` est vide, il tourne 
 
 > **Rien ne se paie avec de l'argent réel.** La monnaie du jeu, les *Éclats*, se gagne uniquement en accomplissant des quêtes.
 
+## À lire en premier
+
+Pour reprendre le travail sans rien demander au propriétaire. Ce README est la référence de la ligne 2.x ; `CLAUDE.md` en donne les règles, `docs/feuille-de-route.md` ce qui est prévu et le calendrier.
+
+**L'état du projet (24 octobre 2026).**
+- **Le lancement public a été annulé** le 24 septembre 2026, après échange avec Gentle Mates : l'écran d'entrée affiche « Projet annulé · Merci » (`vAnnonceArret()`, `js/gate.js`) et seuls les comptes invités jouent (`beta_lancement()` vaut `infinity`, voir « Écran d'entrée et bêta fermée »). Le jeu vit pour eux.
+- **Le vrai site** (racine de `main`) est la **2.5, en ligne avant sa sortie** : il se montre en 2.1.3, avec le récap de Reflets et le teasing de la 2.5, jusqu'au **lundi 26 octobre 2026, 0 h (heure de Paris)**, puis bascule tout seul en 2.5 : L'Échauffement (sept défis, jusqu'au 4 novembre), les Reverses recyclables et fabricables, la fenêtre des nouveautés (« Version 2.5 »).
+- **La vraie base** a le SQL de la 2.1.4 (22 octobre, sauf `ech_admin_rejouer`), les Reverses reportées au 26 et l'indice 3 à 127 (23 octobre). Il reste à coller, avec l'accord du propriétaire, `supabase/MAJ-2.5.sql` (le Labo de la 2.5 et la date de sortie) : la procédure du dimanche est dans `docs/feuille-de-route.md`, § 6.
+- **La 3.0** se développe sur `version-3.0` et ne se voit qu'en pré-prod (`matetcg.com/preprod/`). Sa date n'est pas fixée.
+
+**Où vit quoi.** La racine de `main` (le vrai site), `main/prebuild/` (la démo de la 2.x en préparation), `main/preprod/` (la démo de la 3.0), la branche `version-2.5` (ce README : la ligne 2.x), la branche `version-3.0` (la 3.0, son propre README). Le tableau complet est dans « La pré-prod ».
+
+**La direction artistique de la 2.x, en bref** (le détail : « Habillage », « Les onglets », « Le thème ») :
+- **sombre uniquement** : des fonds noirs teintés prune, des jetons dans `css/tokens.css` (une feuille prend un jeton, pas une couleur en dur) ;
+- **une seule couleur d'interface, le violet** : `--accent` `#8936ff`, `--accent-soft` `#a95cf2`, le rebord `#57189e` sous ce qui se presse ; les raretés gardent leurs couleurs (bleu, violet, or) ; l'orchidée et le rose du logo ne servent qu'au logo ;
+- **les polices** : Archivo (titres, en italique très gras) et Figtree (texte), chargées depuis Google Fonts ;
+- **le ressenti « jeu de cartes mobile »** : boutons, puces et pastilles ont un rebord plein dessous qui s'enfonce au clic ; icônes au trait, sauf l'étoile du logo (Boosters) ;
+- **mobile d'abord** : barre du bas de cinq onglets, tiroir du compte ; à partir de 900 px, un rail à droite ;
+- **L'Échauffement est l'exception voulue** : il prend les couleurs de la 3.0 (graphite et lavande, jetons `--e-*` posés sur `.ech` et ses voisins, en fin de `css/hub.css`), sans en reprendre les écrans ; il tient dans l'écran sans défiler (règle 8 de `CLAUDE.md`).
+Ce qui est hors de cette DA (la palette « Graphite et lavande » partout, les nouveaux écrans) est la 3.0 : ne pas l'importer dans la 2.x sans demande.
+
+**Liste de reprise.**
+1. Lire `CLAUDE.md`, ce README et `docs/feuille-de-route.md` (importés d'office dans Claude Code : il faut quand même les lire en entier).
+2. `git fetch origin` : comparer avec `origin/main`, `origin/version-2.5`, `origin/version-3.0`, jamais avec une branche locale en retard.
+3. Servir le dépôt (`python3 -m http.server`), ouvrir `/prebuild/` après `python3 tools/demo.py --prebuild` : c'est là que la 2.x en préparation se teste, Labo ouvert.
+4. Tester le SQL sur un PostgreSQL 16 local (la base de `main`, puis la mise à jour deux fois), l'interface dans Chromium aux quatre tailles (390 × 844, 375 × 667, 360 × 740, 1 280 × 800).
+5. Avant tout SQL sur la vraie base : l'accord du propriétaire, et la comparaison des fonctions (`CLAUDE.md`).
+6. Ce qui n'est pas propre à la 2.x se reporte dans la 3.0 (`docs/feuille-de-route.md`, § 5).
+7. Commiter et pousser au fur et à mesure : le conteneur d'une session peut être remplacé sans prévenir.
+
 ## Lancer le projet
 
 **Le plus simple :** double-clique sur `index.html`. Le jeu s'ouvre dans ton navigateur.
@@ -112,7 +142,7 @@ mate-tcg-online/
 │   ├── render-card.js  Affichage d'une carte
 │   ├── ui.js           Fenêtre modale, avatars, petits blocs répétés
 │   ├── backend.js      Un seul jeu d'appels, deux implantations (local / en ligne)
-│   ├── gate.js         Écran d'attente et code d'accès
+│   ├── gate.js         Écran d'entrée : l'annonce d'arrêt, l'entrée des invités
 │   ├── auth.js         Écran de connexion et création de compte
 │   ├── fx.js           Particules
 │   ├── booster.js      Réserve, composition d'un booster, écran du paquet en 3D
@@ -170,11 +200,11 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Ajouter, retirer ou régler une quête | `supabase/04_seed.sql` |
 | Publier une annonce à tous les joueurs | Labo › *Annonce à tous les joueurs*, ou à la main en bas de `supabase/11_boite.sql` |
 | Changer les prix ou les articles de la boutique | `supabase/04_seed.sql` |
-| Ouvrir le site au public | `PORTE.active` dans `js/gate.js` |
+| Ouvrir le site au public (projet annulé : rien ne le prévoit) | `PORTE.active` dans `js/gate.js` **et** `beta_lancement()` dans `supabase/01_schema.sql` (« Écran d'entrée et bêta fermée ») |
 | Modifier la mention légale | `MENTIONS` dans `js/config.js` (elle s'affiche aux trois endroits d'un coup) |
 | Changer l'adresse du Discord | `DISCORD_URL` dans `js/config.js` (elle est citée à cinq endroits) |
 | Inviter quelqu'un à la bêta | `supabase/09_beta.sql` |
-| Changer la date d'ouverture | `beta_lancement()` dans `supabase/01_schema.sql` — et nulle part ailleurs |
+| Changer la date d'ouverture (aujourd'hui `infinity`) | `beta_lancement()` dans `supabase/01_schema.sql` — et nulle part ailleurs |
 | Ouvrir ou fermer une méthode de connexion | `CONNEXION` dans `js/config.js` (+ le fournisseur correspondant dans Supabase) |
 | Ajouter ou déplacer un onglet | `TABS` dans `js/config.js` (`bas` = barre du bas, `hub` = page « Plus ») |
 | Modifier un son | la recette correspondante dans `RECETTES`, `js/sfx.js` |
@@ -467,7 +497,7 @@ Sans rien toucher, on garde un exemplaire : rien ne change. Ce que ça change si
 
 **Devine l'illu** : une illustration de l'extension par jour, la même pour tous. Elle arrive en 9 × 6 pixels ; chaque essai raté la précise (12 × 8, 18 × 12, 36 × 24). Quatre essais. Trouvée au premier : 25 Prismes et 120 Éclats, puis 18/90, 12/60, 6/30 (`illu_gain()`) — les Prismes seulement pendant l'événement. Tout est automatique : les 113 illustrations sont rangées une fois pour toutes dans un ordre secret (tiré du sel `parametres.illu_sel`, créé au hasard à l'installation et jamais montré), et chaque jour prend la suivante — aucune ne revient avant 113 jours, et l'ordre ne se devine pas depuis le code, qui est public. Le serveur garde les pixels (`illu_pixels`, rempli par `supabase/21b_illu.sql`) et n'envoie que la grille du moment : le navigateur ne connaît la carte qu'une fois la partie finie. Quand une illustration change : `node tools/illu-pixels.js`, puis `python3 tools/build-sql.py`.
 
-**Les invitations** s'achètent en boutique : 2 000 Éclats, trois par joueur (`shop_items.limite`). Chaque achat crée un code `M8-XXXX-XXXX`, valable une fois. L'ami se connecte avec Discord, arrive sur l'écran d'attente, et saisit le code — ou le reçoit tout rempli par le lien `/?invitation=CODE`. Il entre avec un cadeau de bienvenue : 10 boosters hors réserve (en plus des 5 de départ) et 1 000 Éclats. Pour que ce soit possible, **un compte non invité est désormais créé** à la connexion (`handle_new_user`) : il reste bloqué par `garde_beta()` sur toutes les actions du jeu et n'apparaît ni dans la recherche ni dans le classement, mais il peut utiliser un code. **Un invité n'invite pas à son tour** (version 2.1, `est_filleul()`) : sinon chaque nouveau venu ouvrirait la porte à d'autres et la liste d'accès ne voudrait plus rien dire. Le serveur refuse l'achat (`shop_buy`, `creer_invitation`), la boutique ne lui montre pas l'article et ses quêtes d'invitation sont cachées (`me()`). Les codes achetés par un invité avant cette règle et jamais utilisés ont été annulés et remboursés ; ceux déjà utilisés restent valables.
+**Les invitations** s'achètent en boutique : 2 000 Éclats, trois par joueur (`shop_items.limite`). Chaque achat crée un code `M8-XXXX-XXXX`, valable une fois. L'ami se connecte avec Discord, arrive sur l'écran d'entrée, et saisit le code — ou le reçoit tout rempli par le lien `/?invitation=CODE`. Il entre avec un cadeau de bienvenue : 10 boosters hors réserve (en plus des 5 de départ) et 1 000 Éclats. Pour que ce soit possible, **un compte non invité est désormais créé** à la connexion (`handle_new_user`) : il reste bloqué par `garde_beta()` sur toutes les actions du jeu et n'apparaît ni dans la recherche ni dans le classement, mais il peut utiliser un code. **Un invité n'invite pas à son tour** (version 2.1, `est_filleul()`) : sinon chaque nouveau venu ouvrirait la porte à d'autres et la liste d'accès ne voudrait plus rien dire. Le serveur refuse l'achat (`shop_buy`, `creer_invitation`), la boutique ne lui montre pas l'article et ses quêtes d'invitation sont cachées (`me()`). Les codes achetés par un invité avant cette règle et jamais utilisés ont été annulés et remboursés ; ceux déjà utilisés restent valables.
 
 **Après l'événement.** Pendant trois jours, son onglet devient un **récap** (`evenement_recap()`) : le bilan du joueur, le podium, ce qui reste, et un « À suivre » sur les Combats et les Secrets ; le bandeau de l'écran Boosters y mène, et une fenêtre l'annonce une fois. Puis l'onglet disparaît. **Devine l'illu continue** dans son propre onglet (tiroir) : il rapporte toujours ses Éclats (120, 90, 60, 30 selon l'essai), plus de Prismes. Le Labo montre l'onglet récap, la fenêtre et le bandeau avec des chiffres inventés.
 
@@ -693,78 +723,23 @@ Le service worker sert le code par le réseau d'abord (les corrections arrivent 
 
 Les balises de partage (Open Graph et Twitter Card) sont en haut de `index.html`. Elles pointent en relatif, ce qui marche partout ; si tu prends un vrai domaine, renseigne `SITE_URL` dans `js/config.js` — il sert aussi d'adresse de retour après un courriel de confirmation ou un détour par Discord.
 
-## Écran d'attente et bêta fermée
+## Écran d'entrée et bêta fermée
 
-Tant que `PORTE.active` vaut `true` dans `js/gate.js`, le jeu n'est ouvert qu'aux comptes
-invités. Les autres voient un paquet qui flotte, « Bientôt disponible », le lien vers le
-Discord — pour suivre l'actualité du jeu et discuter avec la communauté — et, en discret,
-« J'ai déjà un accès » pour les comptes invités.
+**Le projet est annulé depuis le 24 septembre 2026** : l'ouverture au public, prévue ce jour-là à 18 h, n'a pas eu lieu, après échange avec Gentle Mates. L'écran d'entrée affiche l'annonce d'arrêt (`vAnnonceArret()`, `js/gate.js`) : « Projet annulé · Merci », trois phrases d'explication, un lien vers Matepedia (`MATEPEDIA_URL`) et, en discret, l'entrée des comptes invités. **Seuls les comptes invités jouent**, et le jeu continue pour eux (Reflets, la 2.5, L'Échauffement).
 
-**L'accès est nominatif.** On se connecte avec son compte Discord, et c'est le serveur qui
-vérifie que ce compte figure dans la table `beta_invites`. On invite, on retire, on
-regarde qui est entré depuis `supabase/09_beta.sql`. Depuis la 2.0, un joueur peut aussi
-inviter un ami avec un code acheté en boutique (voir « Version 2.0 · Reflets ») : le code
-inscrit le compte Discord de l'ami dans `beta_invites`, une seule fois.
+Deux verrous, l'un pour l'écran, l'autre pour le serveur :
+- `PORTE.active` vaut `true` dans `js/gate.js` (figé : on ne le bascule pas depuis la console) : l'écran d'entrée est en place ;
+- `beta_lancement()` vaut `infinity` dans `supabase/01_schema.sql` : `beta_ouverte()` reste faux, et `garde_beta()` refuse **toute action du jeu** à un compte qui n'est pas dans `beta_invites`. C'est lui qui protège vraiment : l'écran seul ne suffirait pas.
 
-Deux raisons d'avoir abandonné le code d'accès, et les deux ont servi contre nous :
+**Rouvrir à tous** demanderait les deux : `active` à `false` dans `js/gate.js`, et une date passée dans `beta_lancement()` (puis jouer la fonction dans Supabase). Rien ne le prévoit aujourd'hui.
 
-1. **L'empreinte était dans la page.** Le code n'y figurait pas en clair, mais son
-   empreinte si — et la comparaison se faisait dans le navigateur. Ouvrir la console et
-   écrire la valeur attendue dans le stockage local suffisait à entrer.
-2. **Un code se transmet.** Une fois dans un salon Discord, il n'appartient plus à
-   personne et ne se reprend plus. Une invitation, elle, se retire.
+**L'accès est nominatif.** On se connecte avec son compte Discord, et c'est le serveur qui vérifie que ce compte figure dans la table `beta_invites`. On invite, on retire, on regarde qui est entré depuis `supabase/09_beta.sql`. Depuis la 2.0, un joueur peut aussi inviter un ami avec un code acheté en boutique (voir « Version 2.0 · Reflets ») : le code inscrit le compte Discord de l'ami dans `beta_invites`, une seule fois ; depuis la 2.1, un invité n'invite pas à son tour.
 
-Le contrôle vit maintenant côté serveur, dans `garde_beta()` : tant que la bêta est
-fermée, **aucune action du jeu n'aboutit** pour un compte non invité — ni ouvrir un
-booster, ni consulter un profil, ni chercher un joueur. Le mode hors ligne ne franchit
-plus cet écran non plus : c'était la vraie faille, puisqu'il donnait accès à tout le jeu
-sans le moindre compte.
+**Pourquoi plus de code d'accès** (abandonné avant l'ouverture prévue) : son empreinte était dans la page et la comparaison se faisait dans le navigateur (écrire la valeur attendue dans le stockage local suffisait à entrer) ; et un code se transmet, alors qu'une invitation se retire.
 
-### L'ouverture est datée — par le serveur
+**Ce qui reste de l'ouverture datée.** L'écran ne consulte pas la montre de l'appareil : il demande au serveur (`porte()`, appelable sans compte) si c'est ouvert, quand ça ouvre et quelle heure il est chez lui, puis compte avec `performance.now()`. Sans réponse du serveur, l'écran reste fermé. Trois fermetures vont avec : le drapeau `invite` de `me()` doit valoir `true` explicitement ; `PORTE` est figé et les fonctions de l'écran sont des constantes ; `est_invite()`, `garde_beta()`, `photo_discord()` et `check_promos()` ne sont pas appelables sans compte (le droit est retiré au rôle `public`, pas seulement à `anon` et `authenticated`).
 
-La date d'ouverture au public — **jeudi 24 septembre 2026 à 18 h** — vit à un seul endroit :
-`beta_lancement()`, dans `supabase/01_schema.sql`. Un compte à rebours s'affiche tout seul,
-et à la seconde dite l'écran s'efface : pas de rechargement, pas de geste à faire, rien à
-pousser ce soir-là.
-
-**L'écran ne consulte plus la montre de l'appareil.** Il comparait l'heure d'ouverture à
-`Date.now()` : avancer la date du téléphone suffisait à l'effacer, et derrière lui le mode
-hors ligne donnait accès à tout le jeu, sans compte. C'est par là que des visiteurs
-passaient. Désormais il demande au serveur (`porte()`, appelable sans compte) si c'est
-ouvert, quand ça ouvre et quelle heure il est chez lui, puis compte le temps qui passe avec
-`performance.now()` — une horloge qui démarre avec la page et qu'on ne règle pas. Sans
-réponse du serveur, l'écran reste fermé. Au retour sur l'onglet, il redemande l'heure : un
-téléphone en veille peut avoir arrêté l'horloge de la page.
-
-Trois autres fermetures vont avec : le drapeau `invite` renvoyé par `me()` doit valoir
-`true` explicitement (un champ absent valait « invité ») ; `PORTE` est figé et les fonctions
-de l'écran sont des constantes, qu'on ne remplace plus d'une ligne dans la console ; et
-`est_invite()`, `garde_beta()`, `photo_discord()` et `check_promos()` ne sont plus
-appelables sans compte — le droit n'avait été retiré qu'à `anon` et `authenticated`, pas au
-rôle `public` dont ils héritent.
-
-Le passage est étalé exprès. Personne ne recharge : la page se redessine sur place, et le
-premier appel au serveur part après un délai tiré au hasard entre 0 et 20 secondes. Sans
-ça, tous ceux qui attendent le compte à rebours frapperaient le serveur à la même
-seconde.
-
-> **Ce que cet écran protège, et ce qu'il ne protège pas.** Il protège le *jeu* : sans
-> invitation, le serveur ne répond rien. Il ne protège pas les *fichiers*. Le site est
-> statique : ses scripts, ses images et la liste des cartes se téléchargent à l'adresse
-> où ils sont publiés, écran d'attente ou non — et le dépôt lui-même est lisible s'il est
-> public. La seule réponse à ça est du côté de l'hébergement : dépôt privé, et un
-> hébergeur capable de demander une identité avant de servir le premier octet
-> (Cloudflare Access, un mot de passe Netlify, un proxy). Aucune ligne de JavaScript ne
-> peut le faire à leur place.
-
-### Ouvrir le jeu à tout le monde
-
-Il n'y a rien à faire : la date suffit. Le 24 septembre à 18 h, `beta_ouverte()` bascule
-côté serveur, et l'écran, qui lit l'heure du serveur, s'efface au même instant.
-
-Une fois l'ouverture passée et la poussière retombée, on peut faire le ménage :
-`PORTE.active` → `false` dans `js/gate.js`, ce qui retire définitivement l'écran d'attente
-du chemin. Ce n'est qu'un nettoyage — le jeu est déjà ouvert sans ça.
+> **Ce que cet écran protège, et ce qu'il ne protège pas.** Il protège le *jeu* : sans invitation, le serveur ne répond rien. Il ne protège pas les *fichiers* : le site est statique, ses scripts, ses images et la liste des cartes se téléchargent à l'adresse où ils sont publiés, et le dépôt lui-même est lisible s'il est public. La seule réponse est du côté de l'hébergement (dépôt privé, et un hébergeur qui demande une identité avant de servir le premier octet). Aucune ligne de JavaScript ne peut le faire à leur place.
 
 ## Remettre les compteurs à zéro
 
@@ -800,8 +775,8 @@ c'est `supabase/09_beta.sql`.
 ## Le Discord
 
 `DISCORD_URL` dans `js/config.js` porte l'adresse du serveur, et elle est citée partout où
-elle a sa place : sur l'écran d'attente (en bouton principal — avant l'ouverture, c'est la
-seule chose qu'un visiteur puisse faire), au pied du tiroir du compte et du rail
+elle a sa place : sur l'écran d'entrée (sous l'annonce d'arrêt, c'est la seule chose
+qu'un visiteur non invité puisse faire), au pied du tiroir du compte et du rail
 d'ordinateur, dans un panneau des Réglages, et dans les deux fenêtres d'accueil.
 
 Ces fenêtres vivent dans `js/bienvenue.js` :
