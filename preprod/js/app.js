@@ -404,7 +404,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-lab],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes]');
   if (!el) return;
   const d = el.dataset;
 
@@ -418,6 +418,8 @@ async function clicPage(e) {
   /* Version 3.0 : le Raid (js/raid.js). */
   if (d.rd) return raidAction(d.rd, el);
   if (d.labv) { labVue = d.labv; return render(); }
+  /* Le Labo : le serveur et son compte (js/lab.js). */
+  if (d.lab) return labAction(d.lab, el);
   /* Version 2.0 */
   if (d.succes) {
     const x = SUCCES.find(y => y.id === d.succes);
@@ -574,33 +576,10 @@ async function clicPage(e) {
     case 't-v3-recap-ban': apercuRecapChoc(); return aller('boosters');
     case 't-partage':
       return partagerTirage({ ids: makeBooster(poolFor(), false).map(c => c.id), quand: new Date().toISOString() });
-    case 't-fragments':
-      save.fragments = (save.fragments || 0) + 5000; render();
-      return toast(`+5 000 ${FRAGMENTS.nom} (affichage seulement).`);
-    case 't-succes':
-      save.succes = SUCCES.map(x => x.id); render();
-      return toast('Tous les succès (affichage seulement).');
     case 't-ev-reel': return labEtatReel();
     case 't-joueurs': return labChargerJoueurs();
     case 'cadeau-offrir': return labOffrirCadeau();
     case 't-cadeau': return labApercuCadeau();
-    case 't-all':
-      cards.concat(brillantes).forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
-      persist(); toast('Toutes les cartes sont débloquées (affichage seulement).');
-      return render();
-    case 't-clear':
-      return openSheet({
-        title: 'Vider ta collection ?',
-        body: '<p class="muted">Les cartes du jeu restent, mais tu ne possèdes plus aucun exemplaire.</p>',
-        actions: [
-          { label: 'Vider', primary: true, fn: () => { save.col = {}; persist(); closeSheet(); render(); toast('Collection vidée.'); } },
-          { label: 'Annuler', fn: closeSheet }
-        ]
-      });
-    case 't-10':
-      save.tickets += 10; persist(); render();
-      return toast('+10 boosters (affichage seulement).');
-    case 't-90': return testRemplir(90);
     case 't-promo-file': return testFilePromos();
     case 't-quete': return testQuete();
     case 't-ping': return testPing();

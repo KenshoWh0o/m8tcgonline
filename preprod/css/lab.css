@@ -75,3 +75,64 @@
 /* Jamais un sous-onglet caché hors de l'écran : la barre passe à la ligne plutôt que de défiler. */
 .labvues{flex-wrap:wrap;margin:0 0 var(--gap-3);border-radius:22px}
 .labvues button{flex:1 1 auto}
+.labfait{flex-wrap:wrap}
+.labfait b{white-space:normal;text-align:right}
+
+/* ============ Labo 3.0.10 : le serveur, son compte ============ */
+/* « pour tout le monde » : à côté d'un titre, ce qui touche chaque joueur. */
+.labtag{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;vertical-align:middle;
+  font:800 10px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);
+  background:color-mix(in srgb,var(--warn) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--warn) 40%,transparent)}
+.labalerte.doux{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+
+/* L'état en trois puces, puis le calendrier en frise. */
+.labpuces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.labpuces span{display:flex;flex-direction:column;gap:2px;min-width:0;padding:9px 10px;border-radius:var(--radius-sm);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labpuces span.on{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+.labpuces small{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.labpuces b{font-size:13px;line-height:1.25}
+.labfrise{position:relative;list-style:none;margin:0;padding:0 0 0 22px}
+.labfrise::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--line-2)}
+.labjalon{position:relative;padding:6px 0}
+.labjalon>i{position:absolute;left:-20px;top:11px;width:12px;height:12px;border-radius:50%;
+  background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),inset 0 0 0 2px var(--line-3)}
+.labjalon.passe>i{background:var(--line-3);box-shadow:0 0 0 3px var(--surface)}
+.labjalon.ici>i{background:var(--accent);box-shadow:0 0 0 3px var(--surface),0 0 12px var(--accent-glow)}
+.labjalon>span{display:flex;flex-direction:column;gap:1px}
+.labjalon b{font-size:14px}
+.labjalon.passe b{color:var(--subtle)}
+.labjalon.ici b{color:var(--accent-soft)}
+.labjalon small{font-size:12px;color:var(--muted)}
+
+/* Les jours du Choc (vingt et un, sept par ligne) et les phases du Raid. */
+.labjours{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.labjours button{aspect-ratio:1;max-height:48px;border:0;border-radius:50%;cursor:pointer;font:900 15px/1 var(--display);
+  color:var(--text);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-2),0 2px 0 rgba(0,0,0,.35)}
+.labjours button:hover{background:var(--surface-3)}
+.labjours button.on{color:#fff;background:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-soft),0 2px 0 var(--accent-deep)}
+.labseuils{margin:8px 0 0}
+
+/* Un choix parmi quelques-uns : l'échelle du Raid, la Section. */
+.labchoix{display:flex;gap:3px;padding:3px;margin:0 0 8px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.labchoix button{flex:1 1 0;min-width:0;padding:8px 6px;border:0;border-radius:999px;cursor:pointer;background:none;
+  font:800 12.5px/1 var(--body);color:var(--muted)}
+.labchoix button:hover{color:var(--text)}
+.labchoix button.on{color:#fff;background:var(--accent)}
+
+/* Ce qui ne se rattrape pas : en rouge. */
+.labbtn.labdanger{border-left:3px solid var(--danger)}
+.btn.labdanger{color:var(--danger);margin-top:10px}
+
+/* Ses ressources : six champs. */
+.labres{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.labres .field{margin:0}
+.labres .field input{padding:11px 10px}
+
+.labplus{margin-top:12px}
+.labplus summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted)}
+@media (max-width:380px){
+  .labpuces small{font-size:9.5px;letter-spacing:.04em}
+  .labpuces b{font-size:12px}
+  .labjours{gap:4px}
+}
