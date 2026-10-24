@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#121119">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=3.0.9">
-<link rel="stylesheet" href="css/base.css?v=3.0.9">
+<link rel="stylesheet" href="css/tokens.css?v=3.0.10-e06018">
+<link rel="stylesheet" href="css/base.css?v=3.0.10-e06018">
 <style>
 /* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
 body{display:block;height:auto;min-height:100%}
@@ -71,8 +71,8 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="js/config.js?v=3.0.9"></script>
-<script src="js/supabase-config.js?v=3.0.9"></script>
+<script src="js/config.js?v=3.0.10-e06018"></script>
+<script src="js/supabase-config.js?v=3.0.10-e06018"></script>
 <script>
 "use strict";
 
@@ -315,6 +315,17 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
             faire: `Pour te les donner : ouvre <code>supabase/administration/admin.sql</code>, remplace
               l’adresse par <code>${E(session.user.email || '')}</code>, et exécute-le dans le
               <b>SQL Editor</b>. Étape 7 de <code>SETUP.md</code>.` });
+      /* Les Reverses (reportées de la 2.5, supabase/installation/22c_reverses.sql) :
+         seul me() le dit, et seulement à un compte connecté. */
+      const rv = etat && etat.parametres && etat.parametres.reverses;
+      poser(rv
+        ? { etat: 'ok', titre: rv.ouvertes ? 'Reverses : recyclage et fabrication ouverts'
+              : rv.des ? `Reverses : ouverture le ${E(new Date(rv.des).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' }))}`
+              : 'Reverses : installées, fermées, sans date d\'ouverture',
+            detail: `Fabriquer : ${rv.couts.C} (Commune), ${rv.couts.PC} (Peu commune), ${rv.couts.R} (Rare) Fragments.` }
+        : { etat: 'ko', titre: 'Les Reverses ne sont pas installées',
+            detail: '<code>me()</code> ne renvoie pas <code>parametres.reverses</code> : la base n\'a pas reçu <code>supabase/installation/22c_reverses.sql</code>.',
+            faire: 'Recolle <code>supabase/TOUT.sql</code> dans le <b>SQL Editor</b> : il se rejoue sans danger.' });
     } catch (e) {
       poser({ etat: 'warn', titre: 'Connecté, mais le profil est introuvable',
         detail: 'Le compte existe côté authentification, mais pas côté jeu.',

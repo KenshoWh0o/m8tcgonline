@@ -35,12 +35,14 @@ MORCEAUX = [
     ('21_reflets.sql', 'Version 2.0 : evenement Reflets, Devine l\'illu, invitations, titres'),
     ('21b_illu.sql',   'Devine l\'illu : les illustrations en pixels'),
     ('22_garder.sql',  'Version 2.1 : les exemplaires a garder, et les favoris'),
+    ('22c_reverses.sql', 'Version 2.5 (reportee) : les Reverses se recyclent et se fabriquent'),
     ('23_combats.sql', 'Version 3.0 : les Combats — Sections, decks, combats, defis'),
     ('24_secretes.sql', 'Version 3.0 : les Secretes'),
     ('25_choc.sql',    'Version 3.0 : l\'evenement « Le Choc des Sections »'),
     ('26_niveaux.sql', 'Version 3.0 : l\'XP et le niveau de combattant'),
     ('27_raid.sql', 'Version 3.0 : le Raid, un boss commun par saisons de deux semaines'),
     ('28_maitrise.sql', 'Version 3.0.7 : la maitrise des cartes, et la carte fetiche'),
+    ('29_labo.sql', 'Version 3.0.10 : le Labo des administrateurs (le serveur, son compte)'),
 ]
 
 entete = """-- =====================================================================

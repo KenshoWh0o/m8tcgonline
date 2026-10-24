@@ -37,11 +37,35 @@ const FAB_DEFAUT = { ES: 20, C: 40, PC: 100, R: 400, E: 2000, L: 8000 };
 const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAUT;
 const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
 const recPrix = c => recValeurs()[c.rar] || 0;
-/* Les Reverses se recyclent seulement une fois leur fabrication ouverte
-   (parametres.fabrication_reverse, supabase/installation/12_recyclage.sql). */
-const recReverses = () => (save.parametres || {}).fabrication_reverse ? reverses : [];
-/* Une Reverse coûte le double (fabriquer, supabase/installation/12_recyclage.sql). */
-const fabCout = c => (fabCouts()[c.rar] || 0) * (c.rev ? 2 : 1);
+/* Les Reverses (version 2.0) se recyclent et se fabriquent à partir d'une
+   date que donne le serveur (reporté de la 2.5, supabase/installation/22c_reverses.sql) :
+   la page bascule toute seule à l'heure dite, et prochaineBascule()
+   (js/booster.js) redemande l'état au serveur. Elles rapportent comme leur
+   classique, et coûtent le prix de leur vraie rareté (REV_DEFAUT). */
+const REV_DEFAUT = { C: 400, PC: 500, R: 2400 };
+const revEtat = () => (save.parametres || {}).reverses || {};
+const revOuvertes = () => { const r = revEtat(); return !!r.ouvertes || (!!r.des && Date.now() >= srvTime(r.des)); };
+const revCouts = () => revEtat().couts || REV_DEFAUT;
+const recReverses = () => revOuvertes() ? reverses : [];
+/* « 400 (Commune), 500 (Peu commune) ou 2 400 (Rare) » */
+const revCoutsTexte = () => { const k = revCouts();
+  return `${fmtN(k.C)} (Commune), ${fmtN(k.PC)} (Peu commune) ou ${fmtN(k.R)} (Rare)`; };
+const fabCout = c => (c.rev ? revCouts() : fabCouts())[c.rar] || 0;
+/* « vendredi 23 octobre à minuit », « samedi 24 octobre à 18 h » : heure de Paris. */
+function jourParis(iso) {
+  const t = srvTime(iso);
+  const p = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' })
+    .formatToParts(new Date(t)).reduce((o, x) => (o[x.type] = +x.value, o), {});
+  const minuit = !p.hour && !p.minute;
+  const jour = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'long', day: 'numeric', month: 'long' })
+    .format(new Date(minuit ? t - 60000 : t));
+  return `${jour} à ${minuit ? 'minuit' : p.hour + '\u00a0h' + (p.minute ? '\u00a0' + String(p.minute).padStart(2, '0') : '')}`;
+}
+/* La phrase qui dit quand ça ouvre, ou rien s'il n'y a pas de date. */
+const revQuand = () => {
+  const r = revEtat();
+  return r.des ? `${jourParis(r.des)}, dans <b data-rebours="${srvTime(r.des)}">${h(dureeCourte(srvTime(r.des) - Date.now()))}</b>` : '';
+};
 const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
 
 /* Les exemplaires proposés dans une de mes demandes d'échange en attente. */
@@ -116,7 +140,8 @@ function vFabInfo() {
       <span class="tnum">${manque.length ? `<b>${manque.length}</b> à fabriquer` : 'Collection complète'}</span>
     </div>
     <small>Dans la Collection, touche une case vide : la carte est à toi contre des ${FRAGMENTS.nom}.
-      Une Rare coûte ${fmtN(c.R)}, une Épique ${fmtN(c.E)}, une Légendaire ${fmtN(c.L)}.</small>
+      Une Rare coûte ${fmtN(c.R)}, une Épique ${fmtN(c.E)}, une Légendaire ${fmtN(c.L)}.${revOuvertes()
+        ? ` Une Reverse, ${revCoutsTexte()} : son prix suit sa vraie rareté en booster.` : ''}</small>
     ${manque.length ? '<button class="linkbtn" data-tab="collection">Voir ce qui me manque</button>' : ''}
   </section>`;
 }
@@ -303,15 +328,18 @@ async function recEnvoyer() {
 function ouvrirFabrication(id) {
   const c = byId[id];
   if (!c || c.promo || save.col[id] > 0) return;
-  /* Les Reverses (version 2.0) : fermées au lancement, ouvertes plus tard par
-     un administrateur (parametres, supabase/installation/21_reflets.sql). */
-  if (c.rev && !(save.parametres || {}).fabrication_reverse) {
+  /* Les Reverses (version 2.0) : fermées au lancement, ouvertes à une date
+     donnée par le serveur (revOuvertes). */
+  if (c.rev && !revOuvertes()) {
+    const quand = revQuand();
     return openSheet({
       title: 'Pas encore',
       body: `<div class="fabfiche">
           <button class="fabcarte" data-show="${c.id}" data-snd="carte">${renderCard(c)}</button>
           <div class="fabmeta"><b>${nomH(c)}</b>
-            <p class="muted small">La fabrication des Reverses ouvrira plus tard : pour l'instant, elles se trouvent
+            <p class="muted small">${quand
+              ? `La fabrication des Reverses ouvre ${quand}. D'ici là`
+              : 'La fabrication des Reverses ouvrira plus tard. Pour l\'instant'}, elles se trouvent
               en booster — une par booster, en 5ᵉ carte — et s'échangent entre joueurs.</p></div>
         </div>`,
       actions: [{ label: 'Fermer', fn: closeSheet }]
@@ -321,6 +349,9 @@ function ouvrirFabrication(id) {
   const solde = save.fragments || 0;
   const manque = Math.max(0, cout - solde);
   const R = RAR[c.rar] || RAR.C;
+  /* Les mêmes Fragments servent aux cartes de l'extension : le dire avant
+     qu'on les mette dans une Reverse. */
+  const classiques = c.rev ? cards.filter(k => !k.promo && !(save.col[k.id] > 0)).length : 0;
 
   openSheet({
     title: 'Fabriquer cette carte ?',
@@ -333,6 +364,8 @@ function ouvrirFabrication(id) {
           <p class="achatreste${manque ? ' court' : ''}">${manque
             ? `Il te manque ${fmtN(manque)} ${FRAGMENTS.nom}. Recycle des doublons pour en gagner.`
             : `Il te restera ${fmtN(solde - cout)} ${FRAGMENTS.nom}.`}</p>
+          ${classiques ? `<p class="muted small">Il te manque encore ${classiques} carte${classiques > 1 ? 's' : ''} de l'extension :
+            ces ${FRAGMENTS.nom} peuvent aussi ${classiques > 1 ? 'les' : 'la'} fabriquer.</p>` : ''}
         </div>
       </div>`,
     actions: manque

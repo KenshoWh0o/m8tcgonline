@@ -226,7 +226,9 @@ const etincelleIco = '<svg class="prismeico etincelleico" viewBox="0 0 24 24" ar
 /* L'icône de la monnaie de l'événement en cours (MONNAIES_EV, js/config.js). */
 const evIco = () => (evMonnaieCode() === 'choc' ? etincelleIco : prismeIco);
 
-const fmtN = n => String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+/* Les milliers sont séparés par une espace insécable : « 2 000 » ne se coupe
+   jamais en fin de ligne. */
+const fmtN = n => String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 
 /* Compte à rebours court : « 2 h 40 », « 12 min », « 8 s ». */
 function dans(ms) {

@@ -42,20 +42,20 @@ Autres documents : [`SETUP.md`](SETUP.md) (mettre un serveur Supabase en ligne, 
 
 | Lieu | Contenu | Version |
 |---|---|---|
-| **`main`, à la racine** | **Le vrai site**, servi à `matetcg.com` par GitHub Pages (`CNAME`). | **2.1.3** (teaser « le signal ») |
-| **`main`, dossier `prebuild/`** | La démo de la prochaine 2.x, construite depuis la branche 2.x et servie à `matetcg.com/prebuild/` (faux serveur, comme la pré-prod). | 2.1.4 (L'Échauffement) |
-| **`main`, dossier `preprod/`** | La pré-prod : une copie *construite* de la version suivante, servie à `matetcg.com/preprod/`, qui tourne avec un **faux serveur** dans le navigateur (aucun compte, aucune base). | 3.0.x |
-| **Branche de travail `version-3.0`** | Le **code source** de la version suivante, à la racine. `preprod/` y est aussi versionné : identique à `main` juste après une publication, en avance entre deux (`git diff --stat origin/main HEAD -- preprod`). | 3.0.8 |
-| **Branche `claude/interface-ux-fixes-o92u4a`** | La **ligne 2.x** (le vrai site), partie de `main`, avec son propre `README.md` et son `CLAUDE.md`. Elle ne se publie à la racine de `main` qu'avec l'accord du propriétaire. | 2.1.4 |
-| **Base Supabase de production** | Installée en 2.1 ; `MAJ-2.1.4.sql` (tables `ech_*`) à coller par le propriétaire avant le 23 octobre 2026 à midi. **Aucun SQL 3.0 n'y a été joué.** | 2.1 (→ 2.1.4) |
+| **`main`, à la racine** | **Le vrai site**, servi à `matetcg.com` par GitHub Pages (`CNAME`). En ligne depuis le 23 octobre 2026 **avant sa sortie** : il se montre en 2.1.3 (le récap de Reflets, avec le teasing de la 2.5) jusqu'au lundi 26 octobre 2026, 0 h (heure de Paris), puis bascule tout seul en 2.5 (README de la 2.x, « La sortie datée »). | **2.5** |
+| **`main`, dossier `prebuild/`** | La démo de la prochaine 2.x, construite depuis `version-2.5` et servie à `matetcg.com/prebuild/` (faux serveur, comme la pré-prod). | 2.5 (Labo refait) |
+| **`main`, dossier `preprod/`** | La pré-prod : une copie *construite* de la 3.0, servie à `matetcg.com/preprod/`, qui tourne avec un **faux serveur** dans le navigateur (aucun compte, aucune base). | 3.0.x |
+| **Branche de travail `version-3.0`** | Le **code source** de la 3.0, à la racine. `preprod/` y est aussi versionné : identique à `main` juste après une publication, en avance entre deux (`git diff --stat origin/main HEAD -- preprod`). | 3.0.10 |
+| **Branche `version-2.5`** | La **ligne 2.x** (le vrai site), avec son propre `README.md` et son `CLAUDE.md`. Elle ne se publie à la racine de `main` qu'avec l'accord du propriétaire. Elle remplace `claude/interface-ux-fixes-o92u4a` et `teaser-2.x`, toutes deux contenues dans `main` et à supprimer par le propriétaire. | 2.5 |
+| **Base Supabase de production** | SQL de la 2.1.4 appliqué le 22 octobre 2026 (sauf `ech_admin_rejouer`) ; le 23, Reverses reportées au 26 et indice 3 à 127. Reste à coller avant la sortie de la 2.5 : `supabase/MAJ-2.5.sql` de la 2.x (son Labo, la date de sortie). **Aucun SQL 3.0 n'y a été joué.** | 2.1.4 (→ 2.5) |
 
-**État du projet.** Le 24 septembre 2026, le lancement public a été **annulé** après échange avec Gentle Mates (`vAnnonceArret()`, `js/gate.js`) : l'écran d'entrée du vrai site affiche « Projet annulé · Merci ». Les comptes déjà invités jouent toujours à la 2.x (2.1.3, puis 2.1.4 et son mini-événement L'Échauffement, du 26 octobre au 4 novembre 2026). Le développement de la 3.0 continue **uniquement en pré-prod**.
+**État du projet.** Le 24 septembre 2026, le lancement public a été **annulé** après échange avec Gentle Mates (`vAnnonceArret()`, `js/gate.js`) : l'écran d'entrée du vrai site affiche « Projet annulé · Merci ». Les comptes déjà invités jouent toujours à la 2.x : la 2.5 sort le lundi 26 octobre 2026 avec son mini-événement L'Échauffement (jusqu'au 4 novembre). Le développement de la 3.0 continue **uniquement en pré-prod** ; sa date de sortie n'est pas fixée. **La feuille de route** ([`docs/feuille-de-route.md`](docs/feuille-de-route.md), copie identique sur `version-2.5`) dit ce que le propriétaire a prévu pour la 2.5 et la 3.0, et ce qui doit passer de la 2.x à la 3.0.
 
 **Conséquence pratique.** On développe sur la branche, on construit `preprod/` avec `python3 tools/demo.py --preprod`, et on ne reporte **que `preprod/`** sur `main` ([§ 2.5](#25-construire-et-publier-la-pré-prod)). **La branche ne se fusionne jamais dans `main`** : sa racine est la 3.0, qui appelle des RPC absentes de la base de production.
 
 ### 1.3 Les règles du propriétaire (non négociables)
 
-1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `preprod/` sur `main`, et aucun SQL 3.0 n'est joué sur la base de production. Le vrai site (la 2.x) peut, lui, évoluer à la demande du propriétaire : on travaille alors sur la branche de la ligne 2.x (`claude/interface-ux-fixes-o92u4a`, partie de `main`), et on ne publie qu'après son accord.
+1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `preprod/` sur `main`, et aucun SQL 3.0 n'est joué sur la base de production. Le vrai site (la 2.x) peut, lui, évoluer à la demande du propriétaire : on travaille alors sur la branche de la ligne 2.x (`version-2.5`), et on ne publie qu'après son accord. Ce qui change dans la 2.x et n'est pas propre à elle se **reporte dans la 3.0** ([`docs/feuille-de-route.md`](docs/feuille-de-route.md), § 5).
 2. **Pas de pull request** sans demande explicite.
 3. **Français**, partout : interface, commentaires, documentation, messages de commit.
 4. **Mode sombre uniquement.** Il n'y a qu'un thème.
@@ -84,7 +84,8 @@ Un README faux est pire que pas de README : en cas de doute, vérifier dans le c
 3. `node tools/combat-tests.js` : les tests de règles doivent tous passer.
 4. `python3 tools/demo.py --preprod`, puis servir le dépôt ([§ 2.1](#21-servir-le-site-en-local)) et ouvrir `/preprod/` : c'est là que la 3.0 se teste.
 5. Regarder [§ 14](#14-dette-connue) : ce qui est connu pour être faux ou mort.
-6. Si le travail touche à `main` (la racine ou `prebuild/`), lire aussi le `README.md` et le `CLAUDE.md` de la ligne 2.x : `git show origin/claude/interface-ux-fixes-o92u4a:README.md`.
+6. Si le travail touche à `main` (la racine ou `prebuild/`), lire aussi le `README.md` et le `CLAUDE.md` de la ligne 2.x : `git show origin/version-2.5:README.md`.
+7. Lire [`docs/feuille-de-route.md`](docs/feuille-de-route.md) : ce que le propriétaire a prévu, et le registre de ce qui passe de la 2.x à la 3.0.
 
 ---
 
@@ -137,10 +138,10 @@ reset role;   -- pour relire les tables (le rôle authenticated n'y a pas accès
 ### 2.4 Changer de version
 
 ```bash
-python3 tools/version.py 3.0.8
+python3 tools/version.py 3.0.10
 ```
 
-Le script écrit `APP_VERSION` (`js/pwa.js`) et `VERSION = 'mtcg-v3.0.8'` (`sw.js`), ajoute `?v=3.0.8` à chaque CSS et JS local d'`index.html` et de `verif.html`, et **régénère la liste `ESSENTIEL` de `sw.js`**. Il ne touche ni `preprod/` (relancer `demo.py --preprod` ensuite), ni `NOUVEAUTES_VERSION` (`js/bienvenue.js`), ni ce README.
+Le script écrit `APP_VERSION` (`js/pwa.js`), accroche à chaque CSS et JS local d'`index.html` et de `verif.html` la marque `?v=3.0.10-<empreinte>` (six caractères tirés du contenu de tous ces fichiers, depuis la 3.0.10, comme la 2.5) et la même dans `VERSION` (`sw.js`), et **régénère la liste `ESSENTIEL` de `sw.js`**. Deux publications de la même version avec un code différent ont donc des adresses différentes ; relancer le script sans rien changer ne change rien. Le lancer en dernier, après toute modification des CSS et des JS. Il ne touche ni `preprod/` (relancer `demo.py --preprod` ensuite), ni `NOUVEAUTES_VERSION` (`js/bienvenue.js`), ni ce README.
 
 **Pourquoi.** GitHub Pages met en cache dix minutes, et le service worker garde les fichiers : sans `?v=`, une correction peut ne jamais arriver chez un joueur.
 
@@ -168,7 +169,7 @@ Contrôle après coup : `git diff --stat origin/main~1 origin/main` ne liste que
 
 ### 2.7 Le jour d'une sortie en production
 
-Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la branche dans `main`, coller `supabase/TOUT.sql` dans Supabase (il passe sur une base 2.x sans rien perdre, testé), régler `PORTE` et `beta_lancement()` ([§ 4.9](#49-porte-bêta-et-connexion)), puis ouvrir l'événement à la main (commande en fin de `supabase/installation/25_choc.sql`). La mise en place d'un serveur neuf est décrite dans [`SETUP.md`](SETUP.md).
+Pas de date. La feuille de route ([`docs/feuille-de-route.md`](docs/feuille-de-route.md)) prévoit, une fois la date connue : un teasing final sur la 2.x, une **maintenance**, puis la mise à jour. Le jour venu, **avec l'accord du propriétaire** (règle 1) : comparer les fonctions de la vraie base à une installation locale de la 2.5 (elle a déjà été en retard sur le site), coller `supabase/TOUT.sql` dans Supabase (il passe sur une base 2.5 sans rien perdre, testé : les dates de la 2.5 et les Reverses ouvertes sont gardées, le Labo de la 2.5 est remplacé par celui de la 3.0), mettre le code de la branche à la racine de `main`, garder `PORTE` et `beta_lancement()` ([§ 4.9](#49-porte-bêta-et-connexion)) tant que le projet reste fermé, puis ouvrir l'événement (Labo › Serveur › Le Choc, ou la commande en fin de `supabase/installation/25_choc.sql`). La mise en place d'un serveur neuf est décrite dans [`SETUP.md`](SETUP.md).
 
 ---
 
@@ -263,12 +264,12 @@ Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la br
 │
 ├── supabase/              Le serveur (voir § 9)
 │   ├── TOUT.sql           Assemblé par tools/build-sql.py : ce qu'on colle dans Supabase
-│   ├── installation/      01_schema.sql … 28_maitrise.sql : les 21 fichiers assemblés dans TOUT.sql
+│   ├── installation/      01_schema.sql … 29_labo.sql : les 23 fichiers assemblés dans TOUT.sql
 │   └── administration/    admin.sql, beta.sql, reset-profil.sql, reset-tout.sql : à jouer à la main
 │
 ├── cards/                 Les images des cartes (.avif 1000 × 1397), promos/ et uniques/
 ├── assets/                Habillage : logos, paquets, essences, cadres, cosmétiques de combat, icônes
-├── docs/                  design-3.0.md, regles-3.0.md, economie-3.0.md
+├── docs/                  design-3.0.md, regles-3.0.md, economie-3.0.md, feuille-de-route.md (copie identique sur version-2.5)
 ├── tools/                 Scripts de maintenance (§ 12)
 ├── _demo/                 Le faux serveur, ses réglages, LISEZMOI.txt de la démo autonome (non publié)
 ├── _sources/              Images d'origine des visuels générés (non publié)
@@ -276,7 +277,7 @@ Il n'y en a pas de prévue (projet annulé). Si cela changeait : fusionner la br
 └── preprod/               La pré-prod CONSTRUITE (ne jamais l'éditer à la main)
 ```
 
-GitHub Pages passe par Jekyll : les dossiers qui commencent par `_` (`_demo/`, `_sources/`, `_build/`) ne sont pas publiés. Sur `main`, `preprod/`, `presse/`, `tools/` et `supabase/` le sont. `docs/`, `CLAUDE.md` et `_sources/` n'existent que sur la branche.
+GitHub Pages passe par Jekyll : les dossiers qui commencent par `_` (`_demo/`, `_sources/`, `_build/`) ne sont pas publiés. Sur `main`, `preprod/`, `presse/`, `tools/` et `supabase/` le sont. `docs/`, `CLAUDE.md` et `_sources/` n'existent que sur la branche (et `docs/feuille-de-route.md`, aussi sur `version-2.5`, donc sur `main`).
 
 ---
 
@@ -593,7 +594,7 @@ L'arène (`#arene`, `css/arene.css`) a ses variables locales : `--ar-act` `#9d8c
 | Famille | Identifiants | Nombre | Rareté (`RAR`, rang) | D'où elle vient | Échange | Recyclage / fabrication | Maîtrise |
 |---|---|---|---|---|---|---|---|
 | **Extension** « Tout commence ici » | `c001`…`c122` | 122 | ES 0, C 1, PC 2, R 3, E 4, L 5 | les boosters | même rareté (sauf ES) | oui (ES compris) | oui, sauf ES |
-| **Reverses** | `r` + numéro (`r010`…) | 85 | celle de la classique (C, PC, R) | 5ᵉ carte du booster | contre une Reverse | fermés tant que `parametres.fabrication_reverse` est faux ; fabrication au double | partage celle de sa classique |
+| **Reverses** | `r` + numéro (`r010`…) | 85 | celle de la classique (C, PC, R) | 5ᵉ carte du booster | contre une Reverse | ouverts à la date `parametres.reverses_des` (le 26 octobre 2026 sur la vraie base, posée par la 2.5) ou à la main ; fabrication au prix de leur vraie rareté (400 / 500 / 2 400) | partage celle de sa classique |
 | **Secrètes** | `c123`…`c127` | 5 | S (5,5) | le hit, 0,75 % | contre une Secrète (serveur) | non | oui, sans exemplaire |
 | **Promos** | `p01`…`p06` | 6 | PR (6) | boutique, paliers, Sections | non | non | non |
 | **Essences Brillantes** | `b001`…`b009` | 9 | BR (7) | case Essence, 1 fois sur 50 | non | non | non |
@@ -693,7 +694,11 @@ Les doublons deviennent des **Fragments** (`recycler`, `supabase/installation/12
 | Rare | 20 | 400 |
 | Épique | 80 | 2 000 |
 | Légendaire | 250 | 8 000 |
+| Reverse Commune | 2 | 400 |
+| Reverse Peu commune | 5 | 500 |
+| Reverse Rare | 20 | 2 400 |
 
+- **Les Reverses** (reportées de la 2.5, `supabase/installation/22c_reverses.sql`) : fermées tant que ni la date `parametres.reverses_des` n'est passée ni `fabrication_reverse` n'est vrai (`reverses_ouvertes()`) ; une Reverse rapporte comme sa classique et coûte `prix_reverse()`. Le calcul de ces prix est en tête du fichier (simulation : `python3 tools/equilibre-reverses.py`). `me()` envoie `parametres.reverses` (`ouvertes`, `des`, `couts`) ; la page (`revOuvertes`, `revCouts`, `revQuand`, `js/recyclage.js`) bascule toute seule à la minute dite (`prochaineBascule`, `js/booster.js`). Sur une installation neuve, la date est vide : fermées. Sur la vraie base, la 2.5 l'a posée au 26 octobre 2026 : quand la 3.0 sortira, elles seront ouvertes.
 - Montants : `cfg('recyclage_*')` / `cfg('fabrication_*')` (`01_schema.sql`), envoyés au client par `me().recyclage` ; `REC_DEFAUT` / `FAB_DEFAUT` (`js/recyclage.js`) ne sont que des secours.
 - On garde **toujours** un exemplaire, et autant qu'on a choisi d'en garder ; les exemplaires promis dans un échange en attente sont réservés (`recDispo = mesEx − aGarder − réservés`). 150 lots au plus par envoi ; le serveur refuse tout l'envoi si un seul point ne tient pas ; journal `recyclages`.
 - Garde-fous de l'interface : « Tout prendre » laisse E et L de côté ; une case à cocher si une E ou une L est sélectionnée ; une dernière confirmation dont le bouton ne répond qu'après 3 s.
@@ -787,7 +792,7 @@ Trois rayons (`RAYONS`, `js/shop.js`) : **Cartes**, **Cosmétiques**, **Combats*
 - **Ajouter une Promo** : `PROMO_DATA` et l'image dans `cards/promos/` ; la ligne `pNN` dans `03b_promos.sql` ; si elle se vend, l'article dans `04_seed.sql` (effet `carte`, `carte_id`) **et son identifiant dans la liste du `delete … not in (…)`**, puis dans `BOUTIQUE` (`_demo/serveur.js`) ; si elle est jouable, son script dans `js/combat/effets.js`.
 - **Changer les taux** : `open_pack` (SQL), `RATES` / `GOD` (`booster.js`) **et** `tirerPaquet` (`_demo/serveur.js`), ensemble.
 - **Changer recyclage / fabrication** : `cfg()` (`01_schema.sql`), `REC_DEFAUT` / `FAB_DEFAUT`, `CFG` du faux serveur.
-- **Ouvrir recyclage et fabrication des Reverses** : `update public.parametres set fabrication_reverse = true where id = 1;`.
+- **Ouvrir recyclage et fabrication des Reverses** : Labo › Serveur › Les Reverses, ou `update public.parametres set fabrication_reverse = true where id = 1;` ; les dater : `parametres.reverses_des`. **Changer leur prix** : `prix_reverse()` (`22c_reverses.sql`), `REV_DEFAUT` (`js/recyclage.js`), `prixReverse` (`_demo/serveur.js`), et le `22c_reverses.sql` de la 2.x.
 - **Ajouter une page à la fiche** : une entrée dans `VW_ONGLETS` et son cas dans `vPageVw`, **avant** le `return vGererVw(c)` final (une clé inconnue affiche la page Gérer) ; ses boutons en `data-v`, traités dans la délégation de `#viewer`. `rafraichirFicheVw` la redessine déjà, comme toutes les pages sauf Infos.
 - **Remettre un critère au Classement** : un objet `{id, titre, dit, val}` dans `CRITERES` (le serveur sait déjà le calculer).
 - **Tester une ouverture** : Labo, `openBooster({test:true, force, god, brillante, unique, reverseR})` (tirage local, rien n'est écrit).
@@ -1031,12 +1036,12 @@ update public.chasse set active = true, ouvre_le = now() where id = 1;
 
 | Fichiers | Nature | Dans `TOUT.sql` |
 |---|---|---|
-| `01`, `02`, `03`, `03b`, `04`, `06`, `07`, `11`, `12`, `14`, `15`, `18`, `21`, `21b`, `22`, `23`, `24`, `25`, `26`, `27`, `28` | **Installation**, rejouable (`if not exists`, `on conflict`, `create or replace`) | oui, dans cet ordre (`MORCEAUX`, `tools/build-sql.py`) |
+| `01`, `02`, `03`, `03b`, `04`, `06`, `07`, `11`, `12`, `14`, `15`, `18`, `21`, `21b`, `22`, `22c`, `23`, `24`, `25`, `26`, `27`, `28`, `29` | **Installation**, rejouable (`if not exists`, `on conflict`, `create or replace`) | oui, dans cet ordre (`MORCEAUX`, `tools/build-sql.py`) |
 | `02_cards.sql`, `21b_illu.sql` | **Générés** (`python3 tools/gen-cards-sql.py`, `node tools/illu-pixels.js`) : ne jamais éditer | oui |
 | `administration/admin.sql`, `beta.sql`, `reset-profil.sql`, `reset-tout.sql` | **Outils d'administration** ponctuels ([§ 9.10](#910-outils-dadministration)) | non |
 
 Les fichiers d'installation vivent dans `supabase/installation/` ; leur préfixe numérique est leur ordre dans `TOUT.sql` (les numéros manquants, `05`, `08`–`10`, `13`, `16`, `17`, `19`, `20`, étaient des outils, devenus `administration/`, ou des **mises à jour historiques** des bases 1.4 / 1.5, dangereuses à rejouer et **supprimées en 3.0.8** : elles restent dans l'historique git, commit `80a621f` et avant).
-| `TOUT.sql` | **Assemblé** par `python3 tools/build-sql.py` (~6 100 lignes) : c'est ce qu'on colle dans Supabase | — |
+| `TOUT.sql` | **Assemblé** par `python3 tools/build-sql.py` (~6 800 lignes) : c'est ce qu'on colle dans Supabase | — |
 
 | Fichier | Contenu |
 |---|---|
@@ -1052,30 +1057,34 @@ Les fichiers d'installation vivent dans `supabase/installation/` ; leur préfixe
 | `14_classement.sql` | `classement(p_critere)` |
 | `15_evenements.sql` | `tirages`, `evenements`, `chasse`, `succes_de`, `mes_tirages` |
 | `18_cadeaux.sql` | Cadeaux d'un administrateur, boosters hors réserve |
-| `21_reflets.sql` | `parametres`, moteur d'événements (`evt_*`, `accorder`, Pass), Devine l'illu, invitations, titres, `personnaliser` ; **crée l'événement Reflets pour 14 jours s'il n'existe pas** |
+| `21_reflets.sql` | `parametres`, moteur d'événements (et `evenements.recap_jusqua`, la fin du récap réglable, reportée de la 2.5) (`evt_*`, `accorder`, Pass), Devine l'illu, invitations, titres, `personnaliser` ; **crée l'événement Reflets pour 14 jours s'il n'existe pas** |
 | `22_garder.sql` | À garder, favoris |
+| `22c_reverses.sql` | Reporté de la 2.5 : `reverses_ouvertes()`, `prix_reverse()`, la colonne `parametres.reverses_des` |
 | `23_combats.sql` | Sections, decks, combats (`combat_debut` / `combat_fin`), campagne, Arcade, Starters, défis, tutoriel |
 | `24_secretes.sql` | Les 5 Secrètes |
 | `25_choc.sql` | Le Choc : Pass, Épreuve, `choc_etat`, `choc_recap` |
 | `26_niveaux.sql` | XP et niveaux |
 | `27_raid.sql` | Le Raid par saisons et phases, `raid_echelle` |
 | `28_maitrise.sql` | Maîtrise et carte fétiche |
+| `29_labo.sql` | Le Labo ([§ 10](#10-le-labo-administrateurs)) : `labo_*`, `labo_sauvegardes` ; retire le calendrier et les outils de L'Échauffement du Labo de la 2.5 |
 
 **Ordre** : `03b` avant `04` (la boutique vend `p01`) ; `21` avant `21b` ; `23` avant `26`. Ailleurs, PL/pgSQL résout les appels à l'exécution : `me()` (07) appelle des fonctions de 11 à 28 — **il faut passer tout `TOUT.sql`**.
 
-### 9.3 Les tables (43)
+### 9.3 Les tables (44)
 
 - **Joueur** : `profiles` (pseudo, avatar, cadre, `shards`, `fragments`, `tickets`, `last_tick`, `boosters_bonus`, `tickets_offerts`, `is_admin`, `garder`, `vitrine`, `titre`, `banniere`, `devise`, `fetiche`…), `collection`, `inventory`, `quest_progress`, `favoris`, `gardes`, `tirages`, `recyclages`, `cadeaux`, `notifications`.
-- **Catalogue et réglages** : `cards`, `quests`, `shop_items`, `parametres` (une ligne : `fabrication_reverse`, `illu_sel`, `raid_echelle`), `pve_campagne`, `pve_difficultes`, `starters`, `niveau_paliers`, `illu_pixels`, `evt_piste`.
+- **Catalogue et réglages** : `cards`, `quests`, `shop_items`, `parametres` (une ligne : `fabrication_reverse`, `reverses_des`, `illu_sel`, `raid_echelle` ; une base passée par la 2.5 a aussi `sorties`, que la 3.0 ne lit pas), `pve_campagne`, `pve_difficultes`, `starters`, `niveau_paliers`, `illu_pixels`, `evt_piste`.
 - **Social** : `friendships`, `trades`, `annonces`, `invitations`, `beta_invites`.
 - **Événements** : `evenements`, `chasse`, `evt_comptes`, `evt_piste_prises`, `devine_illu`, `choc_joueurs`, `choc_epreuves`.
 - **Combat** : `combat_joueurs` (section, deck actif, cosmétiques, campagne, plafonds du jour, statistiques, `xp`), `decks`, `combats_ouverts`, `defis`.
 - **Raid** : `raid_saisons`, `raid_tombees`, `raid_participants`, `raid_pris`, `raid_tentatives`.
 - **Maîtrise** : `maitrises`, `maitrises_journal`.
+- **Labo** : `labo_sauvegardes` (une par administrateur ; aucune policy).
+- Une base passée par la 2.5 a en plus les tables de L'Échauffement (`ech_saison`, `ech_defis`, `ech_indices`, `ech_essais`, `ech_scores`, `ech_paliers`, `ech_joueurs`) : la 3.0 ne s'en sert pas et n'y touche pas, sauf le Labo (sauvegarde et remise à zéro de son propre compte).
 
 Préfixes d'inventaire : `f_` cadres, `t_` titres **et** tapis, `s_` sleeves (et articles), `trade_token`.
 
-### 9.4 Les RPC publiques (58, `porte` comprise)
+### 9.4 Les RPC publiques (73, `porte` comprise)
 
 | Domaine | RPC (→ retour) | Appelées par |
 |---|---|---|
@@ -1085,10 +1094,11 @@ Préfixes d'inventaire : `f_` cadres, `t_` titres **et** tapis, `s_` sleeves (et
 | Social | `trade_create`, `trade_respond`, `trade_cancel`, `trade_list`, `find_player`, `friend_request`, `friend_respond`, `friend_remove`, `friend_list`, `player_profile(p_pseudo)`, `amis_doublons()`, `classement(p_critere)`, `boite()`, `boite_lue()` | `trade`, `social`, `classement`, `boite` |
 | Cadeaux | `mes_cadeaux()`, `ouvrir_cadeau(p_id)` | `cadeaux` |
 | Administration | `annonce_publier`, `annonce_retirer`, `offrir_cadeau(p_joueurs, p_eclats, p_boosters, p_fragments, p_carte, p_message)`, `admin_joueurs()` | `lab`, `app` |
+| Labo (administrateurs, `29_labo.sql`) | `labo_etat()`, `labo_evenement(p_etat, p_n)`, `labo_decaler(p_heures)`, `labo_evenement_raz(p_confirmation)`, `labo_reverses(p_ouvertes)`, `labo_raid(p_phase)`, `labo_raid_echelle(p_echelle)`, `labo_raid_raz(p_confirmation)`, `labo_cartes(p_quoi)`, `labo_monnaies(p_valeurs)`, `labo_cosmetiques(p_ids)`, `labo_combats_moi(p_action, p_valeur)`, `labo_sauver()`, `labo_restaurer()`, `labo_raz_moi()` | `lab` (`Backend.labo`) |
 | Événements | `evenement_etat()`, `piste_reclamer(p_palier)`, `evenement_recap()`, `illu_etat()`, `illu_essai(p_carte)`, `choc_etat()`, `raid_etat()`, `raid_reclamer(p_saison, p_quoi, p_n)` | `reflets`, `choc`, `raid` |
 | Combats | `tutoriel_fini()`, `combat_section`, `combat_reglages`, `deck_sauver`, `deck_supprimer`, `combat_debut(p_mode, p_cle, p_niveau)` → `{id, graine}`, `combat_fin(p_id, p_gagne, p_resume)` → `{etat, recompense}`, `defi_lancer`, `defi_repondre`, `defi_etat(p_id, p_depuis)`, `defi_jouer(p_id, p_n, p_action)`, `defi_fin(p_id, p_gagnant, p_tours)` | `battle`, `combat/*` |
 
-La plupart des RPC qui écrivent renvoient `me()`, que `Backend.apply` transforme en `save`. **Le faux serveur `_demo/serveur.js` implémente exactement les mêmes 58** (vérifié). Les rouages internes (`regen_tickets`, `bump_quests`, `pick_card`, `check_promos`, `garde_beta`, `notifier`, `accorder`, `crediter_prismes`, `evenement_en_cours`, `titres_de`, `garde_de`, toutes les fonctions de combat, Choc, Raid, niveaux, maîtrise…) ne sont pas appelables depuis le navigateur.
+La plupart des RPC qui écrivent renvoient `me()`, que `Backend.apply` transforme en `save`. **Le faux serveur `_demo/serveur.js` implémente exactement les mêmes 73** (vérifié en 3.0.10 : la liste des fonctions exécutables par `authenticated` d'une installation neuve, moins les outils internes, est celle des `RPC.*` du faux serveur). Les rouages internes (`regen_tickets`, `bump_quests`, `pick_card`, `check_promos`, `garde_beta`, `notifier`, `accorder`, `crediter_prismes`, `evenement_en_cours`, `titres_de`, `garde_de`, toutes les fonctions de combat, Choc, Raid, niveaux, maîtrise…) ne sont pas appelables depuis le navigateur.
 
 ### 9.5 `cfg()` : les réglages d'économie
 
@@ -1132,6 +1142,8 @@ Chaque règle de jeu existe en **trois exemplaires** : le SQL (qui fait foi), le
 | Raid | `raid_phases`, `raid_perso`, `raid_fin` (27) | via `choc-data.js` | `RAID` (`choc-data.js`) |
 | Épreuve | `choc_debut`, `choc_fin`, `choc_score` (25) | via `choc-data.js` | `CHOC`, `scoreEpreuve` |
 | Devine l'illu | `illu_gain` (21) | `ILLU_GAINS` | — |
+| Reverses (ouverture, prix) | `reverses_ouvertes`, `prix_reverse` (22c ; aussi dans la 2.x) | `revDes`, `revOuvertes`, `prixReverse` | `REV_DEFAUT`, `revOuvertes` (`recyclage.js`) |
+| Labo | `labo_*` (29) | `RPC.labo_*`, `laboEtat`, `laboCompte` | `js/lab.js` (`CHOC_JOURS` = 21) |
 | Succès, titres | `succes_de` (15), `titres_de` (21) | `succesDe`, `titresDe` | `SUCCES`, `TITRES` (`config.js`) |
 
 ### 9.9 Recettes
@@ -1160,21 +1172,25 @@ Les deux remises à zéro (réécrites pour la 3.0 en 3.0.8, testées sur Postgr
 
 ## 10. Le Labo (administrateurs)
 
-L'onglet **Labo** (`js/lab.js`, `css/lab.css`) n'apparaît que pour `save.isAdmin` (posé en SQL, [§ 9.1](#91-principes-et-sécurité)). En pré-prod, le faux serveur rend le visiteur administrateur : **le Labo y est toujours ouvert**. Il sert à **voir ce qu'on ne peut pas provoquer**. Presque tout y est local : les boutons qui touchent la collection ne modifient que l'affichage, et le `pull` suivant remet l'état du serveur. Le Labo n'est jamais redessiné en arrière-plan (`enTrainDEcrire()`).
+L'onglet **Labo** (`js/lab.js`, `css/lab.css`, serveur `supabase/installation/29_labo.sql`) n'apparaît que pour `save.isAdmin` (posé en SQL, [§ 9.1](#91-principes-et-sécurité)). En pré-prod, le faux serveur rend le visiteur administrateur : **le Labo y est toujours ouvert**, et ses gestes s'y jouent sur le monde de démo. **Refait en 3.0.10** à la demande du propriétaire (« pouvoir gérer entièrement ce qui se passe : mon compte, le serveur, naviguer entre les états ») : ce qui touche le serveur est **réel**, ce qui touche son compte est **réel et se sauvegarde**, les aperçus restent **locaux**. Chaque fonction `labo_*` vérifie le droit (`labo_garde`) : cacher l'onglet ne protégerait rien. Le Labo n'est jamais redessiné en arrière-plan (`enTrainDEcrire()`).
 
 Il a **cinq sous-onglets** (`labVue`, barre `.labvues` qui passe à la ligne plutôt que de cacher un onglet hors de l'écran) :
 
 | Sous-onglet | Ce qu'il permet |
 |---|---|
-| **Maintenant** | l'état du serveur (événement, rythme de recharge, carte unique) ; **le Choc** : Nouveautés 3.0, le récap avec des chiffres inventés (onglet, fenêtre, bandeau) ; « Revenir à l'état réel » quand un aperçu est posé ; les requêtes SQL du moment (un événement de recharge, l'échelle du Raid) |
-| **Combats** | campagnes dévoilées (Toxique, Déter), **toutes les récompenses** (`laboRecompenses` : campagne, Arcade, niveaux 2 → 60, Raid, Pass), une fin de combat à deux niveaux, la fiche de niveau, le bilan d'un Starter |
-| **Scènes** | ouvertures de test : normale, R / E / L / Secrète forcées, Essence Brillante, carte unique, Reverse Rare, godpack (tirage local `makeBooster`, rien n'est écrit) ; l'image de partage d'un booster ; la scène d'obtention de chaque Promo ; les fenêtres (invitation achetée `M8-TEST-0000`, cadeau reçu) ; les notifications |
+| **Serveur** (pour tout le monde) | trois puces (le Choc, le Raid, les Reverses) et le calendrier en frise (début, fin et récap du Choc, saisons du Raid, ouverture des Reverses, « Maintenant ») ; **le Choc des Sections** dans un état : avant (2 min, 1 h), un jour de 1 à 21, son récap, fini (`labo_evenement` ; la ligne `choc` est créée si besoin, les autres événements sont clos), avancer ou reculer d'un jour (`labo_decaler`), la participation, **remettre le Choc à zéro** (écrire EFFACER) ; **le Raid** : la saison en cours à une phase de 1 à 6 ou à l'Infini (`labo_raid`), l'échelle des seuils (× 0,25 à × 2), remettre la saison à zéro (EFFACER) ; **les Reverses** : ouvrir, fermer ; **en vigueur** : joueurs, Sections, recharge, carte unique, barèmes de Fragments (Reverses comprises), et les requêtes SQL de ce que le Labo ne fait pas |
+| **Mon compte** | **la sauvegarde** (`labo_sauver` / `labo_restaurer` : tout ce qui est à soi, sauf amis, boîte, échanges et défis ; une sauvegarde de la 2.5 se restaure aussi) ; **la collection** : master set (tout sauf la carte unique, à la limite d'un deck : de quoi construire n'importe quel deck), les 122, les cartes de combat, vider ; **les ressources** : Éclats, Fragments, boosters en plus, réserve, monnaie de l'événement, niveau (l'XP posée au début du niveau, sans payer ses paliers) ; **les cosmétiques** : tous les cadres, titres, tapis et sleeves ; **repartir de zéro** |
+| **Combats** | sa **Section** (Toxique, Déter, ou aucune pour la choisir de nouveau), la **campagne** gagnée ou à zéro (sans récompense), **rejouer aujourd'hui** (victoires payées, tentatives du Raid, essais de l'Épreuve), **tout maîtriser** ou les maîtrises à zéro (`labo_combats_moi`) ; puis **ce que le jeu cache**, en lecture seule : campagnes dévoilées, toutes les récompenses (`laboRecompenses`), une fin de combat à deux niveaux, la fiche de niveau, le bilan d'un Starter |
 | **Joueurs** (réel) | `annonce_publier`, avec confirmation ; **offrir un cadeau** : Éclats, boosters, Fragments, une carte et un mot à un ou plusieurs joueurs (liste avec leur retard sur la médiane) ; aperçu sans rien envoyer |
-| **Affichage** (local) | tout débloquer, vider, 90 %, +10 boosters, +5 000 Fragments, tous les succès, boosters illimités ; les valeurs d'équilibrage en vigueur, barèmes de recyclage et de fabrication |
+| **Aperçus** (local) | ouvertures de test (normale, R / E / L / Secrète forcées, Essence Brillante, carte unique, Reverse Rare, godpack ; tirage local, rien n'est écrit), l'image de partage ; le Choc : Nouveautés 3.0, le récap avec des chiffres inventés (onglet, fenêtre, bandeau) ; les fenêtres (invitation `M8-TEST-0000`, cadeau reçu) ; l'obtention de chaque Promo ; les notifications. « Revenir à l'état réel » efface un aperçu |
 
-Retiré en 3.0.9, parce que plus rien ne s'en servait : les quatre aperçus de la chasse à la carte unique (1.5) et leurs requêtes, la fenêtre de fin de chasse, tout le panneau « Version 2.0 · Reflets » (Nouveautés 2.1, fenêtres de palier, onglet, Devine l'illu, récap de Reflets, avec `montrerNouveautes21` et `apercuRecap`), et le bouton qui ne faisait qu'ouvrir l'onglet du Choc.
+Sur le vrai site, un geste « pour tout le monde » demande une confirmation, et une remise à zéro qu'on écrive EFFACER ; dans la pré-prod (`labDemo()`), le faux serveur les joue sans rien demander (les remises à zéro demandent toujours le mot). Après un geste sur le serveur, la page relit `me()`, le Choc et le Raid.
 
-Les clics du Labo passent par `clicPage` (`data-labv`, `data-act="t-*"`, `data-promo`).
+Retiré en 3.0.10 : l'onglet **Affichage** (tout débloquer, vider, 90 %, +10 boosters, +5 000 Fragments, tous les succès, boosters illimités, qui ne changeaient que l'affichage jusqu'au rafraîchissement suivant : remplacés par les vrais gestes de Mon compte) ; « Maintenant » et « Scènes » sont devenus Serveur et Aperçus. Retiré en 3.0.9 : les aperçus de la chasse 1.5, le panneau « Version 2.0 · Reflets ».
+
+**Une base passée par la 2.5** avait le Labo de la 2.5 (`22d_admin.sql` de la 2.x : mêmes noms pour les gestes communs). `29_labo.sql` le remplace, garde sa table `labo_sauvegardes`, et supprime ce qui n'a plus d'objet (`labo_calendrier`, `labo_ech_raz`, `labo_ech_moi`, `calendrier_officiel`, `poser_calendrier`, `calendrier_officiel_poser`). Tests : `labo_*` sur une base 2.5 + 3.0 rejouée deux fois (refus d'un joueur, droits, chaque état du Choc, chaque phase du Raid, remises à zéro avec et sans confirmation, master set à la limite de deck, niveau sans palier, restauration à l'identique, sauvegarde de la 2.5) ; la page dans Chromium aux quatre tailles.
+
+Les clics du Labo passent par `clicPage` (`data-labv`, `data-lab` → `labAction`, `data-act="t-*"`, `data-promo`).
 
 ---
 
@@ -1201,17 +1217,17 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 
 ### 11.2 Le faux serveur (`_demo/serveur.js`)
 
-- Il définit `window.supabase = {createClient: () => client}` : **le code du jeu croit parler à Supabase**. Il implémente les **58 mêmes RPC**, avec les mêmes noms, paramètres et messages d'erreur, et `from('shop_items')`.
+- Il définit `window.supabase = {createClient: () => client}` : **le code du jeu croit parler à Supabase**. Il implémente les **73 mêmes RPC**, avec les mêmes noms, paramètres et messages d'erreur, et `from('shop_items')`.
 - **Un appel** (`appeler`) : charge l'état, refuse `'non connecte'` sans session, copie l'état, fait vivre les bots, exécute `RPC[nom](MOI, args)`, sauvegarde, attend 60 à 150 ms. **Une exception annule tout l'appel** (bots compris). Un refus s'écrit `refuser('…')` (jamais un `throw` brut : sur `me`, il déclencherait la recréation du monde).
 - **Stockage** : l'état entier `S` dans IndexedDB (`kvSet('demo-serveur', S)`). Le seul numéro de schéma est `S.v === 1` : **ne jamais le changer** (cela effacerait toutes les parties). Les ajouts se font dans `completer()` (`S.x = S.x || …`) ou dans une fonction `mondeXX()` idempotente.
 - **Il ne lit rien du jeu au chargement** (il est chargé avant `config.js`) : seulement à l'intérieur de fonctions (`cards`, `byId`, `Decks`, `Combat`, `IA`, `RAID`, `CHOC`, `niveauDe`, `recompenseNiveau`…).
 - **Session** : connecté sauf si `localStorage['mtcg.demo.connecte'] === '0'` ; « Discord » pose `'1'`. **`?reinitialiser`** efface l'état du faux serveur (pas le `localStorage` du client : tutoriel vu, accueil, etc.).
-- **Réglages** (`_demo/reglages.js`) : pseudo `Visiteur`, 6 000 Éclats, `ticket_minutes` 240, `raid_echelle` 0,25. Pseudo et Éclats ne valent que pour un monde neuf ; le rythme et l'échelle du Raid s'appliquent tout de suite.
+- **Réglages** (`_demo/reglages.js`) : pseudo `Visiteur`, 6 000 Éclats, `ticket_minutes` 240, `raid_echelle` 0,25. Pseudo et Éclats ne valent que pour un monde neuf ; le rythme et l'échelle du Raid s'appliquent tout de suite (l'échelle posée par le Labo, `S.parametres.raid_echelle`, l'emporte).
 
 ### 11.3 Le monde de démo
 
 - **Quatre bots** : Lumen (`f_or`, ami), Mira (`f_rose`, amie), Kairo (`f_azur`), Nova.92 (`f_prisme`, gagnant de la chasse : il porte `f_unique`). Leurs collections viennent de vrais tirages. Ils font leur check-in, acceptent une demande d'ami (6 à 20 s) ou d'échange (12 à 40 s ; le premier échange possible est toujours accepté, les suivants 3 fois sur 4), proposent des échanges, acceptent et jouent tes défis (IA niveau 3 ; `defi_fin` **rejoue** la partie, contrairement au vrai serveur), te défient une fois, frappent le Raid toutes les 30 s environ, tentent l'Épreuve. **Ils ne vivent que page ouverte** (minuteur de 4 s).
-- **Événements** : `monde20()` crée Reflets, puis `monde30()` le remplace par **le Choc, commencé 4 jours avant la première visite en 3.0 et prévu pour 21 jours**. Au-delà (17 jours plus le récap de 3), plus d'événement : seul `?reinitialiser` le relance. Un seul `S.evenement` à la fois.
+- **Événements** : `monde20()` crée Reflets, puis `monde30()` le remplace par **le Choc, commencé 4 jours avant la première visite en 3.0 et prévu pour 21 jours**. Au-delà (17 jours plus le récap de 3), plus d'événement : le Labo (Serveur › Le Choc) le remet à n'importe quel jour, ou `?reinitialiser` recrée le monde. Les Reverses y sont ouvertes dès la création du monde (`revDes()`), sauf date posée par le Labo. Un seul `S.evenement` à la fois.
 - **Raid** : `mondeRaid()` inflige 102 dégâts à la saison courante (avec `raid_echelle` 0,25 : deux phases tombées, la troisième en cours). Le Raid suit le vrai calendrier : une nouvelle saison repart à zéro.
 
 ---
@@ -1222,11 +1238,12 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 
 | Commande | Dépendances | Produit |
 |---|---|---|
-| `python3 tools/version.py X.Y.Z` | aucune | `APP_VERSION`, `VERSION` du service worker, `?v=` d'`index.html` / `verif.html`, liste `ESSENTIEL` |
+| `python3 tools/version.py X.Y[.Z]` | aucune | `APP_VERSION`, la marque `?v=<version>-<empreinte>` d'`index.html` / `verif.html` et `VERSION` du service worker, liste `ESSENTIEL` |
 | `python3 tools/demo.py [--preprod]` | aucune | `preprod/` ou `_build/m8tcg-demo(.zip)` |
 | `python3 tools/build-sql.py` | aucune | `supabase/TOUT.sql` |
-| `tools/tester-sql.sh [tests.sql…]` | PostgreSQL 16 | joue la production puis `TOUT.sql` deux fois sur une base locale ([§ 2.3](#23-tester-le-sql-sur-un-postgresql-local)) ; `tools/sql-stub.sql` imite Supabase |
+| `tools/tester-sql.sh [tests.sql…]` | PostgreSQL 16 | joue `TOUT.sql` de `origin/main` (la 2.5, sans le Labo de la 2.5 ni le calendrier : pour une base fidèle à la production, jouer aussi `origin/version-2.5:supabase/calendrier-2.5.sql`) puis `TOUT.sql` deux fois sur une base locale ([§ 2.3](#23-tester-le-sql-sur-un-postgresql-local)) ; `tools/sql-stub.sql` imite Supabase |
 | `python3 tools/equilibre-fragments.py [joueurs] [jours]` | aucune | les Fragments gagnés par semaine et la fréquence d'une carte : la base du barème de la maîtrise |
+| `python3 tools/equilibre-reverses.py` | aucune | la simulation qui a fixé le prix des Reverses (400 / 500 / 2 400), reprise de la 2.5 |
 | `python3 tools/gen-cards-sql.py` | aucune | `supabase/installation/02_cards.sql` |
 | `node tools/illu-pixels.js` | Node, Playwright (Chromium) | `supabase/installation/21b_illu.sql` (puis `build-sql.py` et `demo.py`) |
 | `node tools/combat-tests.js` | Node | les tests de règles |
@@ -1319,11 +1336,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 28. Toute règle a trois copies ([§ 9.8](#98-une-règle-plusieurs-copies)).
 29. `revoke … from public` sur chaque nouvelle fonction ; les messages d'erreur sont en français et montrés tels quels.
 30. Une installation neuve lance Reflets pour 14 jours ; l'administrateur lui-même doit être dans `beta_invites`.
-31. **La base de production a reçu (ou recevra) la 2.1.4** : tables `ech_*` de L'Échauffement et colonne `evenements.recap_jusqua` (ligne 2.x, `supabase/22b_echauffement.sql`). `TOUT.sql` de la 3.0 passe par-dessus sans erreur (testé deux fois sur 2.1.3 + `MAJ-2.1.4.sql`, le 22 octobre 2026) mais **redéfinit `evenement_recent()` et `evenement_recap()` sans `recap_jusqua`** : après la 3.0, le récap d'un événement redure trois jours. Les deux remises à zéro connaissent les tables `ech_*` depuis la 3.0.9 et ne les vident que si elles existent.
-    La 2.1.4 ouvre aussi **le recyclage et la fabrication des Reverses** à une date (`parametres.reverses_des`, le 23 octobre 2026 à minuit ; `reverses_ouvertes()`), au prix de `prix_reverse()` (400 / 500 / 2 400 au lieu du double), et son `me()` envoie `parametres.reverses` au lieu de `fabrication_reverse` (`supabase/22c_reverses.sql` de la 2.x). `TOUT.sql` de la 3.0 redéfinit `me()`, `recycler` et `fabriquer` avec l'ancien interrupteur et le double : testé (le 22 octobre 2026, sur 2.1.3 + cette `MAJ-2.1.4.sql`, Reverses ouvertes), il passe sans erreur mais **referme les Reverses** (`fabrication_reverse` est faux). Avant la sortie : reporter `22c_reverses.sql` et les lectures de la page (`revOuvertes`, `revCouts` dans `js/recyclage.js` de la 2.x), ou au minimum ouvrir l'interrupteur et décider du prix.
-
-**Pré-prod**
-
+31. **La base de production sera passée par la 2.5** quand la 3.0 sortira : tables `ech_*` de L'Échauffement, `evenements.recap_jusqua`, `parametres.reverses_des` (le 26 octobre 2026) et `parametres.sorties`, le Labo de la 2.5. Depuis la 3.0.10, `TOUT.sql` de la 3.0 en reprend ce qui la concerne (`recap_jusqua` dans `evenement_recent` / `evenement_recap`, les Reverses datées de `22c_reverses.sql`, `me()` avec `parametres.reverses`) et remplace le Labo ; testé deux fois sur `TOUT.sql` de `version-2.5` + `calendrier-2.5.sql` : dates gardées, Reverses ouvertes au bon prix, fin du récap au 26. Il ne touche pas aux tables `ech_*` ; les deux remises à zéro les vident si elles existent. **Une règle qui change dans la 2.x doit être reportée ici** ([`docs/feuille-de-route.md`](docs/feuille-de-route.md), § 5) : sinon le `TOUT.sql` de la 3.0 la défait le jour de la sortie.
 32. Dans `_demo/serveur.js` : rien lu du jeu au niveau du module ; `refuser()` plutôt que `throw` ; ne jamais changer `S.v`.
 33. Le Choc de la démo expire (21 jours après le début, posé 4 jours avant la première visite) ; les bots ne vivent que page ouverte.
 34. Le préfixe `preprod:` ne réécrit que `getItem`, `setItem`, `removeItem`, `clear` : `key()` et `length` voient aussi les clés du vrai site.
@@ -1409,6 +1422,7 @@ Le gros du code mort a été retiré en 3.0.8 (navigation, données, combat, év
 | 3.0.6 | 13–14 oct. | **Raid par saisons et phases** (`27_raid.sql`) ; **tutoriel jouable** ; Guide en glossaire ; IA sans coups au hasard (mesurée) ; Decks avec bilan ; Classement Niveau / Secrètes / Versus ; bannière Squeezie le Toxique contre Brawks Déter, sans VS ; Insignes renommées **Étincelles** ; cadres 3.0 redessinés ; le Labo montre tout. |
 | **3.0.7** | 14 oct. | **Maîtrise des cartes** (`28_maitrise.sql`) et **carte fétiche** ; fiche de carte en trois pages (Infos, Maîtrise, Gérer) ; arène : carte agrandie intacte avec son état dessous, Joueur engagé qui ne pivote plus, animations rejouées depuis l'état de chaque instant, flèche de visée, touchers iOS ; tutoriel réécrit et vérifié dans Chromium (390, 375, 360) ; récap de booster sans défilement, pastille Boosters, niveau dans l'en-tête, Classement à quatre critères. |
 | **3.0.8** | 14–15 oct. | **README réécrit de zéro** et `CLAUDE.md` ; bandeau et tapis « Le Choc des Sections » recadrés sur Brawks Déter, Nouveautés sans « Deux Sections » ; tapis et cadre du Sorcier dans la même colonne de la boutique du Choc ; « Apprendre d'abord » ouvre le Guide ; liens `data-colvue` réparés ; cadres Arène sans plaque « NIV » ; **carte fétiche** refaite dans la DA ; **maîtrise refaite** (barème par rareté, effets sans voile, un joyau à la place de la couronne, fiche qui tient sans défiler) ; arène : **zone de détails** au-dessus de son camp pour sa main et ses Joueurs, **fantôme de la carte** dans les places libres à la place du « + » ; **dépôt rangé** (SQL en `installation/` et `administration/`, remises à zéro réécrites pour la 3.0 et protégées par un garde-fou, mises à jour historiques supprimées, code et CSS morts retirés, `SETUP.md` et docs remis d'accord avec le code) ; solde du Choc à jour après un achat. ; branches rangées : la branche de travail s'appelle désormais `version-3.0`. |
+| **3.0.10** | 24 oct. | **Reports de la 2.5** : les Reverses se recyclent et se fabriquent à une date (`22c_reverses.sql`, `parametres.reverses_des`), au prix de leur vraie rareté (400 / 500 / 2 400, `tools/equilibre-reverses.py`), la page bascule seule ; la fin du récap réglable (`evenements.recap_jusqua`) ; les marques de cache à empreinte (`tools/version.py`). **Labo refait** ([§ 10](#10-le-labo-administrateurs)) : Serveur (le Choc d'un état à l'autre, le Raid à une phase, l'échelle, les Reverses, remises à zéro), Mon compte (sauvegarde, master set à la limite de deck, ressources et niveau, cosmétiques), Combats (Section, campagne, essais du jour, maîtrises), Joueurs, Aperçus ; `29_labo.sql`, 15 RPC. Les milliers prennent une espace insécable (`fmtN`). |
 | **3.0.9** | 22 oct. | **Labo réorganisé** en cinq sous-onglets (Maintenant, Combats, Scènes, Joueurs, Affichage), sans les aperçus de la chasse 1.5 ni le panneau Reflets (`montrerNouveautes21`, `apercuRecap` retirés) ; remises à zéro compatibles avec une base qui a reçu la 2.1.4 (tables `ech_*`) ; README et `CLAUDE.md` à jour des trois lignes (racine de `main`, `prebuild/`, `preprod/`) ; `CLAUDE.md` importe toute la documentation (`@README.md`, `@docs/…`, `@SETUP.md`, `@presse/README.md`). |
 
 **Choix d'interprétation de la 3.0.7, à connaître** : « Éclats » dans la demande sur la maîtrise a été lu comme **Fragments** ; le conflit entre exemplaires et decks est résolu par les exemplaires **en trop** seulement (le manque se paie en Fragments) ; la carte fétiche est distincte de la vitrine ; le Classement est réduit à quatre critères. Non vérifié sur un vrai appareil iOS (zones sûres, glissé des pages de la fiche).

@@ -119,10 +119,12 @@ function vVideFiltres() {
 function vColReverses() {
   const all = reverses.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
   const list = filtrer(all);
-  const ouverte = (save.parametres || {}).fabrication_reverse;
-  return `<p class="colsous revfab">${NAVICO.fragment}${ouverte
-      ? 'Fabrication ouverte : le double du prix d\'une classique.'
-      : 'La fabrication des Reverses ouvrira plus tard.'}</p>
+  /* Ouverte à la date donnée par le serveur (revOuvertes, js/recyclage.js). */
+  const quand = revQuand();
+  return `<p class="colsous revfab">${NAVICO.fragment}<span>${revOuvertes()
+      ? `Recyclage et fabrication ouverts. Fabriquer coûte ${revCoutsTexte()}.`
+      : quand ? `Recyclage et fabrication : ouverture ${quand}.`
+      : 'La fabrication des Reverses ouvrira plus tard.'}</span></p>
     ${vFiltres(all)}
     ${list.length
       ? `<div class="grid">${list.map(vCase).join('')}</div>`

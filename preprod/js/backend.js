@@ -436,6 +436,9 @@ Backend.utiliserInvitation = async code => Backend.apply(await Backend.rpc('util
 /* ---- Cadeaux (supabase/installation/18_cadeaux.sql) ---- */
 Backend.mesCadeaux = () => Backend.rpc('mes_cadeaux');
 Backend.ouvrirCadeau = async id => Backend.apply(await Backend.rpc('ouvrir_cadeau', { p_id: id }));
+/* Le Labo (supabase/installation/29_labo.sql) : chaque fonction vérifie elle-même le
+   droit d'administrateur. */
+Backend.labo = (nom, args) => Backend.rpc(nom, args);
 Backend.adminJoueurs = () => Backend.rpc('admin_joueurs');
 Backend.offrirCadeau = c => Backend.rpc('offrir_cadeau', {
   p_joueurs: c.joueurs, p_eclats: c.eclats || 0, p_boosters: c.boosters || 0,

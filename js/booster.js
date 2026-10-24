@@ -245,6 +245,11 @@ function prochaineBascule() {
   const ev = save.evenement;
   if (ev) t.push(srvTime(ev.a_venir ? ev.debut : ev.fin));
   if (chasseAnnoncee(save.chasse)) t.push(srvTime(save.chasse.ouvre_le));
+  /* La fin du récap d'un événement (evenements.recap_jusqua). */
+  if (save.recap && save.recap.jusqua) t.push(srvTime(save.recap.jusqua));
+  /* L'ouverture des Reverses (supabase/installation/22c_reverses.sql). */
+  const rv = (save.parametres || {}).reverses;
+  if (rv && !rv.ouvertes && rv.des) t.push(srvTime(rv.des));
   return t.length ? Math.min(...t) : 0;
 }
 

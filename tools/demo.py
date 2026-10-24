@@ -90,13 +90,17 @@ const SUPABASE_ANON_KEY = 'demo-locale-aucune-cle-necessaire';
 
 # --- la page charge le faux client a la place de la bibliotheque Supabase
 page = lire('index.html')
-version = re.search(r'js/config\.js\?v=([\d.]+)', page)
-v = version.group(1) if version else 'demo'
+# La marque des fichiers (version et empreinte, tools/version.py), et le
+# numero que lit le joueur (APP_VERSION), pour le titre et le bandeau.
+version = re.search(r'js/config\.js\?v=([^"]+)"', page)
+marque = version.group(1) if version else 'demo'
+num = re.search(r"const APP_VERSION = '([^']+)'", open(os.path.join(ROOT, 'js', 'pwa.js'), encoding='utf-8').read())
+v = num.group(1) if num else marque
 page = remplacer(page,
     r'<script src="https://cdn\.jsdelivr\.net/npm/@supabase/supabase-js[^"]*"[^>]*></script>',
-    f'<script src="js/demo-reglages.js?v={v}"></script>\n'
-    f'<script src="js/demo-illu.js?v={v}"></script>\n'
-    f'<script src="js/demo-serveur.js?v={v}"></script>',
+    f'<script src="js/demo-reglages.js?v={marque}"></script>\n'
+    f'<script src="js/demo-illu.js?v={marque}"></script>\n'
+    f'<script src="js/demo-serveur.js?v={marque}"></script>',
     'la balise de la bibliotheque Supabase dans index.html')
 ecrire('index.html', page)
 
@@ -165,14 +169,14 @@ if PREPROD:
     # jamais les redemander (sw.js, « estMedia ») : une image retouchee sous
     # le meme nom restait l'ancienne chez qui avait deja visite le site.
     # Les cartes (cards/) ne changent pas : elles gardent leur adresse.
-    marque = re.compile(r"((?<![\w/.-])(?:\.\./)?assets/[\w./-]+\.(?:svg|webp|png|jpe?g|avif|gif))(?![?\w])")
+    motif = re.compile(r"((?<![\w/.-])(?:\.\./)?assets/[\w./-]+\.(?:svg|webp|png|jpe?g|avif|gif))(?![?\w])")
     for dossier, _, fichiers in os.walk(OUT):
         for f in fichiers:
             if not re.search(r'\.(css|js|html)$', f) or f.startswith('demo-illu'):
                 continue
             chemin = os.path.join(dossier, f)
             texte = open(chemin, encoding='utf-8').read()
-            nouveau = marque.sub(lambda m: m.group(1) + '?v=' + v, texte)
+            nouveau = motif.sub(lambda m: m.group(1) + '?v=' + v, texte)
             if nouveau != texte:
                 open(chemin, 'w', encoding='utf-8').write(nouveau)
     os.remove(os.path.join(OUT, 'sw.js'))

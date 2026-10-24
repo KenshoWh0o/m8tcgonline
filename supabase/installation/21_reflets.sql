@@ -260,12 +260,17 @@ end $$;
 -- Pendant trois jours apres la fin d'un evenement, son onglet devient un
 -- recap : ce que le joueur y a fait, le podium, et la suite. me() en porte
 -- l'annonce (le code, les dates) ; evenement_recap() donne le detail.
+-- Version 2.5 (reportee) : `recap_jusqua` fixe la fin du recap ; vide, trois
+-- jours apres la fin de l'evenement, comme avant. La 2.5 l'a pose pour Reflets
+-- (jusqu'au dimanche 25 octobre 2026 minuit).
+alter table public.evenements add column if not exists recap_jusqua timestamptz;
+
 create or replace function public.evenement_recent() returns jsonb
 language sql stable security definer set search_path = public as $$
   select jsonb_build_object('code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
-                            'jusqua', e.fin + interval '3 days')
+                            'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'))
     from evenements e
-   where e.code is not null and now() >= e.fin and now() < e.fin + interval '3 days'
+   where e.code is not null and now() >= e.fin and now() < coalesce(e.recap_jusqua, e.fin + interval '3 days')
      and evenement_en_cours() is null
    order by e.fin desc limit 1;
 $$;
@@ -277,7 +282,7 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   select * into e from evenements
-   where code is not null and now() >= fin and now() < fin + interval '3 days'
+   where code is not null and now() >= fin and now() < coalesce(recap_jusqua, fin + interval '3 days')
    order by fin desc limit 1;
   if not found then return 'null'::jsonb; end if;
   select * into cpt from evt_comptes where user_id = p and evenement = e.code;
@@ -286,7 +291,7 @@ begin
   select count(*) into nb from evt_comptes where evenement = e.code and total > 0;
   return jsonb_build_object(
     'code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
-    'jusqua', e.fin + interval '3 days',
+    'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'),
     'total', coalesce(cpt.total, 0),
     'paliers', (select count(*) from evt_piste pa where pa.evenement = e.code and pa.seuil <= coalesce(cpt.total, 0)),
     'paliers_max', (select count(*) from evt_piste pa where pa.evenement = e.code),

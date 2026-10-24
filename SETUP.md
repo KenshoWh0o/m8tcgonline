@@ -16,7 +16,7 @@ copier et coller. Compte une heure tranquille.
 
 À la fin, ton serveur aura des comptes (connexion par Discord), la collection
 sauvegardée sur le compte, les échanges, les quêtes, la boutique et les
-Combats : tout ce que fait le code de la branche (version 3.0.9 en cours).
+Combats : tout ce que fait le code de la branche (version 3.0.10 en cours).
 
 **Une page t'accompagne :** `verif.html`, à la racine du site. Elle contrôle
 l'installation et dit en clair ce qui est fait et ce qui reste. Dans le doute,

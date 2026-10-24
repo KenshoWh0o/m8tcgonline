@@ -491,7 +491,8 @@
       evenement: evenementActif(),
       recap: evenementRecent(),
       chasse: chasseEtat(),
-      parametres: { fabrication_reverse: !!S.parametres.fabrication_reverse },
+      parametres: { reverses: { ouvertes: revOuvertes(), des: revDes() == null ? null : iso(revDes()),
+        couts: { C: prixReverse('C'), PC: prixReverse('PC'), R: prixReverse('R') } } },
       prismes: compte(p).solde,
       invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
@@ -520,10 +521,13 @@
     return e && now() >= e.debut && now() < e.fin ? e.code : null;
   }
   /* evenement_recent, 21_reflets.sql : fini depuis moins de trois jours. */
+  /* La fin du récap : evenements.recap_jusqua, ou trois jours après la fin
+     (evenement_recent, 21_reflets.sql). */
+  const recapFin = e => (e.recap_jusqua != null ? e.recap_jusqua : e.fin + 3 * 86400000);
   function evenementRecent() {
     const e = S.evenement;
-    if (!e || !e.code || now() < e.fin || now() >= e.fin + 3 * 86400000) return null;
-    return { code: e.code, titre: e.titre, debut: iso(e.debut), fin: iso(e.fin), jusqua: iso(e.fin + 3 * 86400000) };
+    if (!e || !e.code || now() < e.fin || now() >= recapFin(e)) return null;
+    return { code: e.code, titre: e.titre, debut: iso(e.debut), fin: iso(e.fin), jusqua: iso(recapFin(e)) };
   }
   function evenementActif() {
     const e = S.evenement;
@@ -1219,7 +1223,7 @@
       const k = carte(cid);
       if (!k) refuser('Carte inconnue.');
       if (k.promo) refuser('Cette carte ne se recycle pas.');
-      if (k.rev && !(S.parametres || {}).fabrication_reverse) refuser('Les Reverses ne se recyclent pas encore.');
+      if (k.rev && !revOuvertes()) refuser('Les Reverses ne se recyclent pas encore.');
       const prix = cfg('recyclage_' + k.rar);
       if (prix == null) refuser('Cette carte ne se recycle pas.');
       const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === cid && t.status === 'pending').length;
@@ -1239,6 +1243,18 @@
     return me(p);
   };
 
+  /* 22c_reverses.sql (reporté de la 2.5) : reverses_ouvertes et prix_reverse.
+     Ouvertes à la main, ou passé la date. Dans la vraie base, la date est
+     parametres.reverses_des, posée par la 2.5 (le 26 octobre 2026) ; dans le
+     monde de la démo, qui vient après la 2.5, elles sont ouvertes dès le
+     début (S.debut), sauf date posée par le Labo. */
+  function revDes() {
+    if ('reverses_des' in S.parametres) return S.parametres.reverses_des;
+    return S.debut;
+  }
+  function revOuvertes() { const d = revDes(); return !!S.parametres.fabrication_reverse || (d != null && now() >= d); }
+  function prixReverse(r) { return { C: 400, PC: 500, R: 2400 }[r]; }
+
   /* fabriquer, 12_recyclage.sql */
   RPC.fabriquer = (p, { p_carte }) => {
     const k = carte(p_carte);
@@ -1247,8 +1263,8 @@
     let cout = cfg('fabrication_' + k.rar);
     if (cout == null) refuser('Cette carte ne se fabrique pas.');
     if (k.rev) {
-      if (!S.parametres.fabrication_reverse) refuser('La fabrication des Reverses n\'est pas encore ouverte.');
-      cout *= 2;
+      if (!revOuvertes()) refuser('La fabrication des Reverses n\'est pas encore ouverte.');
+      cout = prixReverse(k.rar);
     }
     if (possede(p, p_carte)) refuser('Tu possèdes déjà cette carte.');
     const pr = profil(p);
@@ -1297,6 +1313,272 @@
       cartes: Object.entries(colDe(o.id)).filter(([id, n]) => n > 0 && carte(id) && !carte(id).promo).length,
       cadeaux: (S.cadeaux || []).filter(c => c.user_id === o.id).length,
       en_attente: (S.cadeaux || []).filter(c => c.user_id === o.id && !c.ouvert_le).length }));
+  };
+
+  /* ------------------------------------------ le Labo, 29_labo.sql */
+  /* Les mêmes gestes que la vraie base, sur le monde de la démo : le Choc
+     dans un état ou un autre, le Raid à une phase, son compte réglé, mis de
+     côté, remis. */
+  const J_MS = 86400000;
+  function laboEtat(p) {
+    const e = S.evenement && S.evenement.code === 'choc' ? S.evenement : null;
+    const sa = saisonDemo(), r = raidDe(), sv = (S.labo || {})[p];
+    const ch = chocDe();
+    const comptes = Object.entries(S.evt.comptes).filter(([k, v]) => k.endsWith('|choc') && v.total > 0);
+    const cbs = Object.values(S.cb || {});
+    const vs = vueSaison(p, sa);
+    return {
+      serveur: iso(now()),
+      choc: e ? { debut: iso(e.debut), fin: iso(e.fin), recap_jusqua: iso(recapFin(e)) } : null,
+      en_cours: evenementEnCours(), recent: evenementRecent(),
+      participation: { joueurs: comptes.length, etincelles: comptes.reduce((n, [, v]) => n + v.total, 0),
+        epreuves: Object.keys(ch.epreuves).length, gagnees: Object.keys(ch.gagnees).length,
+        raid: Object.values(ch.joueurs).reduce((n, x) => n + (x.degats || 0), 0) },
+      raid: { saison: sa, debut: vs.debut, fin: vs.fin, degats: degatsSaison(sa), phase: phaseDemo(sa),
+        seuils: RAID.phases.map((x, i) => seuilDemo(i + 1)), echelle: echelleRaid(),
+        joueurs: Object.entries(r.part).filter(([k, x]) => k.startsWith(sa + '|') && x.combats > 0).length },
+      reverses: { des: revDes() == null ? null : iso(revDes()), manuel: !!S.parametres.fabrication_reverse, ouvertes: revOuvertes() },
+      sections: { toxique: cbs.filter(c => c.section === 'toxique').length, deter: cbs.filter(c => c.section === 'deter').length },
+      chasse: chasseEtat(),
+      recharge: { minutes: cfg('ticket_minutes'), cap: cfg('ticket_cap') },
+      recharges: [],
+      joueurs: Object.keys(S.profils).length,
+      sauvegarde: sv ? { le: iso(sv.le), version: '3.0', cartes: Object.keys(sv.contenu.col || {}).length } : null
+    };
+  }
+  RPC.labo_etat = p => { estAdmin(p); return laboEtat(p); };
+  RPC.labo_evenement = (p, { p_etat, p_n }) => {
+    estAdmin(p);
+    const t = now(), D21 = 21 * J_MS;
+    let d;
+    if (p_etat === 'avant') {
+      const n = p_n == null ? 2 : p_n;
+      if (!(n >= 1 && n <= 10080)) refuser('Entre 1 minute et 7 jours.');
+      d = t + n * 60000;
+    } else if (p_etat === 'jour') {
+      const n = p_n == null ? 1 : p_n;
+      if (!(n >= 1 && n <= 21)) refuser('Un jour de 1 à 21.');
+      d = t - (n - 1) * J_MS - 3600000;
+    } else if (p_etat === 'recap') d = t - D21 - 3600000;
+    else if (p_etat === 'fini') d = t - D21 - 4 * J_MS;
+    else refuser('État inconnu.');
+    /* Un seul événement dans la démo : celui d'avant (Reflets) laisse la place. */
+    S.evenement = { titre: CHOC.nom, code: 'choc', debut: d, fin: d + D21, recap_jusqua: null,
+      texte: 'La version 3.0 : le Raid contre The French Sorcerer et l\'Épreuve du jour.' };
+    return laboEtat(p);
+  };
+  RPC.labo_decaler = (p, { p_heures }) => {
+    estAdmin(p);
+    if (!p_heures || Math.abs(p_heures) > 336) refuser('De 1 à 336 heures.');
+    const e = S.evenement && S.evenement.code === 'choc' ? S.evenement : null;
+    if (!e) refuser('Pas de Choc à décaler : pose d\'abord un état.');
+    e.debut -= p_heures * 3600000; e.fin -= p_heures * 3600000;
+    if (e.recap_jusqua != null) e.recap_jusqua -= p_heures * 3600000;
+    return laboEtat(p);
+  };
+  RPC.labo_evenement_raz = (p, { p_confirmation }) => {
+    estAdmin(p);
+    if (p_confirmation !== 'EFFACER') refuser('Confirmation manquante.');
+    const ch = chocDe();
+    const r = { epreuves: Object.keys(ch.epreuves).length, raid: Object.keys(ch.joueurs).length };
+    ch.epreuves = {}; ch.gagnees = {}; ch.joueurs = {};
+    Object.keys(S.evt.comptes).forEach(k => { if (k.endsWith('|choc')) delete S.evt.comptes[k]; });
+    Object.keys(S.evt.prises).forEach(k => { if (k.endsWith('|choc')) delete S.evt.prises[k]; });
+    QUETES.filter(q => q.evenement === 'choc').forEach(q => Object.keys(S.qp).forEach(k => { if (k.split('|')[1] === q.id) delete S.qp[k]; }));
+    return Object.assign(r, { etat: laboEtat(p) });
+  };
+  RPC.labo_reverses = (p, { p_ouvertes }) => {
+    estAdmin(p);
+    if (p_ouvertes) S.parametres.fabrication_reverse = true;
+    else { S.parametres.fabrication_reverse = false; S.parametres.reverses_des = null; }
+    return laboEtat(p);
+  };
+  RPC.labo_raid = (p, { p_phase }) => {
+    estAdmin(p);
+    if (!(p_phase >= 1 && p_phase <= 7)) refuser('Une phase de 1 à 7.');
+    const r = raidDe(), sa = saisonDemo();
+    r.saisons[sa] = p_phase === 1 ? 0 : seuilDemo(p_phase - 1);
+    for (let k = 1; k <= RAID.phases.length; k++) {
+      if (k < p_phase) r.tombees[sa + '|' + k] = r.tombees[sa + '|' + k] || now();
+      else delete r.tombees[sa + '|' + k];
+    }
+    return laboEtat(p);
+  };
+  RPC.labo_raid_echelle = (p, { p_echelle }) => {
+    estAdmin(p);
+    if (!(p_echelle >= 0.05 && p_echelle <= 20)) refuser('Une échelle de 0,05 à 20.');
+    S.parametres.raid_echelle = p_echelle;
+    return laboEtat(p);
+  };
+  RPC.labo_raid_raz = (p, { p_confirmation }) => {
+    estAdmin(p);
+    if (p_confirmation !== 'EFFACER') refuser('Confirmation manquante.');
+    const r = raidDe(), sa = saisonDemo(), auj = jourParis(now());
+    const de = o => Object.keys(o).filter(k => k.startsWith(sa + '|'));
+    const res = { joueurs: de(r.part).length, coffres: de(r.pris).length };
+    de(r.part).forEach(k => delete r.part[k]); de(r.pris).forEach(k => delete r.pris[k]); de(r.tombees).forEach(k => delete r.tombees[k]);
+    Object.keys(r.tentatives).forEach(k => { if (k.endsWith('|' + auj)) delete r.tentatives[k]; });
+    r.saisons[sa] = 0;
+    return Object.assign(res, { etat: laboEtat(p) });
+  };
+  /* limite_copies, 23_combats.sql : deux exemplaires, un pour une
+     Légendaire, une Secrète, une Promo. */
+  const limiteCopies = k => (['L', 'S', 'UN', 'PR'].includes(k.rar) || (k.promo && !k.rev && !k.secrete)) ? 1 : 2;
+  RPC.labo_cartes = (p, { p_quoi }) => {
+    estAdmin(p);
+    const col = colDe(p);
+    if (p_quoi === 'vider') {
+      S.trades.filter(x => x.status === 'pending' && (x.from_user === p || x.to_user === p))
+        .forEach(x => { x.status = 'cancelled'; x.resolved_at = now(); });
+      Object.keys(col).forEach(k => delete col[k]);
+    } else if (['master', 'classiques', 'combat'].includes(p_quoi)) {
+      const liste = p_quoi === 'master' ? cards.concat(reverses, promos, brillantes, secretes)
+        : p_quoi === 'classiques' ? cards : cards.filter(k => ['joueur', 'coach', 'moment', 'objet'].includes(k.cat));
+      liste.filter(k => k.rar !== 'UN').forEach(k => { col[k.id] = Math.max(col[k.id] || 0, p_quoi === 'classiques' ? 1 : limiteCopies(k)); });
+    } else refuser('Choix inconnu.');
+    syncCollection(p); checkPromos(p);
+    return me(p);
+  };
+  RPC.labo_monnaies = (p, { p_valeurs }) => {
+    estAdmin(p);
+    if (!p_valeurs || typeof p_valeurs !== 'object') refuser('Valeurs invalides.');
+    const lim = { eclats: 1e7, fragments: 1e7, boosters: 999, reserve: 99, prismes: 1e7, niveau: 100 };
+    Object.entries(p_valeurs).forEach(([k, v]) => {
+      if (!(k in lim)) refuser(`Valeur inconnue : ${k}.`);
+      if (typeof v !== 'number') refuser('Un nombre est attendu.');
+      if (v < (k === 'niveau' ? 1 : 0) || v > lim[k]) refuser(`Valeur hors limites : ${k}.`);
+    });
+    const pr = profil(p), V = k => Math.round(p_valeurs[k]);
+    if ('eclats' in p_valeurs) pr.shards = V('eclats');
+    if ('fragments' in p_valeurs) pr.fragments = V('fragments');
+    if ('boosters' in p_valeurs) { pr.boosters_bonus = V('boosters'); pr.tickets_offerts = Math.min(pr.tickets_offerts || 0, V('boosters')); }
+    if ('reserve' in p_valeurs) { pr.tickets = V('reserve'); pr.last_tick = now(); }
+    if ('prismes' in p_valeurs) {
+      const ev = evenementEnCours() || (S.evenement && S.evenement.code);
+      if (!ev) refuser('Aucun événement : pas de monnaie d\'événement à poser.');
+      const c = (S.evt.comptes[p + '|' + ev] = S.evt.comptes[p + '|' + ev] || { solde: 0, total: 0 });
+      c.solde = V('prismes'); c.total = Math.max(c.total, c.solde);
+    }
+    if ('niveau' in p_valeurs) {
+      let xp = 0;
+      for (let n = 1; n < V('niveau'); n++) xp += xpRequis(n);
+      cb(p).xp = xp;
+      QUETES.filter(q => q.metric === 'niveau').forEach(q => {
+        const k = cleQp(p, q), qp = (S.qp[k] = S.qp[k] || { progress: 0, claimed: false });
+        if (!qp.claimed) qp.progress = Math.max(qp.progress, V('niveau'));
+      });
+    }
+    return me(p);
+  };
+  RPC.labo_cosmetiques = (p, { p_ids }) => {
+    estAdmin(p);
+    if (!Array.isArray(p_ids) || !p_ids.length || p_ids.length > 300) refuser('Liste vide ou trop longue.');
+    const inv = invDe(p);
+    p_ids.forEach(x => {
+      if (!/^[fts]_[a-z0-9_]{1,40}$/.test(x)) refuser(`Identifiant invalide : ${x}.`);
+      inv[x] = Math.max(inv[x] || 0, 1);
+    });
+    return me(p);
+  };
+  RPC.labo_combats_moi = (p, { p_action, p_valeur }) => {
+    estAdmin(p);
+    const c = cb(p), auj = jourParis(now());
+    if (p_action === 'section') {
+      if (p_valeur != null && !SEC_PROMO[p_valeur]) refuser('Section inconnue.');
+      c.section = p_valeur || null;
+      if (p_valeur && !possede(p, SEC_PROMO[p_valeur])) ajouter(p, SEC_PROMO[p_valeur], 1);
+    } else if (p_action === 'campagne') {
+      if (p_valeur === 'finie') { c.faits = Array.from({ length: 20 }, (x, i) => 'cp' + String(i + 1).padStart(2, '0')); c.finie = true; }
+      else if (p_valeur === 'raz') { c.faits = []; c.finie = false; }
+      else refuser('Choix inconnu.');
+    } else if (p_action === 'jour') {
+      c.recompensees = 0; c.jour = null; c.defis_rec = 0; c.defis_jour = null;
+      delete raidDe().tentatives[p + '|' + auj];
+      const ch = chocDe();
+      delete ch.epreuves[p + '|' + auj]; delete ch.gagnees[p + '|' + auj];
+    } else if (p_action === 'maitrises') {
+      if (p_valeur === 'max') {
+        Object.keys(colDe(p)).filter(id => colDe(p)[id] > 0).forEach(id => {
+          const k = carte(id.replace(/^r(?=\d)/, 'c'));
+          if (k && k.cat !== 'essence' && !k.rev && (!k.promo || k.secrete) && ['C', 'PC', 'R', 'E', 'L', 'S'].includes(k.rar)) mzDe(p)[k.id] = 5;
+        });
+      } else if (p_valeur === 'raz') S.maitrises[p] = {};
+      else refuser('Choix inconnu.');
+    } else refuser('Action inconnue.');
+    return me(p);
+  };
+  /* labo_tables : ce qui est à soi, sauf les amis, la boîte, les échanges et
+     les défis entre amis. */
+  function laboCompte(p) {
+    const a = x => k => k.startsWith(x), r = raidDe(), ch = chocDe();
+    const de = (o, f) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => f(k)));
+    const c = Object.assign({}, cb(p), { ouverts: {} });
+    return JSON.parse(JSON.stringify({
+      profil: profil(p), col: colDe(p), inv: invDe(p), qp: de(S.qp, a(p + '|')),
+      comptes: de(S.evt.comptes, a(p + '|')), prises: de(S.evt.prises, k => k === p || k.startsWith(p + '|')),
+      gardes: (S.gardes || {})[p] || {}, favoris: (S.favoris || {})[p] || [], illu: de(S.illu, a(p + '|')),
+      tirages: S.tirages.filter(t => t.user_id === p), recyclages: S.recyclages.filter(t => t.user_id === p),
+      cb: c, maitrises: mzDe(p),
+      epreuves: de(ch.epreuves, a(p + '|')), gagnees: de(ch.gagnees, a(p + '|')), choc: ch.joueurs[p] || null,
+      raidPart: de(r.part, k => k.split('|')[1] === p), raidPris: de(r.pris, k => k.split('|')[1] === p),
+      tentatives: de(r.tentatives, a(p + '|'))
+    }));
+  }
+  function laboEffacer(p) {
+    const pas = x => k => !k.startsWith(x), r = raidDe(), ch = chocDe();
+    const garder = (o, f) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => f(k)));
+    S.col[p] = {}; S.inv[p] = {};
+    S.qp = garder(S.qp, pas(p + '|')); S.evt.comptes = garder(S.evt.comptes, pas(p + '|'));
+    S.evt.prises = garder(S.evt.prises, k => k !== p && !k.startsWith(p + '|'));
+    if (S.gardes) delete S.gardes[p];
+    if (S.favoris) delete S.favoris[p];
+    S.illu = garder(S.illu, pas(p + '|'));
+    S.tirages = S.tirages.filter(t => t.user_id !== p); S.recyclages = S.recyclages.filter(t => t.user_id !== p);
+    if (S.cb) delete S.cb[p];
+    S.maitrises[p] = {};
+    ch.epreuves = garder(ch.epreuves, pas(p + '|')); ch.gagnees = garder(ch.gagnees, pas(p + '|')); delete ch.joueurs[p];
+    r.part = garder(r.part, k => k.split('|')[1] !== p); r.pris = garder(r.pris, k => k.split('|')[1] !== p);
+    r.tentatives = garder(r.tentatives, pas(p + '|'));
+  }
+  RPC.labo_sauver = p => {
+    estAdmin(p);
+    S.labo = S.labo || {};
+    S.labo[p] = { le: now(), contenu: laboCompte(p) };
+    return laboEtat(p);
+  };
+  RPC.labo_restaurer = p => {
+    estAdmin(p);
+    const sv = (S.labo || {})[p];
+    if (!sv) refuser('Aucune sauvegarde.');
+    const c = JSON.parse(JSON.stringify(sv.contenu)), r = raidDe(), ch = chocDe();
+    laboEffacer(p);
+    const pr = profil(p);
+    ['shards', 'fragments', 'tickets', 'last_tick', 'trade_free_at', 'boosters_bonus', 'tickets_offerts', 'packs_opened',
+     'trades_done', 'streak', 'last_checkin', 'serie_max', 'fabrications', 'avatar', 'frame', 'titre', 'banniere',
+     'devise', 'vitrine', 'garder', 'fetiche'].forEach(k => { if (k in c.profil) pr[k] = c.profil[k]; });
+    S.col[p] = c.col; S.inv[p] = c.inv;
+    Object.assign(S.qp, c.qp); Object.assign(S.evt.comptes, c.comptes); Object.assign(S.evt.prises, c.prises);
+    S.gardes = S.gardes || {}; S.gardes[p] = c.gardes;
+    S.favoris = S.favoris || {}; S.favoris[p] = c.favoris;
+    Object.assign(S.illu, c.illu);
+    S.tirages.push(...c.tirages); S.recyclages.push(...c.recyclages);
+    S.cb = S.cb || {}; S.cb[p] = c.cb;
+    S.maitrises[p] = c.maitrises;
+    Object.assign(ch.epreuves, c.epreuves); Object.assign(ch.gagnees, c.gagnees);
+    if (c.choc) ch.joueurs[p] = c.choc;
+    Object.assign(r.part, c.raidPart); Object.assign(r.pris, c.raidPris); Object.assign(r.tentatives, c.tentatives);
+    return me(p);
+  };
+  RPC.labo_raz_moi = p => {
+    estAdmin(p);
+    S.trades.filter(x => x.status === 'pending' && (x.from_user === p || x.to_user === p))
+      .forEach(x => { x.status = 'cancelled'; x.resolved_at = now(); });
+    laboEffacer(p);
+    Object.assign(profil(p), { shards: 0, fragments: 0, tickets: cfg('ticket_cap'), last_tick: now(), trade_free_at: now(),
+      boosters_bonus: 0, tickets_offerts: 0, packs_opened: 0, trades_done: 0, streak: 0, last_checkin: null,
+      serie_max: 0, fabrications: 0, avatar: 'star', frame: 'default', titre: null, banniere: null, devise: null,
+      vitrine: [], garder: {}, fetiche: null });
+    return me(p);
   };
 
   /* ------------------------------------------- version 2.0, 21_reflets.sql */
@@ -1971,7 +2253,9 @@
   const saisonDemo = () => raidSaison(jourParis(now())).n;
   /* Les paliers, à l'échelle du serveur (peu de joueurs dans la démo :
      _demo/reglages.js). */
-  const seuilDemo = k => Math.max(10, Math.round(RAID.phases[k - 1].seuil * (D.raid_echelle || 1)));
+  /* L'échelle : celle du Labo (parametres.raid_echelle), sinon celle des réglages. */
+  const echelleRaid = () => (S.parametres && S.parametres.raid_echelle) || D.raid_echelle || 1;
+  const seuilDemo = k => Math.max(10, Math.round(RAID.phases[k - 1].seuil * echelleRaid()));
   const degatsSaison = sa => (raidDe().saisons[sa] || 0);
   function phaseDemo(sa) {
     let k = 1;
