@@ -270,6 +270,18 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
           faire: `Colle <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> (ou <code>supabase/TOUT.sql</code> en entier).` }
       : { etat: 'ok', titre: 'L\'Échauffement (2.5) est installé' });
   }
+  /* Le 24 octobre 2026, L'Échauffement est devenu un événement (Braises,
+     Pass, quêtes, boutique : 22e_echauffement-evenement.sql) et a reçu son
+     mode sans fin (22f_sans-fin.sql). Une MAJ-2.5.sql collée avant n'a ni
+     l'un ni l'autre : l'onglet Combats reste alors aux seuls défis. */
+  {
+    const { error } = await sb.rpc('ech_sf_etat');
+    poser(error && (error.code === 'PGRST202' || /could not find the function/i.test(error.message || ''))
+      ? { etat: 'ko', titre: 'L\'événement de la 2.5 et son mode sans fin ne sont pas installés',
+          detail: 'La fonction <code>ech_sf_etat()</code> manque : la <code>supabase/MAJ-2.5.sql</code> collée date d\'avant le 24 octobre 2026 (sans Braises, Pass ni défi du jour).',
+          faire: 'Recolle la dernière <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' }
+      : { etat: 'ok', titre: 'L\'événement de la 2.5 (Braises, Pass) et son mode sans fin sont installés' });
+  }
 
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');

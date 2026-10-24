@@ -1832,7 +1832,7 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-pal-ico svg{width:34cqi;height:34cqi;fill:none;stroke:var(--e-deco);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ech-pal-ico .shard{width:30cqi;height:30cqi;stroke:none;color:#b3a6ff}
 .ech-pal-ico img{height:36cqi}
-.ech-pal-ico .ava{width:32cqi;height:32cqi}
+.ech-pal-ico .ava{width:27cqi;height:27cqi;margin-top:-3cqi}
 .ech-pal-titre{display:grid;place-items:center;width:38cqi;height:38cqi;border-radius:30%;background:var(--e-wash)}
 .ech-pal-titre svg{width:24cqi;height:24cqi}
 .ech-pal-mot{max-width:84cqi;font-size:max(8.5px,15cqi);font-weight:800;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--e-sub)}

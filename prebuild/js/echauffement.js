@@ -303,7 +303,7 @@ function vEchAccueil() {
   return `<section class="ech">
     <header class="ech-hero">
       ${echIllu(byId.c122, .6, .4, 'fond')}
-      <span class="ech-hero-haut"><span class="ech-kick">Événement · encore ${h(dureeCourte(reste))}</span>
+      <span class="ech-hero-haut"><span class="ech-kick">Événement · ${h(dureeCourte(reste))}</span>
         <span class="ech-hero-d">${echEv ? echSolde() : ''}
         <span class="ech-anneau" style="--p:${Math.round(etoiles / 21 * 100)}%" aria-label="${etoiles} étoiles sur 21"><b class="tnum">${etoiles}</b><small>/21</small></span></span></span>
       <span class="ech-hero-bas"><h2 class="ech-titre">L'Échauffement</h2><small>Sept défis, un par jour.</small></span>

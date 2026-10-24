@@ -15,7 +15,7 @@ Cette branche, `version-2.5`, porte le **vrai site** (la 2.x, aujourd'hui la 2.5
 5. **Aucun identifiant de modèle d'IA** dans les messages de commit (pas de ligne `Co-Authored-By` qui nomme un modèle), le code ou la documentation.
 6. **Comptes rendus honnêtes et exhaustifs** : ce qui est sûr, ce qui est supposé, ce qui n'a pas été testé.
 7. **Ne jamais jouer de SQL sur la vraie base** sans l'action ou l'accord explicite du propriétaire : on livre le fichier (par exemple `supabase/MAJ-2.5.sql`), il le colle.
-8. **L'Échauffement tient dans l'écran, sans défiler** : ses trois sous-onglets, l'écran du défi et la scène de combat, aux quatre tailles de référence (README, « Version 2.5 »).
+8. **L'Échauffement tient dans l'écran, sans défiler** : tous ses sous-onglets (aujourd'hui six pendant la saison : Défis, Pass, Quêtes, Boutique, Classement, Indices ; puis le défi du jour, son classement, les indices et le récap), l'écran du défi et la scène de combat, aux quatre tailles de référence (README, « Version 2.5 »).
 9. **Un indice ne promet rien d'incertain** : pas de règle de combat de la 3.0 qui soit un choix « maison » (taille du deck, lignes, PV : `docs/regles-3.0.md` de la 3.0).
 
 ## À chaque modification

@@ -1779,7 +1779,9 @@ button.ech-a.on i{color:var(--e-acc2)}
 /* Les mêmes principes : des tuiles pleines, une seule action lavande par
    écran, et chaque vue mesurée sur la place qui reste (.ech-corps est le
    conteneur, cqw et cqh). */
-.ech-hero-d{display:flex;align-items:center;gap:8px}
+.ech-hero-d{flex:0 0 auto;display:flex;align-items:center;gap:8px}
+.ech-hero-haut{gap:8px}
+.ech-hero-haut .ech-kick{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ech-solde{display:inline-flex;align-items:center;gap:5px;padding:6px 11px 6px 8px;border-radius:999px;font-family:var(--display);font-weight:900;font-size:15px;
   color:var(--e-txt);background:rgba(18,17,25,.72);box-shadow:inset 0 0 0 1px var(--e-l2)}
 .ech-solde .prismeico{width:17px;height:17px}
@@ -1830,7 +1832,7 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-pal-ico svg{width:34cqi;height:34cqi;fill:none;stroke:var(--e-deco);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ech-pal-ico .shard{width:30cqi;height:30cqi;stroke:none;color:#b3a6ff}
 .ech-pal-ico img{height:36cqi}
-.ech-pal-ico .ava{width:40cqi;height:40cqi}
+.ech-pal-ico .ava{width:27cqi;height:27cqi;margin-top:-3cqi}
 .ech-pal-titre{display:grid;place-items:center;width:38cqi;height:38cqi;border-radius:30%;background:var(--e-wash)}
 .ech-pal-titre svg{width:24cqi;height:24cqi}
 .ech-pal-mot{max-width:84cqi;font-size:max(8.5px,15cqi);font-weight:800;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--e-sub)}
