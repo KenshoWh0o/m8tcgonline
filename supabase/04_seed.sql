@@ -189,7 +189,13 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   -- un mois environ chacune a six boosters par jour. Les echanges y aident.
   ('m_exR',     'milestone', 'ex_R',       10,      1000, null,      'Dix fois la même',      'Possède 10 exemplaires d''une même Rare.', 26),
   ('m_exE',     'milestone', 'ex_E',        5,      1500, null,      'Cinq fois la même',     'Possède 5 exemplaires d''une même Épique.', 27),
-  ('m_exL',     'milestone', 'ex_L',        3,      2500, null,      'Trois fois la même',    'Possède 3 exemplaires d''une même Légendaire.', 28)
+  ('m_exL',     'milestone', 'ex_L',        3,      2500, null,      'Trois fois la même',    'Possède 3 exemplaires d''une même Légendaire.', 28),
+  -- ---------------------------------------------------------- version 2.5
+  -- Le mode sans fin de L'Echauffement (22f_sans-fin.sql) : dix jours
+  -- gagnes, le titre « Infatigable ». Un defi par jour, gagne une fois sur
+  -- deux a trois a peu pres (simulation, en tete du fichier) : trois
+  -- semaines environ pour un joueur qui vient chaque jour.
+  ('m_sf10',    'milestone', 'sf_victoire', 10,         0, 't_ech_infatigable', 'Infatigable', 'Gagne 10 défis du jour, après L''Échauffement.', 29)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -203,9 +209,11 @@ delete from public.quests where id not in (
   'm_packs25','m_packs50','m_packs100','m_packs200',
   'm_trade25',
   'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_illu10','m_invite',
-  'm_exR','m_exE','m_exL',
+  'm_exR','m_exE','m_exL','m_sf10',
   'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev45','e_trade','e_illu7','e_packs70',
-  'e_recycle','e_invite');
+  'e_recycle','e_invite',
+  'ej_visite','ej_combat','ej_victoire','ej_packs',
+  'ee_sept','ee_parfaits','ee_etoiles','ee_joueurs','ee_eclats','ee_reverse','ee_packs','ee_recycle','ee_trade');
 
 -- ------------------------------------------------- l'evenement « Reflets »
 -- Ses quetes paient en Prismes (21_reflets.sql). Du jour : 50 Prismes pour
@@ -231,7 +239,27 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('e_packs70', 'ev',      'packs',    70, 50, null, 'Soixante-dix boosters',  'Ouvre 70 boosters pendant l''événement.', 6, 'reflets', 'prismes'),
   ('e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets',    'Conclus 3 échanges.', 7, 'reflets', 'prismes'),
   ('e_recycle', 'ev',      'recycle', 150, 30, null, 'Grand ménage',           'Recycle 150 doublons pendant l''événement.', 8, 'reflets', 'prismes'),
-  ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes')
+  ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes'),
+  -- ------------------------------------- l'evenement « L'Echauffement » (2.5)
+  -- Ses quetes paient en Braises (22e_echauffement-evenement.sql, ou est le
+  -- calcul du Pass). Du jour : 50 pour qui les fait toutes. De l'evenement,
+  -- une fois : 390. Elles portent sur les defis, et sur ce que la 2.5 ouvre
+  -- d'autre (fabriquer une Reverse). Comptees par le serveur : ech_terminer
+  -- (ech_combat, ech_victoire, ech_eclat, et ech_sync_quetes pour les
+  -- etats), fabriquer (fab_rev), open_pack, recycler, trade_respond.
+  ('ej_visite',   'ev_jour', 'ev_visite',     1, 10, null, 'À l''entraînement',     'Passe voir L''Échauffement aujourd''hui.', 1, 'echauffement', 'prismes'),
+  ('ej_combat',   'ev_jour', 'ech_combat',    1, 10, null, 'Un combat',             'Termine un combat de L''Échauffement.', 2, 'echauffement', 'prismes'),
+  ('ej_victoire', 'ev_jour', 'ech_victoire',  1, 15, null, 'Une victoire',          'Gagne un combat de L''Échauffement.', 3, 'echauffement', 'prismes'),
+  ('ej_packs',    'ev_jour', 'packs',         4, 15, null, 'Quatre boosters',       'Ouvre 4 boosters aujourd''hui.', 4, 'echauffement', 'prismes'),
+  ('ee_sept',     'ev',      'ech_gagnes',    7, 60, null, 'Les sept défis',        'Gagne les sept défis.', 1, 'echauffement', 'prismes'),
+  ('ee_parfaits', 'ev',      'ech_parfaits',  3, 40, null, 'Trois fois parfait',    'Fais trois étoiles à 3 défis.', 2, 'echauffement', 'prismes'),
+  ('ee_etoiles',  'ev',      'ech_etoiles',  21, 80, null, 'Vingt et une étoiles',  'Les trois étoiles aux sept défis.', 3, 'echauffement', 'prismes'),
+  ('ee_joueurs',  'ev',      'ech_joueurs',  10, 40, null, 'Tout l''effectif',      'Fais combattre 10 Joueurs différents.', 4, 'echauffement', 'prismes'),
+  ('ee_eclats',   'ev',      'ech_eclat',     5, 30, null, 'Cinq coups d''éclat',   'Place 5 coups d''éclat.', 5, 'echauffement', 'prismes'),
+  ('ee_reverse',  'ev',      'fab_rev',       1, 40, null, 'Une Reverse fabriquée', 'Fabrique une Reverse avec tes Fragments.', 6, 'echauffement', 'prismes'),
+  ('ee_packs',    'ev',      'packs',        30, 40, null, 'Trente boosters',       'Ouvre 30 boosters pendant l''événement.', 7, 'echauffement', 'prismes'),
+  ('ee_recycle',  'ev',      'recycle',     100, 30, null, 'Grand ménage',          'Recycle 100 doublons pendant l''événement.', 8, 'echauffement', 'prismes'),
+  ('ee_trade',    'ev',      'trades',        2, 30, null, 'Deux échanges',         'Conclus 2 échanges pendant l''événement.', 9, 'echauffement', 'prismes')
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id, titre = excluded.titre,
@@ -284,7 +312,15 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('ev_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 60, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5),
   ('ev_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n''as pas encore.', 150, 'reverse_R',  1, null, false, 3, 'prismes', 'reflets', 3),
   ('t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l''événement.',
-                                                                                                200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null)
+                                                                                                200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null),
+  -- Version 2.5 : la boutique de L'Echauffement, payee en Braises
+  -- (22e_echauffement-evenement.sql). Tout acheter coute 1 120 ; un joueur
+  -- regulier en gagne ~815 : il faut choisir.
+  ('eh_boosters',  'evenement', 'x2 Boosters',       'Deux boosters à ouvrir tout de suite.',      80, 'tickets',    2, null, false, 1, 'prismes', 'echauffement', 4),
+  ('eh_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 2, 'prismes', 'echauffement', 4),
+  ('eh_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n''as pas encore.', 160, 'reverse_R',  1, null, false, 3, 'prismes', 'echauffement', 2),
+  ('t_ech_entraineur', 'evenement', 'Titre « Entraîneur »', 'Un titre qui ne se vendra plus après l''événement.',
+                                                                                                200, 'cosmetique', 1, null, true, 4, 'prismes', 'echauffement', null)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -295,4 +331,5 @@ delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',
   'f_azur','f_rose','f_or','f_prisme',
-  's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect');
+  's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
+  'eh_boosters','eh_fragments','eh_reverse','t_ech_entraineur');

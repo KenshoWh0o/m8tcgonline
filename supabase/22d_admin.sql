@@ -26,11 +26,17 @@
 --                                                n minutes (2 par defaut) ;
 --                                   'defi'       la 2.5 sortie, le defi n ouvert ;
 --                                   'rattrapage' les sept ouverts, la saison court ;
---                                   'fini'       la saison terminee
+--                                   'fini'       la saison terminee depuis une
+--                                                heure : son recap ;
+--                                   'sans_fin'   le jour n du mode sans fin
+--                                                (4 par defaut : recap fini)
 --     labo_decaler(heures)        avancer (positif) ou reculer la saison
 --     labo_reverses(ouvertes)     ouvrir ou fermer les Reverses a la main
 --     labo_ech_raz('EFFACER')     effacer essais, notes et paliers de tous les
---                                 joueurs (les gains deja verses restent)
+--                                 joueurs, mode sans fin compris (les gains
+--                                 deja verses restent, Braises comprises)
+--  La ligne de l'evenement L'Echauffement suit la saison toute seule
+--  (declencheur, 22e_echauffement-evenement.sql).
 --   Son propre compte :
 --     labo_cartes(quoi)           'master' (tout sauf la carte unique),
 --                                 'classiques' (les 122), 'joueurs' (ceux de
@@ -39,8 +45,8 @@
 --                                 reserve, Prismes
 --     labo_cosmetiques(ids)       des cadres (f_…) et des titres (t_…)
 --     labo_ech_moi(action, ...)   ses etoiles a un defi ('etoiles'), ses essais
---                                 du jour ('essais'), tout ('raz') ; rien n'est
---                                 verse
+--                                 du jour ('essais', mode sans fin compris),
+--                                 tout ('raz') ; rien n'est verse
 --     labo_sauver(), labo_restaurer()  mettre son compte de cote, le remettre
 --     labo_raz_moi()              repartir de zero, comme un nouveau joueur
 --
@@ -84,7 +90,10 @@ language sql stable as $$
     'saison_debut', timestamptz '2026-10-26 00:00:00+01',
     'saison_fin',   timestamptz '2026-11-04 00:00:00+01',
     'reverses_des', timestamptz '2026-10-26 00:00:00+01',
-    'sortie_25',    timestamptz '2026-10-26 00:00:00+01')
+    'sortie_25',    timestamptz '2026-10-26 00:00:00+01',
+    -- Pour la frise du Labo : la fin du recap de L'Echauffement (trois jours
+    -- apres la saison, 22e_echauffement-evenement.sql).
+    'ech_recap',    timestamptz '2026-11-07 00:00:00+01')
 $$;
 
 -- Poser tout le calendrier d'un coup : la fin de Reflets et de son recap,
@@ -128,6 +137,15 @@ begin
     'sortie', (select sorties -> '2.5' from parametres where id = 1),
     'saison', (select jsonb_build_object('debut', s.debut, 'fin', s.fin, 'ouvert', ech_jour_ouvert())
                  from ech_saison s where s.id = 1),
+    -- L'evenement L'Echauffement (22e_echauffement-evenement.sql) : la fin de
+    -- son recap ; et le mode sans fin (22f_sans-fin.sql) : l'adversaire du jour.
+    'ech_recap', (select coalesce(e.recap_jusqua, e.fin + interval '3 days') from evenements e
+                   where e.code = 'echauffement' order by e.fin desc limit 1),
+    'sans_fin', (select jsonb_build_object('ordre', ech_sf_ordre(j), 'niveau', ech_sf_niveau(j),
+                          'adversaire', (ech_sf_defi(j)).adversaire, 'titre', (ech_sf_defi(j)).titre,
+                          'joueurs', (select count(distinct user_id) from ech_sf_essais),
+                          'gagnes', (select count(*) from ech_sf_scores where jour = j and etoiles > 0))
+                   from (select (now() at time zone 'Europe/Paris')::date as j) x),
     'reverses', (select jsonb_build_object('des', reverses_des, 'manuel', fabrication_reverse,
                           'ouvertes', reverses_ouvertes())
                    from parametres where id = 1),
@@ -156,10 +174,13 @@ begin
     if n < 1 or n > 10080 then raise exception 'Entre 1 minute et 7 jours.'; end if;
     d := now() + make_interval(mins => n);
     perform poser_calendrier(now() - interval '1 day', d, d, d + interval '9 days', d, d);
-  elsif p_etat in ('defi', 'rattrapage', 'fini') then
+  elsif p_etat in ('defi', 'rattrapage', 'fini', 'sans_fin') then
     -- La 2.5 est sortie, au debut de la saison ; le recap avait dure deux jours.
-    n := case p_etat when 'defi' then coalesce(p_n, 1) when 'rattrapage' then 8 else 10 end;
+    -- 'sans_fin' : la saison est finie depuis n - 1 jours et une heure.
+    n := case p_etat when 'defi' then coalesce(p_n, 1) when 'rattrapage' then 8 when 'fini' then 10
+                     else 9 + coalesce(p_n, 4) end;
     if p_etat = 'defi' and (n < 1 or n > 7) then raise exception 'Un défi de 1 à 7.'; end if;
+    if p_etat = 'sans_fin' and (n < 10 or n > 9 + 60) then raise exception 'Un jour de 1 à 60.'; end if;
     d := now() - make_interval(days => n - 1) - interval '1 hour';
     perform poser_calendrier(d - interval '2 days', d, d, d + interval '9 days', d, d);
   else
@@ -198,7 +219,7 @@ end $$;
 -- (Eclats, boosters, titre) reste : on ne reprend rien a un joueur.
 create or replace function public.labo_ech_raz(p_confirmation text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare a int; b int; c int;
+declare a int; b int; c int; a2 int; b2 int;
 begin
   perform labo_garde();
   if p_confirmation is distinct from 'EFFACER' then raise exception 'Confirmation manquante.'; end if;
@@ -208,7 +229,12 @@ begin
   get diagnostics b = row_count;
   delete from ech_paliers where true;
   get diagnostics c = row_count;
-  return jsonb_build_object('essais', a, 'notes', b, 'paliers', c, 'etat', labo_etat());
+  -- Le mode sans fin (22f_sans-fin.sql).
+  delete from ech_sf_essais where true;
+  get diagnostics a2 = row_count;
+  delete from ech_sf_scores where true;
+  get diagnostics b2 = row_count;
+  return jsonb_build_object('essais', a + a2, 'notes', b + b2, 'paliers', c, 'etat', labo_etat());
 end $$;
 
 -- --------------------------------------------------------- son propre compte
@@ -312,10 +338,13 @@ begin
   elsif p_action = 'essais' then
     delete from ech_essais
      where user_id = p and (le at time zone 'Europe/Paris')::date = (now() at time zone 'Europe/Paris')::date;
+    delete from ech_sf_essais where user_id = p and jour = (now() at time zone 'Europe/Paris')::date;
   elsif p_action = 'raz' then
     delete from ech_essais where user_id = p;
     delete from ech_scores where user_id = p;
     delete from ech_paliers where user_id = p;
+    delete from ech_sf_essais where user_id = p;
+    delete from ech_sf_scores where user_id = p;
   else
     raise exception 'Action inconnue.';
   end if;
@@ -328,7 +357,7 @@ create or replace function public.labo_tables() returns text[]
 language sql immutable as $$
   select array['collection', 'inventory', 'quest_progress', 'evt_comptes', 'evt_piste_prises',
                'gardes', 'favoris', 'devine_illu', 'ech_scores', 'ech_paliers', 'ech_essais',
-               'tirages', 'recyclages']
+               'ech_sf_scores', 'ech_sf_essais', 'tirages', 'recyclages']
 $$;
 
 create or replace function public.labo_sauver() returns jsonb

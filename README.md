@@ -113,8 +113,10 @@ mate-tcg-online/
 │   ├── 22b_echauffement.sql  Version 2.5 : L'Échauffement, sept défis (aussi dans TOUT.sql)
 │   ├── 22c_reverses.sql  Version 2.5 : les Reverses se recyclent et se fabriquent (aussi dans TOUT.sql)
 │   ├── 22d_admin.sql     Version 2.5 : le Labo (comptes et serveur), la date de sortie (aussi dans TOUT.sql)
+│   ├── 22e_echauffement-evenement.sql  Version 2.5 : L'Échauffement devient un événement (Braises, Pass ; aussi dans TOUT.sql)
+│   ├── 22f_sans-fin.sql  Version 2.5 : le mode sans fin, un défi par jour après la saison (aussi dans TOUT.sql)
 │   ├── calendrier-2.5.sql  Les dates de fin octobre 2026 : Reflets, son récap, la sortie de la 2.5 (rejouable)
-│   ├── MAJ-2.5.sql       La mise à jour 2.5 d'un bloc, pour une base en 2.1.0 ou plus (générée : 03, 07, 12, 21, 22b, 22c, 22d, calendrier)
+│   ├── MAJ-2.5.sql       La mise à jour 2.5 d'un bloc, pour une base en 2.1.0 ou plus (générée : 03, 04, 07, 12, 21, 22b à 22f, calendrier)
 │   ├── 05_admin.sql    Se donner les droits d'administrateur
 │   ├── 08_reset-profil.sql  Remettre un seul joueur à zéro
 │   ├── 10_reset-tout.sql    Remettre tous les comptes à zéro (lancement)
