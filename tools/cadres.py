@@ -243,6 +243,60 @@ body=(f"<path d='{ring_path(47.5,57)}' fill='#1a0d33' fill-rule='evenodd'/>"
       + twinkle(star4(*pt(61,35),3.2,'#ffd6f0'),2.6,.3)+twinkle(star4(*pt(60,165),2.6),3,1.2)+twinkle(star4(*pt(62,-130),2.2),2.3,.8))
 files['nebuleuse']=svg(body,defs)
 
+# ================================================== version 2.5 : L'Échauffement
+# Les deux cadres du Pass, aux couleurs de l'événement : graphite et lavande,
+# et le cœur chaud d'une braise (css/hub.css, jetons --e-*).
+
+# ---------------------------------------------------------------- Braise
+# Un anneau de graphite liseré de lavande, une lueur qui en fait le tour, et
+# des braises qui montent du haut de l'anneau, s'allument et s'éteignent.
+defs=("<linearGradient id='bz-r' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#3a3750'/><stop offset='.5' stop-color='#24232f'/><stop offset='1' stop-color='#2d2b3a'/></linearGradient>"
+      "<linearGradient id='bz-l' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#8a78f5' stop-opacity='0'/><stop offset='.5' stop-color='#c8bfff'/><stop offset='1' stop-color='#8a78f5' stop-opacity='0'/></linearGradient>"
+      "<radialGradient id='bz-e'><stop offset='0' stop-color='#fff4dc'/><stop offset='.35' stop-color='#ffcf8a'/><stop offset='.7' stop-color='#b3a6ff' stop-opacity='.7'/><stop offset='1' stop-color='#8a78f5' stop-opacity='0'/></radialGradient>"
+      f"<mask id='bz-m'><path d='{ring_path(48.5,55)}' fill='#fff' fill-rule='evenodd'/></mask>")
+def braise(a, r0, s, dur, delay, monte=9):
+    x,y=pt(r0,a)
+    return (f"<circle cx='{f(x)}' cy='{f(y)}' r='{s}' fill='url(#bz-e)' opacity='0'>"
+            f"<animate attributeName='cy' values='{f(y)};{f(y-monte)}' dur='{dur}s' begin='{delay}s' repeatCount='indefinite'/>"
+            f"<animate attributeName='opacity' values='0;1;.9;0' keyTimes='0;.25;.6;1' dur='{dur}s' begin='{delay}s' repeatCount='indefinite'/></circle>")
+body=(f"<path d='{ring_path(48.5,55)}' fill='url(#bz-r)' fill-rule='evenodd'/>"
+      "<circle cx='64' cy='64' r='55' fill='none' stroke='#c8bfff' stroke-width='.9' opacity='.75'/>"
+      "<circle cx='64' cy='64' r='48.5' fill='none' stroke='#8a78f5' stroke-width='.8' opacity='.8'/>"
+      "<g mask='url(#bz-m)'><g><rect x='34' y='0' width='60' height='20' fill='url(#bz-l)' opacity='.9'/>"
+      "<animateTransform attributeName='transform' type='rotate' from='0 64 64' to='360 64 64' dur='7s' repeatCount='indefinite'/></g></g>"
+      # le cœur chaud, en haut de l'anneau
+      + ''.join(f"<circle cx='{f(pt(51.7,a)[0])}' cy='{f(pt(51.7,a)[1])}' r='{s}' fill='url(#bz-e)'><animate attributeName='opacity' values='.55;1;.55' dur='{d}s' begin='{b}s' repeatCount='indefinite'/></circle>"
+                for a,s,d,b in ((-90,4.2,1.6,0),(-118,3.2,1.9,.5),(-62,3.4,2.1,.9),(-140,2.4,1.7,.3),(-40,2.6,2.3,1.2)))
+      + braise(-95,57,2.4,2.6,0)+braise(-75,56,1.8,2.2,.7)+braise(-115,56,2,2.9,1.3)+braise(-55,57,1.5,2.4,1.9)
+      + braise(-135,56,1.6,3.1,.4,7)+braise(-85,58,1.4,2,1.6,11)+braise(-30,56,1.3,2.7,2.2,6)
+      + twinkle(star4(*pt(60,150),2.6,'#e8e2ff'),2.6,.4))
+files['braise']=svg(body,defs)
+
+# ---------------------------------------------------------------- Ardeur
+# La couronne du dernier palier : un anneau lavande, et tout autour des
+# flammes lavande au cœur clair, qui vacillent chacune à son rythme.
+defs=("<linearGradient id='ar-r' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#c8bfff'/><stop offset='.45' stop-color='#8a78f5'/><stop offset='1' stop-color='#5d4bd9'/></linearGradient>"
+      "<linearGradient id='ar-s' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#fff' stop-opacity='0'/><stop offset='.5' stop-color='#fff' stop-opacity='.95'/><stop offset='1' stop-color='#fff' stop-opacity='0'/></linearGradient>"
+      "<radialGradient id='ar-f' cx='.5' cy='1' r='1'><stop offset='0' stop-color='#fff4dc'/><stop offset='.35' stop-color='#d9d0ff'/><stop offset='.75' stop-color='#8a78f5'/><stop offset='1' stop-color='#5d4bd9' stop-opacity='0'/></radialGradient>"
+      f"<mask id='ar-m'><path d='{ring_path(48,54)}' fill='#fff' fill-rule='evenodd'/></mask>")
+STYLE_FL=("<style>.fl{transform-box:fill-box;transform-origin:50% 100%;animation:fl 1.4s ease-in-out infinite alternate}"
+          "@keyframes fl{from{transform:scaleY(.72) scaleX(1.06)}to{transform:scaleY(1.08) scaleX(.94)}}"
+          "@media (prefers-reduced-motion:reduce){.fl{animation:none}}</style>")
+def flamme(a, L, w, dur, delay):
+    # une flamme dressée vers l'extérieur : base sur l'anneau (r 53), pointe à r 53 + L
+    tip=pt(53+L,a); b1=pt(53.2,a-w); b2=pt(53.2,a+w); c1=pt(53+L*.55,a-w*1.35); c2=pt(53+L*.55,a+w*1.35)
+    d=(f"M{f(b1[0])} {f(b1[1])}Q{f(c1[0])} {f(c1[1])} {f(tip[0])} {f(tip[1])}Q{f(c2[0])} {f(c2[1])} {f(b2[0])} {f(b2[1])}Z")
+    return f"<path class='fl' d='{d}' fill='url(#ar-f)' style='animation-duration:{dur}s;animation-delay:{delay}s'/>"
+fl=''.join(flamme(a, 8 + 4 * ((i * 7) % 3) / 2, 5.2, 1.1 + (i % 5) * .17, -(i * .23)) for i, a in enumerate(range(-90, 270, 20)))
+body=(STYLE_FL + fl
+      + f"<path d='{ring_path(48,54)}' fill='url(#ar-r)' fill-rule='evenodd'/>"
+      "<circle cx='64' cy='64' r='54' fill='none' stroke='#fff' stroke-width='.8' opacity='.7'/>"
+      "<circle cx='64' cy='64' r='48' fill='none' stroke='#3b2f7a' stroke-width='.8' opacity='.7'/>"
+      "<g mask='url(#ar-m)'><rect x='-30' y='0' width='24' height='128' fill='url(#ar-s)' transform='rotate(25 64 64)'>"
+      "<animate attributeName='x' values='-30;140' dur='4s' repeatCount='indefinite'/></rect></g>"
+      + twinkle(star4(*pt(66,-90),4.2,'#fff4dc'),2.2,0)+twinkle(star4(*pt(64,30),2.6,'#e8e2ff'),2.8,.9)+twinkle(star4(*pt(64,150),2.4,'#e8e2ff'),2.5,1.5))
+files['ardeur']=svg(body,defs)
+
 for k,v in files.items():
     open(os.path.join(OUT,k+'.svg'),'w').write(v)
     print(k, len(v))

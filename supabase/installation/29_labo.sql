@@ -53,6 +53,22 @@ drop function if exists public.labo_ech_moi(text, integer, integer);
 drop function if exists public.calendrier_officiel_poser();
 drop function if exists public.poser_calendrier(timestamptz, timestamptz, timestamptz, timestamptz, timestamptz, timestamptz);
 drop function if exists public.calendrier_officiel();
+-- Le mode sans fin de L'Echauffement (22f_sans-fin.sql de la 2.5 : un defi par
+-- jour, sans date de fin, « en attendant la 3.0 ») s'arrete avec elle : sans
+-- ces trois appels, il continuerait de verser des Eclats a qui l'appelle a la
+-- main. Ses tables restent (ech_sf_*, l'historique) ; « repartir de zero » et
+-- les deux remises a zero les vident. Le declencheur qui calait la ligne de
+-- l'evenement sur la saison (22e de la 2.5) part avec sa fonction.
+drop function if exists public.ech_sf_etat();
+drop function if exists public.ech_sf_commencer(jsonb);
+drop function if exists public.ech_sf_terminer(bigint, jsonb);
+drop function if exists public.ech_sf_etat_de(uuid);
+drop function if exists public.ech_sf_essais_du_jour(uuid, date);
+drop function if exists public.ech_sf_niveau(date);
+drop function if exists public.ech_sf_defi(date);
+drop function if exists public.ech_sf_ordre(date);
+drop function if exists public.ech_sf_premier();
+drop function if exists public.ech_saison_evenement() cascade;
 
 -- Une sauvegarde par administrateur : son compte tel qu'il etait.
 create table if not exists public.labo_sauvegardes (
@@ -422,7 +438,7 @@ language sql stable as $$
     'collection', 'inventory', 'quest_progress', 'evt_comptes', 'evt_piste_prises', 'gardes', 'favoris',
     'devine_illu', 'tirages', 'recyclages', 'combat_joueurs', 'decks', 'choc_joueurs', 'choc_epreuves',
     'raid_participants', 'raid_pris', 'raid_tentatives', 'maitrises', 'maitrises_journal',
-    'ech_scores', 'ech_paliers', 'ech_essais']) with ordinality as x(t, o)
+    'ech_scores', 'ech_paliers', 'ech_essais', 'ech_sf_scores', 'ech_sf_essais']) with ordinality as x(t, o)
    where to_regclass('public.' || x.t) is not null
 $$;
 

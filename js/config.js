@@ -204,6 +204,13 @@ const TITRES = {
   t_prisme:    { nom: 'Éclat absolu',              ton: 'L',  comment: 'Réunir les 9 Essences Brillantes' },
   t_maitre:    { nom: 'Maître de l\'extension',    ton: 'L',  comment: 'Posséder les 122 cartes' },
   t_reflet:    { nom: 'Miroir parfait',            ton: 'L',  comment: 'Réunir les 85 Reverses' },
+  /* Version 2.5 : L'Échauffement et son événement (supabase/22b_echauffement.sql,
+     22e et 22f de la 2.5). La 3.0 ne les donne plus ; ceux qui les ont les gardent. */
+  t_echauffe:  { nom: 'Échauffé',                  ton: 'E',  comment: 'Les 21 étoiles de L\'Échauffement' },
+  t_ech_round: { nom: 'Premier round',             ton: 'EV', comment: 'Palier 3 du Pass de L\'Échauffement' },
+  t_ech_feu:   { nom: 'Feu sacré',                 ton: 'EV', comment: 'Palier 19 du Pass de L\'Échauffement' },
+  t_ech_entraineur: { nom: 'Entraîneur',           ton: 'EV', comment: 'Boutique de l\'événement « L\'Échauffement »' },
+  t_ech_infatigable: { nom: 'Infatigable',         ton: 'E',  comment: 'Gagner 10 défis du jour, après L\'Échauffement' },
   t_eclaireur: { nom: 'Éclaireur des Reflets',     ton: 'EV', comment: 'Palier 3 du Pass Reflets' },
   t_collect:   { nom: 'Collectionneur de Reflets', ton: 'EV', comment: 'Boutique de l\'événement « Reflets »' },
   t_ame:       { nom: 'Âme des Reflets',           ton: 'EV', comment: 'Palier 19 du Pass Reflets' },
@@ -269,6 +276,10 @@ const FRAMES = {
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
+  /* Version 2.5 : le Pass de L'Échauffement (paliers 9 et 20), dessinés par
+     tools/cadres.py. La 3.0 ne les donne plus ; ceux qui les ont les gardent. */
+  f_braise: { nom: 'Braise', fx: 'braise', vente: false, c1: '#ffcf8a', c2: '#8a78f5' },
+  f_ardeur: { nom: 'Ardeur', fx: 'ardeur', vente: false, c1: '#c8bfff', c2: '#5d4bd9' },
   /* Version 3.0 : le Pass et le Raid du Choc des Sections. */
   f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#62d84e', c2: '#7c3aed' },
   f_foudre: { nom: 'The French Sorcerer', fx: 'foudre', vente: false, c1: '#ec8fff', c2: '#6a2bd6' },

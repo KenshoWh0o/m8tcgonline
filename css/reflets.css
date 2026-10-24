@@ -357,6 +357,9 @@
 .ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg')}
 .ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg')}
 .ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg')}
+/* Version 2.5 : le Pass de L'Échauffement. */
+.ava.fx-braise .fx-deco{background-image:url('../assets/cadres/braise.svg')}
+.ava.fx-ardeur .fx-deco{background-image:url('../assets/cadres/ardeur.svg')}
 
 /* ============ Boutique : invitations, limites ============ */
 .ofbadge.limite{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}

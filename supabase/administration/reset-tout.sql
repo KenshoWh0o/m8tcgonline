@@ -19,7 +19,8 @@
 --    · la progression des quetes, les compteurs, les boites de reception ;
 --    · tous les echanges, y compris ceux en attente ;
 --    · les evenements : soldes, Pass, Devine l'illu ;
---      et les etoiles et essais de L'Echauffement (2.1.4) s'il est installe ;
+--      et les etoiles et essais de L'Echauffement (2.1.4, 2.5) et de son
+--      mode sans fin, s'ils sont installes ;
 --    · les Combats : Sections, XP et niveaux, decks, campagnes, combats en
 --      cours, defis, Epreuves du Choc, Raid (participations ET degats de la
 --      saison : le boss repart avec tous ses PV) ;
@@ -27,7 +28,9 @@
 --      montraient une carte redeviennent l'etoile ; les cadres reviennent
 --      a celui de base ;
 --    · la carte unique : la chasse reprend, la carte est de nouveau a
---      trouver.
+--      trouver ;
+--    · les sauvegardes du Labo (labo_sauvegardes) : aucun administrateur
+--      ne remet son compte d'avant le lancement.
 --
 --  CE QUI EST GARDE :
 --    · les comptes eux-memes — personne n'a a se reinscrire ;
@@ -71,8 +74,10 @@ declare
     'combat_joueurs', 'decks', 'combats_ouverts', 'defis', 'choc_joueurs',
     'choc_epreuves', 'raid_participants', 'raid_pris', 'raid_tentatives',
     'trades', 'chasse',
-    -- L'Echauffement (2.1.4), s'il a ete installe sur cette base :
-    'ech_scores', 'ech_essais', 'ech_paliers',
+    -- L'Echauffement (2.1.4, puis 2.5), s'il a ete installe sur cette base :
+    'ech_scores', 'ech_essais', 'ech_paliers', 'ech_sf_scores', 'ech_sf_essais',
+    -- les sauvegardes du Labo (29_labo.sql) :
+    'labo_sauvegardes',
     -- gardees :
     'friendships', 'invitations', 'annonces'];
   inconnues text;
@@ -134,6 +139,15 @@ begin
     execute 'delete from public.ech_scores';
     execute 'delete from public.ech_essais';
     execute 'delete from public.ech_paliers';
+  end if;
+  -- Son mode sans fin (22f_sans-fin.sql de la 2.5), s'il a ete installe :
+  if to_regclass('public.ech_sf_scores') is not null then
+    execute 'delete from public.ech_sf_scores';
+    execute 'delete from public.ech_sf_essais';
+  end if;
+  -- Les sauvegardes du Labo : personne ne remet son compte d'avant.
+  if to_regclass('public.labo_sauvegardes') is not null then
+    execute 'delete from public.labo_sauvegardes';
   end if;
   -- Le boss du Raid repart avec tous ses PV : les degats de chaque saison
   -- et les phases abattues s'effacent (raid_saisons se recree tout seul).

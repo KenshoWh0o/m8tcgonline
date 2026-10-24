@@ -20,7 +20,8 @@
 --    · la progression des quetes, les compteurs (boosters ouverts,
 --      echanges, fabrications, serie de jours), la boite de reception ;
 --    · les evenements : soldes (Prismes, Etincelles…), Pass, Devine l'illu ;
---      et les etoiles et essais de L'Echauffement (2.1.4) s'il est installe ;
+--      et les etoiles et essais de L'Echauffement (2.1.4, 2.5) et de son
+--      mode sans fin, s'ils sont installes ;
 --    · les Combats : Section, XP et niveau, decks, campagne, combats en
 --      cours, defis (les siens ET ceux qu'on lui a lances), Epreuve du
 --      Choc, participation au Raid ;
@@ -29,8 +30,9 @@
 --      base.
 --
 --  CE QUI EST GARDE : le compte, le pseudo, la devise, les amis, les
---  invitations qu'il a creees, ses reglages « a garder » par rarete, et
---  les droits d'administrateur.
+--  invitations qu'il a creees, ses reglages « a garder » par rarete, les
+--  droits d'administrateur, et la sauvegarde du Labo d'un administrateur
+--  (labo_sauvegardes) : c'est elle qui lui permet de revenir en arriere.
 --
 --  ET AUTOUR :
 --    · ses demandes d'echange en attente sont annulees (l'historique reste) ;
@@ -60,10 +62,10 @@ declare
     'combat_joueurs', 'decks', 'combats_ouverts', 'defis', 'choc_joueurs',
     'choc_epreuves', 'raid_participants', 'raid_pris', 'raid_tentatives',
     'trades', 'chasse',
-    -- L'Echauffement (2.1.4), s'il a ete installe sur cette base :
-    'ech_scores', 'ech_essais', 'ech_paliers',
+    -- L'Echauffement (2.1.4, puis 2.5), s'il a ete installe sur cette base :
+    'ech_scores', 'ech_essais', 'ech_paliers', 'ech_sf_scores', 'ech_sf_essais',
     -- gardees :
-    'friendships', 'invitations', 'annonces'];
+    'friendships', 'invitations', 'annonces', 'labo_sauvegardes'];
   inconnues text;
   unique_rendue boolean;
 begin
@@ -117,6 +119,11 @@ begin
     execute 'delete from public.ech_scores  where user_id = $1' using uid;
     execute 'delete from public.ech_essais  where user_id = $1' using uid;
     execute 'delete from public.ech_paliers where user_id = $1' using uid;
+  end if;
+  -- Son mode sans fin (22f_sans-fin.sql de la 2.5), s'il a ete installe :
+  if to_regclass('public.ech_sf_scores') is not null then
+    execute 'delete from public.ech_sf_scores where user_id = $1' using uid;
+    execute 'delete from public.ech_sf_essais where user_id = $1' using uid;
   end if;
 
   -- Les demandes d'echange en cours n'ont plus d'objet sans collection.
