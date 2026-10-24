@@ -153,7 +153,22 @@
     ['e_packs70', 'ev',      'packs',    70, 50, null, 'Soixante-dix boosters', 'Ouvre 70 boosters pendant l\'événement.', 6, 'reflets', 'prismes'],
     ['e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets', 'Conclus 3 échanges.', 7, 'reflets', 'prismes'],
     ['e_recycle', 'ev',      'recycle', 150, 30, null, 'Grand ménage',        'Recycle 150 doublons pendant l\'événement.', 8, 'reflets', 'prismes'],
-    ['e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes']
+    ['e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes'],
+    /* Version 2.5 : L'Échauffement, ses quêtes paient en Braises. */
+    ['ej_visite',   'ev_jour', 'ev_visite',     1, 10, null, 'À l\'entraînement',     'Passe voir L\'Échauffement aujourd\'hui.', 1, 'echauffement', 'prismes'],
+    ['ej_combat',   'ev_jour', 'ech_combat',    1, 10, null, 'Un combat',             'Termine un combat de L\'Échauffement.', 2, 'echauffement', 'prismes'],
+    ['ej_victoire', 'ev_jour', 'ech_victoire',  1, 15, null, 'Une victoire',          'Gagne un combat de L\'Échauffement.', 3, 'echauffement', 'prismes'],
+    ['ej_packs',    'ev_jour', 'packs',         4, 15, null, 'Quatre boosters',       'Ouvre 4 boosters aujourd\'hui.', 4, 'echauffement', 'prismes'],
+    ['ee_sept',     'ev',      'ech_gagnes',    7, 60, null, 'Les sept défis',        'Gagne les sept défis.', 1, 'echauffement', 'prismes'],
+    ['ee_parfaits', 'ev',      'ech_parfaits',  3, 40, null, 'Trois fois parfait',    'Fais trois étoiles à 3 défis.', 2, 'echauffement', 'prismes'],
+    ['ee_etoiles',  'ev',      'ech_etoiles',  21, 80, null, 'Vingt et une étoiles',  'Les trois étoiles aux sept défis.', 3, 'echauffement', 'prismes'],
+    ['ee_joueurs',  'ev',      'ech_joueurs',  10, 40, null, 'Tout l\'effectif',      'Fais combattre 10 Joueurs différents.', 4, 'echauffement', 'prismes'],
+    ['ee_eclats',   'ev',      'ech_eclat',     5, 30, null, 'Cinq coups d\'éclat',   'Place 5 coups d\'éclat.', 5, 'echauffement', 'prismes'],
+    ['ee_reverse',  'ev',      'fab_rev',       1, 40, null, 'Une Reverse fabriquée', 'Fabrique une Reverse avec tes Fragments.', 6, 'echauffement', 'prismes'],
+    ['ee_packs',    'ev',      'packs',        30, 40, null, 'Trente boosters',       'Ouvre 30 boosters pendant l\'événement.', 7, 'echauffement', 'prismes'],
+    ['ee_recycle',  'ev',      'recycle',     100, 30, null, 'Grand ménage',          'Recycle 100 doublons pendant l\'événement.', 8, 'echauffement', 'prismes'],
+    ['ee_trade',    'ev',      'trades',        2, 30, null, 'Deux échanges',         'Conclus 2 échanges pendant l\'événement.', 9, 'echauffement', 'prismes'],
+    ['m_sf10',      'milestone', 'sf_victoire', 10,  0, 't_ech_infatigable', 'Infatigable', 'Gagne 10 défis du jour, après L\'Échauffement.', 29]
   ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie]) =>
     ({ id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement: evenement || null, monnaie: monnaie || 'eclats' }));
 
@@ -175,12 +190,19 @@
     ['ev_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      70, 'tickets',   2,   null, false, 1, 'prismes', 'reflets', 5],
     ['ev_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 60, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5],
     ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
-    ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null]
+    ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
+    /* Version 2.5 : celle de L'Échauffement, en Braises. */
+    ['eh_boosters',  'evenement', 'x2 Boosters',       'Deux boosters à ouvrir tout de suite.',      80, 'tickets',    2, null, false, 1, 'prismes', 'echauffement', 4],
+    ['eh_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 2, 'prismes', 'echauffement', 4],
+    ['eh_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n\'as pas encore.', 160, 'reverse_R',  1, null, false, 3, 'prismes', 'echauffement', 2],
+    ['t_ech_entraineur', 'evenement', 'Titre « Entraîneur »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'echauffement', null]
   ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
        devise: devise || 'eclats', evenement: evenement || null, limite: limite == null ? null : limite }));
 
-  /* Le Pass de l'événement (21_reflets.sql). */
+  /* Le Pass de chaque événement : Reflets (21_reflets.sql) ici, L'Échauffement
+     (22e_echauffement-evenement.sql) dans ECH_PISTE, js/echauffement.js. */
+  const pisteDe = ev => (ev === 'echauffement' ? ECH_PISTE : PISTE);
   const PISTE = [
     [1, 15, 'boosters', 2, null, '2 boosters'], [2, 40, 'eclats', 150, null, '150 Éclats'],
     [3, 70, 'titre', 0, 't_eclaireur', 'Titre « Éclaireur des Reflets »'], [4, 105, 'fragments', 250, null, '250 Fragments'],
@@ -264,7 +286,7 @@
   /* bump_quests, 01_schema.sql */
   function bump(p, m, n) {
     if (n <= 0) return;
-    QUETES.filter(q => q.metric === m).forEach(q => {
+    QUETES.filter(q => q.metric === m && (!q.evenement || q.evenement === evenementEnCours())).forEach(q => {
       const k = cleQp(p, q);
       const qp = S.qp[k];
       if (!qp) S.qp[k] = { progress: n, claimed: false };
@@ -403,7 +425,7 @@
         /* Version 2.5 (22d_admin.sql) : la date de sortie de chaque version.
            Ici, la 2.5 sort avec L'Échauffement, sauf date posée par le Labo. */
         sorties: sortiesDe() },
-      prismes: compte(p).solde,
+      prismes: evenementEnCours() ? compte(p).solde : 0,
       invitations: S.invitations.filter(i => i.auteur === p).map(i => ({ code: i.code, cree_le: iso(i.cree_le),
         utilise_par: i.utilise_par ? profil(i.utilise_par).pseudo : null, utilise_le: i.utilise_le ? iso(i.utilise_le) : null })),
       col: garde(colDe(p)),
@@ -423,34 +445,48 @@
   }
 
   /* ======================================== version 2.0, 21_reflets.sql */
-  /* L'événement « Reflets » : deux semaines à partir de la création du monde. */
-  function evenementEnCours() {
-    const e = S.evenement;
-    return e && now() >= e.debut && now() < e.fin ? e.code : null;
+  /* Les événements à code : Reflets, ouvert deux semaines à la création du
+     monde, puis L'Échauffement, dont la ligne suit sa saison (le déclencheur
+     de 22e_echauffement-evenement.sql) : mêmes dates, et trois jours de récap. */
+  const ECH_EV = { titre: 'L\'Échauffement', code: 'echauffement',
+    texte: 'Sept défis, un par jour, avec tes Joueurs. Gagne des Braises et remonte le Pass.' };
+  function evenements() {
+    const s = echSaison();
+    return (S.evenement ? [S.evenement] : []).concat([Object.assign({}, ECH_EV,
+      { debut: s.debut, fin: s.fin, recap_jusqua: s.fin + 3 * 86400000 })]);
   }
-  /* evenement_recent, 21_reflets.sql : fini depuis moins de trois jours. */
-  /* La fin du récap : evenements.recap_jusqua, ou trois jours après la fin
-     (evenement_recent, 22b_echauffement.sql). */
+  /* evenement_en_cours, 21_reflets.sql */
+  function evenementEnCours() {
+    const e = evenements().filter(x => x.code && now() >= x.debut && now() < x.fin).sort((x, y) => y.debut - x.debut)[0];
+    return e ? e.code : null;
+  }
+  /* evenement_recent, 22b_echauffement.sql : la fin du récap est recap_jusqua,
+     ou trois jours après la fin. */
   const recapFin = e => (e.recap_jusqua != null ? e.recap_jusqua : e.fin + 3 * 86400000);
   function evenementRecent() {
-    const e = S.evenement;
-    if (!e || !e.code || now() < e.fin || now() >= recapFin(e)) return null;
-    return { code: e.code, titre: e.titre, debut: iso(e.debut), fin: iso(e.fin), jusqua: iso(recapFin(e)) };
+    if (evenementEnCours()) return null;
+    const e = evenements().filter(x => x.code && now() >= x.fin && now() < recapFin(x)).sort((x, y) => y.fin - x.fin)[0];
+    return e ? { code: e.code, titre: e.titre, debut: iso(e.debut), fin: iso(e.fin), jusqua: iso(recapFin(e)) } : null;
   }
+  /* evenement_actif, 15_evenements.sql : en cours, sinon le prochain dans les quinze jours. */
   function evenementActif() {
-    const e = S.evenement;
-    if (!e || now() >= e.fin) return null;
-    return { titre: e.titre, texte: e.texte, code: e.code, debut: iso(e.debut), fin: iso(e.fin),
-      ticket_minutes: null, a_venir: now() < e.debut };
+    const l = evenements();
+    const en = l.filter(x => now() >= x.debut && now() < x.fin).sort((x, y) => y.debut - x.debut)[0];
+    const av = l.filter(x => x.debut > now() && x.debut < now() + 15 * 86400000).sort((x, y) => x.debut - y.debut)[0];
+    const e = en || av;
+    return e ? { titre: e.titre, texte: e.texte, code: e.code, debut: iso(e.debut), fin: iso(e.fin),
+      ticket_minutes: null, a_venir: !en } : null;
   }
-  function compte(p) {
-    const ev = evenementEnCours() || 'reflets';
+  function compte(p, code) {
+    const ev = code || evenementEnCours() || 'reflets';
     const k = p + '|' + ev;
     return (S.evt.comptes[k] = S.evt.comptes[k] || { solde: 0, total: 0 });
   }
-  function crediterPrismes(p, n) {
-    if (!evenementEnCours() || !(n > 0)) return;
-    const c = compte(p); c.solde += n; c.total += n;
+  /* crediter_prismes, 21_reflets.sql : dans le compte de l'événement dit. */
+  function crediterPrismes(p, n, code) {
+    const ev = code || evenementEnCours();
+    if (!ev || !(n > 0)) return;
+    const c = compte(p, ev); c.solde += n; c.total += n;
   }
 
   /* accorder, 21_reflets.sql */
@@ -685,7 +721,7 @@
     if (qp && qp.claimed) refuser('Récompense déjà récupérée.');
     if ((qp ? qp.progress : 0) < objectif(q)) refuser('Quête non terminée.');
     qp.claimed = true;
-    if (q.reward > 0 && q.monnaie === 'prismes') crediterPrismes(p, q.reward);
+    if (q.reward > 0 && q.monnaie === 'prismes') crediterPrismes(p, q.reward, q.evenement);
     else if (q.reward > 0) profil(p).shards += q.reward;
     if (q.item_id) {
       if (carte(q.item_id)) { if (!(q.item_id in colDe(p))) colDe(p)[q.item_id] = 1; }
@@ -707,8 +743,8 @@
       if ((pr.fragments || 0) < it.prix) refuser('Pas assez de Fragments.');
       pr.fragments -= it.prix;
     } else if (it.devise === 'prismes') {
-      const c = compte(p);
-      if (c.solde < it.prix) refuser('Pas assez de Prismes.');
+      const c = compte(p, it.evenement);
+      if (c.solde < it.prix) refuser(`Pas assez de ${it.evenement === 'echauffement' ? 'Braises' : 'Prismes'}.`);
       c.solde -= it.prix;
     } else {
       if (pr.shards < it.prix) refuser('Pas assez d\'Éclats.');
@@ -1111,6 +1147,7 @@
     pr.fragments -= cout;
     pr.fabrications = (pr.fabrications || 0) + 1;
     colDe(p)[p_carte] = 1;
+    if (k.rev) bump(p, 'fab_rev', 1);
     syncCollection(p);
     checkPromos(p);
     return me(p);
@@ -1158,13 +1195,23 @@
   RPC.evenement_etat = p => {
     const ev = evenementEnCours();
     if (!ev) return null;
+    if (ev === 'echauffement') {
+      const jours = Math.max(0, (now() - echSaison().debut) / 86400000);
+      [['b_nova', .95], ['b_lumen', .8], ['b_mira', .5], ['b_kairo', .3]].forEach(([id, f]) => {
+        if (!S.profils[id]) return;
+        const c = compte(id, ev), t = Math.round(f * Math.min(1225, (jours + .5) * 125));
+        if (t > c.total) { c.solde += t - c.total; c.total = t; }
+      });
+    }
     /* La quête « Passe voir l'événement » (ev_visite, 21_reflets.sql). */
     QUETES.filter(q => q.metric === 'ev_visite').forEach(q => {
       const k = cleQp(p, q);
       if (!S.qp[k]) S.qp[k] = { progress: 1, claimed: false };
     });
-    const c = compte(p);
-    const prises = S.evt.prises[p] || [];
+    const c = compte(p, ev);
+    const prises = (S.evt.prises[p] || []).filter(x => typeof x === 'number' ? ev === 'reflets' : x.startsWith(ev + '|'))
+      .map(x => (typeof x === 'number' ? x : +x.split('|')[1]));
+    const tous = Object.entries(S.evt.comptes).filter(([k, v]) => k.endsWith('|' + ev) && v.total > 0);
     const top = Object.entries(S.evt.comptes)
       .filter(([k, v]) => k.endsWith('|' + ev) && v.total > 0)
       .map(([k, v]) => ({ id: k.split('|')[0], total: v.total }))
@@ -1172,16 +1219,20 @@
       .map(x => { const o = profil(x.id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame,
         titre: o.titre || null, photo: null, total: x.total, moi: x.id === p }; });
     return { code: ev, solde: c.solde, total: c.total,
-      piste: PISTE.map(pa => Object.assign({}, pa, { pris: prises.includes(pa.palier) })), top };
+      rang: c.total > 0 ? tous.filter(([, v]) => v.total > c.total).length + 1 : null, joueurs: tous.length,
+      piste: pisteDe(ev).map(pa => Object.assign({}, pa, { pris: prises.includes(pa.palier) })), top };
   };
+  /* Les paliers pris : un nombre pour Reflets (comme avant), « code|palier » ensuite. */
   RPC.piste_reclamer = (p, { p_palier }) => {
-    if (!evenementEnCours()) refuser('Aucun événement en cours.');
-    const pa = PISTE.find(x => x.palier === p_palier);
+    const ev = evenementEnCours();
+    if (!ev) refuser('Aucun événement en cours.');
+    const pa = pisteDe(ev).find(x => x.palier === p_palier);
     if (!pa) refuser('Palier inconnu.');
-    if (compte(p).total < pa.seuil) refuser('Palier pas encore atteint.');
+    if (compte(p, ev).total < pa.seuil) refuser('Palier pas encore atteint.');
     const prises = (S.evt.prises[p] = S.evt.prises[p] || []);
-    if (prises.includes(pa.palier)) refuser('Récompense déjà récupérée.');
-    prises.push(pa.palier);
+    const cle = ev === 'reflets' ? pa.palier : ev + '|' + pa.palier;
+    if (prises.includes(cle)) refuser('Récompense déjà récupérée.');
+    prises.push(cle);
     const cartes = accorder(p, pa.type, pa.montant, pa.objet);
     return { cartes, etat: me(p) };
   };
@@ -1193,9 +1244,15 @@
     const tous = Object.entries(S.evt.comptes).filter(([k, v]) => k.endsWith('|' + e.code) && v.total > 0)
       .map(([k, v]) => ({ id: k.split('|')[0], total: v.total })).sort((a, b) => b.total - a.total);
     const col = colDe(p);
-    return Object.assign(e, {
-      total: c.total, paliers: PISTE.filter(x => x.seuil <= c.total).length, paliers_max: PISTE.length,
-      pris: (S.evt.prises[p] || []).length,
+    const ech = e.code === 'echauffement' ? (() => {
+      const s = echSaison(), n = ECH_DEFIS.map(d => (s.scores[p + '|' + d.jour] || {}).etoiles || 0);
+      return { etoiles: n.reduce((x, y) => x + y, 0), gagnes: n.filter(x => x > 0).length, parfaits: n.filter(x => x === 3).length,
+        defis: ECH_DEFIS.length, combats: Object.values(s.essais || {}).filter(x => x.p === p && x.fini).length };
+    })() : {};
+    return Object.assign(e, ech, {
+      total: c.total, paliers: pisteDe(e.code).filter(x => x.seuil <= c.total).length, paliers_max: pisteDe(e.code).length,
+      pris: (S.evt.prises[p] || []).filter(x => (typeof x === 'number') === (e.code === 'reflets')
+        && (typeof x === 'number' || x.startsWith(e.code + '|'))).length,
       illus: Object.entries(S.illu || {}).filter(([k, v]) => k.startsWith(p + '|') && v.trouve).length,
       reverses: reverses.filter(k => (col[k.id] || 0) > 0).length, reverses_max: reverses.length,
       quetes: QUETES.filter(q => q.evenement === e.code && (S.qp[cleQp(p, q)] || {}).claimed).length,
@@ -1227,7 +1284,9 @@
      du jeu (js/echauffement.js), lui-même copie de ech_simuler : une seule
      copie en JavaScript. Pour essayer : `?echauffement` dans
      l'adresse ouvre la saison tout de suite avec trois défis ouverts,
-     `?echauffement=7` les sept ; Reflets est alors fini, et le visiteur
+     `?echauffement=7` les sept, `?echauffement=fin` la saison finie depuis
+     une heure (son récap), `?echauffement=sf` le quatrième jour du mode sans
+     fin ; Reflets est alors fini, et le visiteur
      reçoit des Joueurs s'il en a moins de neuf. Le prébuild
      (tools/demo.py --prebuild) pose DEMO_ECHAUFFEMENT pour l'ouvrir d'office. */
   const ECH_DEFIS = [
@@ -1240,6 +1299,8 @@
     { jour: 7, adversaire: 'c116', pv: 1150, regle: 'final', param: { seuil: 80, plus: 20 }, titre: 'Le dernier défi', texte: 'Il ignore les coups de moins de 80, et les siens gagnent 20 à chaque fois.' }
   ];
   const ECH_PRIX = [80, 80, 140];
+  /* Les Braises de chaque étoile (ech_terminer). */
+  const ECH_BRAISES_S = [15, 15, 25];
   /* ech_indices : trois étoiles au défi n, l'indice n ; les sept, le jour 0. */
   const ECH_INDICES = [
     { jour: 0, titre: 'Tout est prêt', texte: 'Rendez-vous quand tu auras les cartes en main.', visuel: { type: 'mot', valeur: 'Bientôt' } },
@@ -1265,8 +1326,9 @@
       const d = Math.max(now(), r);
       S.ech = { debut: d, fin: d + 9 * 86400000, scores: {}, paliers: {}, essais: {}, seq: 0 };
     }
-    const m = location.search.match(/[?&]echauffement(?:=(\d))?/);
-    const f = m ? Math.min(7, Math.max(1, +(m[1] || 3))) : (typeof DEMO_ECHAUFFEMENT === 'number' ? DEMO_ECHAUFFEMENT : 0);
+    const m = location.search.match(/[?&]echauffement(?:=(\d|fin|sf))?/);
+    const f = m ? (m[1] === 'fin' ? 10 : m[1] === 'sf' ? 13 : Math.min(7, Math.max(1, +(m[1] || 3))))
+      : (typeof DEMO_ECHAUFFEMENT === 'number' ? DEMO_ECHAUFFEMENT : 0);
     if (f && S.ech.force !== f) {
       S.ech.debut = now() - (f - 1) * 86400000 - 3600000; S.ech.fin = S.ech.debut + 9 * 86400000; S.ech.force = f;
       /* Reflets et son récap sont finis. */
@@ -1300,15 +1362,10 @@
     };
   }
   RPC.ech_etat = p => echEtat(p);
-  RPC.ech_commencer = (p, { p_jour, p_equipe }) => {
-    const s = echSaison();
-    if (now() < s.debut) refuser('L\'Échauffement n\'a pas commencé.');
-    if (now() >= s.fin) refuser('L\'Échauffement est terminé.');
-    if (!(p_jour >= 1 && p_jour <= echOuvert())) refuser('Ce défi n\'est pas encore ouvert.');
+  /* ech_equipe_propre : un à trois Joueurs possédés, sans doublon, une attaque qui existe. */
+  function echEquipePropre(p, p_equipe) {
     if (!Array.isArray(p_equipe)) refuser('Équipe invalide.');
     if (p_equipe.length < 1 || p_equipe.length > 3) refuser('Une équipe compte un à trois Joueurs.');
-    const deja = echEssaisDuJour(p, p_jour);
-    if (deja >= 3) refuser('Plus d\'essai pour ce défi aujourd\'hui : reviens demain.');
     const propre = [];
     for (const e of p_equipe) {
       let cid = e && e.carte;
@@ -1321,6 +1378,32 @@
       if (a < 0 || (st.attaques.length && a >= st.attaques.length) || (!st.attaques.length && a !== 0)) refuser('Attaque inconnue.');
       propre.push({ carte: cid, a });
     }
+    return propre;
+  }
+  /* ech_sync_quetes : les défis gagnés, à trois étoiles, les étoiles, les Joueurs qui ont combattu. */
+  function echSyncQuetes(p) {
+    const s = echSaison();
+    const n = ECH_DEFIS.map(d => (s.scores[p + '|' + d.jour] || {}).etoiles || 0);
+    const js = new Set();
+    Object.values(s.essais || {}).forEach(e => { if (e.p === p && e.fini) e.equipe.forEach(x => js.add(x.carte)); });
+    const v = { ech_gagnes: n.filter(x => x > 0).length, ech_parfaits: n.filter(x => x === 3).length,
+      ech_etoiles: n.reduce((x, y) => x + y, 0), ech_joueurs: js.size };
+    QUETES.filter(q => q.metric in v && (!q.evenement || q.evenement === evenementEnCours())).forEach(q => {
+      const k = cleQp(p, q), qp = S.qp[k];
+      if (!qp) S.qp[k] = { progress: v[q.metric], claimed: false };
+      else if (!qp.claimed) qp.progress = Math.max(qp.progress, v[q.metric]);
+    });
+  }
+  RPC.ech_commencer = (p, { p_jour, p_equipe }) => {
+    const s = echSaison();
+    if (now() < s.debut) refuser('L\'Échauffement n\'a pas commencé.');
+    if (now() >= s.fin) refuser('L\'Échauffement est terminé.');
+    if (!(p_jour >= 1 && p_jour <= echOuvert())) refuser('Ce défi n\'est pas encore ouvert.');
+    if (!Array.isArray(p_equipe)) refuser('Équipe invalide.');
+    if (p_equipe.length < 1 || p_equipe.length > 3) refuser('Une équipe compte un à trois Joueurs.');
+    const deja = echEssaisDuJour(p, p_jour);
+    if (deja >= 3) refuser('Plus d\'essai pour ce défi aujourd\'hui : reviens demain.');
+    const propre = echEquipePropre(p, p_equipe);
     s.essais = s.essais || {};
     const id = s.seq = (s.seq || 0) + 1;
     s.essais[id] = { p, jour: p_jour, equipe: propre, le: now(), fini: false };
@@ -1344,18 +1427,129 @@
     const cle = p + '|' + es.jour;
     const vieux = s.scores[cle];
     const avant = vieux ? vieux.etoiles : 0;
-    const gain = { eclats: 0, boosters: 0, titre: null };
+    const gain = { eclats: 0, braises: 0, boosters: 0, titre: null };
     if (r.etoiles > avant) {
-      for (let k = avant + 1; k <= r.etoiles; k++) gain.eclats += ECH_PRIX[k - 1];
+      for (let k = avant + 1; k <= r.etoiles; k++) { gain.eclats += ECH_PRIX[k - 1]; gain.braises += ECH_BRAISES_S[k - 1]; }
       s.scores[cle] = { etoiles: r.etoiles, equipe: es.equipe, tours: r.tours };
       accorder(p, 'eclats', gain.eclats, null);
+      crediterPrismes(p, gain.braises, 'echauffement');
     } else if (!vieux) s.scores[cle] = { etoiles: 0, equipe: es.equipe, tours: r.tours };
+    bump(p, 'ech_combat', 1);
+    if (r.gagne) bump(p, 'ech_victoire', 1);
+    if (r.log.some(l => l[1] === 'eclat')) bump(p, 'ech_eclat', 1);
+    echSyncQuetes(p);
     const indice = r.etoiles === 3 && avant < 3 ? ECH_INDICES.find(x => x.jour === es.jour) : null;
     const pal = (s.paliers[p] = s.paliers[p] || {});
     const notes = ECH_DEFIS.map(x => (s.scores[p + '|' + x.jour] || {}).etoiles || 0);
     if (notes.filter(x => x > 0).length === 7 && !pal.sept) { pal.sept = true; gain.boosters = 3; accorder(p, 'boosters', 3, null); }
     if (notes.reduce((x, y) => x + y, 0) === 21 && !pal.parfait) { pal.parfait = true; gain.titre = 't_echauffe'; accorder(p, 'titre', 0, 't_echauffe'); }
     return { resultat: r, avant, gain, indice, etat: echEtat(p), me: me(p) };
+  };
+  /* ---------- Le mode sans fin (22f_sans-fin.sql) ---------- */
+  /* Après la saison : un défi par jour, le même pour tous, dans l'ordre de
+     ech_sf_adversaires (21 adversaires, puis on recommence). Les notes et les
+     essais vivent avec la saison (S.ech.sfScores, S.ech.sfEssais). */
+  const ECH_SF = [
+    [1, 'c057', 850, 'aucune', {}, 1, 'Sans règle', 'Pas de règle aujourd\'hui.'],
+    [2, 'c063', 1000, 'carapace', { seuil: 80 }, 2, 'Carapace', 'Il ignore les coups de moins de 80.'],
+    [3, 'c079', 600, 'eclair', {}, 3, 'Frappe éclair', 'Il frappe à chaque tour.'],
+    [4, 'c074', 750, 'riposte', { degats: 20 }, 1, 'Riposte', 'Chaque coup que tu lui portes te coûte 20 de Défense.'],
+    [5, 'c100', 1200, 'final', { seuil: 70, plus: 15 }, 4, 'Carapace et fureur', 'Il ignore les coups de moins de 70, et les siens gagnent 15 à chaque fois.'],
+    [6, 'c112', 1150, 'affinite', { couleur: 'rose' }, 2, 'Affinité Rose', 'Tes Joueurs Roses frappent deux fois plus fort.'],
+    [7, 'c071', 500, 'eclair', {}, 1, 'Frappe éclair', 'Il frappe à chaque tour.'],
+    [8, 'c035', 950, 'fureur', { plus: 30 }, 3, 'Fureur', 'Ses coups gagnent 30 de dégâts à chaque fois.'],
+    [9, 'c023', 850, 'aucune', {}, 2, 'Sans règle', 'Pas de règle aujourd\'hui.'],
+    [10, 'c117', 900, 'carapace', { seuil: 100 }, 4, 'Carapace', 'Il ignore les coups de moins de 100.'],
+    [11, 'c058', 1050, 'affinite', { couleur: 'neutre' }, 1, 'Affinité Neutre', 'Tes Joueurs Neutres frappent deux fois plus fort.'],
+    [12, 'c029', 1100, 'final', { seuil: 90, plus: 25 }, 3, 'Carapace et fureur', 'Il ignore les coups de moins de 90, et les siens gagnent 25 à chaque fois.'],
+    [13, 'c012', 700, 'riposte', { degats: 30 }, 2, 'Riposte', 'Chaque coup que tu lui portes te coûte 30 de Défense.'],
+    [14, 'c118', 550, 'fureur', { plus: 40 }, 1, 'Fureur', 'Ses coups gagnent 40 de dégâts à chaque fois.'],
+    [15, 'c022', 500, 'eclair', {}, 4, 'Frappe éclair', 'Il frappe à chaque tour.'],
+    [16, 'c113', 1650, 'affinite', { couleur: 'mauve' }, 3, 'Affinité Mauve', 'Tes Joueurs Mauves frappent deux fois plus fort.'],
+    [17, 'c121', 900, 'fureur', { plus: 20 }, 2, 'Fureur', 'Ses coups gagnent 20 de dégâts à chaque fois.'],
+    [18, 'c069', 1200, 'aucune', {}, 1, 'Sans règle', 'Pas de règle aujourd\'hui.'],
+    [19, 'c050', 1100, 'carapace', { seuil: 90 }, 3, 'Carapace', 'Il ignore les coups de moins de 90.'],
+    [20, 'c025', 850, 'aucune', {}, 2, 'Sans règle', 'Pas de règle aujourd\'hui.'],
+    [21, 'c068', 800, 'riposte', { degats: 40 }, 4, 'Riposte', 'Chaque coup que tu lui portes te coûte 40 de Défense.']
+  ].map(([ordre, adversaire, pv, regle, param, niveau, titre, texte]) => ({ ordre, adversaire, pv, regle, param, niveau, titre, texte }));
+  const ECH_SF_PRIX = [30, 30, 60];
+  const demain = j => { const d = new Date(j + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+  const ecartJours = (a, b) => Math.round((Date.parse(a + 'T12:00:00Z') - Date.parse(b + 'T12:00:00Z')) / 86400000);
+  /* ech_sf_premier, ech_sf_ordre, ech_sf_defi */
+  const sfPremier = () => jourParis(echSaison().fin);
+  const sfOrdre = j => { const n = ECH_SF.length; return ((ecartJours(j, sfPremier()) % n) + n) % n + 1; };
+  const sfDefi = j => Object.assign({ jour: 0 }, ECH_SF.find(x => x.ordre === sfOrdre(j)));
+  const sfData = () => { const s = echSaison(); s.sfScores = s.sfScores || {}; s.sfEssais = s.sfEssais || {}; return s; };
+  const sfEssaisDuJour = (p, j) => Object.values(sfData().sfEssais).filter(e => e.p === p && e.jour === j).length;
+  /* Les joueurs simulés ont joué les jours passés : de quoi faire un classement. */
+  function sfBots() {
+    const s = sfData(), auj = jourParis(now());
+    BOTS.forEach((b, i) => {
+      for (let j = sfPremier(); j < auj; j = demain(j)) {
+        const k = b.id + '|' + j;
+        if (!(k in s.sfScores)) s.sfScores[k] = { etoiles: hacher(k) % (i === 3 ? 3 : 5) > 1 ? 1 + hacher(k + '!') % 3 : 0, equipe: [], tours: 6 };
+      }
+    });
+  }
+  /* ech_sf_etat_de */
+  function sfEtat(p) {
+    const s = sfData();
+    if (now() < s.fin) return { ouvert: false, debut: iso(s.fin), serveur: iso(now()) };
+    sfBots();
+    const j = jourParis(now()), d = sfDefi(j), sc = s.sfScores[p + '|' + j];
+    let serie = 0;
+    for (let k = sc && sc.etoiles > 0 ? j : hier(j); (s.sfScores[p + '|' + k] || {}).etoiles > 0; k = hier(k)) serie++;
+    const totaux = {};
+    Object.entries(s.sfScores).forEach(([k, v]) => { const id = k.split('|')[0]; totaux[id] = (totaux[id] || 0) + v.etoiles; });
+    const tot = totaux[p] || 0;
+    const top = Object.entries(totaux).filter(([, t]) => t > 0).sort((a, b) => b[1] - a[1]);
+    return {
+      ouvert: true, debut: iso(s.fin), serveur: iso(now()), jour: j, n: ecartJours(j, sfPremier()) + 1, essais_max: 3, prix: ECH_SF_PRIX,
+      defi: { adversaire: d.adversaire, pv: d.pv, regle: d.regle, param: d.param, titre: d.titre, texte: d.texte, niveau: d.niveau,
+        etoiles: sc ? sc.etoiles : 0, equipe: sc ? sc.equipe : null, essais_jour: sfEssaisDuJour(p, j) },
+      demain: sfDefi(demain(j)).niveau,
+      victoires: Object.entries(s.sfScores).filter(([k, v]) => k.startsWith(p + '|') && v.etoiles > 0).length,
+      etoiles: tot, serie, rang: tot > 0 ? top.filter(([, t]) => t > tot).length + 1 : null,
+      top: top.slice(0, 10).map(([id, t]) => { const o = profil(id); return { pseudo: o.pseudo, avatar: o.avatar, frame: o.frame,
+        titre: o.titre || null, photo: null, total: t, moi: id === p }; })
+    };
+  }
+  RPC.ech_sf_etat = p => sfEtat(p);
+  RPC.ech_sf_commencer = (p, { p_equipe }) => {
+    const s = sfData(), j = jourParis(now());
+    if (now() < s.fin) refuser('Le défi du jour commence après L\'Échauffement.');
+    if (!Array.isArray(p_equipe)) refuser('Équipe invalide.');
+    if (p_equipe.length < 1 || p_equipe.length > 3) refuser('Une équipe compte un à trois Joueurs.');
+    const deja = sfEssaisDuJour(p, j);
+    if (deja >= 3) refuser('Plus d\'essai aujourd\'hui : un autre adversaire t\'attend demain.');
+    const propre = echEquipePropre(p, p_equipe);
+    const id = s.seq = (s.seq || 0) + 1;
+    s.sfEssais['sf' + id] = { p, jour: j, equipe: propre, le: now(), fini: false };
+    return { essai: 'sf' + id, equipe: propre, restants: 2 - deja };
+  };
+  RPC.ech_sf_terminer = (p, { p_essai, p_eclat }) => {
+    const s = sfData();
+    const es = s.sfEssais[p_essai];
+    if (!es || es.p !== p) refuser('Essai inconnu.');
+    if (es.fini) refuser('Cet essai est déjà joué.');
+    if (now() > es.le + 3600000) refuser('Cet essai a expiré.');
+    let ec = null;
+    if (p_eclat != null) {
+      if (typeof p_eclat !== 'object' || !Number.isInteger(p_eclat.tour) || !Number.isInteger(p_eclat.i)
+        || p_eclat.tour < 1 || p_eclat.tour > 10 || p_eclat.i < 0 || p_eclat.i >= es.equipe.length) refuser('Coup d\'éclat invalide.');
+      ec = { tour: p_eclat.tour, i: p_eclat.i };
+    }
+    const r = echSimuler(sfDefi(es.jour), es.equipe, echStats, ec);
+    es.fini = true; es.eclat = ec; es.etoiles = r.etoiles;
+    const cle = p + '|' + es.jour, vieux = s.sfScores[cle], avant = vieux ? vieux.etoiles : 0;
+    const gain = { eclats: 0 };
+    if (r.etoiles > avant) {
+      for (let k = avant + 1; k <= r.etoiles; k++) gain.eclats += ECH_SF_PRIX[k - 1];
+      s.sfScores[cle] = { etoiles: r.etoiles, equipe: es.equipe, tours: r.tours };
+      accorder(p, 'eclats', gain.eclats, null);
+      if (avant === 0) bump(p, 'sf_victoire', 1);
+    } else if (!vieux) s.sfScores[cle] = { etoiles: 0, equipe: es.equipe, tours: r.tours };
+    return { resultat: r, avant, gain, etat: sfEtat(p), me: me(p) };
   };
   /* ech_admin, ech_admin_rejouer : le Labo. */
   RPC.ech_admin = p => {
@@ -1386,7 +1580,8 @@
   const CAL_OFFICIEL = {
     reflets_fin: Date.parse('2026-10-24T00:00:00+02:00'), recap_jusqua: Date.parse('2026-10-26T00:00:00+01:00'),
     saison_debut: Date.parse('2026-10-26T00:00:00+01:00'), saison_fin: Date.parse('2026-11-04T00:00:00+01:00'),
-    reverses_des: Date.parse('2026-10-26T00:00:00+01:00'), sortie_25: Date.parse('2026-10-26T00:00:00+01:00')
+    reverses_des: Date.parse('2026-10-26T00:00:00+01:00'), sortie_25: Date.parse('2026-10-26T00:00:00+01:00'),
+    ech_recap: Date.parse('2026-11-07T00:00:00+01:00')
   };
   /* poser_calendrier */
   function poserCalendrier(refletsFin, recap, saison, saisonFin, rev, sortie) {
@@ -1407,6 +1602,10 @@
       reflets: e ? { debut: iso(e.debut), fin: iso(e.fin), recap_jusqua: iso(recapFin(e)) } : null,
       sortie: sortiesDe()['2.5'],
       saison: { debut: iso(s.debut), fin: iso(s.fin), ouvert: echOuvert() },
+      ech_recap: iso(s.fin + 3 * 86400000),
+      sans_fin: (() => { const j = jourParis(now()), d = sfDefi(j), sd = sfData(); return { ordre: sfOrdre(j), niveau: d.niveau,
+        adversaire: d.adversaire, titre: d.titre, joueurs: new Set(Object.values(sd.sfEssais).map(e => e.p)).size,
+        gagnes: Object.entries(sd.sfScores).filter(([k, v]) => k.endsWith('|' + j) && v.etoiles > 0).length }; })(),
       reverses: { des: revDes() == null ? null : iso(revDes()), manuel: !!S.parametres.fabrication_reverse, ouvertes: revOuvertes() },
       chasse: chasseEtat(),
       recharge: { minutes: cfg('ticket_minutes'), cap: cfg('ticket_cap') },
@@ -1427,9 +1626,10 @@
       if (!(n >= 1 && n <= 10080)) refuser('Entre 1 minute et 7 jours.');
       const d = t + n * 60000;
       poserCalendrier(t - J, d, d, d + 9 * J, d, d);
-    } else if (['defi', 'rattrapage', 'fini'].includes(p_etat)) {
-      const n = p_etat === 'defi' ? (p_n == null ? 1 : p_n) : p_etat === 'rattrapage' ? 8 : 10;
+    } else if (['defi', 'rattrapage', 'fini', 'sans_fin'].includes(p_etat)) {
+      const n = p_etat === 'defi' ? (p_n == null ? 1 : p_n) : p_etat === 'rattrapage' ? 8 : p_etat === 'fini' ? 10 : 9 + (p_n == null ? 4 : p_n);
       if (p_etat === 'defi' && !(n >= 1 && n <= 7)) refuser('Un défi de 1 à 7.');
+      if (p_etat === 'sans_fin' && !(n >= 10 && n <= 69)) refuser('Un jour de 1 à 60.');
       const d = t - (n - 1) * J - 3600000;
       poserCalendrier(d - 2 * J, d, d, d + 9 * J, d, d);
     } else refuser('État inconnu.');
@@ -1454,7 +1654,9 @@
     const s = echSaison();
     const r = { essais: Object.keys(s.essais || {}).length, notes: Object.keys(s.scores).length,
       paliers: Object.values(s.paliers).reduce((n, v) => n + Object.keys(v).length, 0) };
-    s.essais = {}; s.scores = {}; s.paliers = {};
+    const sd = sfData();
+    r.essais += Object.keys(sd.sfEssais).length; r.notes += Object.keys(sd.sfScores).length;
+    s.essais = {}; s.scores = {}; s.paliers = {}; s.sfEssais = {}; s.sfScores = {};
     return Object.assign(r, { etat: laboEtat(p) });
   };
   RPC.labo_cartes = (p, { p_quoi }) => {
@@ -1514,7 +1716,12 @@
       else s.scores[p + '|' + p_jour] = Object.assign({ equipe: [], tours: 0 }, s.scores[p + '|' + p_jour], { etoiles: p_etoiles });
     } else if (p_action === 'essais' || p_action === 'raz') {
       Object.keys(s.essais || {}).forEach(k => { const e = s.essais[k]; if (e.p === p && (p_action === 'raz' || jourParis(e.le) === j)) delete s.essais[k]; });
-      if (p_action === 'raz') { Object.keys(s.scores).forEach(k => { if (k.startsWith(p + '|')) delete s.scores[k]; }); delete s.paliers[p]; }
+      const sd = sfData();
+      Object.keys(sd.sfEssais).forEach(k => { const e = sd.sfEssais[k]; if (e.p === p && (p_action === 'raz' || e.jour === j)) delete sd.sfEssais[k]; });
+      if (p_action === 'raz') {
+        Object.keys(s.scores).forEach(k => { if (k.startsWith(p + '|')) delete s.scores[k]; }); delete s.paliers[p];
+        Object.keys(sd.sfScores).forEach(k => { if (k.startsWith(p + '|')) delete sd.sfScores[k]; });
+      }
     } else refuser('Action inconnue.');
     return echEtat(p);
   };
@@ -1528,6 +1735,7 @@
       gardes: (S.gardes || {})[p] || {}, favoris: (S.favoris || {})[p] || [], illu: de(S.illu, a(p + '|')),
       scores: de(s.scores, a(p + '|')), paliers: s.paliers[p] || {},
       essais: de(s.essais, k => s.essais[k].p === p),
+      sfScores: de(sfData().sfScores, a(p + '|')), sfEssais: de(sfData().sfEssais, k => sfData().sfEssais[k].p === p),
       tirages: S.tirages.filter(t => t.user_id === p), recyclages: S.recyclages.filter(t => t.user_id === p)
     }));
   }
@@ -1541,6 +1749,8 @@
     S.illu = garder(S.illu, pas(p + '|'));
     s.scores = garder(s.scores, pas(p + '|')); delete s.paliers[p];
     s.essais = garder(s.essais, k => s.essais[k].p !== p);
+    const sd = sfData();
+    sd.sfScores = garder(sd.sfScores, pas(p + '|')); sd.sfEssais = garder(sd.sfEssais, k => sd.sfEssais[k].p !== p);
     S.tirages = S.tirages.filter(t => t.user_id !== p); S.recyclages = S.recyclages.filter(t => t.user_id !== p);
   }
   RPC.labo_sauver = p => {
@@ -1567,6 +1777,7 @@
     Object.assign(S.illu, c.illu); Object.assign(s.scores, c.scores);
     if (Object.keys(c.paliers).length) s.paliers[p] = c.paliers;
     s.essais = Object.assign(s.essais || {}, c.essais);
+    Object.assign(sfData().sfScores, c.sfScores || {}); Object.assign(sfData().sfEssais, c.sfEssais || {});
     S.tirages.push(...c.tirages); S.recyclages.push(...c.recyclages);
     return me(p);
   };
