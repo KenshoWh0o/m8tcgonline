@@ -643,23 +643,19 @@ function vEchRecap() {
   return `<section class="rr-bilan">
       <h2>Ton bilan</h2>
       <div class="rr-stats">
-        ${stat(braiseIco, fmtN(r.total || 0), `${echBraises()} gagnées`, r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 're'}</sup> sur ${fmtN(r.joueurs)}` : '')}
+        ${stat(braiseIco, fmtN(r.total || 0), echBraises(), r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 're'}</sup> sur ${fmtN(r.joueurs)}` : '')}
         ${stat(NAVICO.trophy, `${r.paliers || 0}<small>/${r.paliers_max || 20}</small>`, 'paliers du Pass', (r.paliers || 0) >= (r.paliers_max || 20) ? 'Pass terminé' : '')}
         ${stat(NAVICO.star, `${r.etoiles || 0}<small>/${defis * 3}</small>`, 'étoiles', `${r.gagnes || 0} défi${(r.gagnes || 0) > 1 ? 's' : ''} gagné${(r.gagnes || 0) > 1 ? 's' : ''}`)}
         ${stat(NAVICO.cards, `${r.parfaits || 0}<small>/${defis}</small>`, 'indices', '')}
         ${stat(NAVICO.sword, fmtN(r.combats || 0), 'combats', '')}
-        ${stat(NAVICO.quest, fmtN(r.quetes || 0), 'quêtes accomplies', '')}
+        ${stat(NAVICO.quest, fmtN(r.quetes || 0), 'quêtes', '')}
       </div>
     </section>
     ${podium ? `<section class="rr-podium"><h2>Le podium</h2><ol>${podium}</ol></section>` : ''}
     <section class="rr-continue">
       <h2>Ce qui continue</h2>
-      <div class="rr-cartes">
-        <button class="rr-lien" data-ech="sf-onglet" data-o="jour"><span class="rr-ico">${NAVICO.sword}</span><b>Le défi du jour</b>
-          <small>Un adversaire par jour, le même pour tous, de Facile à Redoutable : jusqu'à ${ECH_SF_PRIX.reduce((a, b) => a + b, 0)} ${MONNAIE.nom}.</small></button>
-        <button class="rr-lien" data-ech="sf-onglet" data-o="indices"><span class="rr-ico">${NAVICO.cards}</span><b>Les indices</b>
-          <small>Ceux que tu as gagnés se relisent.</small></button>
-      </div>
+      <button class="rr-lien ech-suite" data-ech="sf-onglet" data-o="jour"><span class="rr-ico">${NAVICO.sword}</span>
+        <span><b>Le défi du jour</b><small>Un adversaire par jour, de Facile à Redoutable : trois essais, jusqu'à ${ECH_SF_PRIX.reduce((a, b) => a + b, 0)} ${MONNAIE.nom}.</small></span></button>
     </section>`;
 }
 
