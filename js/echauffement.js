@@ -849,7 +849,7 @@ function echScene(d, equipe, essai) {
 
   const pips = (n, plein) => Array.from({ length: n }, (_, i) => `<i class="${i < plein ? 'on' : ''}"></i>`).join('');
   const v = document.createElement('div');
-  v.className = 'ech-scene';
+  v.className = 'ech-scene' + (reduit ? '' : ' intro');
   v.setAttribute('role', 'dialog');
   v.setAttribute('aria-label', `${d.sf ? 'Défi du jour' : `Défi ${d.jour}`} : ${adv.nom}`);
   v.innerHTML = `${echIllu(adv, .5, .3, 'fond')}<div class="ech-sc">
@@ -866,7 +866,12 @@ function echScene(d, equipe, essai) {
           <span class="ech-pips">${pips(a.cout || 0, a.elan)}</span>
         </button>`).join('')}</div>
       <div class="ech-sc-fin" hidden></div>
-    </div>`;
+    </div>
+    <div class="ech-sc-vs" aria-hidden="true"><div>
+      <small>${d.sf ? `Défi du jour · ${h(ECH_NIVEAUX[d.niveau] || '')}` : `Défi ${d.jour} sur 7`}</small>
+      <b>${h(adv.nom)}</b>
+      <span class="ech-sc-vs-regle">${echIco(d.regle)}${d.regle === 'aucune' ? 'Sans règle' : h(d.titre)}</span>
+    </div></div>`;
   document.body.appendChild(v);
   requestAnimationFrame(() => v.classList.add('on'));
   const fx = document.getElementById('fx');
@@ -887,6 +892,18 @@ function echScene(d, equipe, essai) {
     el.querySelector('.ech-jauge span').textContent = fmtN(Math.max(0, reste));
   };
   const rejouer = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  const son = nom => { if (typeof SFX === 'object') SFX.jouer(nom); };
+  /* Le coup qui suit le coup d'éclat : la scène tremble, des éclats d'or
+     jaillissent de l'adversaire (rien avec le mouvement réduit). */
+  let eclatI = null;
+  const impact = () => {
+    if (reduit) return;
+    rejouer(v, 'secousse');
+    setTimeout(() => v.classList.remove('secousse'), 450);
+    if (typeof FX !== 'object') return;
+    const rc = advEl.querySelector('.ech-sc-carte').getBoundingClientRect();
+    FX.burst(rc.left + rc.width / 2, rc.top + rc.height * .45, { n: 38, colors: ['#fff', '#ffb35c', '#ffc73b', '#c8bfff'], speed: 7, size: 3.2, life: 40 });
+  };
   const flotte = (el, txt, cls) => {
     const f = el.querySelector('.ech-flot');
     f.textContent = txt; f.className = 'ech-flot ' + (cls || '');
@@ -895,11 +912,14 @@ function echScene(d, equipe, essai) {
   const ligne = ev => {
     const [, type, i, dg, reste] = ev;
     const a = c.al[i];
-    if (type === 'eclat') { rejouer(jEl(i), 'eclate'); if (typeof SFX === 'object') SFX.jouer('rare'); }
+    const fort = eclatI === i && (type === 'frappe' || type === 'bloque');
+    if (fort) eclatI = null;
+    if (type === 'eclat') { eclatI = i; rejouer(jEl(i), 'eclate'); son('rare'); }
     else if (type === 'frappe') {
-      rejouer(jEl(i), 'frappe'); rejouer(advEl, 'touche'); flotte(advEl, '−' + dg, dg >= 150 ? 'gros' : '');
-      jauge(advEl, reste, d.pv); if (typeof SFX === 'object') SFX.jouer('tap');
-    } else if (type === 'bloque') { rejouer(jEl(i), 'frappe'); rejouer(advEl, 'bloque'); flotte(advEl, 'Bloqué', 'gris'); }
+      rejouer(jEl(i), 'frappe'); rejouer(advEl, 'touche'); flotte(advEl, '−' + dg, dg >= 150 || fort ? 'gros' : '');
+      jauge(advEl, reste, d.pv); son(fort ? 'impact' : 'tap');
+      if (fort) impact();
+    } else if (type === 'bloque') { rejouer(jEl(i), 'frappe'); rejouer(advEl, 'bloque'); flotte(advEl, 'Bloqué', 'gris'); son('bloque'); }
     else if (type === 'riposte') { flotte(jEl(i), '−' + dg, 'petit'); jauge(jEl(i), reste, a.def); }
     else if (type === 'subit') { rejouer(advEl, 'attaque'); rejouer(jEl(i), 'touche'); flotte(jEl(i), '−' + dg, 'rouge'); jauge(jEl(i), reste, a.def); }
     else if (type === 'ko') { jEl(i).classList.add('ko'); if (typeof vibrer === 'function') vibrer(25); }
@@ -926,8 +946,28 @@ function echScene(d, equipe, essai) {
     attente = setTimeout(() => { if (choix) { choix = null; r(null); } }, passer ? 0 : 1700);
   });
 
+  /* L'entrée : le face-à-face. L'adversaire arrive de près, le bandeau du
+     défi (son numéro, son nom, sa règle) traverse l'écran, l'équipe monte ;
+     1,75 s, un toucher n'importe où l'abrège. Avec le mouvement réduit, rien. */
+  const entree = () => new Promise(fini => {
+    if (reduit) return fini();
+    let fait = false;
+    const finir = () => {
+      if (fait) return;
+      fait = true; clearTimeout(t);
+      v.removeEventListener('pointerdown', finir);
+      v.classList.remove('intro');
+      fini();
+    };
+    const t = setTimeout(finir, 1750);
+    v.addEventListener('pointerdown', finir);
+    son('vs');
+    [950, 1050, 1150].forEach(ms => setTimeout(() => { if (!fait) son('carte'); }, ms));
+  });
+
   const jouer = async () => {
-    await pause(650);
+    await entree();
+    await pause(reduit ? 650 : 350);
     while (!c.fin) {
       v.querySelector('.ech-sc-tour').textContent = `Tour ${c.t + 1}`;
       majPips(true);
@@ -1042,6 +1082,7 @@ async function echFinEnScene(v, fin, res, reduit) {
     fin.querySelector('.ech-tampon').classList.add('posee');
     if (!vite) {
       son('tampon');
+      v.classList.remove('secousse'); void v.offsetWidth;
       v.classList.add('secousse');
       eclats(fin.querySelector('.ech-fin-et'), { n: 70, colors: ['#ffb35c', '#ffd9a8', '#c8bfff', '#8a78f5', '#fff'], speed: 9, size: 3, life: 55, up: 2 });
       if (typeof FX === 'object') FX.sparkle({ n: 90, colors: ['#ffb35c', '#ffd9a8', '#c8bfff', '#fff'], size: 3.2 });

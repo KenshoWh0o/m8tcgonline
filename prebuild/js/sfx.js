@@ -254,6 +254,16 @@ const RECETTES = {
   tampon: () => { note({ f0: 120, f1: 50, duree: .3, gain: .24, onde: 'sine' });
                   souffle({ f0: 900, f1: 200, duree: .14, gain: .15, q: .7 });
                   carillon([784, 988, 1175, 1568], 1, .1, .1); },
+  /* L'entrée d'un combat (le face-à-face) : un souffle qui traverse, un coup
+     sourd ; un coup arrêté par la Carapace : un tintement ; le coup d'éclat
+     qui porte : un choc plus lourd. */
+  vs:     () => { souffle({ f0: 300, f1: 2600, duree: .3, gain: .14, q: .6, attaque: .08 });
+                  note({ f0: 110, f1: 48, duree: .4, gain: .2, onde: 'sine', delai: .12 }); },
+  bloque: () => { note({ f0: 1250, f1: 980, duree: .07, gain: .05, onde: 'triangle' });
+                  note({ f0: 2500, duree: .12, gain: .025, onde: 'sine', delai: .02 }); },
+  impact: () => { note({ f0: 150, f1: 42, duree: .34, gain: .26, onde: 'sine' });
+                  souffle({ f0: 2400, f1: 300, duree: .22, gain: .18, q: .6 });
+                  note({ f0: 1568, duree: .25, gain: .06, onde: 'triangle', delai: .03 }); },
   ouvre:  () => { note({ f0: 300, f1: 640, duree: .16, gain: .10, onde: 'sine', filtre: 2000 }); },
   /* Le ping de la boite de réception : deux notes claires qui montent, plus
      court que le carillon d'une récompense — quelqu'un frappe, rien n'est
