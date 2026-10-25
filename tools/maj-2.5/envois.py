@@ -54,6 +54,17 @@ for l in subprocess.run(PSQL + [req], capture_output=True, text=True, check=True
     nom, sig, h, d = l.split('|')
     attendu.setdefault(nom, []).append((sig, h, d))
 
+# Le contenu de l'événement (pas seulement le nombre de lignes) : le Pass, ses quêtes, sa boutique,
+# tels qu'une installation neuve les a. Une empreinte par table, sur les lignes entières.
+def contenu(table, cle):
+    q = (f"select md5(coalesce(string_agg(row_to_json(t)::text, ';' order by t.{cle}), '')) "
+         f"from public.{table} t where t.evenement = 'echauffement'")
+    return subprocess.run(PSQL + [q], capture_output=True, text=True, check=True).stdout.strip()
+def verif_contenu(table, cle, quoi):
+    return (f"  if (select md5(coalesce(string_agg(row_to_json(t)::text, ';' order by t.{cle}), '')) from public.{table} t "
+            f"where t.evenement = 'echauffement') <> '{contenu(table, cle)}' then\n"
+            f"    raise exception 'ECART : contenu de {quoi}'; end if;")
+
 CONTROLE = """
 -- Controle : chaque fonction de cet envoi doit avoir exactement l'empreinte et
 -- les droits d'une installation neuve de la 2.5. Au moindre ecart, tout
@@ -82,7 +93,8 @@ end $verif$;
 EXTRAS = {
     0: """  if (select count(*) from public.quests where evenement = 'echauffement') <> 13 or not exists (select 1 from public.quests where id = 'm_sf10')
      or (select count(*) from public.shop_items where evenement = 'echauffement') <> 4 then
-    raise exception 'ECART : quetes ou boutique de L''Echauffement'; end if;""",
+    raise exception 'ECART : quetes ou boutique de L''Echauffement'; end if;
+""" + verif_contenu('quests', 'id', 'ses quetes') + '\n' + verif_contenu('shop_items', 'id', 'sa boutique'),
     1: """  if exists (select 1 from pg_proc where proname = 'ech_simuler' and pronargs = 2 and pronamespace = 'public'::regnamespace) then
     raise exception 'ECART : l''ancien ech_simuler est encore la'; end if;""",
     2: """  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'parametres' and column_name = 'sorties') then
@@ -94,6 +106,7 @@ EXTRAS = {
      or not (select relrowsecurity from pg_class where oid = 'public.ech_sf_essais'::regclass) then
     raise exception 'ECART : tables du mode sans fin'; end if;
   if (select count(*) from public.evt_piste where evenement = 'echauffement') <> 20 then raise exception 'ECART : Pass'; end if;
+""" + verif_contenu('evt_piste', 'palier', 'son Pass') + """
   if not exists (select 1 from pg_trigger where tgname = 'ech_saison_evenement') then raise exception 'ECART : declencheur'; end if;
   -- Le calendrier officiel, et la ligne de l'evenement qui suit la saison.
   if (select sorties ->> '2.5' from public.parametres where id = 1)::timestamptz <> timestamptz '2026-10-26 00:00:00+01'

@@ -25,7 +25,12 @@ P="psql -q -h $D -p $PORT -U postgres -v ON_ERROR_STOP=1"
 for b in ref cible maj; do $P -c "create database $b" && $P -d $b -f $D/stub.sql >/dev/null 2>&1; done
 for b in ref cible maj; do $P -d $b -c "alter database $b set search_path = public, extensions" >/dev/null; done
 for b in ref maj; do
-  $P -d $b -f $D/ref.sql >/dev/null && $P -d $b -f $D/refcal.sql >/dev/null && echo "· $b : 2.1.4 du 22 octobre"
+  # Une installation neuve lance Reflets « maintenant » ; la vraie base l'a lancé vers le 9 octobre. Sans
+  # ce recul, le calendrier du 22 (fin de Reflets le 23 au soir) heurte evenement_dans_l_ordre une fois
+  # le 23 passé, et rien de refcal.sql ne s'applique.
+  $P -d $b -f $D/ref.sql >/dev/null \
+    && $P -d $b -c "update public.evenements set debut = timestamptz '2026-10-09 12:00:00+02' where code = 'reflets'" >/dev/null \
+    && $P -d $b -f $D/refcal.sql >/dev/null && echo "· $b : 2.1.4 du 22 octobre" || { echo "ÉCHEC : la base $b n'a pas pu être montée"; exit 1; }
   $P -d $b -c "update public.parametres set reverses_des = timestamptz '2026-10-26 00:00:00+01' where id = 1" -c "update public.ech_indices set titre = 'Cent vingt-sept', texte = 'La collection ne s''arrête pas à 122 : elle comptera 127 cartes.', visuel = '{\"type\": \"nombre\", \"valeur\": \"127\"}'::jsonb where jour = 3" >/dev/null
 done
 $P -d ref -c "drop function public.ech_admin_rejouer()" >/dev/null && echo "· ref : sans ech_admin_rejouer (comme la vraie base)"
