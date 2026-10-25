@@ -21,6 +21,7 @@
 - Modifier les sources (`js/`, `css/`, `_demo/`, `supabase/`), jamais `preprod/` à la main : reconstruire avec `python3 tools/demo.py --preprod`.
 - Une règle de jeu a trois copies : SQL, `_demo/serveur.js`, constante JS (README § 9.8).
 - **Ce qui change dans la 2.x se reporte ici** s'il n'est pas propre à la 2.x (L'Échauffement l'est) : dans la même session si possible, sinon inscrit « à reporter » dans `docs/feuille-de-route.md` § 5. Sinon le `TOUT.sql` de la 3.0 défait la règle de la 2.x le jour de la sortie (README § 13, piège 31).
+- **Le jour de la sortie, la vraie base** : comparer ses empreintes avant ; le propriétaire colle le fichier, on vérifie en lecture seule ; fins de ligne Windows et comparaisons en `jsonb` (README § 13, point 33).
 - **Commiter et pousser au fur et à mesure** : la session tourne dans un conteneur qui peut être remplacé sans prévenir (le 24 octobre 2026, un travail testé mais pas commité a été perdu et refait).
 - Vérifier : `node tools/combat-tests.js` ; toute modification visible se regarde dans Chromium (Playwright) aux largeurs 390, 375, 360 et sur ordinateur ; le SQL se teste sur PostgreSQL local (README § 2.3).
 

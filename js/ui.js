@@ -223,8 +223,13 @@ const prismeIco = '<svg class="prismeico" viewBox="0 0 24 24" aria-hidden="true"
    une forme franche, pas de détail qui se brouille. */
 const etincelleIco = '<svg class="prismeico etincelleico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="etg" x1="0" y1="0" x2="1" y2="0"><stop offset=".22" stop-color="#62d84e"/><stop offset=".48" stop-color="#e9ffe0"/><stop offset=".52" stop-color="#ece6ff"/><stop offset=".78" stop-color="#9b70ff"/></linearGradient><radialGradient id="etc"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><path d="M12 1.2C13.1 7.7 16.3 10.9 22.8 12 16.3 13.1 13.1 16.3 12 22.8 10.9 16.3 7.7 13.1 1.2 12 7.7 10.9 10.9 7.7 12 1.2Z" fill="url(#etg)"/><circle cx="12" cy="12" r="4.6" fill="url(#etc)"/><path d="M19.4 2.4 20 4 21.6 4.6 20 5.2 19.4 6.8 18.8 5.2 17.2 4.6 18.8 4Z" fill="#c4b5fd"/><path d="M4.6 17.2 5.1 18.5 6.4 19 5.1 19.5 4.6 20.8 4.1 19.5 2.8 19 4.1 18.5Z" fill="#b7f29a"/></svg>';
 
+/* La Braise, monnaie de L'Échauffement (version 2.5) : une flamme lavande,
+   les couleurs de l'événement, et son cœur chaud. Lisible à 14 px : une
+   forme franche, deux tons. */
+const braiseIco = '<svg class="prismeico braiseico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="brg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffcf8a"/><stop offset=".45" stop-color="#c8b4ff"/><stop offset="1" stop-color="#8a78f5"/></linearGradient></defs><path d="M12 2.4c1.6 3.5 6.2 5.7 6.2 11.1a6.2 6.2 0 0 1-12.4 0c0-2.7 1.3-4.5 2.8-5.8.1 2 .9 3.2 2.1 3.5-.5-3.1.1-6 1.3-8.8Z" fill="url(#brg)"/><path d="M12 12.4c1.5 1.5 2.7 2.7 2.7 4.5a2.7 2.7 0 0 1-5.4 0c0-1.6 1.1-3 2.7-4.5Z" fill="#fff4dc" opacity=".92"/></svg>';
+
 /* L'icône de la monnaie de l'événement en cours (MONNAIES_EV, js/config.js). */
-const evIco = () => (evMonnaieCode() === 'choc' ? etincelleIco : prismeIco);
+const evIco = () => ({ choc: etincelleIco, echauffement: braiseIco }[evMonnaieCode()] || prismeIco);
 
 /* Les milliers sont séparés par une espace insécable : « 2 000 » ne se coupe
    jamais en fin de ligne. */

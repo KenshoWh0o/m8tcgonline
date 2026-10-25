@@ -235,12 +235,15 @@ const TITRES = {
 /* La monnaie d'un événement (supabase/installation/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
    avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
-   de Reflets (2.0), les Étincelles du Choc des Sections (3.0). Le serveur les
-   range toutes au même endroit (evt_comptes) ; seuls le nom et l'icône
-   changent. `PRISMES` suit l'événement en cours, ou celui dont on lit le
-   récap. */
+   de Reflets (2.0), les Braises de L'Échauffement (2.5), les Étincelles du Choc
+   des Sections (3.0). Le serveur les range toutes au même endroit
+   (evt_comptes) ; seuls le nom et l'icône changent. `PRISMES` suit l'événement
+   en cours, ou celui dont on lit le récap. Les Braises sont là pour une 3.0
+   qui sortirait pendant L'Échauffement ou son récap (jusqu'au 7 novembre
+   2026) : sans elles, la page les appellerait « Prismes ». */
 const MONNAIES_EV = {
   reflets: { nom: 'Prismes', un: 'Prisme' },
+  echauffement: { nom: 'Braises', un: 'Braise' },
   choc: { nom: 'Étincelles', un: 'Étincelle' }
 };
 const evMonnaieCode = () => {
