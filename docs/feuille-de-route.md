@@ -2,7 +2,7 @@
 
 > **Ce fichier existe en deux copies identiques**, une sur `version-2.5` (donc aussi sur `main`) et une sur `version-3.0`. Toute modification se fait dans les deux, dans la même session : copier le fichier d'une branche à l'autre (`git show origin/version-2.5:docs/feuille-de-route.md > docs/feuille-de-route.md`, ou l'inverse), puis vérifier que `git diff origin/version-2.5 origin/version-3.0 -- docs/feuille-de-route.md` est vide une fois les deux poussées.
 
-Mise à jour : dimanche 25 octobre 2026, au matin.
+Mise à jour : dimanche 25 octobre 2026, dans la nuit, après la mise en ligne.
 
 ## 1. Ce que le propriétaire a dicté
 
@@ -46,6 +46,10 @@ Le « … » final est du propriétaire : la liste de la 3.0 n'est pas close.
 >
 > au global, travaille un peu mieux la chose, et trouve d'autres idées
 
+Puis, dans la nuit du 25 :
+
+> vasy publie sur main et fais le sql, pense aussi à faire les modifs conséquentes pour la 3.0 (nouveaux cadres etc). pas le mode Infini par contre, c'est juste pour patienter ça
+
 **Lecture des deux dictées sur le mode sans fin.** Le 23 disait « avec moins de récompense (mais pas comme devine l'illu, ça reste un event) » ; le 24 dit « des récompenses équilibrées, comme le devine l'illu devenu permanent ». Le plus récent a été suivi : le niveau de récompense de Devine l'illu (120 Éclats au plus par jour), dans un mode qui garde des atours d'événement (l'onglet Combats, un classement, une série, un titre). C'est une interprétation : à confirmer par le propriétaire.
 
 ## 2. Le calendrier (heure de Paris)
@@ -85,7 +89,8 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
   - **le Pass refait** : vingt paliers en quatre blocs de cinq, un cosmétique tous les cinq (5 : titre « Premier round », 10 : cadre « Braise », 15 : titre « Feu sacré », 20 : cadre « Ardeur ») ; **plus d'Essence Brillante** ; 10 boosters, 700 Éclats, 1 000 Fragments, 2 Reverses Rares ; seuils de 40 à 1 050 Braises. Un joueur qui fait tout le finit vers le huitième jour, un joueur régulier atteint le palier 16 environ, un joueur de passage le 8 (calcul en tête de `22e`) ;
   - **la fin de combat en scène** : le verdict, les étoiles qui se posent une à une avec leur note, le tampon « Parfait » à trois étoiles, les gains qui défilent ;
 - **25 octobre, de la session** (« au global, travaille un peu mieux la chose ») : l'**entrée du combat en face-à-face** (l'adversaire, un bandeau avec le défi et sa règle, l'équipe qui monte ; 1,75 s, un toucher l'abrège) ; « Bloqué » lisible, un tintement, et le coup qui suit le coup d'éclat fait trembler la scène ; **la révélation des 21 étoiles** (les sept indices en éventail, le dernier mot qui se retourne) ; le récap qui tient dans l'écran avec son podium ; le niveau « Redoutable » qui débordait de sa tuile. À valider par le propriétaire : ce sont des choix de la session ;
-- **25 octobre, la mise à jour de la vraie base** : les trois envois refaits avec le nouveau Pass ; leur contrôle vérifie aussi le contenu du Pass, des quêtes et de la boutique de l'événement ; `tools/maj-2.5/essai.sh` les rejoue sur deux copies du modèle de la vraie base (§ 6). Toujours pas appliquée.
+- **25 octobre, la mise à jour de la vraie base** : les trois envois refaits avec le nouveau Pass ; leur contrôle vérifie aussi le contenu du Pass, des quêtes et de la boutique de l'événement ; `tools/maj-2.5/essai.sh` les rejoue sur deux copies du modèle de la vraie base (§ 6).
+- **25 octobre, dans la nuit : la 2.5 est en ligne, site et base** (accord du propriétaire, § 1). Le site : `version-2.5` fusionnée dans `main` (`e9f0c36`), servie à 02 h 22 UTC ; elle se montre en « 2.1.3 » jusqu'à lundi 0 h. La base : `MAJ-2.5.sql` collé par le propriétaire vers 02 h 35 UTC (l'outil Supabase n'a pas reçu ses confirmations), fins de ligne Windows corrigées (`fix-crlf.sql`), puis vérifiée : identique à une installation neuve (§ 6, et README, « La mise en ligne »).
 
 **Décidé le 24 octobre sur le mode sans fin** (les quatre questions laissées ouvertes le 23) :
 - *quand il commence* : le mercredi 4 novembre, après le rattrapage (le propriétaire) ;
@@ -190,9 +195,9 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 | L'onglet sur la charpente de Reflets, la fin de combat en scène, l'entrée en face-à-face, la révélation des 21 étoiles, le récap resserré, et leurs sons (`etoile`, `tampon`, `vs`, `bloque`, `impact`) | 25 oct. | propres à L'Échauffement : rien à reporter (la 3.0 a ses propres combats et son propre écran d'événement) |
 | Les envois contrôlés et leur essai (`tools/maj-2.5/` : empreintes, droits, contenu) | 24-25 oct. | propres à la mise à jour 2.5 ; la méthode servira à la sortie de la 3.0 : à reprendre ce jour-là |
 
-## 6. Dimanche 25 octobre : publier la 2.5
+## 6. Dimanche 25 octobre : publier la 2.5 (fait, sauf les contrôles d'après minuit)
 
-À faire avant **23 h, heure de Paris** (22 h UTC), pour laisser une heure de marge. **L'ordre compte : le site d'abord, la base ensuite.** La base mise à jour crée la ligne d'événement `echauffement`, que le site publié le 23 octobre ne connaît pas : il rouvrirait une fois à chaque joueur la fenêtre des nouveautés de la 2.1, puis, à la sortie, appellerait les Braises « Prismes », compterait les quêtes de l'événement dans la pastille de Quêtes sans les montrer, et n'aurait ni Pass ni boutique de l'événement. La dernière `version-2.5` est faite pour marcher avec et sans la mise à jour (sans : ni événement ni mode sans fin, Labo « fonction absente ») ; c'est vérifié avec (prébuild), et seulement à la lecture du code sans.
+**Fait dans la nuit du 25 (étapes 1 à 3) : voir « Ce qui s'est passé » à la fin du paragraphe.** L'ordre comptait : le site d'abord, la base ensuite. La base mise à jour crée la ligne d'événement `echauffement`, que le site publié le 23 octobre ne connaît pas : il rouvrirait une fois à chaque joueur la fenêtre des nouveautés de la 2.1, puis, à la sortie, appellerait les Braises « Prismes », compterait les quêtes de l'événement dans la pastille de Quêtes sans les montrer, et n'aurait ni Pass ni boutique de l'événement. La dernière `version-2.5` est faite pour marcher avec et sans la mise à jour (sans : ni événement ni mode sans fin, Labo « fonction absente ») ; c'est vérifié avec (prébuild), et seulement à la lecture du code sans.
 
 1. **L'accord du propriétaire pour publier sur la racine de `main`** la dernière 2.5 (celle du 25 octobre, règle 1) ; s'il retient des idées du § 3, elles d'abord, sur `version-2.5`, essayées dans le prébuild (`python3 tools/demo.py --prebuild`, puis reporter `prebuild/` sur `main`).
 2. **Le site** : `python3 tools/version.py 2.5` (en dernier, après toute autre modification des CSS et des JS), commit, `version-2.5` fusionnée dans `main`, poussée. Contrôle : le site dit toujours « version 2.1.3 », le récap de Reflets est là.
@@ -205,7 +210,11 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 5. **Après minuit** : le site dit « version 2.5 », la fenêtre des nouveautés s'ouvre, le défi 1 se joue et paie ses Braises, le Pass, les quêtes et la boutique de l'événement répondent, une Reverse se fabrique.
 6. **Mercredi 4 novembre, 0 h** : la saison se termine, le récap (bandeau, fenêtre, sous-onglet) et le défi du jour apparaissent. **Samedi 7, 0 h** : fin du récap.
 
-**Si l'étape 3 n'est pas faite**, le site sort quand même à l'heure (la date est aussi dans le code), avec L'Échauffement de la 2.1.4 (sept défis, sans Braises, Pass, quêtes, boutique ni mode sans fin) ; les outils du Labo qui touchent au serveur répondent « fonction absente ». **Si l'étape 2 n'est pas faite**, la 2.5 du 23 octobre sort seule à minuit, et l'étape 3 doit attendre que le site soit publié (voir plus haut pourquoi).
+**Ce qui s'est passé, le 25 dans la nuit.**
+- Étapes 1 et 2 : accord du propriétaire ; `tools/version.py 2.5` (marque `2.5-198119`) ; `version-2.5` fusionnée dans `main` (`e9f0c36`, seul conflit `prebuild/index.html`, pris de `version-2.5` ; `preprod/` et `CNAME` intacts) ; chargé dans Chromium sans erreur (« 2.1.3 », l'écran d'entrée) ; servi par GitHub Pages à 02 h 22 UTC.
+- Étape 3 : la base, comparée d'abord, était exactement le modèle (`C|210|281c441b…`, `F|87|eb557b19…`, `T|33|669f1168…`) : l'envoi du 24 n'était jamais passé. L'envoi 1 tenté deux fois par l'outil : la confirmation n'est pas parvenue au propriétaire dans la minute, l'outil a tout annulé (base relue entre les deux : inchangée). Le propriétaire a collé `MAJ-2.5.sql` lui-même (vers 02 h 35 UTC). Relue : tout comme une installation neuve, sauf 79 fonctions en fins de ligne Windows (`F|118|6fcb5c2e…`, la copie depuis le navigateur ; diagnostic reproduit sur le banc ; sans effet sur le jeu). `tools/maj-2.5/fix-crlf.sql`, essayé sur le banc, envoyé (sans confirmation : ni `delete` ni `drop`). Relue : `C|236|8236f2bf…`, `F|118|e44e662b…`, `T|37|7ace681b…`, 11 règles d'accès, 1 déclencheur, le contenu (`tools/maj-2.5/donnees.sql`) identique au banc. `me()`, `ech_etat()`, `ech_sf_etat()`, `evenement_etat()`, `labo_etat()`, `ech_admin()` appelées en administrateur, dans un bloc annulé à la fin : sans erreur, avec les bonnes dates.
+- Étape 4 : `verif.html` n'a pas été ouvert sur le vrai site (il faut un administrateur connecté) : au propriétaire.
+- Restent les étapes 5 (après minuit) et 6 (le 4 novembre).
 
 ## 7. Décisions récentes, et pourquoi
 
@@ -228,3 +237,5 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - **25 oct.** Le Pass : des paliers significatifs (un cosmétique tous les cinq), sans Essence Brillante, « c'est qu'un mini event » (le propriétaire).
 - **25 oct.** La fin de combat en scène (le propriétaire) ; l'entrée en face-à-face, la révélation des 21 étoiles et le récap resserré (la session) : à valider par le propriétaire.
 - **25 oct.** Le banc de la mise à jour : le calendrier du 22 y échouait sans bruit depuis le 23 au soir (une installation neuve lance Reflets « maintenant ») ; sans effet sur les empreintes, corrigé. L'essai des envois était décrit comme fait « sur une copie de la base de production » : c'était le modèle de la vraie base, ce que le README dit désormais.
+- **25 oct., dans la nuit.** La 2.5 publiée à la racine de `main`, puis la base mise à jour (le propriétaire : « vasy publie sur main et fais le sql »). La confirmation de l'outil Supabase n'ayant jamais atteint le propriétaire (trois fois sur trois, les 24 et 25), la voie retenue pour la base est désormais celle de la règle 7 : le propriétaire colle le fichier, la session vérifie en lecture seule (`CLAUDE.md`). Deux pièges consignés : les fins de ligne Windows d'un collage (`fix-crlf.sql`), et l'ordre des colonnes de la vraie base, qui fausse une comparaison en `row_to_json` (on compare en `jsonb`).
+- **25 oct., dans la nuit.** Le mode sans fin ne passe pas dans la 3.0 (« c'est juste pour patienter ») : la 3.0 le ferme déjà à sa sortie (§ 5).
