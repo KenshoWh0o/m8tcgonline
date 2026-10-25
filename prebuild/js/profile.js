@@ -103,7 +103,7 @@ const CADRE_SOURCE = {
   f_aurore: 'Les 9 Brillantes', f_miroir: 'Pass Reflets, palier 10', f_nebuleuse: 'Pass Reflets, palier 20',
   f_unique: 'La carte unique',
   /* Version 2.5. */
-  f_braise: 'Pass de L\'Échauffement, palier 9', f_ardeur: 'Pass de L\'Échauffement, palier 20'
+  f_braise: 'Pass de L\'Échauffement, palier 10', f_ardeur: 'Pass de L\'Échauffement, palier 20'
 };
 
 /* Le titre sous un pseudo. */

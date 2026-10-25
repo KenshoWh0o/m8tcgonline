@@ -1432,19 +1432,19 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
   color:var(--muted);margin:14px 0 0}
 
 /* ============ L'Échauffement (js/echauffement.js) ============ */
-/* Une fenêtre sur la suite : la page prend les jetons de la 3.0 (graphite et
-   lavande, docs/design-3.0.md du dépôt de la 3.0), posés ici sous `--e-*` et
-   seulement sur l'événement. Le reste du site garde les siens. Les principes
-   aussi : des tuiles pleines, des illustrations qui portent la couleur, une
-   seule action lavande par écran, peu de texte. */
-.ech,.ech-scene,.ech-ban,.ech-annonce,.ech-ind-grand,.ech-picks,.ech-tri,.labinds{
-  --e-bg:#121119;--e-s1:#1c1b25;--e-s2:#24232f;--e-s3:#2d2b3a;--e-creux:rgba(0,0,0,.26);
-  --e-l1:rgba(255,255,255,.07);--e-l2:rgba(255,255,255,.12);--e-l3:rgba(255,255,255,.2);
-  --e-txt:#f1f0f8;--e-sub:#c4c1d6;--e-mut:#9a97ae;
-  --e-acc:#8a78f5;--e-acc2:#b3a6ff;--e-deco:#c8bfff;--e-wash:rgba(157,140,255,.13);
-  --e-cta:linear-gradient(180deg,#8f7dfb,#5d4bd9);--e-glow:rgba(140,120,255,.45);
-  --e-or:#f5c451;--e-ok:#4fd6a0;--e-rouge:#ff6b6b;
-  --e-tuile:inset 0 1px 0 rgba(255,255,255,.05),0 6px 18px rgba(0,0,0,.24)}
+/* L'onglet a la charpente de l'écran Reflets (plus bas, .ech-rf) ; l'écran
+   du défi, la scène du combat et les visuels des indices ont leurs propres
+   blocs. Tous prennent les fonds, les textes et les boutons du site (jetons
+   `--e-*` posés sur ceux de css/tokens.css) ; l'événement n'y ajoute que ses
+   couleurs : la lavande de la suite et la braise. */
+.ech,.ech-rf,.ech-scene,.ech-rfban,.ech-annonce,.ech-ind-grand,.ech-final,.ech-picks,.ech-tri,.labinds{
+  --e-bg:var(--bg);--e-s1:var(--surface);--e-s2:var(--surface-2);--e-s3:var(--surface-3);--e-creux:var(--bg-2);
+  --e-l1:var(--line);--e-l2:var(--line-2);--e-l3:var(--line-3);
+  --e-txt:var(--text);--e-sub:var(--subtle);--e-mut:var(--muted);
+  --e-acc:#8a78f5;--e-acc2:#c8bfff;--e-deco:#c8bfff;--e-wash:rgba(138,120,245,.14);
+  --e-cta:linear-gradient(180deg,#8f7dfb,#5d4bd9);--e-glow:rgba(138,120,245,.4);
+  --e-or:var(--warn);--e-ok:var(--ok);--e-rouge:#ff6b6b;--e-braise:#ffb35c;
+  --e-tuile:var(--sh-2)}
 
 /* L'illustration seule d'une carte (la zone 85,205–895,684 du gabarit
    1000 × 1397), recadrée pour couvrir son conteneur sans jamais montrer le
@@ -1467,66 +1467,10 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
 .ech-ico{flex:0 0 auto;width:30px;height:30px;padding:6px;border-radius:10px;fill:none;stroke:var(--e-deco);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;
   background:var(--e-wash)}
 
-/* L'accueil : le bandeau, les sous-onglets, puis la vue. Rien ne défile
-   (règle du propriétaire) : .ech prend toute la hauteur de #main, le bandeau
-   une part, et .ech-corps le reste, que chaque vue mesure (container
-   queries) pour y faire tenir ses tuiles. */
-.ech-hero{position:relative;isolation:isolate;overflow:hidden;flex:0 0 auto;display:flex;flex-direction:column;justify-content:space-between;
-  height:clamp(104px,23%,200px);padding:12px 14px 14px;border-radius:24px;box-shadow:var(--e-tuile)}
-.ech-hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,rgba(18,17,25,.15) 0,rgba(18,17,25,.35) 40%,rgba(18,17,25,.95) 100%)}
-.ech-hero-haut{display:flex;align-items:flex-start;justify-content:space-between}
-.ech-hero-haut .ech-kick{padding:5px 10px;border-radius:999px;color:var(--e-txt);background:rgba(18,17,25,.72);box-shadow:inset 0 0 0 1px var(--e-l2)}
-.ech-anneau{position:relative;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;
-  background:conic-gradient(var(--e-or) var(--p),rgba(255,255,255,.14) 0);box-shadow:0 6px 16px rgba(0,0,0,.4)}
-.ech-anneau::before{content:"";position:absolute;inset:4px;border-radius:50%;background:rgba(18,17,25,.92)}
-.ech-anneau b,.ech-anneau small{position:relative;line-height:1}
-.ech-anneau b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--e-txt);margin-top:5px}
-.ech-anneau small{font-size:9px;font-weight:800;color:var(--e-mut);margin-top:-12px}
-.ech-titre{margin:0 0 2px;padding:0;font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:min(34px,8vw);line-height:1;
-  letter-spacing:-.03em;text-transform:none;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.55)}
-.ech-titre::before{display:none}
-.ech-hero-bas small{font-size:13px;color:var(--e-sub)}
-.ech-onglets{flex:0 0 auto;display:flex;gap:3px;padding:3px;border-radius:999px;background:var(--e-creux);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-onglets button{flex:1;padding:8px 6px;border:0;border-radius:999px;background:none;cursor:pointer;font:inherit;font-weight:800;font-size:13.5px;color:var(--e-mut)}
-/* Choisir n'est pas agir : l'onglet choisi est blanc, pas lavande. */
-.ech-onglets button.on{color:var(--e-txt);background:rgba(255,255,255,.15);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
-.ech-corps{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:12px;container-type:size}
-.ech-mini{flex:0 0 auto;margin:0;font-size:12.5px;line-height:1.35;color:var(--e-mut);text-align:center}
-.ech-mini b{color:var(--e-acc2)}
-
-/* Défis : la porte du jour prend la place qui reste. */
-.ech-porte{position:relative;isolation:isolate;overflow:hidden;flex:1 1 0;min-height:0;max-height:250px;display:flex;align-items:flex-end;padding:14px;border:0;border-radius:22px;
-  cursor:pointer;font:inherit;text-align:left;color:var(--e-txt);background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1),var(--e-tuile)}
-.ech-porte .ech-illu.fond{left:34%}
-.ech-porte::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(90deg,var(--e-s1) 34%,rgba(28,27,37,.6) 58%,rgba(28,27,37,0) 85%),linear-gradient(0deg,rgba(28,27,37,.75),transparent 55%)}
-.ech-porte-txt{display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:64%}
-.ech-porte-txt small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--e-acc2)}
-.ech-porte-txt b{font-family:var(--display);font-stretch:110%;font-weight:900;font-style:italic;font-size:23px;line-height:1.05}
-.ech-porte-regle{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--e-sub)}
-.ech-porte-regle .ech-ico{width:26px;height:26px;padding:5px;border-radius:8px}
-.ech-porte-cta{position:absolute;right:12px;bottom:12px;padding:10px 18px;border-radius:999px;font-family:var(--display);font-weight:800;font-size:15px;color:#fff;
-  background:var(--e-cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 8px 20px var(--e-glow)}
-.ech-porte:active{transform:scale(.98)}
-.ech-jours{flex:0 0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.ech-jour{display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;border:0;background:none;font:inherit;cursor:pointer}
-.ech-jour>i{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;font-style:normal;font-family:var(--display);font-weight:900;font-size:16px;
-  color:var(--e-txt);background:var(--e-s2);box-shadow:inset 0 0 0 1px var(--e-l2),var(--e-tuile)}
-.ech-jour>i svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
-.ech-jour .ech-et{min-height:9px;font-size:9px}
-.ech-jour.gagne>i{box-shadow:inset 0 0 0 2px var(--e-acc2),var(--e-tuile)}
-.ech-jour.fini>i{color:#2b1d00;background:linear-gradient(180deg,#ffe08a,var(--e-or));box-shadow:0 0 16px rgba(245,196,81,.35)}
-.ech-jour.ferme{cursor:default}
-.ech-jour.ferme>i{color:var(--e-mut);background:var(--e-creux);box-shadow:inset 0 0 0 1px var(--e-l1)}
-
-/* Indices : sept cases de carte, mesurées sur la hauteur qui reste (deux
-   rangées, avec leur légende), puis le dernier mot. */
-.ech-inds{flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(4,var(--tw));justify-content:center;align-content:center;gap:10px;
-  --tw:min(calc((100cqw - 30px) / 4),calc(((100cqh - 38px) / 2 - 32px) * .716),118px)}
-.ech-case{display:flex;flex-direction:column;align-items:center;gap:4px;width:var(--tw);padding:0;border:0;background:none;font:inherit;color:inherit}
+/* Indices : huit cases de carte (la grille : .ech-rf .ech-inds, plus bas). */
+.ech-case{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:0;border:0;background:none;font:inherit;color:inherit}
 button.ech-case{cursor:pointer}
-.ech-case small{width:calc(var(--tw) + 8px);min-height:2.3em;font-size:10.5px;font-weight:700;line-height:1.15;text-align:center;color:var(--e-sub);
+.ech-case small{width:100%;min-height:2.3em;font-size:10.5px;font-weight:700;line-height:1.15;text-align:center;color:var(--e-sub);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ech-case>span.ech-ind+small{color:var(--e-mut)}
 .ech-ind{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:63/88;border-radius:10px;overflow:hidden;
@@ -1570,6 +1514,29 @@ button.ech-case{cursor:pointer}
 .ech-ind-grand .ech-iv.eventail{width:170px}
 .ech-ind-grand b{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--e-acc2)}
 .ech-ind-grand p{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.2}
+
+/* La révélation des 21 étoiles (montrerDernierMot) : les sept indices en
+   éventail, le dernier mot qui se retourne ; son texte n'apparaît qu'après. */
+.ech-final{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 6px;padding:18px 14px 16px;border-radius:22px;text-align:center;color:var(--text);
+  background:radial-gradient(90% 60% at 50% 38%,rgba(255,179,92,.16),transparent 70%),radial-gradient(100% 80% at 50% 25%,#3b2f7a,var(--surface) 75%)}
+.ech-final-sept{display:flex;justify-content:center;height:74px;padding-top:4px}
+.ech-final-sept .ech-ind{flex:0 0 44px;width:44px;margin:0 -5px;transform-origin:50% 120%;transform:translateY(var(--y)) rotate(calc(var(--k) * 8deg));
+  box-shadow:inset 0 0 0 1px rgba(200,191,255,.35),0 6px 14px rgba(0,0,0,.45)}
+.ech-final:not(.vu) .ech-final-sept .ech-ind{animation:ech-final-sept .6s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc((var(--k) + 3) * 70ms)}
+@keyframes ech-final-sept{from{opacity:0;transform:translateY(30px) rotate(0)}}
+.ech-final-carte{padding:0;border:0;background:none;cursor:pointer}
+.ech-final-carte{display:block}
+.ech-final .ech-flip{display:block;flex:none;width:118px;perspective:800px}
+.ech-final .ech-flip>span{border-radius:9px}
+.ech-final .ech-flip .face{--fmax:30px}
+.ech-final.vu .ech-flip{filter:drop-shadow(0 0 18px rgba(255,179,92,.45)) drop-shadow(0 10px 22px rgba(0,0,0,.5))}
+.ech-final:not(.vu) .ech-flip{animation:ech-appel 1.6s ease-in-out infinite}
+.ech-final>small{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c8bfff}
+.ech-final-titre{font-family:var(--display);font-stretch:110%;font-style:italic;font-weight:900;font-size:24px;line-height:1.1;padding-right:.1em;
+  background:linear-gradient(100deg,#fff,#ffe1bf 40%,#d9d0ff 75%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ech-final-txt{margin:0;font-size:14px;line-height:1.4;color:var(--subtle)}
+.ech-final>small,.ech-final-titre,.ech-final-txt{transition:opacity .45s .35s,transform .45s .35s}
+.ech-final:not(.vu)>small,.ech-final:not(.vu) .ech-final-titre,.ech-final:not(.vu) .ech-final-txt{opacity:0;transform:translateY(8px)}
 
 /* Une jauge : l'or pour ce qui paie, la lavande pour le Pass. */
 .ech-rj{display:block;width:100%;height:8px;border-radius:999px;overflow:hidden;background:var(--e-creux);box-shadow:inset 0 0 0 1px var(--e-l1)}
@@ -1645,9 +1612,6 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-a.double b{color:var(--e-ok)}
 .ech-a.bloque b{color:var(--e-rouge);text-decoration:line-through}
 .ech-ryt{max-width:var(--cw);font-size:10.5px;line-height:1.2;color:var(--e-mut);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech .btn{text-transform:none;letter-spacing:0;font-family:var(--display);font-weight:800;font-size:16px;color:#fff;background:var(--e-cta);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 8px 22px var(--e-glow)}
-.ech .btn[disabled]{background:var(--e-s3);box-shadow:none;color:var(--e-mut)}
 .ech-lancer{flex:0 0 auto;width:100%}
 .ech-pied{flex:0 0 auto;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 10px;margin:0;font-size:11.5px;color:var(--e-mut)}
 .ech-pied-prix{color:var(--e-or)}
@@ -1659,18 +1623,8 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-picks .ech-val i{width:1px;height:12px;background:var(--e-l3)}
 .ech-tri{margin:2px 0 6px}
 
-/* Le bandeau de l'écran Boosters, et l'annonce. */
-.ech-ban{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:10px;width:100%;max-width:520px;flex:0 0 auto;min-height:68px;
-  margin:0 0 8px;padding:10px 14px;border:0;border-radius:18px;cursor:pointer;font:inherit;text-align:left;color:var(--e-txt);background:var(--e-s1);
-  box-shadow:inset 0 0 0 1px var(--e-l1),var(--e-tuile)}
-.ech-ban .ech-illu.fond{left:40%}
-.ech-ban::after,.ech-annonce::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(90deg,var(--e-s1) 40%,rgba(28,27,37,.55) 68%,rgba(28,27,37,0))}
-.ech-ban-txt{flex:1;display:flex;flex-direction:column;gap:2px;line-height:1.15;min-width:0}
-.ech-ban-txt small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--e-acc2)}
-.ech-ban-txt b{font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:21px}
-.ech-ban-n{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;font-style:normal;font-size:12px;font-weight:800;color:#fff;background:#ff5f7e}
-.ech-ban-fl{font-size:24px;line-height:1;color:var(--e-sub)}
+/* L'annonce : la couverture des fenêtres de l'événement. */
+.ech-annonce::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
 .ech-annonce{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;min-height:180px;margin:0 0 10px;padding:16px;border-radius:22px;
   color:var(--e-txt);background:var(--e-s1)}
 .ech-annonce::after{background:linear-gradient(180deg,rgba(28,27,37,0) 25%,rgba(28,27,37,.97))}
@@ -1723,7 +1677,8 @@ button.ech-a.on i{color:var(--e-acc2)}
   color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.4),0 0 14px rgba(140,120,255,.8);opacity:0;pointer-events:none;white-space:nowrap}
 .ech-flot.gros{font-size:34px;color:var(--e-or);text-shadow:0 2px 0 rgba(0,0,0,.4),0 0 16px rgba(245,196,81,.8)}
 .ech-flot.rouge{color:#ffd6d6;text-shadow:0 2px 0 rgba(0,0,0,.4),0 0 14px rgba(255,107,107,.9)}
-.ech-flot.gris{font-size:16px;color:var(--e-sub);text-shadow:0 2px 6px rgba(0,0,0,.7)}
+.ech-flot.gris{top:34%;padding:4px 12px 5px;border-radius:999px;font-family:inherit;font-style:normal;font-size:14px;font-weight:800;letter-spacing:.02em;color:#fff;
+  background:rgba(18,17,25,.88);box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.6),0 6px 16px rgba(0,0,0,.5);text-shadow:none}
 .ech-flot.petit{font-size:17px}
 .ech-flot.go{animation:ech-flot .8s cubic-bezier(.2,.8,.2,1)}
 @keyframes ech-flot{0%{opacity:0;transform:translate(-50%,12px) scale(.6)}25%{opacity:1;transform:translate(-50%,0) scale(1.15)}100%{opacity:0;transform:translate(-50%,-30px) scale(1)}}
@@ -1749,17 +1704,67 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-sc-fin[hidden]{display:none}
 .ech-sc-verdict{font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:32px;line-height:1}
 .ech-sc-tours{font-size:12.5px;color:var(--e-sub)}
-.ech-sc-fin .ech-et.grand i{display:inline-block;animation:ech-etoile .4s cubic-bezier(.2,1.4,.4,1) both}
-.ech-sc-fin .ech-et.grand i:nth-child(2){animation-delay:.15s}
-.ech-sc-fin .ech-et.grand i:nth-child(3){animation-delay:.3s}
-@keyframes ech-etoile{from{transform:scale(0) rotate(-40deg)}}
+/* L'entrée, en face-à-face (echScene › entree) : l'adversaire arrive de
+   près, le bandeau du défi traverse l'écran, l'équipe monte. Retirer la
+   classe .intro (un toucher, ou au bout de 1,75 s) pose tout à sa place. */
+.ech-sc-vs{display:none}
+.ech-scene.intro .ech-sc-vs{position:absolute;left:0;right:0;top:54%;z-index:4;display:block;padding:14px 18px 16px;pointer-events:none;
+  background:linear-gradient(90deg,rgba(21,13,28,.9),rgba(21,13,28,.97) 30%,rgba(21,13,28,.97) 70%,rgba(21,13,28,.9));
+  box-shadow:0 -2px 0 var(--ev-a),0 2px 0 var(--ev-c),0 24px 60px rgba(0,0,0,.65);animation:ech-vs 1.75s cubic-bezier(.2,.8,.2,1) both}
+.ech-sc-vs>div{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:440px;margin:0 auto;text-align:center;transform:skewY(4deg)}
+.ech-sc-vs small{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ev-b)}
+.ech-sc-vs b{font-family:var(--display);font-stretch:110%;font-style:italic;font-weight:900;font-size:clamp(24px,8vw,34px);line-height:1.05;padding-right:.1em;
+  background:linear-gradient(100deg,#fff,#ffe1bf 40%,#d9d0ff 75%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ech-sc-vs-regle{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 5px;border-radius:999px;font-size:13px;font-weight:700;color:var(--e-txt);
+  background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.ech-sc-vs-regle .ech-ico{width:24px;height:24px;padding:4px;border-radius:8px}
+@keyframes ech-vs{0%{transform:translate(-105%,-50%) skewY(-4deg);opacity:0}16%{transform:translate(0,-50%) skewY(-4deg);opacity:1}
+  80%{transform:translate(0,-50%) skewY(-4deg);opacity:1}100%{transform:translate(105%,-50%) skewY(-4deg);opacity:0}}
+.ech-scene.intro .ech-sc-adv{animation:ech-vs-adv .6s cubic-bezier(.2,1.2,.4,1) both}
+@keyframes ech-vs-adv{from{transform:scale(1.4);opacity:0;filter:brightness(2.2)}to{transform:none;opacity:1;filter:none}}
+.ech-scene.intro .ech-sc-j{animation:ech-vs-j .5s cubic-bezier(.2,1.2,.4,1) .95s both}
+.ech-scene.intro .ech-sc-j:nth-child(2){animation-delay:1.05s}
+.ech-scene.intro .ech-sc-j:nth-child(3){animation-delay:1.15s}
+@keyframes ech-vs-j{from{transform:translateY(80px);opacity:0}to{transform:none;opacity:1}}
+
+/* La fin, en scène (echFinEnScene) : le verdict tombe, les étoiles se
+   posent dans leurs cases, le tampon « Parfait », une lueur de braise. Les
+   particules passent au-dessus de la scène (#fx, css/opening.css). */
+#fx.dessus{z-index:75}
+.ech-scene.gagne::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(70% 45% at 50% 80%,rgba(255,179,92,.3),transparent 70%);animation:ech-lueur 1.4s ease-out both}
+@keyframes ech-lueur{from{opacity:0}35%{opacity:1}to{opacity:.55}}
+.ech-scene.secousse .ech-sc{animation:ech-secousse .42s}
+@keyframes ech-secousse{20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
+.ech-sc-fin.on .ech-sc-verdict{animation:ech-verdict .55s cubic-bezier(.2,1.3,.4,1) backwards}
+@keyframes ech-verdict{from{transform:scale(1.9);opacity:0;filter:blur(6px)}}
+.ech-sc-verdict.gagne{padding-right:.1em;background:linear-gradient(100deg,#fff,#ffe1bf 45%,#ffc73b);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 14px rgba(255,179,92,.45))}
+.ech-fin-et{position:relative;display:flex;justify-content:center;gap:12px;margin:2px 0}
+.ech-fin-case{position:relative;display:grid;place-items:center;width:50px;height:50px;border-radius:50%;font-style:normal;
+  background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);transition:background .3s,box-shadow .3s}
+.ech-fin-case b{font-size:30px;line-height:1;color:rgba(255,255,255,.14)}
+.ech-fin-case.posee{background:radial-gradient(circle,rgba(255,199,59,.32),transparent 72%);box-shadow:inset 0 0 0 1.5px rgba(255,199,59,.65),0 0 22px rgba(255,199,59,.3)}
+.ech-fin-case.posee b{color:#ffc73b;text-shadow:0 0 14px rgba(255,199,59,.85);animation:ech-et-pose .5s cubic-bezier(.2,1.5,.4,1) backwards}
+@keyframes ech-et-pose{0%{transform:translateY(-80px) scale(1.9) rotate(-35deg);opacity:0}60%{transform:translateY(4px) scale(.9);opacity:1}}
+.ech-tampon{position:absolute;left:50%;top:66%;z-index:1;padding:3px 14px 4px;border:3px solid #ffb35c;border-radius:10px;
+  font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;letter-spacing:.08em;text-transform:uppercase;line-height:1.1;
+  color:#ffb35c;background:rgba(21,13,28,.82);box-shadow:0 0 26px rgba(255,179,92,.45),inset 0 0 12px rgba(255,179,92,.25);
+  transform:translate(-50%,-50%) rotate(-12deg);opacity:0;pointer-events:none}
+.ech-tampon.posee{opacity:1;animation:ech-tampon .45s cubic-bezier(.2,1.6,.4,1) backwards}
+@keyframes ech-tampon{0%{transform:translate(-50%,-50%) rotate(-12deg) scale(2.6);opacity:0}70%{transform:translate(-50%,-50%) rotate(-12deg) scale(.92);opacity:1}}
 .ech-gains{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.ech-gains span{padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:800;color:var(--e-or);background:rgba(245,196,81,.12);box-shadow:inset 0 0 0 1px rgba(245,196,81,.35)}
+.ech-gains span{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:800;color:var(--e-or);
+  background:rgba(245,196,81,.12);box-shadow:inset 0 0 0 1px rgba(245,196,81,.35)}
+.ech-gains b{font-family:var(--display);font-weight:900}
+.ech-gains .shard,.ech-gains .prismeico{width:14px;height:14px}
+.ech-gains svg:not(.shard):not(.prismeico){width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+.ech-gains span.titre{color:#c8bfff;background:rgba(138,120,245,.14);box-shadow:inset 0 0 0 1px rgba(200,191,255,.4)}
+.ech-sc-indice.invite:not(.vu){animation:ech-invite 1.5s ease-in-out infinite}
+@keyframes ech-invite{50%{box-shadow:inset 0 0 0 1px rgba(200,191,255,.7),0 0 20px rgba(138,120,245,.45)}}
 .ech-sc-fin small{font-size:12.5px;color:var(--e-sub)}
 .ech-astuce{max-width:34ch}
-.ech-sc-fin .btn{width:100%;margin-top:4px;text-transform:none;letter-spacing:0;font-family:var(--display);font-weight:800;color:#fff;background:var(--e-cta);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 8px 22px var(--e-glow)}
-.ech-sc-fin .btn.ghost{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px var(--e-l2)}
+.ech-sc-fin .btn{width:100%;margin-top:4px}
 .ech-sc-indice{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:16px;cursor:pointer;font:inherit;text-align:left;color:var(--e-txt);
   background:linear-gradient(110deg,rgba(93,75,217,.35),rgba(28,27,37,.6));box-shadow:inset 0 0 0 1px rgba(200,191,255,.3)}
 .ech-sc-ind-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -1775,205 +1780,241 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-sc-indice:not(.vu) .ech-flip{animation:ech-appel 1.6s ease-in-out infinite}
 @keyframes ech-appel{50%{transform:translateY(-3px) rotate(-2deg)}}
 
-/* ---------- L'événement (version 2.5) : Braises, Pass, quêtes, boutique, classement ---------- */
-/* Les mêmes principes : des tuiles pleines, une seule action lavande par
-   écran, et chaque vue mesurée sur la place qui reste (.ech-corps est le
-   conteneur, cqw et cqh). */
-.ech-hero-d{flex:0 0 auto;display:flex;align-items:center;gap:8px}
-.ech-hero-haut{gap:8px}
-.ech-hero-haut .ech-kick{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech-solde{display:inline-flex;align-items:center;gap:5px;padding:6px 11px 6px 8px;border-radius:999px;font-family:var(--display);font-weight:900;font-size:15px;
-  color:var(--e-txt);background:rgba(18,17,25,.72);box-shadow:inset 0 0 0 1px var(--e-l2)}
-.ech-solde .prismeico{width:17px;height:17px}
-.ech-solde.serie svg{width:15px;height:15px;fill:none;stroke:var(--e-acc2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-/* Six sous-onglets sur une ligne, de 360 px à l'ordinateur : la taille du
-   texte suit la largeur de la barre. */
-.ech-onglets{container-type:inline-size}
-.ech-onglets button{position:relative;flex:1 1 auto;min-width:0;padding:8px 4px;font-size:clamp(11px,3.4cqi,13.5px);white-space:nowrap}
-.ech-on-n{position:absolute;top:-4px;right:-2px;display:grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
-  font-style:normal;font-size:10px;font-weight:800;color:#fff;background:#ff5f7e;box-shadow:0 0 0 2px var(--e-bg)}
-.segbar .ech-on-n{position:static;margin-left:6px;box-shadow:none}
+/* ---------- L'onglet de l'événement, sur la charpente de Reflets ---------- */
+/* Les composants de l'écran Reflets (css/reflets.css : .rf-tete, .rf-onglets,
+   .rf-tuile, .rf-pass, .rf-art, .rf-top, .rr-*, .rfban), avec les couleurs
+   de L'Échauffement à la place du rose de Reflets : la braise (l'ambre) et
+   la lavande de la suite. Les fonds, les textes et les boutons restent ceux
+   du site. */
+.ech-rf,.ech-rfban,.ech-scene{--ev-a:#ffb35c;--ev-b:#c8bfff;--ev-c:#8a78f5;--ev-chaud:#ff9a4d}
 
-/* Défis : les deux bonus de la saison, sous les sept médaillons. */
-.ech-bonus{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.ech-bon{display:flex;align-items:center;gap:8px;min-width:0;padding:7px 9px;border-radius:14px;background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-bon-ico{flex:0 0 auto;display:grid;place-items:center;width:26px;height:26px}
-.ech-bon-ico img{height:24px;filter:drop-shadow(0 0 6px rgba(245,196,81,.35))}
-.ech-bon-ico svg{width:18px;height:18px;fill:none;stroke:var(--e-or);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ech-bon-txt{flex:1;display:flex;flex-direction:column;min-width:0;line-height:1.15}
-.ech-bon-txt b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech-bon-txt small{font-size:11px;font-weight:700;color:var(--e-or);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech-bon em{flex:0 0 auto;font-style:normal;font-size:11.5px;font-weight:800;color:var(--e-mut)}
-.ech-bon.ok{box-shadow:inset 0 0 0 1px rgba(79,214,160,.45)}
-.ech-bon.ok .ech-bon-ico svg{stroke:var(--e-ok)}
-.ech-bon.ok em{color:var(--e-ok)}
+/* L'en-tête : le médaillon de « La Luxueuse III » au bout de sa chaîne,
+   fondu dans le fond comme La Relève dans celui de Reflets. */
+.rf-tete.ech-tete{background:#150d1c}
+.rf-tete.ech-tete .rf-fond>i,.rfban.ech-rfban .rf-fond>i{--t:.30;--z:1.5;filter:saturate(1.1) brightness(.92);
+  background-position:60% calc(50% + (0.5 - var(--t)) * var(--z) * 139.7cqw)}
+/* Le titre est long : le surtitre et les chiffres partagent la première
+   ligne, le nom prend toute la largeur dessous. */
+.ech-tete .rf-tetenom{flex:1;min-width:0}
+.ech-tl1{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 10px}
+.ech-tl1 small{min-width:0}
+.ech-tete .rf-tetechiffres{flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px}
+.ech-tete .rf-solde,.ech-tete .rf-fin{white-space:nowrap}
+.ech-tete .rf-tetenom h1{margin-top:8px}
+.rf-tete.ech-tete::before,.rfban.ech-rfban::before{background-image:linear-gradient(110deg,transparent 25%,rgba(255,179,92,.7) 40%,rgba(255,255,255,.9) 48%,rgba(200,191,255,.75) 56%,transparent 72%)}
+.ech-tete .rf-tetenom h1{font-size:36px;background-image:linear-gradient(100deg,#fff 0%,#ffe1bf 32%,#d9d0ff 62%,#fff)}
+.ech-tete .rf-solde .prismeico{width:17px;height:17px}
+.ech-tete .rf-solde svg:not(.prismeico){width:15px;height:15px;fill:none;stroke:var(--ev-b);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ech-rf .rf-onglets button.on::after{background:linear-gradient(90deg,var(--ev-a),var(--ev-b),var(--ev-c))}
+.ech-rf .rf-pastille,.ech-rfban .rfban-n{background:var(--ev-chaud)}
+@media (max-width:480px){.ech-tete .rf-tetenom h1{font-size:28px}}
 
-/* Le Pass : l'en-tête, vingt médaillons en grille de cinq, la phrase. */
-.ech-pass-tete{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:18px;
-  background:linear-gradient(120deg,rgba(138,120,245,.2),var(--e-s1) 70%);box-shadow:inset 0 0 0 1px rgba(200,191,255,.22)}
-.ech-pass-niv{display:flex;flex-direction:column;align-items:center;line-height:1}
-.ech-pass-niv small{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--e-acc2)}
-.ech-pass-niv b{font-family:var(--display);font-weight:900;font-size:26px}
-.ech-pass-niv b i{font-style:normal;font-size:13px;color:var(--e-mut)}
-.ech-pass-j{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
-.ech-pass-ch{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--e-sub);white-space:nowrap}
-.ech-pass-ch b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--e-txt)}
-.ech-pass-ch small{margin-left:auto;font-size:11.5px;color:var(--e-mut)}
-.ech-pass-ch small b{font-size:12.5px;color:var(--e-acc2)}
-.ech-pass-tout{flex:0 0 auto;padding:9px 12px;border:0;border-radius:999px;cursor:pointer;font:inherit;font-family:var(--display);font-weight:800;font-size:13px;color:#fff;
-  background:var(--e-cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 8px 20px var(--e-glow);white-space:nowrap}
-.ech-pass{flex:1 1 0;min-height:0;margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(5,var(--pw));grid-auto-rows:var(--pw);
-  justify-content:center;align-content:center;gap:clamp(6px,2cqw,12px);
-  --pw:min(calc((100cqw - 4 * clamp(6px,2cqw,12px)) / 5),calc((100cqh - 120px - 3 * clamp(6px,2cqw,12px)) / 4),86px)}
-.ech-pass li{display:block;min-width:0}
-.ech-pal{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;height:100%;padding:0;border:0;border-radius:50%;
-  cursor:pointer;font:inherit;color:var(--e-txt);background:var(--e-s2);box-shadow:inset 0 0 0 1.5px var(--e-l2),var(--e-tuile);container-type:inline-size}
-.ech-pal-ico{display:grid;place-items:center;height:38cqi}
-.ech-pal-ico svg{width:34cqi;height:34cqi;fill:none;stroke:var(--e-deco);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.ech-pal-ico .shard{width:30cqi;height:30cqi;stroke:none;color:#b3a6ff}
-.ech-pal-ico img{height:36cqi}
-.ech-pal-ico .ava{width:27cqi;height:27cqi;margin-top:-3cqi}
-.ech-pal-titre{display:grid;place-items:center;width:38cqi;height:38cqi;border-radius:30%;background:var(--e-wash)}
-.ech-pal-titre svg{width:24cqi;height:24cqi}
-.ech-pal-mot{max-width:84cqi;font-size:max(8.5px,15cqi);font-weight:800;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--e-sub)}
-.ech-pal-n{position:absolute;right:-2px;top:-2px;display:grid;place-items:center;min-width:max(15px,30cqi);height:max(15px,30cqi);padding:0 3px;border-radius:999px;
-  font-style:normal;font-family:var(--display);font-weight:900;font-size:max(9px,17cqi);color:var(--e-txt);background:var(--e-s3);box-shadow:0 0 0 2px var(--e-bg)}
-.ech-pal-n svg{width:60%;height:60%;fill:none;stroke:currentColor;stroke-width:3}
-.ech-pal.loin{opacity:.55}
-.ech-pal.prochain{box-shadow:inset 0 0 0 2px var(--e-acc2),0 0 14px rgba(140,120,255,.35)}
-.ech-pal.pret{background:radial-gradient(circle at 50% 35%,#5d4bd9,var(--e-s2) 75%);box-shadow:inset 0 0 0 2px #c8bfff,0 0 18px var(--e-glow);animation:ech-pal 1.8s ease-in-out infinite}
-.ech-pal.pret .ech-pal-n{color:#fff;background:#ff5f7e}
-.ech-pal.pris{background:var(--e-s1);box-shadow:inset 0 0 0 1.5px rgba(79,214,160,.5)}
-.ech-pal.pris .ech-pal-ico,.ech-pal.pris .ech-pal-mot{opacity:.55}
-.ech-pal.pris .ech-pal-n{color:#05301f;background:var(--e-ok)}
-.ech-pal.rare:not(.pris){box-shadow:inset 0 0 0 1.5px rgba(245,196,81,.55),var(--e-tuile)}
-.ech-pal.rare.pret{box-shadow:inset 0 0 0 2px var(--e-or),0 0 18px rgba(245,196,81,.45)}
-@keyframes ech-pal{50%{transform:translateY(-3px)}}
-.ech-gainico{background:radial-gradient(circle at 50% 35%,#5d4bd9,#24232f 75%)}
-.ech-gainico img{width:50px}
-.ech-gainico .ava{width:58px;height:58px}
+/* Les tuiles (Aujourd'hui) */
+.ech-rf .rf-tuile:hover{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
+.ech-rf .rf-tuile.chaud{box-shadow:inset 0 0 0 1.5px var(--ev-chaud)}
+.ech-rf .rf-tuile.chaud .rf-tuiletxt span{color:var(--ev-a)}
+.ech-rf .rf-tuileico{background:linear-gradient(135deg,var(--ev-a),var(--ev-c))}
+.ech-rf .rf-tuiletxt b sup{font-size:.6em}
+.ech-rf .rf-tuile.fixe{cursor:default}
+.ech-rf .rf-tuile.fixe:hover{box-shadow:inset 0 0 0 1px var(--line);translate:none}
+.ech-rf .rf-tuiletxt .ech-niv{font-size:13px}
 
-/* Les quêtes : deux listes, une tuile par quête, sur deux colonnes ; les
-   rangées se resserrent pour tenir. */
-.segbar.ech-seg{flex:0 0 auto;margin:0;background:var(--e-creux);border-color:var(--e-l1)}
-.segbar.ech-seg button{color:var(--e-mut);font-weight:800}
-.segbar.ech-seg button.on{color:var(--e-txt);background:rgba(255,255,255,.15);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
-.ech-qs{flex:1 1 0;min-height:0;margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,64px);align-content:start;gap:7px}
-.ech-qt{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr auto;align-items:center;gap:2px 7px;min-height:0;overflow:hidden;
-  padding:6px 9px;border-radius:14px;background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-q-ico{grid-row:1 / 3;display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--e-wash)}
-.ech-q-ico svg{width:14px;height:14px;fill:none;stroke:var(--e-deco);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ech-q-txt{display:flex;flex-direction:column;gap:4px;min-width:0;padding:0;border:0;background:none;cursor:pointer;font:inherit;color:inherit;text-align:left}
-.ech-q-txt b{font-size:12.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech-q-txt small{font-size:11px;color:var(--e-ok)}
-.ech-q-bar{display:block;height:4px;border-radius:999px;overflow:hidden;background:var(--e-creux)}
-.ech-q-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--e-acc),var(--e-acc2))}
-.ech-q-gain{display:flex;align-items:center;gap:4px;font-family:var(--display);font-weight:900;font-size:12px;color:var(--e-sub)}
-.ech-q-gain small{margin-right:auto;font-family:var(--body);font-weight:700;font-size:10.5px;color:var(--e-mut)}
-.ech-q-gain .prismeico,.ech-q-btn .prismeico{width:13px;height:13px}
-.ech-q-btn{justify-self:start;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:0;border-radius:999px;cursor:pointer;font:inherit;
-  font-family:var(--display);font-weight:900;font-size:12px;color:#fff;background:var(--e-cta);box-shadow:0 4px 12px var(--e-glow)}
-.ech-qt.pret{box-shadow:inset 0 0 0 1.5px #c8bfff}
-.ech-qt.pret .ech-q-ico svg,.ech-qt.fait .ech-q-ico svg{stroke:var(--e-ok)}
-.ech-qt.fait{opacity:.6}
+/* Le défi du jour, en vedette : la carte de l'adversaire et l'invitation. */
+.ech-une{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:16px;width:100%;padding:16px;border:0;border-radius:var(--radius);
+  cursor:pointer;font:inherit;text-align:left;color:var(--text);background:#150d1c;
+  box-shadow:inset 0 0 0 1.5px var(--ev-c),0 12px 30px rgba(0,0,0,.4);transition:translate .15s}
+.ech-une:active{translate:0 1px}
+.ech-une>.ech-illu.fond{left:30%;-webkit-mask:linear-gradient(90deg,transparent,#000 55%);mask:linear-gradient(90deg,transparent,#000 55%)}
+.ech-une>.ech-illu.fond img{filter:saturate(1.1) brightness(.62)}
+.ech-une::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(90% 120% at 0% 50%,rgba(21,13,28,.9),rgba(21,13,28,.35) 70%),linear-gradient(0deg,rgba(21,13,28,.7),transparent 60%)}
+.ech-une.parfait{box-shadow:inset 0 0 0 1.5px rgba(255,199,59,.6),0 12px 30px rgba(0,0,0,.4)}
+.ech-une-carte{flex:0 0 92px;rotate:-5deg;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
+.ech-une-txt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.ech-une-txt>small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ev-b)}
+.ech-une-txt>small .ech-niv{letter-spacing:0;text-transform:none}
+.ech-une-txt>b{font-family:var(--display);font-stretch:110%;font-style:italic;font-weight:900;font-size:24px;line-height:1.05;padding-right:.1em}
+.ech-une-regle{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--subtle)}
+.ech-une-regle .ech-ico{width:26px;height:26px;padding:5px;border-radius:8px}
+.ech-une-bas{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted)}
+.ech-une-bas .ech-et{font-size:15px}
+.ech-une-bas em{font-style:normal}
+.ech-une-cta{margin-top:4px;pointer-events:none}
+@media (max-width:380px){.ech-une{gap:12px;padding:14px 12px}.ech-une-carte{flex-basis:78px}.ech-une-txt>b{font-size:21px}}
 
-/* La boutique : quatre articles, deux par rangée. */
-.ech-arts{flex:1 1 0;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,170px);align-content:center;gap:10px}
-.ech-art{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:0;overflow:hidden;padding:10px 8px;border:0;border-radius:18px;
-  cursor:pointer;font:inherit;text-align:center;color:var(--e-txt);background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1),var(--e-tuile)}
-.ech-art-vis{position:relative;display:grid;place-items:center;height:min(56px,32%)}
-.ech-art-vis img{height:100%}
-.ech-art-vis svg{width:38px;height:38px;fill:none;stroke:var(--e-deco);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.ech-art-vis .qrtitre{font-size:12px}
-.ech-art-x{position:absolute;right:-14px;bottom:-2px;font-style:normal;font-family:var(--display);font-weight:900;font-size:14px}
-.ech-art b{font-size:13px;line-height:1.15}
-.ech-art small{font-size:11px;font-weight:700;color:var(--e-mut)}
-.ech-art-prix{display:inline-flex;align-items:center;gap:5px;margin-top:2px;padding:5px 12px;border-radius:999px;font-family:var(--display);font-weight:900;font-size:14px;
-  color:#fff;background:var(--e-cta);box-shadow:0 6px 16px var(--e-glow)}
-.ech-art-prix .prismeico{width:15px;height:15px}
-.ech-art.cher .ech-art-prix{color:var(--e-mut);background:var(--e-s3);box-shadow:none}
-.ech-art.fini{cursor:default;opacity:.6}
-.ech-art.fini .ech-art-prix{color:var(--e-ok);background:none;box-shadow:inset 0 0 0 1px rgba(79,214,160,.45)}
+/* Les sept défis et les bonus : la piste du Pass de Reflets. */
+.ech-rf .rf-pal.pris::before,.ech-rf .rf-pal.pret::before,.ech-defis .rf-pal.gagne::before{background:linear-gradient(var(--ev-a),var(--ev-c))}
+.ech-rf .rf-pal.pris .rf-palnum,.ech-rf .rf-pal.pret .rf-palnum,.ech-defis .rf-pal.gagne .rf-palnum{color:#fff;background:linear-gradient(135deg,var(--ev-a),var(--ev-b),var(--ev-c));box-shadow:none}
+.ech-rf .rf-pal.prochain .rf-palnum{box-shadow:inset 0 0 0 2px var(--ev-c)}
+.ech-rf .rf-pal.rare .rf-palcarte{background:linear-gradient(110deg,rgba(255,179,92,.12),rgba(138,120,245,.1)),var(--surface)}
+.ech-rf .rf-pal.pret .rf-palcarte{box-shadow:inset 0 0 0 1.5px var(--ev-chaud),0 0 18px rgba(255,154,77,.16)}
+.ech-rf .rf-pal.prochain .rf-palcarte{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
+.ech-rf .rf-pal.prochain .rf-paletat{color:var(--ev-b)}
+.ech-rf .rf-palico{color:var(--ev-b)}
+.ech-rf .rf-paltxt small .prismeico{width:13px;height:13px}
+.ech-defis .rf-pal.pris .rf-palcarte{opacity:1}
+.ech-defis .rf-pal.arattraper .rf-palcarte{box-shadow:inset 0 0 0 1px rgba(255,154,77,.5)}
+.ech-defis .rf-pal.ferme{opacity:.55}
+.ech-defis button.rf-palcarte{width:100%;border:0;cursor:pointer;font:inherit;color:inherit;text-align:left}
+.ech-defis button.rf-palcarte:active{translate:0 1px}
+.ech-defis .rf-palico.illu{position:relative;isolation:isolate;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line-2)}
+.ech-defis .rf-paltxt small{gap:6px;color:var(--subtle)}
+.ech-defis .rf-paltxt small .ech-ico{width:18px;height:18px;padding:3px;border-radius:6px}
+.ech-defis .rf-palnum svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.ech-dl-fin{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.ech-dl-fin .ech-et{font-size:14px}
+.ech-dl-fin em{font-style:normal;font-size:10.5px;font-weight:800;color:var(--ev-a);white-space:nowrap}
+.ech-comment{align-self:center}
 
-/* Le classement : dix rangées, qui se resserrent pour tenir. */
-.ech-top{flex:1 1 0;min-height:0;margin:0;padding:0;list-style:none;display:grid;grid-auto-rows:minmax(0,40px);align-content:start;gap:4px}
-.ech-top li{display:flex;align-items:center;gap:8px;min-height:0;overflow:hidden;padding:0 10px;border-radius:12px;background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-top li.moi{box-shadow:inset 0 0 0 1.5px var(--e-acc2)}
-.ech-top .ava{width:24px;height:24px;flex:0 0 auto}
-.ech-rang{flex:0 0 auto;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-family:var(--display);font-weight:900;font-size:12px;color:var(--e-txt);background:var(--e-s3)}
-.ech-rang.r1{color:#2b1d00;background:linear-gradient(180deg,#ffe08a,var(--e-or))}
-.ech-rang.r2{color:#1d1d24;background:linear-gradient(180deg,#f1f0f8,#a9a7b8)}
-.ech-rang.r3{color:#2a1300;background:linear-gradient(180deg,#f3b37a,#b8743c)}
-.ech-top-nom{flex:1;display:flex;flex-direction:column;min-width:0;line-height:1.1}
-.ech-top-nom b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech-top-nom small{font-size:10.5px}
-.ech-top-pts{display:inline-flex;align-items:center;gap:4px;font-family:var(--display);font-weight:900;font-size:13.5px}
-.ech-top-pts .prismeico{width:14px;height:14px}
-.ech-top-et{font-style:normal;color:var(--e-or)}
+/* Le Pass : un palier sur cinq, un titre ou un cadre, un peu plus grand. */
+.ech-rf .rf-passtete{background:radial-gradient(100% 140% at 0% 50%,rgba(255,179,92,.14),transparent 60%),var(--surface)}
+.ech-rf .rf-passniv{background:radial-gradient(circle,var(--surface) 62%,transparent 63%),conic-gradient(var(--ev-a),var(--ev-b),var(--ev-c),var(--ev-a))}
+.ech-rf .rf-jauge i{background:linear-gradient(90deg,var(--ev-a),var(--ev-b),var(--ev-c))}
+.ech-rf .rf-pal.jalon .rf-palnum{flex-basis:40px;height:40px;font-family:var(--display);font-size:15px}
+.ech-rf .rf-pal.jalon .rf-palcarte{padding:12px}
+.ech-rf .rf-pal.jalon .rf-palico{flex-basis:50px;height:50px;border-radius:14px}
+.ech-rf .rf-pal.jalon .rf-palico .ava{width:42px;height:42px}
+.ech-rf .rf-pal.jalon .rf-paltxt b{font-family:var(--display);font-style:italic;font-weight:900;font-size:15px}
+.ech-gain .rf-gainico{background:linear-gradient(135deg,#ffb35c,#c8bfff 55%,#8a78f5);box-shadow:0 10px 26px rgba(255,179,92,.3)}
+.ech-gain .rf-gainico .ava{width:60px;height:60px}
+.ech-gain p{margin:0}
 
-/* Le mode sans fin : son niveau en quatre crans, trois chiffres sous la porte. */
+/* La boutique, le classement */
+.ech-rf .rf-art{padding:12px 10px 10px;gap:5px}
+.ech-rf .rf-artvis{height:52px;color:var(--ev-b)}
+.ech-rf .rf-artvis svg{width:38px;height:38px}
+.ech-rf .rf-art .btn .prismeico{width:15px;height:15px}
+.ech-rf .rf-top li.moi{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
+.ech-rf .rf-pts .prismeico{width:15px;height:15px}
+.ech-top-et{font-style:normal;color:var(--warn)}
+.ech-maplace{margin:0;font-size:13px;color:var(--muted)}
+.ech-maplace b{color:var(--text)}
+
+/* Les indices : huit cases de carte, quatre par rangée (huit à partir de 640 px). */
+.ech-rf .ech-inds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 10px}
+@media (min-width:640px){.ech-rf .ech-inds{grid-template-columns:repeat(4,minmax(0,120px));justify-content:center}}
+@media (max-height:760px) and (max-width:639px){.ech-rf .ech-inds{grid-template-columns:repeat(4,minmax(0,64px));justify-content:center;gap:10px 14px}}
+.ech-rf .ech-case{width:auto}
+.ech-rf .ech-case small{width:auto}
+
+/* Le mode sans fin : son niveau en quatre crans ; ce qu'il rapporte. */
 .ech-niv{display:inline-flex;align-items:center;gap:3px;vertical-align:-1px}
 .ech-niv i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)}
-.ech-niv i.on{background:var(--e-acc2)}
+.ech-niv i.on{background:var(--ev-b,#c8bfff)}
 .ech-niv.n3 i.on{background:#ffb37a}
-.ech-niv.n4 i.on{background:var(--e-rouge)}
+.ech-niv.n4 i.on{background:#ff6b6b}
 .ech-niv em{margin-left:3px;font-style:normal;font-weight:800;letter-spacing:.06em}
-.ech-sf-ts{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.ech-sf-t{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;padding:8px 6px;border-radius:14px;text-align:center;
-  background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-sf-t b{font-family:var(--display);font-weight:900;font-size:19px;line-height:1.1}
-.ech-sf-t small{font-size:11px;font-weight:700;color:var(--e-sub)}
-.ech-sf-t b.mot{display:flex;align-items:center;min-height:21px;font-family:var(--body);font-weight:800;font-size:12px;color:var(--e-txt)}
-.ech-sf-t b.mot .ech-niv{flex-wrap:wrap;justify-content:center;row-gap:2px}
-.ech-sf-t b.mot .ech-niv em{flex-basis:100%;margin:0;text-align:center;letter-spacing:0}
-.ech-sf-t em{font-style:normal;font-size:10.5px;color:var(--e-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ech-regle-sf{display:flex;align-items:flex-start;gap:10px;margin:0;padding:12px 14px;border-radius:var(--radius-sm);font-size:13px;line-height:1.45;color:var(--subtle);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ech-regle-sf .shard{flex:0 0 auto;width:18px;height:18px;margin-top:1px;color:var(--accent-soft)}
+.ech-regle-sf b{color:var(--text)}
 
-/* Le récap : six chiffres, le podium, et ce qui continue. */
-.ech-rcs{flex:0 1 auto;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(0,70px);gap:8px}
-.ech-rc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:0;overflow:hidden;padding:4px;border-radius:14px;text-align:center;
-  background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-rc b{display:inline-flex;align-items:center;gap:4px;font-family:var(--display);font-weight:900;font-size:18px;line-height:1.1}
-.ech-rc b i{font-style:normal;font-size:12px;color:var(--e-mut)}
-.ech-rc .prismeico{width:16px;height:16px}
-.ech-rc small{font-size:11px;font-weight:700;color:var(--e-sub)}
-.ech-rc em{font-style:normal;font-size:10.5px;color:var(--e-acc2)}
-.ech-podium{flex:1 1 0;min-height:0;margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,1fr);align-items:end;gap:8px}
-.ech-podium li{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:10px 4px 8px;border-radius:16px;
-  background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-podium li.p1{order:2;padding-top:16px;box-shadow:inset 0 0 0 1.5px rgba(245,196,81,.5)}
-.ech-podium li.p2{order:1}
-.ech-podium li.p3{order:3}
-.ech-podium li.moi{box-shadow:inset 0 0 0 1.5px var(--e-acc2)}
-.ech-podium b{max-width:100%;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech-podium small{display:inline-flex;align-items:center;gap:3px;font-family:var(--display);font-weight:900;font-size:12px}
-.ech-podium .ech-rang{position:absolute;top:-8px}
-.ech-suite{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-radius:16px;cursor:pointer;font:inherit;text-align:left;color:var(--e-txt);
-  background:linear-gradient(110deg,rgba(93,75,217,.4),rgba(28,27,37,.6));box-shadow:inset 0 0 0 1px rgba(200,191,255,.3)}
-.ech-suite>span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
-.ech-suite b{font-size:14px}
-.ech-suite small{font-size:11.5px;line-height:1.3;color:var(--e-deco)}
-.ech-suite-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--e-wash)}
-.ech-suite-ico svg{width:19px;height:19px;fill:none;stroke:var(--e-deco);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Le mode sans fin : trois chiffres côte à côte, même sur téléphone. */
+.ech-rf .rf-tuiles.ech-ts{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ech-rf .ech-ts .rf-tuile{flex-direction:column;align-items:flex-start;gap:7px;padding:10px}
+.ech-rf .ech-ts .rf-tuileico{width:26px;height:26px;border-radius:8px}
+.ech-rf .ech-ts .rf-tuileico svg{width:15px;height:15px}
+.ech-rf .ech-ts .rf-tuiletxt b{font-size:15px}
+.ech-rf .ech-ts .rf-tuiletxt span{font-size:11px}
+/* « Demain » : le nom du niveau sous ses crans (« Redoutable » ne tient pas à côté sur téléphone). */
+.ech-rf .ech-ts .ech-niv{flex-wrap:wrap}
+.ech-rf .ech-ts .ech-niv em{flex:1 0 100%;margin:3px 0 0}
 
-/* Les bandeaux, la boutique principale et la fin d'un combat. */
-.ech-ban-solde{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:999px;font-family:var(--display);font-weight:900;font-size:13px;
-  color:var(--e-txt);background:rgba(18,17,25,.72);box-shadow:inset 0 0 0 1px var(--e-l2)}
-.ech-ban-solde .prismeico{width:15px;height:15px}
-.ech-ban .ech-et{font-size:14px}
-.ech-ban.shopev{max-width:none;margin:0 0 12px}
+/* Le récap : les blocs de celui de Reflets (.rr-*), aux couleurs de
+   l'événement, resserrés pour tenir dans l'écran avec son podium (règle 8) :
+   six chiffres en deux rangées de trois (une rangée de six à partir de
+   720 px), l'icône à côté du chiffre ; la suite en une seule carte. */
+.ech-rf .rr-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ech-rf .rr-stat,.ech-rf .rr-stat:first-child{grid-column:auto;display:grid;grid-template-columns:auto minmax(0,1fr);align-content:start;align-items:center;gap:2px 7px;padding:10px}
+.ech-rf .rr-stat:first-child{background:radial-gradient(120% 160% at 0% 0%,rgba(255,179,92,.18),transparent 60%),var(--surface)}
+.ech-rf .rr-stat .rr-ico,.ech-rf .rr-lien .rr-ico{color:#fff;background:linear-gradient(135deg,var(--ev-a),var(--ev-c))}
+.ech-rf .rr-stat .rr-ico{width:24px;height:24px;margin:0;border-radius:8px}
+.ech-rf .rr-stat .rr-ico svg{width:14px;height:14px}
+.ech-rf .rr-stat .rr-ico .prismeico{width:17px;height:17px}
+.ech-rf .rr-stat b,.ech-rf .rr-stat:first-child b{font-size:22px}
+.ech-rf .rr-stat>span:not(.rr-ico),.ech-rf .rr-stat>small{grid-column:1 / -1;line-height:1.25}
+.ech-rf .rr-stat>span:not(.rr-ico){margin-top:3px;font-size:12px}
+.ech-rf .rr-stat>small{color:var(--ev-a)}
+@media (min-width:720px){.ech-rf .rr-stats{grid-template-columns:repeat(6,minmax(0,1fr))}}
+/* Le rang dans le coin, pas au-dessus : une ligne de moins. */
+.ech-rf .rr-podium li{position:relative;padding:12px 6px 9px;gap:4px}
+.ech-rf .rr-podium li.p1{padding-top:16px}
+.ech-rf .rr-place{position:absolute;top:6px;left:9px;font-size:13px}
+.ech-rf .rr-podium .ava{width:46px;height:46px}
+.ech-rf .rr-podium small .prismeico{width:13px;height:13px}
+.ech-rf .rr-lien.ech-suite{flex-direction:row;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left}
+.ech-rf .rr-lien .rr-ico{flex:0 0 auto;width:34px;height:34px;display:grid;place-items:center;border-radius:10px}
+.ech-suite>span:not(.rr-ico){display:flex;flex-direction:column;gap:2px;min-width:0}
+.ech-suite .ech-niv{margin-left:2px}
+.ech-rf .rr-lien:hover{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
+
+/* Les écrans bas (375 × 667, 360 × 740) : l'en-tête se resserre, la
+   boutique passe en liste, pour qu'aucune page ne défile d'un tout petit peu
+   (règle 8) ; les pages longues (Défis, Quêtes, Pass) défilent. */
+@media (max-height:760px){
+  .rf-tete.ech-tete{padding-top:14px}
+  .ech-tete .rf-tetenom h1{font-size:26px;margin-top:4px}
+  .ech-tete .rf-onglets{margin-top:12px}
+  .ech-tete .rf-onglets button{padding:10px 9px 11px}
+  .ech-rf .rf-page{gap:10px}
+  .ech-une{padding:12px}
+  .ech-une-carte{flex-basis:70px}
+  .ech-une-txt{gap:5px}
+  .ech-une-txt>b{font-size:20px}
+  .ech-une-cta{padding-top:10px;padding-bottom:10px}
+  .ech-rf .ech-ts .rf-tuile{padding:8px 10px;gap:5px}
+  .ech-regle-sf{padding:9px 12px}
+  .ech-rf .rf-top{gap:5px}
+  .ech-rf .rf-top li{padding:6px 12px}
+  .ech-rf .rf-top .ava{width:34px;height:34px}
+  .ech-rf .rr-stat,.ech-rf .rr-stat:first-child{padding:8px 9px}
+  .ech-rf .rr-stat .rr-ico{width:22px;height:22px}
+  .ech-rf .rr-stat b,.ech-rf .rr-stat:first-child b{font-size:19px}
+  .ech-rf .rr-podium li{padding:9px 6px 7px;gap:3px}
+  .ech-rf .rr-podium li.p1{padding-top:12px}
+  .ech-rf .rr-podium .ava{width:40px;height:40px}
+  .ech-rf .rr-lien.ech-suite{padding:10px 12px}
+  .ech-rf .rf-page h2{margin-bottom:6px;font-size:16px}
+}
+/* 375 × 667 : le podium en trois pastilles (l'avatar à côté du nom). */
+@media (max-height:700px){
+  .ech-rf .rr-podium li,.ech-rf .rr-podium li.p1{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:0 7px;padding:7px 8px;text-align:left}
+  .ech-rf .rr-podium .ava{grid-row:1 / 3;width:32px;height:32px}
+  .ech-rf .rr-podium b,.ech-rf .rr-podium small{grid-column:2;justify-self:start}
+  .ech-rf .rr-place{top:3px;left:auto;right:7px;font-size:12px}
+}
+@media (max-height:760px) and (max-width:639px){
+  .ech-rf .rf-arts{grid-template-columns:1fr;gap:8px}
+  .ech-rf .rf-art{display:grid;grid-template-columns:44px 1fr auto;grid-template-rows:auto auto;align-items:center;column-gap:12px;row-gap:2px;padding:10px 12px;text-align:left}
+  .ech-rf .rf-artvis{grid-row:1 / 3;height:44px}
+  .ech-rf .rf-artvis svg{width:30px;height:30px}
+  .ech-rf .rf-artvis .qrtitre{font-size:9.5px;padding:4px 5px}
+  .ech-rf .rf-art>b{grid-column:2;font-size:13.5px}
+  .ech-rf .rf-art>small{display:none}
+  .ech-rf .rf-artreste{grid-column:2;grid-row:2}
+  .ech-rf .rf-art .btn,.ech-rf .rf-art .qtag{grid-column:3;grid-row:1 / 3;width:auto;min-width:84px}
+}
+
+/* Les bandeaux (écran Boosters, Boutique principale) */
+.rfban.ech-rfban{background:#150d1c}
+.ech-rfban .rfban-txt b{background-image:linear-gradient(100deg,#fff,#ffe1bf 38%,#d9d0ff 70%,#fff)}
+.ech-rfban .rfban-solde .prismeico{width:15px;height:15px}
+.ech-rfban .rfban-solde .ech-et{font-size:13px}
+.ech-rfban.shopev{max-width:none;margin:0 0 12px}
+
+/* Le pied de l'écran du défi, et la fenêtre de fin */
 .ech-pied-prix.braises{display:inline-flex;align-items:center;gap:3px;color:var(--e-acc2)}
 .ech-pied .shard{width:11px;height:11px;vertical-align:-1px;color:var(--e-or)}
 .ech-pied .prismeico{width:12px;height:12px}
 .ech-popstats{margin:0 0 6px}
 .ech-popstats b small{font-size:12px;color:var(--muted)}
-/* Les rangées de quêtes et de classement passent aussi par .ech-corps : une
-   hauteur bien plus grande (ordinateur) les espace sans les étirer. */
-@container (min-height:520px){.ech-qs{grid-auto-rows:minmax(0,72px)}.ech-top{grid-auto-rows:minmax(0,46px)}}
-@media (prefers-reduced-motion:reduce){.ech-pal.pret{animation:none}}
-html.rm .ech-pal.pret{animation:none}
 
 @media (max-height:700px){.ech-sc-adv{width:34%}.ech-sc{gap:8px}.ech-sc-eq{gap:8px;width:88%}}
 @media (prefers-reduced-motion:reduce){.frappe .ech-sc-carte,.touche .ech-sc-carte,.attaque .ech-sc-carte,.bloque .ech-sc-carte,.ech-flot.go,.ech-sc-j.pret .ech-sc-carte,
-  .touche .ech-eclat,.eclate .ech-eclat,.ech-sc-indice .ech-flip,.ech-sc-fin .ech-et.grand i,.ech-sc-j.ko .ech-ko{animation:none}}
+  .touche .ech-eclat,.eclate .ech-eclat,.ech-sc-indice .ech-flip,.ech-sc-j.ko .ech-ko,
+  .ech-scene.gagne::before,.ech-scene.secousse .ech-sc,.ech-sc-fin.on .ech-sc-verdict,.ech-fin-case.posee b,.ech-tampon.posee,.ech-sc-indice.invite,
+  .ech-scene.intro .ech-sc-vs,.ech-scene.intro .ech-sc-adv,.ech-scene.intro .ech-sc-j,.ech-final .ech-ind,.ech-final .ech-flip{animation:none}}
 html.rm .frappe .ech-sc-carte,html.rm .touche .ech-sc-carte,html.rm .attaque .ech-sc-carte,html.rm .bloque .ech-sc-carte,html.rm .ech-sc-j.pret .ech-sc-carte,
-html.rm .ech-sc-indice .ech-flip,html.rm .ech-sc-fin .ech-et.grand i,html.rm .ech-sc-j.ko .ech-ko{animation:none}
+html.rm .ech-sc-indice .ech-flip,html.rm .ech-sc-j.ko .ech-ko,html.rm .ech-scene.gagne::before,html.rm .ech-scene.secousse .ech-sc,
+html.rm .ech-sc-fin.on .ech-sc-verdict,html.rm .ech-fin-case.posee b,html.rm .ech-tampon.posee,html.rm .ech-sc-indice.invite,
+html.rm .ech-scene.intro .ech-sc-vs,html.rm .ech-scene.intro .ech-sc-adv,html.rm .ech-scene.intro .ech-sc-j,html.rm .ech-final .ech-ind,html.rm .ech-final .ech-flip{animation:none}
