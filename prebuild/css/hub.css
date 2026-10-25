@@ -1680,12 +1680,41 @@ button.ech-a.on i{color:var(--e-acc2)}
 .ech-sc-fin[hidden]{display:none}
 .ech-sc-verdict{font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:32px;line-height:1}
 .ech-sc-tours{font-size:12.5px;color:var(--e-sub)}
-.ech-sc-fin .ech-et.grand i{display:inline-block;animation:ech-etoile .4s cubic-bezier(.2,1.4,.4,1) both}
-.ech-sc-fin .ech-et.grand i:nth-child(2){animation-delay:.15s}
-.ech-sc-fin .ech-et.grand i:nth-child(3){animation-delay:.3s}
-@keyframes ech-etoile{from{transform:scale(0) rotate(-40deg)}}
+/* La fin, en scène (echFinEnScene) : le verdict tombe, les étoiles se
+   posent dans leurs cases, le tampon « Parfait », une lueur de braise. Les
+   particules passent au-dessus de la scène (#fx, css/opening.css). */
+#fx.dessus{z-index:75}
+.ech-scene.gagne::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(70% 45% at 50% 80%,rgba(255,179,92,.3),transparent 70%);animation:ech-lueur 1.4s ease-out both}
+@keyframes ech-lueur{from{opacity:0}35%{opacity:1}to{opacity:.55}}
+.ech-scene.secousse .ech-sc{animation:ech-secousse .42s}
+@keyframes ech-secousse{20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
+.ech-sc-fin.on .ech-sc-verdict{animation:ech-verdict .55s cubic-bezier(.2,1.3,.4,1) backwards}
+@keyframes ech-verdict{from{transform:scale(1.9);opacity:0;filter:blur(6px)}}
+.ech-sc-verdict.gagne{padding-right:.1em;background:linear-gradient(100deg,#fff,#ffe1bf 45%,#ffc73b);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 14px rgba(255,179,92,.45))}
+.ech-fin-et{position:relative;display:flex;justify-content:center;gap:12px;margin:2px 0}
+.ech-fin-case{position:relative;display:grid;place-items:center;width:50px;height:50px;border-radius:50%;font-style:normal;
+  background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);transition:background .3s,box-shadow .3s}
+.ech-fin-case b{font-size:30px;line-height:1;color:rgba(255,255,255,.14)}
+.ech-fin-case.posee{background:radial-gradient(circle,rgba(255,199,59,.32),transparent 72%);box-shadow:inset 0 0 0 1.5px rgba(255,199,59,.65),0 0 22px rgba(255,199,59,.3)}
+.ech-fin-case.posee b{color:#ffc73b;text-shadow:0 0 14px rgba(255,199,59,.85);animation:ech-et-pose .5s cubic-bezier(.2,1.5,.4,1) backwards}
+@keyframes ech-et-pose{0%{transform:translateY(-80px) scale(1.9) rotate(-35deg);opacity:0}60%{transform:translateY(4px) scale(.9);opacity:1}}
+.ech-tampon{position:absolute;left:50%;top:66%;z-index:1;padding:3px 14px 4px;border:3px solid #ffb35c;border-radius:10px;
+  font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;letter-spacing:.08em;text-transform:uppercase;line-height:1.1;
+  color:#ffb35c;background:rgba(21,13,28,.82);box-shadow:0 0 26px rgba(255,179,92,.45),inset 0 0 12px rgba(255,179,92,.25);
+  transform:translate(-50%,-50%) rotate(-12deg);opacity:0;pointer-events:none}
+.ech-tampon.posee{opacity:1;animation:ech-tampon .45s cubic-bezier(.2,1.6,.4,1) backwards}
+@keyframes ech-tampon{0%{transform:translate(-50%,-50%) rotate(-12deg) scale(2.6);opacity:0}70%{transform:translate(-50%,-50%) rotate(-12deg) scale(.92);opacity:1}}
 .ech-gains{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.ech-gains span{padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:800;color:var(--e-or);background:rgba(245,196,81,.12);box-shadow:inset 0 0 0 1px rgba(245,196,81,.35)}
+.ech-gains span{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:800;color:var(--e-or);
+  background:rgba(245,196,81,.12);box-shadow:inset 0 0 0 1px rgba(245,196,81,.35)}
+.ech-gains b{font-family:var(--display);font-weight:900}
+.ech-gains .shard,.ech-gains .prismeico{width:14px;height:14px}
+.ech-gains svg:not(.shard):not(.prismeico){width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+.ech-gains span.titre{color:#c8bfff;background:rgba(138,120,245,.14);box-shadow:inset 0 0 0 1px rgba(200,191,255,.4)}
+.ech-sc-indice.invite:not(.vu){animation:ech-invite 1.5s ease-in-out infinite}
+@keyframes ech-invite{50%{box-shadow:inset 0 0 0 1px rgba(200,191,255,.7),0 0 20px rgba(138,120,245,.45)}}
 .ech-sc-fin small{font-size:12.5px;color:var(--e-sub)}
 .ech-astuce{max-width:34ch}
 .ech-sc-fin .btn{width:100%;margin-top:4px}
@@ -1910,6 +1939,8 @@ button.ech-a.on i{color:var(--e-acc2)}
 
 @media (max-height:700px){.ech-sc-adv{width:34%}.ech-sc{gap:8px}.ech-sc-eq{gap:8px;width:88%}}
 @media (prefers-reduced-motion:reduce){.frappe .ech-sc-carte,.touche .ech-sc-carte,.attaque .ech-sc-carte,.bloque .ech-sc-carte,.ech-flot.go,.ech-sc-j.pret .ech-sc-carte,
-  .touche .ech-eclat,.eclate .ech-eclat,.ech-sc-indice .ech-flip,.ech-sc-fin .ech-et.grand i,.ech-sc-j.ko .ech-ko{animation:none}}
+  .touche .ech-eclat,.eclate .ech-eclat,.ech-sc-indice .ech-flip,.ech-sc-j.ko .ech-ko,
+  .ech-scene.gagne::before,.ech-scene.secousse .ech-sc,.ech-sc-fin.on .ech-sc-verdict,.ech-fin-case.posee b,.ech-tampon.posee,.ech-sc-indice.invite{animation:none}}
 html.rm .frappe .ech-sc-carte,html.rm .touche .ech-sc-carte,html.rm .attaque .ech-sc-carte,html.rm .bloque .ech-sc-carte,html.rm .ech-sc-j.pret .ech-sc-carte,
-html.rm .ech-sc-indice .ech-flip,html.rm .ech-sc-fin .ech-et.grand i,html.rm .ech-sc-j.ko .ech-ko{animation:none}
+html.rm .ech-sc-indice .ech-flip,html.rm .ech-sc-j.ko .ech-ko,html.rm .ech-scene.gagne::before,html.rm .ech-scene.secousse .ech-sc,
+html.rm .ech-sc-fin.on .ech-sc-verdict,html.rm .ech-fin-case.posee b,html.rm .ech-tampon.posee,html.rm .ech-sc-indice.invite{animation:none}

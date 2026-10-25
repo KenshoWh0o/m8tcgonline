@@ -245,6 +245,15 @@ const RECETTES = {
   piece:  () => { note({ f0: 1568, f1: 2093, duree: .09, gain: .11, onde: 'triangle' });
                   note({ f0: 2093, duree: .22, gain: .09, onde: 'triangle', delai: .07 }); },
   gagne:  () => carillon([523, 659, 784, 1046], .6, .11),
+  /* La fin d'un combat de L'Échauffement (version 2.5) : une note par étoile
+     qui se pose, de plus en plus haute (k : 1, 2 ou 3), puis le tampon
+     « Parfait » — un coup sourd et un carillon. */
+  etoile: k => { const f = [784, 988, 1319][(k || 1) - 1] || 784;
+                 note({ f0: f, f1: f * 1.5, duree: .12, gain: .11, onde: 'triangle' });
+                 note({ f0: f * 2, duree: .5, gain: .07, onde: 'sine', delai: .06 }); },
+  tampon: () => { note({ f0: 120, f1: 50, duree: .3, gain: .24, onde: 'sine' });
+                  souffle({ f0: 900, f1: 200, duree: .14, gain: .15, q: .7 });
+                  carillon([784, 988, 1175, 1568], 1, .1, .1); },
   ouvre:  () => { note({ f0: 300, f1: 640, duree: .16, gain: .10, onde: 'sine', filtre: 2000 }); },
   /* Le ping de la boite de réception : deux notes claires qui montent, plus
      court que le carillon d'une récompense — quelqu'un frappe, rien n'est

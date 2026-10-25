@@ -873,6 +873,8 @@ function echScene(d, equipe, essai) {
     </div>`;
   document.body.appendChild(v);
   requestAnimationFrame(() => v.classList.add('on'));
+  const fx = document.getElementById('fx');
+  if (fx) fx.classList.add('dessus');
 
   const advEl = v.querySelector('.ech-sc-adv');
   const jEl = i => v.querySelector(`.ech-sc-j[data-i="${i}"]`);
@@ -967,20 +969,24 @@ function echScene(d, equipe, essai) {
     const res = r.resultat;
     if (res.etoiles !== c.fin.etoiles) console.warn('Échauffement : le serveur et la page ne sont pas d\'accord', res, c.fin);
     const g = r.gain || {};
+    /* Les gains, qui défilent : [montant, nom, icône]. */
     const gains = [];
-    if (g.eclats) gains.push(`+${fmtN(g.eclats)} Éclats`);
-    if (g.braises) gains.push(`+${fmtN(g.braises)} ${MONNAIES_EV.echauffement.nom}`);
-    if (g.boosters) gains.push(`+${g.boosters} boosters`);
-    if (g.titre) gains.push(`Titre « ${h((TITRES[g.titre] || {}).nom || 'Échauffé')} »`);
-    fin.innerHTML = `<b class="ech-sc-verdict">${res.gagne ? 'Victoire' : 'Pas cette fois'}</b>
-      ${echEtoiles(res.etoiles, 'grand')}
+    if (g.eclats) gains.push([g.eclats, MONNAIE.nom, shardIco]);
+    if (g.braises) gains.push([g.braises, MONNAIES_EV.echauffement.nom, braiseIco]);
+    if (g.boosters) gains.push([g.boosters, `booster${g.boosters > 1 ? 's' : ''}`, NAVICO.star]);
+    const parfait = res.etoiles === 3;
+    fin.innerHTML = `<b class="ech-sc-verdict${res.gagne ? ' gagne' : ''}">${res.gagne ? 'Victoire' : 'Pas cette fois'}</b>
+      <span class="ech-fin-et" role="img" aria-label="${res.etoiles} étoile${res.etoiles > 1 ? 's' : ''} sur 3">
+        ${[1, 2, 3].map(k => `<i class="ech-fin-case${k <= res.etoiles ? ' gagnee' : ''}"><b>★</b></i>`).join('')}
+        ${parfait ? '<em class="ech-tampon" aria-hidden="true">Parfait</em>' : ''}
+      </span>
       <small class="ech-sc-tours">${res.gagne ? `En ${res.tours} tour${res.tours > 1 ? 's' : ''}${res.ko ? `, ${res.ko} KO` : ', sans perte'}` : res.tours >= 10 ? 'Le temps est écoulé.' : 'Ton équipe est tombée.'}</small>
-      ${gains.length ? `<div class="ech-gains">${gains.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+      ${gains.length || g.titre ? `<div class="ech-gains">${gains.map(([n, nom, ico]) => `<span>${ico}<b class="tnum" data-compte="${n}">+0</b> ${h(nom)}</span>`).join('')}
+        ${g.titre ? `<span class="titre">Titre « ${h((TITRES[g.titre] || {}).nom || 'Échauffé')} »</span>` : ''}</div>` : ''}
       ${r.indice ? `<button class="ech-sc-indice" data-sc="indice"><span class="ech-flip"><span class="dos"><img src="${ART.back}" alt=""></span><span class="face">${vIndiceVisuel(r.indice)}</span></span><span class="ech-sc-ind-txt"><b>Un indice</b><small>Touche pour le retourner</small></span></button>` : ''}
       ${res.etoiles < 3 ? `<small class="ech-astuce">${h(ECH_ASTUCES[d.regle] ? ECH_ASTUCES[d.regle](d) : '')}</small>` : ''}
       ${essai == null ? '<small class="ech-astuce">Aperçu du Labo : rien n\'est enregistré.</small>' : ''}
       <button class="btn" data-sc="fermer">${res.gagne ? 'Continuer' : 'Changer d\'équipe'}</button>`;
-    if (res.gagne && typeof SFX === 'object') SFX.jouer(res.etoiles === 3 ? 'legend' : 'gagne');
     if (typeof vibrer === 'function') vibrer(res.gagne ? [20, 40, 20] : 30);
     fin.onclick = e2 => {
       const b = e2.target.closest('[data-sc]');
@@ -991,12 +997,14 @@ function echScene(d, equipe, essai) {
         if (typeof SFX === 'object') SFX.jouer('rare');
       }
     };
+    await echFinEnScene(v, fin, res, reduit);
   };
   fin.addEventListener('click', e2 => {
     const b = e2.target.closest('[data-sc]');
     if (!b) return;
     if (b.dataset.sc === 'reessayer') return terminer();
     if (b.dataset.sc === 'fermer') {
+      if (fx) fx.classList.remove('dessus');
       v.classList.remove('on');
       setTimeout(() => v.remove(), 250);
       echOccupe = false;
@@ -1006,6 +1014,59 @@ function echScene(d, equipe, essai) {
     }
   });
   jouer();
+}
+
+/* La fin, en scène : le verdict tombe, les étoiles se posent une à une —
+   chacune sa note, plus haute, et ses éclats —, le tampon « Parfait » à trois
+   étoiles (un coup sourd, la scène tremble, des braises), puis les gains
+   défilent. Un toucher sur la fenêtre pose tout d'un coup ; avec le
+   mouvement réduit, tout est posé d'emblée et un seul son joue. Les
+   particules passent au-dessus de la scène le temps du combat (#fx.dessus). */
+async function echFinEnScene(v, fin, res, reduit) {
+  let vite = reduit;
+  const parfait = res.etoiles === 3;
+  const son = (nom, arg) => { if (typeof SFX === 'object') SFX.jouer(nom, arg); };
+  const attendre = ms => new Promise(ok => (vite ? ok() : setTimeout(ok, ms)));
+  fin.addEventListener('click', e => { if (!e.target.closest('[data-sc]')) vite = true; });
+  const eclats = (el, o) => {
+    if (vite || !el || typeof FX !== 'object') return;
+    const rc = el.getBoundingClientRect();
+    FX.burst(rc.left + rc.width / 2, rc.top + rc.height / 2, o);
+  };
+  if (res.gagne) v.classList.add('gagne');
+  await attendre(450);
+  const cases = [...fin.querySelectorAll('.ech-fin-case.gagnee')];
+  for (let k = 0; k < cases.length; k++) {
+    cases[k].classList.add('posee');
+    if (!vite) son('etoile', k + 1);
+    eclats(cases[k], { n: 16 + k * 10, colors: ['#ffc73b', '#ffe08a', '#fff'], speed: 4 + k * 1.5, size: 2.4, life: 38 });
+    await attendre(430);
+  }
+  if (parfait) {
+    fin.querySelector('.ech-tampon').classList.add('posee');
+    if (!vite) {
+      son('tampon');
+      v.classList.add('secousse');
+      eclats(fin.querySelector('.ech-fin-et'), { n: 70, colors: ['#ffb35c', '#ffd9a8', '#c8bfff', '#8a78f5', '#fff'], speed: 9, size: 3, life: 55, up: 2 });
+      if (typeof FX === 'object') FX.sparkle({ n: 90, colors: ['#ffb35c', '#ffd9a8', '#c8bfff', '#fff'], size: 3.2 });
+    }
+    await attendre(420);
+  }
+  if (reduit && res.gagne) son(parfait ? 'tampon' : 'gagne');
+  else if (res.gagne && !parfait) son('gagne');
+  fin.querySelectorAll('[data-compte]').forEach(el => {
+    const n = +el.dataset.compte;
+    if (vite) { el.textContent = '+' + fmtN(n); return; }
+    const t0 = performance.now();
+    const pas = t => {
+      const p = Math.min(1, (t - t0) / 700);
+      el.textContent = '+' + fmtN(Math.round(n * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  });
+  const ind = fin.querySelector('.ech-sc-indice');
+  if (ind) ind.classList.add('invite');
 }
 
 /* La fin d'un combat d'aperçu, comme ech_terminer la rendrait, sans serveur :
