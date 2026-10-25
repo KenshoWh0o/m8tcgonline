@@ -24,15 +24,27 @@
 --  Soit 1 225 au plus. Un joueur qui vient chaque jour et fait tout finit le
 --  Pass (1 050) vers le huitieme jour ; un joueur regulier (sept jours sur
 --  neuf, les quatre cinquiemes des quetes du jour, deux tiers de celles de
---  l'evenement, quinze etoiles) en gagne ~815 : palier 15 ; un joueur de
+--  l'evenement, quinze etoiles) en gagne ~815 : palier 16 ; un joueur de
 --  passage (quatre jours, huit etoiles) ~395 : palier 8.
 --
---  LE PASS : vingt paliers, les ecarts grandissent pour que les premiers
---  tombent vite. En tout : 10 boosters, 600 Eclats, 1 100 Fragments, 4
---  Reverses Rares, une Essence Brillante, deux titres et deux cadres
---  decores (« Braise », « Ardeur » : tools/cadres.py). A peu pres les trois
---  quarts du Pass de Reflets, pour un evenement de neuf jours au lieu de
---  quatorze, qui paie deja ses defis en Eclats (2 100) et en boosters (3).
+--  LE PASS (refait le 25 octobre 2026, a la demande du proprietaire : « des
+--  paliers significatifs », et pas d'Essence Brillante, « c'est qu'un mini
+--  event ») : vingt paliers, en quatre blocs de cinq.
+--    · Chaque cinquieme palier est un cosmetique, de plus en plus beau : le
+--      titre « Premier round » (5), le cadre « Braise » (10), le titre « Feu
+--      sacre » (15), le cadre « Ardeur » (20) — tools/cadres.py.
+--    · Entre eux, toujours le meme ordre : des boosters, des Fragments, des
+--      Eclats, puis deux boosters ou une Reverse Rare ; les montants
+--      grandissent d'un bloc a l'autre (Fragments 100, 200, 300, 400 ; Eclats
+--      100, 150, 200, 250).
+--    · Les seuils : de 40 en 40 jusqu'au palier 5 (200), de 50 en 50 jusqu'au
+--      10 (450), puis de 60 en 60 (750 au 15, 1 050 au 20) : les premiers
+--      tombent vite, les cosmetiques tombent sur des nombres ronds.
+--  En tout : 10 boosters, 700 Eclats, 1 000 Fragments, 2 Reverses Rares, deux
+--  titres et deux cadres. Nettement moins que le Pass de Reflets (14
+--  boosters, 1 350 Eclats, 1 250 Fragments, 4 Reverses Rares, une Brillante),
+--  pour un evenement de neuf jours qui paie deja ses defis en Eclats (2 100)
+--  et en boosters (3).
 --
 --  LA BOUTIQUE (04_seed.sql) : tout acheter coute 1 120 Braises ; un joueur
 --  regulier doit choisir.
@@ -90,26 +102,26 @@ end $$;
 -- ------------------------------------------------------------------ le Pass
 delete from public.evt_piste where evenement = 'echauffement' and palier > 20;
 insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values
-  ('echauffement',  1,   20, 'boosters',   1, null,              '1 booster'),
-  ('echauffement',  2,   50, 'fragments', 150, null,             '150 Fragments'),
-  ('echauffement',  3,   85, 'titre',      0, 't_ech_round',     'Titre « Premier round »'),
-  ('echauffement',  4,  125, 'boosters',   2, null,              '2 boosters'),
-  ('echauffement',  5,  170, 'eclats',   150, null,              '150 Éclats'),
-  ('echauffement',  6,  220, 'reverse_R',  1, null,              'Une Reverse Rare'),
-  ('echauffement',  7,  275, 'fragments', 250, null,             '250 Fragments'),
-  ('echauffement',  8,  335, 'boosters',   2, null,              '2 boosters'),
-  ('echauffement',  9,  400, 'cadre',      0, 'f_braise',        'Cadre « Braise »'),
-  ('echauffement', 10,  465, 'fragments', 300, null,             '300 Fragments'),
-  ('echauffement', 11,  530, 'boosters',   2, null,              '2 boosters'),
-  ('echauffement', 12,  595, 'reverse_R',  1, null,              'Une Reverse Rare'),
-  ('echauffement', 13,  660, 'eclats',   200, null,              '200 Éclats'),
-  ('echauffement', 14,  725, 'fragments', 400, null,             '400 Fragments'),
-  ('echauffement', 15,  790, 'brillante',  1, null,              'Une Essence Brillante'),
-  ('echauffement', 16,  850, 'boosters',   3, null,              '3 boosters'),
-  ('echauffement', 17,  910, 'eclats',   250, null,              '250 Éclats'),
-  ('echauffement', 18,  965, 'reverse_R',  2, null,              'Deux Reverses Rares'),
-  ('echauffement', 19, 1010, 'titre',      0, 't_ech_feu',       'Titre « Feu sacré »'),
-  ('echauffement', 20, 1050, 'cadre',      0, 'f_ardeur',        'Cadre « Ardeur »')
+  ('echauffement',  1,   40, 'boosters',    1, null,            '1 booster'),
+  ('echauffement',  2,   80, 'fragments', 100, null,            '100 Fragments'),
+  ('echauffement',  3,  120, 'eclats',    100, null,            '100 Éclats'),
+  ('echauffement',  4,  160, 'boosters',    2, null,            '2 boosters'),
+  ('echauffement',  5,  200, 'titre',       0, 't_ech_round',   'Titre « Premier round »'),
+  ('echauffement',  6,  250, 'boosters',    1, null,            '1 booster'),
+  ('echauffement',  7,  300, 'fragments', 200, null,            '200 Fragments'),
+  ('echauffement',  8,  350, 'eclats',    150, null,            '150 Éclats'),
+  ('echauffement',  9,  400, 'reverse_R',   1, null,            'Une Reverse Rare'),
+  ('echauffement', 10,  450, 'cadre',       0, 'f_braise',      'Cadre « Braise »'),
+  ('echauffement', 11,  510, 'boosters',    2, null,            '2 boosters'),
+  ('echauffement', 12,  570, 'fragments', 300, null,            '300 Fragments'),
+  ('echauffement', 13,  630, 'eclats',    200, null,            '200 Éclats'),
+  ('echauffement', 14,  690, 'boosters',    2, null,            '2 boosters'),
+  ('echauffement', 15,  750, 'titre',       0, 't_ech_feu',     'Titre « Feu sacré »'),
+  ('echauffement', 16,  810, 'boosters',    2, null,            '2 boosters'),
+  ('echauffement', 17,  870, 'fragments', 400, null,            '400 Fragments'),
+  ('echauffement', 18,  930, 'eclats',    250, null,            '250 Éclats'),
+  ('echauffement', 19,  990, 'reverse_R',   1, null,            'Une Reverse Rare'),
+  ('echauffement', 20, 1050, 'cadre',       0, 'f_ardeur',      'Cadre « Ardeur »')
 on conflict (evenement, palier) do update set
   seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
   objet = excluded.objet, titre = excluded.titre;

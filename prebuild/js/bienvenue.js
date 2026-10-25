@@ -141,7 +141,7 @@ const montrerNouveautes = () => (sortieFaite() ? montrerNouveautes25() : montrer
    remplace : deux fenêtres pour la même chose, ce serait une de trop. */
 const NOUVEAUTES_25 = () => [
   ['sword', 'L\'Échauffement, l\'événement.', 'Sept défis, un par jour, dans l\'onglet Combats, avec trois Joueurs de ta collection ; trois étoiles, un indice sur ce qui se prépare.'],
-  ['trophy', `Des ${MONNAIES_EV.echauffement.nom}, un Pass de vingt paliers`, `et une boutique, en plus des ${fmtN(2100)} ${MONNAIE.nom} des défis. Deux cadres et trois titres à gagner.`],
+  ['trophy', `Des ${MONNAIES_EV.echauffement.nom}, un Pass de vingt paliers`, `et une boutique, en plus des ${fmtN(2100)} ${MONNAIE.nom} des défis. Deux cadres et quatre titres à gagner.`],
   ['clock', 'Et après, un défi par jour.', `${typeof echData !== 'undefined' && echData && echData.fin ? `Dès ${jourParis(echData.fin)}` : 'Dès le 4 novembre'}, L'Échauffement continue : un adversaire par jour, le même pour tous.`],
   ['reflets', 'Les Reverses se fabriquent.', `Recycle leurs doublons, fabrique celles qui manquent : de ${fmtN(revCouts().C)} à ${fmtN(revCouts().R)} ${FRAGMENTS.nom}.`]
 ];

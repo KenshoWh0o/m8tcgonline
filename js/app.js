@@ -267,6 +267,7 @@ function render() {
 
   if (tab === 'boosters') bindPack();
   if (tab === 'reflets') placerPass();
+  if (tab === 'combats' && typeof echPlacerPass === 'function') echPlacerPass();
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();

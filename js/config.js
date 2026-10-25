@@ -214,8 +214,8 @@ const TITRES = {
   t_reflet:    { nom: 'Miroir parfait',            ton: 'L',  comment: 'Réunir les 85 Reverses' },
   t_echauffe:  { nom: 'Échauffé',                  ton: 'E',  comment: 'Les 21 étoiles de L\'Échauffement' },
   /* Version 2.5 : L'Échauffement devenu événement (supabase/22e_echauffement-evenement.sql). */
-  t_ech_round: { nom: 'Premier round',             ton: 'EV', comment: 'Palier 3 du Pass de L\'Échauffement' },
-  t_ech_feu:   { nom: 'Feu sacré',                 ton: 'EV', comment: 'Palier 19 du Pass de L\'Échauffement' },
+  t_ech_round: { nom: 'Premier round',             ton: 'EV', comment: 'Palier 5 du Pass de L\'Échauffement' },
+  t_ech_feu:   { nom: 'Feu sacré',                 ton: 'EV', comment: 'Palier 15 du Pass de L\'Échauffement' },
   t_ech_entraineur: { nom: 'Entraîneur',           ton: 'EV', comment: 'Boutique de l\'événement « L\'Échauffement »' },
   t_ech_infatigable: { nom: 'Infatigable',         ton: 'E',  comment: 'Gagner 10 défis du jour, après L\'Échauffement' },
   t_eclaireur: { nom: 'Éclaireur des Reflets',     ton: 'EV', comment: 'Palier 3 du Pass Reflets' },
@@ -270,7 +270,7 @@ const FRAMES = {
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
-  /* Version 2.5 : le Pass de L'Échauffement (paliers 9 et 20), aux couleurs
+  /* Version 2.5 : le Pass de L'Échauffement (paliers 10 et 20), aux couleurs
      de l'événement — graphite et lavande, et le cœur chaud d'une braise. */
   f_braise: { nom: 'Braise', fx: 'braise', vente: false, c1: '#ffcf8a', c2: '#8a78f5' },
   f_ardeur: { nom: 'Ardeur', fx: 'ardeur', vente: false, c1: '#c8bfff', c2: '#5d4bd9' }

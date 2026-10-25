@@ -22,10 +22,12 @@
    mode sans fin (supabase/22f_sans-fin.sql) : un défi par jour, le même pour
    tous, et trois jours de récap.
 
-   La page prend les couleurs de la suite (graphite et lavande, jetons
-   `--e-*` posés sur .ech, en fin de css/hub.css) : une fenêtre sur ce qui
-   vient. Le reste du site ne change pas. Règle du propriétaire : chaque vue
-   tient dans l'écran, sans défiler. */
+   L'onglet a la charpente et les composants de l'écran Reflets (css/
+   reflets.css), aux couleurs de l'événement : la braise et la lavande, un
+   avant-goût de la suite (.ech-rf, en fin de css/hub.css). Règle du
+   propriétaire (règle 8 de CLAUDE.md) : pas de page qui défile d'un tout
+   petit peu alors qu'elle pourrait tenir ; l'écran du défi et la scène du
+   combat tiennent dans l'écran ; une page détaillée peut défiler. */
 "use strict";
 
 let echData = null;
@@ -41,7 +43,6 @@ let echJour = 0;
 let echTri = 'def';
 let echOccupe = false;
 let echPlace = 0;
-let echQVue = 'jour';
 let echSfOnglet = 'jour';
 /* L'équipe en préparation, défi par défi : [{ carte, a }] (0 : le défi du jour du mode sans fin). */
 const echEquipes = {};
@@ -68,16 +69,18 @@ const ECH_ASTUCES = {
    evenement.sql), pour les aperçus du Labo et pour le faux serveur de la démo.
    Le jeu, lui, lit celui du serveur (evenement_etat). */
 const ECH_PISTE = [
-  [1, 20, 'boosters', 1, null, '1 booster'], [2, 50, 'fragments', 150, null, '150 Fragments'],
-  [3, 85, 'titre', 0, 't_ech_round', 'Titre « Premier round »'], [4, 125, 'boosters', 2, null, '2 boosters'],
-  [5, 170, 'eclats', 150, null, '150 Éclats'], [6, 220, 'reverse_R', 1, null, 'Une Reverse Rare'],
-  [7, 275, 'fragments', 250, null, '250 Fragments'], [8, 335, 'boosters', 2, null, '2 boosters'],
-  [9, 400, 'cadre', 0, 'f_braise', 'Cadre « Braise »'], [10, 465, 'fragments', 300, null, '300 Fragments'],
-  [11, 530, 'boosters', 2, null, '2 boosters'], [12, 595, 'reverse_R', 1, null, 'Une Reverse Rare'],
-  [13, 660, 'eclats', 200, null, '200 Éclats'], [14, 725, 'fragments', 400, null, '400 Fragments'],
-  [15, 790, 'brillante', 1, null, 'Une Essence Brillante'], [16, 850, 'boosters', 3, null, '3 boosters'],
-  [17, 910, 'eclats', 250, null, '250 Éclats'], [18, 965, 'reverse_R', 2, null, 'Deux Reverses Rares'],
-  [19, 1010, 'titre', 0, 't_ech_feu', 'Titre « Feu sacré »'], [20, 1050, 'cadre', 0, 'f_ardeur', 'Cadre « Ardeur »']
+  [1, 40, 'boosters', 1, null, '1 booster'], [2, 80, 'fragments', 100, null, '100 Fragments'],
+  [3, 120, 'eclats', 100, null, '100 Éclats'], [4, 160, 'boosters', 2, null, '2 boosters'],
+  [5, 200, 'titre', 0, 't_ech_round', 'Titre « Premier round »'],
+  [6, 250, 'boosters', 1, null, '1 booster'], [7, 300, 'fragments', 200, null, '200 Fragments'],
+  [8, 350, 'eclats', 150, null, '150 Éclats'], [9, 400, 'reverse_R', 1, null, 'Une Reverse Rare'],
+  [10, 450, 'cadre', 0, 'f_braise', 'Cadre « Braise »'],
+  [11, 510, 'boosters', 2, null, '2 boosters'], [12, 570, 'fragments', 300, null, '300 Fragments'],
+  [13, 630, 'eclats', 200, null, '200 Éclats'], [14, 690, 'boosters', 2, null, '2 boosters'],
+  [15, 750, 'titre', 0, 't_ech_feu', 'Titre « Feu sacré »'],
+  [16, 810, 'boosters', 2, null, '2 boosters'], [17, 870, 'fragments', 400, null, '400 Fragments'],
+  [18, 930, 'eclats', 250, null, '250 Éclats'], [19, 990, 'reverse_R', 1, null, 'Une Reverse Rare'],
+  [20, 1050, 'cadre', 0, 'f_ardeur', 'Cadre « Ardeur »']
 ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
 const ECH_ICO = {
   aucune: '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5"/>',
@@ -266,90 +269,158 @@ function montrerIndice(j) {
   });
 }
 
-/* ---------- L'accueil ---------- */
-/* Règle du propriétaire : chaque vue de l'événement tient dans l'écran, sans
-   défiler, de 360 × 740 à l'ordinateur en passant par 375 × 667. La page
-   prend toute la hauteur de #main (.ech, height:100%), le bandeau une part
-   fixe, et chaque sous-onglet mesure ses tuiles sur la place qui reste
-   (container queries, css/hub.css). Le bandeau : l'illustration de « La
-   Luxueuse III » (#122), le médaillon d'or au bout de sa chaîne. */
+/* ---------- L'onglet : l'en-tête et les sous-onglets ---------- */
+/* La charpente de Reflets (css/reflets.css : .rf, .rf-tete, .rf-onglets,
+   .rf-page, .rf-tuile, .rf-pass, .rf-art, .rf-top, .rr-*), comme Le Choc de la
+   3.0 : un en-tête qui reste, des sous-onglets, une page par rubrique. Les
+   couleurs sont celles de l'événement — la braise et la lavande (.ech-rf, en
+   fin de css/hub.css) — sur les fonds du site. Règle du propriétaire (règle 8
+   de CLAUDE.md) : pas de page qui défile d'un tout petit peu alors qu'elle
+   pourrait tenir ; une page détaillée (le Pass, les quêtes, la boutique) peut
+   défiler. */
 let echOnglet = 'defis';
-/* Les sous-onglets de la saison. Ceux de l'événement (Pass, Quêtes, Boutique,
+/* Les sous-onglets de la saison. Ceux de l'événement (Quêtes, Pass, Boutique,
    Classement) n'existent que si le serveur l'a : sans MAJ-2.5.sql, la page
    reste celle des sept défis. */
-const ECH_ONGLETS = [['defis', 'Défis'], ['pass', 'Pass'], ['quetes', 'Quêtes'], ['boutique', 'Boutique'],
+const ECH_ONGLETS = [['defis', 'Défis'], ['quetes', 'Quêtes'], ['pass', 'Pass'], ['boutique', 'Boutique'],
   ['classement', 'Classement'], ['indices', 'Indices']];
 const echOngletsDispo = () => ECH_ONGLETS.filter(([k]) => echEv || k === 'defis' || k === 'indices');
+/* Le Pass se place tout seul sur le palier en cours, une fois par visite. */
+let echPassPlace = false;
 
 function vEchauffement() {
   return echVue === 'defi' ? vEchDefi() : vEchAccueil();
 }
 
-/* Le solde de Braises, posé dans le bandeau. */
-const echSolde = () => `<span class="ech-solde" aria-label="${fmtN(save.prismes || 0)} ${MONNAIES_EV.echauffement.nom}">${braiseIco}<b class="tnum">${fmtN(save.prismes || 0)}</b></span>`;
+/* L'illustration de « La Luxueuse III » (#122), le médaillon d'or au bout de
+   sa chaîne : le fond de l'en-tête et des bandeaux, posée comme celle de
+   Reflets (.rf-fond, cadrée par .ech-rf). */
+function echFond() {
+  const c = byId.c122;
+  return c && c.img ? `<span class="rf-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
+}
+const echFin = t => `<span class="rf-fin">${NAVICO.clock}<b data-rebours="${t}">${h(dureeCourte(t - Date.now()))}</b></span>`;
+const echBraises = () => MONNAIES_EV.echauffement.nom;
 
-function vEchAccueil() {
-  const s = echData;
-  const reste = Date.parse(s.fin) - Date.now();
-  const etoiles = s.etoiles || 0;
-  const dispo = echOngletsDispo();
-  if (!dispo.some(([k]) => k === echOnglet)) echOnglet = 'defis';
-  const corps = { indices: vEchIndices, pass: vEchPass, quetes: vEchQuetes, boutique: vEchBoutique,
-    classement: vEchClassement }[echOnglet] || vEchDefis;
-  const pastille = k => {
-    const n = k === 'pass' ? echPaliersPrets() : k === 'quetes' ? echQuetesPretes() : 0;
-    return n ? `<i class="ech-on-n">${n}</i>` : '';
-  };
-  return `<section class="ech">
-    <header class="ech-hero">
-      ${echIllu(byId.c122, .6, .4, 'fond')}
-      <span class="ech-hero-haut"><span class="ech-kick">Événement · ${h(dureeCourte(reste))}</span>
-        <span class="ech-hero-d">${echEv ? echSolde() : ''}
-        <span class="ech-anneau" style="--p:${Math.round(etoiles / 21 * 100)}%" aria-label="${etoiles} étoiles sur 21"><b class="tnum">${etoiles}</b><small>/21</small></span></span></span>
-      <span class="ech-hero-bas"><h2 class="ech-titre">L'Échauffement</h2><small>Sept défis, un par jour.</small></span>
-    </header>
-    <nav class="ech-onglets" role="tablist">${dispo.map(([k, n]) => `<button role="tab" data-ech="onglet" data-o="${k}" class="${echOnglet === k ? 'on' : ''}" aria-selected="${echOnglet === k}">${n}${pastille(k)}</button>`).join('')}</nav>
-    <div class="ech-corps">${corps()}</div>
-  </section>`;
+/* L'en-tête : le nom, ses chiffres, et les sous-onglets ([id, nom, pastille]). */
+function vEchTete(petit, chiffres, onglets, actif, act) {
+  return `<header class="rf-tete ech-tete">
+    ${echFond()}
+    <div class="rf-tetehaut">
+      <div class="rf-tetenom">
+        <div class="ech-tl1"><small>${petit}</small><span class="rf-tetechiffres">${chiffres}</span></div>
+        <h1>L'Échauffement</h1>
+      </div>
+    </div>
+    ${onglets.length > 1 ? `<nav class="rf-onglets" role="tablist">${onglets.map(([id, nom, n]) => `<button class="${actif === id ? 'on' : ''}"
+      data-ech="${act}" data-o="${id}" role="tab" aria-selected="${actif === id}">${nom}${n ? `<i class="rf-pastille">${n}</i>` : ''}</button>`).join('')}</nav>` : ''}
+  </header>`;
 }
 
-/* Le défi du jour, les sept, et les deux bonus de la saison. */
+function vEchAccueil() {
+  const dispo = echOngletsDispo();
+  if (!dispo.some(([k]) => k === echOnglet)) echOnglet = 'defis';
+  const corps = { quetes: vEchQuetes, pass: vEchPass, boutique: vEchBoutique, classement: vEchClassement,
+    indices: vEchIndices }[echOnglet] || vEchDefis;
+  const n = { defis: echData.defis.filter(d => !d.etoiles).length, quetes: echQuetesPretes(), pass: echPaliersPrets() };
+  const chiffres = `${echEv ? `<span class="rf-solde" title="${echBraises()} à dépenser">${braiseIco}<b class="tnum">${fmtN(save.prismes || 0)}</b></span>` : ''}
+    ${echFin(srvTime(echData.fin))}`;
+  return `<div class="rf ech-rf">
+    ${vEchTete('Événement · Version 2.5', chiffres, dispo.map(([k, nom]) => [k, nom, n[k] || 0]), echOnglet, 'onglet')}
+    <div class="rf-page">${corps()}</div>
+  </div>`;
+}
+
+/* Une tuile, comme celles de l'accueil de Reflets ; sans `attrs`, elle ne
+   mène nulle part. */
+const echTuile = (attrs, ico, titre, valeur, sous, chaud) => `<${attrs ? 'button' : 'div'} class="rf-tuile${chaud ? ' chaud' : ''}${attrs ? '' : ' fixe'}" ${attrs || ''}>
+    <span class="rf-tuileico">${ico}</span>
+    <span class="rf-tuiletxt"><small>${titre}</small><b>${valeur}</b><span>${sous}</span></span>
+  </${attrs ? 'button' : 'div'}>`;
+
+/* Le défi du jour en vedette : la carte de l'adversaire, sa règle, et
+   l'invitation à le relever. Pour la saison comme pour le mode sans fin. */
+function vEchUne(d, attrs, petit, cta) {
+  const adv = byId[d.adversaire];
+  const restants = echRestants(d);
+  return `<button class="ech-une${d.etoiles === 3 ? ' parfait' : ''}" ${attrs} aria-label="${h(petit)} : ${h(adv ? adv.nom : '')}">
+      ${adv ? echIllu(adv, .55, .3, 'fond') : ''}
+      <span class="ech-une-carte">${adv ? renderCard(adv) : ''}</span>
+      <span class="ech-une-txt">
+        <small>${petit}</small>
+        <b>${h(adv ? adv.nom : d.adversaire)}</b>
+        <span class="ech-une-regle">${echIco(d.regle)}<span>${d.regle === 'aucune' ? 'Sans règle' : h(d.titre)}</span></span>
+        <span class="ech-une-bas">${echEtoiles(d.etoiles)}<em>${restants ? `${restants} essai${restants > 1 ? 's' : ''} aujourd'hui` : 'Plus d\'essai aujourd\'hui'}</em></span>
+        <span class="btn ech-une-cta">${cta}</span>
+      </span>
+    </button>`;
+}
+
+/* ---------- Défis : aujourd'hui, les sept, les bonus ---------- */
 function vEchDefis() {
   const s = echData;
   const dj = echDuJour();
-  const adv = byId[dj.adversaire];
   const total = s.total || 7;
-  const jours = Array.from({ length: total }, (_, i) => {
-    const j = i + 1;
-    const x = s.defis.find(y => y.jour === j);
-    if (!x) return `<span class="ech-jour ferme" aria-label="Défi ${j}, pas encore ouvert"><i>${NAVICO.lock}</i><span class="ech-et"></span></span>`;
-    return `<button class="ech-jour ${x.etoiles === 3 ? 'fini' : x.etoiles ? 'gagne' : ''}" data-ech="defi" data-j="${j}" aria-label="Défi ${j}">
-      <i>${j}</i>${echEtoiles(x.etoiles)}</button>`;
-  }).join('');
+  const debut = srvTime(s.debut);
   const pris = s.paliers || [];
-  const bonus = (ok, ico, titre, quoi, v, max) => `<span class="ech-bon${ok ? ' ok' : ''}">
-      <span class="ech-bon-ico">${ok ? NAVICO.check : ico}</span>
-      <span class="ech-bon-txt"><b>${titre}</b><small>${quoi}</small></span>
-      <em class="tnum">${ok ? 'Obtenu' : `${v}/${max}`}</em></span>`;
-  return `<button class="ech-porte" data-ech="defi" data-j="${dj.jour}">
-      ${echIllu(adv, .55, .3, 'fond')}
-      <span class="ech-porte-txt">
-        <small>Défi ${dj.jour} · aujourd'hui</small>
-        <b>${h(adv.nom)}</b>
-        <span class="ech-porte-regle">${echIco(dj.regle)}${h(dj.titre)}</span>
-        ${echEtoiles(dj.etoiles)}
-      </span>
-      <span class="ech-porte-cta">${dj.etoiles === 3 ? 'Revoir' : 'Relever'}</span>
-    </button>
-    <div class="ech-jours">${jours}</div>
-    <div class="ech-bonus">
-      ${bonus(pris.includes('sept'), `<img src="${ART.seal}" alt="">`, 'Les sept défis', '3 boosters', s.gagnes || 0, total)}
-      ${bonus(pris.includes('parfait'), NAVICO.star, '21 étoiles', `titre ${h((TITRES.t_echauffe || {}).nom || 'Échauffé')}`, s.etoiles || 0, total * 3)}
+
+  const ligne = j => {
+    const x = s.defis.find(y => y.jour === j);
+    if (!x) {
+      const ouvre = debut + (j - 1) * 86400000;
+      return `<li class="rf-pal loin ferme"><span class="rf-palnum tnum">${j}</span>
+        <div class="rf-palcarte"><span class="rf-palico">${NAVICO.lock}</span>
+          <span class="rf-paltxt"><b>Défi ${j}</b><small>Ouvre dans <span data-rebours="${ouvre}">${h(dureeCourte(ouvre - Date.now()))}</span></small></span></div></li>`;
+    }
+    const adv = byId[x.adversaire];
+    const etat = x.etoiles === 3 ? 'pris' : x.etoiles ? 'gagne' : x.jour === dj.jour ? 'prochain' : 'arattraper';
+    return `<li class="rf-pal ${etat}"><span class="rf-palnum tnum">${x.etoiles === 3 ? NAVICO.check : j}</span>
+      <button class="rf-palcarte" data-ech="defi" data-j="${j}">
+        <span class="rf-palico illu">${adv ? echIllu(adv, .55, .28, 'fond') : ''}</span>
+        <span class="rf-paltxt"><b>${h(adv ? adv.nom : '')}</b><small>${echIco(x.regle)}${x.regle === 'aucune' ? 'Sans règle' : h(x.titre)}</small></span>
+        <span class="ech-dl-fin">${echEtoiles(x.etoiles)}${etat === 'arattraper' ? '<em>à rattraper</em>' : ''}</span>
+      </button></li>`;
+  };
+
+  const bonus = (ok, ico, titre, quoi, v, max) => `<li class="rf-pal ${ok ? 'pris' : v ? 'prochain' : 'loin'} rare">
+      <span class="rf-palnum">${ok ? NAVICO.check : ico}</span>
+      <div class="rf-palcarte"><span class="rf-paltxt"><b>${titre}</b><small>${quoi}</small></span>
+        <span class="rf-paletat tnum">${ok ? 'Obtenu' : `${v} / ${max}`}</span></div></li>`;
+
+  let tuiles = '';
+  if (echEv) {
+    const piste = echEv.piste;
+    const atteint = piste.filter(x => echEv.total >= x.seuil).length;
+    const prochain = piste.find(x => echEv.total < x.seuil);
+    const qj = (save.quetes || []).filter(q => q.evenement === 'echauffement' && q.scope === 'ev_jour');
+    const qp = echQuetesPretes(), pp = echPaliersPrets();
+    tuiles = `<div class="rf-tuiles">
+      ${echTuile('data-ech="onglet" data-o="quetes"', NAVICO.quest, 'Quêtes du jour', `${qj.filter(q => q.progress >= q.goal).length} / ${qj.length}`,
+        qp ? `${qp} à récupérer` : `Nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}`, qp > 0)}
+      ${echTuile('data-ech="onglet" data-o="pass"', NAVICO.trophy, 'Pass', `Palier ${atteint} / ${piste.length}`,
+        pp ? `${pp} à récupérer` : prochain ? `Suivant dans ${fmtN(prochain.seuil - echEv.total)} ${echBraises()}` : 'Terminé', pp > 0)}
+      ${echTuile('data-ech="onglet" data-o="classement"', NAVICO.amis, 'Classement', echEv.rang ? `${echEv.rang}<sup>e</sup>` : '—',
+        echEv.rang ? `sur ${fmtN(echEv.joueurs)} joueur${echEv.joueurs > 1 ? 's' : ''}` : `Gagne des ${echBraises()} pour y entrer`)}
     </div>`;
+  }
+
+  return `<h3 class="rf-sous">Aujourd'hui</h3>
+    ${vEchUne(dj, `data-ech="defi" data-j="${dj.jour}"`, `Défi ${dj.jour} sur ${total}`,
+      dj.etoiles === 3 ? 'Revoir le défi' : dj.etoiles ? 'Viser les trois étoiles' : 'Relever le défi')}
+    ${tuiles}
+    <h3 class="rf-sous">Les sept défis <small>· ${s.etoiles || 0} ★ sur ${total * 3}</small></h3>
+    <ol class="rf-pass ech-defis">${Array.from({ length: total }, (_, i) => ligne(i + 1)).join('')}</ol>
+    <h3 class="rf-sous">Les bonus de la saison</h3>
+    <ol class="rf-pass ech-defis">
+      ${bonus(pris.includes('sept'), NAVICO.star, 'Les sept défis gagnés', '3 boosters', s.gagnes || 0, total)}
+      ${bonus(pris.includes('parfait'), NAVICO.trophy, 'Les 21 étoiles', `Titre « ${h((TITRES.t_echauffe || {}).nom || 'Échauffé')} »`, s.etoiles || 0, total * 3)}
+    </ol>
+    <button class="btn ghost tiny ech-comment" data-ech="regles">Comment ça marche</button>`;
 }
 
-/* Le carnet : huit cases de carte, en deux rangées de quatre — un indice par
-   défi réussi à trois étoiles, et le dernier mot, quand les sept le sont. */
+/* ---------- Les indices ---------- */
+/* Huit cases de carte : un indice par défi réussi à trois étoiles, et le
+   dernier mot, quand les sept le sont. */
 function vEchIndices() {
   const s = echData;
   const total = s.total || 7;
@@ -357,33 +428,20 @@ function vEchIndices() {
   const cas = (j, x, verrou) => (x
     ? `<button class="ech-case" data-ech="indice" data-j="${j}" aria-label="${j ? 'Indice ' + j : 'Le dernier mot'} : ${h(x.titre)}"><span class="ech-ind ouvert">${vIndiceVisuel(x)}</span><small>${h(x.titre)}</small></button>`
     : `<span class="ech-case" aria-label="${verrou}"><span class="ech-ind"><img src="${ART.back}" alt="">${NAVICO.lock}</span><small>${j ? 'Défi ' + j : 'Les sept'}</small></span>`);
-  const tuiles = Array.from({ length: total }, (_, i) => cas(i + 1, echIndice(i + 1), `Indice ${i + 1}, à gagner`)).join('')
-    + cas(0, echIndice(0), 'Le dernier mot, quand les sept sont à trois étoiles');
-  return `<p class="ech-mini">Trois étoiles à un défi : son indice sur ce qui se prépare. <b class="tnum">${n}/${total}</b></p>
-    <div class="ech-inds">${tuiles}</div>`;
+  return `${rfTitre('Indices', `Trois étoiles à un défi : son indice sur ce qui se prépare. Tu en as <b class="tnum">${n} sur ${total}</b>.`)}
+    <div class="ech-inds">${Array.from({ length: total }, (_, i) => cas(i + 1, echIndice(i + 1), `Indice ${i + 1}, à gagner`)).join('')}
+      ${cas(0, echIndice(0), 'Le dernier mot, quand les sept sont à trois étoiles')}</div>`;
 }
 
 /* ---------- Le Pass ---------- */
-/* Vingt médaillons, en grille : tout tient dans l'écran (règle du
-   propriétaire). Un médaillon se touche : ce qu'il donne, et « Récupérer ». */
-const ECH_TYPE_NOM = { boosters: 'Boosters', eclats: MONNAIE.nom, fragments: FRAGMENTS.nom, titre: 'Titre', cadre: 'Cadre',
-  reverse_R: 'Reverse', brillante: 'Brillante' };
-function echPalIco(x, taille) {
-  if (x.type === 'eclats') return shardIco;
-  if (x.type === 'boosters') return `<img src="${ART.seal}" alt="">`;
-  if (x.type === 'cadre') return avatarHTML(save.avatar, x.objet, taille || 'sm', maPhoto());
-  if (x.type === 'titre') return `<i class="ech-pal-titre">${NAVICO.user}</i>`;
-  if (x.type === 'fragments') return NAVICO.fragment;
-  if (x.type === 'reverse_R') return NAVICO.reflets;
-  return NAVICO.promo;
-}
-/* Ce qu'on lit sous un médaillon : le montant, ou le genre. */
-const echPalMot = x => (x.type === 'boosters' ? `×${x.montant}` : x.type === 'eclats' || x.type === 'fragments' ? fmtN(x.montant)
-  : x.type === 'reverse_R' && x.montant > 1 ? '×2' : ECH_TYPE_NOM[x.type] || '');
+/* Comme celui de Reflets : une piste, du premier palier au dernier, qui se
+   place toute seule sur celui en cours. Tous les cinq paliers, un titre ou
+   un cadre (supabase/22e_echauffement-evenement.sql). */
+const echPalIco = (x, taille) => rfIco(x, taille);
 
 function vEchPass() {
   const v = echEv;
-  if (!v) return '<p class="ech-mini">Chargement du Pass…</p>';
+  if (!v) return '<p class="muted boitecharge">Chargement du Pass…</p>';
   const total = v.total || 0;
   const piste = v.piste;
   const atteint = piste.filter(x => total >= x.seuil).length;
@@ -391,46 +449,45 @@ function vEchPass() {
   const avant = prochain ? (piste[prochain.palier - 2] || { seuil: 0 }).seuil : 0;
   const pct = prochain ? Math.round((total - avant) / (prochain.seuil - avant) * 100) : 100;
   const prets = echPaliersPrets();
-  const med = x => {
+
+  const ligne = x => {
     const ok = total >= x.seuil;
     const etat = x.pris ? 'pris' : ok ? 'pret' : x === prochain ? 'prochain' : 'loin';
-    const rare = x.type === 'cadre' || x.type === 'titre' || x.type === 'brillante';
-    return `<li><button class="ech-pal ${etat}${rare ? ' rare' : ''}" data-ech="palier" data-p="${x.palier}" aria-label="Palier ${x.palier} : ${h(x.titre)}${x.pris ? ', récupéré' : ok ? ', à récupérer' : ''}">
-      <span class="ech-pal-ico">${echPalIco(x)}</span>
-      <small class="ech-pal-mot">${h(echPalMot(x))}</small>
-      <i class="ech-pal-n tnum">${x.pris ? NAVICO.check : x.palier}</i></button></li>`;
+    return `<li class="rf-pal ${etat}${x.palier % 5 === 0 ? ' rare jalon' : ''}" id="ech-pal-${x.palier}">
+      <span class="rf-palnum tnum">${x.pris ? NAVICO.check : x.palier}</span>
+      <div class="rf-palcarte">
+        <span class="rf-palico">${echPalIco(x)}</span>
+        <span class="rf-paltxt"><b>${h(x.titre)}</b><small>${braiseIco}<span class="tnum">${fmtN(x.seuil)}</span></small></span>
+        ${x.pris ? '<span class="rf-paletat">Récupéré</span>'
+          : ok ? `<button class="btn tiny" data-ech="palier" data-p="${x.palier}" data-snd="piece">Récupérer</button>`
+          : x === prochain ? `<span class="rf-paletat">encore ${fmtN(x.seuil - total)}</span>` : ''}
+      </div>
+    </li>`;
   };
-  return `<div class="ech-pass-tete">
-      <span class="ech-pass-niv"><small>Palier</small><b class="tnum">${atteint}<i>/${piste.length}</i></b></span>
-      <span class="ech-pass-j">
-        <span class="ech-pass-ch">${braiseIco}<b class="tnum">${fmtN(total)}</b> gagnées<small>${prochain ? `encore <b class="tnum">${fmtN(prochain.seuil - total)}</b>` : 'Pass terminé'}</small></span>
-        <span class="ech-rj lav"><i style="width:${pct}%"></i></span>
-      </span>
-      ${prets ? `<button class="ech-pass-tout" data-ech="pass-tout" data-snd="piece">${prets > 1 ? `Tout récupérer · ${prets}` : 'Récupérer'}</button>` : ''}
-    </div>
-    <ol class="ech-pass">${piste.map(med).join('')}</ol>
-    <p class="ech-mini">Chaque Braise gagnée fait avancer le Pass ; dépenser en boutique ne le fait pas reculer.</p>`;
+
+  return `<section class="rf-passtete">
+      <div class="rf-passniv"><small>Palier</small><b class="tnum">${atteint}<span>/${piste.length}</span></b></div>
+      <div class="rf-passjauge">
+        <div class="rf-passchiffres">
+          <span><b class="tnum">${fmtN(total)}</b> ${echBraises()} gagnées</span>
+          <small>${prochain ? `encore <b class="tnum">${fmtN(prochain.seuil - total)}</b>` : 'Pass terminé'}</small>
+        </div>
+        <div class="rf-jauge"><i style="width:${pct}%"></i></div>
+        <small class="muted">Tous les cinq paliers, un titre ou un cadre. Dépenser en boutique ne fait pas reculer le Pass.</small>
+      </div>
+    </section>
+    ${prets > 1 ? `<button class="btn rf-tout" data-ech="pass-tout" data-snd="piece">${NAVICO.check}Tout récupérer · ${prets} paliers</button>` : ''}
+    <ol class="rf-pass">${piste.map(ligne).join('')}</ol>`;
 }
 
-/* La fiche d'un palier : ce qu'il donne, et le bouton s'il est atteint. */
-function montrerPalierEch(n) {
-  const v = echEv;
-  const x = v && v.piste.find(p => p.palier === n);
-  if (!x) return;
-  const ok = v.total >= x.seuil;
-  openSheet({
-    title: `Palier ${x.palier}`,
-    body: `<div class="rf-gain ech-gain">
-        <span class="rf-gainico ech-gainico">${echPalIco(x, 'md')}</span>
-        <b>${h(x.titre)}</b>
-        <p class="muted small">${x.pris ? 'Déjà récupéré.' : ok ? 'Atteint : il t\'attend.'
-          : `À ${fmtN(x.seuil)} ${MONNAIES_EV.echauffement.nom} gagnées : encore ${fmtN(x.seuil - v.total)}.`}
-          ${x.type === 'titre' || x.type === 'cadre' ? ' À choisir ensuite dans ton profil.' : ''}</p>
-      </div>`,
-    actions: !x.pris && ok
-      ? [{ label: 'Récupérer', primary: true, fn: () => { closeSheet(); echReclamer([x]); } }, { label: 'Fermer', fn: closeSheet }]
-      : [{ label: 'Fermer', primary: true, fn: closeSheet }]
-  });
+/* À l'ouverture du Pass : le premier palier à récupérer, ou le suivant, au
+   milieu de l'écran. Appelé après le rendu (js/app.js). */
+function echPlacerPass() {
+  if (tab !== 'combats' || echVue !== 'accueil' || echOnglet !== 'pass' || echPassPlace || !echEv || !echActif()) return;
+  echPassPlace = true;
+  const x = echEv.piste.find(p => !p.pris && echEv.total >= p.seuil) || echEv.piste.find(p => echEv.total < p.seuil);
+  const el = x && document.getElementById('ech-pal-' + x.palier);
+  if (el && x.palier > 3) el.scrollIntoView({ block: 'center' });
 }
 
 /* Un ou plusieurs paliers, puis une seule fenêtre (piste_reclamer). */
@@ -449,14 +506,18 @@ async function echReclamer(l) {
   occupe(false);
   if (!pris.length) return render();
   SFX.jouer('gagne');
-  if (!RM()) FX.sparkle({ n: 100, colors: ['#ffcf8a', '#c8b4ff', '#8a78f5', '#fff'], size: 3.4 });
+  if (!RM()) FX.sparkle({ n: 100, colors: ['#ffb35c', '#ffd9a8', '#c8bfff', '#8a78f5', '#fff'], size: 3.4 });
   const ks = cartes.map(id => byId[id]).filter(Boolean);
   const boosters = pris.some(x => x.type === 'boosters');
+  const seul = pris.length === 1 && !ks.length ? pris[0] : null;
   openSheet({
     title: pris.length > 1 ? `${pris.length} paliers récupérés` : `Palier ${pris[0].palier}`,
     body: `<div class="rf-gain ech-gain">
-        ${ks.length ? `<div class="rf-gaincartes">${ks.map(c => `<button data-show="${c.id}">${renderCard(c)}</button>`).join('')}</div>` : ''}
-        <ul class="rf-gainliste">${pris.map(x => `<li><span class="rf-palico">${echPalIco(x)}</span>${h(x.titre)}</li>`).join('')}</ul>
+        ${ks.length ? `<div class="rf-gaincartes">${ks.map(c => `<button data-show="${c.id}">${renderCard(c)}</button>`).join('')}</div>`
+          : seul ? `<span class="rf-gainico">${echPalIco(seul, 'md')}</span><b>${h(seul.titre)}</b>` : ''}
+        ${seul ? '' : `<ul class="rf-gainliste">${pris.map(x => `<li><span class="rf-palico">${echPalIco(x)}</span>${h(x.titre)}</li>`).join('')}</ul>`}
+        <p class="muted small">${boosters ? 'Les boosters t\'attendent sur l\'écran Boosters, hors réserve.'
+          : pris.some(x => x.type === 'titre' || x.type === 'cadre') ? 'À choisir dans ton profil.' : 'C\'est sur ton compte.'}</p>
       </div>`,
     actions: boosters
       ? [{ label: 'Ouvrir mes boosters', primary: true, fn: () => { closeSheet(); aller('boosters'); setTimeout(() => openBooster({ bonus: true }), 350); } },
@@ -466,78 +527,55 @@ async function echReclamer(l) {
 }
 
 /* ---------- Les quêtes ---------- */
-/* Deux listes, du jour et de l'événement : une ligne par quête, pour tenir
-   dans l'écran. Une ligne se touche : son détail. */
+/* Les mêmes listes que l'onglet Quêtes et que Reflets (vListeQuetes,
+   js/quests.js) : du jour, puis de l'événement. */
 function vEchQuetes() {
   const qs = (save.quetes || []).filter(q => q.evenement === 'echauffement');
-  const jour = qs.filter(q => q.scope === 'ev_jour'), ev = qs.filter(q => q.scope === 'ev');
-  const l = trierQuetes(echQVue === 'ev' ? ev : jour);
-  const pret = q => !q.claimed && q.progress >= q.goal;
-  const n = l2 => l2.filter(pret).length;
-  const ligne = q => `<li class="ech-qt${q.claimed ? ' fait' : pret(q) ? ' pret' : ''}">
-      <span class="ech-q-ico">${NAVICO[q.claimed || pret(q) ? 'check' : QICO[q.metric] || 'quest']}</span>
-      <button class="ech-q-txt" data-ech="quete" data-q="${h(q.id)}"><b>${h(q.titre)}</b>
-        ${q.claimed ? '<small>Récupérée</small>' : `<span class="ech-q-bar"><i style="width:${Math.min(100, Math.round(q.progress / q.goal * 100))}%"></i></span>`}</button>
-      ${pret(q) ? `<button class="ech-q-btn" data-quete="${h(q.id)}" data-snd="piece">${braiseIco}${fmtN(q.reward)}</button>`
-        : `<span class="ech-q-gain">${q.claimed ? '' : `<small class="tnum">${fmtN(q.progress)}/${fmtN(q.goal)}</small>`}${braiseIco}${fmtN(q.reward)}</span>`}
-    </li>`;
-  return `<div class="segbar ech-seg">
-      <button data-ech="qvue" data-o="jour" class="${echQVue !== 'ev' ? 'on' : ''}">Du jour${n(jour) ? `<i class="ech-on-n">${n(jour)}</i>` : ''}</button>
-      <button data-ech="qvue" data-o="ev" class="${echQVue === 'ev' ? 'on' : ''}">De l'événement${n(ev) ? `<i class="ech-on-n">${n(ev)}</i>` : ''}</button>
-    </div>
-    ${l.length ? `<ol class="ech-qs">${l.map(ligne).join('')}</ol>` : '<p class="ech-mini">Pas de quête pour l\'instant.</p>'}
-    <p class="ech-mini">${echQVue === 'ev' ? 'Une fois pour tout l\'événement.' : `Nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}.`}
-      Elles paient en ${MONNAIES_EV.echauffement.nom}.</p>`;
+  return `${rfTitre('Quêtes', `Elles paient en ${echBraises()}, et chaque Braise gagnée fait avancer le Pass.`)}
+    <h3 class="rf-sous">Du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
+    ${vListeQuetes(qs.filter(q => q.scope === 'ev_jour'))}
+    <h3 class="rf-sous">De l'événement <small>· une fois</small></h3>
+    ${vListeQuetes(qs.filter(q => q.scope === 'ev'))}`;
 }
-function montrerQueteEch(id) {
-  const q = (save.quetes || []).find(x => x.id === id);
-  if (!q) return;
-  const pret = !q.claimed && q.progress >= q.goal;
-  openSheet({
-    title: q.titre,
-    body: `<p>${h(q.detail)}</p><p class="muted small">${q.claimed ? 'Récupérée.' : `${fmtN(q.progress)} sur ${fmtN(q.goal)}.`}
-      Elle rapporte ${fmtN(q.reward)} ${MONNAIES_EV.echauffement.nom}.</p>`,
-    actions: pret ? [{ label: 'Récupérer', primary: true, fn: () => { closeSheet(); echEncaisser(q.id); } },
-      { label: 'Fermer', fn: closeSheet }] : [{ label: 'Fermer', primary: true, fn: closeSheet }]
-  });
-}
-const echEncaisser = id => agir(() => Backend.claimQuest(id), 'Récompense encaissée.').then(ok => { if (ok) chargerEch(true); });
 
 /* ---------- La boutique ---------- */
 function vEchBoutique() {
   const items = (Backend.shop || []).filter(it => it.evenement === 'echauffement');
-  if (!items.length) return '<p class="ech-mini">Chargement de la boutique…</p>';
   const solde = save.prismes || 0;
-  const art = it => {
+  const article = it => {
     const deja = (save.inv || {})[it.id] || 0;
     const fini = it.unique_buy ? deja > 0 : it.limite != null && deja >= it.limite;
-    const reste = it.limite != null && !it.unique_buy ? `${it.limite - deja}/${it.limite}` : it.unique_buy ? 'Exclusif' : '';
-    const vis = TITRES[it.id] ? `<span class="qrtitre t${TITRES[it.id].ton}">${h(TITRES[it.id].nom)}</span>`
-      : it.effet === 'tickets' ? `<img src="${ART.seal}" alt=""><i class="ech-art-x">×${it.montant}</i>`
-      : it.effet === 'fragments' ? NAVICO.fragment : it.effet === 'reverse_R' ? NAVICO.reflets : NAVICO.star;
-    return `<button class="ech-art${fini ? ' fini' : solde < it.prix ? ' cher' : ''}" ${fini ? 'disabled' : `data-shop="${h(it.id)}"`}>
-      <span class="ech-art-vis">${vis}</span>
+    const reste = it.limite != null && !it.unique_buy ? `${it.limite - deja} / ${it.limite}` : it.unique_buy ? 'Exclusif' : '';
+    const visuel = TITRES[it.id] ? `<span class="qrtitre t${TITRES[it.id].ton}">${h(TITRES[it.id].nom)}</span>`
+      : it.effet === 'reverse_R' ? NAVICO.reflets : it.effet === 'fragments' ? NAVICO.fragment : NAVICO.star;
+    return `<article class="rf-art${fini ? ' fini' : ''}">
+      <div class="rf-artvis">${visuel}</div>
       <b>${h(it.titre)}</b>
-      ${reste ? `<small>${fini && !it.unique_buy ? 'Épuisé' : reste}</small>` : ''}
-      <span class="ech-art-prix">${fini ? 'Acquis' : `${braiseIco}${fmtN(it.prix)}`}</span>
-    </button>`;
+      <small>${h(it.detail)}</small>
+      ${reste ? `<span class="rf-artreste">${fini && !it.unique_buy ? 'Épuisé' : reste}</span>` : ''}
+      ${fini ? '<span class="qtag">Acquis</span>'
+        : `<button class="btn tiny" data-shop="${h(it.id)}" ${solde < it.prix ? 'disabled' : ''}>${braiseIco}${fmtN(it.prix)}</button>`}
+    </article>`;
   };
-  return `<p class="ech-mini">En ${MONNAIES_EV.echauffement.nom}, seulement pendant l'événement. Il t'en reste ${braiseIco}<b class="tnum">${fmtN(solde)}</b>.</p>
-    <div class="ech-arts">${items.map(art).join('')}</div>`;
+  return `${rfTitre('Boutique', `En ${echBraises()}, seulement pendant l'événement. Ton solde : ${braiseIco}<b class="tnum">${fmtN(solde)}</b>`)}
+    ${items.length ? `<div class="rf-arts">${items.map(article).join('')}</div>` : '<p class="muted">Chargement de la boutique…</p>'}`;
 }
 
 /* ---------- Le classement ---------- */
 /* Ceux qui ont gagné le plus de Braises ; et sa place, si on n'est pas dans
-   les dix. */
-function vEchClassement(liste, unite, vide, moi) {
-  const top = liste || (echEv && echEv.top) || [];
-  const u = unite || braiseIco;
-  const r = moi || (echEv ? { rang: echEv.rang, joueurs: echEv.joueurs, total: echEv.total } : null);
-  const ligne = (j, i) => `<li class="${j.moi ? 'moi' : ''}"><span class="ech-rang r${i + 1}">${i + 1}</span>
-      ${avatarHTML(j.avatar, j.frame, 'sm', j.photo)}<span class="ech-top-nom"><b>${h(j.pseudo)}</b>${j.titre && TITRES[j.titre] ? `<small class="titreligne t${TITRES[j.titre].ton}">${h(TITRES[j.titre].nom)}</small>` : ''}</span>
-      <span class="ech-top-pts tnum">${u}${fmtN(j.total)}</span></li>`;
-  return `${top.length ? `<ol class="ech-top">${top.map(ligne).join('')}</ol>` : `<p class="ech-mini">${vide || 'Personne n\'a encore gagné de Braises : à toi de commencer.'}</p>`}
-    ${r && r.rang && !top.some(j => j.moi) ? `<p class="ech-mini">Ta place : <b class="tnum">${r.rang}<sup>e</sup></b>${r.joueurs ? ` sur ${fmtN(r.joueurs)}` : ''}, avec ${fmtN(r.total)}.</p>` : ''}`;
+   les dix. Sert aussi au mode sans fin, en étoiles. */
+function vEchTop(top, unite, vide, moi) {
+  const ligne = (j, i) => `<li class="${j.moi ? 'moi' : ''}">
+      <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
+      <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.titre && TITRES[j.titre] ? `<small class="titreligne t${TITRES[j.titre].ton}">${h(TITRES[j.titre].nom)}</small>` : ''}</span>
+      <span class="rf-pts tnum">${unite}${fmtN(j.total)}</span></li>`;
+  return `${top.length ? `<ol class="rf-top">${top.map(ligne).join('')}</ol>` : `<p class="muted">${vide}</p>`}
+    ${moi && moi.rang && !top.some(j => j.moi) ? `<p class="ech-maplace">Ta place : <b class="tnum">${moi.rang}<sup>e</sup></b>${moi.joueurs ? ` sur ${fmtN(moi.joueurs)}` : ''}, avec ${unite}<b class="tnum">${fmtN(moi.total)}</b>.</p>` : ''}`;
+}
+function vEchClassement() {
+  const v = echEv || {};
+  return `${rfTitre('Classement', `Ceux qui ont gagné le plus de ${echBraises()} depuis le début de l'événement.`)}
+    ${vEchTop(v.top || [], braiseIco, 'Personne n\'a encore gagné de Braises : à toi de commencer.', { rang: v.rang, joueurs: v.joueurs, total: v.total })}`;
 }
 
 /* =====================================================================
@@ -553,18 +591,15 @@ function vEchSansFin() {
   if (!dispo.some(([k]) => k === echSfOnglet)) echSfOnglet = dispo.length ? dispo[0][0] : 'jour';
   const corps = { jour: vEchSfJour, classement: vEchSfClassement, indices: vEchIndices, recap: vEchRecap }[echSfOnglet] || vEchSfJour;
   const serie = sf && sf.serie || 0;
-  return `<section class="ech">
-    <header class="ech-hero">
-      ${echIllu(byId.c122, .6, .4, 'fond')}
-      <span class="ech-hero-haut"><span class="ech-kick">${recap ? 'Événement terminé · le récap' : 'L\'Échauffement continue'}</span>
-        <span class="ech-hero-d">${serie ? `<span class="ech-solde serie" aria-label="Série de ${serie} jour${serie > 1 ? 's' : ''}">${NAVICO.sword}<b class="tnum">${serie}</b></span>` : ''}
-        ${echSfOnglet === 'recap' && (echRecapApercu || echRecap) ? (r => `<span class="ech-anneau" style="--p:${Math.round((r.etoiles || 0) / 21 * 100)}%" aria-label="${r.etoiles || 0} étoiles sur 21"><b class="tnum">${r.etoiles || 0}</b><small>/21</small></span>`)(echRecapApercu || echRecap)
-          : sf && sf.defi ? `<span class="ech-anneau" style="--p:${Math.round((sf.defi.etoiles || 0) / 3 * 100)}%" aria-label="${sf.defi.etoiles || 0} étoile sur 3 aujourd'hui"><b class="tnum">${sf.defi.etoiles || 0}</b><small>/3</small></span>` : ''}</span></span>
-      <span class="ech-hero-bas"><h2 class="ech-titre">${echSfOnglet === 'recap' ? 'L\'Échauffement' : 'Le défi du jour'}</h2><small>${echSfOnglet === 'recap' ? 'Neuf jours, sept défis : ton bilan.' : 'Un adversaire par jour, le même pour tous.'}</small></span>
-    </header>
-    ${dispo.length > 1 ? `<nav class="ech-onglets" role="tablist">${dispo.map(([k, n]) => `<button role="tab" data-ech="sf-onglet" data-o="${k}" class="${echSfOnglet === k ? 'on' : ''}" aria-selected="${echSfOnglet === k}">${n}</button>`).join('')}</nav>` : ''}
-    <div class="ech-corps">${corps()}</div>
-  </section>`;
+  const chiffres = `${serie ? `<span class="rf-solde" title="Jours gagnés d'affilée">${NAVICO.sword}<b class="tnum">${serie}</b></span>` : ''}
+    ${echSfOnglet === 'recap' && recap && recap.jusqua ? echFin(srvTime(recap.jusqua))
+      : echSfActif() ? echFin(Date.now() + resteAvantRemise('daily')) : ''}`;
+  const aJouer = sf && sf.defi && !sf.defi.etoiles ? 1 : 0;
+  return `<div class="rf ech-rf">
+    ${vEchTete(echSfOnglet === 'recap' ? 'Terminé · le récap' : 'Un défi par jour', chiffres,
+      dispo.map(([k, n]) => [k, n, k === 'jour' ? aJouer : 0]), echSfOnglet, 'sf-onglet')}
+    <div class="rf-page">${corps()}</div>
+  </div>`;
 }
 
 /* Le niveau du jour, en quatre crans. */
@@ -572,57 +607,60 @@ const echNiveau = n => `<span class="ech-niv n${n}" aria-label="Niveau ${h(ECH_N
 
 function vEchSfJour() {
   const sf = echSf;
-  if (!echSfActif()) return '<p class="ech-mini">Le défi du jour commence à la fin de la saison.</p>';
+  if (!echSfActif()) return '<p class="muted">Le défi du jour commence à la fin de la saison.</p>';
   const d = echSfDefi();
-  const adv = byId[d.adversaire];
-  const tuile = (v, lib, sous, mot) => `<span class="ech-sf-t"><b class="tnum${mot ? ' mot' : ''}">${v}</b><small>${lib}</small>${sous ? `<em>${sous}</em>` : ''}</span>`;
-  return `<button class="ech-porte" data-ech="sf-defi">
-      ${adv ? echIllu(adv, .55, .3, 'fond') : ''}
-      <span class="ech-porte-txt">
-        <small>Jour ${fmtN(sf.n)} · ${echNiveau(d.niveau)}</small>
-        <b>${h(adv ? adv.nom : d.adversaire)}</b>
-        <span class="ech-porte-regle">${echIco(d.regle)}${h(d.titre)}</span>
-        ${echEtoiles(d.etoiles)}
-      </span>
-      <span class="ech-porte-cta">${d.etoiles === 3 ? 'Revoir' : echRestants(d) ? 'Relever' : 'Voir'}</span>
-    </button>
-    <div class="ech-sf-ts">
-      ${tuile(sf.serie || 0, 'jours d\'affilée', '')}
-      ${tuile(sf.victoires || 0, 'défis gagnés', `${fmtN(sf.etoiles || 0)} ★ en tout`)}
-      ${tuile(sf.demain ? echNiveau(sf.demain) : '—', 'demain', `dans ${h(dureeCourte(resteAvantRemise('daily')))}`, true)}
+  const prix = ECH_SF_PRIX.reduce((a, b) => a + b, 0);
+  return `${vEchUne(d, 'data-ech="sf-defi"', `Jour ${fmtN(sf.n)} · ${h(ECH_NIVEAUX[d.niveau] || '')}`,
+      d.etoiles === 3 ? 'Revoir le défi' : echRestants(d) ? (d.etoiles ? 'Viser les trois étoiles' : 'Relever le défi') : 'Voir le défi')}
+    <div class="rf-tuiles ech-ts">
+      ${echTuile('', NAVICO.sword, 'Série', `${fmtN(sf.serie || 0)} j`, 'd\'affilée')}
+      ${echTuile('', NAVICO.trophy, 'Gagnés', fmtN(sf.victoires || 0), `${fmtN(sf.etoiles || 0)} ★ en tout`)}
+      ${echTuile('', NAVICO.clock, 'Demain', sf.demain ? echNiveau(sf.demain) : '—', `dans ${h(dureeCourte(resteAvantRemise('daily')))}`)}
     </div>
-    <p class="ech-mini">★ ${ECH_SF_PRIX[0]} · ★★ ${ECH_SF_PRIX[1]} · ★★★ ${ECH_SF_PRIX[2]} ${MONNAIE.nom} chaque jour · trois essais.</p>`;
+    <p class="ech-regle-sf">${shardIco}<span>Jusqu'à <b>${prix}</b> ${MONNAIE.nom} par jour (★ ${ECH_SF_PRIX.join(' · ')}), trois essais.
+      Dix jours gagnés : le titre « ${h((TITRES.t_ech_infatigable || {}).nom || 'Infatigable')} ».</span></p>`;
 }
 
 function vEchSfClassement() {
   const sf = echSf || {};
-  return `<p class="ech-mini">Les étoiles gagnées au défi du jour, depuis le début.</p>
-    ${vEchClassement(sf.top || [], '<i class="ech-top-et">★</i>', 'Personne n\'a encore d\'étoile : à toi de commencer.',
+  return `${rfTitre('Classement', 'Les étoiles gagnées au défi du jour, depuis le début.')}
+    ${vEchTop(sf.top || [], '<i class="ech-top-et">★</i>', 'Personne n\'a encore d\'étoile : à toi de commencer.',
       { rang: sf.rang, total: sf.etoiles })}`;
 }
 
 /* Le récap, trois jours après la saison : son bilan, le podium, et la suite
-   (le défi du jour) — c'est ici, et dans la fenêtre de fin, qu'on l'explique. */
+   (le défi du jour) — c'est ici, et dans la fenêtre de fin, qu'on l'explique.
+   Les blocs du récap de Reflets (.rr-*, css/reflets.css). */
 function vEchRecap() {
   const r = echRecapApercu || echRecap;
-  if (!r) { chargerEch(true); return '<p class="ech-mini">Chargement du récap…</p>'; }
-  const stat = (v, lib, sous) => `<span class="ech-rc"><b class="tnum">${v}</b><small>${lib}</small>${sous ? `<em>${sous}</em>` : ''}</span>`;
-  const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
-      <b>${h(j.pseudo)}</b><small>${braiseIco}${fmtN(j.total)}</small><span class="ech-rang r${i + 1}">${i + 1}</span></li>`).join('');
-  return `<div class="ech-rcs">
-      ${stat(`${braiseIco}${fmtN(r.total || 0)}`, MONNAIES_EV.echauffement.nom, r.rang ? `${r.rang}<sup>e</sup> sur ${fmtN(r.joueurs)}` : '')}
-      ${stat(`${r.paliers || 0}<i>/${r.paliers_max || 20}</i>`, 'paliers du Pass', '')}
-      ${stat(`${r.etoiles || 0}<i>/${(r.defis || 7) * 3}</i>`, 'étoiles', `${r.gagnes || 0} défi${(r.gagnes || 0) > 1 ? 's' : ''} gagné${(r.gagnes || 0) > 1 ? 's' : ''}`)}
-      ${stat(`${r.parfaits || 0}<i>/${r.defis || 7}</i>`, 'indices', '')}
-      ${stat(fmtN(r.combats || 0), 'combats', '')}
-      ${stat(fmtN(r.quetes || 0), 'quêtes', '')}
-    </div>
-    ${podium ? `<ol class="ech-podium">${podium}</ol>` : ''}
-    <button class="ech-suite" data-ech="sf-onglet" data-o="jour">
-      <span class="ech-suite-ico">${NAVICO.sword}</span>
-      <span><b>L'Échauffement continue</b><small>Un défi par jour, le même pour tous, de Facile à Redoutable : jusqu'à ${ECH_SF_PRIX.reduce((a, b) => a + b, 0)} ${MONNAIE.nom}, trois essais.</small></span>
-      <span class="ech-ban-fl" aria-hidden="true">›</span>
-    </button>`;
+  if (!r) { chargerEch(true); return '<p class="muted boitecharge">Chargement du récap…</p>'; }
+  const stat = (ico, val, lib, sous) => `<div class="rr-stat"><span class="rr-ico">${ico}</span>
+    <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
+  const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
+      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
+      <b>${h(j.pseudo)}</b><small>${braiseIco}${fmtN(j.total)}</small></li>`).join('');
+  const defis = r.defis || 7;
+  return `<section class="rr-bilan">
+      <h2>Ton bilan</h2>
+      <div class="rr-stats">
+        ${stat(braiseIco, fmtN(r.total || 0), `${echBraises()} gagnées`, r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 're'}</sup> sur ${fmtN(r.joueurs)}` : '')}
+        ${stat(NAVICO.trophy, `${r.paliers || 0}<small>/${r.paliers_max || 20}</small>`, 'paliers du Pass', (r.paliers || 0) >= (r.paliers_max || 20) ? 'Pass terminé' : '')}
+        ${stat(NAVICO.star, `${r.etoiles || 0}<small>/${defis * 3}</small>`, 'étoiles', `${r.gagnes || 0} défi${(r.gagnes || 0) > 1 ? 's' : ''} gagné${(r.gagnes || 0) > 1 ? 's' : ''}`)}
+        ${stat(NAVICO.cards, `${r.parfaits || 0}<small>/${defis}</small>`, 'indices', '')}
+        ${stat(NAVICO.sword, fmtN(r.combats || 0), 'combats', '')}
+        ${stat(NAVICO.quest, fmtN(r.quetes || 0), 'quêtes accomplies', '')}
+      </div>
+    </section>
+    ${podium ? `<section class="rr-podium"><h2>Le podium</h2><ol>${podium}</ol></section>` : ''}
+    <section class="rr-continue">
+      <h2>Ce qui continue</h2>
+      <div class="rr-cartes">
+        <button class="rr-lien" data-ech="sf-onglet" data-o="jour"><span class="rr-ico">${NAVICO.sword}</span><b>Le défi du jour</b>
+          <small>Un adversaire par jour, le même pour tous, de Facile à Redoutable : jusqu'à ${ECH_SF_PRIX.reduce((a, b) => a + b, 0)} ${MONNAIE.nom}.</small></button>
+        <button class="rr-lien" data-ech="sf-onglet" data-o="indices"><span class="rr-ico">${NAVICO.cards}</span><b>Les indices</b>
+          <small>Ceux que tu as gagnés se relisent.</small></button>
+      </div>
+    </section>`;
 }
 
 /* ---------- Le défi ---------- */
@@ -773,19 +811,17 @@ function echAction(act, el) {
   if (act === 'tri') { echTri = x.c; return echChoisir(echPlace); }
   if (act === 'retirer') { echEquipe(echDefi()).splice(+x.i, 1); return render(); }
   if (act === 'attaque') { echEquipe(echDefi())[+x.i].a = +x.k; return render(); }
-  if (act === 'onglet') { echOnglet = x.o; echVue = 'accueil'; return render(); }
+  if (act === 'onglet') { echOnglet = x.o; echVue = 'accueil'; if (x.o === 'pass') echPassPlace = false; render(); return $('#main').scrollTo({ top: 0 }); }
   if (act === 'lancer') return echLancer();
   if (act === 'annonce') return montrerEchAnnonce();
   /* L'événement : le Pass, les quêtes, la boutique (voir aussi data-shop, js/shop.js). */
-  if (act === 'palier') return montrerPalierEch(+x.p);
+  if (act === 'palier') return echReclamer(echEv ? echEv.piste.filter(p => p.palier === +x.p && !p.pris && echEv.total >= p.seuil) : []);
   if (act === 'pass-tout') return echReclamer(echEv ? echEv.piste.filter(p => !p.pris && echEv.total >= p.seuil) : []);
-  if (act === 'qvue') { echQVue = x.o; return render(); }
-  if (act === 'quete') return montrerQueteEch(x.q);
   /* Depuis ailleurs (la Boutique, un bandeau) : un sous-onglet de l'événement. */
-  if (act === 'aller') { echOnglet = x.o; echVue = 'accueil'; return aller('combats'); }
+  if (act === 'aller') { echOnglet = x.o; echVue = 'accueil'; echPassPlace = false; return aller('combats'); }
   /* Après la saison : le défi du jour, ses sous-onglets, le récap. */
   if (act === 'sf-defi') { echJour = 0; echVue = 'defi'; $('#main').scrollTop = 0; return render(); }
-  if (act === 'sf-onglet') { echSfOnglet = x.o; echVue = 'accueil'; return tab === 'combats' ? render() : aller('combats'); }
+  if (act === 'sf-onglet') { echSfOnglet = x.o; echVue = 'accueil'; if (tab !== 'combats') return aller('combats'); render(); return $('#main').scrollTo({ top: 0 }); }
   if (act === 'recap') { echSfOnglet = 'recap'; echVue = 'accueil'; return aller('combats'); }
 }
 
@@ -989,36 +1025,37 @@ function echTerminerApercu(d, res) {
 
 /* ---------- Les bandeaux ---------- */
 /* L'écran Boosters : pendant la saison, l'événement ; pendant trois jours, son
-   récap ; ensuite, le défi du jour. La même couverture que l'onglet : le
-   médaillon de « La Luxueuse III ». */
+   récap ; ensuite, le défi du jour. Le bandeau de Reflets (.rfban,
+   css/reflets.css), aux couleurs de l'événement, sur le médaillon de « La
+   Luxueuse III ». */
 function vBandeauEch() {
-  const ban = (act, petit, titre, droite, label) => `<button class="ech-ban" ${act} aria-label="${h(label)}">
-    ${echIllu(byId.c122, .6, .4, 'fond')}
-    <span class="ech-ban-txt"><small>${petit}</small><b>${titre}</b></span>
-    ${droite}<span class="ech-ban-fl" aria-hidden="true">›</span>
+  const ban = (attrs, petit, droite, label) => `<button class="rfban ech-rfban" ${attrs} aria-label="${h(label)}">
+    ${echFond()}
+    <span class="rfban-txt"><small>${petit}</small><b>L'Échauffement</b></span>
+    ${droite}<span class="rfban-fl" aria-hidden="true">›</span>
   </button>`;
   if (echActif()) {
+    const fin = srvTime(echData.fin);
     const n = echPastille();
-    return ban('data-tab="combats"', `Événement · encore ${h(dureeCourte(Date.parse(echData.fin) - Date.now()))}`, 'L\'Échauffement',
-      n ? `<i class="ech-ban-n">${n}</i>` : echEnCours() ? `<span class="ech-ban-solde">${braiseIco}${fmtN(save.prismes || 0)}</span>` : '',
-      'L\'Échauffement : aller au défi du jour');
+    return ban('data-tab="combats"', `Événement 2.5 · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span>`,
+      n ? `<span class="rfban-n">${n}</span>` : echEnCours() ? `<span class="rfban-solde">${braiseIco}${fmtN(save.prismes || 0)}</span>` : '',
+      'Ouvrir L\'Échauffement');
   }
-  const r = echRecapEnCours();
-  if (r) return ban('data-ech="recap"', 'Terminé · le récap', 'L\'Échauffement', '<span class="ech-ban-solde">Ton bilan</span>', 'Voir le récap de L\'Échauffement');
+  if (echRecapEnCours()) return ban('data-ech="recap"', 'Terminé · le récap', '<span class="rfban-solde">Ton bilan</span>', 'Voir le récap de L\'Échauffement');
   if (echSfActif()) {
     const d = echSf.defi || {};
-    return ban('data-ech="sf-onglet" data-o="jour"', `Le défi du jour · ${h(ECH_NIVEAUX[d.niveau] || '')}`, 'L\'Échauffement',
-      d.etoiles ? echEtoiles(d.etoiles) : '<i class="ech-ban-n">1</i>', 'L\'Échauffement : le défi du jour');
+    return ban('data-ech="sf-onglet" data-o="jour"', `Le défi du jour · ${h(ECH_NIVEAUX[d.niveau] || '')}`,
+      d.etoiles ? `<span class="rfban-solde">${echEtoiles(d.etoiles)}</span>` : '<span class="rfban-n">1</span>', 'L\'Échauffement : le défi du jour');
   }
   return '';
 }
 
 /* La Boutique principale : un lien vers celle de l'événement, dans Combats. */
 function vBandeauEchBoutique() {
-  return `<button class="ech-ban shopev" data-ech="aller" data-o="boutique" aria-label="Ouvrir la boutique de L'Échauffement">
-    ${echIllu(byId.c122, .6, .4, 'fond')}
-    <span class="ech-ban-txt"><small>En ${MONNAIES_EV.echauffement.nom}, pendant l'événement</small><b>Boutique de L'Échauffement</b></span>
-    <span class="ech-ban-solde">${braiseIco}${fmtN(save.prismes || 0)}</span><span class="ech-ban-fl" aria-hidden="true">›</span>
+  return `<button class="rfban ech-rfban shopev" data-ech="aller" data-o="boutique" aria-label="Ouvrir la boutique de L'Échauffement">
+    ${echFond()}
+    <span class="rfban-txt"><small>Sa boutique · en ${echBraises()}</small><b>L'Échauffement</b></span>
+    <span class="rfban-solde">${braiseIco}${fmtN(save.prismes || 0)}</span><span class="rfban-fl" aria-hidden="true">›</span>
   </button>`;
 }
 
