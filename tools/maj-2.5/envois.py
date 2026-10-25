@@ -55,13 +55,16 @@ for l in subprocess.run(PSQL + [req], capture_output=True, text=True, check=True
     attendu.setdefault(nom, []).append((sig, h, d))
 
 # Le contenu de l'événement (pas seulement le nombre de lignes) : le Pass, ses quêtes, sa boutique,
-# tels qu'une installation neuve les a. Une empreinte par table, sur les lignes entières.
+# tels qu'une installation neuve les a. Une empreinte par table, sur les lignes entières, en jsonb :
+# l'ordre des clés y est normalisé. Avec row_to_json, l'ordre des colonnes compte, et il n'est pas
+# le même sur la vraie base (des colonnes y ont été ajoutées après coup : quests.item_id,
+# shop_items.carte_id) : le contrôle aurait refusé un contenu identique (vu le 25 octobre 2026).
 def contenu(table, cle):
-    q = (f"select md5(coalesce(string_agg(row_to_json(t)::text, ';' order by t.{cle}), '')) "
+    q = (f"select md5(coalesce(string_agg(to_jsonb(t)::text, ';' order by t.{cle}), '')) "
          f"from public.{table} t where t.evenement = 'echauffement'")
     return subprocess.run(PSQL + [q], capture_output=True, text=True, check=True).stdout.strip()
 def verif_contenu(table, cle, quoi):
-    return (f"  if (select md5(coalesce(string_agg(row_to_json(t)::text, ';' order by t.{cle}), '')) from public.{table} t "
+    return (f"  if (select md5(coalesce(string_agg(to_jsonb(t)::text, ';' order by t.{cle}), '')) from public.{table} t "
             f"where t.evenement = 'echauffement') <> '{contenu(table, cle)}' then\n"
             f"    raise exception 'ECART : contenu de {quoi}'; end if;")
 
