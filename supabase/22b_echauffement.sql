@@ -33,8 +33,10 @@
 --  compte.
 --
 --  RECOMPENSES : 80, 80 puis 140 Eclats pour les etoiles 1, 2 et 3 de chaque
---  defi (300 par defi, 2 100 en tout) ; 3 boosters quand les sept defis sont
---  gagnes ; le titre « Echauffe » pour les 21 etoiles.
+--  defi (300 par defi, 2 100 en tout), et 15, 15 puis 25 Braises (55 par
+--  defi, 385 en tout : la monnaie de l'evenement, 22e_echauffement-
+--  evenement.sql) ; 3 boosters quand les sept defis sont gagnes ; le titre
+--  « Echauffe » pour les 21 etoiles.
 --
 --  LES INDICES : trois etoiles au defi n debloquent l'indice n — une phrase
 --  sur ce qui vient, sans rien montrer. Leur texte n'est que dans la base
@@ -51,9 +53,12 @@
 --  fois sur trente a cent ; une collection aux deux tiers trouve presque
 --  toujours ses trois etoiles, une collection au tiers deux ou trois.
 --
---  Ce n'est pas un evenement au sens de la table `evenements` : il ne
---  remplacerait alors le recap de Reflets (evenement_recent) pendant trois
---  jours. Il a sa propre saison (ech_saison) et son propre onglet : Combats.
+--  Sa saison (ech_saison) commence a la fin du recap de Reflets. Depuis le
+--  24 octobre 2026, L'Echauffement est aussi un evenement au sens de la table
+--  `evenements` (code 'echauffement', 22e_echauffement-evenement.sql), calee
+--  sur la saison : sa monnaie, ses quetes, son Pass, sa boutique, son
+--  classement et son recap. Il vit dans l'onglet Combats ; apres la saison,
+--  le mode sans fin y prend sa place (22f_sans-fin.sql).
 --
 --  Les noms commencent tous par `ech_` : la version 3.0 a deja ses `defis`.
 -- =====================================================================
@@ -111,13 +116,23 @@ begin
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = e.code and total > 0
                order by total desc limit 3) c
-        join profiles pr on pr.id = c.user_id), '[]'::jsonb));
+        join profiles pr on pr.id = c.user_id), '[]'::jsonb))
+    -- L'Echauffement (22e_echauffement-evenement.sql) : ses defis, en plus.
+    || case when e.code = 'echauffement' then jsonb_build_object(
+         'etoiles', coalesce((select sum(etoiles) from ech_scores where user_id = p), 0),
+         'gagnes', (select count(*) from ech_scores where user_id = p and etoiles > 0),
+         'parfaits', (select count(*) from ech_scores where user_id = p and etoiles = 3),
+         'defis', (select count(*) from ech_defis),
+         'combats', (select count(*) from ech_essais where user_id = p and fini))
+       else '{}'::jsonb end;
 end $$;
 
 -- La saison : une seule ligne. Elle commence a la fin du recap de Reflets
 -- (ou tout de suite s'il est deja fini) et dure neuf jours : un defi de plus
 -- chaque jour pendant sept jours, puis deux jours pour rattraper.
 --   Avancer ou reculer :  update public.ech_saison set debut = ..., fin = ... where id = 1;
+--   (la ligne de l'evenement suit : 22e_echauffement-evenement.sql ; le Labo
+--   le fait aussi, 22d_admin.sql.)
 create table if not exists public.ech_saison (
   id    integer primary key default 1 check (id = 1),
   debut timestamptz not null,
@@ -306,17 +321,20 @@ $$;
 --   [tour, "subit", i, degats, defense restante]
 --   [tour, "ko", i]
 -- `i` part de 0. La meme chose, a la ligne pres, est echCombat (js/echauffement.js).
+--
+-- ech_combat joue un defi donne : une ligne de ech_defis, ou l'adversaire du
+-- jour du mode sans fin, mis sous la meme forme (22f_sans-fin.sql) ;
+-- ech_simuler, celui d'un des sept jours.
 drop function if exists public.ech_simuler(integer, jsonb);
-create or replace function public.ech_simuler(p_jour integer, p_equipe jsonb, p_eclat jsonb default null) returns jsonb
+create or replace function public.ech_combat(d ech_defis, p_equipe jsonb, p_eclat jsonb default null) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
-  d ech_defis; n int; i int; t int; e jsonb; j ech_joueurs; at jsonb;
+  n int; i int; t int; e jsonb; j ech_joueurs; at jsonb;
   pv int[] := '{}'; elan int[] := '{}'; cout int[] := '{}'; deg int[] := '{}'; col text[] := '{}';
   pv_b int; elan_b int := 0; cout_b int; deg_b int; fureur int := 0; ko int := 0; dd int;
   journal jsonb := '[]'; seuil int; plus int; riposte int; affin text;
   ec_tour int; ec_i int; ec_pris boolean := false; issue text := null;
 begin
-  select * into d from ech_defis where jour = p_jour;
   pv_b := d.pv;
   seuil := coalesce((d.param ->> 'seuil')::int, 0);
   plus := coalesce((d.param ->> 'plus')::int, 0);
@@ -401,6 +419,62 @@ begin
   return null;
 end $$;
 
+create or replace function public.ech_simuler(p_jour integer, p_equipe jsonb, p_eclat jsonb default null) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select ech_combat(d, p_equipe, p_eclat) from ech_defis d where d.jour = p_jour
+$$;
+
+-- L'equipe proposee, verifiee et mise au propre : un a trois Joueurs
+-- possedes (une Reverse joue comme sa carte classique), sans doublon, chacun
+-- avec une attaque qui existe. Pour ech_commencer et ech_sf_commencer.
+create or replace function public.ech_equipe_propre(p uuid, p_equipe jsonb) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare e jsonb; cid text; nb int; vus text[] := '{}'; propre jsonb := '[]'; a int; natt int;
+begin
+  if p_equipe is null or jsonb_typeof(p_equipe) <> 'array' then raise exception 'Équipe invalide.'; end if;
+  nb := jsonb_array_length(p_equipe);
+  if nb < 1 or nb > 3 then raise exception 'Une équipe compte un à trois Joueurs.'; end if;
+  for e in select value from jsonb_array_elements(p_equipe) loop
+    cid := e ->> 'carte';
+    -- Une Reverse joue comme sa carte classique.
+    if cid ~ '^r[0-9]' then cid := 'c' || substr(cid, 2); end if;
+    if cid is null or not exists (select 1 from ech_joueurs where card_id = cid) then raise exception 'Ce n''est pas un Joueur.'; end if;
+    if cid = any(vus) then raise exception 'Un Joueur apparaît deux fois.'; end if;
+    vus := vus || cid;
+    if not exists (select 1 from collection where user_id = p and qty > 0
+                    and card_id in (cid, 'r' || substr(cid, 2))) then
+      raise exception 'Tu ne possèdes pas un des Joueurs choisis.';
+    end if;
+    natt := (select jsonb_array_length(attaques) from ech_joueurs where card_id = cid);
+    a := coalesce((e ->> 'a')::int, 0);
+    if a < 0 or (natt > 0 and a >= natt) or (natt = 0 and a <> 0) then raise exception 'Attaque inconnue.'; end if;
+    propre := propre || jsonb_build_array(jsonb_build_object('carte', cid, 'a', a));
+  end loop;
+  return propre;
+end $$;
+
+-- Ce que les quetes de L'Echauffement recomptent (04_seed.sql) : des etats,
+-- pas des compteurs, comme sync_collection_quests — les defis gagnes, ceux
+-- a trois etoiles, les etoiles, et les Joueurs differents qui ont combattu.
+create or replace function public.ech_sync_quetes(p uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare g int; t int; e int; nj int;
+begin
+  select count(*) filter (where etoiles > 0), count(*) filter (where etoiles = 3), coalesce(sum(etoiles), 0)
+    into g, t, e from ech_scores where user_id = p;
+  select count(distinct x ->> 'carte') into nj
+    from ech_essais es, jsonb_array_elements(es.equipe) x where es.user_id = p and es.fini;
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, period_key(q.scope),
+         case q.metric when 'ech_gagnes' then g when 'ech_parfaits' then t when 'ech_etoiles' then e else nj end
+    from quests q
+   where q.metric in ('ech_gagnes', 'ech_parfaits', 'ech_etoiles', 'ech_joueurs')
+     and (q.evenement is null or q.evenement = evenement_en_cours())
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress)
+    where not quest_progress.claimed;
+end $$;
+
 -- ------------------------------------------------------------------ l'etat
 create or replace function public.ech_etat_de(p uuid) returns jsonb
 language sql stable security definer set search_path = public as $$
@@ -445,8 +519,7 @@ drop function if exists public.ech_jouer(integer, jsonb);
 create or replace function public.ech_commencer(p_jour integer, p_equipe jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
-  p uuid := auth.uid(); s ech_saison; e jsonb; cid text; nb int; vus text[] := '{}';
-  propre jsonb := '[]'; a int; natt int; deja int; eid bigint;
+  p uuid := auth.uid(); s ech_saison; nb int; propre jsonb; deja int; eid bigint;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -464,37 +537,23 @@ begin
   deja := ech_essais_du_jour(p, p_jour);
   if deja >= 3 then raise exception 'Plus d''essai pour ce défi aujourd''hui : reviens demain.'; end if;
 
-  for e in select value from jsonb_array_elements(p_equipe) loop
-    cid := e ->> 'carte';
-    -- Une Reverse joue comme sa carte classique.
-    if cid ~ '^r[0-9]' then cid := 'c' || substr(cid, 2); end if;
-    if cid is null or not exists (select 1 from ech_joueurs where card_id = cid) then raise exception 'Ce n''est pas un Joueur.'; end if;
-    if cid = any(vus) then raise exception 'Un Joueur apparaît deux fois.'; end if;
-    vus := vus || cid;
-    if not exists (select 1 from collection where user_id = p and qty > 0
-                    and card_id in (cid, 'r' || substr(cid, 2))) then
-      raise exception 'Tu ne possèdes pas un des Joueurs choisis.';
-    end if;
-    natt := (select jsonb_array_length(attaques) from ech_joueurs where card_id = cid);
-    a := coalesce((e ->> 'a')::int, 0);
-    if a < 0 or (natt > 0 and a >= natt) or (natt = 0 and a <> 0) then raise exception 'Attaque inconnue.'; end if;
-    propre := propre || jsonb_build_array(jsonb_build_object('carte', cid, 'a', a));
-  end loop;
-
+  propre := ech_equipe_propre(p, p_equipe);
   insert into ech_essais (user_id, jour, equipe) values (p, p_jour, propre) returning id into eid;
   return jsonb_build_object('essai', eid, 'equipe', propre, 'restants', 2 - deja);
 end $$;
 
 -- -------------------------------------------------------------- terminer
 -- Rejoue le combat de l'essai avec le coup d'eclat choisi, garde la
--- meilleure note, paie. Rend { resultat, avant, gain: { eclats, boosters,
--- titre }, indice, etat, me }.
+-- meilleure note, paie, et fait avancer les quetes de l'evenement. Rend
+-- { resultat, avant, gain: { eclats, braises, boosters, titre }, indice,
+-- etat, me }.
 create or replace function public.ech_terminer(p_essai bigint, p_eclat jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); s ech_saison; es ech_essais; r jsonb; avant int; nouv int; k int; ec jsonb := null;
-  eclats int := 0; boosters int := 0; titre text := null; indice jsonb := null;
+  eclats int := 0; braises int := 0; boosters int := 0; titre text := null; indice jsonb := null;
   prix int[] := array[80, 80, 140];
+  prix_braises int[] := array[15, 15, 25];
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -523,17 +582,28 @@ begin
   avant := coalesce(avant, 0);
 
   if nouv > avant then
-    for k in (avant + 1)..nouv loop eclats := eclats + prix[k]; end loop;
+    for k in (avant + 1)..nouv loop eclats := eclats + prix[k]; braises := braises + prix_braises[k]; end loop;
     insert into ech_scores (user_id, jour, etoiles, equipe, tours)
     values (p, es.jour, nouv, es.equipe, (r ->> 'tours')::int)
     on conflict (user_id, jour) do update set etoiles = excluded.etoiles, equipe = excluded.equipe,
       tours = excluded.tours, le = now();
     perform accorder(p, 'eclats', eclats, null);
+    -- Les Braises, la monnaie de l'evenement (22e_echauffement-evenement.sql).
+    perform crediter_prismes(p, 'echauffement', braises);
   else
     insert into ech_scores (user_id, jour, etoiles, equipe, tours)
     values (p, es.jour, 0, es.equipe, (r ->> 'tours')::int)
     on conflict (user_id, jour) do nothing;
   end if;
+
+  -- Les quetes de l'evenement (04_seed.sql) : un combat de plus, une
+  -- victoire, un coup d'eclat qui a vraiment frappe ; puis ce qui se recompte.
+  perform bump_quests(p, 'ech_combat', 1);
+  if (r ->> 'gagne')::boolean then perform bump_quests(p, 'ech_victoire', 1); end if;
+  if exists (select 1 from jsonb_array_elements(r -> 'log') l where l ->> 1 = 'eclat') then
+    perform bump_quests(p, 'ech_eclat', 1);
+  end if;
+  perform ech_sync_quetes(p);
 
   -- Un indice : les trois etoiles, pour la premiere fois.
   if nouv = 3 and avant < 3 then
@@ -552,7 +622,7 @@ begin
   end if;
 
   return jsonb_build_object('resultat', r, 'avant', avant,
-    'gain', jsonb_build_object('eclats', eclats, 'boosters', boosters, 'titre', titre),
+    'gain', jsonb_build_object('eclats', eclats, 'braises', braises, 'boosters', boosters, 'titre', titre),
     'indice', indice, 'etat', ech_etat_de(p), 'me', me());
 end $$;
 
@@ -601,7 +671,8 @@ begin
   return jsonb_build_object('effaces', n, 'etat', ech_etat_de(p));
 end $$;
 
-revoke all on function public.ech_jour_ouvert, public.ech_simuler, public.ech_etat_de, public.ech_essais_du_jour
+revoke all on function public.ech_jour_ouvert, public.ech_simuler, public.ech_etat_de, public.ech_essais_du_jour,
+  public.ech_combat, public.ech_equipe_propre, public.ech_sync_quetes
   from public, anon, authenticated;
 revoke all on function public.ech_etat, public.ech_commencer, public.ech_terminer,
   public.ech_admin, public.ech_admin_rejouer from public, anon;

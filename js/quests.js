@@ -28,6 +28,9 @@ const QICO = {
   /* Version 2.0 : Reverses, Brillantes, Devine l'illu, invitations, personnalisation. */
   rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
   brill_ALL: 'promo', illu: 'illu', ev_visite: 'reflets', invite: 'amis', titre: 'user', perso: 'user',
+  /* Version 2.5 : L'Échauffement et son mode sans fin. */
+  ech_combat: 'sword', ech_victoire: 'trophy', ech_eclat: 'promo', ech_gagnes: 'sword', ech_parfaits: 'star',
+  ech_etoiles: 'star', ech_joueurs: 'cards', fab_rev: 'recycle', sf_victoire: 'sword',
   /* Version 2.1 : plusieurs exemplaires d'une même carte. */
   ex_R: 'cards', ex_E: 'cards', ex_L: 'coin'
 };
@@ -37,8 +40,10 @@ const questesDe = scope => (save.quetes || []).filter(q => q.scope === scope);
 const questePrete = q => !q.claimed && q.progress >= q.goal;
 
 /* Nombre de récompenses à encaisser : sert la pastille de la barre du bas. */
+/* Les quêtes d'un événement vivent dans son onglet, qui a sa pastille : on ne
+   les compte pas deux fois. */
 function questesPretes() {
-  return (save.quetes || []).filter(questePrete).length;
+  return (save.quetes || []).filter(q => !q.evenement && questePrete(q)).length;
 }
 
 const questesPretesDe = scope => questesDe(scope).filter(questePrete).length;
@@ -128,7 +133,7 @@ function notifQuete(q) {
   /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
      bannière de réussite donnerait l'impression d'un bug. */
   const gain = q.reward > 0
-    ? `${q.monnaie === 'prismes' ? prismeIco : shardIco}${fmtN(q.reward)}`
+    ? `${q.monnaie === 'prismes' ? evIco() : shardIco}${fmtN(q.reward)}`
     : q.item ? 'Récompense' : '';
   el.innerHTML = `<span class="qnico">${NAVICO.check}</span>
     <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
@@ -290,7 +295,7 @@ function vRecompense(q) {
     return `<span class="qreward objet titre" title="Titre ${h(t.nom)}">
       <span class="qrtitre t${t.ton}">${h(t.nom)}</span><small>Titre</small></span>`;
   }
-  if (q.monnaie === 'prismes') return `<span class="qreward prismes">${prismeIco}${fmtN(q.reward)}</span>`;
+  if (q.monnaie === 'prismes') return `<span class="qreward prismes">${evIco()}${fmtN(q.reward)}</span>`;
   const f = q.item ? FRAMES[q.item] : null;
   if (f) {
     return `<span class="qreward objet" title="Cadre ${h(f.nom)}">

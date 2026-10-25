@@ -417,6 +417,14 @@ Backend.echTerminer = async (essai, eclat) => {
   Backend.apply(r.me);
   return r;
 };
+/* Le mode sans fin (supabase/22f_sans-fin.sql) : le défi du jour, après la saison. */
+Backend.echSfEtat = () => Backend.rpc('ech_sf_etat');
+Backend.echSfCommencer = equipe => Backend.rpc('ech_sf_commencer', { p_equipe: equipe });
+Backend.echSfTerminer = async (essai, eclat) => {
+  const r = await Backend.rpc('ech_sf_terminer', { p_essai: essai, p_eclat: eclat || null });
+  Backend.apply(r.me);
+  return r;
+};
 Backend.illuEssai = async id => {
   const r = await Backend.rpc('illu_essai', { p_carte: id });
   Backend.apply(r.etat);
@@ -430,9 +438,11 @@ Backend.utiliserInvitation = async code => Backend.apply(await Backend.rpc('util
 Backend.mesCadeaux = () => Backend.rpc('mes_cadeaux');
 Backend.ouvrirCadeau = async id => Backend.apply(await Backend.rpc('ouvrir_cadeau', { p_id: id }));
 Backend.adminJoueurs = () => Backend.rpc('admin_joueurs');
-/* L'Échauffement, côté Labo : tout voir, et rejouer ses propres essais du jour. */
-Backend.echAdmin = () => Backend.rpc('ech_admin');
-Backend.echAdminRejouer = () => Backend.rpc('ech_admin_rejouer');
+/* Le Labo de la 2.5 (supabase/22d_admin.sql) : labo_etat, labo_calendrier…
+   pour tout le monde, labo_cartes, labo_monnaies… sur son propre compte.
+   Chaque fonction vérifie le droit d'administrateur ; le Labo (js/lab.js)
+   applique ce qu'elles rendent. */
+Backend.labo = (nom, args) => Backend.rpc(nom, args);
 Backend.offrirCadeau = c => Backend.rpc('offrir_cadeau', {
   p_joueurs: c.joueurs, p_eclats: c.eclats || 0, p_boosters: c.boosters || 0,
   p_fragments: c.fragments || 0, p_carte: c.carte || null, p_message: c.message || ''

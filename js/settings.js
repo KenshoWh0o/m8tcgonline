@@ -261,8 +261,6 @@ function bindReglages() {
     e.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); socAjouter(); } };
   });
 
-  const u = $('#unl');
-  if (u) u.onchange = () => { save.unlimited = u.checked; persist(); header(); };
 }
 
 async function changerPseudo() {

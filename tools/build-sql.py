@@ -35,6 +35,8 @@ MORCEAUX = [
     ('22b_echauffement.sql', 'Version 2.5 : L\'Echauffement, sept defis avant la suite'),
     ('22c_reverses.sql', 'Version 2.5 : les Reverses se recyclent et se fabriquent'),
     ('22d_admin.sql',  'Version 2.5 : le Labo (comptes et serveur), la date de sortie'),
+    ('22e_echauffement-evenement.sql', 'Version 2.5 : L\'Echauffement, un evenement (Braises, Pass, boutique)'),
+    ('22f_sans-fin.sql', 'Version 2.5 : L\'Echauffement continue, un defi par jour'),
 ]
 
 entete = """-- =====================================================================
@@ -97,8 +99,11 @@ open(sortie, 'w', encoding='utf-8').write(entete + ''.join(bloc) + fin)
 #   · les Reverses : me, recycler, fabriquer (07_vitrine.sql, 12_recyclage.sql)
 #     et 22c_reverses.sql ;
 #   · L'Echauffement (22b_echauffement.sql) ;
-#   · le Labo de la 2.5 et la date de sortie (22d_admin.sql), puis le
-#     calendrier.
+#   · le Labo de la 2.5 et la date de sortie (22d_admin.sql) ;
+#   · L'Echauffement devenu evenement (22e_echauffement-evenement.sql) et ses
+#     quetes et sa boutique (04_seed.sql, rejoue entier : ses donnees sont des
+#     mises a jour idempotentes), puis son mode sans fin (22f_sans-fin.sql) ;
+#   · le calendrier.
 # Les fichiers sont rejoues entiers : ils ne contiennent rien qu'une version
 # plus recente redefinirait ailleurs, et leurs donnees sont des mises a jour
 # idempotentes (verifie : le Pass de Reflets de la vraie base est celui du
@@ -106,8 +111,9 @@ open(sortie, 'w', encoding='utf-8').write(entete + ''.join(bloc) + fin)
 # La vraie base en a recu la premiere partie le 22 octobre 2026 (tout sauf
 # ech_admin_rejouer, 22d_admin.sql et la date de sortie dans me() : voir le
 # README, « Version 2.5 », Mise en ligne).
-MAJ_25 = ['03_rpc.sql', '07_vitrine.sql', '12_recyclage.sql', '21_reflets.sql',
-          '22b_echauffement.sql', '22c_reverses.sql', '22d_admin.sql', 'calendrier-2.5.sql']
+MAJ_25 = ['03_rpc.sql', '04_seed.sql', '07_vitrine.sql', '12_recyclage.sql', '21_reflets.sql',
+          '22b_echauffement.sql', '22c_reverses.sql', '22d_admin.sql', '22e_echauffement-evenement.sql',
+          '22f_sans-fin.sql', 'calendrier-2.5.sql']
 maj = os.path.join(SB, 'MAJ-2.5.sql')
 open(maj, 'w', encoding='utf-8').write(
     "-- Mate TCG Online — mise a jour 2.5, assemblee par tools/build-sql.py le %s.\n"

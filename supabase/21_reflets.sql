@@ -220,6 +220,10 @@ begin
     'code', ev,
     'solde', coalesce(cpt.solde, 0),
     'total', coalesce(cpt.total, 0),
+    -- Version 2.5 : sa place, pour qui n'est pas dans les dix.
+    'rang', case when coalesce(cpt.total, 0) > 0 then
+      (select count(*) + 1 from evt_comptes x where x.evenement = ev and x.total > cpt.total) end,
+    'joueurs', (select count(*) from evt_comptes x where x.evenement = ev and x.total > 0),
     'piste', coalesce((
       select jsonb_agg(jsonb_build_object(
                'palier', pa.palier, 'seuil', pa.seuil, 'type', pa.type, 'montant', pa.montant,

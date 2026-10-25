@@ -148,7 +148,7 @@ function vTiroir() {
         <small>booster${save.tickets > 1 ? 's' : ''}</small></span>
       <span class="sac">${shardIco}<b>${fmtN(save.shards)}</b><small>${MONNAIE.nom}</small></span>
       ${jetons ? `<span class="sac"><img src="${ART.jeton}" alt=""><b>${jetons}</b><small>jeton${jetons > 1 ? 's' : ''}</small></span>` : ''}
-      ${evenementEnCours() ? `<span class="sac prismes">${prismeIco}<b>${fmtN(save.prismes || 0)}</b><small>${PRISMES.nom}</small></span>` : ''}
+      ${evenementEnCours() ? `<span class="sac prismes">${evIco()}<b>${fmtN(save.prismes || 0)}</b><small>${PRISMES.nom}</small></span>` : ''}
     </div>
 
     <ul class="tiroir-liste">
@@ -267,6 +267,7 @@ function render() {
 
   if (tab === 'boosters') bindPack();
   if (tab === 'reflets') placerPass();
+  if (tab === 'combats' && typeof echPlacerPass === 'function') echPlacerPass();
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
@@ -323,7 +324,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-ech]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-lab],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-ech]');
   if (!el) return;
   const d = el.dataset;
 
@@ -331,6 +332,8 @@ async function clicPage(e) {
   /* L'Échauffement (js/echauffement.js). */
   if (d.ech) return echAction(d.ech, el);
   if (d.labv) { labVue = d.labv; return render(); }
+  /* Le Labo (js/lab.js) : le serveur, son compte. */
+  if (d.lab) return labAction(d.lab, el);
   /* Version 2.0 */
   if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
   if (d.palier) return reclamerPalier(+d.palier);
@@ -380,7 +383,7 @@ async function clicPage(e) {
 
   /* Quêtes, boutique, échanges */
   if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.')
-    .then(ok => { if (ok && tab === 'reflets') chargerReflets(); });
+    .then(ok => { if (ok && tab === 'reflets') chargerReflets(); if (ok && tab === 'combats') chargerEch(); });
   if (d.trep) return trRepondre(d.trep, d.ok === '1');
   if (d.gdef) return reglerGardeDefaut(d.gdef, +d.n);
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
@@ -468,40 +471,19 @@ async function clicPage(e) {
       if (!(echData && echData.apercu) && !echActif()) labEchApercu(false);
       return echData && montrerEchAnnonce();
     case 't-ech-indices': return labEchIndices();
-    case 't-ech-rejouer': return labEchRejouer();
+    case 't-ech-final': return labEchFinal();
+    case 't-ech-sf': return labEchApercuApres(false);
+    case 't-ech-recap': return labEchApercuApres(true);
     case 't-v2-recap': apercuRecap(); return aller('reflets');
     case 't-v2-recap-pop': apercuRecap(); return montrerRecap();
     case 't-v2-recap-ban': apercuRecap(); return aller('boosters');
     case 'recap-quitter': return quitterApercuRecap();
     case 't-partage':
       return partagerTirage({ ids: makeBooster(poolFor(), false).map(c => c.id), quand: new Date().toISOString() });
-    case 't-fragments':
-      save.fragments = (save.fragments || 0) + 5000; render();
-      return toast(`+5 000 ${FRAGMENTS.nom} (affichage seulement).`);
-    case 't-succes':
-      save.succes = SUCCES.map(x => x.id); render();
-      return toast('Tous les succès (affichage seulement).');
     case 't-ev-reel': return labEtatReel();
     case 't-joueurs': return labChargerJoueurs();
     case 'cadeau-offrir': return labOffrirCadeau();
     case 't-cadeau': return labApercuCadeau();
-    case 't-all':
-      cards.concat(brillantes).forEach(c => save.col[c.id] = Math.max(2, save.col[c.id] || 0));
-      persist(); toast('Toutes les cartes sont débloquées (affichage seulement).');
-      return render();
-    case 't-clear':
-      return openSheet({
-        title: 'Vider ta collection ?',
-        body: '<p class="muted">Les cartes du jeu restent, mais tu ne possèdes plus aucun exemplaire.</p>',
-        actions: [
-          { label: 'Vider', primary: true, fn: () => { save.col = {}; persist(); closeSheet(); render(); toast('Collection vidée.'); } },
-          { label: 'Annuler', fn: closeSheet }
-        ]
-      });
-    case 't-10':
-      save.tickets += 10; persist(); render();
-      return toast('+10 boosters (affichage seulement).');
-    case 't-90': return testRemplir(90);
     case 't-promo-file': return testFilePromos();
     case 't-quete': return testQuete();
     case 't-ping': return testPing();

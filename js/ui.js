@@ -190,6 +190,14 @@ const shardIco = '<svg class="shard" viewBox="0 0 24 24" aria-hidden="true"><pat
 /* Le Prisme, monnaie de l'événement (version 2.0). */
 const prismeIco = '<svg class="prismeico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="prg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7cc8"/><stop offset=".5" stop-color="#b38cff"/><stop offset="1" stop-color="#7fd8ff"/></linearGradient></defs><path d="M12 2.5 21 18.5H3Z" fill="url(#prg)"/><path d="M12 2.5 9.4 18.5h5.2Z" fill="#fff" opacity=".35"/></svg>';
 
+/* La Braise, monnaie de L'Échauffement (version 2.5) : une flamme lavande,
+   les couleurs de l'événement, et son cœur chaud. Lisible à 14 px : une
+   forme franche, deux tons. */
+const braiseIco = '<svg class="prismeico braiseico" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="brg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffcf8a"/><stop offset=".45" stop-color="#c8b4ff"/><stop offset="1" stop-color="#8a78f5"/></linearGradient></defs><path d="M12 2.4c1.6 3.5 6.2 5.7 6.2 11.1a6.2 6.2 0 0 1-12.4 0c0-2.7 1.3-4.5 2.8-5.8.1 2 .9 3.2 2.1 3.5-.5-3.1.1-6 1.3-8.8Z" fill="url(#brg)"/><path d="M12 12.4c1.5 1.5 2.7 2.7 2.7 4.5a2.7 2.7 0 0 1-5.4 0c0-1.6 1.1-3 2.7-4.5Z" fill="#fff4dc" opacity=".92"/></svg>';
+
+/* L'icône de la monnaie de l'événement en cours (MONNAIES_EV, js/config.js). */
+const evIco = () => (evMonnaieCode() === 'echauffement' ? braiseIco : prismeIco);
+
 /* Les milliers sont séparés par une espace insécable : « 2 000 » ne se coupe
    jamais en fin de ligne. */
 const fmtN = n => String(n == null ? 0 : n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');

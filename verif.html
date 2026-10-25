@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#0c0910">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=2.5-1c8c4c">
-<link rel="stylesheet" href="css/base.css?v=2.5-1c8c4c">
+<link rel="stylesheet" href="css/tokens.css?v=2.5-198119">
+<link rel="stylesheet" href="css/base.css?v=2.5-198119">
 <style>
 /* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
 body{display:block;height:auto;min-height:100%}
@@ -71,8 +71,8 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="js/config.js?v=2.5-1c8c4c"></script>
-<script src="js/supabase-config.js?v=2.5-1c8c4c"></script>
+<script src="js/config.js?v=2.5-198119"></script>
+<script src="js/supabase-config.js?v=2.5-198119"></script>
 <script>
 "use strict";
 
@@ -270,6 +270,18 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
           faire: `Colle <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> (ou <code>supabase/TOUT.sql</code> en entier).` }
       : { etat: 'ok', titre: 'L\'Échauffement (2.5) est installé' });
   }
+  /* Le 24 octobre 2026, L'Échauffement est devenu un événement (Braises,
+     Pass, quêtes, boutique : 22e_echauffement-evenement.sql) et a reçu son
+     mode sans fin (22f_sans-fin.sql). Une MAJ-2.5.sql collée avant n'a ni
+     l'un ni l'autre : l'onglet Combats reste alors aux seuls défis. */
+  {
+    const { error } = await sb.rpc('ech_sf_etat');
+    poser(error && (error.code === 'PGRST202' || /could not find the function/i.test(error.message || ''))
+      ? { etat: 'ko', titre: 'L\'événement de la 2.5 et son mode sans fin ne sont pas installés',
+          detail: 'La fonction <code>ech_sf_etat()</code> manque : la <code>supabase/MAJ-2.5.sql</code> collée date d\'avant le 24 octobre 2026 (sans Braises, Pass ni défi du jour).',
+          faire: 'Recolle la dernière <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' }
+      : { etat: 'ok', titre: 'L\'événement de la 2.5 (Braises, Pass) et son mode sans fin sont installés' });
+  }
 
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');
@@ -300,6 +312,17 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
             faire: `Pour te les donner : ouvre <code>supabase/05_admin.sql</code>, remplace
               l’adresse par <code>${E(session.user.email || '')}</code>, et exécute-le dans le
               <b>SQL Editor</b>. Étape 7 de <code>SETUP.md</code>.` });
+      /* La version 2.5 : le Labo et la date de sortie (supabase/22d_admin.sql),
+         vérifiables seulement par un administrateur. */
+      if (data && data.is_admin) {
+        const { error: le } = await sb.rpc('labo_etat');
+        poser(le && (le.code === 'PGRST202' || /could not find the function/i.test(le.message || ''))
+          ? { etat: 'ko', titre: 'Le Labo de la 2.5 n\'est pas installé',
+              detail: 'La fonction <code>labo_etat()</code> manque : <code>supabase/MAJ-2.5.sql</code> n\'a pas été jouée en entier.',
+              faire: 'Colle <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' }
+          : le ? { etat: 'warn', titre: 'Le Labo répond mal', detail: E(le.message || '') }
+          : { etat: 'ok', titre: 'Le Labo de la 2.5 est installé' });
+      }
       /* La version 2.5 : les Reverses (supabase/22c_reverses.sql). Une
          MAJ-2.5.sql collée avant leur ajout installe L'Échauffement mais pas
          elles : seul me() le dit, et seulement à un compte connecté. */

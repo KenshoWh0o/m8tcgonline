@@ -213,6 +213,11 @@ const TITRES = {
   t_maitre:    { nom: 'Maître de l\'extension',    ton: 'L',  comment: 'Posséder les 122 cartes' },
   t_reflet:    { nom: 'Miroir parfait',            ton: 'L',  comment: 'Réunir les 85 Reverses' },
   t_echauffe:  { nom: 'Échauffé',                  ton: 'E',  comment: 'Les 21 étoiles de L\'Échauffement' },
+  /* Version 2.5 : L'Échauffement devenu événement (supabase/22e_echauffement-evenement.sql). */
+  t_ech_round: { nom: 'Premier round',             ton: 'EV', comment: 'Palier 5 du Pass de L\'Échauffement' },
+  t_ech_feu:   { nom: 'Feu sacré',                 ton: 'EV', comment: 'Palier 15 du Pass de L\'Échauffement' },
+  t_ech_entraineur: { nom: 'Entraîneur',           ton: 'EV', comment: 'Boutique de l\'événement « L\'Échauffement »' },
+  t_ech_infatigable: { nom: 'Infatigable',         ton: 'E',  comment: 'Gagner 10 défis du jour, après L\'Échauffement' },
   t_eclaireur: { nom: 'Éclaireur des Reflets',     ton: 'EV', comment: 'Palier 3 du Pass Reflets' },
   t_collect:   { nom: 'Collectionneur de Reflets', ton: 'EV', comment: 'Boutique de l\'événement « Reflets »' },
   t_ame:       { nom: 'Âme des Reflets',           ton: 'EV', comment: 'Palier 19 du Pass Reflets' },
@@ -222,8 +227,25 @@ const TITRES = {
 
 /* La monnaie d'un événement (supabase/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
-   avancer son Pass de récompenses. */
-const PRISMES = { nom: 'Prismes', un: 'Prisme' };
+   avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
+   de Reflets (2.0), les Braises de L'Échauffement (2.5). Le serveur les range
+   toutes au même endroit (evt_comptes) et les appelle toutes `prismes` ;
+   seuls le nom et l'icône (evIco, js/ui.js) changent. `PRISMES` suit
+   l'événement en cours, ou celui dont on lit le récap. (La même chose que la
+   3.0, qui y ajoute ses Étincelles.) */
+const MONNAIES_EV = {
+  reflets: { nom: 'Prismes', un: 'Prisme' },
+  echauffement: { nom: 'Braises', un: 'Braise' }
+};
+const evMonnaieCode = () => {
+  const ev = typeof evenementEnCours === 'function' ? evenementEnCours() : null;
+  const r = typeof save !== 'undefined' && save && save.recap ? save.recap.code : null;
+  return MONNAIES_EV[ev] ? ev : MONNAIES_EV[r] ? r : 'reflets';
+};
+const PRISMES = {
+  get nom() { return MONNAIES_EV[evMonnaieCode()].nom; },
+  get un() { return MONNAIES_EV[evMonnaieCode()].un; }
+};
 
 /* Cadres d'avatar vendus en boutique. La clé est l'identifiant de public.shop_items. */
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
@@ -247,7 +269,11 @@ const FRAMES = {
   f_reflet: { nom: 'Reflet', fx: 'reflet', vente: false, c1: '#ffd3ec', c2: '#cfeeff' },
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
-  f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' }
+  f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
+  /* Version 2.5 : le Pass de L'Échauffement (paliers 10 et 20), aux couleurs
+     de l'événement — graphite et lavande, et le cœur chaud d'une braise. */
+  f_braise: { nom: 'Braise', fx: 'braise', vente: false, c1: '#ffcf8a', c2: '#8a78f5' },
+  f_ardeur: { nom: 'Ardeur', fx: 'ardeur', vente: false, c1: '#c8bfff', c2: '#5d4bd9' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
@@ -278,7 +304,7 @@ const TRADE_COOLDOWN_H = 6;
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
-  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Bientôt : la version 3.0' },
+  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'L\'Échauffement, en attendant la 3.0' },
   /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, il prend la
      place de Combats dans la barre (navHTML, js/app.js). */
   { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets', online: true },

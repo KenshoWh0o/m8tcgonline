@@ -187,6 +187,9 @@ begin
   insert into collection (user_id, card_id, qty) values (p, p_carte, 1)
     on conflict (user_id, card_id) do update set qty = collection.qty + 1;
 
+  -- Version 2.5 : la quete de L'Echauffement « Une Reverse fabriquee »
+  -- (04_seed.sql).
+  if k.reverse then perform bump_quests(p, 'fab_rev', 1); end if;
   perform sync_collection_quests(p);
   perform check_promos(p);
   return me();
