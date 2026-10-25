@@ -450,6 +450,7 @@ function vLabApercus() {
       <button class="labbtn" data-act="t-ech-complet"><b>Tout gagné</b><span>21 étoiles, les huit indices</span></button>
       <button class="labbtn" data-act="t-ech-annonce"><b>Son annonce</b><span>la fenêtre de l'événement</span></button>
       <button class="labbtn" data-act="t-ech-indices"><b>Les indices</b><span>les huit, avec leur texte</span></button>
+      <button class="labbtn" data-act="t-ech-final"><b>Le dernier mot</b><span>la révélation des 21 étoiles</span></button>
       <button class="labbtn" data-act="t-ech-sf"><b>Le défi du jour</b><span>après la saison, sans limite d'essais</span></button>
       <button class="labbtn" data-act="t-ech-recap"><b>Son récap</b><span>la page et la fenêtre de fin, chiffres inventés</span></button>
     </div>
@@ -620,6 +621,14 @@ async function labEchIndices() {
         <span><small>${x.jour ? 'Défi ' + x.jour : 'Les sept'}</small><b>${h(x.titre)}</b><em>${h(x.texte)}</em></span></div>`).join('')}</div>`,
     actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
   });
+}
+
+/* La révélation des 21 étoiles, avec les indices du serveur. */
+async function labEchFinal() {
+  if (!labEtat || !labEtat.echauffement) { await labCharger(); }
+  const E = labEtat && labEtat.echauffement;
+  if (!E) return toast('Les données de L\'Échauffement ne sont pas chargées.');
+  montrerDernierMot(E.indices);
 }
 
 async function labEtatReel() {

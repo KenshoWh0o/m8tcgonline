@@ -1437,7 +1437,7 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
    blocs. Tous prennent les fonds, les textes et les boutons du site (jetons
    `--e-*` posés sur ceux de css/tokens.css) ; l'événement n'y ajoute que ses
    couleurs : la lavande de la suite et la braise. */
-.ech,.ech-rf,.ech-scene,.ech-rfban,.ech-annonce,.ech-ind-grand,.ech-picks,.ech-tri,.labinds{
+.ech,.ech-rf,.ech-scene,.ech-rfban,.ech-annonce,.ech-ind-grand,.ech-final,.ech-picks,.ech-tri,.labinds{
   --e-bg:var(--bg);--e-s1:var(--surface);--e-s2:var(--surface-2);--e-s3:var(--surface-3);--e-creux:var(--bg-2);
   --e-l1:var(--line);--e-l2:var(--line-2);--e-l3:var(--line-3);
   --e-txt:var(--text);--e-sub:var(--subtle);--e-mut:var(--muted);
@@ -1514,6 +1514,29 @@ button.ech-case{cursor:pointer}
 .ech-ind-grand .ech-iv.eventail{width:170px}
 .ech-ind-grand b{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--e-acc2)}
 .ech-ind-grand p{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.2}
+
+/* La révélation des 21 étoiles (montrerDernierMot) : les sept indices en
+   éventail, le dernier mot qui se retourne ; son texte n'apparaît qu'après. */
+.ech-final{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 6px;padding:18px 14px 16px;border-radius:22px;text-align:center;color:var(--text);
+  background:radial-gradient(90% 60% at 50% 38%,rgba(255,179,92,.16),transparent 70%),radial-gradient(100% 80% at 50% 25%,#3b2f7a,var(--surface) 75%)}
+.ech-final-sept{display:flex;justify-content:center;height:74px;padding-top:4px}
+.ech-final-sept .ech-ind{flex:0 0 44px;width:44px;margin:0 -5px;transform-origin:50% 120%;transform:translateY(var(--y)) rotate(calc(var(--k) * 8deg));
+  box-shadow:inset 0 0 0 1px rgba(200,191,255,.35),0 6px 14px rgba(0,0,0,.45)}
+.ech-final:not(.vu) .ech-final-sept .ech-ind{animation:ech-final-sept .6s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc((var(--k) + 3) * 70ms)}
+@keyframes ech-final-sept{from{opacity:0;transform:translateY(30px) rotate(0)}}
+.ech-final-carte{padding:0;border:0;background:none;cursor:pointer}
+.ech-final-carte{display:block}
+.ech-final .ech-flip{display:block;flex:none;width:118px;perspective:800px}
+.ech-final .ech-flip>span{border-radius:9px}
+.ech-final .ech-flip .face{--fmax:30px}
+.ech-final.vu .ech-flip{filter:drop-shadow(0 0 18px rgba(255,179,92,.45)) drop-shadow(0 10px 22px rgba(0,0,0,.5))}
+.ech-final:not(.vu) .ech-flip{animation:ech-appel 1.6s ease-in-out infinite}
+.ech-final>small{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c8bfff}
+.ech-final-titre{font-family:var(--display);font-stretch:110%;font-style:italic;font-weight:900;font-size:24px;line-height:1.1;padding-right:.1em;
+  background:linear-gradient(100deg,#fff,#ffe1bf 40%,#d9d0ff 75%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ech-final-txt{margin:0;font-size:14px;line-height:1.4;color:var(--subtle)}
+.ech-final>small,.ech-final-titre,.ech-final-txt{transition:opacity .45s .35s,transform .45s .35s}
+.ech-final:not(.vu)>small,.ech-final:not(.vu) .ech-final-titre,.ech-final:not(.vu) .ech-final-txt{opacity:0;transform:translateY(8px)}
 
 /* Une jauge : l'or pour ce qui paie, la lavande pour le Pass. */
 .ech-rj{display:block;width:100%;height:8px;border-radius:999px;overflow:hidden;background:var(--e-creux);box-shadow:inset 0 0 0 1px var(--e-l1)}
@@ -1990,8 +2013,8 @@ button.ech-a.on i{color:var(--e-acc2)}
 @media (prefers-reduced-motion:reduce){.frappe .ech-sc-carte,.touche .ech-sc-carte,.attaque .ech-sc-carte,.bloque .ech-sc-carte,.ech-flot.go,.ech-sc-j.pret .ech-sc-carte,
   .touche .ech-eclat,.eclate .ech-eclat,.ech-sc-indice .ech-flip,.ech-sc-j.ko .ech-ko,
   .ech-scene.gagne::before,.ech-scene.secousse .ech-sc,.ech-sc-fin.on .ech-sc-verdict,.ech-fin-case.posee b,.ech-tampon.posee,.ech-sc-indice.invite,
-  .ech-scene.intro .ech-sc-vs,.ech-scene.intro .ech-sc-adv,.ech-scene.intro .ech-sc-j{animation:none}}
+  .ech-scene.intro .ech-sc-vs,.ech-scene.intro .ech-sc-adv,.ech-scene.intro .ech-sc-j,.ech-final .ech-ind,.ech-final .ech-flip{animation:none}}
 html.rm .frappe .ech-sc-carte,html.rm .touche .ech-sc-carte,html.rm .attaque .ech-sc-carte,html.rm .bloque .ech-sc-carte,html.rm .ech-sc-j.pret .ech-sc-carte,
 html.rm .ech-sc-indice .ech-flip,html.rm .ech-sc-j.ko .ech-ko,html.rm .ech-scene.gagne::before,html.rm .ech-scene.secousse .ech-sc,
 html.rm .ech-sc-fin.on .ech-sc-verdict,html.rm .ech-fin-case.posee b,html.rm .ech-tampon.posee,html.rm .ech-sc-indice.invite,
-html.rm .ech-scene.intro .ech-sc-vs,html.rm .ech-scene.intro .ech-sc-adv,html.rm .ech-scene.intro .ech-sc-j{animation:none}
+html.rm .ech-scene.intro .ech-sc-vs,html.rm .ech-scene.intro .ech-sc-adv,html.rm .ech-scene.intro .ech-sc-j,html.rm .ech-final .ech-ind,html.rm .ech-final .ech-flip{animation:none}

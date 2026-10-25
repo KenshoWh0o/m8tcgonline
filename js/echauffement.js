@@ -269,6 +269,43 @@ function montrerIndice(j) {
   });
 }
 
+/* La révélation finale, après le combat qui donne la 21ᵉ étoile : les sept
+   indices en éventail, le dernier mot qui se retourne au milieu (tout seul
+   au bout d'un instant, ou d'un toucher). Rien n'est versé ici (le titre
+   « Échauffé » l'a été par ech_terminer) ; le Labo la montre avec les
+   indices du serveur (liste). Avec le mouvement réduit, tout est posé. */
+function montrerDernierMot(liste) {
+  const l = liste || echData.indices || [];
+  const fin = l.find(x => x.jour === 0);
+  if (!fin) return;
+  const sept = [1, 2, 3, 4, 5, 6, 7].map(j => l.find(x => x.jour === j)).filter(Boolean);
+  const reduit = RM() || document.documentElement.classList.contains('rm');
+  openSheet({
+    title: 'Les 21 étoiles',
+    body: `<div class="ech-final${reduit ? ' vu' : ''}">
+        <div class="ech-final-sept" aria-hidden="true">${sept.map((x, k) => `<span class="ech-ind ouvert" style="--k:${k - 3};--y:${Math.abs(k - 3) * 5}px">${vIndiceVisuel(x)}</span>`).join('')}</div>
+        <button class="ech-final-carte" aria-label="Retourner le dernier mot"><span class="ech-flip"><span class="dos"><img src="${ART.back}" alt=""></span><span class="face">${vIndiceVisuel(fin)}</span></span></button>
+        <small>Les sept défis, à trois étoiles</small>
+        <b class="ech-final-titre">${h(fin.titre)}</b>
+        <p class="ech-final-txt">${h(fin.texte)}</p>
+      </div>`,
+    actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
+  });
+  const el = document.querySelector('#sheet .ech-final');
+  if (!el || reduit) { if (typeof SFX === 'object') SFX.jouer('gagne'); return; }
+  let t = null;
+  const retourner = () => {
+    if (el.classList.contains('vu')) return;
+    clearTimeout(t);
+    el.classList.add('vu');
+    if (typeof SFX === 'object') SFX.jouer('legend');
+    if (typeof vibrer === 'function') vibrer([20, 40, 20]);
+    if (typeof FX === 'object') FX.sparkle({ n: 110, colors: ['#ffb35c', '#ffd9a8', '#c8bfff', '#8a78f5', '#fff'], size: 3.2 });
+  };
+  el.querySelector('.ech-final-carte').addEventListener('click', retourner);
+  t = setTimeout(retourner, 1300);
+}
+
 /* ---------- L'onglet : l'en-tête et les sous-onglets ---------- */
 /* La charpente de Reflets (css/reflets.css : .rf, .rf-tete, .rf-onglets,
    .rf-page, .rf-tuile, .rf-pass, .rf-art, .rf-top, .rr-*), comme Le Choc de la
@@ -989,6 +1026,7 @@ function echScene(d, equipe, essai) {
   };
 
   const fin = v.querySelector('.ech-sc-fin');
+  let dernierMot = false;
   const terminer = async () => {
     fin.innerHTML = '<b class="ech-sc-verdict">…</b>';
     fin.hidden = false; requestAnimationFrame(() => fin.classList.add('on'));
@@ -1005,6 +1043,7 @@ function echScene(d, equipe, essai) {
     const res = r.resultat;
     if (res.etoiles !== c.fin.etoiles) console.warn('Échauffement : le serveur et la page ne sont pas d\'accord', res, c.fin);
     const g = r.gain || {};
+    dernierMot = !d.sf && g.titre === 't_echauffe';
     /* Les gains, qui défilent : [montant, nom, icône]. */
     const gains = [];
     if (g.eclats) gains.push([g.eclats, MONNAIE.nom, shardIco]);
@@ -1047,6 +1086,8 @@ function echScene(d, equipe, essai) {
       render();
       /* Des Braises et des quêtes ont pu bouger : le Pass suit. */
       if (essai != null && !d.sf) chargerEch(true);
+      /* La 21e étoile : le dernier mot, en grand. */
+      if (dernierMot) setTimeout(() => montrerDernierMot(), 350);
     }
   });
   jouer();

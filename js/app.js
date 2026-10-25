@@ -471,6 +471,7 @@ async function clicPage(e) {
       if (!(echData && echData.apercu) && !echActif()) labEchApercu(false);
       return echData && montrerEchAnnonce();
     case 't-ech-indices': return labEchIndices();
+    case 't-ech-final': return labEchFinal();
     case 't-ech-sf': return labEchApercuApres(false);
     case 't-ech-recap': return labEchApercuApres(true);
     case 't-v2-recap': apercuRecap(); return aller('reflets');
