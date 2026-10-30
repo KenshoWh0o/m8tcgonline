@@ -163,8 +163,8 @@ function vChAccueil() {
   return `<section class="rf-jour">
       <h3 class="rf-sous">Aujourd'hui</h3>
       <div class="rf-tuiles ch-tuiles">
-        ${tuile('raid', NAVICO.foudre, r ? `Raid ${r.n} · ${h(rdBoss(r).nom)}` : 'Le Raid', r ? (rdInfini(r) ? 'Mode Infini' : `Phase ${r.phase} sur ${RAID.phases.length}`) : '…',
-          coffres ? `${coffres} coffre${coffres > 1 ? 's' : ''} à ouvrir` : tr ? `${tr} tentative${tr > 1 ? 's' : ''} aujourd'hui` : 'Reviens demain', coffres > 0 || tr > 0)}
+        ${tuile('raid', NAVICO.foudre, r ? `Raid ${r.n}` : 'Le Raid', r ? (rdInfini(r) ? 'Mode Infini' : `Phase ${r.phase}/${RAID.phases.length}`) : '…',
+          `${r ? h(rdBoss(r).nom) + ' · ' : ''}${coffres ? `${coffres} coffre${coffres > 1 ? 's' : ''} à ouvrir` : tr ? `${tr} tentative${tr > 1 ? 's' : ''}` : 'reviens demain'}`, coffres > 0 || tr > 0)}
         ${tuile('epreuve', NAVICO.epreuve, chEtat.n ? `Épreuve ${chEtat.n} sur ${chEtat.jours || CHOC.epreuve.calendrier.length}` : 'Épreuve du jour', h(regle.nom),
           ep.gagnee ? 'Gagnée aujourd\'hui' : er ? `${er} essai${er > 1 ? 's' : ''} restant${er > 1 ? 's' : ''}` : 'Terminée', er > 0 && !ep.gagnee)}
         ${tuile('quetes', NAVICO.quest, 'Quêtes du jour', `${qFaites} / ${qj.length}`,

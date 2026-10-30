@@ -235,9 +235,32 @@ function trierQuetes(l) {
 function vListeQuetes(liste, cle) {
   const l = trierQuetes(liste);
   const faites = l.filter(q => q.claimed);
-  return `<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
+  /* Plusieurs récompenses à prendre : un seul geste (version 3.0.11). */
+  const prets = l.filter(questePrete);
+  const tout = prets.length > 1 ? `<button class="btn rf-tout qtout" data-act="quetes-tout" data-ids="${prets.map(q => h(q.id)).join(',')}" data-snd="piece">${NAVICO.check}Tout récupérer · ${prets.length} quêtes</button>` : '';
+  return `${tout}<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
     ${faites.length ? `<details class="qfaites" data-garde="qfaites-${cle || 'liste'}"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
       <div class="questlist">${faites.map(q => vQuete(q)).join('')}</div></details>` : ''}`;
+}
+
+/* « Tout récupérer » (version 3.0.11) : les quêtes prêtes d'une liste, une
+   à une côté serveur (claim_quest : le serveur revérifie chacune), et un
+   seul message à la fin plutôt qu'un par quête. */
+async function recupererQuetes(ids) {
+  if (!ids.length) return;
+  occupe(true);
+  let n = 0;
+  try {
+    for (const id of ids) { await Backend.claimQuest(id); n++; }
+  } catch (e) {
+    toast(e.message || 'Une récompense n\'est pas passée.');
+  } finally {
+    occupe(false);
+  }
+  if (n) { SFX.jouer('gagne'); toast(`${n} récompense${n > 1 ? 's' : ''} encaissée${n > 1 ? 's' : ''}.`); }
+  render();
+  if (tab === 'choc' && typeof chargerChoc === 'function') chargerChoc();
+  if (tab === 'reflets' && typeof chargerReflets === 'function') chargerReflets();
 }
 
 /* Les quêtes de saison, par thème. Les paliers d'une même mesure (25, 50,

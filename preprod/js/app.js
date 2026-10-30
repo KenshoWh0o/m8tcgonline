@@ -507,6 +507,7 @@ async function clicPage(e) {
     case 'open': return openBooster();
     case 'open-bonus': return openBooster({ bonus: true });
     /* Version 3.0.11 : dix au plus d'un coup, un seul récap (js/opening.js). */
+    case 'quetes-tout': return recupererQuetes((el.dataset.ids || '').split(',').filter(Boolean));
     case 'open-tout': return ouvrirTout();
     case 'nouveautes': return montrerNouveautes();
     /* Version 3.0.11 : l'échange des Essences Brillantes, depuis l'onglet du

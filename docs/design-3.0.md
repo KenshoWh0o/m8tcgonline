@@ -230,6 +230,13 @@ rendait la carte floue.
 - **Fermer d'un geste** : dans l'arène, tout ce qui flotte se referme en touchant à côté (le flou, le vide, le voile). C'est la règle des feuilles du site, étendue à l'arène.
 - **Les filtres sur téléphone** : une rangée par critère, qui glisse de côté, l'intitulé à gauche ; sur ordinateur, les rangées passent à la ligne, faute de geste pour glisser.
 
+## 10 ter. Version 3.0.11 : la maîtrise, les icônes
+
+- **La maîtrise** (refaite : la 3.0.8 était « soit trop sobre soit too much et trop cheap », et son joyau du niveau V « horrible »). Chaque niveau ajoute une **finition** qu'on reconnaît d'un coup d'œil, comme les versions premium d'une carte imprimée : I **Satin** (un vernis, une lumière qui glisse), II **Liseré** (un bord de métal biseauté à la couleur de l'Essence), III **Holo** (l'illustration holographique, une bande prismatique en `overlay` qui colore sans brûler), IV **Lumière** (une lumière fait le tour du liseré, des étincelles montent, un halo fixe), V **Légende** (le liseré prismatique, trois étoiles du logo qui scintillent, le halo qui respire). Plus d'or ni de joyau : l'or reste aux récompenses. Rien ne s'anime que par `transform` et `opacity`, jamais sous un `filter` (la 3.0.8 faisait tomber la fiche à 20 images par seconde).
+- **L'insigne de maîtrise** : l'étoile du logo et le chiffre romain, sur une pastille graphite ; l'étoile s'éclaire du gris à la lavande pâle (la famille du décor, pas celle de l'action), et prend au V le prisme des Secrètes. Plus de pastille jaune.
+- **Les icônes de l'app, le favicon et l'image de partage** passent au graphite et à la lavande : l'étoile du logo en dégradé du blanc à la lavande, sur le graphite éclairé d'une lueur lavande ; l'image de partage garde le logo du jeu à ses couleurs (la marque ne sert plus qu'au logo), avec cinq Légendaires en éventail et une phrase en Archivo italique.
+- **L'en-tête mobile** : plus de fondu flou sous l'en-tête ; une bande de verre nette apparaît seulement quand la page passe dessous.
+
 ## 11. Sources
 
 Consultées pendant la refonte. Les captures de jeux sont des observations
