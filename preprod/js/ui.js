@@ -48,7 +48,7 @@ $('#sheet').addEventListener('click', e => {
     for (; el && el !== w; el = el.parentElement) if (el.scrollTop > 0) return true;
     return false;
   };
-  const sansAnim = () => RM() || document.documentElement.classList.contains('rm');
+  const sansAnim = RM;
 
   w.addEventListener('touchstart', e => {
     g = null;

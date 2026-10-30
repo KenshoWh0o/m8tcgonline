@@ -82,7 +82,8 @@ function ouvrirDefi(d) {
   } catch (err) {
     return toast('Ce défi ne peut pas être rejoué : ' + err.message);
   }
-  defiActif = { id: d.id, moi: d.moi, n: (d.actions || []).length, poll: null };
+  arreterDefi();
+  defiActif = { id: d.id, moi: d.moi, n: (d.actions || []).length, poll: null, file: Promise.resolve() };
   const adv = d.adversaire || {};
   Table.ouvrir({
     E: E.journal.length || E.fin ? E : null, init: d.init,
@@ -93,10 +94,15 @@ function ouvrirDefi(d) {
     titre: `Défi · ${adv.nom || ''}`, sousTitre: 'Entre amis · 60 secondes par tour',
     /* Soixante secondes par tour : pas d'attente sans fin (js/combat/table.js). */
     minuteur: 60,
+    /* Le compte avance tout de suite (la relève demande la suite à partir de
+       lui, sans reprendre ses propres actions), mais les envois partent un à
+       un, dans l'ordre : le serveur n'accepte que l'action suivante (p_n). */
     surAction: (a, E2, deMoi) => {
       if (!deMoi || !defiActif) return;
-      const n = defiActif.n++;
-      Backend.defiJouer(defiActif.id, n, a).catch(err => toast('Action non transmise : ' + (err.message || err)));
+      const D = defiActif, n = D.n++;
+      D.file = D.file
+        .then(() => (defiActif === D && !D.reprise ? Backend.defiJouer(D.id, n, a) : null))
+        .catch(err => { toast('Action non transmise : ' + (err.message || err)); reprendreDefi(D); });
     },
     surFin: async (E2, gagne) => {
       arreterDefi();
@@ -132,4 +138,27 @@ function ecouterDefi() {
 function arreterDefi() {
   if (defiActif) clearInterval(defiActif.poll);
   defiActif = null;
+}
+
+/* Une action que le serveur n'a pas prise (le réseau, un refus) : toutes les
+   suivantes le seraient aussi (« Actions désynchronisées »), et la partie des
+   deux joueurs divergerait. On reprend donc le défi tel que le serveur l'a
+   noté : l'action perdue se rejoue. Trois essais ; sans réponse, l'arène se
+   ferme et le défi reprendra quand on le rouvrira (Combats › Versus). */
+async function reprendreDefi(D) {
+  if (defiActif !== D || D.reprise) return;
+  D.reprise = true;
+  clearInterval(D.poll);
+  let d = null;
+  for (let essai = 0; essai < 3 && !d; essai++) {
+    if (essai) await new Promise(r => setTimeout(r, 2000 * essai));
+    if (defiActif !== D) return;
+    d = await Backend.defiEtat(D.id, 0).catch(() => null);
+  }
+  if (defiActif !== D) return;
+  if (d) return ouvrirDefi(d);
+  arreterDefi();
+  Table.fermer();
+  render();
+  toast('Le défi n\'a pas pu être repris : rouvre-le depuis Combats › Versus.');
 }

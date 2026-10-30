@@ -16,9 +16,15 @@ function regen() {
   }
 }
 
+/* Le titre de l'onglet tel que la page l'a reçu : le nom du jeu, ou
+   « PRÉ-PROD 3.0.x · Mate TCG Online » dans la pré-prod (tools/demo.py).
+   brand() et majSignalBoite() (js/boite.js) partent de lui : réécrit avec
+   GAME_NAME seul, le titre perdait sa marque de pré-prod. */
+const TITRE_PAGE = document.title || GAME_NAME;
+
 function brand() {
   $('#brand').innerHTML = `<img src="${ART.logo}" alt="${h(GAME_NAME)}">`;
-  document.title = GAME_NAME;
+  document.title = TITRE_PAGE;
 }
 
 /* ---------- Compte à rebours ---------- */
@@ -74,6 +80,14 @@ const RATES = {
 };
 const GOD = 1 / 2000;
 
+/* Une rareté vide se rabat sur la plus proche, dans l'ordre de pick_card
+   (supabase/installation/03_rpc.sql, et REPLI dans _demo/serveur.js) : le
+   Labo ne doit pas tirer autrement que le serveur. */
+const REPLI_RARETE = {
+  C: ['C', 'PC', 'R', 'E', 'L'], PC: ['PC', 'C', 'R', 'E', 'L'], R: ['R', 'PC', 'E', 'C', 'L'],
+  E: ['E', 'R', 'L', 'PC', 'C'], L: ['L', 'E', 'R', 'PC', 'C']
+};
+
 function pickFrom(pool, r) {
   /* Une Secrète se tire dans les Secrètes (version 3.0). */
   if (r === 'S') {
@@ -81,10 +95,7 @@ function pickFrom(pool, r) {
     if (l.length) return rnd(l);
     r = 'L';
   }
-  const order = ['C', 'PC', 'R', 'E', 'L'].sort((a, b) =>
-    Math.abs(RAR[a].rank - RAR[r].rank) - Math.abs(RAR[b].rank - RAR[r].rank) || RAR[b].rank - RAR[a].rank
-  );
-  for (const k of order) {
+  for (const k of REPLI_RARETE[r] || REPLI_RARETE.C) {
     const c = pool.filter(p => p.rar === k && p.cat !== 'essence');
     if (c.length) return rnd(c);
   }

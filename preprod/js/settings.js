@@ -30,7 +30,9 @@ function poserRM(v) {
 
 /* ---------- Réglages de confort ---------- */
 /* Des préférences de jeu, pas d'affichage : elles changent ce qui se passe à
-   l'ouverture d'un booster. Rangées ensemble dans une seule clé. */
+   l'ouverture d'un booster et en combat. Rangées ensemble dans une seule clé,
+   avec un seul écrivain (`sauverJeu`) : l'arène écrivait aussi `rapide` de son
+   côté, et changer un réglage ici remettait l'ancienne vitesse de combat. */
 const JEU_CLE = 'mtcg.jeu';
 const JEU = {
   /* Passer directement au récap sans faire défiler les cartes une à une. */
@@ -38,7 +40,9 @@ const JEU = {
   /* Faire vibrer le téléphone sur les révélations. */
   vibrer: true,
   /* Incliner les cartes avec le gyroscope pendant l'ouverture. */
-  gyro: true
+  gyro: true,
+  /* Les combats en accéléré (le bouton « Vitesse » de l'arène). */
+  rapide: false
 };
 
 (function chargerJeu() {

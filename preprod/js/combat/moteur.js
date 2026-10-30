@@ -718,8 +718,9 @@ function* resoudre(E, X) {
   const def = defense(E, t);
   ev(E, { t: 'impact', u: c.u, cible: t.u, val, def });
   if (val >= def) {
-    X.vaincu = true;
-    yield* vaincre(E, t, c);
+    /* Vaincu seulement si « Invitation » ne l'a pas sauvé (vaincre() rend
+       false) : Target Missed (c055) lit X.vaincu à la fin de l'attaque. */
+    X.vaincu = (yield* vaincre(E, t, c)) !== false;
   } else {
     ev(E, { t: 'repousse', u: t.u, par: c.u, val, def });
   }

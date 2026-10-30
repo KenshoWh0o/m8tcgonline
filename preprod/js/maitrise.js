@@ -201,7 +201,7 @@ function jouerMonteeMaitrise(el, n, mc) {
   const w = el && el.querySelector('.cwrap');
   SFX.jouer(n >= 5 ? 'legend' : n >= 3 ? 'epique' : 'rare');
   vibrer(n >= 5 ? [30, 60, 40] : 30);
-  if (!w || RM() || document.documentElement.classList.contains('rm')) {
+  if (!w || RM()) {
     toast(`Maîtrise ${CHIFFRES_ROMAINS[n]} · ${MAITRISE.noms[n - 1]} !`);
     return Promise.resolve();
   }
@@ -234,7 +234,7 @@ function jouerMonteeMaitrise(el, n, mc) {
 function mzEffetCombat(x, n, mc, o) {
   o = o || {};
   if (!x || !n) return Promise.resolve();
-  const calme = RM() || document.documentElement.classList.contains('rm');
+  const calme = RM();
   if (n >= 4) SFX.jouer(n >= 5 ? 'legend' : 'rare');
   else SFX.jouer('piece');
   if (calme) return Promise.resolve();

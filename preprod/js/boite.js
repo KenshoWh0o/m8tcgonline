@@ -78,7 +78,7 @@ function boiteNonLues() {
 /* La cloche, le titre de l'onglet, et la pastille de l'icône installée. */
 function majSignalBoite() {
   const n = boiteNonLues();
-  document.title = (n ? `(${n}) ` : '') + GAME_NAME;
+  document.title = (n ? `(${n}) ` : '') + TITRE_PAGE;
   try {
     if (navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge();
   } catch (e) { /* pas d'icône installée */ }
