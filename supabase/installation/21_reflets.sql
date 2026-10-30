@@ -582,6 +582,21 @@ update public.inventory iv
 -- (15_evenements.sql), calcules a la volee comme eux ; les autres sont des
 -- objets gagnes (inventaire, `t_…`) : Pass d'evenement, boutique, quetes.
 -- Les noms vivent dans TITRES (js/config.js).
+
+-- Version 3.0 : un tapis (genre 'tapis') ou un sleeve ('sleeve') de combat.
+-- Les tapis partagent le prefixe `t_` avec les titres, et l'inventaire a des
+-- `s_` qui ne sont pas des sleeves (`s_invite`) : c'est la boutique ou le Pass
+-- qui disent ce qu'est un objet (la categorie `tapis` ou `sleeve`, ou un
+-- article d'evenement qui en porte le nom, comme le tapis du Sorcier). Celui
+-- de base en est toujours un. Les noms vivent dans TAPIS et SLEEVES
+-- (js/combat/table.js).
+create or replace function public.est_cosmetique_combat(x text, genre text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select x = case genre when 'tapis' then 't_base' else 's_base' end
+      or exists (select 1 from shop_items s where s.id = x
+                   and (s.categ = genre or (s.categ = 'evenement' and s.titre like initcap(genre) || ' %')))
+      or exists (select 1 from evt_piste e where e.objet = x and e.type = genre);
+$$;
 create or replace function public.titres_de(p uuid) returns text[]
 language plpgsql stable security definer set search_path = public as $$
 declare s jsonb := succes_de(p); t text[] := '{}';
@@ -598,7 +613,8 @@ begin
   if s ? 'reverses_toutes'   then t := array_append(t, 't_reflet'); end if;
   if exists (select 1 from profiles where id = p and is_admin) then t := array_append(t, 't_admin'); end if;
   select t || coalesce(array_agg(item_id order by item_id), '{}') into t
-    from inventory where user_id = p and qty > 0 and item_id like 't\_%';
+    from inventory where user_id = p and qty > 0 and item_id like 't\_%'
+     and not est_cosmetique_combat(item_id, 'tapis');
   return t;
 end $$;
 
@@ -648,8 +664,8 @@ select 'Reflets', 'La version 2.0 : les Reverses, des cadres, des titres, Devine
 
 -- ================================================================= droits
 revoke all on function public.evenement_en_cours, public.crediter_prismes, public.accorder,
-  public.illu_cible, public.illu_grille, public.creer_invitation, public.est_filleul, public.titres_de
-  from public, anon, authenticated;
+  public.illu_cible, public.illu_grille, public.creer_invitation, public.est_filleul, public.titres_de,
+  public.est_cosmetique_combat from public, anon, authenticated;
 revoke all on function public.piste_reclamer, public.evenement_etat, public.illu_etat,
   public.illu_essai, public.utiliser_invitation, public.personnaliser, public.evenement_recap,
   public.evenement_recent, public.amis_doublons from public, anon;

@@ -363,6 +363,9 @@ begin
     v := p_reglages->>k;
     continue when v is null;
     base := case k when 'tapis' then 't_base' else 's_base' end;
+    -- Un tapis qui en est un, un sleeve qui en est un (21_reflets.sql) : un
+    -- titre possede n'est pas un tapis.
+    if not est_cosmetique_combat(v, k) then raise exception 'Cet objet ne se pose pas là.'; end if;
     if v <> base and not exists (select 1 from inventory where user_id = p and item_id = v and qty > 0) then
       raise exception 'Tu ne possèdes pas cet objet.';
     end if;

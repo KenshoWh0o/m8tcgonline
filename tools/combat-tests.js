@@ -208,6 +208,13 @@ test('Invitation : bench à la place du Joueur vaincu', () => {
   vrai(L(E, 1, 0), 'toujours là');
   egal(E.j[1].banc.map(c => c.id), ['c032']);
 });
+test('Target Missed : un Joueur sauvé par Invitation n\'a pas été vaincu', () => {
+  const E = situation({ lignes: [['c078'], [['c051', { eng: true, obj: ['c032'] }]]], ess: [['rose', 'rose', 'mauve']], main: [['c055']] });
+  Combat.agir(E, { t: 'jouer', u: E.j[0].main[0].u });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: L(E, 1, 0).u });
+  vrai(L(E, 1, 0), 'sauvé par Invitation');
+  vrai(Combat.aMotCle(E, L(E, 0, 0), 'Provocation'), 'l\'attaquant gagne Provocation');
+});
 
 console.log('Limites du tour');
 test('un seul Joueur déployé, un seul Coach par tour', () => {

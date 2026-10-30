@@ -142,9 +142,11 @@ function majPastilleBoosters() {
   p.textContent = n;
 }
 
-/* Sur l'avatar : ce qui attend derrière le tiroir, pour qu'on pense à l'ouvrir. */
+/* Sur l'avatar : ce qui attend derrière le tiroir, pour qu'on pense à l'ouvrir.
+   Les mêmes entrées que le tiroir (`ongletsTiroir`), donc l'onglet de
+   l'événement en tête, et pas un onglet que le tiroir ne montre pas. */
 function pastilleTiroir() {
-  return TABS.filter(t => t.tiroir).reduce((n, t) => n + pastilleOnglet(t.id), 0);
+  return ongletsTiroir().reduce((n, t) => n + pastilleOnglet(t.id), 0);
 }
 
 /* ---------- Tiroir du compte ---------- */

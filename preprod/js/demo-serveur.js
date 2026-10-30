@@ -287,6 +287,13 @@
   const PISTES = { reflets: PISTE, choc: PISTE_CHOC };
   const pisteDe = code => PISTES[code] || PISTE;
 
+  /* est_cosmetique_combat, 21_reflets.sql : un tapis ou un sleeve, d'après la
+     boutique et les Pass (les titres partagent le préfixe `t_` des tapis). */
+  const estCosmetiqueCombat = (x, genre) => x === (genre === 'tapis' ? 't_base' : 's_base')
+    || BOUTIQUE.some(a => a.id === x && (a.categ === genre
+      || (a.categ === 'evenement' && a.titre.startsWith(genre[0].toUpperCase() + genre.slice(1) + ' '))))
+    || Object.values(PISTES).some(l => l.some(r => r.type === genre && r.objet === x));
+
   /* Le catalogue : celui du jeu (js/cards-data.js, js/promos-data.js). */
   /* L'objectif d'une rareté complète : le total de la rareté dans le catalogue,
      lu au premier besoin (le catalogue n'existe pas encore quand ce fichier
@@ -586,7 +593,8 @@
       toutes_brillantes: 't_prisme', reverses_toutes: 't_reflet' };
     const t = Object.keys(map).filter(k => s.includes(k)).map(k => map[k]);
     if (profil(p).is_admin) t.push('t_admin');
-    Object.keys(invDe(p)).filter(k => k.startsWith('t_') && invDe(p)[k] > 0).sort().forEach(k => t.push(k));
+    Object.keys(invDe(p)).filter(k => k.startsWith('t_') && invDe(p)[k] > 0 && !estCosmetiqueCombat(k, 'tapis'))
+      .sort().forEach(k => t.push(k));
     return t;
   }
 
@@ -656,9 +664,10 @@
       const x = parPseudo(p_pseudo);
       if (x && x.id !== p) refuser('Ce pseudo est déjà pris.');
     }
+    if (p_avatar != null && !/^[a-z0-9_:\-]{1,40}$/.test(p_avatar)) refuser('Avatar invalide.');
     if (p_avatar != null && p_avatar.startsWith('card:') && !possede(p, p_avatar.slice(5)))
       refuser('Tu ne possèdes pas cette carte.');
-    if (p_frame != null && p_frame !== 'default' && !((invDe(p)[p_frame] || 0) > 0))
+    if (p_frame != null && p_frame !== 'default' && (!p_frame.startsWith('f_') || !((invDe(p)[p_frame] || 0) > 0)))
       refuser('Cadre non débloqué.');
     const pr = profil(p);
     if (p_pseudo != null) pr.pseudo = p_pseudo;
@@ -1974,6 +1983,7 @@
     for (const k of ['tapis', 'sleeve']) {
       if (!r[k]) continue;
       const base = { tapis: 't_base', sleeve: 's_base' }[k];
+      if (!estCosmetiqueCombat(r[k], k)) refuser('Cet objet ne se pose pas là.');
       if (r[k] !== base && !((invDe(p)[r[k]] || 0) > 0)) refuser('Tu ne possèdes pas cet objet.');
       if (c.cosm[k] !== r[k]) bump(p, 'cosm', 1);
       c.cosm[k] = r[k];

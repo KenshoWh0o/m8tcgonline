@@ -104,8 +104,8 @@ function openViewer(c, qui) {
 
 /* ---------- La fiche : Infos, Maîtrise, Gérer (version 3.0.7) ---------- */
 const vwTous = s => [...document.querySelectorAll(s)];
-/* Les mouvements réduits : ceux du système, ou le réglage du jeu. */
-const vwCalme = () => RM() || document.documentElement.classList.contains('rm');
+/* Les mouvements réduits : ceux du système, ou le réglage du jeu (`RM`). */
+const vwCalme = RM;
 const VW_ONGLETS = [['infos', 'Infos'], ['maitrise', 'Maîtrise'], ['gerer', 'Gérer']];
 let vwOngletRetenu = 'infos';
 

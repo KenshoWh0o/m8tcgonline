@@ -57,6 +57,12 @@ begin
     end if;
   end if;
 
+  -- L'avatar est un mot court : « discord », une cle d'AVATARS (js/config.js),
+  -- « ess:rose », « card:c012 ». Rien d'autre : il part chez tous ceux qui
+  -- voient le joueur (amis, classement, echanges).
+  if p_avatar is not null and p_avatar !~ '^[a-z0-9_:\-]{1,40}$' then
+    raise exception 'Avatar invalide.';
+  end if;
   -- Un avatar « card:cXXX » doit correspondre a une carte reellement possedee.
   if p_avatar is not null and p_avatar like 'card:%' then
     if not exists (select 1 from collection
@@ -65,9 +71,11 @@ begin
     end if;
   end if;
 
-  -- Un cadre achete doit etre dans l'inventaire.
+  -- Un cadre (`f_…`, FRAMES dans js/config.js) doit etre dans l'inventaire :
+  -- un tapis ou un titre possede n'en est pas un.
   if p_frame is not null and p_frame <> 'default'
-     and not exists (select 1 from inventory where user_id = p and item_id = p_frame and qty > 0) then
+     and (p_frame not like 'f\_%'
+          or not exists (select 1 from inventory where user_id = p and item_id = p_frame and qty > 0)) then
     raise exception 'Cadre non débloqué.';
   end if;
 

@@ -135,7 +135,13 @@ function brancherSW() {
         if (!sw) return;
         sw.addEventListener('statechange', () => {
           if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-            openSheet({
+            /* Jamais à la place d'une fenêtre ouverte (un achat qu'on confirme,
+               un cadeau), ni pendant une ouverture, la visionneuse ou un
+               combat : on attend que l'écran soit rendu au joueur. */
+            const occupe = () => document.body.classList.contains('intheater')
+              || document.body.classList.contains('en-arene')
+              || !$('#sheet').hidden || !$('#viewer').hidden;
+            const prevenir = () => occupe() ? setTimeout(prevenir, 1500) : openSheet({
               title: 'Nouvelle version',
               body: '<p class="muted">Une mise à jour du jeu est prête.</p>',
               actions: [
@@ -143,6 +149,7 @@ function brancherSW() {
                 { label: 'Plus tard', fn: closeSheet }
               ]
             });
+            prevenir();
           }
         });
       });

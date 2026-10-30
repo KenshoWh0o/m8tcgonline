@@ -65,7 +65,9 @@ const essIcon = (k, cls) => {
 };
 
 /* ---------- Accessibilité ---------- */
-const RM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* Les mouvements réduits : le réglage du jeu (Réglages › Animations réduites,
+   la classe `rm` de <html>) ou celui du système, l'un ou l'autre suffit. */
+const RM = () => document.documentElement.classList.contains('rm') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- Gyroscope ---------- */
 /* Incliner l'appareil fait tourner la carte. Deux écrans s'en servent —

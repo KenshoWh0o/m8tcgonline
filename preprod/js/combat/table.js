@@ -113,7 +113,7 @@ const Table = (() => {
       E, o, moi: o.moi || 0, cosm: o.cosm || [{}, {}], brillantes: o.brillantes || [[], []],
       focus: null, cible: null, rapide: false, occupe: false, fini: false, journal: [], histo: [], tapis: null
     };
-    try { T.rapide = JSON.parse(localStorage.getItem('mtcg.jeu') || '{}').rapide || false; } catch (e) { /* */ }
+    T.rapide = !!JEU.rapide;
     let el = document.getElementById('arene');
     if (!el) {
       el = document.createElement('div');
@@ -1052,7 +1052,7 @@ const Table = (() => {
       T.rapide = !T.rapide;
       b.classList.toggle('on', T.rapide);
       b.querySelector('i').textContent = T.rapide ? 'oui' : 'non';
-      try { const j = JSON.parse(localStorage.getItem('mtcg.jeu') || '{}'); j.rapide = T.rapide; localStorage.setItem('mtcg.jeu', JSON.stringify(j)); } catch (e) { /* */ }
+      JEU.rapide = T.rapide; sauverJeu();
       return;
     }
     if (k === 'regles') { fermerSheet(); if (typeof ouvrirGuidesSurcouche === 'function') ouvrirGuidesSurcouche(); return; }

@@ -57,7 +57,10 @@ let reverses = [];
 let secretes = [];
 let packArt = PACK_ARTS[0];
 let byId = {};
-let tab = 'boosters';
+/* Le premier onglet : celui que demande l'adresse (`?onglet=collection`, les
+   raccourcis de l'application installée, manifest.webmanifest), sinon Boosters.
+   Un nom inconnu ou un onglet indisponible retombe sur Boosters (`ongletValide`). */
+let tab = (/[?&]onglet=([a-z0-9_-]+)/i.exec(location.search) || [])[1] || 'boosters';
 let rv = null;
 let colFilter = 'all';
 let essFilter = 'all';
