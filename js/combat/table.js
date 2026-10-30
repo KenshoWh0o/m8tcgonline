@@ -1328,6 +1328,10 @@ const Table = (() => {
   /* ---------- Les décisions ---------- */
   function montrerDecision(d) {
     ticker(null);
+    /* Une décision hors de son tour d'action (défendre, soutenir, une
+       Résilience, choisir une carte) : la carte agrandie se referme, elle
+       couvrirait la feuille. */
+    if (d.type !== 'tour' && T.focus) fermerFocus();
     rendre();
     if (d.type === 'tour') {
       fermerSheetDecision();

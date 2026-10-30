@@ -851,6 +851,9 @@ html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-c.holo::after,html.r
 .ar-tuto{position:absolute;left:0;right:0;top:calc(6px + env(safe-area-inset-top,0px));z-index:30;display:flex;justify-content:center;padding:0 10px;pointer-events:none}
 .ar-tuto[hidden]{display:none}
 .ar-tuto.bas,#arene:has(.ar-focus:not([hidden])) .ar-tuto:not(.bloque){top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+/* Une décision ouverte en bas (défendre, soutenir, une Résilience) : la
+   bulle reste en haut, au-dessus du plateau (version 3.0.12). */
+#arene:has(.ar-sheet.decision:not([hidden]):not(.compact)) .ar-tuto:not(.bloque){top:calc(6px + env(safe-area-inset-top,0px));bottom:auto}
 /* La carte agrandie s'arrête au-dessus de la bulle (--tuto-h, sa hauteur) :
    ses attaques et son bouton « Jouer » restent visibles. */
 #arene:has(.ar-tuto:not([hidden]):not(.bloque)) .ar-focus:not(.haut){padding-bottom:calc(14px + var(--tuto-h,0px))}
