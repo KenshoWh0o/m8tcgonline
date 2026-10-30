@@ -168,3 +168,13 @@ html.rm .vw-ong-barre{transition:none}
   .vw-fiche{grid-column:2;grid-row:3;width:100%}
   .vw-hint{grid-column:1;grid-row:4;justify-self:center;margin:44px 0 0}
 }
+
+/* Version 3.0.12 : une page choisie par son onglet entre en glissant d'un
+   côté (allerOngletVw) ; seuls transform et opacity bougent. */
+.vw-page.entre{animation:vw-entre .26s cubic-bezier(.2,.9,.3,1)}
+.vw-page.entre.de-g{--de:-18px}
+.vw-page.entre.de-d{--de:18px}
+@keyframes vw-entre{from{opacity:.25;transform:translateX(var(--de,0))}}
+.vw-page{contain:layout paint}
+html.rm .vw-page.entre{animation:none}
+@media (prefers-reduced-motion:reduce){.vw-page.entre{animation:none}}

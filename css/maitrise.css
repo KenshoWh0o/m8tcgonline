@@ -9,13 +9,16 @@
      dans la carte (découpé à sa forme) :
        .mz-s   I    Satin    un vernis : un reflet posé en haut à gauche, et
                              une bande de lumière qui glisse lentement ;
-       .mz-t   II   Liseré   un bord de métal biseauté, à sa couleur ;
+     autour d'elle (la carte imprimée reste intacte, version 3.0.12) :
+       .mz-t   II   Écrin    un fin cadre de métal, à sa couleur, posé
+                             AUTOUR de la carte — le liseré de la 3.0.11,
+                             posé sur son bord, la dénaturait ;
        .mz-h   III  Holo     l'illustration devient holographique : une bande
                              prismatique dérive dessus, des paillettes ;
-       .mz-b   IV   Lumière  une lumière fait le tour du liseré ;
+       .mz-b   IV   Lumière  une lumière fait le tour de l'écrin ;
        .mz-p   IV            des étincelles montent de l'illustration ;
-       .mz-g   V    Légende  trois étoiles du logo qui scintillent, et le
-                             liseré devient prismatique ;
+       .mz-g   V    Légende  trois étoiles du logo qui scintillent, et
+                             l'écrin devient prismatique ;
      autour :
        .mz-a   IV, V         un halo de sa couleur (V : il respire).
    Ce qui avait déplu en 3.0.8 n'y est plus : le joyau du niveau V, le halo
@@ -41,8 +44,10 @@
 .cwrap.mz{position:relative;isolation:isolate}
 .cwrap.mz>.card{z-index:1}
 .mz-s,.mz-t,.mz-h,.mz-b,.mz-p,.mz-g,.mz-a{position:absolute;pointer-events:none}
-/* L'anneau du bord : un calque découpé en cadre (le liseré, sa lumière). */
-.mz-t,.mz-b{inset:0;border-radius:inherit;padding:1.6cqi;
+/* L'écrin : un calque découpé en anneau, juste AUTOUR de la carte (son
+   rayon, 5,5cqi, plus l'épaisseur de l'anneau) ; sa lumière (IV) passe
+   dedans. Rien ne couvre le bord imprimé de la carte. */
+.mz-t,.mz-b{inset:-1.15cqi;border-radius:6.65cqi;padding:1.15cqi;
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
   mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
 
@@ -56,18 +61,15 @@
 /* Immobile : la bande reste posée à gauche, le vernis se voit. */
 .mz-calme .mz-s::after{animation:none;transform:translateX(-25%) skewX(-14deg);opacity:.65}
 
-/* ---------- II · Liseré : un bord de métal biseauté ---------- */
-/* Éclairé d'en haut à gauche : clair sur ces deux bords, sombre sur les
-   deux autres ; un filet sombre dehors, un filet de lumière dedans. */
-.mz-t{z-index:6;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--mc) 28%,#fff) 0%,var(--mc) 30%,color-mix(in srgb,var(--mc) 72%,#000) 62%,color-mix(in srgb,var(--mc) 48%,#000) 100%)}
-.mz-t::before{content:'';position:absolute;inset:1.6cqi;border-radius:3.9cqi;box-shadow:0 0 0 .38cqi rgba(255,255,255,.4)}
-.mz-t::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 .32cqi rgba(0,0,0,.5)}
+/* ---------- II · Écrin : un fin cadre de métal, autour ---------- */
+/* Éclairé d'en haut à gauche : clair sur ces deux bords, plus sombre sur
+   les deux autres. Il épouse la carte sans rien en cacher. */
+.mz-t{z-index:2;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--mc) 22%,#fff) 0%,color-mix(in srgb,var(--mc) 70%,#fff) 26%,var(--mc) 52%,color-mix(in srgb,var(--mc) 62%,#000) 100%)}
 /* V : le métal devient prismatique — les couleurs du reflet des Secrètes,
    et celle de l'Essence. Plus large d'un rien. */
-.mz-5 .mz-t{padding:1.9cqi;
-  background:conic-gradient(from 210deg,#ff9fd2,#c9b3ff 17%,#8fd0ff 34%,#8ff0c4 50%,#fff2c2 60%,var(--mc) 74%,#ffb3dc 88%,#ff9fd2)}
-.mz-5 .mz-t::before{inset:1.9cqi}
+.mz-5 .mz-t,.mz-5 .mz-b{inset:-1.45cqi;border-radius:6.95cqi;padding:1.45cqi}
+.mz-5 .mz-t{background:conic-gradient(from 210deg,#ff9fd2,#c9b3ff 17%,#8fd0ff 34%,#8ff0c4 50%,#fff2c2 60%,var(--mc) 74%,#ffb3dc 88%,#ff9fd2)}
 
 /* ---------- III · Holo : l'illustration holographique ---------- */
 /* Sur le haut de la carte (l'illustration, ou le haut d'une carte pleine),
@@ -91,9 +93,9 @@
   radial-gradient(circle at 76% 77%,#fff 0 .24cqi,transparent .5cqi),radial-gradient(circle at 9% 58%,#fff 0 .2cqi,transparent .44cqi)}
 .mz-calme .mz-h::before{animation:none;transform:translateX(-4%)}
 
-/* ---------- IV · Lumière : elle fait le tour du liseré ---------- */
+/* ---------- IV · Lumière : elle fait le tour de l'écrin ---------- */
 /* Un grand dégradé conique qui tourne, vu à travers l'anneau. */
-.mz-b{z-index:7;overflow:hidden}
+.mz-b{z-index:3;overflow:hidden}
 .mz-b::before{content:'';position:absolute;left:50%;top:50%;width:200cqi;height:200cqi;margin:-100cqi 0 0 -100cqi;
   background:conic-gradient(transparent 0 70%,color-mix(in srgb,var(--mc) 30%,#fff) 83%,#fff 88.5%,transparent 90.5%);
   animation:mz-tour 6s linear infinite}
@@ -222,6 +224,9 @@ html.rm .cwrap.mz-monte::before,html.rm .cwrap.mz-monte::after,html.rm .mz-sceau
 .mz-detail{display:flex;flex-direction:column;gap:2px;padding:11px 14px 12px;border-radius:16px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
 .mz-detail>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:16px;color:#fff}
 .mz-detail>small{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-soft)}
+/* Trois lignes réservées au texte du niveau : regarder un autre niveau ne
+   change pas la hauteur de la fiche (version 3.0.12). */
+.mz-detail>p{min-height:calc(3 * 1.4em)}
 .mz-detail.fait>small{color:var(--ok)}
 .mz-detail>p{margin:4px 0 0;font-size:13px;line-height:1.4;color:var(--subtle)}
 /* Le bouton, et ce qu'il coûte. */
@@ -297,23 +302,26 @@ html.rm .cwrap.mz-monte::before,html.rm .cwrap.mz-monte::after,html.rm .mz-sceau
 
 /* ============ En combat (js/combat/table.js) ============
    Ses propres cartes seulement. Dans la carte (.ar-c) : les finitions ;
-   autour du Joueur posé (.ar-j, un conteneur à la largeur de la carte) : le
-   halo. Dans la main et la carte agrandie, la carte est seule : une lueur de
-   sa couleur tient lieu de halo. */
+   autour du Joueur posé (.ar-j, un conteneur à la largeur de la carte) :
+   l'écrin, sa lumière et le halo. Dans la main, la carte agrandie, la carte
+   montrée, la carte est seule : son écrin est un anneau de sa couleur
+   (une ombre portée pleine, qui suit la carte), une lueur tient lieu de
+   halo. */
 .ar-c.mz{container-type:inline-size}
-.ar-c.mz .mz-s,.ar-c.mz .mz-t,.ar-c.mz .mz-b{border-radius:inherit}
-/* Le Joueur posé a une ombre en `filter: drop-shadow` (css/arene.css) :
-   avec une maîtrise animée dedans, elle se recalculait à chaque image. Une
-   carte maîtrisée prend une ombre portée simple à la place. */
+.ar-c.mz .mz-s{border-radius:inherit}
 .ar-j.mz-j{filter:none}
 .ar-j.mz-j>.ar-c{box-shadow:0 1.6cqi 2.6cqi rgba(0,0,0,.6)}
-/* Engagé : la carte s'assombrit (un filtre, css/arene.css), son halo
-   aussi ; ses finitions s'arrêtent, sans quoi le filtre se recalculerait à
-   chaque image. */
+/* Engagé, la carte est tournée (css/arene.css) : l'écrin, qui ne tourne
+   pas, s'efface, et la carte prend son anneau ; le halo baisse ; ses
+   finitions s'arrêtent. */
+.ar-j .mz-t,.ar-j .mz-b{transition:opacity .3s}
+.ar-j.eng .mz-t,.ar-j.eng .mz-b{opacity:0}
+.ar-j.eng>.ar-c.mz:not(.mz-1){box-shadow:0 0 0 1.15cqi color-mix(in srgb,var(--mc) 70%,#fff),0 1.6cqi 2.6cqi rgba(0,0,0,.6)}
 .ar-j.eng .mz-a{opacity:.2;animation:none}
 .ar-j.eng .mz-s::after,.ar-j.eng .mz-h::before,.ar-j.eng .mz-b::before,.ar-j.eng .mz-p i,.ar-j.eng .mz-g svg{animation-play-state:paused}
-.ar-m .ar-c.mz-4,.ar-fc .ar-c.mz-4,.ar-montre .ar-c.mz-4{box-shadow:0 0 14px color-mix(in srgb,var(--mc) 65%,transparent)}
-.ar-m .ar-c.mz-5,.ar-fc .ar-c.mz-5,.ar-montre .ar-c.mz-5{box-shadow:0 0 14px color-mix(in srgb,var(--mc) 70%,transparent),0 0 26px rgba(200,190,255,.32)}
+:is(.ar-m,.ar-fc,.ar-montre,.ar-lot,.ar-hl,.ar-lc) .ar-c.mz:not(.mz-1){box-shadow:0 0 0 1.15cqi color-mix(in srgb,var(--mc) 70%,#fff),0 4px 10px rgba(0,0,0,.5)}
+:is(.ar-m,.ar-fc,.ar-montre) .ar-c.mz-4{box-shadow:0 0 0 1.15cqi color-mix(in srgb,var(--mc) 70%,#fff),0 0 14px color-mix(in srgb,var(--mc) 65%,transparent)}
+:is(.ar-m,.ar-fc,.ar-montre) .ar-c.mz-5{box-shadow:0 0 0 1.45cqi #e6dcff,0 0 14px color-mix(in srgb,var(--mc) 70%,transparent),0 0 26px rgba(200,190,255,.32)}
 /* Un Objet maîtrisé, lié à son Joueur : son médaillon prend un anneau de sa
    couleur (V : blanc et prismatique). */
 .ar-obj.mzo{box-shadow:0 0 0 1.5px color-mix(in srgb,var(--mc) 80%,#fff),0 0 7px color-mix(in srgb,var(--mc) 60%,transparent)}

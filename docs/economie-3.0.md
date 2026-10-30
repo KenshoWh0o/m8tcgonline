@@ -243,7 +243,7 @@ Une Commune en Légende demandait donc six semaines de tout le recyclage, autant
 
 Un niveau coûte **la base de la rareté, fois 1, 2, 4, 7 puis 11** (25 fois la base pour aller jusqu'à la Légende), plus des exemplaires **en trop** :
 
-| Rareté | Base | I · Satin | II · Liseré | III · Holo | IV · Lumière | V · Légende | Total | Exemplaires en trop (I à V) |
+| Rareté | Base | I · Satin | II · Écrin | III · Holo | IV · Lumière | V · Légende | Total | Exemplaires en trop (I à V) |
 |---|---|---|---|---|---|---|---|---|
 | Commune | 60 | 60 | 120 | 240 | 420 | 660 | **1 500** | 1 · 1 · 1 · 2 · 2 (7) |
 | Peu commune | 100 | 100 | 200 | 400 | 700 | 1 100 | **2 500** | 1 · 1 · 1 · 1 · 2 (6) |

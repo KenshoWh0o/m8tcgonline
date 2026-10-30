@@ -204,19 +204,36 @@ function majOngletVw(k) {
    carte au-dessus montait et descendait (de 5 à 9 px, mesuré), pendant que
    le défilement des pages recalculait la mise en page à chaque image. Rien
    ne suit les pages : le blanc sous une page plus courte ne se voit pas. */
+/* Version 3.0.12 : elle ne rapetisse plus. Regarder un niveau de maîtrise
+   change la longueur de son texte : la fiche raccourcissait de 18 px, et,
+   défilée vers le bas, toute la vue — la carte comprise — sautait d'autant.
+   Elle grandit si une page le demande, et garde sa hauteur jusqu'à ce que
+   la fiche se referme. */
 function hauteurPagesVw() {
   const pages = $('#viewer .vw-pages');
   if (!pages) return;
-  pages.style.height = '';
-  pages.style.height = Math.max(...[...pages.children].map(p => p.scrollHeight)) + 'px';
+  const h = Math.max(...[...pages.children].map(p => p.scrollHeight));
+  if (h > (parseFloat(pages.style.height) || 0)) pages.style.height = h + 'px';
 }
+/* Toucher un onglet : la page se pose d'un coup, puis entre en glissant
+   (une animation de transform et d'opacité, sur elle seule). Le défilement
+   « smooth » d'un conteneur en scroll-snap saccadait (une image figée
+   100 ms au premier passage, mesuré), surtout sur Safari. Le doigt, lui,
+   fait toujours glisser les pages. */
 function allerOngletVw(k) {
   const pages = $('#viewer .vw-pages');
   const i = VW_ONGLETS.findIndex(x => x[0] === k);
-  if (!pages || i < 0) return;
+  if (!pages || i < 0 || k === (VW && VW.ong)) return;
+  const avant = VW_ONGLETS.findIndex(x => x[0] === (VW && VW.ong));
   SFX.jouer('tap');
   majOngletVw(k);
-  pages.scrollTo({ left: i * pages.clientWidth, behavior: vwCalme() ? 'auto' : 'smooth' });
+  pages.scrollTo({ left: i * pages.clientWidth, behavior: 'auto' });
+  const p = pages.children[i];
+  if (p && !vwCalme()) {
+    p.classList.remove('entre', 'de-g', 'de-d');
+    void p.offsetWidth;
+    p.classList.add('entre', i > avant ? 'de-d' : 'de-g');
+  }
 }
 
 /* Après une maîtrise, un choix de carte fétiche : la carte et les pages se

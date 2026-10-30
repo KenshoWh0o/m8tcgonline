@@ -6,12 +6,14 @@
    où elle apparaît, en combat compris (version 3.0.11, refonte entière) :
 
      1 · Satin    un vernis : un reflet posé, une lumière qui glisse ;
-     2 · Liseré   un bord de métal biseauté, à la couleur de son Essence ;
+     2 · Écrin    un fin cadre de métal autour de la carte, à la couleur de
+                  son Essence (le liseré de la 3.0.11, posé sur le bord de
+                  la carte, la dénaturait : version 3.0.12) ;
      3 · Holo     son illustration devient holographique ;
-     4 · Lumière  une lumière fait le tour du liseré, des étincelles
+     4 · Lumière  une lumière fait le tour de l'écrin, des étincelles
                   montent, un halo ; en combat, elle entre dans un éclat, et
                   ses coups brillent ;
-     5 · Légende  un liseré prismatique et trois étoiles du logo qui
+     5 · Légende  un écrin prismatique et trois étoiles du logo qui
                   scintillent ; en combat, une onde de choc.
    En combat, chaque niveau se voit à l'entrée de la carte — un Joueur posé,
    mais aussi un Moment ou un Coach joué, un Objet lié (mzEffetCombat). La
@@ -34,13 +36,13 @@
 
 const MAITRISE = {
   max: 5,
-  noms: ['Satin', 'Liseré', 'Holo', 'Lumière', 'Légende'],
+  noms: ['Satin', 'Écrin', 'Holo', 'Lumière', 'Légende'],
   dit: [
     'Un vernis satiné : un reflet se pose sur la carte, une lumière la traverse de temps en temps.',
-    'Un bord de métal biseauté, à la couleur de son Essence.',
+    'Un fin écrin de métal autour de la carte, à la couleur de son Essence : la carte, elle, reste intacte.',
     'Son illustration devient holographique : un reflet prismatique la traverse, des paillettes s\'y allument.',
-    'Une lumière fait le tour de son liseré, des étincelles montent, un halo l\'entoure. En combat, elle entre dans un éclat, et ses coups brillent.',
-    'Un liseré prismatique et trois étoiles qui scintillent. En combat, une onde de choc traverse le plateau.'
+    'Une lumière fait le tour de son écrin, des étincelles montent, un halo l\'entoure. En combat, elle entre dans un éclat, et ses coups brillent.',
+    'Un écrin prismatique et trois étoiles qui scintillent. En combat, une onde de choc traverse le plateau.'
   ],
   /* Les Fragments d'un niveau (version 3.0.8) : la base de la rareté, fois
      1, 2, 4, 7, 11 — 25 fois la base pour la Légende : 1 500 pour une
@@ -92,12 +94,13 @@ function coutMaitrise(c) {
 
 /* ---------- L'allure ---------- */
 /* Ce que renderCard ajoute à une carte maîtrisée : des classes sur son
-   enveloppe, et les couches des finitions — dans la carte (le vernis, le
-   liseré, l'holo, la lumière, les étincelles, les étoiles : la carte les
-   découpe à sa forme), autour d'elle (le halo). `calme` : sans animation
+   enveloppe, et les couches des finitions — dans la carte (le vernis,
+   l'holo, les étincelles, les étoiles : la carte les découpe à sa forme),
+   autour d'elle (le halo, l'écrin et sa lumière). `calme` : sans animation
    (une grille de cent cartes). L'arène fait de même (js/combat/table.js,
-   htmlCarte et mzAutour). L'ordre des couches compte : l'holo sous le
-   liseré, la lumière par-dessus, les étoiles au-dessus de tout. */
+   htmlCarte et mzAutour). L'ordre des couches compte : le halo sous
+   l'écrin, sa lumière par-dessus ; dans la carte, les étoiles au-dessus de
+   tout. */
 /* L'étoile du logo, à quatre branches : l'insigne, les étoiles de la
    Légende. */
 const MZ_ETOILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .6c1 6.6 4.3 10 11.4 11.4C16.3 13.4 13 16.8 12 23.4 11 16.8 7.7 13.4.6 12 7.7 10.6 11 7.2 12 .6Z"/></svg>';
@@ -108,10 +111,10 @@ const MZ_ETOILE_V = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGr
 const mzDedans = n => '<i class="mz-s" aria-hidden="true"></i>'
   + (n >= 3 ? '<i class="mz-h" aria-hidden="true"></i>' : '')
   + (n >= 4 ? '<i class="mz-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i>' : '')
-  + (n >= 2 ? '<i class="mz-t" aria-hidden="true"></i>' : '')
-  + (n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : '')
   + (n >= 5 ? `<i class="mz-g" aria-hidden="true">${MZ_ETOILE}${MZ_ETOILE}${MZ_ETOILE}</i>` : '');
-const mzAutourDe = n => (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '');
+const mzAutourDe = n => (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '')
+  + (n >= 2 ? '<i class="mz-t" aria-hidden="true"></i>' : '')
+  + (n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : '');
 function maitriseEnveloppe(c, n, calme) {
   if (!n) return { cls: '', style: '', dedans: '', autour: '' };
   const k = carteMaitrise(c);
@@ -290,10 +293,27 @@ function voirNiveauVw(m) {
   const n = niveauMaitrise(c);
   /* Touché encore, ou son niveau actuel : on revient à la carte telle qu'elle est. */
   VW.apercu = VW.apercu === m || m === n ? 0 : m;
-  const carteEl = document.querySelector('#vwc');
-  if (carteEl) { carteEl.innerHTML = vCarteVw(c); VW.reflets = refletsVw(); }
+  /* La carte change de finition en place : ses classes et ses calques, pas
+     son image (version 3.0.12 ; la redessiner rechargeait l'illustration). */
+  const w = document.querySelector('#vwc .cwrap');
+  if (w) poserMaitrise(w, c, VW.apercu || n);
   const p = document.querySelector('#viewer .vw-page[data-p="maitrise"]');
   if (p) { p.innerHTML = vMaitriseFiche(c); hauteurPagesVw(); }
+}
+
+/* La finition d'une carte déjà affichée (renderCard), changée sans la
+   redessiner : les classes de son enveloppe, les calques dans la carte et
+   autour d'elle. */
+function poserMaitrise(w, c, n) {
+  const e = maitriseEnveloppe(c, n, w.classList.contains('mz-calme'));
+  [...w.classList].filter(k => /^mz(-\d)?$/.test(k)).forEach(k => w.classList.remove(k));
+  w.querySelectorAll(':scope>.card>:is(.mz-s,.mz-h,.mz-p,.mz-g),:scope>:is(.mz-a,.mz-t,.mz-b)').forEach(x => x.remove());
+  if (!n) { w.style.removeProperty('--mc'); return; }
+  w.classList.add('mz', 'mz-' + n);
+  w.style.setProperty('--mc', tcol(carteMaitrise(c)));
+  const carte = w.querySelector(':scope>.card');
+  if (carte) carte.insertAdjacentHTML('beforeend', e.dedans);
+  w.insertAdjacentHTML('beforeend', e.autour);
 }
 
 /* ---------- La carte fétiche ---------- */
