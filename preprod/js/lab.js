@@ -118,7 +118,8 @@ function vLabFrise() {
   const etatRev = rv.ouvertes ? (rv.manuel ? 'ouvertes à la main' : 'ouvertes') : rv.des ? 'fermées' : 'fermées, sans date';
   const jalons = [
     c && ['Début du Choc', c.debut], c && ['Fin du Choc', c.fin], c && ['Fin de son récap', c.recap_jusqua],
-    R.debut && ['Début de la saison ' + R.saison + ' du Raid', minuitParis(R.debut)], R.fin && ['Saison suivante du Raid', minuitParis(R.fin)],
+    R.debut && [`Début du raid ${R.saison} (${raidBoss(R.boss || RAID.boss).nom})`, minuitParis(R.debut)],
+    R.fin && [`Raid ${R.saison + 1} (${raidBoss(R.saison + 1).nom})`, minuitParis(R.fin)],
     rv.des && !rv.manuel && ['Ouverture des Reverses', rv.des]
   ].filter(Boolean).sort((a, b) => srvTime(a[1]) - srvTime(b[1]));
   const maintenant = Date.now();
@@ -169,14 +170,14 @@ function vLabChoc() {
   </section>`;
 }
 
-/* Le Raid : la saison en cours, à une phase ; l'échelle des seuils. */
+/* Le Raid : le raid en cours (son boss), à une phase ; l'échelle des seuils. */
 function vLabRaid() {
   const R = labEtat.raid || {};
   const s = R.seuils || [];
   const echelles = [0.25, 0.5, 1, 2];
   return `<section class="panel">
     <h2>Le Raid <small class="labtag">pour tout le monde</small></h2>
-    <p class="muted small">Saison ${R.saison}, du ${h(labJour(R.debut))} au ${h(labJour(R.fin))} : ${fmtN(R.degats || 0)} PV pris par
+    <p class="muted small">Raid ${R.saison} (${h(raidBoss(R.boss || RAID.boss).nom)}), du ${h(labJour(R.debut))} au ${h(labJour(R.fin))} : ${fmtN(R.degats || 0)} PV pris par
       ${fmtN(R.joueurs || 0)} joueur${(R.joueurs || 0) > 1 ? 's' : ''}. Choisir une phase pose les dégâts du serveur à son seuil ;
       les coffres déjà ouverts le restent.</p>
     <div class="labjours">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-lab="raid" data-n="${k}" class="${R.phase === k ? 'on' : ''}"
@@ -186,7 +187,8 @@ function vLabRaid() {
     <div class="labchoix" role="group" aria-label="Échelle des seuils">${echelles.map(x => `<button data-lab="echelle" data-n="${x}"
         class="${Math.abs((R.echelle || 1) - x) < 1e-9 ? 'on' : ''}">× ${String(x).replace('.', ',')}</button>`).join('')}</div>
     <p class="muted small">Les seuils sont calculés pour une dizaine de joueurs (× 1).</p>
-    <button class="btn ghost labdanger" data-lab="raid-raz">Remettre la saison à zéro…</button>
+    <p class="muted small">Les raids se comptent depuis le premier jour du Choc (quatorze jours chacun, ${RAID.bosses.map(b => h(b.nom)).join(' puis ')}) : poser le Choc à un jour déplace aussi le raid (au jour 15, le raid 2).</p>
+    <button class="btn ghost labdanger" data-lab="raid-raz">Remettre le raid à zéro…</button>
   </section>`;
 }
 
@@ -471,9 +473,102 @@ function vLabJoueurs() {
 /* ======================================================= Aperçus (local) */
 /* Rien n'est envoyé : la mise en scène, la fenêtre, la page, telles que les
    verra un joueur. « Revenir à l'état réel » efface tout aperçu. */
+/* ---------- La maîtrise, en aperçu (version 3.0.11) ----------
+   Les cinq finitions sur une carte au choix, la montée d'un niveau, et ce
+   qu'une carte maîtrisée fait en combat — un Joueur posé, un Moment ou un
+   Coach joué, un Objet lié —, sur un petit plateau qui reprend celui de
+   l'arène. Rien n'est envoyé ni enregistré : le niveau de ses cartes, en
+   vrai, se monte dans leur fiche, ou « Tout maîtriser » (Combats). */
+const LAB_MZ_TYPES = [['joueur', 'Joueur', 'c012'], ['objet', 'Objet', 'c122'], ['moment', 'Moment', 'c110'], ['coach', 'Coach', 'c026']];
+let labMz = { type: 'joueur', id: 'c012', n: 3 };
+const labMzCarte = () => byId[labMz.id] || byId.c012;
+/* Une carte comme l'arène la dessine (htmlCarte, js/combat/table.js), avec
+   sa maîtrise. */
+function labMzArene(c, n) {
+  const mc = tcol(carteMaitrise(c));
+  return `<div class="ar-c${n ? ` mz mz-${n}` : ''}"${n ? ` style="--mc:${mc}"` : ''}><img src="${h(c.img)}" alt="" draggable="false">${n ? mzDedans(n) : ''}</div>`;
+}
+function vLabMaitrise() {
+  const c = labMzCarte();
+  const n = labMz.n;
+  const genre = { joueur: 'Le Joueur posé', objet: 'L\'Objet lié à un Joueur', moment: 'Le Moment joué', coach: 'Le Coach joué' }[labMz.type];
+  const sur = byId.c012;
+  const plateau = labMz.type === 'joueur'
+    ? `<div class="lab-mz-place"><div class="ar-j${n ? ` mz-j mz-${n}` : ''}" style="--mc:${tcol(carteMaitrise(c))}">${n ? mzAutourDe(n) : ''}${labMzArene(c, n)}</div></div>`
+    : labMz.type === 'objet'
+      ? `<div class="lab-mz-place"><div class="ar-j">${labMzArene(sur, 0)}<span class="ar-objs"></span></div></div>`
+      : '';
+  return `<section class="panel lab-mz">
+    <h2>La maîtrise</h2>
+    <p class="muted small">Les cinq finitions, la montée d'un niveau, et ce qu'une carte maîtrisée fait en combat — rien n'est enregistré.
+      En vrai, le niveau se monte dans la fiche d'une carte (Collection › une carte › Maîtrise).</p>
+    <div class="segbar lab-mz-types">${LAB_MZ_TYPES.map(([k, nom]) => `<button data-lab="mz-type" data-v="${k}" class="${labMz.type === k ? 'on' : ''}">${nom}</button>`).join('')}</div>
+    <div class="lab-mz-scene">
+      <div class="lab-mz-carte" id="labmz">${renderCard(c, { m: n })}</div>
+      <div class="lab-mz-cote">
+        <div class="labjours lab-mz-niv" role="group" aria-label="Niveau">${[0, 1, 2, 3, 4, 5].map(k => `<button data-lab="mz-niveau" data-n="${k}" class="${n === k ? 'on' : ''}">${k ? CHIFFRES_ROMAINS[k] : '0'}</button>`).join('')}</div>
+        <p class="lab-mz-nom">${n ? `${insigneMaitrise(n)} <b>${MAITRISE.noms[n - 1]}</b>` : '<b>Sans maîtrise</b>'}</p>
+        <p class="muted small">${n ? h(MAITRISE.dit[n - 1]) : 'La carte telle qu\'elle est imprimée.'}</p>
+        <p class="muted small">${h(c.nom)} · ${h((COLORS[carteMaitrise(c).col] || COLORS.neutre).nom)} <button class="linkbtn" data-lab="mz-carte">Une autre carte</button></p>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" data-lab="mz-monte" ${n ? '' : 'disabled'}>Montée au niveau ${n ? CHIFFRES_ROMAINS[n] : '…'}</button>
+      <button class="btn ghost" data-lab="mz-fiche">Sa fiche, à ce niveau</button>
+    </div>
+    <h3 class="labsous">En combat · ${genre}</h3>
+    <div class="lab-mz-plateau ar-scene" id="labmzp">${plateau}</div>
+    <div class="row"><button class="btn ghost" data-lab="mz-combat" ${n ? '' : 'disabled'}>Jouer ${labMz.type === 'joueur' ? 'son entrée' : labMz.type === 'objet' ? 'la liaison' : 'la carte'}</button></div>
+    <p class="muted small">En combat, seules tes cartes montrent leur maîtrise. I et II : un trait de lumière ; III : un anneau ; IV : un éclat ; V : une onde de choc, et le plateau tremble.</p>
+  </section>`;
+}
+
+/* La mise en scène d'une carte jouée (Moment, Coach) ou liée (Objet), sur
+   le petit plateau : la carte arrive au centre, puis sa maîtrise se joue. */
+async function labMzJouer() {
+  const P = $('#labmzp');
+  const c = labMzCarte(), n = labMz.n, mc = tcol(carteMaitrise(c));
+  if (!P || !n) return;
+  const secousse = f => P.animate([{ transform: 'none' }, { transform: `translate(${-f}px,${f / 2}px)` }, { transform: `translate(${f}px,${-f / 2}px)` }, { transform: 'none' }], { duration: 320 });
+  if (labMz.type === 'joueur') {
+    const x = P.querySelector('.ar-j');
+    if (x) x.animate([{ transform: 'translateY(-30px) scale(1.15)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    SFX.jouer('carte');
+    await new Promise(ok => setTimeout(ok, 380));
+    return mzEffetCombat(x, n, mc, { scene: P, secousse });
+  }
+  const z = document.createElement('div');
+  z.className = 'lab-mz-montre';
+  z.innerHTML = labMzArene(c, n);
+  P.appendChild(z);
+  const carteEl = z.querySelector('.ar-c');
+  carteEl.animate([{ transform: 'translateY(60px) scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.3,.7,.3,1)' });
+  SFX.jouer('woosh');
+  await new Promise(ok => setTimeout(ok, 400));
+  if (labMz.type !== 'objet') {
+    await mzEffetCombat(carteEl, n, mc, { scene: P, secousse });
+    await new Promise(ok => setTimeout(ok, 900));
+    z.remove();
+    return;
+  }
+  /* L'Objet file sur le Joueur, qui reçoit sa maîtrise ; son médaillon
+     prend l'anneau. */
+  await new Promise(ok => setTimeout(ok, 500));
+  const j = P.querySelector('.ar-j');
+  const r0 = carteEl.getBoundingClientRect(), r1 = j.getBoundingClientRect();
+  await carteEl.animate([{ transform: 'none' }, { transform: `translate(${r1.left + r1.width / 2 - r0.left - r0.width / 2}px,${r1.top + r1.height / 2 - r0.top - r0.height / 2}px) scale(.3)`, opacity: .4 }],
+    { duration: 420, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards' }).finished.catch(() => {});
+  z.remove();
+  const objs = j.querySelector('.ar-objs');
+  if (objs) objs.innerHTML = `<i class="ar-obj${n >= 2 ? ` mzo mzo-${n}` : ''}" style="background-image:url('${h(c.img)}');--mc:${mc}"></i>`;
+  return mzEffetCombat(j, n, mc, { scene: P, secousse });
+}
+
 function vLabApercus() {
   const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
-  return `<section class="panel">
+  return `${vLabMaitrise()}
+
+  <section class="panel">
     <h2>Ouvertures</h2>
     <p class="muted small">Tirées dans ce navigateur : elles ne consomment rien et n'ajoutent rien. Elles
       règlent la mise en scène, pas les probabilités réelles.</p>
@@ -535,6 +630,35 @@ function labAction(a, el) {
   const d = el.dataset, n = d.n == null ? null : +d.n;
   switch (a) {
     case 'recharger': labEtat = null; labEtatCharge = false; return render();
+    case 'mz-type': {
+      const t = LAB_MZ_TYPES.find(x => x[0] === d.v) || LAB_MZ_TYPES[0];
+      labMz.type = t[0]; labMz.id = t[2];
+      return render();
+    }
+    case 'mz-niveau': labMz.n = n; return render();
+    case 'mz-carte': {
+      const cat = labMz.type;
+      const l = cards.filter(c => c.cat === cat && c.id !== labMz.id && maitrisable(c));
+      if (l.length) labMz.id = l[Math.floor(Math.random() * l.length)].id;
+      return render();
+    }
+    case 'mz-monte': {
+      const c = labMzCarte();
+      return jouerMonteeMaitrise($('#labmz'), labMz.n, tcol(carteMaitrise(c)));
+    }
+    case 'mz-fiche': {
+      const c = labMzCarte();
+      openViewer(c);
+      if (VW) {
+        VW.apercu = labMz.n;
+        const el = $('#vwc');
+        if (el) { el.innerHTML = vCarteVw(c); VW.reflets = refletsVw(); }
+        const pg = $('#viewer .vw-page[data-p="maitrise"]');
+        if (pg) { pg.innerHTML = vMaitriseFiche(c); hauteurPagesVw(); }
+      }
+      return;
+    }
+    case 'mz-combat': return labMzJouer();
     case 'choc': {
       const etat = d.etat;
       const titres = { avant: 'Avant le Choc ?', jour: `Au jour ${n} du Choc ?`, recap: 'Au récap du Choc ?', fini: 'Finir le Choc ?' };
@@ -560,9 +684,9 @@ function labAction(a, el) {
       return labPourTous('Changer l\'échelle des seuils ?', `Les seuils des six phases sont multipliés par ${String(n).replace('.', ',')}.`,
         () => labServeurFaire('labo_raid_echelle', { p_echelle: n }, 'Échelle posée.'));
     case 'raid-raz':
-      return labEffacer('Remettre la saison du Raid à zéro ?', `Les dégâts, les phases, la part de <b>chaque joueur</b> et les coffres
-        ouverts de la saison en cours sont effacés, avec les tentatives du jour. Ce qui a été versé reste.`,
-        'labo_raid_raz', {}, 'La saison du Raid est remise à zéro.');
+      return labEffacer('Remettre le raid en cours à zéro ?', `Les dégâts, les phases, la part de <b>chaque joueur</b> et les coffres
+        ouverts du raid en cours sont effacés, avec les tentatives du jour. Ce qui a été versé reste.`,
+        'labo_raid_raz', {}, 'Le raid en cours est remis à zéro.');
     case 'reverses':
       return labPourTous(n ? 'Ouvrir les Reverses ?' : 'Fermer les Reverses ?',
         n ? 'Leur recyclage et leur fabrication s\'ouvrent tout de suite, pour tout le monde.'
@@ -819,12 +943,15 @@ function laboRecompenses() {
     <h3>Niveaux de combattant</h3>
     <p class="muted small">Chaque niveau : ${NIVEAUX.eclats} Éclats. Les paliers jusqu'au 60 :</p>
     ${tableau(['Niveau', 'XP pour y monter', 'En plus'], niveaux)}
-    <h3>Le Raid · ${h(R.nom)}</h3>
+    <h3>Le Raid · ${R.bosses.map(b => h(b.nom)).join(', puis ')}</h3>
     ${tableau(['Phase', 'Seuil', 'Combat', 'Coffre commun'], R.phases.map((ph, i) => [i + 1, `${fmtN(ph.seuil)} × échelle`,
       `IA ${ph.ia} ★ · ${ph.pv} PV${ph.ess ? ` · +${ph.ess} Ess.` : ''}`, h(ph.commun.titre)]))}
     ${tableau(['Palier perso', 'Dégâts', 'Coffre'], R.perso.map((x, i) => [i + 1, fmtN(x.seuil), h(x.titre)]))}
     ${tableau(['Infini', 'Combat'], [1, 2, 3, 4, 6, 9].map(n => { const c = R.infini(n); return [`palier ${n}`, `IA ${c.ia} ★ · boss ${c.pvBoss} PV · +${c.ess} Ess. · toi ${c.pvMoi} PV`]; }))}
-    <p class="muted small">Pendant le Choc : ${R.parDegat} Étincelles par dégât, +${R.victoire} si le boss tombe. Sinon : ${R.parDegatEclats} Éclats par dégât, +${R.victoireEclats}. ${R.tentatives} tentatives par jour ; saisons de ${R.saison.jours} jours. L'échelle des seuils se règle dans le Labo › Serveur.</p>
+    <p class="muted small">Pendant le Choc : ${R.parDegat} Étincelles par dégât, +${R.victoire} si le boss tombe. Sinon : ${R.parDegatEclats} Éclats par dégât, +${R.victoireEclats}. ${R.tentatives} tentatives par jour ; des raids de ${R.saison.jours} jours, comptés depuis le premier jour du Choc, aux boss à tour de rôle.</p>
+    ${tableau(['Boss', 'Raids', 'Son deck', 'En combat'], R.bosses.map((b, i) => [h(b.nom), i ? 'pairs (2, 4…)' : 'impairs (1, 3…)', h(b.dit),
+      `${b.ajuste ? `${-b.ajuste.pv} PV et ${-b.ajuste.ess} Essence d'avance de moins que la phase · ` : 'les chiffres de la phase · '}cadre ${h((FRAMES[b.cadre] || {}).nom || b.cadre)} · tapis ${h(((typeof TAPIS !== 'undefined' && TAPIS[b.tapis]) || (typeof TAPIS_BOSS !== 'undefined' && TAPIS_BOSS[b.tapis]) || {}).nom || b.tapis)}`]))}
+    <p class="muted small">L'échelle des seuils se règle dans le Labo › Serveur. Les deux boss ont les mêmes phases et les mêmes coffres ; seuls leur deck, leur illustration, leur cadre et leur tapis changent.</p>
     <h3>Le Pass du Choc</h3>
     ${ev ? tableau(['Palier', 'Étincelles', 'Récompense'], chEv.piste.map(x => [x.palier, fmtN(x.seuil), h(x.titre || x.type || '')])) : '<p class="muted small">Ouvre une fois l\'onglet de l\'événement (pendant le Choc) pour charger le Pass, puis reviens ici.</p>'}`;
 }

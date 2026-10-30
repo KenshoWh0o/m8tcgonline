@@ -1,18 +1,21 @@
 /* La maîtrise des cartes, et la carte fétiche (version 3.0.7).
 
    Ce que deviennent les Fragments quand la collection est complète : une
-   carte qu'on possède s'améliore, en cinq niveaux, et chaque niveau change
-   son allure — partout où elle apparaît, en combat compris.
+   carte qu'on possède s'améliore, en cinq niveaux, et chaque niveau ajoute
+   une finition, comme les versions premium d'une carte imprimée — partout
+   où elle apparaît, en combat compris (version 3.0.11, refonte entière) :
 
-     1 · Éclat    un reflet de lumière passe sur la carte ;
-     2 · Liseré   un liseré de métal, à la couleur de son Essence, la borde ;
-     3 · Aura     un halo de son Essence respire derrière elle ;
-     4 · Arène    une lumière court sur son liseré ; en combat, elle entre
-                  dans l'arène dans un éclat, et ses coups brillent ;
-     5 · Légende  un liseré irisé, un reflet irisé très doux, un joyau serti
-                  au sommet ; en combat, une onde de choc à son entrée.
-   (Version 3.0.8 : plus de trame sur l'illustration ni de couronne ; la
-   carte reste intacte, c'est sa finition qui change.)
+     1 · Satin    un vernis : un reflet posé, une lumière qui glisse ;
+     2 · Liseré   un bord de métal biseauté, à la couleur de son Essence ;
+     3 · Holo     son illustration devient holographique ;
+     4 · Lumière  une lumière fait le tour du liseré, des étincelles
+                  montent, un halo ; en combat, elle entre dans un éclat, et
+                  ses coups brillent ;
+     5 · Légende  un liseré prismatique et trois étoiles du logo qui
+                  scintillent ; en combat, une onde de choc.
+   En combat, chaque niveau se voit à l'entrée de la carte — un Joueur posé,
+   mais aussi un Moment ou un Coach joué, un Objet lié (mzEffetCombat). La
+   carte reste intacte : c'est sa finition qui change (css/maitrise.css).
 
    Ce que coûte un niveau : des Fragments, et des exemplaires de la carte.
    Le conflit avec les decks (il en faut deux pour jouer une carte deux
@@ -30,13 +33,13 @@
 
 const MAITRISE = {
   max: 5,
-  noms: ['Éclat', 'Liseré', 'Aura', 'Arène', 'Légende'],
+  noms: ['Satin', 'Liseré', 'Holo', 'Lumière', 'Légende'],
   dit: [
-    'Un reflet de lumière passe sur la carte.',
-    'Un liseré de métal, à la couleur de son Essence, borde la carte.',
-    'Un halo de son Essence respire derrière elle.',
-    'Une lumière court sur son liseré. En combat, elle entre dans l\'arène dans un éclat, et ses coups brillent.',
-    'Un liseré irisé, un reflet irisé et un joyau à son sommet. En combat, une onde de choc à son entrée.'
+    'Un vernis satiné : un reflet se pose sur la carte, une lumière la traverse de temps en temps.',
+    'Un bord de métal biseauté, à la couleur de son Essence.',
+    'Son illustration devient holographique : un reflet prismatique la traverse, des paillettes s\'y allument.',
+    'Une lumière fait le tour de son liseré, des étincelles montent, un halo l\'entoure. En combat, elle entre dans un éclat, et ses coups brillent.',
+    'Un liseré prismatique et trois étoiles qui scintillent. En combat, une onde de choc traverse le plateau.'
   ],
   /* Les Fragments d'un niveau (version 3.0.8) : la base de la rareté, fois
      1, 2, 4, 7, 11 — 25 fois la base pour la Légende : 1 500 pour une
@@ -87,36 +90,35 @@ function coutMaitrise(c) {
 
 /* ---------- L'allure ---------- */
 /* Ce que renderCard ajoute à une carte maîtrisée : des classes sur son
-   enveloppe, et les couches de l'effet — dans la carte (le reflet, le
-   liseré, la lumière qui court, le reflet irisé : la carte les découpe à sa
-   forme), autour d'elle (le halo, le joyau). `calme` : sans animation (une
-   grille de cent cartes). L'arène fait de même (js/combat/table.js,
-   htmlCarte et mzAutour). */
-const mzDedans = n => `<i class="mz-l" aria-hidden="true"></i>${n >= 2 ? '<i class="mz-e" aria-hidden="true"></i>' : ''}${n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : ''}${n >= 5 ? '<i class="mz-h" aria-hidden="true"></i>' : ''}`;
-const mzAutourDe = n => `${n >= 3 ? '<i class="mz-a" aria-hidden="true"></i>' : ''}${n >= 5 ? `<i class="mz-c" aria-hidden="true">${JOYAU}</i>` : ''}`;
+   enveloppe, et les couches des finitions — dans la carte (le vernis, le
+   liseré, l'holo, la lumière, les étincelles, les étoiles : la carte les
+   découpe à sa forme), autour d'elle (le halo). `calme` : sans animation
+   (une grille de cent cartes). L'arène fait de même (js/combat/table.js,
+   htmlCarte et mzAutour). L'ordre des couches compte : l'holo sous le
+   liseré, la lumière par-dessus, les étoiles au-dessus de tout. */
+/* L'étoile du logo, à quatre branches : l'insigne, les étoiles de la
+   Légende. */
+const MZ_ETOILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .6c1 6.6 4.3 10 11.4 11.4C16.3 13.4 13 16.8 12 23.4 11 16.8 7.7 13.4.6 12 7.7 10.6 11 7.2 12 .6Z"/></svg>';
+/* La même, au prisme des Secrètes (l'insigne de la Légende). Le dégradé
+   porte un identifiant fixe : identique partout, il peut être défini
+   plusieurs fois dans la page. */
+const MZ_ETOILE_V = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="mzprisme" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc4e4"/><stop offset=".35" stop-color="#d9c9ff"/><stop offset=".65" stop-color="#b9e4ff"/><stop offset="1" stop-color="#bff3dc"/></linearGradient></defs><path d="M12 .6c1 6.6 4.3 10 11.4 11.4C16.3 13.4 13 16.8 12 23.4 11 16.8 7.7 13.4.6 12 7.7 10.6 11 7.2 12 .6Z"/></svg>';
+const mzDedans = n => '<i class="mz-s" aria-hidden="true"></i>'
+  + (n >= 3 ? '<i class="mz-h" aria-hidden="true"></i>' : '')
+  + (n >= 4 ? '<i class="mz-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i>' : '')
+  + (n >= 2 ? '<i class="mz-t" aria-hidden="true"></i>' : '')
+  + (n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : '')
+  + (n >= 5 ? `<i class="mz-g" aria-hidden="true">${MZ_ETOILE}${MZ_ETOILE}${MZ_ETOILE}</i>` : '');
+const mzAutourDe = n => (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '');
 function maitriseEnveloppe(c, n, calme) {
   if (!n) return { cls: '', style: '', dedans: '', autour: '' };
   const k = carteMaitrise(c);
   return { cls: ` mz mz-${n}${calme ? ' mz-calme' : ''}`, style: `--mc:${tcol(k)}`, dedans: mzDedans(n), autour: mzAutourDe(n) };
 }
-/* Le joyau de la Légende (à la place de la couronne, version 3.0.8) : une
-   pierre taillée à la couleur de l'Essence, sertie d'or, posée à cheval sur
-   le bord haut de la carte ; une étincelle y passe de temps en temps. Le
-   dégradé d'or porte un identifiant fixe : identique partout, il peut être
-   défini plusieurs fois dans la page. */
-const JOYAU = '<svg viewBox="0 0 60 28"><defs><linearGradient id="mzjor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".45" stop-color="#f5c451"/><stop offset="1" stop-color="#8a5a06"/></linearGradient></defs>'
-  + '<g fill="none" stroke="url(#mzjor)" stroke-width="1.7" stroke-linecap="round"><path d="M11 14C7 9.6 4 10.4 1.6 12.6M11 14C7 18.4 4 17.6 1.6 15.4M49 14C53 9.6 56 10.4 58.4 12.6M49 14C53 18.4 56 17.6 58.4 15.4"/></g>'
-  + '<circle cx="1.6" cy="14" r="1.3" fill="url(#mzjor)"/><circle cx="58.4" cy="14" r="1.3" fill="url(#mzjor)"/>'
-  + '<path d="M10 14 17 5.5h26L50 14l-7 8.5H17Z" fill="url(#mzjor)" stroke="#4a3000" stroke-width=".9" stroke-linejoin="round"/>'
-  + '<path d="M13 14 18.4 7.6h23.2L47 14l-5.4 6.4H18.4Z" fill="none" stroke="#fff7d6" stroke-width=".6" opacity=".7"/>'
-  + '<path d="M15 14 19.5 9h21L45 14l-4.5 5h-21Z" style="fill:var(--mc)" stroke="#2a1a00" stroke-width=".5" stroke-linejoin="round"/>'
-  + '<path d="M15 14 19.5 9h21L45 14Z" fill="#fff" opacity=".2"/>'
-  + '<path d="M22 14 24.5 11.2h11L38 14l-2.5 2.8h-11Z" style="fill:color-mix(in srgb,var(--mc) 45%,#fff)"/>'
-  + '<path d="M24.5 11.2 19.5 9M35.5 11.2 40.5 9M38 14h7M35.5 16.8 40.5 19M24.5 16.8 19.5 19M22 14h-7" stroke="#fff" stroke-width=".45" opacity=".55"/>'
-  + '<path class="mz-eclat" d="M25.5 9.4 26.3 11.2 28.1 12 26.3 12.8 25.5 14.6 24.7 12.8 22.9 12 24.7 11.2Z" fill="#fff"/></svg>';
 
-/* Le petit insigne d'une maîtrise : « III ». */
-const insigneMaitrise = n => (n ? `<i class="mz-ins mz-ins-${n}" title="Maîtrise ${CHIFFRES_ROMAINS[n]} · ${MAITRISE.noms[n - 1]}">${CHIFFRES_ROMAINS[n]}</i>` : '');
+/* Le petit insigne d'une maîtrise : « ✦ III » (version 3.0.11 : l'étoile du
+   logo et le chiffre, sur une pastille graphite ; plus de jaune). */
+const insigneMaitrise = n => (n ? `<i class="mz-ins mz-ins-${n}" title="Maîtrise ${CHIFFRES_ROMAINS[n]} · ${MAITRISE.noms[n - 1]}">${n >= 5 ? MZ_ETOILE_V : MZ_ETOILE}<b>${CHIFFRES_ROMAINS[n]}</b></i>` : '');
 
 /* ---------- La fiche : l'onglet Maîtrise (version 3.0.8) ----------
    Tout tient sans défiler : la frise des cinq niveaux (touchée, elle montre
@@ -149,7 +151,7 @@ function vMaitriseFiche(c) {
   let action = '';
   if (!en) action = '<p class="mz-rien">La maîtrise se joue en ligne.</p>';
   else if (!possede) action = `<p class="mz-rien">Il faut posséder ${c.rev ? 'sa carte classique' : 'la carte'} pour la maîtriser.</p>`;
-  else if (!cout) action = '<p class="mz-max">Maîtrise au maximum : c\'est une Légende.</p>';
+  else if (!cout) action = `<p class="mz-max">${insigneMaitrise(MAITRISE.max)}Maîtrise au maximum : c'est une Légende.</p>`;
   else {
     const assez = (save.fragments || 0) >= cout.total;
     const morceaux = [`${NAVICO.fragment}<b class="tnum">${fmtN(cout.frag)}</b>`];
@@ -182,13 +184,100 @@ async function maitriserVw() {
     if (b) b.disabled = false;
     return;
   }
-  SFX.jouer('legend');
-  vibrer(30);
   /* La carte change d'allure sous les yeux : elle est redessinée en place,
-     un éclair la traverse. */
-  rafraichirFicheVw(true);
-  toast(`Maîtrise ${CHIFFRES_ROMAINS[cout.n]} · ${MAITRISE.noms[cout.n - 1]} !`);
+     puis la montée se joue sur elle (jouerMonteeMaitrise). */
+  rafraichirFicheVw();
   render();
+  await jouerMonteeMaitrise(document.querySelector('#vwc'), cout.n, tcol(k));
+}
+
+/* La montée d'un niveau, sur une carte affichée (la fiche ; l'aperçu du
+   Labo, js/lab.js) : la carte se soulève, un éclat blanc, un trait de
+   lumière la traverse, et le chiffre du niveau s'inscrit sur elle avec son
+   nom ; des étincelles de sa couleur, un carillon (plus riche de niveau en
+   niveau). `el` contient la carte (son .cwrap) ; elle a déjà sa nouvelle
+   finition. Avec les mouvements réduits : le carillon et un message. */
+function jouerMonteeMaitrise(el, n, mc) {
+  const w = el && el.querySelector('.cwrap');
+  SFX.jouer(n >= 5 ? 'legend' : n >= 3 ? 'epique' : 'rare');
+  vibrer(n >= 5 ? [30, 60, 40] : 30);
+  if (!w || RM() || document.documentElement.classList.contains('rm')) {
+    toast(`Maîtrise ${CHIFFRES_ROMAINS[n]} · ${MAITRISE.noms[n - 1]} !`);
+    return Promise.resolve();
+  }
+  w.style.setProperty('--mc', mc);
+  w.classList.remove('mz-monte'); void w.offsetWidth; w.classList.add('mz-monte');
+  const sceau = document.createElement('span');
+  sceau.className = 'mz-sceau';
+  sceau.innerHTML = `<b>${CHIFFRES_ROMAINS[n]}</b><small>${MAITRISE.noms[n - 1]}</small>`;
+  w.appendChild(sceau);
+  if (typeof FX !== 'undefined') {
+    const r = w.getBoundingClientRect();
+    const couleurs = n >= 5 ? ['#fff', mc, '#ffc4e4', '#b9e4ff', '#d9c9ff'] : ['#fff', mc, mc];
+    setTimeout(() => FX.burst(r.left + r.width / 2, r.top + r.height * .45, { n: 30 + n * 12, colors: couleurs, speed: 7, size: 3.2, g: .08 }), 160);
+  }
+  return new Promise(fin => setTimeout(() => { w.classList.remove('mz-monte'); sceau.remove(); fin(); }, 1750));
+}
+
+/* En combat (js/combat/table.js) et dans l'aperçu du Labo : ce que fait une
+   carte maîtrisée en entrant — un Joueur posé, un Moment ou un Coach joué
+   (montré en grand), un Objet lié (sur le Joueur qui le reçoit). Avant la
+   3.0.11, seuls les Joueurs des niveaux IV et V avaient leur entrée.
+     I et plus   un trait de lumière passe sur la carte ;
+     III et plus un anneau de sa couleur part d'elle ;
+     IV et plus  un éclat, des étincelles, un carillon ;
+     V           une onde de choc traverse le plateau, qui tremble.
+   `x` : l'élément de la carte (positionné) ; `o.scene` : le plateau, où
+   poser l'anneau et l'onde ; `o.secousse(force)` : faire trembler le
+   plateau ; `o.vitesse` : le réglage « Animations rapides » de l'arène.
+   Renvoie une promesse : le temps à attendre avant la suite. */
+function mzEffetCombat(x, n, mc, o) {
+  o = o || {};
+  if (!x || !n) return Promise.resolve();
+  const calme = RM() || document.documentElement.classList.contains('rm');
+  if (n >= 4) SFX.jouer(n >= 5 ? 'legend' : 'rare');
+  else SFX.jouer('piece');
+  if (calme) return Promise.resolve();
+  const trait = document.createElement('i');
+  trait.className = 'mz-trait';
+  trait.style.setProperty('--mc', mc);
+  x.appendChild(trait);
+  setTimeout(() => trait.remove(), 800);
+  const scene = o.scene || x.offsetParent || document.body;
+  const r = x.getBoundingClientRect(), sc = scene.getBoundingClientRect();
+  const centre = el => { el.style.left = (r.left - sc.left + r.width / 2) + 'px'; el.style.top = (r.top - sc.top + r.height / 2) + 'px'; el.style.setProperty('--mc', mc); };
+  if (n >= 3) {
+    const a = document.createElement('i');
+    a.className = 'mz-anneau';
+    centre(a);
+    scene.appendChild(a);
+    setTimeout(() => a.remove(), 1000);
+  }
+  if (n >= 4) {
+    x.style.setProperty('--mc', mc);
+    x.classList.remove('mz-entree'); void x.offsetWidth; x.classList.add('mz-entree');
+    setTimeout(() => x.classList.remove('mz-entree'), 1100);
+    if (typeof FX !== 'undefined') FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: n >= 5 ? 46 : 30, colors: ['#fff', mc, mc, color2(mc)], speed: 6, size: 3, g: .1 });
+  }
+  if (n >= 5) {
+    const w = document.createElement('i');
+    w.className = 'mz-onde';
+    centre(w);
+    scene.appendChild(w);
+    setTimeout(() => w.remove(), 1300);
+    if (o.secousse) o.secousse(6);
+  }
+  const ms = n >= 5 ? 700 : n >= 4 ? 420 : n >= 3 ? 260 : 120;
+  return new Promise(fin => setTimeout(fin, ms * (o.vitesse || 1)));
+}
+/* Une seconde teinte des étincelles : la couleur, éclaircie de moitié. Les
+   particules sont dessinées dans un canvas : une couleur #rrggbb, pas un
+   color-mix(). */
+function color2(mc) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(mc || '').trim());
+  if (!m) return '#ffffff';
+  const v = parseInt(m[1], 16);
+  return '#' + [16, 8, 0].map(k => Math.round((((v >> k) & 255) + 255) / 2).toString(16).padStart(2, '0')).join('');
 }
 
 /* L'aperçu du niveau suivant, posé sur la carte de la fiche le temps de le
@@ -200,9 +289,9 @@ function voirNiveauVw(m) {
   /* Touché encore, ou son niveau actuel : on revient à la carte telle qu'elle est. */
   VW.apercu = VW.apercu === m || m === n ? 0 : m;
   const carteEl = document.querySelector('#vwc');
-  if (carteEl) carteEl.innerHTML = vCarteVw(c);
+  if (carteEl) { carteEl.innerHTML = vCarteVw(c); VW.reflets = refletsVw(); }
   const p = document.querySelector('#viewer .vw-page[data-p="maitrise"]');
-  if (p) p.innerHTML = vMaitriseFiche(c);
+  if (p) { p.innerHTML = vMaitriseFiche(c); hauteurPagesVw(); }
 }
 
 /* ---------- La carte fétiche ---------- */
@@ -229,15 +318,17 @@ function vFetiche(id, niveau, o) {
   const R = RAR[c.rar] || RAR.C;
   const col = COLORS[k.col] || COLORS.neutre;
   const rar = FET_RAR[c.rar] ? `style="color:var(${FET_RAR[c.rar]})"` : '';
+  const crans = Array.from({ length: MAITRISE.max }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('');
   return `<section class="fet${n ? ' fet-mz' + n : ''}" style="--fc:${tcol(k)}">
     <span class="fet-fond" aria-hidden="true" style="background-image:url('${h(c.img)}')"></span>
     <button class="fet-carte" data-show="${c.id}" data-snd="carte" aria-label="Voir ${h(c.nom)}">${renderCard(c, { m: n })}</button>
     <div class="fet-t">
-      <small>${o.moi ? 'Ma carte fétiche' : 'Sa carte fétiche'}</small>
+      <small>${MZ_ETOILE}${o.moi ? 'Ma carte fétiche' : 'Sa carte fétiche'}</small>
       <b>${h(c.nom)}</b>
       <span class="fet-meta"><span class="fet-rar r${c.rar}" ${rar}>${R.nom}${c.rev ? ' · Reverse' : ''}</span>
         <span class="fet-ess">${essIcon(k.col)}${h(col.nom)}</span><span class="fet-num tnum">${c.num ? '#' + String(c.num).padStart(3, '0') : h(c.code || '')}</span></span>
-      ${n ? `<span class="fet-mz">${insigneMaitrise(n)}<span>Maîtrise ${CHIFFRES_ROMAINS[n]} · <b>${MAITRISE.noms[n - 1]}</b></span></span>` : ''}
+      ${n ? `<span class="fet-mz"><span>${insigneMaitrise(n)}Maîtrise · <b>${MAITRISE.noms[n - 1]}</b></span><span class="fet-crans${n >= MAITRISE.max ? ' max' : ''}" aria-hidden="true">${crans}</span></span>`
+        : maitrisable(c) ? '<span class="fet-mz"><span>Pas encore maîtrisée</span></span>' : ''}
       ${o.edit ? '<button class="btn tiny ghost fet-changer" data-tab="collection">Changer</button>' : ''}
     </div>
   </section>`;
@@ -252,6 +343,6 @@ async function choisirFeticheVw() {
   } catch (e) { toast(e.message || 'Le choix n\'est pas passé.'); return; }
   SFX.jouer(on ? 'rare' : 'retour');
   toast(on ? `${c.nom} est ta carte fétiche.` : 'Carte fétiche retirée.');
-  rafraichirFicheVw(false);
+  rafraichirFicheVw();
   render();
 }

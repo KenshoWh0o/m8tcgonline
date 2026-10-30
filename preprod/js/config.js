@@ -35,21 +35,21 @@ const CARD_DIR = 'cards/';
 /* ---------- Habillage ---------- */
 /* Les quatre visuels de booster : un est tiré au sort à chaque paquet, sans effet sur le contenu. */
 const PACK_ARTS = [
-  'assets/boosters/booster-01.webp?v=3.0.10',
-  'assets/boosters/booster-02.webp?v=3.0.10',
-  'assets/boosters/booster-03.webp?v=3.0.10',
-  'assets/boosters/booster-04.webp?v=3.0.10'
+  'assets/boosters/booster-01.webp?v=3.0.11',
+  'assets/boosters/booster-02.webp?v=3.0.11',
+  'assets/boosters/booster-03.webp?v=3.0.11',
+  'assets/boosters/booster-04.webp?v=3.0.11'
 ];
 
-/* Le sceau assets/pack-star.svg?v=3.0.10 sert d'icône au compteur de boosters, directement dans index.html. */
+/* Le sceau assets/pack-star.svg?v=3.0.11 sert d'icône au compteur de boosters, directement dans index.html. */
 const ART = {
-  logo: 'assets/logo-m8.webp?v=3.0.10',         /* logo du jeu, en en-tête */
-  back: 'assets/card-back.webp?v=3.0.10',       /* dos de carte */
-  set: 'assets/extension-logo.svg?v=3.0.10',    /* logo de l'extension */
-  edition: 'assets/1st-edition.svg?v=3.0.10',   /* pastille 1re édition */
-  seal: 'assets/pack-star.svg?v=3.0.10',        /* sceau, icône de la réserve */
-  star: 'assets/star-pink.svg?v=3.0.10',        /* étincelle, repli d'avatar */
-  jeton: 'assets/jeton-echange.webp?v=3.0.10'   /* le jeton d'échange, frappé du M8 */
+  logo: 'assets/logo-m8.webp?v=3.0.11',         /* logo du jeu, en en-tête */
+  back: 'assets/card-back.webp?v=3.0.11',       /* dos de carte */
+  set: 'assets/extension-logo.svg?v=3.0.11',    /* logo de l'extension */
+  edition: 'assets/1st-edition.svg?v=3.0.11',   /* pastille 1re édition */
+  seal: 'assets/pack-star.svg?v=3.0.11',        /* sceau, icône de la réserve */
+  star: 'assets/star-pink.svg?v=3.0.11',        /* étincelle, repli d'avatar */
+  jeton: 'assets/jeton-echange.webp?v=3.0.11'   /* le jeton d'échange, frappé du M8 */
 };
 
 /* Petites icônes en ligne : elles héritent de la couleur du texte qui les entoure.
@@ -65,16 +65,16 @@ const ICON = {
 /* ---------- Référentiels ---------- */
 /* Couleurs officielles des neuf essences ; `ic` est le symbole affiché dans l'interface. */
 const COLORS = {
-  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.10' },
-  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.10' },
-  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.10' },
-  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.10' },
-  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.10' },
-  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.10' },
-  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.10' },
-  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.10' },
-  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.10' },
-  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.10' }
+  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=3.0.11' },
+  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=3.0.11' },
+  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=3.0.11' },
+  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=3.0.11' },
+  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=3.0.11' },
+  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=3.0.11' },
+  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=3.0.11' },
+  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=3.0.11' },
+  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=3.0.11' },
+  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=3.0.11' }
 };
 
 /* `PR` n'est pas une rareté de plus dans l'échelle : c'est une case à part.
@@ -91,9 +91,10 @@ const RAR = {
   /* Version 3.0 : les Secrètes, au-delà des 122 (« 123/122 »). */
   S: { nom: 'Secrète', sym: '✦✦', rank: 5.5 },
   PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true },
-  /* Hors extension, comme les Promos : jamais dans les 122, jamais échangées
-     ni recyclées. La Brillante sort de la case Essence d'un booster, une fois
-     sur cinquante ; l'Unique n'existe qu'en un exemplaire dans tout le jeu. */
+  /* Hors extension, comme les Promos : jamais dans les 122, jamais recyclées.
+     La Brillante sort de la case Essence d'un booster, une fois sur cinquante,
+     et s'échange contre une autre Brillante (version 3.0.11) ; l'Unique
+     n'existe qu'en un exemplaire dans tout le jeu, et ne s'échange pas. */
   BR: { nom: 'Brillante', sym: '✧', rank: 7, promo: true },
   UN: { nom: 'Unique', sym: '◈', rank: 8, promo: true }
 };
@@ -204,6 +205,13 @@ const TITRES = {
   t_prisme:    { nom: 'Éclat absolu',              ton: 'L',  comment: 'Réunir les 9 Essences Brillantes' },
   t_maitre:    { nom: 'Maître de l\'extension',    ton: 'L',  comment: 'Posséder les 122 cartes' },
   t_reflet:    { nom: 'Miroir parfait',            ton: 'L',  comment: 'Réunir les 85 Reverses' },
+  /* Version 2.5 : L'Échauffement et son événement (supabase/22b_echauffement.sql,
+     22e et 22f de la 2.5). La 3.0 ne les donne plus ; ceux qui les ont les gardent. */
+  t_echauffe:  { nom: 'Échauffé',                  ton: 'E',  comment: 'Les 21 étoiles de L\'Échauffement' },
+  t_ech_round: { nom: 'Premier round',             ton: 'EV', comment: 'Palier 5 du Pass de L\'Échauffement' },
+  t_ech_feu:   { nom: 'Feu sacré',                 ton: 'EV', comment: 'Palier 15 du Pass de L\'Échauffement' },
+  t_ech_entraineur: { nom: 'Entraîneur',           ton: 'EV', comment: 'Boutique de l\'événement « L\'Échauffement »' },
+  t_ech_infatigable: { nom: 'Infatigable',         ton: 'E',  comment: 'Gagner 10 défis du jour, après L\'Échauffement' },
   t_eclaireur: { nom: 'Éclaireur des Reflets',     ton: 'EV', comment: 'Palier 3 du Pass Reflets' },
   t_collect:   { nom: 'Collectionneur de Reflets', ton: 'EV', comment: 'Boutique de l\'événement « Reflets »' },
   t_ame:       { nom: 'Âme des Reflets',           ton: 'EV', comment: 'Palier 19 du Pass Reflets' },
@@ -228,12 +236,15 @@ const TITRES = {
 /* La monnaie d'un événement (supabase/installation/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
    avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
-   de Reflets (2.0), les Étincelles du Choc des Sections (3.0). Le serveur les
-   range toutes au même endroit (evt_comptes) ; seuls le nom et l'icône
-   changent. `PRISMES` suit l'événement en cours, ou celui dont on lit le
-   récap. */
+   de Reflets (2.0), les Braises de L'Échauffement (2.5), les Étincelles du Choc
+   des Sections (3.0). Le serveur les range toutes au même endroit
+   (evt_comptes) ; seuls le nom et l'icône changent. `PRISMES` suit l'événement
+   en cours, ou celui dont on lit le récap. Les Braises sont là pour une 3.0
+   qui sortirait pendant L'Échauffement ou son récap (jusqu'au 7 novembre
+   2026) : sans elles, la page les appellerait « Prismes ». */
 const MONNAIES_EV = {
   reflets: { nom: 'Prismes', un: 'Prisme' },
+  echauffement: { nom: 'Braises', un: 'Braise' },
   choc: { nom: 'Étincelles', un: 'Étincelle' }
 };
 const evMonnaieCode = () => {
@@ -269,6 +280,10 @@ const FRAMES = {
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
+  /* Version 2.5 : le Pass de L'Échauffement (paliers 10 et 20), dessinés par
+     tools/cadres.py. La 3.0 ne les donne plus ; ceux qui les ont les gardent. */
+  f_braise: { nom: 'Braise', fx: 'braise', vente: false, c1: '#ffcf8a', c2: '#8a78f5' },
+  f_ardeur: { nom: 'Ardeur', fx: 'ardeur', vente: false, c1: '#c8bfff', c2: '#5d4bd9' },
   /* Version 3.0 : le Pass et le Raid du Choc des Sections. */
   f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#62d84e', c2: '#7c3aed' },
   f_foudre: { nom: 'The French Sorcerer', fx: 'foudre', vente: false, c1: '#ec8fff', c2: '#6a2bd6' },
@@ -291,11 +306,11 @@ const FRAMES = {
    Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
    avatarHTML dans js/ui.js). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.10', ico: true, bg: '#5d4bd9' },
-  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.10', objet: true, pos: '50%' },
-  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.10', objet: true, pos: '40%' },
-  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.10', ico: true, bg: '#5d4bd9' },
-  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.10', ico: true, bg: '#ee0073' }
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=3.0.11', ico: true, bg: '#5d4bd9' },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=3.0.11', objet: true, pos: '50%' },
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=3.0.11', objet: true, pos: '40%' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=3.0.11', ico: true, bg: '#5d4bd9' },
+  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=3.0.11', ico: true, bg: '#ee0073' }
 };
 
 /* ---------- Échanges ---------- */

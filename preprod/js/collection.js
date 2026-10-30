@@ -52,15 +52,19 @@ function vCollection() {
   }
 
   const sp = speciales();
+  /* Les Secrètes se comptent au-delà du total, comme les cartes secrètes d'un
+     vrai jeu de cartes (« 127 / 122 ») : le nombre les compte, la jauge et le
+     pourcentage, qui disent où on en est de l'extension, non (`dans`). */
   const vues = [
-    { id: 'classiques', nom: 'Classiques', n: possedees(cards), total: cards.length },
+    { id: 'classiques', nom: 'Classiques', dans: possedees(cards), n: possedees(cards) + possedees(secretes), total: cards.length },
     { id: 'reverses', nom: 'Reverses', n: possedees(reverses), total: reverses.length },
     { id: 'speciales', nom: 'Spéciales', n: possedees(sp), total: sp.length }
   ].filter(v => v.total > 0);
+  vues.forEach(v => { if (v.dans == null) v.dans = v.n; });
   if (!vues.some(v => v.id === colVue)) colVue = 'classiques';
   const toutes = vues.reduce((n, v) => n + v.total, 0);
   const miennes = vues.reduce((n, v) => n + v.n, 0);
-  const pctTout = Math.floor(miennes / toutes * 100);
+  const pctTout = Math.floor(vues.reduce((n, v) => n + v.dans, 0) / toutes * 100);
 
   const tete = `<div class="colhead">
       <div class="colheadtop">
@@ -75,7 +79,7 @@ function vCollection() {
     <div class="colvues" role="tablist">${vues.map(v => `<button class="colvue ${v.id}${colVue === v.id ? ' on' : ''}" data-colvue="${v.id}"
         role="tab" aria-selected="${colVue === v.id}">
         <b>${v.nom}</b><span class="tnum">${v.n}<small> / ${v.total}</small></span>
-        <i class="colvuebar"><i style="width:${Math.round(v.n / v.total * 100)}%"></i></i></button>`).join('')}</div>`;
+        <i class="colvuebar"><i style="width:${Math.round(v.dans / v.total * 100)}%"></i></i></button>`).join('')}</div>`;
 
   return tete + (colVue === 'reverses' ? vColReverses() : colVue === 'speciales' ? vColSpeciales() : vColClassiques());
 }
@@ -90,9 +94,7 @@ function vColClassiques() {
      On ne les montre que sans filtre : ils n'ont encore ni catégorie ni essence. */
   const noFilter = !filtresActifs();
 
-  return `${Backend.mode === 'cloud' && owned < all.length
-      ? `<div class="colsous"><span class="colfab">${NAVICO.fragment}<b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom} · touche une case vide pour la fabriquer</span></div>`
-      : ''}
+  return `${vLigneFragments(owned >= all.length)}
 
     ${noFilter && uniques[0] && save.col[uniques[0].id] > 0 ? vUniqueVitrine() : ''}
 
@@ -115,16 +117,24 @@ function vVideFiltres() {
     <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`;
 }
 
+/* La ligne des Fragments, la même en tête des Classiques et des Reverses
+   (reprise de la 2.5) : le solde, et ce qu'une case vide permet. Rien hors
+   ligne ni une fois tout possédé. `quoi` remplace la fin de la phrase (les
+   Reverses, tant que leur fabrication n'est pas ouverte). */
+function vLigneFragments(complet, quoi) {
+  if (Backend.mode !== 'cloud' || complet) return '';
+  return `<div class="colsous"><span class="colfab">${NAVICO.fragment}<b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom} · ${quoi || 'touche une case vide pour la fabriquer'}</span></div>`;
+}
+
 /* ---------- Les 85 Reverses ---------- */
 function vColReverses() {
   const all = reverses.slice().sort((a, b) => (a.num || 0) - (b.num || 0));
   const list = filtrer(all);
-  /* Ouverte à la date donnée par le serveur (revOuvertes, js/recyclage.js). */
+  /* Ouverte à la date donnée par le serveur (revOuvertes, js/recyclage.js) ;
+     avant, la ligne dit quand. */
   const quand = revQuand();
-  return `<p class="colsous revfab">${NAVICO.fragment}<span>${revOuvertes()
-      ? `Recyclage et fabrication ouverts. Fabriquer coûte ${revCoutsTexte()}.`
-      : quand ? `Recyclage et fabrication : ouverture ${quand}.`
-      : 'La fabrication des Reverses ouvrira plus tard.'}</span></p>
+  const ferme = revOuvertes() ? null : quand ? `fabrication ${quand}` : 'fabrication pas encore ouverte';
+  return `${vLigneFragments(possedees(all) >= all.length, ferme)}
     ${vFiltres(all)}
     ${list.length
       ? `<div class="grid">${list.map(vCase).join('')}</div>`

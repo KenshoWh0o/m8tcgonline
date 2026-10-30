@@ -329,6 +329,7 @@ function render() {
     else if (b > n.scrollLeft + n.clientWidth) n.scrollLeft = b - n.clientWidth + 24;
   });
   if (haut) m.scrollTop = haut;
+  majDefile();
 
   if (tab === 'boosters') bindPack();
   if (tab === 'reflets') placerPass();
@@ -347,6 +348,16 @@ function render() {
      d'une fenêtre par session, et jamais par-dessus autre chose. */
   proposerAccueil();
 }
+
+/* L'en-tête prend son fond de verre dès que la page passe dessous
+   (version 3.0.11, `body.defile`, css/base.css) : en haut de page, il n'y a
+   rien sous lui. Il n'y a plus le bord flou et dégradé qui effaçait le
+   contenu en remontant. */
+function majDefile() {
+  const m = $('#main');
+  document.body.classList.toggle('defile', !!m && m.scrollTop > 2);
+}
+$('#main').addEventListener('scroll', majDefile, { passive: true });
 
 /* Va sur un onglet, en remontant en haut de page. */
 function aller(id) {
@@ -479,7 +490,7 @@ async function clicPage(e) {
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
   if (d.pick) { trRetenirMot(); trPickRar = 'all'; return ouvrirChoixCarte(d.pick); }
   if (d.pickrar) return ouvrirChoixCarte(d.role, d.pickrar);
-  if (d.pickrev) return ouvrirChoixCarte(d.role, null, d.pickrev === '1');
+  if (d.pickrev) return ouvrirChoixCarte(d.role, null, d.pickrev);
   if (d.cardpick) return trChoisir(d.role, d.cardpick);
 
   /* Recyclage */
@@ -495,7 +506,17 @@ async function clicPage(e) {
   switch (d.act) {
     case 'open': return openBooster();
     case 'open-bonus': return openBooster({ bonus: true });
+    /* Version 3.0.11 : dix au plus d'un coup, un seul récap (js/opening.js). */
+    case 'quetes-tout': return recupererQuetes((el.dataset.ids || '').split(',').filter(Boolean));
+    case 'open-tout': return ouvrirTout();
     case 'nouveautes': return montrerNouveautes();
+    /* Version 3.0.11 : l'échange des Essences Brillantes, depuis l'onglet du
+       Choc ; la composition s'ouvre du côté des Spéciales. */
+    case 'echange-brillantes':
+      socVue = 'echanges'; trVue = 'nouvelle'; trCible = null;
+      trBrouillon = { pseudo: '', offre: null, veut: null, note: '' };
+      trPickCote = 's'; trPickRar = 'all';
+      return aller('social');
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
     case 'vers-garder': return versGarder();

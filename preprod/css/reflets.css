@@ -290,8 +290,6 @@
 .colsous b{color:var(--text)}
 .colsous .colfab{display:inline-flex;align-items:center;gap:5px}
 .colsous .colfab svg{width:14px;height:14px;fill:none;stroke:var(--deco-ink);stroke-width:2}
-.revfab{gap:6px;flex-wrap:nowrap;align-items:flex-start}
-.revfab svg{flex:none;width:14px;height:14px;margin-top:2px;fill:none;stroke:#b38cff;stroke-width:2}
 .gcell .num .revico{margin-left:.25em}
 
 /* ============ Les titres ============ */
@@ -352,13 +350,16 @@
 .ava.xl.fx{box-shadow:0 0 22px var(--violet-glow)}
 .fx-deco{position:absolute;inset:-14%;z-index:2;pointer-events:none;background:center/contain no-repeat;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
-.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=3.0.10')}
-.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=3.0.10')}
-.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=3.0.10')}
-.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=3.0.10')}
-.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=3.0.10')}
-.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=3.0.10')}
-.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=3.0.10')}
+.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=3.0.11')}
+.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=3.0.11')}
+.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=3.0.11')}
+.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=3.0.11')}
+.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=3.0.11')}
+.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=3.0.11')}
+.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=3.0.11')}
+/* Version 2.5 : le Pass de L'Échauffement. */
+.ava.fx-braise .fx-deco{background-image:url('../assets/cadres/braise.svg?v=3.0.11')}
+.ava.fx-ardeur .fx-deco{background-image:url('../assets/cadres/ardeur.svg?v=3.0.11')}
 
 /* ============ Boutique : invitations, limites ============ */
 .ofbadge.limite{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}

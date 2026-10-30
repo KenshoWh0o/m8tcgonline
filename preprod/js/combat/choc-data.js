@@ -1,19 +1,26 @@
 /* Le Raid, et l'événement de la version 3.0, « Le Choc des Sections ».
 
-   Le Raid (RAID) : The French Sorcerer, un boss commun à tout le serveur,
-   par saisons de deux semaines. Chaque saison, il a six phases : chaque PV
-   que les joueurs lui prennent en combat s'ajoute aux dégâts de tout le
-   serveur, et chaque palier de dégâts atteint abat une phase — tous ceux qui
-   ont combattu dans la saison ouvrent alors son coffre commun. En plus, des
-   paliers personnels (les dégâts de chacun). Une fois les six phases
-   abattues (si le serveur y arrive), le mode Infini : un palier par joueur,
-   qui monte à chaque victoire, pour le classement. Trois tentatives par
-   jour. La saison suivante, tout recommence. Pendant le Choc, il paie en
-   Étincelles ; sinon, en Éclats.
+   Le Raid (RAID) : un boss commun à tout le serveur, pour deux semaines —
+   un « raid » (une « saison » en base : raid_saisons…). Depuis la version
+   3.0.11, ils se comptent depuis le premier jour du Choc des Sections : le
+   raid 1 (The French Sorcerer) commence avec lui, le raid 2 (Le
+   Marionnettiste) quatorze jours plus tard, une semaine avant la fin de
+   l'événement, puis les deux boss alternent. Avant, ils se comptaient depuis
+   le 12 octobre 2026 : le premier raid du Choc s'appelait « saison 2 ».
+   Chaque raid, le boss a six phases : chaque PV que les joueurs lui
+   prennent en combat s'ajoute aux dégâts de tout le serveur, et chaque
+   palier de dégâts atteint abat une phase — tous ceux qui ont combattu dans
+   le raid ouvrent alors son coffre commun. En plus, des paliers personnels
+   (les dégâts de chacun). Une fois les six phases abattues (si le serveur y
+   arrive), le mode Infini : un palier par joueur, qui monte à chaque
+   victoire, pour le classement. Trois tentatives par jour. Au raid suivant,
+   tout recommence. Pendant le Choc, il paie en Étincelles ; sinon, en Éclats.
 
    L'événement (CHOC) ajoute l'Épreuve du jour : le même combat pour tout le
    monde — les mêmes deux decks imposés, la même donne, une règle du jour.
-   Trois essais, le meilleur compte, et un classement du jour.
+   Trois essais, le meilleur compte, et un classement du jour. Une Épreuve
+   par jour de l'événement, numérotée de 1 à 21 (version 3.0.11), et un
+   calendrier des règles sur les trois semaines (CHOC.epreuve.calendrier).
 
    Ce fichier est lu par la page et par le serveur de démo
    (_demo/serveur.js). Le serveur réel en a la copie dans
@@ -21,13 +28,40 @@
 "use strict";
 
 const RAID = {
-  /* The French Sorcerer (#116), Légendaire Mauve : ses éclairs renvoient
-     les Joueurs sur le Banc et frappent à 200. */
+  /* Les boss, un par raid, à tour de rôle (raid_boss, 27_raid.sql) :
+     - The French Sorcerer (#116), Légendaire Mauve : ses éclairs renvoient
+       les Joueurs sur le Banc et frappent à 200 ;
+     - Le Marionnettiste (#121, version 3.0.11), Légendaire Neutre : il tire
+       les ficelles (Coup de fil, 160) et riposte quand il tombe.
+     `couleur` : celle du boss dans son deck (une seconde change chaque
+     jour ; un boss Neutre en prend deux) ; `visage` : le point de
+     l'illustration gardé au centre (illuCadre) ; `cadre` et `tapis` : ce
+     qu'il porte en combat (le tapis d'un boss : TAPIS ou TAPIS_BOSS,
+     js/combat/table.js). */
+  bosses: [
+    { id: 'c116', nom: 'The French Sorcerer', couleur: 'mauve', visage: [.46, .24], cadre: 'f_foudre', tapis: 't_orage',
+      dit: 'Ses éclairs renvoient tes Joueurs sur le Banc et frappent à 200.' },
+    { id: 'c121', nom: 'Le Marionnettiste', couleur: 'neutre', visage: [.45, .58], cadre: 'f_nebuleuse', tapis: 't_ficelles',
+      dit: 'Il joue les couleurs des autres, deux nouvelles chaque jour, frappe à 160, et riposte quand il tombe.',
+      /* À phases égales, il est plus dur que le Sorcier : son attaque ne
+         demande que trois Essences de n'importe quelle couleur, il frappe
+         plus tôt. Mesuré (un Starter contre chaque boss, IA niveau 3, 80
+         combats par case) : le joueur gagnait 35 %, 5 % et 0 % des combats
+         des phases 1, 3 et 5, contre 53 %, 26 % et 8 % face au Sorcier. Avec
+         un PV et une Essence d'avance de moins que la phase : 63 %, 29 %,
+         8 %, et des dégâts comptés par le serveur équivalents (une victoire
+         y vaut les PV de la phase + 4, comme contre le Sorcier). Une IA plus
+         douce rendait la phase 1 trop facile (68 %) sans sauver la 5 (3 %).
+         raidCombat(cle, boss). */
+      ajuste: { pv: -1, ess: -1 } }
+  ],
+  /* Le premier boss (avant la 3.0.11, le seul). */
   boss: 'c116',
   nom: 'The French Sorcerer',
   tentatives: 3,
-  /* Une saison dure `jours` jours ; la première a commencé le lundi
-     `depart` (raid_saison, 27_raid.sql). */
+  /* Un raid dure `jours` jours. Le premier commence le jour où commence le
+     Choc des Sections (raid_ancre, 27_raid.sql) ; sans Choc, le lundi
+     `depart`. */
   saison: { jours: 14, depart: '2026-10-12' },
   /* Les six phases. `seuil` : les dégâts cumulés de tout le serveur dans la
      saison pour l'abattre — calculés pour une dizaine de joueurs, et
@@ -61,22 +95,38 @@ const RAID = {
 };
 
 /* Le combat d'une clé : 'p3' (la phase 3) ou 'i5' (l'Infini, palier 5). */
-function raidCombat(cle) {
+function raidCombat(cle, boss) {
   const s = String(cle || 'p1');
   const n = Math.max(1, parseInt(s.slice(1), 10) || 1);
-  if (s[0] === 'i') return Object.assign({ infini: true, n }, RAID.infini(n));
-  const ph = RAID.phases[Math.min(n, RAID.phases.length) - 1];
-  return { infini: false, n, ia: ph.ia, pvBoss: ph.pv, ess: ph.ess, pvMoi: 5 };
+  let c;
+  if (s[0] === 'i') c = Object.assign({ infini: true, n }, RAID.infini(n));
+  else {
+    const ph = RAID.phases[Math.min(n, RAID.phases.length) - 1];
+    c = { infini: false, n, ia: ph.ia, pvBoss: ph.pv, ess: ph.ess, pvMoi: 5 };
+  }
+  /* Le réglage d'un boss (RAID.bosses › ajuste) : ce qu'il a vraiment en
+     combat. Sans `boss`, les chiffres de la phase — ceux que le serveur
+     garde pour compter les dégâts (raid_combat, 27_raid.sql). */
+  const a = boss ? raidBoss(boss).ajuste : null;
+  if (a) c = Object.assign({}, c, { pvBoss: Math.max(3, c.pvBoss + (a.pv || 0)), ess: Math.max(0, c.ess + (a.ess || 0)) });
+  return c;
 }
 
-/* La saison du jour `j` ('2026-10-20') : son numéro, son premier jour, et le
-   premier jour de la suivante. */
-function raidSaison(j) {
-  const d0 = Date.parse(RAID.saison.depart + 'T12:00:00Z');
+/* Le raid (la saison) du jour `j` ('2026-10-20'), à partir de l'ancre (le
+   premier jour du Choc ; RAID.saison.depart sans lui) : son numéro, son
+   premier jour, le premier jour du suivant, et son boss. Avant l'ancre,
+   c'est le premier (raid_saison, 27_raid.sql). */
+function raidSaison(j, ancre) {
+  const d0 = Date.parse((ancre || RAID.saison.depart) + 'T12:00:00Z');
   const jn = Math.floor((Date.parse(j + 'T12:00:00Z') - d0) / 86400000);
-  const n = Math.floor(jn / RAID.saison.jours) + 1;
+  const n = Math.max(1, Math.floor(jn / RAID.saison.jours) + 1);
   const jour = k => new Date(d0 + k * RAID.saison.jours * 86400000).toISOString().slice(0, 10);
-  return { n, debut: jour(n - 1), fin: jour(n) };
+  return { n, debut: jour(n - 1), fin: jour(n), boss: raidBoss(n).id };
+}
+/* Le boss du raid `n` (ou d'un identifiant de carte) : à tour de rôle. */
+function raidBoss(n) {
+  if (typeof n === 'string') return RAID.bosses.find(b => b.id === n) || RAID.bosses[0];
+  return RAID.bosses[chocMod(Math.max(1, n || 1) - 1, RAID.bosses.length)];
 }
 
 const CHOC = {
@@ -100,14 +150,42 @@ const CHOC = {
       { id: 'outsider', nom: 'L\'outsider', texte: 'Tu as 4 PV, l\'adversaire 6 et une Essence d\'avance.', pv: [4, 6], ess: [0, 1] },
       { id: 'marathon', nom: 'Marathon', texte: 'Sept PV chacun : une partie longue, où chaque carte compte.', pv: [7, 7], ess: [0, 0] },
       { id: 'classique', nom: 'Classique', texte: 'Les règles normales, rien de plus.', pv: [5, 5], ess: [0, 0] }
+    ],
+    /* Les trois semaines de l'événement, jour par jour (version 3.0.11) :
+       chaque semaine a les sept règles, dans un ordre à elle ; jamais la
+       même règle deux jours de suite, ni le même jour de la semaine d'une
+       semaine à l'autre. La première Épreuve est « Classique », pour
+       apprendre. Hors de ces 21 jours (un événement plus long), la règle
+       tourne avec la date (regleEpreuve). Les decks, eux, changent chaque
+       jour avec la graine du serveur. */
+    calendrier: [
+      'classique', 'renforts', 'siege', 'miroir', 'eclair', 'outsider', 'marathon',
+      'siege', 'eclair', 'marathon', 'classique', 'renforts', 'miroir', 'outsider',
+      'renforts', 'marathon', 'outsider', 'eclair', 'miroir', 'classique', 'siege'
     ]
   }
 };
 
-/* Le Sorcier joue Mauve (ses attaques en demandent deux), avec une
-   seconde couleur qui change chaque jour. */
-const CHOC_ALLIES = ['violette', 'azur', 'rose', 'jaune', 'bleue', 'orange', 'verte', 'jade'];
-const chocCouleurs = j => ['mauve', CHOC_ALLIES[chocMod(chocJourN(j), CHOC_ALLIES.length)]];
+/* Les couleurs du deck d'un boss, le jour `j`. Le Sorcier joue Mauve (ses
+   attaques en demandent deux), avec une seconde couleur qui change chaque
+   jour — la liste et l'ordre d'avant la 3.0.11, pour que ses decks ne
+   changent pas. Un boss Neutre (le Marionnettiste : ses attaques prennent
+   n'importe quelle Essence) « joue les couleurs des autres » : chaque jour,
+   une couleur assez fournie pour porter un deck (celles de tirerCouleurs,
+   js/combat/decks.js), et une seconde. */
+const CHOC_ALLIES = ['violette', 'azur', 'rose', 'jaune', 'bleue', 'orange', 'verte', 'jade', 'mauve'];
+const CHOC_FORTES = ['rose', 'orange', 'violette', 'mauve', 'bleue', 'azur', 'verte'];
+function chocCouleurs(j, boss) {
+  const b = raidBoss(boss || RAID.boss);
+  const k = chocJourN(j);
+  if (b.couleur !== 'neutre') {
+    const allies = CHOC_ALLIES.filter(c => c !== b.couleur);
+    return [b.couleur, allies[chocMod(k, allies.length)]];
+  }
+  const a = CHOC_FORTES[chocMod(k, CHOC_FORTES.length)];
+  const reste = CHOC_ALLIES.filter(c => c !== a);
+  return [a, reste[chocMod(k * 3 + 1, reste.length)]];
+}
 
 /* Le numéro d'un jour ('2026-10-11' → nombre de jours depuis le 1er janvier
    2026). Le serveur réel fait le même calcul (choc_jour, 25_choc.sql). */
@@ -116,30 +194,40 @@ function chocJourN(j) {
 }
 const chocMod = (n, m) => ((n % m) + m) % m;
 
-/* Le deck du Sorcier, le jour `j`, pour la clé `cle` (la phase ou le palier
-   Infini) : un deck tiré au sort dans ses deux couleurs du jour, avec The
-   French Sorcerer dedans — il commence la partie déjà sur le plateau
-   (`posesBoss`). */
-function deckSorcier(j, cle) {
-  const couleurs = chocCouleurs(j);
+/* Le deck du boss `boss` (le Sorcier par défaut), le jour `j`, pour la clé
+   `cle` (la phase ou le palier Infini) : un deck tiré au sort dans ses deux
+   couleurs du jour, avec le boss dedans — il commence la partie déjà sur le
+   plateau (`posesBoss`). Le Sorcier garde exactement la graine d'avant. */
+function deckBoss(j, cle, boss) {
+  const b = raidBoss(boss || RAID.boss);
+  const couleurs = chocCouleurs(j, b.id);
   const c = raidCombat(cle);
-  const r = aleaGraine(0x3c6ef372 ^ (chocJourN(j) * 31 + c.n * (c.infini ? 7 : 1) + (c.infini ? 1000 : 0)));
-  const d = Decks.aleatoire(r, { niveau: Math.min(5, c.ia + 1), couleurs, nom: RAID.nom });
-  imposerCarte(d, RAID.boss, 'mauve', r);
-  d.couverture = RAID.boss;
+  const sel = b.id === 'c116' ? 0 : Number(b.id.slice(1)) * 977;
+  const r = aleaGraine(0x3c6ef372 ^ (chocJourN(j) * 31 + c.n * (c.infini ? 7 : 1) + (c.infini ? 1000 : 0) + sel));
+  const d = Decks.aleatoire(r, { niveau: Math.min(5, c.ia + 1), couleurs, nom: b.nom });
+  imposerCarte(d, b.id, couleurs[0], r);
+  d.couverture = b.id;
   return d;
 }
-/* Le Sorcier au milieu de ses trois lignes, dès le début. */
-const posesBoss = () => [[], [{ id: RAID.boss, ligne: 1 }]];
+const deckSorcier = (j, cle) => deckBoss(j, cle, 'c116');
+/* Le boss au milieu de ses trois lignes, dès le début. */
+const posesBoss = boss => [[], [{ id: raidBoss(boss || RAID.boss).id, ligne: 1 }]];
 
-/* La règle de l'Épreuve du jour `j` : une par jour, à tour de rôle. Seule,
-   sans les decks, pour l'accueil de l'événement (js/choc.js). */
-const regleEpreuve = j => CHOC.epreuve.regles[chocMod(chocJourN(j), CHOC.epreuve.regles.length)];
+/* La règle de l'Épreuve du jour `j`, le `n`-ième jour de l'événement
+   (choc_etat › n) : celle du calendrier ; sans `n`, ou au-delà, une par jour
+   à tour de rôle. Seule, sans les decks, pour l'accueil de l'événement
+   (js/choc.js). */
+function regleEpreuve(j, n) {
+  const l = CHOC.epreuve.regles, cal = CHOC.epreuve.calendrier;
+  const id = n >= 1 && n <= cal.length ? cal[n - 1] : null;
+  return (id && l.find(x => x.id === id)) || l[chocMod(chocJourN(j), l.length)];
+}
 
-/* L'Épreuve du jour `j` : sa règle, et les deux decks imposés. La graine
-   du jour vient du serveur (choc_etat) ; tout le reste s'en déduit. */
-function epreuveDuJour(j, graine) {
-  const regle = regleEpreuve(j);
+/* L'Épreuve du jour `j` (le `n`-ième de l'événement) : sa règle, et les
+   deux decks imposés. La graine du jour vient du serveur (choc_etat) ; tout
+   le reste s'en déduit. */
+function epreuveDuJour(j, graine, n) {
+  const regle = regleEpreuve(j, n);
   const moi = Decks.aleatoire(aleaGraine(graine ^ 0x1b873593), { niveau: 3, nom: 'Deck imposé' });
   const adv = regle.miroir ? JSON.parse(JSON.stringify(moi))
     : Decks.aleatoire(aleaGraine(graine ^ 0x85ebca6b), { niveau: 3, nom: 'L\'adversaire du jour' });

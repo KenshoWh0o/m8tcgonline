@@ -45,7 +45,8 @@ async function openBooster(opts) {
   header();
   if (!opts.test) noterPaquetOuvert();
 
-  rv = { cards: drawn, news, idx: 0, god: tirage.god, test: !!opts.test, opts, revealed: false };
+  rv = { cards: drawn, news, idx: 0, god: tirage.god, test: !!opts.test, opts, revealed: false,
+    k: opts.enchaine ? .55 : .72 };
 
   /* « Aller droit au récap » : on saute le défilé, pas le tirage. La
      collection a déjà été mise à jour par le serveur. */
@@ -78,9 +79,15 @@ function packOpen(done) {
   const god = rv.god;
   const cur = rv;
   const cols = god ? ['#fff6d0', '#ffc73b', '#ffffff', '#ffe08a'] : ['#ffffff', '#ffd7f0', '#a95cf2', '#8936ff'];
+  /* Version 3.0.11 : le rythme (`k`, aussi posé en `--rk` sur la scène pour
+     les animations CSS). Un godpack garde toute sa mise en scène ; un booster
+     ordinaire va un tiers plus vite, et celui qu'on enchaîne depuis le récap
+     presque deux fois plus : qui en ouvre beaucoup ne revoit pas la même
+     déchirure au ralenti. */
+  const k = god ? 1 : (cur.k || 1);
   const at = (ms, fn) => setTimeout(() => {
     if (rv === cur && document.body.contains(st)) fn();
-  }, ms);
+  }, ms * k);
   const blast = (y, n, speed, size) => {
     const r = pack.getBoundingClientRect();
     FX.burst(r.left + r.width / 2, r.top + r.height * y, { n, colors: cols, speed, up: 3, shape: 'star', size, g: .05, life: 48 });
@@ -150,7 +157,7 @@ function showStack() {
 
   /* La carte à surprise ne porte pas encore sa rareté : sa couleur ne doit rien révéler
      avant la révélation. doReveal() ajoute la classe au dernier moment. */
-  theater(`<div class="th-stage${rv.god ? ' god' : ''}${anim ? ' packed' : ''}" id="opening">
+  theater(`<div class="th-stage${rv.god ? ' god' : ''}${anim ? ' packed' : ''}" id="opening" style="--rk:${rv.god ? 1 : rv.k}">
     <div class="th-top"><span class="th-count" id="opcount">1 / ${n}</span>${rv.test ? '<span class="th-test">Test</span>' : ''}<button class="th-skip" data-t="skip">Tout voir</button></div>
     <div class="stackwrap">${rv.god ? '<div class="godaura" aria-hidden="true"></div><div class="godwash" aria-hidden="true"></div>' : ''}<div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
       <div class="stack3d" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
@@ -234,7 +241,7 @@ function announce() {
       cur.lock = false;
       const hint = $('#ophint');
       if (hint) hint.textContent = indice;
-    }, RM() ? 700 : 1600);
+    }, RM() ? 600 : 1000);
     return;
   }
   /* Une Reverse se montre un court instant avant qu'on puisse passer : le
@@ -251,7 +258,7 @@ function announce() {
       cur.lock = false;
       const hint = $('#ophint');
       if (hint) hint.textContent = indice;
-    }, RM() ? 300 : 750);
+    }, RM() ? 200 : 350);
     return;
   }
   $('#ophint').textContent = indice;
@@ -470,7 +477,7 @@ function showRecap() {
   /* Toutes les cartes, Essences comprises : c'est le même total que l'onglet
      Collection, sinon les deux écrans s'obstinent à ne pas dire la même chose. */
   const all = cards;
-  const owned = all.filter(c => save.col[c.id] > 0).length;
+  const owned = mesCartesExtension();
   const R = RAR[best.rar] || RAR.C;
 
   theater(`<div class="recap ${rv.god ? 'god' : ''}">
@@ -504,13 +511,28 @@ function vRecapActions() {
     return '<button class="btn" data-t="again">Relancer ce test</button>'
       + '<button class="btn ghost dark" data-t="done">Terminer</button>';
   }
+  /* Version 3.0.11 : tout ouvrir d'un coup, dès qu'il en reste deux. */
+  const tous = boostersDispos();
+  const tout = tous >= 2 ? `<button class="btn ghost dark" data-t="tout">Tout ouvrir<span class="rc-reste">${tous}</span></button>` : '';
+  if (rv.multi) {
+    if (tous >= 2) {
+      return `<button class="btn" data-t="tout">${ICON.star}Tout ouvrir<span class="rc-reste">${tous}</span></button>
+        <div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
+        <button class="btn ghost dark" data-t="done">Terminer</button></div>`;
+    }
+    if (tous === 1) {
+      return `<button class="btn" data-t="again">${ICON.star}Ouvrir le dernier<span class="rc-reste">1</span></button>
+        <div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
+        <button class="btn ghost dark" data-t="done">Terminer</button></div>`;
+    }
+  }
 
   /* Une série de boosters en plus (boutique, cadeau) : on enchaîne sur le
      suivant tant qu'il en reste. */
   if (rv.opts && rv.opts.bonus && save.bonus > 0) {
     return `<button class="btn" data-t="again">${NAVICO.promo}Booster suivant<span class="rc-reste">${save.bonus}</span></button>
-      <div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
-      <button class="btn ghost dark" data-t="done">Terminer</button></div>`;
+      <div class="rc-duo${tout ? ' trio' : ''}"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
+      ${tout}<button class="btn ghost dark" data-t="done">Terminer</button></div>`;
   }
 
   const reste = save.unlimited ? Infinity : save.tickets;
@@ -525,8 +547,132 @@ function vRecapActions() {
     ? '<span class="rc-reste">∞</span>'
     : `<span class="rc-reste">${reste}</span>`;
   return `<button class="btn" data-t="again">${ICON.star}Ouvrir un autre${compte}</button>
-    <div class="rc-duo"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
-    <button class="btn ghost dark" data-t="done">Terminer</button></div>`;
+    <div class="rc-duo${tout ? ' trio' : ''}"><button class="btn ghost dark" data-t="share">${NAVICO.partage}Partager</button>
+    ${tout}<button class="btn ghost dark" data-t="done">Terminer</button></div>`;
+}
+
+/* ---------- Plusieurs boosters d'un coup (version 3.0.11) ---------- */
+/* Pour qui en a beaucoup : dix au plus, tirés un par un par le serveur
+   (open_pack, exactement comme à l'unité : rien ne change aux taux ni à la
+   réserve), puis un seul récap. Pendant les tirages, une pile de paquets se
+   vide au fil des réponses ; ensuite la plus belle carte a sa révélation, et
+   tout le lot se lit dans une grille rangée par rareté, les nouvelles en
+   tête de chaque rareté. La réserve part d'abord, puis les boosters en plus
+   (ceux d'un cadeau les premiers, comme le serveur le décide). */
+const OUVRIR_MAX = 10;
+const boostersDispos = () => (save.unlimited ? OUVRIR_MAX
+  : Math.min(OUVRIR_MAX, Math.max(0, save.tickets || 0) + Math.max(0, save.bonus || 0)));
+/* Les cartes de l'extension qu'on a, les Secrètes au-delà (« 127 / 122 »). */
+const mesCartesExtension = () => cards.filter(c => save.col[c.id] > 0).length
+  + (typeof secretes !== 'undefined' ? secretes.filter(c => save.col[c.id] > 0).length : 0);
+
+async function ouvrirTout(depuisRecap) {
+  if (opening) return;
+  const n = boostersDispos();
+  if (n < 1) return toast('Plus aucun booster à ouvrir.');
+  if (n === 1) {
+    const bonus = !save.unlimited && !(save.tickets > 0);
+    return openBooster(Object.assign(bonus ? { bonus: true } : {}, depuisRecap ? { enchaine: true } : {}));
+  }
+  opening = true;
+  const avant = Object.assign({}, save.col);
+  const pk = $('#pack');
+  if (pk && !RM()) pk.classList.add('tear');
+  SFX.jouer('craque');
+  rv = null;
+  theater(`<div class="mo-stage" id="mo">
+    <p class="mo-kicker">Ouverture</p>
+    <div class="mo-paquets" aria-hidden="true">${Array.from({ length: n }, (_, i) =>
+      `<i class="mo-p" data-i="${i}" style="--i:${i};--n:${n};background-image:url('${h(PACK_ARTS[i % PACK_ARTS.length])}')"></i>`).join('')}</div>
+    <p class="mo-compte"><b class="tnum" id="mocompte">0</b> / ${n} boosters</p>
+  </div>`);
+  const tirages = [];
+  let erreur = null;
+  for (let i = 0; i < n; i++) {
+    const reserve = save.unlimited || save.tickets > 0;
+    if (!reserve && !(save.bonus > 0)) break;
+    try {
+      tirages.push(await Backend.openPack(reserve ? {} : { bonus: true }));
+    } catch (e) {
+      erreur = e;
+      break;
+    }
+    noterPaquetOuvert();
+    const p = document.querySelector(`.mo-p[data-i="${n - 1 - i}"]`);
+    if (p) p.classList.add('ouvert');
+    const c = $('#mocompte');
+    if (c) c.textContent = i + 1;
+    SFX.jouer(i ? 'carte' : 'dechire');
+  }
+  opening = false;
+  header();
+  if (!tirages.length) {
+    closeTheater();
+    toast((erreur && erreur.message) || 'Impossible d\'ouvrir ces boosters.');
+    SFX.jouer('erreur');
+    return;
+  }
+  if (erreur) toast(`${tirages.length} booster${tirages.length > 1 ? 's' : ''} ouvert${tirages.length > 1 ? 's' : ''} : ${erreur.message}`);
+  tirages.forEach(t => t.cards.forEach(c => { if (c.img) new Image().src = c.img; }));
+  setTimeout(() => montrerRecapMulti(tirages, avant), RM() ? 0 : 420);
+}
+
+function montrerRecapMulti(tirages, avant) {
+  const vues = new Set(Object.keys(avant).filter(k => avant[k] > 0));
+  const toutes = [];
+  tirages.forEach((t, b) => t.cards.forEach(c => {
+    toutes.push({ c, neuve: !vues.has(c.id), b });
+    vues.add(c.id);
+  }));
+  if (!toutes.length) return closeTheater();
+  const best = toutes.reduce((m, x) => (rk(x.c) > rk(m.c) || (rk(x.c) === rk(m.c) && x.neuve && !m.neuve) ? x : m), toutes[0]);
+  const nNew = toutes.filter(x => x.neuve).length;
+  const hits = toutes.filter(x => rk(x.c) >= 3).length;
+  const gods = tirages.filter(t => t.god).length;
+  /* Le lot : une case par carte, « ×2 » si elle est sortie deux fois. */
+  const parId = new Map();
+  toutes.forEach(x => {
+    const g = parId.get(x.c.id) || { c: x.c, n: 0, neuve: false };
+    g.n++;
+    g.neuve = g.neuve || x.neuve;
+    parId.set(x.c.id, g);
+  });
+  const lot = [...parId.values()].sort((a, b) => rk(b.c) - rk(a.c) || b.neuve - a.neuve || (a.c.num || 0) - (b.c.num || 0));
+  const R = RAR[best.c.rar] || RAR.C;
+  rv = { multi: true, tirages, cards: toutes.map(x => x.c), news: toutes.map(x => x.neuve), idx: toutes.length, opts: {}, test: false };
+  /* « Partager » : le booster qui contenait la plus belle carte. */
+  dernierTirage = { ids: tirages[best.b].cards.map(c => c.id), god: tirages[best.b].god, quand: new Date().toISOString() };
+
+  theater(`<div class="recap multi${gods ? ' god' : ''}">
+    <div class="rc-head"><span class="rc-kicker">${tirages.length} boosters ouverts${gods ? ` · ${gods > 1 ? gods + ' godpacks' : 'un godpack'}` : ''}</span><img class="rc-setlogo" src="${ART.set}" alt="${h(SET_NAME)}"></div>
+    <div class="rc-hero r${best.c.rar} rcm-hero"><div class="rc-halo"></div><button class="rc-best" data-t="show" data-id="${best.c.id}">${renderCard(best.c)}</button>
+      <div class="rc-bestlabel"><span class="rc-tag r${best.c.rar}">${R.nom}</span>${best.neuve ? '<em>NEW</em>' : ''}</div></div>
+    <div class="rc-stats">
+      <div><b>${nNew}</b><span>nouvelle${nNew > 1 ? 's' : ''}</span></div>
+      <div><b>${hits}</b><span>rare${hits > 1 ? 's' : ''} ou mieux</span></div>
+      <div><b>${mesCartesExtension()}<small>/${cards.length}</small></b><span>collection</span></div>
+    </div>
+    <p class="rcm-titre">Tout le lot <small>${toutes.length} cartes${parId.size < toutes.length ? `, ${parId.size} différentes` : ''}</small></p>
+    <div class="rcm-lot">${lot.map((g, i) => `<button class="rc-cell" data-t="show" data-id="${g.c.id}" style="--d:${Math.min(1100, 260 + i * 24)}ms">${g.neuve ? '<span class="new">NEW</span>' : ''}${g.n > 1 ? `<span class="rcm-n">×${g.n}</span>` : ''}${renderCard(g.c, { calme: true })}</button>`).join('')}</div>
+    <div class="rc-actions rcm-actions">${vRecapActions()}</div>
+  </div>`);
+
+  /* La révélation de la plus belle : la carte se retourne, puis son et éclats
+     à sa rareté (les mêmes que la dernière carte d'un booster, REVEAL). */
+  const cfg = REVEAL[best.c.rar];
+  const haut = ['L', 'S', 'UN'].includes(best.c.rar);
+  SFX.jouer(rk(best.c) >= 3 ? 'monte' : 'gagne', 500);
+  setTimeout(() => {
+    const el = document.querySelector('.rcm-hero .rc-best');
+    if (!el || !rv || !rv.multi) return;
+    SFX.jouer(haut ? 'legend' : best.c.rar === 'E' ? 'epique' : rk(best.c) >= 3 ? 'rare' : 'gagne');
+    if (rk(best.c) >= 3) vibrer(haut ? [30, 50, 30, 50, 60] : best.c.rar === 'E' ? [25, 45, 40] : 30);
+    if (cfg && !RM()) {
+      const r = el.getBoundingClientRect();
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: cfg.n, colors: cfg.colors, speed: cfg.speed, shape: 'star', g: .06, size: 4, life: 45 });
+      if (haut) setTimeout(() => FX.sparkle({ n: 110, colors: cfg.colors, size: 4 }), 200);
+    }
+  }, RM() ? 0 : 560);
 }
 
 $('#theater').addEventListener('click', e => {
@@ -547,18 +693,29 @@ $('#theater').addEventListener('click', e => {
     }
     case 'again': {
       /* Les boosters en plus épuisés, « Ouvrir un autre » repart sur la réserve. */
-      const o = Object.assign({}, rv.opts);
+      if (rv && rv.multi) { FX.clear(); ouvrirTout(true); break; }
+      const o = Object.assign({}, rv.opts, { enchaine: true });
       if (o.bonus && !(save.bonus > 0)) delete o.bonus;
       FX.clear();
       openBooster(o);
       break;
     }
+    case 'tout':
+      FX.clear();
+      ouvrirTout(true);
+      break;
     case 'done':
       closeTheater();
       break;
     case 'share':
       if (dernierTirage) partagerTirage(dernierTirage);
       break;
+    case 'grand': {
+      /* Le récap de plusieurs boosters : la carte en grand, sans quitter le récap. */
+      const c = byId[t.dataset.id];
+      if (c) openViewer(c);
+      break;
+    }
     /* La scène d'obtention d'une Promo vit dans le même théâtre, mais elle a
        sa propre sortie : voir fermerPromo() dans js/promos.js. */
     case 'promo-ok':
