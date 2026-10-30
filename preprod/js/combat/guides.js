@@ -177,7 +177,7 @@ const GUIDES = (() => {
         <p>Choisis la difficulté, de 1 à 5 : l'IA reçoit un deck tiré au sort, différent à chaque partie. Plus c'est dur, plus ça rapporte.</p>
         ${note('Contre l\'IA, les cinq premières victoires de la journée rapportent des Éclats (Arcade, et combats de campagne rejoués). L\'XP, elle, n\'a pas de limite.')}
         <h3>Raid</h3>
-        <p>The French Sorcerer, un boss pour tout le serveur, par <b>saisons de deux semaines</b>. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>, où chacun monte aussi haut qu'il peut. Trois tentatives par jour.</p>
+        <p>Un boss pour tout le serveur, <b>deux semaines chacun</b> : The French Sorcerer, puis Le Marionnettiste, à tour de rôle. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>, où chacun monte aussi haut qu'il peut. Trois tentatives par jour.</p>
         <h3>Versus</h3>
         <p>Pas de recherche d'adversaire : tu défies un de tes amis, il accepte, et vous jouez en direct, 60 secondes par tour. Les trois premiers défis de la journée rapportent des Éclats.</p>`
     },
@@ -248,7 +248,7 @@ const GLOSSAIRE = (() => {
     m('Pioche', 'Une carte du Club au début de ton tour (pas au tout premier tour de celui qui commence). Club vide : ton CEO est touché.', 'tour'),
     m('Provocation', 'Mot-clé : l\'attaquant face à ce Joueur doit le viser, même s\'il est désengagé.', 'motscles'),
     m('PV', `Tes points de vie : ${R().PV} cartes de ton Club posées face cachée. Touché, ton CEO récupère son premier PV dans sa main.`, 'pv'),
-    m('Raid', 'The French Sorcerer, un boss pour tout le serveur, par saisons de deux semaines : six phases, des coffres communs et personnels, puis l\'Infini.', 'modes'),
+    m('Raid', 'Un boss pour tout le serveur, deux semaines chacun (The French Sorcerer, puis Le Marionnettiste) : six phases, des coffres communs et personnels, puis l\'Infini.', 'modes'),
     m('Réserve', `Tes ${R().RESERVE} Essences, face cachée. La première entre en jeu à chaque tour (${R().ESSENCES_P2} au premier tour de celui qui joue en second).`, 'tour'),
     m('Résilience', 'Sur un Coach, un Moment ou un Objet : récupéré comme PV, tu peux le jouer tout de suite, gratuitement, même pendant le tour adverse.', 'pv'),
     m('Riposte', 'Mot-clé : vaincu, ce Joueur peut déclencher une de ses attaques contre son vainqueur, pour une Essence de moins.', 'motscles'),

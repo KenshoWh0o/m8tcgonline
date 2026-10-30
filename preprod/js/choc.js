@@ -8,7 +8,7 @@
 
    L'en-tête montre les deux Sections face à face : Squeezie le Toxique
    (#012) et Brawks Déter (#077), fondus l'un dans l'autre et coupés en biais ;
-   l'illustration de The French Sorcerer est réservée au Raid, pour ne pas
+   l'illustration du boss du Raid est réservée au Raid, pour ne pas
    répéter le même visuel deux fois sur le même écran. Le Raid a sa page (js/raid.js) :
    l'onglet de l'événement en montre la page, et pendant l'événement il paie
    en Étincelles. L'Épreuve se joue dans l'arène (js/combat/table.js), lancée
@@ -100,10 +100,11 @@ function chAffiche() {
   </span>`;
 }
 
-/* L'illustration de The French Sorcerer (#116) : le Raid, et le bandeau de
-   l'écran Boosters. Cadrée sur son visage. */
+/* L'illustration du boss du raid en cours (The French Sorcerer, puis Le
+   Marionnettiste : rdBoss, js/raid.js) : le Raid, et le bandeau de l'écran
+   Boosters. Cadrée sur son visage. */
 function chArt() {
-  const c = byId[RAID.boss];
+  const c = byId[rdBoss().id];
   return c && c.img ? `<span class="rf-fond ch-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
 }
 
@@ -149,7 +150,7 @@ function vChAccueil() {
   const piste = chEv.piste;
   const atteint = piste.filter(x => chEv.total >= x.seuil).length;
   const prochain = piste.find(x => chEv.total < x.seuil);
-  const regle = regleEpreuve(chEtat.jour);
+  const regle = regleEpreuve(chEtat.jour, chEtat.n);
   const tr = rdTentatives();
   const er = ep.max - ep.essais.length;
   const coffres = rdCoffres();
@@ -162,9 +163,9 @@ function vChAccueil() {
   return `<section class="rf-jour">
       <h3 class="rf-sous">Aujourd'hui</h3>
       <div class="rf-tuiles ch-tuiles">
-        ${tuile('raid', NAVICO.foudre, 'Le Raid', r ? (rdInfini(r) ? 'Mode Infini' : `Phase ${r.phase} sur ${RAID.phases.length}`) : '…',
+        ${tuile('raid', NAVICO.foudre, r ? `Raid ${r.n} · ${h(rdBoss(r).nom)}` : 'Le Raid', r ? (rdInfini(r) ? 'Mode Infini' : `Phase ${r.phase} sur ${RAID.phases.length}`) : '…',
           coffres ? `${coffres} coffre${coffres > 1 ? 's' : ''} à ouvrir` : tr ? `${tr} tentative${tr > 1 ? 's' : ''} aujourd'hui` : 'Reviens demain', coffres > 0 || tr > 0)}
-        ${tuile('epreuve', NAVICO.epreuve, 'Épreuve du jour', h(regle.nom),
+        ${tuile('epreuve', NAVICO.epreuve, chEtat.n ? `Épreuve ${chEtat.n} sur ${chEtat.jours || CHOC.epreuve.calendrier.length}` : 'Épreuve du jour', h(regle.nom),
           ep.gagnee ? 'Gagnée aujourd\'hui' : er ? `${er} essai${er > 1 ? 's' : ''} restant${er > 1 ? 's' : ''}` : 'Terminée', er > 0 && !ep.gagnee)}
         ${tuile('quetes', NAVICO.quest, 'Quêtes du jour', `${qFaites} / ${qj.length}`,
           qPretes ? `${qPretes} à récupérer` : `Nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}`, qPretes > 0)}
@@ -203,7 +204,7 @@ function vChNouveautes() {
     ${vChRefonte()}
     <div class="ch-nv-grille">
       ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Tes Fragments font briller une carte, en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
-      ${tuile('data-cb="vue" data-v="raid"', illuCadre(RAID.boss, RAID_VISAGE[0], RAID_VISAGE[1], 1.2), 'Le Raid', 'Un boss pour tout le serveur, par saisons de deux semaines.', 'raid')}
+      ${tuile('data-cb="vue" data-v="raid"', illuCadre(rdBoss().id, rdBoss().visage[0], rdBoss().visage[1], 1.2), 'Le Raid', `Un boss pour tout le serveur, deux semaines chacun : ${RAID.bosses.map(x => h(x.nom)).join(', puis ')}.`, 'raid')}
       ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
@@ -266,8 +267,8 @@ function vChSecretes() {
    ===================================================================== */
 let chEpreuveCache = { cle: '', v: null };
 function epreuveCourante() {
-  const cle = chEtat.jour + ':' + chEtat.epreuve.graine;
-  if (chEpreuveCache.cle !== cle) chEpreuveCache = { cle, v: epreuveDuJour(chEtat.jour, chEtat.epreuve.graine) };
+  const cle = chEtat.jour + ':' + chEtat.epreuve.graine + ':' + (chEtat.n || '');
+  if (chEpreuveCache.cle !== cle) chEpreuveCache = { cle, v: epreuveDuJour(chEtat.jour, chEtat.epreuve.graine, chEtat.n) };
   return chEpreuveCache.v;
 }
 const texteScore = s => (!s ? '—' : s.gagne ? `Victoire en ${s.tours} tour${s.tours > 1 ? 's' : ''} · ${s.pv} PV` : `Défaite · ${s.touches || 0} PV pris`);
@@ -285,10 +286,11 @@ function vChEpreuve() {
       <span class="ch-ep-deck-art">${renderCard(byId[d.couverture] || {})}</span>
       <span><small>${qui}</small><b>${h(d.nom)}</b><em>${Object.keys(d.reserve).filter(k => d.reserve[k]).map(k => essIcon(k)).join('')} Voir les ${Decks.total(d.cartes)} cartes</em></span>
     </button>`;
-  return `${chTitre('L\'Épreuve du jour', 'Le même combat pour tout le monde : les mêmes deux decks, la même donne. Trois essais, ton meilleur compte.')}
+  const num = chEtat.n ? `Épreuve ${chEtat.n} sur ${chEtat.jours || CHOC.epreuve.calendrier.length} · ` : '';
+  return `${chTitre('L\'Épreuve du jour', 'Le même combat pour tout le monde : les mêmes deux decks, la même donne. Trois essais, ton meilleur compte. Une nouvelle chaque jour de l\'événement.')}
     <section class="ch-ep-regle">
       <span class="ch-ep-ico">${NAVICO.epreuve}</span>
-      <div><small>Règle du jour</small><b>${h(x.regle.nom)}</b><p>${h(x.regle.texte)}</p></div>
+      <div><small>${num}Règle du jour</small><b>${h(x.regle.nom)}</b><p>${h(x.regle.texte)}</p></div>
     </section>
     <div class="ch-ep-decks">${deck(x.moi, 'Ton deck imposé', 'moi')}<span class="cb-vs">VS</span>${deck(x.adv, `L'IA · ${h(DIFFICULTES[CHOC.epreuve.ia - 1].nom)}`, 'adv')}</div>
     <section class="ch-ep-etat">
@@ -325,7 +327,7 @@ async function lancerEpreuve() {
     deck: x.moi, deckIA: x.adv,
     adversaire: { nom: 'L\'adversaire du jour', avatar: 'card:' + x.adv.couverture, frame: 'f_choc' },
     pvMoi: x.regle.pv[0], essMoi: x.regle.ess[0], pv: x.regle.pv[1], ess: x.regle.ess[1],
-    titre: `Épreuve · ${x.regle.nom}`, sousTitre: `Essai ${ep.essais.length + 1}/${ep.max}`
+    titre: `Épreuve${chEtat.n ? ' ' + chEtat.n : ''} · ${x.regle.nom}`, sousTitre: `Essai ${ep.essais.length + 1}/${ep.max}`
   });
 }
 
@@ -496,7 +498,7 @@ function vChClassement() {
         <span class="rf-pts tnum">${etincelleIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
       : `<p class="muted">Personne n'a encore gagné d'${CHOC.monnaie.nom} : à toi de commencer.</p>`;
   } else {
-    corps = vTopRaid(10) || '<p class="muted">Personne n\'a encore frappé le Sorcier.</p>';
+    corps = vTopRaid(10) || `<p class="muted">Personne n'a encore frappé ${h(rdBoss().nom)}.</p>`;
   }
   return `${chTitre('Classement', `Ceux qui frappent le plus fort, et ceux qui gagnent le plus d'${CHOC.monnaie.nom}.`)}
     <div class="segbar ch-seg">${seg}</div>${corps}`;
@@ -580,7 +582,7 @@ function vChRecap() {
       <div class="rr-stats">
         ${stat(etincelleIco, fmtN(r.total), CHOC.monnaie.nom + ' gagnées', r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 'er'}</sup> sur ${r.joueurs}` : '')}
         ${stat(NAVICO.trophy, `${r.paliers}<small>/${r.paliers_max}</small>`, 'paliers du Pass', r.paliers >= r.paliers_max ? 'Pass terminé' : '')}
-        ${stat(NAVICO.foudre, fmtN(r.degats || 0), 'dégâts au Sorcier', `${r.raid_phases || 0} phase${(r.raid_phases || 0) > 1 ? 's' : ''} abattue${(r.raid_phases || 0) > 1 ? 's' : ''}`)}
+        ${stat(NAVICO.foudre, fmtN(r.degats || 0), 'dégâts au Raid', `${r.raid_phases || 0} phase${(r.raid_phases || 0) > 1 ? 's' : ''} abattue${(r.raid_phases || 0) > 1 ? 's' : ''}`)}
         ${stat(NAVICO.epreuve, r.epreuves || 0, 'Épreuves gagnées', '')}
         ${stat(NAVICO.quest, r.quetes, 'quêtes accomplies', '')}
       </div>
@@ -589,7 +591,7 @@ function vChRecap() {
     <section class="rr-continue">
       <h2>Ce qui reste</h2>
       <div class="rr-cartes">
-        <button class="rr-lien" data-cb="vue" data-v="raid"><span class="rr-ico">${NAVICO.foudre}</span><b>Le Raid continue</b><small>Une nouvelle saison toutes les deux semaines, payée en Éclats.</small></button>
+        <button class="rr-lien" data-cb="vue" data-v="raid"><span class="rr-ico">${NAVICO.foudre}</span><b>Le Raid continue</b><small>Un nouveau raid toutes les deux semaines, payé en Éclats.</small></button>
         <button class="rr-lien" data-tab="combats"><span class="rr-ico">${NAVICO.sword}</span><b>Les Combats continuent</b><small>Campagne, Arcade, défis entre amis.</small></button>
         <button class="rr-lien" data-colvue="classiques" data-tab="collection"><span class="rr-ico">${NAVICO.promo}</span><b>Les Secrètes restent</b><small>Une chance dans chaque booster.</small></button>
       </div>

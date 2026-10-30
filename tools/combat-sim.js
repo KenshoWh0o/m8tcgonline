@@ -32,7 +32,7 @@ vm.runInContext(`
 const Combat = ctx.Combat, Decks = ctx.Decks, IA = ctx.IA;
 /* L'événement du Choc des Sections (ses `const` ne sont pas des propriétés
    du contexte : on les sort une par une). */
-const Choc = vm.runInContext('({ CHOC, RAID, raidCombat, raidSaison, deckSorcier, posesBoss, epreuveDuJour, scoreEpreuve })', ctx);
+const Choc = vm.runInContext('({ CHOC, RAID, raidCombat, raidSaison, raidBoss, chocCouleurs, deckBoss, deckSorcier, posesBoss, regleEpreuve, epreuveDuJour, scoreEpreuve })', ctx);
 const Campagne = vm.runInContext('({ combatsCampagne, deckRival, SECTIONS })', ctx);
 const Niveaux = vm.runInContext('({ NIVEAUX, xpRequis, niveauDe, xpCombat, recompenseNiveau, prochainsPaliers })', ctx);
 const Tuto = vm.runInContext('({ TUTO_MOI, TUTO_LUI, tutoRival })', ctx);

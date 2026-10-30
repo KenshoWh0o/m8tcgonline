@@ -391,6 +391,8 @@ button.cb-une:active{transform:scale(.98)}
 .rd-hero-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
 .rd-hero-t h2{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:28px;line-height:1.05;text-shadow:0 2px 14px rgba(0,0,0,.7)}
 .rd-etat{align-self:flex-start;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(18,17,25,.72);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+/* Ce que fait le boss du raid (RAID.bosses › dit, version 3.0.11). */
+.rd-dit{margin:6px 0 0;max-width:34em;font-size:12.5px;line-height:1.35;color:var(--subtle);text-shadow:0 1px 8px rgba(0,0,0,.8)}
 /* La piste des six phases : un tronçon par phase, qui se remplit avec les
    dégâts du serveur ; sous chacun, son numéro et son coffre commun. */
 .rd-piste,.rd-perso{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}

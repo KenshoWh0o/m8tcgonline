@@ -179,7 +179,7 @@ $$;
 
 create or replace function public.choc_etat() returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); j date := jour_paris(); e choc_epreuves;
+declare p uuid := auth.uid(); j date := jour_paris(); e choc_epreuves; ev evenements;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -189,8 +189,17 @@ begin
   select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite' and q.evenement = 'choc'
   on conflict (user_id, quest_id, period_key) do nothing;
   select * into e from choc_epreuves where user_id = p and jour = j;
+  select * into ev from evenements x where x.code = 'choc' and now() >= x.debut and now() < x.fin
+   order by x.debut desc limit 1;
   return jsonb_build_object(
     'jour', j,
+    -- Version 3.0.11 : le numero de l'Epreuve, le n-ieme jour de l'evenement
+    -- (heure de Paris), sur `jours` (21 pour un Choc ouvert a minuit : les
+    -- dates qu'il touche). Il choisit la regle du calendrier
+    -- (CHOC.epreuve.calendrier, js/combat/choc-data.js).
+    'n', j - (ev.debut at time zone 'Europe/Paris')::date + 1,
+    'jours', ((ev.fin - interval '1 microsecond') at time zone 'Europe/Paris')::date
+             - (ev.debut at time zone 'Europe/Paris')::date + 1,
     'epreuve', jsonb_build_object(
       'graine', choc_graine(j),
       'essais', coalesce(e.essais, '[]'::jsonb),
@@ -233,10 +242,16 @@ grant execute on function public.choc_etat to authenticated;
 --
 --    insert into public.evenements (titre, texte, debut, fin, code) values (
 --      'Le Choc des Sections',
---      'La version 3.0 : le Raid contre The French Sorcerer et l''Épreuve du jour.',
---      '2026-11-02 18:00+01', '2026-11-23 18:00+01', 'choc');
+--      'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l''Épreuve du jour.',
+--      '2026-11-02 00:00+01', '2026-11-23 00:00+01', 'choc');
 --
---  (Les dates sont un exemple.) Un evenement sans `ticket_minutes` ne change
---  pas le rythme des boosters. Pour le fermer plus tot :
+--  (Les dates sont un exemple.) A minuit, heure de Paris : vingt et un jours
+--  pleins, donc vingt et une Epreuves (choc_etat › n, de 1 a 21) ; le raid 1
+--  commence le premier jour, le raid 2 le quinzieme (raid_ancre,
+--  27_raid.sql). Ouvert a une autre heure, l'evenement touche vingt-deux
+--  dates : la premiere et la derniere Epreuve sont plus courtes, et la
+--  vingt-deuxieme reprend une regle a tour de role (regleEpreuve). Un
+--  evenement sans `ticket_minutes` ne change pas le rythme des boosters.
+--  Pour le fermer plus tot :
 --    update public.evenements set fin = now() where code = 'choc' and fin > now();
 -- =====================================================================

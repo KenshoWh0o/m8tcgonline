@@ -304,18 +304,19 @@ on conflict (id) do update set
 -- Ses quetes paient en Etincelles (25_choc.sql ; la colonne `monnaie` dit
 -- « prismes » pour toute monnaie d'evenement). Du jour : 75 Etincelles ; de
 -- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
---   raid, raid_degats, raid_victoires : le Raid contre The French Sorcerer
+--   raid, raid_degats, raid_victoires : le Raid, contre son boss du moment
+--                                       (The French Sorcerer, puis Le Marionnettiste)
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
 --   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
   ('c_visite',  'ev_jour', 'ev_visite',          1, 10, null, 'Au rapport',          'Passe voir l''événement aujourd''hui.', 1, 'choc', 'prismes'),
   ('c_combats', 'ev_jour', 'combats',            2, 15, null, 'Deux combats',        'Joue 2 combats, contre l''IA ou un ami.', 2, 'choc', 'prismes'),
-  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Paratonnerre',        'Affronte The French Sorcerer.', 3, 'choc', 'prismes'),
+  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Paratonnerre',        'Affronte le boss du Raid.', 3, 'choc', 'prismes'),
   ('c_epreuve', 'ev_jour', 'epreuve',            1, 10, null, 'L''Épreuve du jour',  'Tente l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vaincus', 'ev_jour', 'vaincus',            6, 15, null, 'Six de chute',        'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'),
   ('c_packs',   'ev_jour', 'packs',              3, 10, null, 'Trois boosters',      'Ouvre 3 boosters aujourd''hui.', 6, 'choc', 'prismes'),
-  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'),
-  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'),
+  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au boss du Raid.', 1, 'choc', 'prismes'),
+  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le boss du Raid 5 fois.', 2, 'choc', 'prismes'),
   ('c_ep7',     'ev',      'epreuve_victoires',  7, 80, null, 'Sept Épreuves',       'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'),
   ('c_ep15',    'ev',      'epreuve',           15, 60, null, 'Quinze essais',       'Tente 15 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),

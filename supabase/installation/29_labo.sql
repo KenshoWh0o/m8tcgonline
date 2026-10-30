@@ -26,10 +26,10 @@
 --     labo_evenement_raz('EFFACER')  effacer ce que tout le monde a fait pendant
 --                                    le Choc (les gains deja verses restent)
 --     labo_reverses(ouvertes)        ouvrir ou fermer les Reverses a la main
---     labo_raid(phase)               la saison du Raid en cours a la phase dite
+--     labo_raid(phase)               le raid en cours a la phase dite
 --                                    (7 : les six abattues, l'Infini)
 --     labo_raid_echelle(x)           l'echelle des seuils du Raid
---     labo_raid_raz('EFFACER')       la saison du Raid en cours a zero
+--     labo_raid_raz('EFFACER')       le raid en cours a zero
 --   Son propre compte :
 --     labo_cartes(quoi)              'master', 'classiques', 'combat', 'vider'
 --     labo_monnaies(valeurs)         Eclats, Fragments, boosters en plus, reserve,
@@ -112,7 +112,7 @@ begin
       'gagnees', (select count(*) from choc_epreuves where gagnee),
       'raid', (select coalesce(sum(degats), 0) from choc_joueurs)),
     'raid', jsonb_build_object(
-      'saison', sa, 'debut', raid_saison_debut(sa), 'fin', raid_saison_debut(sa + 1),
+      'saison', sa, 'boss', raid_boss(sa), 'debut', raid_saison_debut(sa), 'fin', raid_saison_debut(sa + 1),
       'degats', coalesce((select degats from raid_saisons where n = sa), 0),
       'phase', raid_phase(sa),
       'seuils', (select jsonb_agg(raid_seuil(k) order by k) from generate_series(1, 6) k),
@@ -137,7 +137,10 @@ end $$;
 
 -- ------------------------------------------------- le Choc des Sections
 -- Trois semaines, comme a son ouverture (fin de 25_choc.sql). La ligne est
--- creee si la base n'en a pas encore.
+-- creee si la base n'en a pas encore. Version 3.0.11 : un jour n commence a
+-- minuit, heure de Paris (n-1 jours avant aujourd'hui), comme le conseille
+-- 25_choc.sql — l'Epreuve est la n-ieme (choc_etat › n), et le raid du jour
+-- suit (raid_ancre, 27_raid.sql : au jour 15, le raid 2).
 create or replace function public.labo_evenement(p_etat text, p_n integer default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare d timestamptz; n int; duree interval := interval '21 days'; id_choc bigint;
@@ -150,7 +153,7 @@ begin
   elsif p_etat = 'jour' then
     n := coalesce(p_n, 1);
     if n < 1 or n > 21 then raise exception 'Un jour de 1 à 21.'; end if;
-    d := now() - make_interval(days => n - 1) - interval '1 hour';
+    d := ((jour_paris() - (n - 1))::timestamp) at time zone 'Europe/Paris';
   elsif p_etat = 'recap' then
     -- Fini depuis une heure : le recap court encore pres de trois jours.
     d := now() - duree - interval '1 hour';
@@ -166,7 +169,7 @@ begin
   select e.id into id_choc from evenements e where e.code = 'choc' order by e.fin desc limit 1;
   if id_choc is null then
     insert into evenements (titre, texte, debut, fin, code) values ('Le Choc des Sections',
-      'La version 3.0 : le Raid contre The French Sorcerer et l''Épreuve du jour.', d, d + duree, 'choc');
+      'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l''Épreuve du jour.', d, d + duree, 'choc');
   else
     update evenements set debut = d, fin = d + duree, recap_jusqua = null where id = id_choc;
   end if;
@@ -226,7 +229,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------- le Raid
--- La saison en cours a la phase p_phase : les degats du serveur sont poses
+-- Le raid en cours a la phase p_phase : les degats du serveur sont poses
 -- au seuil de la phase d'avant (7 : les six abattues, l'Infini). Les coffres
 -- deja ouverts le restent.
 create or replace function public.labo_raid(p_phase integer) returns jsonb
@@ -252,7 +255,7 @@ begin
   return labo_etat();
 end $$;
 
--- La saison en cours a zero : les degats, les phases, la part de chacun, les
+-- Le raid en cours a zero : les degats, les phases, la part de chacun, les
 -- coffres ouverts, les tentatives du jour. Ce qui a ete verse reste.
 create or replace function public.labo_raid_raz(p_confirmation text) returns jsonb
 language plpgsql security definer set search_path = public as $$

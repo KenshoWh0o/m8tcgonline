@@ -9,6 +9,8 @@ Ecrit :
   assets/combat/choc-deter.webp                l'affiche de l'en-tete, a droite
   assets/combat/tapis/t_arene.webp (+ -mini)   Pass, palier 30 : « Le Choc des Sections »
   assets/combat/tapis/t_orage.webp (+ -mini)   boutique de l'evenement : « The French Sorcerer »
+  assets/combat/tapis/t_ficelles.webp (+ -mini) le tapis du boss du raid 2, « Le Marionnettiste »
+                                               (version 3.0.11 ; ni vendu ni a gagner)
   assets/combat/sleeves/s_choc.webp            Pass, palier 8 : « Le Choc »
 
 Comme les tapis de la Boutique (tools/cosmetiques.py), ils partent
@@ -23,6 +25,9 @@ d'illustrations du jeu, pas d'un dessin invente :
     Section, une coupe lumineuse en biais entre les deux.
   - The French Sorcerer : l'illustration de la carte #116, en grand du haut
     jusqu'au milieu, fondue ensuite dans le violet sombre de son ciel.
+  - Le Marionnettiste : l'illustration de la carte #121 de la meme facon,
+    fondue dans le bleu de nuit de son ciel etoile ; ses fils tombent dans le
+    camp du joueur.
   - Le Choc (sleeve) : le dos officiel des cartes (assets/card-back.webp),
     recolore moitie vert, moitie violet, la meme coupe en diagonale.
 Les memes reperes que les autres tapis : bords sombres, bande plus sombre au
@@ -52,6 +57,8 @@ BRAWKS_NET = os.path.join(ROOT, '_sources', 'combat', 'brawks-deter.jpg')
 def brawks_net():
     return Image.open(BRAWKS_NET).convert('RGB')
 SORCIER = ('116_L_Joueur_Mauve_The-French-Sorcerer.avif', ILLU)
+MARIONNETTISTE = ('121_L_Joueur_Neutre_Le-Marionnettiste.avif', ILLU)
+NUIT_BLEUE = ((6, 8, 28), (58, 72, 196), (222, 230, 255))
 
 
 def dossier(*p):
@@ -205,6 +212,26 @@ def french_sorcerer():
     enregistrer_tapis(filet(im), 't_orage')
 
 
+# ------------------------------------------------- Le Marionnettiste
+def marionnettiste():
+    """Le boss du raid 2 (version 3.0.11), comme The French Sorcerer : son
+    illustration en grand dans le camp du haut, le visage vers le tiers
+    (l'illustration le place sous le milieu), fondue ensuite dans le bleu de
+    nuit de son ciel. Les fils, eux, continuent dans le flou du fond."""
+    art = illustration(MARIONNETTISTE)
+    fond = couvrir(art, W, H, cx=.5, cy=.5).filter(ImageFilter.GaussianBlur(30))
+    fond = teinter(ImageEnhance.Brightness(fond).enhance(.4), NUIT_BLEUE, .5)
+    grand = couvrir(art, W, 860, cx=.44, cy=.5).filter(ImageFilter.UnsharpMask(2, 60, 2))
+    grand = ImageEnhance.Brightness(grand).enhance(.86)
+    m = Image.new('L', grand.size, 255)
+    dm = ImageDraw.Draw(m)
+    for y in range(280):
+        dm.line((0, grand.height - 1 - y, W, grand.height - 1 - y), fill=round(255 * (y / 280) ** 1.4))
+    fond.paste(grand, (0, 0), m)
+    im = finitions(fond)
+    enregistrer_tapis(filet(im), 't_ficelles')
+
+
 # ------------------------------------------------- La sleeve
 def sleeve():
     """Le dos officiel, recolore : vert a gauche, violet a droite."""
@@ -230,4 +257,5 @@ if __name__ == '__main__':
     affiche()
     choc_des_sections()
     french_sorcerer()
+    marionnettiste()
     sleeve()

@@ -62,6 +62,10 @@
   const deux = n => String(n).padStart(2, '0');
   const jourParis = t => { const p = paris(t); return `${p.year}-${deux(p.month)}-${deux(p.day)}`; };
   const hier = j => { const d = new Date(j + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
+  /* Les jours de `a` à `b` ('2026-11-02'), et minuit (heure de Paris) d'une date. */
+  const ecartJours = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86400000);
+  const minuitDe = j => ['+02:00', '+01:00'].map(o => Date.parse(`${j}T00:00:00${o}`))
+    .find(t => jourParis(t) === j && paris(t).hour === 0);
 
   /* Semaine ISO (IYYY-WIW), sur la date de Paris. */
   function semaineParis(t) {
@@ -187,12 +191,12 @@
        d'événement, c'est l'événement qui lui donne son nom. */
     ['c_visite',  'ev_jour', 'ev_visite',         1, 10, null, 'Au rapport',           'Passe voir l\'événement aujourd\'hui.', 1, 'choc', 'prismes'],
     ['c_combats', 'ev_jour', 'combats',           2, 15, null, 'Deux combats',         'Joue 2 combats, contre l\'IA ou un ami.', 2, 'choc', 'prismes'],
-    ['c_raid',    'ev_jour', 'raid',              1, 15, null, 'Paratonnerre',         'Affronte The French Sorcerer.', 3, 'choc', 'prismes'],
+    ['c_raid',    'ev_jour', 'raid',              1, 15, null, 'Paratonnerre',         'Affronte le boss du Raid.', 3, 'choc', 'prismes'],
     ['c_epreuve', 'ev_jour', 'epreuve',           1, 10, null, 'L\'Épreuve du jour',   'Tente l\'Épreuve du jour.', 4, 'choc', 'prismes'],
     ['c_vaincus', 'ev_jour', 'vaincus',           6, 15, null, 'Six de chute',         'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'],
     ['c_packs',   'ev_jour', 'packs',             3, 10, null, 'Trois boosters',       'Ouvre 3 boosters aujourd\'hui.', 6, 'choc', 'prismes'],
-    ['c_deg100',  'ev',      'raid_degats',     100, 80, null, 'Cent dégâts',          'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'],
-    ['c_raidv5',  'ev',      'raid_victoires',    5, 60, null, 'Cinq fois à terre',    'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'],
+    ['c_deg100',  'ev',      'raid_degats',     100, 80, null, 'Cent dégâts',          'Inflige 100 dégâts au boss du Raid.', 1, 'choc', 'prismes'],
+    ['c_raidv5',  'ev',      'raid_victoires',    5, 60, null, 'Cinq fois à terre',    'Fais tomber le boss du Raid 5 fois.', 2, 'choc', 'prismes'],
     ['c_ep7',     'ev',      'epreuve_victoires', 7, 80, null, 'Sept Épreuves',        'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'],
     ['c_ep15',    'ev',      'epreuve',          15, 60, null, 'Quinze essais',        'Tente 15 fois l\'Épreuve du jour.', 4, 'choc', 'prismes'],
     ['c_vic30',   'ev',      'victoires',        30, 60, null, 'Trente victoires',     'Gagne 30 combats pendant l\'événement.', 5, 'choc', 'prismes'],
@@ -1337,7 +1341,7 @@
       participation: { joueurs: comptes.length, etincelles: comptes.reduce((n, [, v]) => n + v.total, 0),
         epreuves: Object.keys(ch.epreuves).length, gagnees: Object.keys(ch.gagnees).length,
         raid: Object.values(ch.joueurs).reduce((n, x) => n + (x.degats || 0), 0) },
-      raid: { saison: sa, debut: vs.debut, fin: vs.fin, degats: degatsSaison(sa), phase: phaseDemo(sa),
+      raid: { saison: sa, boss: vs.boss, debut: vs.debut, fin: vs.fin, degats: degatsSaison(sa), phase: phaseDemo(sa),
         seuils: RAID.phases.map((x, i) => seuilDemo(i + 1)), echelle: echelleRaid(),
         joueurs: Object.entries(r.part).filter(([k, x]) => k.startsWith(sa + '|') && x.combats > 0).length },
       reverses: { des: revDes() == null ? null : iso(revDes()), manuel: !!S.parametres.fabrication_reverse, ouvertes: revOuvertes() },
@@ -1361,13 +1365,16 @@
     } else if (p_etat === 'jour') {
       const n = p_n == null ? 1 : p_n;
       if (!(n >= 1 && n <= 21)) refuser('Un jour de 1 à 21.');
-      d = t - (n - 1) * J_MS - 3600000;
+      /* À minuit, heure de Paris (labo_evenement, 3.0.11) : l'Épreuve n. */
+      let j = jourParis(t);
+      for (let k = 1; k < n; k++) j = hier(j);
+      d = minuitDe(j);
     } else if (p_etat === 'recap') d = t - D21 - 3600000;
     else if (p_etat === 'fini') d = t - D21 - 4 * J_MS;
     else refuser('État inconnu.');
     /* Un seul événement dans la démo : celui d'avant (Reflets) laisse la place. */
     S.evenement = { titre: CHOC.nom, code: 'choc', debut: d, fin: d + D21, recap_jusqua: null,
-      texte: 'La version 3.0 : le Raid contre The French Sorcerer et l\'Épreuve du jour.' };
+      texte: 'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l\'Épreuve du jour.' };
     return laboEtat(p);
   };
   RPC.labo_decaler = (p, { p_heures }) => {
@@ -1749,14 +1756,18 @@
 
   /* La version 3.0 : « Le Choc des Sections » prend la suite de Reflets,
      pour trois semaines. Dans la démo, il a commencé quatre jours avant la
-     première visite en 3.0. Les joueurs simulés ont rejoint une Section. */
+     première visite en 3.0, à minuit (heure de Paris, comme le conseille
+     25_choc.sql : 21 Épreuves) — on arrive à l'Épreuve 5. Les joueurs
+     simulés ont rejoint une Section. */
   function monde30() {
     if (S.choc) return;
     chocDe();
     const t = now();
-    const debut = t - 4 * 86400000;
+    let j0 = jourParis(t);
+    for (let k = 0; k < 4; k++) j0 = hier(j0);
+    const debut = minuitDe(j0);
     S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: debut + 21 * 86400000,
-      texte: 'La version 3.0 : le Raid contre The French Sorcerer et l\'Épreuve du jour.' };
+      texte: 'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l\'Épreuve du jour.' };
     [['b_lumen', 'toxique', 24], ['b_mira', 'toxique', 15], ['b_kairo', 'deter', 9], ['b_nova', 'deter', 30]]
       .forEach(([id, sec, d]) => {
         if (!S.profils[id]) return;
@@ -1770,7 +1781,8 @@
   /* La saison en cours, déjà entamée par les joueurs simulés : deux phases
      abattues, la troisième en route. */
   function mondeRaid() {
-    if (S.raid && S.raid.niveau == null) return;
+    if (S.raid && S.raid.niveau == null && S.raid.v === 2) return;
+    S.raid = null;
     const sa = saisonDemo();
     [['b_lumen', 30], ['b_mira', 22], ['b_kairo', 14], ['b_nova', 36]].forEach(([id, d]) => {
       if (!S.profils[id]) return;
@@ -2249,11 +2261,15 @@
      pour ceux qui ont combattu dans la saison, des paliers personnels, puis
      le mode Infini. */
   const raidDe = () => {
-    /* L'ancien Raid par niveaux (pré-build 3.0.5) : on repart de zéro. */
-    if (S.raid && S.raid.niveau != null) S.raid = null;
-    return (S.raid = S.raid || { saisons: {}, tombees: {}, part: {}, pris: {}, tentatives: {} });
+    /* L'ancien Raid par niveaux (pré-build 3.0.5), et les raids comptés
+       depuis le 12 octobre (avant la 3.0.11, `v` absent) : on repart de zéro. */
+    if (S.raid && (S.raid.niveau != null || S.raid.v !== 2)) S.raid = null;
+    return (S.raid = S.raid || { v: 2, saisons: {}, tombees: {}, part: {}, pris: {}, tentatives: {} });
   };
-  const saisonDemo = () => raidSaison(jourParis(now())).n;
+  /* Le premier jour du raid 1 (raid_ancre, 27_raid.sql) : celui où commence
+     le Choc des Sections ; sans lui, RAID.saison.depart. */
+  const raidAncre = () => (S.evenement && S.evenement.code === 'choc' ? jourParis(S.evenement.debut) : RAID.saison.depart);
+  const saisonDemo = () => raidSaison(jourParis(now()), raidAncre()).n;
   /* Les paliers, à l'échelle du serveur (peu de joueurs dans la démo :
      _demo/reglages.js). */
   /* L'échelle : celle du Labo (parametres.raid_echelle), sinon celle des réglages. */
@@ -2323,16 +2339,15 @@
     return { etat: me(p), recompense: r };
   }
 
-  /* Une saison vue par un joueur (raid_vue_saison). */
+  /* Un raid vu par un joueur (raid_vue_saison) : son boss, ses dates. */
   function vueSaison(p, sa) {
     const r = raidDe();
     const x = r.part[sa + '|' + p];
-    const s0 = raidSaison(RAID.saison.depart);
-    const debut = new Date(Date.parse(RAID.saison.depart + 'T12:00:00Z') + (sa - s0.n) * RAID.saison.jours * 86400000).toISOString().slice(0, 10);
-    const fin = new Date(Date.parse(debut + 'T12:00:00Z') + RAID.saison.jours * 86400000).toISOString().slice(0, 10);
+    const a = Date.parse(raidAncre() + 'T12:00:00Z');
+    const jourDe = k => new Date(a + k * RAID.saison.jours * 86400000).toISOString().slice(0, 10);
     const moi = x || { combats: 0, degats: 0, victoires: 0, infini: 0 };
     return {
-      n: sa, debut, fin, degats: degatsSaison(sa), phase: phaseDemo(sa),
+      n: sa, boss: raidBoss(sa).id, debut: jourDe(sa - 1), fin: jourDe(sa), degats: degatsSaison(sa), phase: phaseDemo(sa),
       phases: RAID.phases.map((ph, i) => Object.assign({}, ph, {
         n: i + 1, seuil: seuilDemo(i + 1), tombee: degatsSaison(sa) >= seuilDemo(i + 1), pris: !!r.pris[sa + '|' + p + '|commun|' + (i + 1)] })),
       moi: { participe: !!x, combats: moi.combats, degats: moi.degats, victoires: moi.victoires, infini: moi.infini,
@@ -2363,9 +2378,9 @@
     const r = raidDe();
     const sa = saisonDemo();
     const s = +p_saison, n = +p_n;
-    if (s !== sa && s !== sa - 1) refuser('Cette saison est terminée.');
+    if (s !== sa && s !== sa - 1) refuser('Ce raid est terminé.');
     const x = r.part[s + '|' + p];
-    if (!x || x.combats < 1) refuser('Tu n\'as pas combattu dans cette saison.');
+    if (!x || x.combats < 1) refuser('Tu n\'as pas combattu dans ce raid.');
     let c;
     if (p_quoi === 'commun') {
       if (!(n >= 1 && n <= RAID.phases.length)) refuser('Phase inconnue.');
@@ -2424,8 +2439,11 @@
       .map(([k, l]) => ({ id: k.split('|')[0], s: l.slice().sort((a, b) => scoreEpreuve(b) - scoreEpreuve(a))[0] }))
       .filter(x => x.s && !x.s.abandon).sort((a, b) => scoreEpreuve(b.s) - scoreEpreuve(a.s)).slice(0, 10)
       .map(x => joueurVue(x.id, Object.assign({}, x.s, { moi: x.id === p })));
+    /* Le n-ième jour de l'événement, sur `jours` (choc_etat, 3.0.11). */
+    const e = S.evenement;
+    const d0 = jourParis(e.debut);
     return {
-      jour: auj,
+      jour: auj, n: ecartJours(d0, auj) + 1, jours: ecartJours(d0, jourParis(e.fin - 1)) + 1,
       epreuve: { graine: graineEpreuve(auj), essais, max: CHOC.epreuve.essais, meilleur, gagnee: !!ch.gagnees[p + '|' + auj], top: topEp }
     };
   };

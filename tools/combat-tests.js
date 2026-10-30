@@ -250,25 +250,52 @@ test('les quarante rivaux de campagne ont un deck valide, avec leur carte', () =
 });
 
 console.log('Le Choc des Sections');
-test('le deck du Sorcier est valide et le contient, chaque jour, à chaque phase et en Infini', () => {
-  for (let j = 0; j < 14; j++) {
-    const jour = new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10);
-    for (const cle of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'i1', 'i4', 'i9']) {
-      const d = Choc.deckSorcier(jour, cle);
-      egal(Decks.verifier(d), [], jour + ' ' + cle);
-      vrai(d.cartes[Choc.RAID.boss] === 1, 'The French Sorcerer manque');
-      egal(JSON.stringify(Choc.deckSorcier(jour, cle)), JSON.stringify(d), 'même jour, même deck');
+test('le deck de chaque boss est valide et le contient, chaque jour, à chaque phase et en Infini', () => {
+  for (const b of Choc.RAID.bosses) {
+    for (let j = 0; j < 28; j++) {
+      const jour = new Date(Date.UTC(2026, 10, 2 + j)).toISOString().slice(0, 10);
+      const coul = Choc.chocCouleurs(jour, b.id);
+      vrai(coul.length === 2 && coul[0] !== coul[1] && !coul.includes('neutre'), b.id + ' ' + jour + ' : deux vraies couleurs ' + coul);
+      for (const cle of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'i1', 'i4', 'i9']) {
+        const d = Choc.deckBoss(jour, cle, b.id);
+        egal(Decks.verifier(d), [], b.id + ' ' + jour + ' ' + cle);
+        vrai(d.cartes[b.id] === 1, b.nom + ' manque');
+        egal(d.couverture, b.id);
+        egal(JSON.stringify(Choc.deckBoss(jour, cle, b.id)), JSON.stringify(d), 'même jour, même deck');
+      }
+    }
+  }
+  egal(JSON.stringify(Choc.deckSorcier('2026-11-03', 'p2')), JSON.stringify(Choc.deckBoss('2026-11-03', 'p2', 'c116')), 'deckSorcier = deckBoss du Sorcier');
+});
+test('l\'Épreuve du jour est la même pour tous, et ses decks sont valides les 21 jours', () => {
+  const a = Choc.epreuveDuJour('2026-10-11', 123456789, 3), b = Choc.epreuveDuJour('2026-10-11', 123456789, 3);
+  egal(JSON.stringify(a), JSON.stringify(b));
+  for (let n = 1; n <= 21; n++) {
+    const jour = new Date(Date.UTC(2026, 10, 1 + n)).toISOString().slice(0, 10);
+    for (const g of [1, 77, 123456789, 4294967295]) {
+      const x = Choc.epreuveDuJour(jour, g, n);
+      egal(Decks.verifier(x.moi), [], 'jour ' + n + ' graine ' + g + ' (toi)');
+      egal(Decks.verifier(x.adv), [], 'jour ' + n + ' graine ' + g + ' (IA)');
+      egal(x.regle.id, Choc.CHOC.epreuve.calendrier[n - 1], 'la règle du calendrier, jour ' + n);
     }
   }
 });
-test('l\'Épreuve du jour est la même pour tous, et ses decks sont valides', () => {
-  const a = Choc.epreuveDuJour('2026-10-11', 123456789), b = Choc.epreuveDuJour('2026-10-11', 123456789);
-  egal(JSON.stringify(a), JSON.stringify(b));
-  egal(Decks.verifier(a.moi), []);
-  egal(Decks.verifier(a.adv), []);
+test('le calendrier des 21 Épreuves : chaque semaine ses sept règles, jamais deux jours de suite', () => {
+  const cal = Choc.CHOC.epreuve.calendrier, ids = Choc.CHOC.epreuve.regles.map(r => r.id);
+  egal(cal.length, 21);
+  for (const id of cal) vrai(ids.includes(id), 'règle inconnue ' + id);
+  for (let s = 0; s < 3; s++) egal(new Set(cal.slice(7 * s, 7 * s + 7)).size, 7, 'semaine ' + (s + 1));
+  for (let k = 1; k < 21; k++) vrai(cal[k] !== cal[k - 1], 'deux jours de suite : ' + (k + 1));
+  for (const id of ids) {
+    const places = [0, 1, 2].map(s => cal.slice(7 * s, 7 * s + 7).indexOf(id));
+    egal(new Set(places).size, 3, id + ' : jamais le même jour de la semaine');
+  }
+  /* Hors calendrier (sans numéro, ou au-delà du 21e jour) : une règle par
+     jour, à tour de rôle, comme avant la 3.0.11. */
   const vus = new Set();
-  for (let j = 0; j < 7; j++) vus.add(Choc.epreuveDuJour(new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10), 1).regle.id);
-  egal(vus.size, Choc.CHOC.epreuve.regles.length, 'une règle différente chaque jour de la semaine');
+  for (let j = 0; j < 7; j++) vus.add(Choc.regleEpreuve(new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10)).id);
+  egal(vus.size, 7, 'une règle différente chaque jour de la semaine');
+  egal(Choc.regleEpreuve('2026-11-23', 22).id, Choc.regleEpreuve('2026-11-23').id, 'le 22e jour tourne');
 });
 test('le score de l\'Épreuve : victoire, puis moins de tours, puis plus de PV', () => {
   const s = Choc.scoreEpreuve;
@@ -277,17 +304,18 @@ test('le score de l\'Épreuve : victoire, puis moins de tours, puis plus de PV',
   vrai(s({ gagne: true, tours: 8, pv: 3 }) > s({ gagne: true, tours: 8, pv: 2 }));
   vrai(s({ gagne: false, touches: 4, pv: 0 }) > s({ gagne: false, touches: 3, pv: 2 }));
 });
-test('le Sorcier commence sur le plateau, au milieu, jamais en main ni en PV', () => {
-  const boss = Choc.RAID.boss;
-  for (let g = 1; g <= 40; g++) {
-    const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 'p3'))],
-      graine: g, pv: [5, 7], essDepart: [0, 1], poses: Choc.posesBoss() });
-    while (Combat.demande(E) && Combat.demande(E).but === 'mulligan') Combat.agir(E, { t: 'choix', v: 'oui' });
-    const P = E.j[1];
-    egal((P.lignes[1] || {}).id, boss, 'graine ' + g);
-    const ailleurs = ['main', 'pv', 'club', 'defausse'].reduce((n, z) => n + P[z].filter(c => c.id === boss).length, 0);
-    egal(ailleurs, 0, 'un seul Sorcier, graine ' + g);
-    egal(P.pv.length, 7);
+test('chaque boss commence sur le plateau, au milieu, jamais en main ni en PV', () => {
+  for (const b of Choc.RAID.bosses) {
+    for (let g = 1; g <= 40; g++) {
+      const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckBoss('2026-10-11', 'p3', b.id))],
+        graine: g, pv: [5, 7], essDepart: [0, 1], poses: Choc.posesBoss(b.id) });
+      while (Combat.demande(E) && Combat.demande(E).but === 'mulligan') Combat.agir(E, { t: 'choix', v: 'oui' });
+      const P = E.j[1];
+      egal((P.lignes[1] || {}).id, b.id, b.id + ' graine ' + g);
+      const ailleurs = ['main', 'pv', 'club', 'defausse'].reduce((n, z) => n + P[z].filter(c => Decks.cleCopie(c.id) === Decks.cleCopie(b.id)).length, 0);
+      egal(ailleurs, 0, 'un seul ' + b.nom + ', graine ' + g);
+      egal(P.pv.length, 7);
+    }
   }
 });
 test('le Raid : des phases de plus en plus dures, des paliers croissants, un Infini qui se durcit', () => {
@@ -311,27 +339,41 @@ test('le Raid : des phases de plus en plus dures, des paliers croissants, un Inf
   const p = Choc.RAID.perso;
   for (let k = 1; k < p.length; k++) vrai(p[k].seuil > p[k - 1].seuil, 'paliers personnels croissants');
 });
-test('les saisons du Raid durent deux semaines, sans trou ni chevauchement', () => {
-  const a = Choc.raidSaison('2026-10-12'), b = Choc.raidSaison('2026-10-25'), c = Choc.raidSaison('2026-10-26');
-  egal(a.n, 1); egal(b.n, 1); egal(c.n, 2);
-  egal(a.debut, '2026-10-12'); egal(a.fin, '2026-10-26'); egal(c.debut, a.fin);
+test('les raids durent deux semaines depuis le premier jour du Choc, sans trou ni chevauchement', () => {
+  /* Un Choc ouvert le lundi 2 novembre à minuit, pour 21 jours. */
+  const A = '2026-11-02';
+  const a = Choc.raidSaison('2026-11-02', A), b = Choc.raidSaison('2026-11-15', A), c = Choc.raidSaison('2026-11-16', A);
+  egal([a.n, b.n, c.n], [1, 1, 2]);
+  egal(a.debut, '2026-11-02'); egal(a.fin, '2026-11-16'); egal(c.debut, a.fin);
+  egal([a.boss, c.boss, Choc.raidSaison('2026-11-30', A).boss], ['c116', 'c121', 'c116'], 'les boss à tour de rôle');
+  /* Le raid 2 commence une semaine avant la fin de l'événement (le 23). */
+  egal(Math.round((Date.parse('2026-11-23T00:00:00Z') - Date.parse(c.debut + 'T00:00:00Z')) / 86400000), 7);
+  egal(Choc.raidSaison('2026-10-20', A).n, 1, 'avant le Choc, le raid 1');
+  /* Sans Choc : depuis RAID.saison.depart, comme avant la 3.0.11. */
+  const v = Choc.raidSaison('2026-10-25'), w = Choc.raidSaison('2026-10-26');
+  egal([v.n, w.n, v.debut], [1, 2, '2026-10-12']);
+  egal(Choc.raidBoss(1).id, 'c116'); egal(Choc.raidBoss(2).id, 'c121'); egal(Choc.raidBoss('c121').nom, 'Le Marionnettiste');
 });
-test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme', () => {
+test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme, contre chaque boss', () => {
   const p = Choc.raidCombat('p5');
-  const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckSorcier('2026-10-11', 'p5'))],
-    graine: 77, pv: [5, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss() });
-  egal(E.j[1].pvDepart, 8);
-  let n = 0;
-  while (Combat.demande(E) && n++ < 3000) {
-    const d = Combat.demande(E);
-    let a;
-    if (d.type === 'tour') { const o = Combat.optionsTour(E); a = o.find(x => x.t === 'attaquer') || o.find(x => x.t === 'deployer') || o.find(x => x.t === 'finTour'); }
-    else if (d.type === 'choix') a = { t: 'choix', v: d.options[0].v };
-    else if (d.type === 'cartes') a = { t: 'cartes', u: d.parmi.slice(0, d.min) };
-    else a = { t: 'ordre', u: d.parmi };
-    Combat.agir(E, a);
+  for (const b of Choc.RAID.bosses) {
+    for (const g of [77, 78, 79]) {
+      const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckBoss('2026-11-17', 'p5', b.id))],
+        graine: g, pv: [5, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss(b.id) });
+      egal(E.j[1].pvDepart, 8);
+      let n = 0;
+      while (Combat.demande(E) && n++ < 3000) {
+        const d = Combat.demande(E);
+        let a;
+        if (d.type === 'tour') { const o = Combat.optionsTour(E); a = o.find(x => x.t === 'attaquer') || o.find(x => x.t === 'deployer') || o.find(x => x.t === 'finTour'); }
+        else if (d.type === 'choix') a = { t: 'choix', v: d.options[0].v };
+        else if (d.type === 'cartes') a = { t: 'cartes', u: d.parmi.slice(0, d.min) };
+        else a = { t: 'ordre', u: d.parmi };
+        Combat.agir(E, a);
+      }
+      vrai(E.fin, b.nom + ' : la partie doit finir (graine ' + g + ')');
+    }
   }
-  vrai(E.fin, 'la partie doit finir');
 });
 
 console.log('XP et niveaux');

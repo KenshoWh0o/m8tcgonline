@@ -118,7 +118,8 @@ function vLabFrise() {
   const etatRev = rv.ouvertes ? (rv.manuel ? 'ouvertes à la main' : 'ouvertes') : rv.des ? 'fermées' : 'fermées, sans date';
   const jalons = [
     c && ['Début du Choc', c.debut], c && ['Fin du Choc', c.fin], c && ['Fin de son récap', c.recap_jusqua],
-    R.debut && ['Début de la saison ' + R.saison + ' du Raid', minuitParis(R.debut)], R.fin && ['Saison suivante du Raid', minuitParis(R.fin)],
+    R.debut && [`Début du raid ${R.saison} (${raidBoss(R.boss || RAID.boss).nom})`, minuitParis(R.debut)],
+    R.fin && [`Raid ${R.saison + 1} (${raidBoss(R.saison + 1).nom})`, minuitParis(R.fin)],
     rv.des && !rv.manuel && ['Ouverture des Reverses', rv.des]
   ].filter(Boolean).sort((a, b) => srvTime(a[1]) - srvTime(b[1]));
   const maintenant = Date.now();
@@ -169,14 +170,14 @@ function vLabChoc() {
   </section>`;
 }
 
-/* Le Raid : la saison en cours, à une phase ; l'échelle des seuils. */
+/* Le Raid : le raid en cours (son boss), à une phase ; l'échelle des seuils. */
 function vLabRaid() {
   const R = labEtat.raid || {};
   const s = R.seuils || [];
   const echelles = [0.25, 0.5, 1, 2];
   return `<section class="panel">
     <h2>Le Raid <small class="labtag">pour tout le monde</small></h2>
-    <p class="muted small">Saison ${R.saison}, du ${h(labJour(R.debut))} au ${h(labJour(R.fin))} : ${fmtN(R.degats || 0)} PV pris par
+    <p class="muted small">Raid ${R.saison} (${h(raidBoss(R.boss || RAID.boss).nom)}), du ${h(labJour(R.debut))} au ${h(labJour(R.fin))} : ${fmtN(R.degats || 0)} PV pris par
       ${fmtN(R.joueurs || 0)} joueur${(R.joueurs || 0) > 1 ? 's' : ''}. Choisir une phase pose les dégâts du serveur à son seuil ;
       les coffres déjà ouverts le restent.</p>
     <div class="labjours">${[1, 2, 3, 4, 5, 6, 7].map(k => `<button data-lab="raid" data-n="${k}" class="${R.phase === k ? 'on' : ''}"
@@ -186,7 +187,8 @@ function vLabRaid() {
     <div class="labchoix" role="group" aria-label="Échelle des seuils">${echelles.map(x => `<button data-lab="echelle" data-n="${x}"
         class="${Math.abs((R.echelle || 1) - x) < 1e-9 ? 'on' : ''}">× ${String(x).replace('.', ',')}</button>`).join('')}</div>
     <p class="muted small">Les seuils sont calculés pour une dizaine de joueurs (× 1).</p>
-    <button class="btn ghost labdanger" data-lab="raid-raz">Remettre la saison à zéro…</button>
+    <p class="muted small">Les raids se comptent depuis le premier jour du Choc (quatorze jours chacun, ${RAID.bosses.map(b => h(b.nom)).join(' puis ')}) : poser le Choc à un jour déplace aussi le raid (au jour 15, le raid 2).</p>
+    <button class="btn ghost labdanger" data-lab="raid-raz">Remettre le raid à zéro…</button>
   </section>`;
 }
 
@@ -560,9 +562,9 @@ function labAction(a, el) {
       return labPourTous('Changer l\'échelle des seuils ?', `Les seuils des six phases sont multipliés par ${String(n).replace('.', ',')}.`,
         () => labServeurFaire('labo_raid_echelle', { p_echelle: n }, 'Échelle posée.'));
     case 'raid-raz':
-      return labEffacer('Remettre la saison du Raid à zéro ?', `Les dégâts, les phases, la part de <b>chaque joueur</b> et les coffres
-        ouverts de la saison en cours sont effacés, avec les tentatives du jour. Ce qui a été versé reste.`,
-        'labo_raid_raz', {}, 'La saison du Raid est remise à zéro.');
+      return labEffacer('Remettre le raid en cours à zéro ?', `Les dégâts, les phases, la part de <b>chaque joueur</b> et les coffres
+        ouverts du raid en cours sont effacés, avec les tentatives du jour. Ce qui a été versé reste.`,
+        'labo_raid_raz', {}, 'Le raid en cours est remis à zéro.');
     case 'reverses':
       return labPourTous(n ? 'Ouvrir les Reverses ?' : 'Fermer les Reverses ?',
         n ? 'Leur recyclage et leur fabrication s\'ouvrent tout de suite, pour tout le monde.'
@@ -819,12 +821,15 @@ function laboRecompenses() {
     <h3>Niveaux de combattant</h3>
     <p class="muted small">Chaque niveau : ${NIVEAUX.eclats} Éclats. Les paliers jusqu'au 60 :</p>
     ${tableau(['Niveau', 'XP pour y monter', 'En plus'], niveaux)}
-    <h3>Le Raid · ${h(R.nom)}</h3>
+    <h3>Le Raid · ${R.bosses.map(b => h(b.nom)).join(', puis ')}</h3>
     ${tableau(['Phase', 'Seuil', 'Combat', 'Coffre commun'], R.phases.map((ph, i) => [i + 1, `${fmtN(ph.seuil)} × échelle`,
       `IA ${ph.ia} ★ · ${ph.pv} PV${ph.ess ? ` · +${ph.ess} Ess.` : ''}`, h(ph.commun.titre)]))}
     ${tableau(['Palier perso', 'Dégâts', 'Coffre'], R.perso.map((x, i) => [i + 1, fmtN(x.seuil), h(x.titre)]))}
     ${tableau(['Infini', 'Combat'], [1, 2, 3, 4, 6, 9].map(n => { const c = R.infini(n); return [`palier ${n}`, `IA ${c.ia} ★ · boss ${c.pvBoss} PV · +${c.ess} Ess. · toi ${c.pvMoi} PV`]; }))}
-    <p class="muted small">Pendant le Choc : ${R.parDegat} Étincelles par dégât, +${R.victoire} si le boss tombe. Sinon : ${R.parDegatEclats} Éclats par dégât, +${R.victoireEclats}. ${R.tentatives} tentatives par jour ; saisons de ${R.saison.jours} jours. L'échelle des seuils se règle dans le Labo › Serveur.</p>
+    <p class="muted small">Pendant le Choc : ${R.parDegat} Étincelles par dégât, +${R.victoire} si le boss tombe. Sinon : ${R.parDegatEclats} Éclats par dégât, +${R.victoireEclats}. ${R.tentatives} tentatives par jour ; des raids de ${R.saison.jours} jours, comptés depuis le premier jour du Choc, aux boss à tour de rôle.</p>
+    ${tableau(['Boss', 'Raids', 'Son deck', 'En combat'], R.bosses.map((b, i) => [h(b.nom), i ? 'pairs (2, 4…)' : 'impairs (1, 3…)', h(b.dit),
+      `cadre ${h((FRAMES[b.cadre] || {}).nom || b.cadre)} · tapis ${h(((typeof TAPIS !== 'undefined' && TAPIS[b.tapis]) || (typeof TAPIS_BOSS !== 'undefined' && TAPIS_BOSS[b.tapis]) || {}).nom || b.tapis)}`]))}
+    <p class="muted small">L'échelle des seuils se règle dans le Labo › Serveur. Les deux boss ont les mêmes phases et les mêmes coffres ; seuls leur deck, leur illustration, leur cadre et leur tapis changent.</p>
     <h3>Le Pass du Choc</h3>
     ${ev ? tableau(['Palier', 'Étincelles', 'Récompense'], chEv.piste.map(x => [x.palier, fmtN(x.seuil), h(x.titre || x.type || '')])) : '<p class="muted small">Ouvre une fois l\'onglet de l\'événement (pendant le Choc) pour charger le Pass, puis reviens ici.</p>'}`;
 }

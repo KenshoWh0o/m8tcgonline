@@ -45,7 +45,7 @@ const Table = (() => {
   const abs = p => new URL(p, document.baseURI).href;
   /* Le dos des cartes : la sleeve choisie (Decks › Personnaliser). */
   const sleeveDe = j => (SLEEVES[(T.cosm[j] || {}).sleeve] || SLEEVES.s_base).img;
-  const tapisDe = j => TAPIS[(T.cosm[j] || {}).tapis] || TAPIS.t_base;
+  const tapisDe = j => TAPIS[(T.cosm[j] || {}).tapis] || TAPIS_BOSS[(T.cosm[j] || {}).tapis] || TAPIS.t_base;
 
   /* Les quatre sortes de cartes, chacune sa couleur et son signe. */
   const TYPES = {
@@ -61,11 +61,11 @@ const Table = (() => {
   /* Une carte : son illustration, et ses reflets (Reverse, Légendaire,
      Secrète). Pas de signe de sa sorte dans le coin : l'illustration dit
      déjà ce qu'elle est. */
-  /* Version 3.0.7 : la maîtrise de ses propres cartes (js/maitrise.js) —
+  /* Version 3.0.7 (finitions refaites en 3.0.11) : la maîtrise de ses propres cartes (js/maitrise.js) —
      `m`, son niveau, ou 0. Celle de l'adversaire ne se voit pas : on ne la
      connaît pas. Le reflet, le liseré, la lumière qui court et le reflet
-     irisé vont dans la carte (mzDedans) ; le halo et le joyau autour du
-     Joueur posé (mzAutourDe, js/maitrise.js). */
+     irisé vont dans la carte (mzDedans) ; le halo autour du Joueur posé
+     (mzAutourDe, js/maitrise.js). */
   const mzDe = (id, j) => (j === T.moi && typeof maitrisable === 'function' && byId[id] && maitrisable(byId[id]) ? niveauMaitrise(byId[id]) : 0);
   const mzCouleur = id => tcol(carteMaitrise(byId[id]));
   const mzAutour = (id, m) => (m ? mzAutourDe(m) : '');
@@ -366,7 +366,8 @@ const Table = (() => {
     const objs = x.querySelector('.ar-objs');
     if (objs.dataset.k !== ids) {
       objs.dataset.k = ids;
-      objs.innerHTML = c.obj.map(o => `<i class="ar-obj" data-u="${o.u}" data-id="${o.id}" style="background-image:url('${abs(carte(o.id).img || '')}')"></i>`).join('');
+      /* Un Objet maîtrisé (à soi) : un anneau de sa couleur (version 3.0.11). */
+      objs.innerHTML = c.obj.map(o => { const m = mzDe(o.id, ownerOf(o.u)); return `<i class="ar-obj${m >= 2 ? ` mzo mzo-${m}` : ''}" data-u="${o.u}" data-id="${o.id}" style="background-image:url('${abs(carte(o.id).img || '')}')${m >= 2 ? `;--mc:${mzCouleur(o.id)}` : ''}"></i>`; }).join('');
     }
     const mk = [];
     for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) mk.push(`<i class="ar-mk mk-${O_.sansAccent(m)}" title="${m}">${MARQUES[m]}</i>`);
@@ -1018,7 +1019,7 @@ const Table = (() => {
       /* Pendant le vol, rien d'autre ne se touche. */
       T.occupe = true;
       try {
-        await vol(id, r0, cibleEl.getBoundingClientRect(), { ms: 360, w: r0.width, s1: Math.min(1, cibleEl.getBoundingClientRect().width / r0.width), arc: 10 });
+        await vol(id, r0, cibleEl.getBoundingClientRect(), { ms: 360, w: r0.width, s1: Math.min(1, cibleEl.getBoundingClientRect().width / r0.width), arc: 10, m: mzDe(id, T.moi) });
       } finally { if (T) T.occupe = false; }
     }
     if (!T) return;
@@ -1112,7 +1113,7 @@ const Table = (() => {
     vers.style.visibility = 'hidden';
     T.occupe = true;
     try {
-      await vol(id, r0, r1, { ms: 320, w: r0.width, s1: r1.width / r0.width, arc: 0, sm: 1 });
+      await vol(id, r0, r1, { ms: 320, w: r0.width, s1: r1.width / r0.width, arc: 0, sm: 1, m: mzDe(id, T.moi) });
     } finally { if (T) T.occupe = false; vers.style.visibility = ''; }
     if (!T) return;
     fermerFocus();
@@ -1528,7 +1529,7 @@ const Table = (() => {
     if (!de || !vers || !T) return Promise.resolve();
     const f = document.createElement('div');
     f.className = 'ar-vol';
-    f.innerHTML = o.dos != null && o.dos !== false ? dos(o.dos) : htmlCarte(id);
+    f.innerHTML = o.dos != null && o.dos !== false ? dos(o.dos) : htmlCarte(id, o.m || 0);
     const w = o.w || 92;
     f.style.width = w + 'px';
     document.body.appendChild(f);
@@ -1570,24 +1571,13 @@ const Table = (() => {
     ], { duration: 320, easing: 'ease-out' });
   }
 
-  /* L'entrée d'une carte maîtrisée : un éclat de sa couleur (niveau 4) ;
-     au niveau 5, une onde de choc part d'elle et traverse le plateau. */
-  async function entreeMaitrisee(x, id, m) {
-    const mc = mzCouleur(id);
-    x.classList.remove('mz-entree'); void x.offsetWidth; x.classList.add('mz-entree');
-    setTimeout(() => x && x.classList.remove('mz-entree'), 1100);
-    eclats(x, ['#fff', mc, mc, '#fff6c8'], m >= 5 ? 46 : 30);
-    SFX.jouer(m >= 5 ? 'legend' : 'rare');
-    if (m >= 5 && !RM()) {
-      const r = rect(x), sc = rect(qs('.ar-scene'));
-      const o = document.createElement('i');
-      o.className = 'mz-onde';
-      o.style.cssText = `left:${r.left - sc.left + r.width / 2}px;top:${r.top - sc.top + r.height / 2}px;--mc:${mc}`;
-      qs('.ar-scene').appendChild(o);
-      setTimeout(() => o.remove(), 1200);
-      secousse(6);
-    }
-    await attendre(m >= 5 ? 700 : 420);
+  /* L'entrée d'une carte maîtrisée, à tous les niveaux (version 3.0.11 :
+     avant, seulement les Joueurs des niveaux IV et V) : un trait de lumière,
+     puis un anneau (III), un éclat (IV), une onde de choc qui traverse le
+     plateau (V). `id` : la carte dont la maîtrise compte (l'Objet lié, pour
+     un Joueur qui le reçoit). mzEffetCombat, js/maitrise.js. */
+  function entreeMaitrisee(x, id, m) {
+    return mzEffetCombat(x, m, mzCouleur(id), { scene: qs('.ar-scene'), secousse, vitesse: vitesse() });
   }
 
   function eclats(x, couleurs, n) {
@@ -1622,7 +1612,7 @@ const Table = (() => {
     const lui = j !== T.moi;
     const z = document.createElement('div');
     z.className = 'ar-montre ' + cote(j);
-    z.innerHTML = `${htmlCarte(id)}<div class="ar-mo-txt"><p class="ar-mo-leg">${legende}</p>${texte ? `<p class="ar-mo-fx">${h(texte)}</p>` : ''}</div>${lui ? '<small class="ar-mo-passe">Touche pour continuer</small>' : ''}`;
+    z.innerHTML = `${htmlCarte(id, o.m || 0)}<div class="ar-mo-txt"><p class="ar-mo-leg">${legende}</p>${texte ? `<p class="ar-mo-fx">${h(texte)}</p>` : ''}</div>${lui ? '<small class="ar-mo-passe">Touche pour continuer</small>' : ''}`;
     T.el.appendChild(z);
     if (depuis && !RM()) {
       const c = z.querySelector('.ar-c'), r = c.getBoundingClientRect();
@@ -1630,7 +1620,10 @@ const Table = (() => {
         { duration: 380, easing: 'cubic-bezier(.3,.7,.3,1)' });
     } else z.classList.add('entre');
     SFX.jouer('woosh');
-    const ms = lui ? Math.min(4400, 2100 + texte.length * 16) : 1300;
+    /* Un Moment, un Coach, une Résilience maîtrisés (à soi) : leur entrée,
+       une fois la carte arrivée au centre (entreeMaitrisee). */
+    if (o.m) setTimeout(() => { const c = T && z.querySelector('.ar-c'); if (c) entreeMaitrisee(c, id, o.m); }, RM() ? 0 : 380);
+    const ms = (lui ? Math.min(4400, 2100 + texte.length * 16) : 1300) + (o.m >= 5 ? 500 : o.m >= 3 ? 250 : 0);
     await new Promise(fin => {
       const t = setTimeout(fin, ms * vitesse());
       z.addEventListener('click', ev => { ev.stopPropagation(); clearTimeout(t); fin(); }, { once: true });
@@ -1701,15 +1694,14 @@ const Table = (() => {
       if (T.sauteVol !== e.u) {
         const de = e.j === T.moi ? (qs(`.ar-m[data-mu="${e.u}"]`) || qs('.ar-main')) : qs('.ar-mainadv');
         SFX.jouer('carte');
-        await vol(e.id, rect(de), rect(place), { ms: e.j === T.moi ? 440 : 600, w: rect(place) ? rect(place).width : 92, s0: 0.8, arc: 40 });
+        await vol(e.id, rect(de), rect(place), { ms: e.j === T.moi ? 440 : 600, w: rect(place) ? rect(place).width : 92, s0: 0.8, arc: 40, m: mzDe(e.id, e.j) });
       }
       rendre(true);
       const x = elU(e.u);
       if (x) { x.classList.add('pose'); eclats(x, [coulDe(carte(e.id)).c, '#fff'], 16); }
-      /* Version 3.0.7 : une carte maîtrisée entre dans un éclat (niveau 4),
-         et une Légende dans une onde de choc (niveau 5). */
+      /* Une carte maîtrisée entre avec sa maîtrise (entreeMaitrisee). */
       const m = mzDe(e.id, e.j);
-      if (x && m >= 4) await entreeMaitrisee(x, e.id, m);
+      if (x && m) await entreeMaitrisee(x, e.id, m);
       SFX.jouer('retourne');
       /* Le Joueur adverse se nomme en arrivant. */
       if (e.j !== T.moi) flottant(x, carte(e.id).nom || '', 'info');
@@ -1723,7 +1715,7 @@ const Table = (() => {
     async joue(e) {
       if (e.j === T.moi) rendreMain();
       const k = carte(e.id);
-      await montrer(e.id, `${e.j === T.moi ? 'Tu joues' : `${h(nomCEO(e.j))} joue`} ${k.cat === 'coach' ? 'le Coach' : 'le Moment'} <b>${h(k.nom)}</b>`, e.j, e.j === T.moi ? T.montreDepuis : rect(qs('.ar-mainadv')));
+      await montrer(e.id, `${e.j === T.moi ? 'Tu joues' : `${h(nomCEO(e.j))} joue`} ${k.cat === 'coach' ? 'le Coach' : 'le Moment'} <b>${h(k.nom)}</b>`, e.j, e.j === T.moi ? T.montreDepuis : rect(qs('.ar-mainadv')), { m: mzDe(e.id, e.j) });
       rendre(true);
     },
     /* Un Objet de l'adversaire : montré en grand avec son effet et le
@@ -1740,12 +1732,15 @@ const Table = (() => {
       } else if (T.sauteVol !== e.u) {
         const de = qs(`.ar-m[data-mu="${e.u}"]`) || qs('.ar-main');
         SFX.jouer('carte');
-        await vol(e.id, rect(de), rect(vers), { ms: 400, s1: 0.4, arc: 30 });
+        await vol(e.id, rect(de), rect(vers), { ms: 400, s1: 0.4, arc: 30, m: mzDe(e.id, e.j) });
       }
       rendre(true);
       const x = elU(e.cible);
       if (x) { x.classList.add('brille'); setTimeout(() => x && x.classList.remove('brille'), 900); }
-      eclats(x, ['#c8bfff', '#fff'], 14);
+      /* Un Objet maîtrisé (à soi) : sa maîtrise se joue sur le Joueur qui le reçoit. */
+      const mo = mzDe(e.id, e.j);
+      if (x && mo) await entreeMaitrisee(x, e.id, mo);
+      else eclats(x, ['#c8bfff', '#fff'], 14);
       SFX.jouer('retourne');
       await attendre(e.j === T.moi ? 220 : 520);
     },
@@ -1836,7 +1831,7 @@ const Table = (() => {
     },
     async pvDefausse(e) { flottant(elCEO(e.j), 'PV détruit', 'mort'); rendre(true); await attendre(380); },
     async resilience(e) {
-      await montrer(e.id, `Résilience · ${e.j === T.moi ? 'tu joues' : `${h(nomCEO(e.j))} joue`} <b>${h(carte(e.id).nom)}</b>`, e.j, null, { texte: carte(e.id).res || '' });
+      await montrer(e.id, `Résilience · ${e.j === T.moi ? 'tu joues' : `${h(nomCEO(e.j))} joue`} <b>${h(carte(e.id).nom)}</b>`, e.j, null, { texte: carte(e.id).res || '', m: mzDe(e.id, e.j) });
       rendre(true);
     },
     async riposte(e) {
@@ -2031,6 +2026,13 @@ const TAPIS = {
      `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
   t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.10', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
   t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.10', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
+};
+/* Les tapis des boss du Raid qui n'en ont pas dans TAPIS (RAID.bosses,
+   js/combat/choc-data.js) : sous leurs cartes seulement, ni en vente ni à
+   gagner (version 3.0.11). Le Sorcier a le sien dans TAPIS : la boutique du
+   Choc le vend. Dessinés par tools/choc-visuels.py. */
+const TAPIS_BOSS = {
+  t_ficelles:  { nom: 'Le Marionnettiste', img: 'assets/combat/tapis/t_ficelles.webp?v=3.0.10' }
 };
 const SLEEVES = {
   s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.10', prix: 0 },

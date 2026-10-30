@@ -1999,18 +1999,19 @@ on conflict (id) do update set
 -- Ses quetes paient en Etincelles (25_choc.sql ; la colonne `monnaie` dit
 -- « prismes » pour toute monnaie d'evenement). Du jour : 75 Etincelles ; de
 -- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
---   raid, raid_degats, raid_victoires : le Raid contre The French Sorcerer
+--   raid, raid_degats, raid_victoires : le Raid, contre son boss du moment
+--                                       (The French Sorcerer, puis Le Marionnettiste)
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
 --   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
   ('c_visite',  'ev_jour', 'ev_visite',          1, 10, null, 'Au rapport',          'Passe voir l''événement aujourd''hui.', 1, 'choc', 'prismes'),
   ('c_combats', 'ev_jour', 'combats',            2, 15, null, 'Deux combats',        'Joue 2 combats, contre l''IA ou un ami.', 2, 'choc', 'prismes'),
-  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Paratonnerre',        'Affronte The French Sorcerer.', 3, 'choc', 'prismes'),
+  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Paratonnerre',        'Affronte le boss du Raid.', 3, 'choc', 'prismes'),
   ('c_epreuve', 'ev_jour', 'epreuve',            1, 10, null, 'L''Épreuve du jour',  'Tente l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vaincus', 'ev_jour', 'vaincus',            6, 15, null, 'Six de chute',        'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'),
   ('c_packs',   'ev_jour', 'packs',              3, 10, null, 'Trois boosters',      'Ouvre 3 boosters aujourd''hui.', 6, 'choc', 'prismes'),
-  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au Sorcier.', 1, 'choc', 'prismes'),
-  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le Sorcier 5 fois.', 2, 'choc', 'prismes'),
+  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au boss du Raid.', 1, 'choc', 'prismes'),
+  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le boss du Raid 5 fois.', 2, 'choc', 'prismes'),
   ('c_ep7',     'ev',      'epreuve_victoires',  7, 80, null, 'Sept Épreuves',       'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'),
   ('c_ep15',    'ev',      'epreuve',           15, 60, null, 'Quinze essais',       'Tente 15 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
@@ -5476,7 +5477,7 @@ $$;
 
 create or replace function public.choc_etat() returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); j date := jour_paris(); e choc_epreuves;
+declare p uuid := auth.uid(); j date := jour_paris(); e choc_epreuves; ev evenements;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -5486,8 +5487,17 @@ begin
   select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite' and q.evenement = 'choc'
   on conflict (user_id, quest_id, period_key) do nothing;
   select * into e from choc_epreuves where user_id = p and jour = j;
+  select * into ev from evenements x where x.code = 'choc' and now() >= x.debut and now() < x.fin
+   order by x.debut desc limit 1;
   return jsonb_build_object(
     'jour', j,
+    -- Version 3.0.11 : le numero de l'Epreuve, le n-ieme jour de l'evenement
+    -- (heure de Paris), sur `jours` (21 pour un Choc ouvert a minuit : les
+    -- dates qu'il touche). Il choisit la regle du calendrier
+    -- (CHOC.epreuve.calendrier, js/combat/choc-data.js).
+    'n', j - (ev.debut at time zone 'Europe/Paris')::date + 1,
+    'jours', ((ev.fin - interval '1 microsecond') at time zone 'Europe/Paris')::date
+             - (ev.debut at time zone 'Europe/Paris')::date + 1,
     'epreuve', jsonb_build_object(
       'graine', choc_graine(j),
       'essais', coalesce(e.essais, '[]'::jsonb),
@@ -5530,11 +5540,17 @@ grant execute on function public.choc_etat to authenticated;
 --
 --    insert into public.evenements (titre, texte, debut, fin, code) values (
 --      'Le Choc des Sections',
---      'La version 3.0 : le Raid contre The French Sorcerer et l''Épreuve du jour.',
---      '2026-11-02 18:00+01', '2026-11-23 18:00+01', 'choc');
+--      'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l''Épreuve du jour.',
+--      '2026-11-02 00:00+01', '2026-11-23 00:00+01', 'choc');
 --
---  (Les dates sont un exemple.) Un evenement sans `ticket_minutes` ne change
---  pas le rythme des boosters. Pour le fermer plus tot :
+--  (Les dates sont un exemple.) A minuit, heure de Paris : vingt et un jours
+--  pleins, donc vingt et une Epreuves (choc_etat › n, de 1 a 21) ; le raid 1
+--  commence le premier jour, le raid 2 le quinzieme (raid_ancre,
+--  27_raid.sql). Ouvert a une autre heure, l'evenement touche vingt-deux
+--  dates : la premiere et la derniere Epreuve sont plus courtes, et la
+--  vingt-deuxieme reprend une regle a tour de role (regleEpreuve). Un
+--  evenement sans `ticket_minutes` ne change pas le rythme des boosters.
+--  Pour le fermer plus tot :
 --    update public.evenements set fin = now() where code = 'choc' and fin > now();
 -- =====================================================================
 
@@ -5665,15 +5681,22 @@ revoke all on function public.xp_requis, public.niveau_de, public.xp_combat, pub
 --  Mate TCG Online — version 3.0 : le Raid
 --  A executer apres 26_niveaux.sql. Rejouable sans danger.
 --
---  The French Sorcerer, un boss commun a tout le serveur, par saisons de
---  deux semaines. Chaque saison, six phases : chaque PV qu'un joueur lui
---  prend en combat s'ajoute aux degats de tout le serveur, et chaque palier
---  de degats atteint abat une phase — tous ceux qui ont combattu dans la
---  saison ouvrent alors son coffre commun. En plus, trois paliers
---  personnels (les degats de chacun). Les six phases abattues (si le
---  serveur y arrive), le mode Infini : un palier par joueur, qui monte a
---  chaque victoire, pour le classement. Trois tentatives par jour. La
---  saison suivante, tout recommence.
+--  Un boss commun a tout le serveur, pour deux semaines : un « raid » (une
+--  « saison » dans les tables). Depuis la version 3.0.11, les raids se
+--  comptent depuis le premier jour du Choc des Sections (raid_ancre) : le
+--  raid 1 commence avec lui (The French Sorcerer), le raid 2 quatorze jours
+--  plus tard, une semaine avant la fin de l'evenement (Le Marionnettiste),
+--  puis les deux boss alternent (raid_boss). Avant, ils se comptaient depuis
+--  le 12 octobre 2026, et le premier raid du Choc s'appelait « saison 2 ».
+--  Chaque raid, six phases : chaque PV qu'un joueur prend au boss en combat
+--  s'ajoute aux degats de tout le serveur, et chaque palier de degats
+--  atteint abat une phase — tous ceux qui ont combattu dans le raid ouvrent
+--  alors son coffre commun. En plus, trois paliers personnels (les degats
+--  de chacun). Les six phases abattues (si le serveur y arrive), le mode
+--  Infini : un palier par joueur, qui monte a chaque victoire, pour le
+--  classement. Trois tentatives par jour. Au raid suivant, tout recommence.
+--  Le serveur ne fait pas tourner le combat : le deck du boss se tire dans
+--  la page (deckBoss, js/combat/choc-data.js), le serveur dit lequel.
 --
 --  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
 --  Etincelles ; le reste du temps, en Eclats.
@@ -5764,15 +5787,32 @@ revoke all on public.raid_saisons, public.raid_tombees, public.raid_participants
   public.raid_tentatives from anon, authenticated;
 
 -- ============================================================ 3. les regles
--- La saison d'un jour : la premiere a commence le lundi 12 octobre 2026
--- (RAID.saison).
+-- Le premier jour du raid 1 : la date (heure de Paris) ou commence le Choc
+-- des Sections — la ligne `choc` que le Labo prend aussi (labo_evenement) ;
+-- sans elle, le lundi 12 octobre 2026 (RAID.saison.depart), comme avant la
+-- 3.0.11. Deplacer le Choc (Labo, ou a la main) deplace donc les raids : les
+-- degats deja inscrits restent sous leur numero.
+create or replace function public.raid_ancre() returns date
+language sql stable security definer set search_path = public as $$
+  select coalesce((select (e.debut at time zone 'Europe/Paris')::date from evenements e
+                    where e.code = 'choc' order by e.fin desc limit 1),
+                  date '2026-10-12');
+$$;
+-- Le raid d'un jour : quatorze jours chacun depuis l'ancre (RAID.saison) ;
+-- avant elle, le premier.
 create or replace function public.raid_saison(j date) returns integer
-language sql immutable as $$
-  select floor((j - date '2026-10-12') / 14.0)::int + 1;
+language sql stable security definer set search_path = public as $$
+  select greatest(1, floor((j - raid_ancre()) / 14.0)::int + 1);
 $$;
 create or replace function public.raid_saison_debut(n int) returns date
+language sql stable security definer set search_path = public as $$
+  select raid_ancre() + (n - 1) * 14;
+$$;
+-- Le boss d'un raid (RAID.bosses) : The French Sorcerer (#116) les raids
+-- impairs, Le Marionnettiste (#121) les raids pairs.
+create or replace function public.raid_boss(n int) returns text
 language sql immutable as $$
-  select date '2026-10-12' + (n - 1) * 14;
+  select (array['c116', 'c121'])[1 + (greatest(1, n) - 1) % 2];
 $$;
 
 -- Les six phases (RAID.phases) : le seuil de degats, le combat, le coffre.
@@ -5916,15 +5956,15 @@ begin
 end $$;
 
 -- ===================================================== 5. ce que voit la page
--- Une saison vue par un joueur : les phases (abattues, coffre pris ou pas),
--- ses paliers personnels.
+-- Un raid vu par un joueur : son boss, les phases (abattues, coffre pris ou
+-- pas), ses paliers personnels.
 create or replace function public.raid_vue_saison(p uuid, s int) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare moi raid_participants; d int := coalesce((select degats from raid_saisons where n = s), 0);
 begin
   select * into moi from raid_participants where saison = s and user_id = p;
   return jsonb_build_object(
-    'n', s, 'debut', raid_saison_debut(s), 'fin', raid_saison_debut(s + 1), 'degats', d,
+    'n', s, 'boss', raid_boss(s), 'debut', raid_saison_debut(s), 'fin', raid_saison_debut(s + 1), 'degats', d,
     'phase', raid_phase(s),
     'phases', (select jsonb_agg(x.ph || jsonb_build_object(
                  'n', x.k, 'seuil', raid_seuil(x.k::int),
@@ -5950,7 +5990,7 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   v := raid_vue_saison(p, s);
-  -- La saison d'avant, si on y a laisse des coffres : ils s'ouvrent encore.
+  -- Le raid d'avant, si on y a laisse des coffres : ils s'ouvrent encore.
   prec := raid_vue_saison(p, s - 1);
   return v || jsonb_build_object(
     'jour', j,
@@ -5969,18 +6009,17 @@ begin
         from (select * from raid_participants where saison = s and infini > 0 order by infini desc, infini_le limit 10) x), '[]'::jsonb));
 end $$;
 
--- Un coffre : commun (une phase abattue, pour qui a combattu dans la
--- saison) ou personnel (un palier de ses degats). La saison en cours ou la
--- precedente.
+-- Un coffre : commun (une phase abattue, pour qui a combattu dans le raid)
+-- ou personnel (un palier de ses degats). Le raid en cours ou le precedent.
 create or replace function public.raid_reclamer(p_saison int, p_quoi text, p_n int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); s int := raid_saison(jour_paris()); moi raid_participants; c jsonb; cartes jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if p_saison is null or p_saison not in (s, s - 1) then raise exception 'Cette saison est terminée.'; end if;
+  if p_saison is null or p_saison not in (s, s - 1) then raise exception 'Ce raid est terminé.'; end if;
   select * into moi from raid_participants where saison = p_saison and user_id = p;
-  if moi.user_id is null or moi.combats < 1 then raise exception 'Tu n''as pas combattu dans cette saison.'; end if;
+  if moi.user_id is null or moi.combats < 1 then raise exception 'Tu n''as pas combattu dans ce raid.'; end if;
   if p_quoi = 'commun' then
     if p_n is null or p_n not between 1 and 6 then raise exception 'Phase inconnue.'; end if;
     if raid_phase(p_saison) <= p_n then
@@ -6001,7 +6040,8 @@ begin
 end $$;
 
 -- ============================================================ 6. droits
-revoke all on function public.raid_saison, public.raid_saison_debut, public.raid_phases, public.raid_perso,
+revoke all on function public.raid_ancre, public.raid_saison, public.raid_saison_debut, public.raid_boss,
+  public.raid_phases, public.raid_perso,
   public.raid_seuil, public.raid_phase, public.raid_combat, public.raid_debut, public.raid_fin,
   public.raid_vue_saison from public, anon, authenticated;
 revoke all on function public.raid_etat, public.raid_reclamer from public, anon;
@@ -6251,10 +6291,10 @@ grant execute on function public.maitriser, public.set_fetiche to authenticated;
 --     labo_evenement_raz('EFFACER')  effacer ce que tout le monde a fait pendant
 --                                    le Choc (les gains deja verses restent)
 --     labo_reverses(ouvertes)        ouvrir ou fermer les Reverses a la main
---     labo_raid(phase)               la saison du Raid en cours a la phase dite
+--     labo_raid(phase)               le raid en cours a la phase dite
 --                                    (7 : les six abattues, l'Infini)
 --     labo_raid_echelle(x)           l'echelle des seuils du Raid
---     labo_raid_raz('EFFACER')       la saison du Raid en cours a zero
+--     labo_raid_raz('EFFACER')       le raid en cours a zero
 --   Son propre compte :
 --     labo_cartes(quoi)              'master', 'classiques', 'combat', 'vider'
 --     labo_monnaies(valeurs)         Eclats, Fragments, boosters en plus, reserve,
@@ -6337,7 +6377,7 @@ begin
       'gagnees', (select count(*) from choc_epreuves where gagnee),
       'raid', (select coalesce(sum(degats), 0) from choc_joueurs)),
     'raid', jsonb_build_object(
-      'saison', sa, 'debut', raid_saison_debut(sa), 'fin', raid_saison_debut(sa + 1),
+      'saison', sa, 'boss', raid_boss(sa), 'debut', raid_saison_debut(sa), 'fin', raid_saison_debut(sa + 1),
       'degats', coalesce((select degats from raid_saisons where n = sa), 0),
       'phase', raid_phase(sa),
       'seuils', (select jsonb_agg(raid_seuil(k) order by k) from generate_series(1, 6) k),
@@ -6362,7 +6402,10 @@ end $$;
 
 -- ------------------------------------------------- le Choc des Sections
 -- Trois semaines, comme a son ouverture (fin de 25_choc.sql). La ligne est
--- creee si la base n'en a pas encore.
+-- creee si la base n'en a pas encore. Version 3.0.11 : un jour n commence a
+-- minuit, heure de Paris (n-1 jours avant aujourd'hui), comme le conseille
+-- 25_choc.sql — l'Epreuve est la n-ieme (choc_etat › n), et le raid du jour
+-- suit (raid_ancre, 27_raid.sql : au jour 15, le raid 2).
 create or replace function public.labo_evenement(p_etat text, p_n integer default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare d timestamptz; n int; duree interval := interval '21 days'; id_choc bigint;
@@ -6375,7 +6418,7 @@ begin
   elsif p_etat = 'jour' then
     n := coalesce(p_n, 1);
     if n < 1 or n > 21 then raise exception 'Un jour de 1 à 21.'; end if;
-    d := now() - make_interval(days => n - 1) - interval '1 hour';
+    d := ((jour_paris() - (n - 1))::timestamp) at time zone 'Europe/Paris';
   elsif p_etat = 'recap' then
     -- Fini depuis une heure : le recap court encore pres de trois jours.
     d := now() - duree - interval '1 hour';
@@ -6391,7 +6434,7 @@ begin
   select e.id into id_choc from evenements e where e.code = 'choc' order by e.fin desc limit 1;
   if id_choc is null then
     insert into evenements (titre, texte, debut, fin, code) values ('Le Choc des Sections',
-      'La version 3.0 : le Raid contre The French Sorcerer et l''Épreuve du jour.', d, d + duree, 'choc');
+      'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l''Épreuve du jour.', d, d + duree, 'choc');
   else
     update evenements set debut = d, fin = d + duree, recap_jusqua = null where id = id_choc;
   end if;
@@ -6451,7 +6494,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------- le Raid
--- La saison en cours a la phase p_phase : les degats du serveur sont poses
+-- Le raid en cours a la phase p_phase : les degats du serveur sont poses
 -- au seuil de la phase d'avant (7 : les six abattues, l'Infini). Les coffres
 -- deja ouverts le restent.
 create or replace function public.labo_raid(p_phase integer) returns jsonb
@@ -6477,7 +6520,7 @@ begin
   return labo_etat();
 end $$;
 
--- La saison en cours a zero : les degats, les phases, la part de chacun, les
+-- Le raid en cours a zero : les degats, les phases, la part de chacun, les
 -- coffres ouverts, les tentatives du jour. Ce qui a ete verse reste.
 create or replace function public.labo_raid_raz(p_confirmation text) returns jsonb
 language plpgsql security definer set search_path = public as $$

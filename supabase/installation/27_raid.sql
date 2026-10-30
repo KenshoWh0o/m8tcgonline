@@ -2,15 +2,22 @@
 --  Mate TCG Online — version 3.0 : le Raid
 --  A executer apres 26_niveaux.sql. Rejouable sans danger.
 --
---  The French Sorcerer, un boss commun a tout le serveur, par saisons de
---  deux semaines. Chaque saison, six phases : chaque PV qu'un joueur lui
---  prend en combat s'ajoute aux degats de tout le serveur, et chaque palier
---  de degats atteint abat une phase — tous ceux qui ont combattu dans la
---  saison ouvrent alors son coffre commun. En plus, trois paliers
---  personnels (les degats de chacun). Les six phases abattues (si le
---  serveur y arrive), le mode Infini : un palier par joueur, qui monte a
---  chaque victoire, pour le classement. Trois tentatives par jour. La
---  saison suivante, tout recommence.
+--  Un boss commun a tout le serveur, pour deux semaines : un « raid » (une
+--  « saison » dans les tables). Depuis la version 3.0.11, les raids se
+--  comptent depuis le premier jour du Choc des Sections (raid_ancre) : le
+--  raid 1 commence avec lui (The French Sorcerer), le raid 2 quatorze jours
+--  plus tard, une semaine avant la fin de l'evenement (Le Marionnettiste),
+--  puis les deux boss alternent (raid_boss). Avant, ils se comptaient depuis
+--  le 12 octobre 2026, et le premier raid du Choc s'appelait « saison 2 ».
+--  Chaque raid, six phases : chaque PV qu'un joueur prend au boss en combat
+--  s'ajoute aux degats de tout le serveur, et chaque palier de degats
+--  atteint abat une phase — tous ceux qui ont combattu dans le raid ouvrent
+--  alors son coffre commun. En plus, trois paliers personnels (les degats
+--  de chacun). Les six phases abattues (si le serveur y arrive), le mode
+--  Infini : un palier par joueur, qui monte a chaque victoire, pour le
+--  classement. Trois tentatives par jour. Au raid suivant, tout recommence.
+--  Le serveur ne fait pas tourner le combat : le deck du boss se tire dans
+--  la page (deckBoss, js/combat/choc-data.js), le serveur dit lequel.
 --
 --  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
 --  Etincelles ; le reste du temps, en Eclats.
@@ -101,15 +108,32 @@ revoke all on public.raid_saisons, public.raid_tombees, public.raid_participants
   public.raid_tentatives from anon, authenticated;
 
 -- ============================================================ 3. les regles
--- La saison d'un jour : la premiere a commence le lundi 12 octobre 2026
--- (RAID.saison).
+-- Le premier jour du raid 1 : la date (heure de Paris) ou commence le Choc
+-- des Sections — la ligne `choc` que le Labo prend aussi (labo_evenement) ;
+-- sans elle, le lundi 12 octobre 2026 (RAID.saison.depart), comme avant la
+-- 3.0.11. Deplacer le Choc (Labo, ou a la main) deplace donc les raids : les
+-- degats deja inscrits restent sous leur numero.
+create or replace function public.raid_ancre() returns date
+language sql stable security definer set search_path = public as $$
+  select coalesce((select (e.debut at time zone 'Europe/Paris')::date from evenements e
+                    where e.code = 'choc' order by e.fin desc limit 1),
+                  date '2026-10-12');
+$$;
+-- Le raid d'un jour : quatorze jours chacun depuis l'ancre (RAID.saison) ;
+-- avant elle, le premier.
 create or replace function public.raid_saison(j date) returns integer
-language sql immutable as $$
-  select floor((j - date '2026-10-12') / 14.0)::int + 1;
+language sql stable security definer set search_path = public as $$
+  select greatest(1, floor((j - raid_ancre()) / 14.0)::int + 1);
 $$;
 create or replace function public.raid_saison_debut(n int) returns date
+language sql stable security definer set search_path = public as $$
+  select raid_ancre() + (n - 1) * 14;
+$$;
+-- Le boss d'un raid (RAID.bosses) : The French Sorcerer (#116) les raids
+-- impairs, Le Marionnettiste (#121) les raids pairs.
+create or replace function public.raid_boss(n int) returns text
 language sql immutable as $$
-  select date '2026-10-12' + (n - 1) * 14;
+  select (array['c116', 'c121'])[1 + (greatest(1, n) - 1) % 2];
 $$;
 
 -- Les six phases (RAID.phases) : le seuil de degats, le combat, le coffre.
@@ -253,15 +277,15 @@ begin
 end $$;
 
 -- ===================================================== 5. ce que voit la page
--- Une saison vue par un joueur : les phases (abattues, coffre pris ou pas),
--- ses paliers personnels.
+-- Un raid vu par un joueur : son boss, les phases (abattues, coffre pris ou
+-- pas), ses paliers personnels.
 create or replace function public.raid_vue_saison(p uuid, s int) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare moi raid_participants; d int := coalesce((select degats from raid_saisons where n = s), 0);
 begin
   select * into moi from raid_participants where saison = s and user_id = p;
   return jsonb_build_object(
-    'n', s, 'debut', raid_saison_debut(s), 'fin', raid_saison_debut(s + 1), 'degats', d,
+    'n', s, 'boss', raid_boss(s), 'debut', raid_saison_debut(s), 'fin', raid_saison_debut(s + 1), 'degats', d,
     'phase', raid_phase(s),
     'phases', (select jsonb_agg(x.ph || jsonb_build_object(
                  'n', x.k, 'seuil', raid_seuil(x.k::int),
@@ -287,7 +311,7 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   v := raid_vue_saison(p, s);
-  -- La saison d'avant, si on y a laisse des coffres : ils s'ouvrent encore.
+  -- Le raid d'avant, si on y a laisse des coffres : ils s'ouvrent encore.
   prec := raid_vue_saison(p, s - 1);
   return v || jsonb_build_object(
     'jour', j,
@@ -306,18 +330,17 @@ begin
         from (select * from raid_participants where saison = s and infini > 0 order by infini desc, infini_le limit 10) x), '[]'::jsonb));
 end $$;
 
--- Un coffre : commun (une phase abattue, pour qui a combattu dans la
--- saison) ou personnel (un palier de ses degats). La saison en cours ou la
--- precedente.
+-- Un coffre : commun (une phase abattue, pour qui a combattu dans le raid)
+-- ou personnel (un palier de ses degats). Le raid en cours ou le precedent.
 create or replace function public.raid_reclamer(p_saison int, p_quoi text, p_n int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); s int := raid_saison(jour_paris()); moi raid_participants; c jsonb; cartes jsonb;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if p_saison is null or p_saison not in (s, s - 1) then raise exception 'Cette saison est terminée.'; end if;
+  if p_saison is null or p_saison not in (s, s - 1) then raise exception 'Ce raid est terminé.'; end if;
   select * into moi from raid_participants where saison = p_saison and user_id = p;
-  if moi.user_id is null or moi.combats < 1 then raise exception 'Tu n''as pas combattu dans cette saison.'; end if;
+  if moi.user_id is null or moi.combats < 1 then raise exception 'Tu n''as pas combattu dans ce raid.'; end if;
   if p_quoi = 'commun' then
     if p_n is null or p_n not between 1 and 6 then raise exception 'Phase inconnue.'; end if;
     if raid_phase(p_saison) <= p_n then
@@ -338,7 +361,8 @@ begin
 end $$;
 
 -- ============================================================ 6. droits
-revoke all on function public.raid_saison, public.raid_saison_debut, public.raid_phases, public.raid_perso,
+revoke all on function public.raid_ancre, public.raid_saison, public.raid_saison_debut, public.raid_boss,
+  public.raid_phases, public.raid_perso,
   public.raid_seuil, public.raid_phase, public.raid_combat, public.raid_debut, public.raid_fin,
   public.raid_vue_saison from public, anon, authenticated;
 revoke all on function public.raid_etat, public.raid_reclamer from public, anon;

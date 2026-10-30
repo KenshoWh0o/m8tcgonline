@@ -26,19 +26,19 @@ function openViewer(c, qui) {
   v.innerHTML = `<div class="vw-bg" data-v="close"></div><button class="vw-close" data-v="close" aria-label="Fermer">✕</button>${vFavVw(c)}
   <div class="vw-stage"><div class="vw-card r${c.rar}" id="vwc">${vCarteVw(c)}</div></div>
   <div class="vw-shadow" id="vwsh"></div>
+  <p class="vw-hint">Fais glisser la carte pour la faire pivoter</p>
   <div class="vw-info"><div class="vw-name">${h(c.nom)}</div><div class="vw-meta"><span class="rc-tag r${c.rar}">${R.nom}</span>${c.rev ? '<span class="rc-tag rev">Reverse</span>' : ''}<span class="vw-col">${essIcon(c.col)}${colOf(c).nom}</span><span class="vw-num">${c.promo ? h(c.code) : '#' + String(c.num || 0).padStart(3, '0')}</span><span class="vw-own${n ? '' : ' zero'}">${n ? `Tu en as ${n}` : 'Tu ne l\'as pas'}</span>${lui != null ? `<span class="vw-own autre">${h(qui)} en a ${lui}</span>` : ''}</div></div>
   <section class="vw-fiche" aria-label="Fiche de la carte">
     <div class="vw-ongs" role="tablist">${VW_ONGLETS.map(([k, nom], i) => `<button role="tab" data-v="ong" data-o="${k}" aria-selected="${k === ong}"${k === ong ? ' class="on"' : ''}>${nom}${k === 'maitrise' ? `<span class="vw-ong-mz">${insigneMaitrise(maitrisable(c) ? niveauMaitrise(c) : 0)}</span>` : ''}</button>`).join('')}<i class="vw-ong-barre" style="--i:${Math.max(0, VW_ONGLETS.findIndex(x => x[0] === ong))}"></i></div>
     <div class="vw-pages">${VW_ONGLETS.map(([k]) => `<div class="vw-page" role="tabpanel" data-p="${k}">${vPageVw(k, c)}</div>`).join('')}</div>
-  </section>
-  <p class="vw-hint">Fais glisser la carte pour la faire pivoter</p>`;
+  </section>`;
   v.hidden = false;
 
   const el = $('#vwc');
   const sh = $('#vwsh');
   const st = { rx: 0, ry: 0, drag: false, x0: 0, y0: 0, r0x: 0, r0y: 0, vx: 0, vy: 0, lx: 0, ly: 0,
     grx: 0, gry: 0, t: performance.now() };
-  VW = { st, alive: true, c, ong, apercu: 0 };
+  VW = { st, alive: true, c, ong, apercu: 0, reflets: refletsVw() };
   const me = VW;
   brancherPagesVw(ong);
 
@@ -88,9 +88,14 @@ function openViewer(c, qui) {
       st.rx += (idleX - st.rx) * .06;
     }
     el.style.transform = `rotateX(${st.rx.toFixed(2)}deg) rotateY(${st.ry.toFixed(2)}deg)`;
-    el.style.setProperty('--gx', (50 + st.ry * 1.3).toFixed(1) + '%');
-    el.style.setProperty('--gy', (40 - st.rx * 1.3).toFixed(1) + '%');
-    el.style.setProperty('--hx', (50 + st.ry * 1.6).toFixed(1) + '%');
+    /* Les reflets qui suivent l'inclinaison : posés sur eux seuls. Posées
+       sur la carte, ces variables faisaient recalculer à chaque image le
+       style de tout ce qu'elle contient (version 3.0.11). */
+    const R = me.reflets;
+    if (R.glare) { R.glare.style.setProperty('--gx', (50 + st.ry * 1.3).toFixed(1) + '%'); R.glare.style.setProperty('--gy', (40 - st.rx * 1.3).toFixed(1) + '%'); }
+    const hx = (50 + st.ry * 1.6).toFixed(1) + '%';
+    if (R.holo) R.holo.style.setProperty('--hx', hx);
+    if (R.sec) R.sec.style.setProperty('--hx', hx);
     sh.style.transform = `translateX(${(-st.ry * .8).toFixed(1)}px) scaleX(${(1 - Math.abs(st.ry) / 200).toFixed(3)})`;
     requestAnimationFrame(frame);
   };
@@ -103,6 +108,10 @@ const vwTous = s => [...document.querySelectorAll(s)];
 const vwCalme = () => RM() || document.documentElement.classList.contains('rm');
 const VW_ONGLETS = [['infos', 'Infos'], ['maitrise', 'Maîtrise'], ['gerer', 'Gérer']];
 let vwOngletRetenu = 'infos';
+
+/* Les calques de la carte qui suivent l'inclinaison (à relire après chaque
+   nouveau dessin de la carte). */
+const refletsVw = () => ({ glare: $('#vwc .vw-glare'), holo: $('#vwc .vw-holo'), sec: $('#vwc .card.r-S') });
 
 /* La carte de la visionneuse, avec sa maîtrise (ou l'aperçu du niveau
    suivant, le temps de le regarder). */
@@ -188,15 +197,18 @@ function majOngletVw(k) {
   vwTous('#viewer .vw-ongs [data-o]').forEach(b => { const on = b.dataset.o === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   const barre = $('#viewer .vw-ong-barre');
   if (barre) barre.style.setProperty('--i', i);
-  hauteurPagesVw();
 }
-/* Les pages n'ont pas la même hauteur : le cadre prend celle de la page
-   montrée, sans quoi Infos laissait sous elle le vide de la page Maîtrise. */
+/* Le cadre des pages a la hauteur de la plus haute, et la garde (version
+   3.0.11). Avant, il prenait celle de la page montrée, en transition : la
+   fiche, centrée dans l'écran, changeait de taille à chaque page, et la
+   carte au-dessus montait et descendait (de 5 à 9 px, mesuré), pendant que
+   le défilement des pages recalculait la mise en page à chaque image. Rien
+   ne suit les pages : le blanc sous une page plus courte ne se voit pas. */
 function hauteurPagesVw() {
   const pages = $('#viewer .vw-pages');
-  const i = Math.max(0, VW_ONGLETS.findIndex(x => x[0] === (VW && VW.ong)));
-  const p = pages && pages.children[i];
-  if (p) pages.style.height = p.scrollHeight + 'px';
+  if (!pages) return;
+  pages.style.height = '';
+  pages.style.height = Math.max(...[...pages.children].map(p => p.scrollHeight)) + 'px';
 }
 function allerOngletVw(k) {
   const pages = $('#viewer .vw-pages');
@@ -208,16 +220,16 @@ function allerOngletVw(k) {
 }
 
 /* Après une maîtrise, un choix de carte fétiche : la carte et les pages se
-   redessinent en place. `eclair` : un éclair traverse la carte — elle vient
-   de changer d'allure sous les yeux. */
-function rafraichirFicheVw(eclair) {
+   redessinent en place (la montée d'un niveau se joue ensuite sur la carte :
+   jouerMonteeMaitrise, js/maitrise.js). */
+function rafraichirFicheVw() {
   if (!VW) return;
   const c = VW.c;
   VW.apercu = 0;
   const el = $('#vwc');
   if (el) {
     el.innerHTML = vCarteVw(c);
-    if (eclair && !vwCalme()) { el.classList.remove('vw-eclair'); void el.offsetWidth; el.classList.add('vw-eclair'); }
+    VW.reflets = refletsVw();
   }
   for (const [k] of VW_ONGLETS) {
     if (k === 'infos') continue;
