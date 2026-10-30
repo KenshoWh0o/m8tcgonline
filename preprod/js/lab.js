@@ -619,6 +619,7 @@ function vLabApercus() {
     <p class="muted small">Les bandeaux du haut de l'écran, pour vérifier qu'ils ne recouvrent rien.</p>
     <div class="row">
       <button class="btn ghost" data-act="t-quete">Quête accomplie</button>
+      <button class="btn ghost" data-act="t-quetes">Trois quêtes d'un coup</button>
       <button class="btn ghost" data-act="t-ping">Ping de la boîte</button>
       <button class="btn ghost" data-act="t-toast">Message court</button>
     </div>
@@ -787,6 +788,14 @@ function testQuete() {
     id: 'test', titre: 'Cinq paquets', reward: 50,
     progress: 5, goal: 5, scope: 'daily'
   });
+}
+/* Plusieurs quêtes finies ensemble (un combat) : une seule carte. */
+function testQuetes() {
+  notifQuetes([
+    { id: 't1', titre: 'Sur le terrain', reward: 20, progress: 1, goal: 1, scope: 'daily' },
+    { id: 't2', titre: 'Première victoire', reward: 40, progress: 1, goal: 1, scope: 'daily' },
+    { id: 't3', titre: 'Paratonnerre', reward: 15, monnaie: 'prismes', progress: 1, goal: 1, scope: 'ev_jour' }
+  ]);
 }
 
 /* ---------- Offrir un cadeau ---------- */
