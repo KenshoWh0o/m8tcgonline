@@ -605,6 +605,7 @@ async function clicPage(e) {
     case 't-cadeau': return labApercuCadeau();
     case 't-promo-file': return testFilePromos();
     case 't-quete': return testQuete();
+    case 't-quetes': return testQuetes();
     case 't-ping': return testPing();
     case 't-toast': return toast('Voilà à quoi ça ressemble.');
 

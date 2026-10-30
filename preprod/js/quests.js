@@ -129,25 +129,42 @@ const questesFinies = liste =>
 function signalerQuetes(avant, apres) {
   if (!avant) return;
   const dejaFait = questesFinies(avant);
-  (apres || []).forEach(q => {
-    if (q.progress >= q.goal && !dejaFait.has(q.id)) notifQuete(q);
-  });
+  const neuves = (apres || []).filter(q => q.progress >= q.goal && !dejaFait.has(q.id));
+  /* Plusieurs à la fois (un combat en finit souvent trois) : une seule carte
+     qui les compte, au lieu d'une pile qui couvre la moitié de l'écran
+     (version 3.0.11). */
+  if (neuves.length > 1) notifQuetes(neuves);
+  else if (neuves.length) notifQuete(neuves[0]);
 }
 
 function notifQuete(q) {
+  /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
+     bannière de réussite donnerait l'impression d'un bug. */
+  const gain = q.reward > 0
+    ? `${q.monnaie === 'prismes' ? evIco() : shardIco}${fmtN(q.reward)}`
+    : q.item ? 'Récompense' : '';
+  carteQuete(q.titre, 'Quête accomplie', gain, q.scope);
+}
+
+/* Plusieurs quêtes d'un coup : leurs titres sur une ligne, et la somme de
+   leurs gains, monnaie par monnaie. */
+function notifQuetes(l) {
+  const somme = ev => l.filter(q => q.reward > 0 && (q.monnaie === 'prismes') === ev).reduce((s, q) => s + q.reward, 0);
+  const ec = somme(false), ev = somme(true);
+  const gain = [ec ? `${shardIco}${fmtN(ec)}` : '', ev ? `${evIco()}${fmtN(ev)}` : ''].filter(Boolean).join(' ');
+  carteQuete(l.map(q => q.titre).join(' · '), `${l.length} quêtes accomplies`, gain || 'Récompenses', l[0].scope);
+}
+
+/* La carte en haut de l'écran : ce qui est fait, une ligne d'état, le gain. */
+function carteQuete(titre, etat, gain, vue) {
   const pile = $('#qnotif');
   if (!pile) return;
 
   const el = document.createElement('div');
   el.className = 'qn';
   el.setAttribute('role', 'status');
-  /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
-     bannière de réussite donnerait l'impression d'un bug. */
-  const gain = q.reward > 0
-    ? `${q.monnaie === 'prismes' ? evIco() : shardIco}${fmtN(q.reward)}`
-    : q.item ? 'Récompense' : '';
   el.innerHTML = `<span class="qnico">${NAVICO.check}</span>
-    <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
+    <span class="qntxt"><b>${h(titre)}</b><small>${h(etat)}</small></span>
     ${gain ? `<span class="qngain">${gain}</span>` : ''}`;
 
   /* Deux quêtes peuvent tomber ensemble : un seul son pour la volée, sinon le
@@ -163,7 +180,7 @@ function notifQuete(q) {
     setTimeout(() => el.remove(), 320);
   };
   setTimeout(partir, QNOTIF_DUREE);
-  el.onclick = () => { partir(); qVue = q.scope; aller('quetes'); };
+  el.onclick = () => { partir(); qVue = vue; aller('quetes'); };
 }
 
 /* ---------- L'écran ---------- */
