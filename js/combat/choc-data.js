@@ -29,8 +29,8 @@
 
 const RAID = {
   /* Les boss, un par raid, à tour de rôle (raid_boss, 27_raid.sql) :
-     - The French Sorcerer (#116), Légendaire Mauve : ses éclairs renvoient
-       les Joueurs sur le Banc et frappent à 200 ;
+     - The French Sorcerer (#116), Légendaire Mauve : ses éclairs bench les
+       Joueurs (à la défausse) et frappent à 200 ;
      - Le Marionnettiste (#121, version 3.0.11), Légendaire Neutre : il tire
        les ficelles (Coup de fil, 160) et riposte quand il tombe.
      `couleur` : celle du boss dans son deck (une seconde change chaque
@@ -40,7 +40,7 @@ const RAID = {
      js/combat/table.js). */
   bosses: [
     { id: 'c116', nom: 'The French Sorcerer', couleur: 'mauve', visage: [.46, .24], cadre: 'f_foudre', tapis: 't_orage',
-      dit: 'Ses éclairs renvoient tes Joueurs sur le Banc et frappent à 200.' },
+      dit: 'Ses éclairs envoient tes Joueurs à la défausse et frappent à 200.' },
     { id: 'c121', nom: 'Le Marionnettiste', couleur: 'neutre', visage: [.45, .58], cadre: 'f_nebuleuse', tapis: 't_ficelles',
       dit: 'Il joue les couleurs des autres, deux nouvelles chaque jour, frappe à 160, et riposte quand il tombe.',
       /* À phases égales, il est plus dur que le Sorcier : son attaque ne
@@ -86,7 +86,7 @@ const RAID = {
      toi qui as moins de PV. Chaque victoire fait monter d'un palier. */
   infini: n => {
     const k = Math.max(1, n);
-    return { ia: 5, pvBoss: Math.min(12, 9 + k), ess: Math.min(3, 2 + Math.floor(k / 3)), pvMoi: Math.max(2, 5 - Math.floor(Math.max(0, k - 3) / 2)) };
+    return { ia: 5, pvBoss: Math.min(12, 9 + k), ess: Math.min(3, 2 + Math.floor(k / 3)), pvMoi: Math.max(2, Combat.REGLE.PV - Math.floor(Math.max(0, k - 3) / 2)) };
   },
   /* Ce que rapporte un combat : par PV pris, et s'il tombe (+ bonusDegats
      dégâts). Pendant le Choc, en Étincelles ; sinon, en Éclats. */
@@ -102,7 +102,7 @@ function raidCombat(cle, boss) {
   if (s[0] === 'i') c = Object.assign({ infini: true, n }, RAID.infini(n));
   else {
     const ph = RAID.phases[Math.min(n, RAID.phases.length) - 1];
-    c = { infini: false, n, ia: ph.ia, pvBoss: ph.pv, ess: ph.ess, pvMoi: 5 };
+    c = { infini: false, n, ia: ph.ia, pvBoss: ph.pv, ess: ph.ess, pvMoi: Combat.REGLE.PV };
   }
   /* Le réglage d'un boss (RAID.bosses › ajuste) : ce qu'il a vraiment en
      combat. Sans `boss`, les chiffres de la phase — ceux que le serveur
@@ -141,15 +141,17 @@ const CHOC = {
     participation: 5,
     victoire: 25,
     ia: 3,
-    /* Une règle par jour, à tour de rôle. `pv` et `ess` : [toi, l'adversaire]. */
+    /* Une règle par jour, à tour de rôle. `pv` et `ess` : [toi, l'adversaire].
+       Des variantes du site autour des règles officielles (4 PV chacun) :
+       « Classique », ce sont elles, exactement. */
     regles: [
-      { id: 'eclair', nom: 'Combat éclair', texte: 'Trois PV chacun : la moindre ouverture est fatale.', pv: [3, 3], ess: [0, 0] },
-      { id: 'siege', nom: 'Le siège', texte: 'L\'adversaire a 7 PV. Toi, tu commences avec 2 Essences en jeu.', pv: [5, 7], ess: [2, 0] },
-      { id: 'renforts', nom: 'Renforts', texte: 'Les deux camps commencent avec une Essence en jeu.', pv: [5, 5], ess: [1, 1] },
-      { id: 'miroir', nom: 'Le miroir', texte: 'Les deux camps jouent le même deck.', pv: [5, 5], ess: [0, 0], miroir: true },
-      { id: 'outsider', nom: 'L\'outsider', texte: 'Tu as 4 PV, l\'adversaire 6 et une Essence d\'avance.', pv: [4, 6], ess: [0, 1] },
-      { id: 'marathon', nom: 'Marathon', texte: 'Sept PV chacun : une partie longue, où chaque carte compte.', pv: [7, 7], ess: [0, 0] },
-      { id: 'classique', nom: 'Classique', texte: 'Les règles normales, rien de plus.', pv: [5, 5], ess: [0, 0] }
+      { id: 'eclair', nom: 'Combat éclair', texte: 'Trois PV chacun au lieu de quatre : la moindre ouverture est fatale.', pv: [3, 3], ess: [0, 0] },
+      { id: 'siege', nom: 'Le siège', texte: 'L\'adversaire a 6 PV. Toi, tu commences avec 2 Essences en jeu.', pv: [4, 6], ess: [2, 0] },
+      { id: 'renforts', nom: 'Renforts', texte: 'Les deux camps commencent avec une Essence en jeu.', pv: [4, 4], ess: [1, 1] },
+      { id: 'miroir', nom: 'Le miroir', texte: 'Les deux camps jouent le même deck.', pv: [4, 4], ess: [0, 0], miroir: true },
+      { id: 'outsider', nom: 'L\'outsider', texte: 'Tu as 3 PV, l\'adversaire 5 et une Essence d\'avance.', pv: [3, 5], ess: [0, 1] },
+      { id: 'marathon', nom: 'Marathon', texte: 'Six PV chacun : une partie longue, où chaque carte compte.', pv: [6, 6], ess: [0, 0] },
+      { id: 'classique', nom: 'Classique', texte: 'Les règles officielles, rien de plus.', pv: [4, 4], ess: [0, 0] }
     ],
     /* Les trois semaines de l'événement, jour par jour (version 3.0.11) :
        chaque semaine a les sept règles, dans un ordre à elle ; jamais la
@@ -204,7 +206,10 @@ function deckBoss(j, cle, boss) {
   const c = raidCombat(cle);
   const sel = b.id === 'c116' ? 0 : Number(b.id.slice(1)) * 977;
   const r = aleaGraine(0x3c6ef372 ^ (chocJourN(j) * 31 + c.n * (c.infini ? 7 : 1) + (c.infini ? 1000 : 0) + sel));
-  const d = Decks.aleatoire(r, { niveau: Math.min(5, c.ia + 1), couleurs, nom: b.nom });
+  /* Un seul boss : ses exemplaires (et ceux qui comptent pour lui, même nom
+     et même couleur) sont écartés du tirage, puis il est posé une fois. */
+  const memes = Combat.toutes().filter(k => Decks.cleCopie(k.id) === Decks.cleCopie(b.id)).map(k => k.id);
+  const d = Decks.aleatoire(r, { niveau: Math.min(5, c.ia + 1), couleurs, nom: b.nom, exclure: memes });
   imposerCarte(d, b.id, couleurs[0], r);
   d.couverture = b.id;
   return d;

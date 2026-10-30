@@ -113,16 +113,18 @@ create table if not exists public.starters (
 );
 delete from public.starters;
 insert into public.starters (section, card_id, n) values
-  ('toxique', 'p03', 1), ('toxique', 'c010', 2), ('toxique', 'c011', 2), ('toxique', 'c012', 2),
-  ('toxique', 'c013', 2), ('toxique', 'c017', 1), ('toxique', 'c073', 2), ('toxique', 'c074', 1),
-  ('toxique', 'c078', 2), ('toxique', 'c079', 1), ('toxique', 'c015', 2), ('toxique', 'c085', 2),
-  ('toxique', 'c087', 1), ('toxique', 'c014', 1), ('toxique', 'c016', 2), ('toxique', 'c083', 2),
-  ('toxique', 'c104', 1), ('toxique', 'c096', 1), ('toxique', 'c097', 1), ('toxique', 'c020', 1),
-  ('deter', 'p04', 1), ('deter', 'c051', 2), ('deter', 'c052', 2), ('deter', 'c050', 1),
-  ('deter', 'c077', 2), ('deter', 'c074', 1), ('deter', 'c076', 1), ('deter', 'c080', 2),
-  ('deter', 'c081', 1), ('deter', 'c078', 2), ('deter', 'c059', 1), ('deter', 'c053', 2),
-  ('deter', 'c087', 1), ('deter', 'c088', 2), ('deter', 'c054', 2), ('deter', 'c055', 2),
-  ('deter', 'c083', 2), ('deter', 'c082', 1), ('deter', 'c092', 2);
+  ('toxique', 'p03', 1), ('toxique', 'c010', 3), ('toxique', 'c011', 2), ('toxique', 'c012', 3),
+  ('toxique', 'c013', 2), ('toxique', 'c017', 1), ('toxique', 'c073', 2), ('toxique', 'c078', 2),
+  ('toxique', 'c079', 1), ('toxique', 'c074', 1), ('toxique', 'c015', 3), ('toxique', 'c085', 2),
+  ('toxique', 'c087', 2), ('toxique', 'c088', 1), ('toxique', 'c014', 2), ('toxique', 'c016', 2),
+  ('toxique', 'c083', 2), ('toxique', 'c104', 1), ('toxique', 'c096', 2), ('toxique', 'c097', 2),
+  ('toxique', 'c020', 1), ('toxique', 'c091', 1), ('toxique', 'c092', 1), ('deter', 'p04', 1),
+  ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c050', 1), ('deter', 'c077', 2),
+  ('deter', 'c074', 1), ('deter', 'c076', 1), ('deter', 'c080', 2), ('deter', 'c081', 1),
+  ('deter', 'c078', 2), ('deter', 'c059', 1), ('deter', 'c053', 3), ('deter', 'c087', 2),
+  ('deter', 'c088', 2), ('deter', 'c056', 1), ('deter', 'c054', 2), ('deter', 'c055', 2),
+  ('deter', 'c083', 2), ('deter', 'c082', 2), ('deter', 'c092', 2), ('deter', 'c093', 1),
+  ('deter', 'c072', 1), ('deter', 'c094', 1), ('deter', 'c095', 1);
 
 -- La Guerre des Sections du pre-build : retiree.
 drop function if exists public.marquer_points(uuid, int);
@@ -185,25 +187,25 @@ end $$;
 -- Deux cartes qui n'en font qu'une pour la limite d'exemplaires : une Reverse
 -- et sa carte, l'illustration alternative d'une Promo, la Promo d'une
 -- Legendaire (cleCopie, js/combat/decks.js).
+-- Regles officielles (« Construire son jeu ») : « Il ne peut pas contenir
+-- plus de trois exemplaires d'une meme carte. Un meme exemplaire d'une carte
+-- est une carte possedant le meme nom et la meme couleur, quand bien meme son
+-- texte ou son art est different. » La cle d'une carte : son nom et sa
+-- couleur (une Reverse, une Promo a l'illustration differente, les deux
+-- Leakof). Meme cle cote navigateur : Decks.cleCopie (js/combat/decks.js).
 create or replace function public.cle_copie(id text) returns text
-language sql immutable as $$
-  select case
-    when id ~ '^r[0-9]' then 'c' || substr(id, 2)
-    when id = 'p02' then 'p01'
-    when id = 'p06' then 'c121'
-    else id end;
+language sql stable security definer set search_path = public as $$
+  select coalesce((select lower(k.nom) || '|' || k.col from cards k where k.id = cle_copie.id), cle_copie.id);
 $$;
 
--- Deux exemplaires au plus ; un seul pour une Legendaire, une Secrete, une
--- Promo ou l'Unique.
+-- Trois exemplaires, quelle que soit la rarete.
 create or replace function public.limite_copies(cle text) returns integer
-language sql stable security definer set search_path = public as $$
-  select case when k.rar in ('L', 'S', 'UN', 'PR') or (k.promo and not k.reverse and not k.secrete) then 1 else 2 end
-    from cards k where k.id = cle;
+language sql immutable as $$
+  select 3;
 $$;
 
 -- Ce qui ne va pas dans un deck (le premier probleme), ou null.
---   complet   : un deck qu'on va jouer — 30 cartes, 10 Essences, un Joueur ;
+--   complet   : un deck qu'on va jouer — 40 cartes et 10 Essences (regles officielles) ;
 --   pretees   : les cartes pretees en plus de la collection (Starter Decks).
 create or replace function public.deck_erreur(p uuid, cartes jsonb, reserve jsonb,
                                               complet boolean, pretees jsonb default '{}'::jsonb)
@@ -216,7 +218,7 @@ begin
   for e in select key, value from jsonb_each(cartes) loop
     if jsonb_typeof(e.value) <> 'number' then return 'Deck invalide.'; end if;
     q := (e.value)::text::int;
-    if q < 0 or q > 4 then return 'Deck invalide.'; end if;
+    if q < 0 or q > 3 then return 'Deck invalide.'; end if;
     continue when q = 0;
     select * into k from cards where id = e.key;
     if not found or k.cat not in ('joueur', 'coach', 'moment', 'objet') then
@@ -243,10 +245,9 @@ begin
     ne := ne + (e.value)::text::int;
   end loop;
   if complet then
-    if nb <> 30 then return 'Le Club doit compter 30 cartes.'; end if;
-    if joueurs = 0 then return 'Il faut au moins un Joueur.'; end if;
+    if nb <> 40 then return 'Le Club doit compter 40 cartes.'; end if;
     if ne <> 10 then return 'La Réserve doit compter 10 Essences.'; end if;
-  elsif nb > 30 or ne > 10 then
+  elsif nb > 40 or ne > 10 then
     return 'Deck trop grand.';
   end if;
   return null;

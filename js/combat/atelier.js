@@ -259,7 +259,7 @@ function expliquerPlein(id) {
   if (!(save.col[id] > 0)) return toast('Tu ne possèdes pas cette carte.');
   if ((d.cartes[id] || 0) >= (save.col[id] || 0)) return toast(`Tu n'en as que ${save.col[id]}.`);
   const lim = Decks.limite(id);
-  return toast(`${lim} exemplaire${lim > 1 ? 's' : ''} au plus de « ${c.nom} »${c.rev || Decks.cleCopie(id) !== id ? ' (Reverse et Promo comprises)' : ''}.`);
+  return toast(`${lim} exemplaires au plus de « ${c.nom} » ${(COLORS[byId[id].col] || {}).nom || ''} : même nom et même couleur, toutes versions comprises.`);
 }
 
 /* La recherche et les filtres redessinent la grille seule : le champ garde
@@ -289,12 +289,13 @@ function bindAtelier() {
 }
 
 /* Compléter le Club avec les meilleures cartes possédées, dans les couleurs
-   déjà là (ou toutes, si le deck est vide). */
+   déjà là (ou toutes, si le deck est vide), vers la composition des decks de
+   l'IA (Decks.CIBLES : 18 Joueurs, 8 Objets, 14 Coachs et Moments). */
 function completerDeck() {
   const d = atelier.deck;
   const R = Combat.REGLE;
   const couleurs = new Set(Object.keys(d.cartes).map(id => byId[id].col).filter(c => c !== 'neutre'));
-  const cible = { joueur: 16, objet: 5, instant: 9 };
+  const cible = Decks.CIBLES;
   const fam = c => (c.cat === 'joueur' ? 'joueur' : c.cat === 'objet' ? 'objet' : 'instant');
   const compte = f => Object.keys(d.cartes).filter(id => fam(byId[id]) === f).reduce((s, id) => s + d.cartes[id], 0);
   const cands = cartesJouables().filter(c => save.col[c.id] > 0 && (!couleurs.size || c.col === 'neutre' || couleurs.has(c.col)))

@@ -17,17 +17,17 @@ function test(nom, f) {
 function egal(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || '') + ' attendu ' + JSON.stringify(b) + ', obtenu ' + JSON.stringify(a)); }
 function vrai(x, m) { if (!x) throw new Error(m || 'faux'); }
 
-/* Une partie dont on fixe tout : deux Clubs de 30 cartes de remplissage,
+/* Une partie dont on fixe tout : deux Clubs de 40 cartes de remplissage,
    puis on pose ce qu'on veut où on veut. */
 function situation(o) {
-  const remplir = id => Array(30).fill(id || 'c078');
+  const remplir = id => Array(40).fill(id || 'c078');
   const E = Combat.creer({ decks: [{ club: remplir(o.club0), reserve: Array(10).fill(o.coul0 || 'rose') }, { club: remplir(o.club1), reserve: Array(10).fill(o.coul1 || 'mauve') }], graine: 1, premier: 0 });
   /* Garder les deux mains. */
   while (Combat.demande(E).but === 'mulligan') Combat.agir(E, { t: 'choix', v: 'oui' });
   /* On est au premier tour de 0 : on passe au tour 3 (le second tour de 0)
      pour pouvoir attaquer. */
-  Combat.agir(E, { t: 'finTour' });
-  Combat.agir(E, { t: 'finTour' });
+  finirTour(E);
+  finirTour(E);
   for (const j of [0, 1]) {
     const P = E.j[j];
     P.lignes = [null, null, null];
@@ -41,22 +41,63 @@ function situation(o) {
       for (const oid of opts.obj || []) c.obj.push({ u: ++E.seq, id: oid, j });
       P.lignes[i] = c;
     });
-    for (const coul of (o.ess || [])[j] || []) P.ess.push({ u: ++E.seq, coul, eng: false, j });
+    for (const x of (o.ess || [])[j] || []) {
+      const [coul, eng] = Array.isArray(x) ? x : [x, false];
+      P.ess.push({ u: ++E.seq, coul, eng: !!eng, j });
+    }
     for (const id of (o.main || [])[j] || []) P.main.push({ u: ++E.seq, id, j });
     if (o.pv && o.pv[j] != null) P.pv = P.pv.slice(0, o.pv[j]);
   }
   return E;
+}
+/* Finir le tour, et défausser ce qu'il faut pour garder 5 cartes. */
+function finirTour(E) {
+  Combat.agir(E, { t: 'finTour' });
+  const d = Combat.demande(E);
+  if (d && d.type === 'cartes' && d.but === 'defausseFin') Combat.agir(E, { t: 'cartes', u: d.parmi.slice(0, d.min) });
 }
 const L = (E, j, i) => E.j[j].lignes[i];
 const options = E => Combat.optionsTour(E);
 const attaques = (E, u) => options(E).filter(a => a.t === 'attaquer' && a.u === u);
 const repondre = (E, v) => Combat.agir(E, { t: 'choix', v });
 
-console.log('Cibles et défense');
-test('on vise le CEO ou un Joueur engagé, jamais un Joueur désengagé', () => {
+console.log('Mise en place et tour (règles officielles)');
+test('40 cartes, 5 en main, 4 PV ; le premier CEO pioche dès son premier tour', () => {
+  const F = Combat.creer({ decks: [0, 1].map(() => ({ club: Array(40).fill('c078'), reserve: Array(10).fill('rose') })), graine: 5, premier: 0 });
+  egal(Combat.demande(F).but, 'mulligan');
+  repondre(F, 'oui'); repondre(F, 'oui');
+  egal(F.j[1].pv.length, 4);
+  egal(F.j[1].main.length, 5);
+  egal(F.j[0].main.length, 6, 'pioche du premier tour');
+  egal(F.j[0].ess.length, 1, 'une Essence de la Réserve');
+  egal(F.j[0].club.length, 40 - 5 - 4 - 1);
+});
+test('le tirage au sort de qui commence vient après les mains et les PV', () => {
+  const F = Combat.creer({ decks: [0, 1].map(() => ({ club: Array(40).fill('c078'), reserve: Array(10).fill('rose') })), graine: 9 });
+  repondre(F, 'oui'); repondre(F, 'oui');
+  const t = F.ev.map(e => e.t);
+  vrai(t.indexOf('pileFace') > t.lastIndexOf('pv'), 'pileFace après les PV');
+  vrai(t.indexOf('pileFace') > t.lastIndexOf('main'), 'pileFace après les mains');
+});
+test('fin du tour : on défausse pour garder 5 cartes au plus', () => {
+  const E = situation({ lignes: [[], []], main: [['c078', 'c078', 'c078', 'c078', 'c078', 'c078', 'c078']] });
+  Combat.agir(E, { t: 'finTour' });
+  const d = Combat.demande(E);
+  egal([d.type, d.but, d.min, d.max], ['cartes', 'defausseFin', 2, 2]);
+  Combat.agir(E, { t: 'cartes', u: d.parmi.slice(0, 2) });
+  egal(E.j[0].main.length, 5);
+});
+test('un Club vide au moment de piocher fait perdre', () => {
+  const E = situation({ lignes: [[], []] });
+  E.j[1].club = [];
+  Combat.agir(E, { t: 'finTour' });
+  egal(E.fin, { gagnant: 0, raison: 'club' });
+});
+
+console.log('Cibles, défense, soutien');
+test('une attaque se déclare sur le CEO adverse, jamais sur un Joueur, même engagé', () => {
   const E = situation({ lignes: [['c078'], ['c057', ['c074', { eng: true }], 'c051']], ess: [['rose', 'rose']] });
-  const cibles = attaques(E, L(E, 0, 0).u).filter(a => a.k === 0).map(a => a.cible);
-  egal(cibles.sort(), ['ceo', L(E, 1, 1).u].sort());
+  egal([...new Set(attaques(E, L(E, 0, 0).u).map(a => a.cible))], ['ceo']);
 });
 test('Provocation en face impose sa cible', () => {
   const E = situation({ lignes: [['c078'], ['c058', ['c074', { eng: true }]]], ess: [['rose', 'rose']] });
@@ -66,7 +107,7 @@ test('Slay désengagé impose sa cible, engagé non', () => {
   const E = situation({ lignes: [['c078'], ['c101']], ess: [['rose', 'rose']] });
   egal([...new Set(attaques(E, L(E, 0, 0).u).map(a => a.cible))], [L(E, 1, 0).u]);
   L(E, 1, 0).eng = true;
-  egal([...new Set(attaques(E, L(E, 0, 0).u).map(a => a.cible))].sort(), ['ceo', L(E, 1, 0).u].sort());
+  egal([...new Set(attaques(E, L(E, 0, 0).u).map(a => a.cible))], ['ceo']);
 });
 test('seul le Joueur de la même ligne défend — et Garde, de partout', () => {
   const E = situation({ lignes: [['c078'], [null, 'c051', 'c074']], ess: [['rose', 'rose']] });
@@ -75,61 +116,98 @@ test('seul le Joueur de la même ligne défend — et Garde, de partout', () => 
   const E2 = situation({ lignes: [['c078'], ['c051', 'c078']], ess: [['rose', 'rose']] });
   egal(Combat.defenseurs(E2, L(E2, 0, 0), 'ceo').map(c => c.id), ['c051']);
 });
-test('défendre engage le défenseur ; attaque ≥ Défense : vaincu', () => {
+test('défendre engage le défenseur ; une attaque plus faible ne passe pas', () => {
   const E = situation({ lignes: [['c078'], ['c010']], ess: [['rose', 'rose']] });
   /* Le Chevalier Rose : Serment 120 contre Broken Brawks 130 — repoussé. */
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
-  const d = Combat.demande(E);
-  egal(d.but, 'defense');
+  egal(Combat.demande(E).but, 'defense');
   repondre(E, L(E, 1, 0).u);
   vrai(L(E, 1, 0).eng, 'le défenseur est engagé');
-  egal(E.j[1].pv.length, 5, 'pas de PV perdu');
+  egal(E.j[1].pv.length, 4, 'pas de PV perdu');
   vrai(L(E, 0, 0).eng, 'l\'attaquant est engagé');
 });
-test('défenseur vaincu si l\'attaque l\'égale', () => {
+test('défenseur vaincu si l\'attaque l\'égale ou le dépasse : bench, à la défausse', () => {
   const E = situation({ lignes: [['c078'], ['c051']], ess: [['rose', 'rose']] });
   /* Serment 120 contre La Planète 110 : vaincue. Légion : on refuse. */
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
   repondre(E, L(E, 1, 0).u);
+  if (Combat.demande(E) && Combat.demande(E).but === 'legion') repondre(E, 'non');
   egal(L(E, 1, 0), null);
   egal(E.j[1].defausse.slice(-1)[0].id, 'c051');
+});
+test('le soutien : un Joueur voisin ajoute la valeur de son attaque', () => {
+  /* Serment 120 (2 Essences) contre Broken Brawks 130 : repoussé seul ;
+     avec le soutien d'Assaut 90 (1 Essence) d'un Chevalier voisin : 210. */
+  const E = situation({ lignes: [['c078', 'c078'], [null, 'c010']], ess: [['rose', 'rose', 'rose']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 1).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 1).u);
+  const d = Combat.demande(E);
+  egal(d.but, 'soutien');
+  const o = d.options.find(x => x.u === L(E, 0, 0).u && x.k === 0);
+  vrai(o && o.info.total === 210 && o.info.vaincu, 'total 210');
+  repondre(E, o.v);
+  egal(L(E, 1, 1), null, 'Broken Brawks vaincu');
+  vrai(L(E, 0, 0).eng, 'le soutien est engagé');
+  egal(E.j[0].ess.filter(e => !e.eng).length, 0, 'trois Essences engagées');
+});
+test('pas de soutien sans défenseur, ni d\'une case qui n\'est pas voisine', () => {
+  const E = situation({ lignes: [['c078', null, 'c078'], [null, null, null]], ess: [['rose', 'rose', 'rose']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 2).u, k: 0, cible: 'ceo' });
+  vrai(!Combat.demande(E) || Combat.demande(E).but !== 'soutien');
+  egal(Combat.soutiens(E, L(E, 0, 2)).length, 0, 'la case 0 n\'est pas voisine de la 2');
 });
 test('le CEO touché récupère son premier PV en main', () => {
   const E = situation({ lignes: [['c078'], []], ess: [['rose']] });
   const premier = E.j[1].pv[0];
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
-  egal(E.j[1].pv.length, 4);
+  egal(E.j[1].pv.length, 3);
   vrai(E.j[1].main.includes(premier));
 });
 test('sans PV, le CEO touché a perdu', () => {
-  const E = situation({ lignes: [['c078'], []], ess: [['rose']], pv: [5, 0] });
+  const E = situation({ lignes: [['c078'], []], ess: [['rose']], pv: [4, 0] });
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
   egal(E.fin, { gagnant: 0, raison: 'pv' });
+});
+test('une attaque sans valeur se déclare aussi sur le CEO et le touche si personne ne défend', () => {
+  /* Namifique, Omniscience (1 Rose, pas de valeur) : « Engagez un Joueur adverse ». */
+  const E = situation({ lignes: [['c022'], []], ess: [['rose']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
+  egal(E.j[1].pv.length, 3);
 });
 test('un Joueur engagé ne peut pas attaquer ; le premier CEO n\'attaque pas au tour 1', () => {
   const E = situation({ lignes: [[['c078', { eng: true }]], []], ess: [['rose', 'rose']] });
   egal(attaques(E, L(E, 0, 0).u).length, 0);
-  const F = Combat.creer({ decks: [{ club: Array(30).fill('c078'), reserve: Array(10).fill('rose') }, { club: Array(30).fill('c078'), reserve: Array(10).fill('rose') }], graine: 3, premier: 0 });
+  const F = Combat.creer({ decks: [{ club: Array(40).fill('c078'), reserve: Array(10).fill('rose') }, { club: Array(40).fill('c078'), reserve: Array(10).fill('rose') }], graine: 3, premier: 0 });
   repondre(F, 'oui'); repondre(F, 'oui');
   Combat.agir(F, { t: 'deployer', u: F.j[0].main[0].u, ligne: 0 });
   egal(options(F).filter(a => a.t === 'attaquer').length, 0);
 });
 
-console.log('Coûts et Essences');
+console.log('Coûts, Essences, couleurs');
 test('couleur exacte pour les symboles de couleur, n\'importe laquelle pour le Neutre', () => {
   const E = situation({ lignes: [['c012'], []], ess: [['mauve', 'mauve']] });
   egal(attaques(E, L(E, 0, 0).u).length, 0, 'Trash-talk veut du Rose');
   const F = situation({ lignes: [['c012'], []], ess: [['rose', 'mauve']] });
   vrai(attaques(F, L(F, 0, 0).u).length > 0);
 });
-test('payer engage les Essences ; elles reviennent au début du tour', () => {
+test('payer engage les Essences ; elles se désengagent à l\'entretien', () => {
   const E = situation({ lignes: [['c078'], []], ess: [['rose', 'rose']] });
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
   egal(E.j[0].ess.filter(e => e.eng).length, 2);
-  Combat.agir(E, { t: 'finTour' });
-  Combat.agir(E, { t: 'finTour' });
+  finirTour(E);
+  finirTour(E);
   egal(E.j[0].ess.filter(e => e.eng).length, 0);
   vrai(!L(E, 0, 0).eng);
+});
+test('restriction par couleur : un Coach, un Moment ou un Objet de couleur veut une Essence de sa couleur en jeu', () => {
+  /* Zacking Buff, Coach Rose ; Ravitaillement Rose, Objet. */
+  const E = situation({ lignes: [['c078'], []], ess: [['mauve']], main: [['c014', 'c015']] });
+  egal(options(E).filter(a => a.t === 'jouer' || a.t === 'lier').length, 0, 'pas de Rose en jeu');
+  const F = situation({ lignes: [['c078'], []], ess: [[['rose', true]]], main: [['c014', 'c015']] });
+  vrai(options(F).some(a => a.t === 'jouer'), 'une Essence Rose engagée suffit : ce n\'est pas un coût');
+  vrai(options(F).some(a => a.t === 'lier'));
+  const G = situation({ lignes: [['c078'], []], ess: [['mauve']], main: [['c083', 'c087']] });
+  vrai(options(G).some(a => a.t === 'jouer') && options(G).some(a => a.t === 'lier'), 'les Neutres n\'ont pas de condition');
 });
 test('Doig\'Dance : la première attaque coûte un Neutre de moins', () => {
   const E = situation({ lignes: [['c078'], []], ess: [['rose']], main: [['c097']] });
@@ -137,35 +215,36 @@ test('Doig\'Dance : la première attaque coûte un Neutre de moins', () => {
   Combat.agir(E, { t: 'jouer', u: E.j[0].main[0].u });
   vrai(attaques(E, L(E, 0, 0).u).some(a => a.k === 1), 'Serment devient payable');
 });
-test('La Chevalière : l\'attaque peut coûter 2 Neutres', () => {
+test('La Chevalière : l\'attaque peut coûter 2 Neutres, et elle part à la défausse', () => {
   const E = situation({ lignes: [[['c081', { obj: ['c084'] }]], []], ess: [['rose', 'rose']] });
   const a = attaques(E, L(E, 0, 0).u).find(x => x.chevaliere && x.cible === 'ceo');
   vrai(a, 'Hexa-Punch (4) payable avec 2');
   Combat.agir(E, a);
-  egal(E.j[0].banc.map(c => c.id), ['c084']);
+  vrai(E.j[0].defausse.some(c => c.id === 'c084'), 'à la défausse');
 });
 
 console.log('Mots-clés');
 test('Shield ignore la première attaque', () => {
-  const E = situation({ lignes: [['c078'], [['c059', { eng: true }]]], ess: [['rose', 'rose']] });
-  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: L(E, 1, 0).u });
+  const E = situation({ lignes: [['c078'], ['c059']], ess: [['rose', 'rose']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 0).u);
   vrai(L(E, 1, 0), 'Baby Driver tient');
   vrai(L(E, 1, 0).shieldUse);
+  egal(E.j[1].pv.length, 4);
 });
-test('Riposte : contre-attaque pour un coût diminué de 1', () => {
-  const E = situation({ lignes: [['c078'], [['c035', { eng: true }]]], ess: [['rose', 'rose'], ['orange']] });
-  /* Pitchounes (Éclosion 2 Orange, 130) vaincu par Serment 120 ? Non : 120 < 120 ? */
-  L(E, 1, 0).id = 'c034'; /* Vanyabubu, Défense 90, Baby Shark 1 Orange → 0 */
-  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: L(E, 1, 0).u });
-  const d = Combat.demande(E);
-  egal(d.but, 'riposte');
+test('Riposte : une de ses attaques, pour un coût diminué de 1, sur l\'attaquant', () => {
+  /* Vanyabubu (Défense 90, Riposte) défend contre Serment 120 et tombe. */
+  const E = situation({ lignes: [['c078'], ['c034']], ess: [['rose', 'rose'], ['orange']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 0).u);
+  egal(Combat.demande(E).but, 'riposte');
   repondre(E, 0);
-  /* Baby Shark 60 contre Le Chevalier Rose 80 : repoussé. */
-  vrai(L(E, 0, 0), 'le Chevalier tient');
+  vrai(L(E, 0, 0), 'Baby Shark 60 contre Le Chevalier Rose 80 : il tient');
 });
 test('Légion : défausser une carte pour le reprendre en main', () => {
-  const E = situation({ lignes: [['c078'], [['c051', { eng: true }]]], ess: [['rose', 'rose']], main: [[], ['c078']] });
-  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: L(E, 1, 0).u });
+  const E = situation({ lignes: [['c078'], ['c051']], ess: [['rose', 'rose']], main: [[], ['c078']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 0).u);
   egal(Combat.demande(E).but, 'legion');
   repondre(E, 'oui');
   Combat.agir(E, { t: 'cartes', u: [E.j[1].main[0].u] });
@@ -177,62 +256,102 @@ test('Buff : les autres Joueurs ont +10 Attaque', () => {
   egal(Combat.valeurAttaque(E, L(E, 0, 1), 0), 90, 'pas lui-même');
 });
 
-console.log('PV, Résilience, Banc');
+console.log('PV, Résilience, bench');
 test('Résilience : « Jouez cette carte » joue l\'effet au lieu de la garder', () => {
-  const E = situation({ lignes: [['c078'], ['c010']], ess: [['rose']] });
-  /* On pose Lofi Girl en premier PV de 1. */
+  const E = situation({ lignes: [['c078'], ['c010']], ess: [['rose'], ['mauve']] });
+  /* On pose Lofi Girl (Neutre) en premier PV de 1. */
   E.j[1].pv[0] = { u: ++E.seq, id: 'c104', j: 1 };
   L(E, 1, 0).eng = true;
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
   egal(Combat.demande(E).but, 'resilience');
   repondre(E, 'oui');
-  /* Lofi Girl : désengagez un de vos Joueurs. Broken Brawks s'engage aussi
-     en récupérant un PV — le choix porte sur lui. */
   const d = Combat.demande(E);
   if (d && d.type === 'choix' && d.but === 'desengagerAllie') repondre(E, L(E, 1, 0).u);
   egal(E.j[1].defausse.slice(-1)[0].id, 'c104');
 });
-test('bench : la carte revient en main au début du tour de son propriétaire', () => {
+test('bench : la carte va à la défausse (« une carte déployée est envoyée à la défausse »)', () => {
   const E = situation({ lignes: [['c078'], ['c057']], ess: [['rose']], main: [['c092'], []] });
   L(E, 1, 0).obj.push({ u: ++E.seq, id: 'c087', j: 1 });
   Combat.agir(E, { t: 'jouer', u: E.j[0].main[0].u });
   repondre(E, L(E, 1, 0).obj[0].u);
-  egal(E.j[1].banc.map(c => c.id), ['c087']);
-  Combat.agir(E, { t: 'finTour' });
-  vrai(E.j[1].main.some(c => c.id === 'c087'));
-  egal(E.j[1].banc.length, 0);
+  vrai(E.j[1].defausse.some(c => c.id === 'c087'));
+  finirTour(E);
+  vrai(!E.j[1].main.some(c => c.id === 'c087'), 'ne revient pas en main');
+});
+test('un Joueur qui quitte le Terrain : ses Objets sont bench', () => {
+  /* Cooked (+30 Attaque, pas de Défense) sur La Planète, vaincue. */
+  const E = situation({ lignes: [['c078'], ['c051']], ess: [['rose', 'rose']] });
+  L(E, 1, 0).obj.push({ u: ++E.seq, id: 'c085', j: 1 });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 0).u);
+  if (Combat.demande(E) && Combat.demande(E).but === 'legion') repondre(E, 'non');
+  vrai(E.j[1].defausse.some(c => c.id === 'c085'));
+  vrai(E.j[1].bench.length >= 1);
 });
 test('Invitation : bench à la place du Joueur vaincu', () => {
-  const E = situation({ lignes: [['c078'], [['c051', { eng: true, obj: ['c032'] }]]], ess: [['rose', 'rose']] });
-  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: L(E, 1, 0).u });
+  const E = situation({ lignes: [['c078'], [['c051', { obj: ['c032'] }]]], ess: [['rose', 'rose']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 0).u);
   vrai(L(E, 1, 0), 'toujours là');
-  egal(E.j[1].banc.map(c => c.id), ['c032']);
+  vrai(E.j[1].defausse.some(c => c.id === 'c032'));
 });
 test('Target Missed : un Joueur sauvé par Invitation n\'a pas été vaincu', () => {
-  const E = situation({ lignes: [['c078'], [['c051', { eng: true, obj: ['c032'] }]]], ess: [['rose', 'rose', 'mauve']], main: [['c055']] });
+  const E = situation({ lignes: [['c078'], [['c051', { obj: ['c032'] }]]], ess: [['rose', 'rose', 'mauve']], main: [['c055']] });
   Combat.agir(E, { t: 'jouer', u: E.j[0].main[0].u });
-  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: L(E, 1, 0).u });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 0).u);
   vrai(L(E, 1, 0), 'sauvé par Invitation');
   vrai(Combat.aMotCle(E, L(E, 0, 0), 'Provocation'), 'l\'attaquant gagne Provocation');
 });
 
-console.log('Limites du tour');
-test('un seul Joueur déployé, un seul Coach par tour', () => {
+console.log('Le tour : déployer, lier, jouer');
+test('autant de Joueurs qu\'il y a de cases ; un seul Coach par tour', () => {
   const E = situation({ lignes: [[], []], ess: [['rose']], main: [['c078', 'c078', 'c083', 'c083']] });
   Combat.agir(E, { t: 'deployer', u: E.j[0].main[0].u, ligne: 0 });
-  egal(options(E).filter(a => a.t === 'deployer').length, 0);
+  vrai(options(E).some(a => a.t === 'deployer'), 'un deuxième Joueur');
+  Combat.agir(E, { t: 'deployer', u: E.j[0].main.find(c => c.id === 'c078').u, ligne: 1 });
   Combat.agir(E, { t: 'jouer', u: E.j[0].main.find(c => c.id === 'c083').u });
   egal(options(E).filter(a => a.t === 'jouer').length, 0);
 });
-test('après la première attaque, plus de Joueur ni d\'Objet', () => {
-  const E = situation({ lignes: [['c078'], []], ess: [['rose']], main: [['c078', 'c087']] });
+test('Terrain plein : une fois par tour, bench un Joueur non engagé pour en jouer un autre à sa place', () => {
+  const E = situation({ lignes: [['c078', ['c078', { eng: true }], 'c078'], []], main: [['c051', 'c052']] });
+  const r = options(E).filter(a => a.t === 'deployer');
+  vrai(r.length && r.every(a => a.remplace), 'seulement des remplacements');
+  vrai(!r.some(a => a.remplace === L(E, 0, 1).u), 'pas le Joueur engagé');
+  const a = r.find(x => x.u === E.j[0].main[0].u && x.ligne === 0);
+  const vieux = L(E, 0, 0);
+  Combat.agir(E, a);
+  egal(L(E, 0, 0).id, 'c051');
+  vrai(E.j[0].defausse.includes(vieux), 'l\'ancien est bench');
+  egal(options(E).filter(x => x.t === 'deployer').length, 0, 'une fois par tour');
+});
+test('pas de limite d\'Objets sur un Joueur', () => {
+  const E = situation({ lignes: [['c078'], []], main: [['c087', 'c087', 'c087', 'c088', 'c085']] });
+  for (let i = 0; i < 5; i++) Combat.agir(E, options(E).find(a => a.t === 'lier'));
+  egal(L(E, 0, 0).obj.length, 5);
+});
+test('en phase de Combat, plus que des attaques', () => {
+  const E = situation({ lignes: [['c078'], []], ess: [['rose']], main: [['c078', 'c087', 'c083']] });
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
-  egal(options(E).filter(a => a.t === 'deployer' || a.t === 'lier').length, 0);
+  egal(options(E).filter(a => ['deployer', 'lier', 'jouer'].includes(a.t)).length, 0);
 });
 
 console.log('Decks');
-test('les deux Starter Decks sont valides', () => {
-  for (const k of ['toxique', 'deter']) egal(Decks.verifier(Decks.STARTERS[k]), [], k);
+test('les deux Starter Decks sont valides : 40 cartes, 10 Essences, au moins 15 Joueurs', () => {
+  for (const k of ['toxique', 'deter']) {
+    egal(Decks.verifier(Decks.STARTERS[k]), [], k);
+    vrai(Decks.bilan(Decks.STARTERS[k]).joueurs >= 15, k + ' : 15 Joueurs');
+  }
+});
+test('trois exemplaires au plus d\'une même carte : même nom et même couleur (Reverse, Promo, Leakof)', () => {
+  const base = Object.assign({}, Decks.STARTERS.toxique.cartes);
+  const d = c => Decks.verifier({ cartes: c, reserve: { rose: 10 } });
+  egal(d(base), []);
+  vrai(d(Object.assign({}, base, { c010: 3, r010: 1, c078: 1 })).some(e => /3 exemplaires/.test(e)), 'Reverse comptée avec sa carte');
+  egal(Decks.cleCopie('c072'), Decks.cleCopie('c110'), 'les deux Leakof');
+  egal(Decks.cleCopie('c121'), Decks.cleCopie('p06'), 'Le Marionnettiste et sa Promo');
+  vrai(Decks.cleCopie('c015') !== Decks.cleCopie('c053'), 'Ravitaillement Rose et Mauve : deux cartes');
+  egal(Decks.limite('c113'), 3, 'une Légendaire aussi');
 });
 test('les decks de campagne et tirés au sort sont valides', () => {
   let s = 3;
