@@ -52,15 +52,19 @@ function vCollection() {
   }
 
   const sp = speciales();
+  /* Les Secrètes se comptent au-delà du total, comme les cartes secrètes d'un
+     vrai jeu de cartes (« 127 / 122 ») : le nombre les compte, la jauge et le
+     pourcentage, qui disent où on en est de l'extension, non (`dans`). */
   const vues = [
-    { id: 'classiques', nom: 'Classiques', n: possedees(cards), total: cards.length },
+    { id: 'classiques', nom: 'Classiques', dans: possedees(cards), n: possedees(cards) + possedees(secretes), total: cards.length },
     { id: 'reverses', nom: 'Reverses', n: possedees(reverses), total: reverses.length },
     { id: 'speciales', nom: 'Spéciales', n: possedees(sp), total: sp.length }
   ].filter(v => v.total > 0);
+  vues.forEach(v => { if (v.dans == null) v.dans = v.n; });
   if (!vues.some(v => v.id === colVue)) colVue = 'classiques';
   const toutes = vues.reduce((n, v) => n + v.total, 0);
   const miennes = vues.reduce((n, v) => n + v.n, 0);
-  const pctTout = Math.floor(miennes / toutes * 100);
+  const pctTout = Math.floor(vues.reduce((n, v) => n + v.dans, 0) / toutes * 100);
 
   const tete = `<div class="colhead">
       <div class="colheadtop">
@@ -75,7 +79,7 @@ function vCollection() {
     <div class="colvues" role="tablist">${vues.map(v => `<button class="colvue ${v.id}${colVue === v.id ? ' on' : ''}" data-colvue="${v.id}"
         role="tab" aria-selected="${colVue === v.id}">
         <b>${v.nom}</b><span class="tnum">${v.n}<small> / ${v.total}</small></span>
-        <i class="colvuebar"><i style="width:${Math.round(v.n / v.total * 100)}%"></i></i></button>`).join('')}</div>`;
+        <i class="colvuebar"><i style="width:${Math.round(v.dans / v.total * 100)}%"></i></i></button>`).join('')}</div>`;
 
   return tete + (colVue === 'reverses' ? vColReverses() : colVue === 'speciales' ? vColSpeciales() : vColClassiques());
 }

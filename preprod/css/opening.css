@@ -23,7 +23,7 @@
   transition:transform .3s cubic-bezier(.2,1,.3,1)}
 /* État « dans le paquet » puis retour à zéro : c'est cette seule transition qui sort les cartes,
    alignées, et les ramène face au joueur. */
-.stack3d{transition:transform 1.15s cubic-bezier(.2,.86,.26,1)}
+.stack3d{transition:transform calc(1.15s * var(--rk,1)) cubic-bezier(.2,.86,.26,1)}
 /* La pile tassée doit tenir entière derrière le paquet : à 17 %, son bas
    dépassait de quelques pixels sous le sachet, et la bordure crème des cartes
    se voyait comme un petit rectangle blanc pendant la déchirure. À 11 %, il
@@ -248,3 +248,43 @@ html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,
 .op-rar.big.rS .slam{background:linear-gradient(180deg,#fff,#c9d6ff 45%,#ff9ad5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .rc-tag.rS{background:linear-gradient(90deg,#ffd0ea,#e6e1ff 50%,#c9ecff);color:#1a1230}
 .rc-hero.rS{--hc:rgba(232,236,255,.6)}
+
+/* ============ Plusieurs boosters d'un coup (version 3.0.11) ============ */
+/* Pendant les tirages : la pile de paquets, celui de devant part à chaque
+   réponse du serveur (ouvrirTout, js/opening.js). */
+.mo-stage{height:100%;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px 16px}
+.mo-kicker{margin:0;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.mo-paquets{position:relative;width:100%;max-width:520px;height:min(44vh,300px)}
+.mo-p{--x:calc((var(--i) - (var(--n) - 1) / 2) * min(24px,5.6vw));position:absolute;top:0;left:50%;width:min(150px,34vw);aspect-ratio:337/460;
+  background:center/contain no-repeat;translate:calc(-50% + var(--x)) 0;rotate:calc((var(--i) - (var(--n) - 1) / 2) * 3.4deg);
+  filter:drop-shadow(0 16px 24px rgba(0,0,0,.6));transition:translate .5s cubic-bezier(.3,.7,.3,1),opacity .45s ease-in,scale .5s}
+.mo-p.ouvert{translate:calc(-50% + var(--x)) -78%;scale:1.14;opacity:0}
+.mo-compte{margin:0;font-size:14px;color:rgba(255,255,255,.65)}
+.mo-compte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;color:#fff}
+html.rm .mo-p{transition:none}
+@media (prefers-reduced-motion:reduce){.mo-p{transition:none}}
+
+/* Le récap du lot : la page défile (jusqu'à soixante cartes), la plus belle
+   en tête, puis tout le lot rangé par rareté, les boutons collés en bas. */
+.recap.multi{height:auto;min-height:100%;padding-bottom:0}
+/* Ici la grande carte a une taille fixe : le récap défile, il n'y a pas de
+   hauteur à partager (container-type:normal, sinon la case s'effondre à zéro
+   et la carte déborde sur les chiffres). */
+.recap.multi .rc-hero{flex:none;min-height:0;margin-top:8px;container-type:normal}
+.recap.multi .rc-best{width:min(190px,48vw)}
+.rcm-hero .rc-best{animation:rcm-retourne .7s .12s cubic-bezier(.2,.9,.3,1.15) both}
+@keyframes rcm-retourne{from{transform:perspective(700px) rotateY(-180deg) scale(.86);opacity:.2}to{transform:none;opacity:1}}
+.rcm-titre{align-self:stretch;max-width:520px;width:100%;margin:2px auto 8px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.rcm-titre small{font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.45)}
+.rcm-lot{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 8px;width:100%;max-width:520px}
+@media (min-width:640px){.rcm-lot{grid-template-columns:repeat(8,1fr);gap:12px;max-width:860px}.rcm-titre{max-width:860px}}
+.rcm-n{position:absolute;right:-5px;top:-7px;z-index:3;min-width:22px;height:20px;padding:0 6px;border-radius:999px;display:grid;place-items:center;
+  font-size:11px;font-weight:900;color:#12111a;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.rcm-actions{position:sticky;bottom:0;z-index:4;max-width:520px;margin-top:16px;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,rgba(12,11,17,0),rgba(12,11,17,.92) 28%)}
+html.rm .rcm-hero .rc-best{animation:none}
+@media (prefers-reduced-motion:reduce){.rcm-hero .rc-best{animation:none}}
+/* Trois boutons sous le principal quand « Tout ouvrir » s'y ajoute. */
+.rc-duo.trio{grid-template-columns:1fr 1.15fr 1fr}
+.rc-duo.trio .btn{padding-inline:8px;font-size:14px}
+.rc-duo .rc-reste{margin-left:2px}

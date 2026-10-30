@@ -152,7 +152,7 @@ end $$;
 -- La vitrine est visible de tous : c'est fait pour etre montre.
 create or replace function public.player_profile(p_pseudo text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int;
+declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int; sec int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -180,6 +180,11 @@ begin
   select count(*) into rev
     from collection c join cards k on k.id = c.card_id
    where c.user_id = o.id and c.qty > 0 and k.reverse;
+  -- Version 3.0.11 : ses Secretes, que la fiche compte au-dela du total
+  -- (« 127 / 122 », comme la Collection).
+  select count(*) into sec
+    from collection c join cards k on k.id = c.card_id
+   where c.user_id = o.id and c.qty > 0 and k.secrete;
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -188,7 +193,7 @@ begin
     'packs_opened', o.packs_opened, 'trades_done', o.trades_done,
     'membre_depuis', o.created_at,
     'possede', possede, 'total', total,
-    'reverses', rev, 'reverses_total', rev_total,
+    'reverses', rev, 'reverses_total', rev_total, 'secretes', sec,
     'titre', o.titre, 'banniere', o.banniere, 'devise', o.devise,
     'vitrine', to_jsonb(o.vitrine),
     -- Version 3.0 : son XP de combattant (26_niveaux.sql), pour le niveau

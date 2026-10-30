@@ -7,7 +7,8 @@ function vProfil() {
   if (Backend.mode !== 'cloud') return horsLigne('Profil');
 
   const total = cards.length;
-  const possede = cards.filter(c => save.col[c.id] > 0).length;
+  /* Les Secrètes au-delà du total (« 127 / 122 »), comme dans la Collection. */
+  const possede = cards.filter(c => save.col[c.id] > 0).length + secretes.filter(c => save.col[c.id] > 0).length;
   const exemplaires = Object.values(save.col).reduce((a, b) => a + b, 0);
   const cadres = Object.keys(FRAMES).filter(k => k === 'default' || (save.inv || {})[k] > 0);
 
@@ -104,6 +105,8 @@ const CADRE_SOURCE = {
   f_sceau: '300 boosters ouverts', f_master: 'Les 122 cartes', f_reflet: 'Les 85 Reverses',
   f_aurore: 'Les 9 Brillantes', f_miroir: 'Pass Reflets, palier 10', f_nebuleuse: 'Pass Reflets, palier 20',
   f_unique: 'La carte unique',
+  /* Version 2.5 (L'Échauffement, qui ne revient pas : ceux qui les ont les gardent). */
+  f_braise: 'Pass de L\'Échauffement, palier 10', f_ardeur: 'Pass de L\'Échauffement, palier 20',
   /* Version 3.0. */
   f_choc: 'Pass du Choc, palier 12', f_foudre: 'Boutique du Choc',
   f_niv10: 'Niveau 10 de combattant', f_niv20: 'Niveau 20 de combattant', f_niv30: 'Niveau 30 de combattant',

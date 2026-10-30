@@ -25,7 +25,8 @@ let trVue = 'recues';                  /* 'recues' | 'envoyees' | 'historique' |
 let trBrouillon = { pseudo: '', offre: null, veut: null, note: '' };
 let trCible = null;                    /* joueur visé : { pseudo, avatar, frame, photo } */
 
-const RAR_ORDRE = ['C', 'PC', 'R', 'E', 'L'];
+/* Secrètes et Essences Brillantes en dernier : les plus rares (version 3.0.11). */
+const RAR_ORDRE = ['C', 'PC', 'R', 'E', 'L', 'S', 'BR'];
 const tradeGratuit = () => !save.tradeFreeAt || save.tradeFreeAt <= Date.now();
 const tradeJetons = () => (save.inv || {}).trade_token || 0;
 
@@ -80,8 +81,12 @@ async function chargerCollection(pseudo) {
   }
 }
 
-/* Une carte échangeable : ni Essence, ni Promo — le serveur refuse les deux. */
-const echangeable = c => c && c.cat !== 'essence' && !c.promo;
+/* Une carte échangeable : ni Essence, ni Promo — le serveur refuse les deux —,
+   sauf les Essences Brillantes, entre elles (version 3.0.11). */
+const echangeable = c => c && (c.foil || (c.cat !== 'essence' && !c.promo));
+/* De quel côté se fait un échange : les Classiques, les Reverses, ou les
+   Spéciales (Secrètes et Brillantes, chacune contre une carte de sa rareté). */
+const trCote = c => (c.rev ? 'r' : c.foil || c.secrete ? 's' : 'c');
 
 /* ---------- L'étiquette posée sur une carte ---------- */
 /* Toujours la même question : combien j'en ai. Seul le mot change selon le
@@ -274,7 +279,7 @@ function vNouvelleDemande() {
   const off = trBrouillon.offre ? byId[trBrouillon.offre] : null;
   const veut = trBrouillon.veut ? byId[trBrouillon.veut] : null;
   /* Même rareté, et une Reverse contre une Reverse (version 2.0). */
-  const pret = trCible && off && veut && off.rar === veut.rar && !!off.rev === !!veut.rev;
+  const pret = trCible && off && veut && off.rar === veut.rar && trCote(off) === trCote(veut);
   const pseudo = trCible ? trCible.pseudo : null;
   const ilManque = veut && pseudo && sesEx(pseudo, veut.id) === 0;
 
@@ -323,8 +328,8 @@ function vNouvelleDemande() {
       ${vCout()}
       <button class="btn" data-act="tr-send" ${pret && !ilManque ? '' : 'disabled'}>Envoyer la demande</button>
     </div>
-    <p class="compo-regle">Carte contre carte, même rareté · Essences et Promos exclues ·
-      Refusée ou annulée, ta demande t'est rendue.</p>
+    <p class="compo-regle">Carte contre carte, même rareté · une Brillante contre une Brillante ·
+      Essences et Promos exclues · Refusée ou annulée, ta demande t'est rendue.</p>
   </section>`;
 }
 
@@ -372,22 +377,23 @@ function vCout() {
    je cède sans me démunir.
    La première carte choisie, quel que soit le côté, fixe la rareté de l'autre. */
 let trPickRar = 'all';
-/* Classiques ou Reverses : tant que l'autre carte n'est pas choisie, on
-   choisit de quel côté on échange. */
-let trPickRev = false;
+/* Classiques, Reverses ou Spéciales (trCote) : tant que l'autre carte n'est
+   pas choisie, on choisit de quel côté on échange. */
+let trPickCote = 'c';
 
-function ouvrirChoixCarte(role, rar, rev) {
-  if (rev != null) { trPickRev = rev; trPickRar = 'all'; }
+function ouvrirChoixCarte(role, rar, choixCote) {
+  if (choixCote != null) { trPickCote = choixCote; trPickRar = 'all'; }
   const autre = byId[trBrouillon[role === 'veut' ? 'offre' : 'veut']];
   const pseudo = trCible ? trCible.pseudo : null;
   const connue = !!(pseudo && trCols[noacc(pseudo)]);
   if (rar) trPickRar = rar;
   const impose = autre ? autre.rar : null;
 
-  /* Les Reverses s'échangent aussi (version 2.0), mais entre elles : la
-     première carte choisie dit de quel côté on est. */
-  let liste = cards.concat(reverses).filter(echangeable);
-  liste = liste.filter(c => !!c.rev === (autre ? !!autre.rev : trPickRev));
+  /* Les Reverses s'échangent aussi (version 2.0), mais entre elles ; les
+     Secrètes et les Brillantes aussi (version 3.0.11), chacune contre une
+     carte de sa rareté : la première carte choisie dit de quel côté on est. */
+  const cote = autre ? trCote(autre) : trPickCote;
+  let liste = (cote === 'r' ? reverses : cote === 's' ? secretes.concat(brillantes) : cards).filter(echangeable);
   if (role === 'offre') liste = liste.filter(c => mesEx(c.id) > 0);
   else if (connue) liste = liste.filter(c => sesEx(pseudo, c.id) > 0);
   if (impose) liste = liste.filter(c => c.rar === impose);
@@ -404,9 +410,10 @@ function ouvrirChoixCarte(role, rar, rev) {
   });
 
   const sens = role === 'veut' ? 'entre' : 'sort';
-  const cote = autre ? '' : `<div class="segbar trrev">
-      <button data-pickrev="0" data-role="${role}" class="${trPickRev ? '' : 'on'}">Classiques</button>
-      <button data-pickrev="1" data-role="${role}" class="${trPickRev ? 'on' : ''}">Reverses<i class="revico"></i></button></div>`;
+  const cotes = autre ? '' : `<div class="segbar trrev">
+      <button data-pickrev="c" data-role="${role}" class="${cote === 'c' ? 'on' : ''}">Classiques</button>
+      <button data-pickrev="r" data-role="${role}" class="${cote === 'r' ? 'on' : ''}">Reverses<i class="revico"></i></button>
+      <button data-pickrev="s" data-role="${role}" class="${cote === 's' ? 'on' : ''}">Spéciales</button></div>`;
   const chips = impose ? '' : `<div class="souschips">
     <button data-pickrar="all" data-role="${role}" class="${trPickRar === 'all' ? 'on' : ''}">Toutes</button>
     ${rars.map(r => `<button data-pickrar="${r}" data-role="${role}" class="rarchip r${r} ${trPickRar === r ? 'on' : ''}">
@@ -418,14 +425,16 @@ function ouvrirChoixCarte(role, rar, rev) {
 
   openSheet({
     title: role === 'offre' ? 'Ce que tu donnes' : 'Ce que tu veux',
-    body: `<p class="muted small">${dit}${impose ? ` Rareté imposée : ${(RAR[impose] || RAR.C).nom}${autre && autre.rev ? ', Reverse' : ''}.` : ''}</p>
-      ${cote}${chips}
+    body: `<p class="muted small">${dit}${impose ? ` Rareté imposée : ${(RAR[impose] || RAR.C).nom}${autre && autre.rev ? ', Reverse' : ''}.` : cote === 's' ? ' Une Secrète contre une Secrète, une Brillante contre une Brillante.' : ''}</p>
+      ${cotes}${chips}
       ${vue.length
         ? `<div class="pickgrid">${vue.map(c => `<button class="pick" data-cardpick="${c.id}" data-role="${role}" data-snd="carte">
             <span class="pickimg">${renderCard(c)}${etiquette(c, sens)}</span>
             <span class="picknom">${nomH(c)}</span></button>`).join('')}</div>`
         : `<p class="muted">${role === 'offre'
-            ? (trPickRev && !autre ? 'Tu n\'as aucune Reverse à échanger.' : 'Tu n\'as aucune carte échangeable de cette rareté.')
+            ? (!autre && cote === 'r' ? 'Tu n\'as aucune Reverse à échanger.'
+              : !autre && cote === 's' ? 'Tu n\'as ni Secrète ni Essence Brillante à échanger.'
+              : 'Tu n\'as aucune carte échangeable de cette rareté.')
             : 'Aucune carte à demander ici.'}</p>`}`,
     actions: [{ label: 'Fermer', fn: closeSheet }]
   });
@@ -437,7 +446,7 @@ function trChoisir(role, id) {
   trBrouillon[role] = id;
   const autre = role === 'offre' ? 'veut' : 'offre';
   const a = byId[trBrouillon[autre]];
-  if (a && (a.rar !== byId[id].rar || !!a.rev !== !!byId[id].rev)) trBrouillon[autre] = null;
+  if (a && (a.rar !== byId[id].rar || trCote(a) !== trCote(byId[id]))) trBrouillon[autre] = null;
   closeSheet();
   render();
 }

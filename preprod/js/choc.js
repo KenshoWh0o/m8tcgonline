@@ -204,7 +204,7 @@ function vChNouveautes() {
     <div class="ch-nv-grille">
       ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Tes Fragments font briller une carte, en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
       ${tuile('data-cb="vue" data-v="raid"', illuCadre(RAID.boss, RAID_VISAGE[0], RAID_VISAGE[1], 1.2), 'Le Raid', 'Un boss pour tout le serveur, par saisons de deux semaines.', 'raid')}
-      ${tuile('data-tab="profil"', avatarHTML(save.avatar, 'f_secrete', 'ch-nv-ava'), 'Le cadre Secrète', 'Le plus rare du jeu : il revient à qui trouve sa première Secrète.', 'cadres')}
+      ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
       ${tuile('data-cb="vue" data-v="decks"', illuCadre(couv, .5, .3), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
@@ -230,10 +230,18 @@ function vChRefonte() {
     </button>`;
 }
 
+/* L'échange des Essences Brillantes (version 3.0.11) : deux Brillantes qui
+   se font face, la flèche de l'échange entre elles. */
+function vChBrillantes() {
+  const l = ['b001', 'b006'].map(id => byId[id]).filter(Boolean);
+  return `<span class="ch-nv-br" aria-hidden="true">${l.map((c, i) =>
+    `<span class="ch-nv-brc" style="--i:${i ? 1 : -1}">${renderCard(c, { calme: true })}</span>`).join(`<i class="ch-nv-brx">${NAVICO.swap}</i>`)}</span>`;
+}
+
 /* Les Secrètes, l'autre grand ajout : les cinq en éventail. Celles qu'on a
-   se retournent (floutées tant qu'elles ne sont pas révélées) ; les autres
-   restent de dos, un « ? » irisé dessus. Ni leur nom ni leur taux : c'est
-   un secret. */
+   se retournent, toutes floutées (version 3.0.11 : même révélées, pour que
+   les cinq se répondent) ; les autres restent de dos, un « ? » irisé
+   dessus. Ni leur nom ni leur taux : c'est un secret. */
 function vChSecretes() {
   const liste = secretes || [];
   if (!liste.length) return '';
@@ -241,7 +249,7 @@ function vChSecretes() {
   const milieu = (liste.length - 1) / 2;
   const carte = (c, i) => {
     const a = save.col[c.id] > 0;
-    const face = a ? `<img src="${h(c.img)}" alt=""${c.cachee ? ' class="floue"' : ''}>` : '<b>?</b>';
+    const face = a ? `<img src="${h(c.img)}" alt="" class="floue">` : '<b>?</b>';
     return `<span class="ch-sec-c${a ? ' eue' : ''}" style="--i:${i - milieu}">${face}</span>`;
   };
   return `<button class="ch-nv-une ch-nv-sec" data-colvue="classiques" data-tab="collection">

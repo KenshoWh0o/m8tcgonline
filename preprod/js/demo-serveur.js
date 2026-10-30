@@ -851,7 +851,9 @@
     if (co.rar !== cw.rar) refuser('Les deux cartes doivent être de la même rareté.');
     if (co.rar === 'ES') refuser('Les Essences ne s\'échangent pas.');
     if (co.rar === 'PR') refuser('Les cartes Promo ne s\'échangent pas.');
-    if (co.promo || cw.promo) refuser('Cette carte ne s\'échange pas.');
+    /* Les Essences Brillantes s'échangent entre elles (version 3.0.11) : même
+       rareté (BR), donc une Brillante contre une Brillante. */
+    if ((co.promo && !co.foil) || (cw.promo && !cw.foil)) refuser('Cette carte ne s\'échange pas.');
     if (!!co.rev !== !!cw.rev) refuser('Une Reverse s\'échange contre une Reverse.');
     if (!possede(p, offer)) refuser('Tu ne possèdes pas la carte que tu proposes.');
     if (S.trades.some(t => t.from_user === p && t.to_user === dest.id && t.offer_card === offer
@@ -1021,7 +1023,7 @@
       const o = profil(f.a === moi ? f.b : f.a);
       Object.entries(colDe(o.id)).forEach(([id, n]) => {
         const k = carte(id);
-        if (!k || n <= gardeDe(o.id, id) || (mien[id] || 0) > 0 || k.cat === 'essence' || (k.promo && !k.rev)) return;
+        if (!k || n <= gardeDe(o.id, id) || (mien[id] || 0) > 0 || (k.cat === 'essence' && !k.foil) || (k.promo && !k.rev && !k.foil)) return;
         (parCarte[id] = parCarte[id] || []).push({ pseudo: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null, n });
       });
     });
@@ -1044,6 +1046,7 @@
       possede: extension().filter(k => (c[k.id] || 0) > 0).length,
       total: extension().length,
       reverses: reverses.filter(k => (c[k.id] || 0) > 0).length, reverses_total: reverses.length,
+      secretes: secretes.filter(k => (c[k.id] || 0) > 0).length,
       titre: o.titre || null, banniere: o.banniere || null, devise: o.devise || null,
       vitrine: o.vitrine.slice(),
       xp: xpDe(o.id),

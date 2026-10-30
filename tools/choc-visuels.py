@@ -152,22 +152,24 @@ def choc_des_sections():
 
     Version 3.0.8 : Brawks est la meme illustration que l'affiche de l'en-tete
     et du bandeau (choc-deter.webp), avec ses couleurs (plus de voile sombre
-    ni de teinte violette), la tete entiere au milieu du camp du haut. Dans
-    l'arene, le tapis est pose en « cover » : sur telephone, le haut et le
-    bas de l'image sont rognes d'environ 110 px ; la tete est donc placee
-    vers y = 340, au milieu de ce qui reste visible du camp adverse."""
+    ni de teinte violette), la tete entiere au milieu du camp du haut.
+
+    Version 3.0.11 : l'illustration couvre le camp du haut jusqu'au bord. Avant,
+    a l'echelle 1, elle commencait 140 px sous le bord, et un fondu de 200 px
+    effacait son haut dans la nuit : une bande sombre, violacee, en haut du
+    tapis (« une vieille bande violette »), et un Brawks qui paraissait pose
+    trop bas. A l'echelle 1,5, la tete placee vers y = 300, le haut de
+    l'illustration tombe juste au bord (y0 = 0) : plus de bande ni de fondu.
+    Dans l'arene, le tapis est pose en « cover » (sur telephone, environ
+    110 px rognes en haut et en bas) : le haut du crane reste visible."""
     src = brawks_net()
-    e = 1.0
-    cx, cy = 360, 340
+    e = 1.5
+    cx, cy = 360, 300
     haut = Image.new('RGB', (W, 760), (13, 12, 32))
     b = src.resize((round(src.width * e), round(src.height * e)), Image.LANCZOS)
     x0, y0 = round(cx - BRAWKS_TETE[0] * e), round(cy - BRAWKS_TETE[1] * e)
-    # Le haut de l'illustration se fond dans la nuit au-dessus de lui.
-    fondu = Image.new('L', b.size, 255)
-    df = ImageDraw.Draw(fondu)
-    for y in range(200):
-        df.line((0, y, b.width, y), fill=round(255 * (y / 200) ** 1.3))
-    haut.paste(b, (x0, y0), fondu)
+    assert y0 <= 0, 'le haut de l illustration doit toucher le bord du tapis'
+    haut.paste(b, (x0, y0))
     haut = ImageEnhance.Contrast(ImageEnhance.Brightness(haut).enhance(.94)).enhance(1.04)
     haut = teinter(haut, ((10, 4, 28), (96, 40, 200), (226, 214, 255)), .1)
     bas = couvrir(illustration(SQUEEZIE), W, 760, cx=.4, cy=.35)

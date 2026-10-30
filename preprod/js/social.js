@@ -95,6 +95,9 @@ async function ouvrirFiche(pseudo) {
   if (!f) return toast('Joueur introuvable.');
 
   const pct = f.total ? Math.round(f.possede / f.total * 100) : 0;
+  /* Ses Secrètes au-delà du total (« 127 / 122 », version 3.0.11), comme dans
+     la Collection : le pourcentage, lui, reste celui de l'extension. */
+  const nCol = f.possede + (f.secretes || 0);
 
   /* Entre amis, sa collection est lisible. Mais ce qui se décide dans une
      fiche, c'est « est-ce que ça vaut le coup de lui demander quelque chose ? »
@@ -116,7 +119,7 @@ async function ouvrirFiche(pseudo) {
        Promos ne s'échangent pas : les compter promettrait ce que le serveur
        refusera (voir trade_create dans supabase/installation/03_rpc.sql). Et ce qu'il a
        choisi de garder n'en est pas un (version 2.1, supabase/installation/22_garder.sql). */
-    const doubles = sienne.filter(c => sesDoublons(f.pseudo, c) > 0 && c.cat !== 'essence' && !c.promo);
+    const doubles = sienne.filter(c => sesDoublons(f.pseudo, c) > 0 && echangeable(c));
     const forts = doubles.filter(c => rk(c) >= 3).sort(parRarete).slice(0, 12);
     const manque = sienne.filter(c => !(save.col[c.id] > 0)).length;
 
@@ -152,14 +155,14 @@ async function ouvrirFiche(pseudo) {
         ${f.devise ? `<p class="iddevise">« ${h(f.devise)} »</p>` : ''}
         <p class="fichesous">${f.is_admin ? '<span class="qtag ok">Admin</span>' : ''}Membre depuis ${h(dateCourte(f.membre_depuis).split(' à ')[0])}</p>
         <div class="prog fiche-prog"><div class="bar"><i style="width:${pct}%"></i></div>
-          <span class="tnum"><b>${f.possede}</b> / ${f.total}</span></div>
+          <span class="tnum"><b>${nCol}</b> / ${f.total}</span></div>
       </div>
     </div>
     ${vElu(f.succes, f.moi)}
     ${f.fetiche ? vFetiche(f.fetiche.carte, f.fetiche.niveau, { moi: f.moi }) : ''}
     ${(f.vitrine || []).length ? vVitrine(f.vitrine, false) : ''}
     <div class="stats">
-      <div class="stat"><b>${f.possede} / ${f.total}</b><span>collection (${pct} %)</span></div>
+      <div class="stat"><b>${nCol} / ${f.total}</b><span>collection (${pct} %)</span></div>
       ${f.reverses_total ? `<div class="stat"><b>${f.reverses} / ${f.reverses_total}</b><span>Reverses</span></div>` : ''}
       <div class="stat"><b>${fmtN(f.packs_opened)}</b><span>boosters ouverts</span></div>
       <div class="stat"><b>${fmtN(f.trades_done)}</b><span>échanges conclus</span></div>

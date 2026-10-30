@@ -483,7 +483,8 @@ begin
               join collection c on c.user_id = o.id and c.qty > garde_de(o.id, c.card_id)
               join cards k on k.id = c.card_id
              where (f.a = moi or f.b = moi) and f.accepte
-               and k.cat <> 'essence' and (not k.promo or k.reverse or k.secrete)
+               -- Version 3.0.11 : les Essences Brillantes, qui s'echangent entre elles.
+               and (k.cat <> 'essence' or k.rar = 'BR') and (not k.promo or k.reverse or k.secrete or k.rar = 'BR')
                and not exists (select 1 from collection m where m.user_id = moi and m.card_id = k.id and m.qty > 0)
              group by k.id) x), '[]'::jsonb);
 end $$;

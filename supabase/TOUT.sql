@@ -14,7 +14,7 @@
 --   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
 --   annule tout.
 --
---   Assemble le 2026-10-24
+--   Assemble le 2026-10-30
 --
 -- =====================================================================
 
@@ -1370,11 +1370,12 @@ begin
   if ro <> rw then raise exception 'Les deux cartes doivent être de la même rareté.'; end if;
   if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
-  -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
-  -- unique — reste a qui l'a obtenu. Les Reverses, elles, s'echangent : contre
-  -- une Reverse de meme rarete. Les Secretes aussi (version 3.0) : contre une
-  -- autre Secrete, puisque la rarete doit etre la meme.
-  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse and not secrete) then
+  -- Tout ce qui est hors extension — Promos, carte unique — reste a qui l'a
+  -- obtenu. Les Reverses, elles, s'echangent : contre une Reverse de meme
+  -- rarete. Les Secretes aussi (version 3.0) : contre une autre Secrete,
+  -- puisque la rarete doit etre la meme. Et les Essences Brillantes (version
+  -- 3.0.11) : contre une autre Brillante (rarete BR).
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse and not secrete and rar <> 'BR') then
     raise exception 'Cette carte ne s''échange pas.';
   end if;
   if (select count(distinct reverse) from cards where id in (p_offer, p_want)) > 1 then
@@ -2467,7 +2468,7 @@ end $$;
 -- La vitrine est visible de tous : c'est fait pour etre montre.
 create or replace function public.player_profile(p_pseudo text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int;
+declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int; sec int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -2495,6 +2496,11 @@ begin
   select count(*) into rev
     from collection c join cards k on k.id = c.card_id
    where c.user_id = o.id and c.qty > 0 and k.reverse;
+  -- Version 3.0.11 : ses Secretes, que la fiche compte au-dela du total
+  -- (« 127 / 122 », comme la Collection).
+  select count(*) into sec
+    from collection c join cards k on k.id = c.card_id
+   where c.user_id = o.id and c.qty > 0 and k.secrete;
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -2503,7 +2509,7 @@ begin
     'packs_opened', o.packs_opened, 'trades_done', o.trades_done,
     'membre_depuis', o.created_at,
     'possede', possede, 'total', total,
-    'reverses', rev, 'reverses_total', rev_total,
+    'reverses', rev, 'reverses_total', rev_total, 'secretes', sec,
     'titre', o.titre, 'banniere', o.banniere, 'devise', o.devise,
     'vitrine', to_jsonb(o.vitrine),
     -- Version 3.0 : son XP de combattant (26_niveaux.sql), pour le niveau
@@ -3974,7 +3980,8 @@ begin
               join collection c on c.user_id = o.id and c.qty > garde_de(o.id, c.card_id)
               join cards k on k.id = c.card_id
              where (f.a = moi or f.b = moi) and f.accepte
-               and k.cat <> 'essence' and (not k.promo or k.reverse or k.secrete)
+               -- Version 3.0.11 : les Essences Brillantes, qui s'echangent entre elles.
+               and (k.cat <> 'essence' or k.rar = 'BR') and (not k.promo or k.reverse or k.secrete or k.rar = 'BR')
                and not exists (select 1 from collection m where m.user_id = moi and m.card_id = k.id and m.qty > 0)
              group by k.id) x), '[]'::jsonb);
 end $$;

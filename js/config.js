@@ -91,9 +91,10 @@ const RAR = {
   /* Version 3.0 : les Secrètes, au-delà des 122 (« 123/122 »). */
   S: { nom: 'Secrète', sym: '✦✦', rank: 5.5 },
   PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true },
-  /* Hors extension, comme les Promos : jamais dans les 122, jamais échangées
-     ni recyclées. La Brillante sort de la case Essence d'un booster, une fois
-     sur cinquante ; l'Unique n'existe qu'en un exemplaire dans tout le jeu. */
+  /* Hors extension, comme les Promos : jamais dans les 122, jamais recyclées.
+     La Brillante sort de la case Essence d'un booster, une fois sur cinquante,
+     et s'échange contre une autre Brillante (version 3.0.11) ; l'Unique
+     n'existe qu'en un exemplaire dans tout le jeu, et ne s'échange pas. */
   BR: { nom: 'Brillante', sym: '✧', rank: 7, promo: true },
   UN: { nom: 'Unique', sym: '◈', rank: 8, promo: true }
 };
@@ -279,7 +280,7 @@ const FRAMES = {
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
-  /* Version 2.5 : le Pass de L'Échauffement (paliers 9 et 20), dessinés par
+  /* Version 2.5 : le Pass de L'Échauffement (paliers 10 et 20), dessinés par
      tools/cadres.py. La 3.0 ne les donne plus ; ceux qui les ont les gardent. */
   f_braise: { nom: 'Braise', fx: 'braise', vente: false, c1: '#ffcf8a', c2: '#8a78f5' },
   f_ardeur: { nom: 'Ardeur', fx: 'ardeur', vente: false, c1: '#c8bfff', c2: '#5d4bd9' },

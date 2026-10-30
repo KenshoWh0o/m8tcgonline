@@ -482,11 +482,12 @@ begin
   if ro <> rw then raise exception 'Les deux cartes doivent être de la même rareté.'; end if;
   if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
-  -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
-  -- unique — reste a qui l'a obtenu. Les Reverses, elles, s'echangent : contre
-  -- une Reverse de meme rarete. Les Secretes aussi (version 3.0) : contre une
-  -- autre Secrete, puisque la rarete doit etre la meme.
-  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse and not secrete) then
+  -- Tout ce qui est hors extension — Promos, carte unique — reste a qui l'a
+  -- obtenu. Les Reverses, elles, s'echangent : contre une Reverse de meme
+  -- rarete. Les Secretes aussi (version 3.0) : contre une autre Secrete,
+  -- puisque la rarete doit etre la meme. Et les Essences Brillantes (version
+  -- 3.0.11) : contre une autre Brillante (rarete BR).
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse and not secrete and rar <> 'BR') then
     raise exception 'Cette carte ne s''échange pas.';
   end if;
   if (select count(distinct reverse) from cards where id in (p_offer, p_want)) > 1 then

@@ -7,7 +7,8 @@ function vProfil() {
   if (Backend.mode !== 'cloud') return horsLigne('Profil');
 
   const total = cards.length;
-  const possede = cards.filter(c => save.col[c.id] > 0).length;
+  /* Les Secrètes au-delà du total (« 127 / 122 »), comme dans la Collection. */
+  const possede = cards.filter(c => save.col[c.id] > 0).length + secretes.filter(c => save.col[c.id] > 0).length;
   const exemplaires = Object.values(save.col).reduce((a, b) => a + b, 0);
   const cadres = Object.keys(FRAMES).filter(k => k === 'default' || (save.inv || {})[k] > 0);
 

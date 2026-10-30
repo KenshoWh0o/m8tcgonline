@@ -104,6 +104,11 @@
 .bonusbtn .rc-reste{margin-left:8px}
 .bonusbtn.ghost .rc-reste{background:var(--brand);color:#fff;box-shadow:none}
 .bonuslab{margin:-4px 0 0;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.35}
+/* « Tout ouvrir » (version 3.0.11) : un bouton secondaire à côté du principal. */
+.packduo{display:grid;grid-template-columns:1fr auto;gap:8px;width:100%;max-width:340px}
+.packduo .packbtn{max-width:none}
+.packtout{display:flex;align-items:center;justify-content:center;gap:7px;width:auto;padding-inline:16px;white-space:nowrap}
+.packtout .rc-reste{margin-left:0}
 
 /* ============ Départ de l'ouverture ============ */
 /* Le paquet plonge vers la caméra, le théâtre prend le relais avec la déchirure. */
@@ -122,8 +127,11 @@
 .rp-top img{display:block;width:100%;height:100%;object-fit:contain}
 /* La bande s'assombrit en basculant vers l'arrière : c'est ce qui donne le volume. */
 .rp-top::after{content:'';position:absolute;inset:0;opacity:0;background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,0) 72%)}
-.rip-open .rp-top{animation:riptop 1.05s cubic-bezier(.24,.72,.3,1) forwards}
-.rip-open .rp-top::after{animation:ripshade 1.05s ease-out forwards}
+/* `--rk` (version 3.0.11) : le rythme de la déchirure, posé sur la scène par
+   packOpen (js/opening.js) — 1 pour un godpack, plus vif sinon, plus vif
+   encore pour un booster enchaîné depuis le récap. */
+.rip-open .rp-top{animation:riptop calc(1.05s * var(--rk,1)) cubic-bezier(.24,.72,.3,1) forwards}
+.rip-open .rp-top::after{animation:ripshade calc(1.05s * var(--rk,1)) ease-out forwards}
 @keyframes riptop{
   20%{transform:translateY(-3%) rotateX(58deg)}
   58%{transform:translate(9%,-42%) rotateX(112deg) rotateZ(9deg);opacity:1}
@@ -132,11 +140,11 @@
 
 .rp-line{position:absolute;left:3%;right:3%;top:10.5%;height:3px;border-radius:3px;background:#fff;transform-origin:left center;scale:0 1;
   box-shadow:0 0 12px #fff,0 0 26px var(--accent)}
-.rip-cut .rp-line{animation:ripcut .32s ease-out forwards}
+.rip-cut .rp-line{animation:ripcut calc(.32s * var(--rk,1)) ease-out forwards}
 .god .rp-line{box-shadow:0 0 12px #fff,0 0 30px var(--r-l)}
 @keyframes ripcut{0%{scale:0 1;opacity:1}70%{scale:1 1;opacity:1}100%{scale:1 1;opacity:0}}
 
-.rip-shake .packrip{animation:ripshake .38s ease-in-out}
+.rip-shake .packrip{animation:ripshake calc(.38s * var(--rk,1)) ease-in-out}
 @keyframes ripshake{
   15%{transform:rotateZ(-1.6deg) rotateY(-6deg)}
   40%{transform:rotateZ(1.6deg) rotateY(6deg)}
@@ -182,7 +190,7 @@
   100%{opacity:0;transform:scale(1.4,1.28)}}
 
 /* On tire les cartes vers soi : le paquet vide bascule et descend hors champ. */
-.rip-pull .packrip{animation:packaway 1.05s cubic-bezier(.32,.76,.36,1) forwards}
+.rip-pull .packrip{animation:packaway calc(1.05s * var(--rk,1)) cubic-bezier(.32,.76,.36,1) forwards}
 @keyframes packaway{
   28%{transform:translateY(9%) rotateX(9deg) rotateZ(-2deg)}
   100%{transform:translateY(128%) rotateX(32deg) rotateZ(-9deg);opacity:0}}
