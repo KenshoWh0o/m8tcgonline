@@ -109,7 +109,15 @@ function reserveAuto(cartes, defaut) {
    lourds. 40 cartes chacun, en suivant les conseils des règles officielles :
    au moins 15 Joueurs (18 ici), une couleur dans la Réserve, des attaques à
    une ou deux Essences. Chacun contient sa Promo. Ils sont prêtés : on peut
-   les jouer sans en posséder les cartes. */
+   les jouer sans en posséder les cartes.
+   Mesuré (3.0.12, IA niveau 3 des deux côtés, places alternées, 240
+   parties) : contre des decks tirés au sort (Decks.aleatoire, niveau 3), le
+   Toxique gagne 64 %, le Déter 58 % ; face à face, le Toxique 61 %. Le Déter
+   joue trois Fée Rosalie (★ bench un Joueur adverse engagé) : avec une
+   seule et deux Chevalier Rose, il gagnait 50 % contre le tirage. Neuf
+   autres variantes (des Épiques, Cooked, Doig'Dance à la place de Leakof et
+   d'Alerte Leak, un Toxique sans un Squeezie ni un Vandale…) ne faisaient
+   pas mieux, au bruit près (± 3 points). */
 const STARTERS = {
   toxique: {
     id: 'starter-toxique', nom: 'Starter · Section Toxique', starter: true, couverture: 'c012',
@@ -123,7 +131,7 @@ const STARTERS = {
   deter: {
     id: 'starter-deter', nom: 'Starter · Section Déter', starter: true, couverture: 'c077',
     cartes: {
-      p04: 1, c051: 3, c052: 3, c050: 1, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c078: 2, c059: 1,
+      p04: 1, c051: 3, c052: 3, c050: 3, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c059: 1,
       c053: 3, c087: 2, c088: 2, c056: 1,
       c054: 2, c055: 2, c083: 2, c082: 2, c092: 2, c093: 1, c072: 1, c094: 1, c095: 1
     },

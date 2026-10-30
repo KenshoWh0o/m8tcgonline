@@ -66,7 +66,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-ava.actif::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--ar-act);
   box-shadow:0 0 14px var(--ar-act-lueur);animation:ar-actif 1.8s ease-in-out infinite;pointer-events:none}
 .ar-barre.lui .ar-ava.actif::after{border-color:var(--ar-adv);box-shadow:0 0 14px var(--ar-adv-lueur)}
-@keyframes ar-actif{50%{box-shadow:0 0 4px transparent;opacity:.6}}
+@keyframes ar-actif{50%{opacity:.5}}
 .ar-qui{display:flex;flex-direction:column;gap:4px;min-width:0}
 .ar-qui>b{font-size:13.5px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 /* Les PV sont des cartes face cachée : une petite pile de dos. */
@@ -78,7 +78,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-pvs small{margin-left:-3px;font-size:10px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.55)}
 .ar-pvs.bas em{color:var(--ar-rouge)}
 .ar-pvs.bas .ar-pvdos i{box-shadow:0 0 0 1px var(--ar-adv),0 0 8px var(--ar-adv-lueur);animation:ar-pvbas 1.2s ease-in-out infinite}
-@keyframes ar-pvbas{50%{box-shadow:0 0 0 1px var(--ar-adv),0 0 2px transparent}}
+@keyframes ar-pvbas{50%{opacity:.6}}
 
 /* Le CEO adverse comme cible : une mire rouge sur son avatar. */
 .ar-ceo.cible{cursor:pointer}
@@ -128,8 +128,10 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-fin:disabled{cursor:default;color:rgba(255,255,255,.62)!important;background:var(--ar-verre);
   -webkit-backdrop-filter:blur(16px) saturate(170%);backdrop-filter:blur(16px) saturate(170%);
   box-shadow:inset 0 0 0 1px var(--ar-trait),inset 0 1px 0 rgba(255,255,255,.14)}
-.ar-fin.pulse{animation:ar-finpouls 1.4s ease-in-out infinite}
-@keyframes ar-finpouls{50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 0 7px rgba(157,140,255,.2),0 10px 28px var(--ar-act-lueur)}}
+.ar-fin{position:relative}
+.ar-fin.pulse::after{content:"";position:absolute;inset:-7px;border-radius:999px;pointer-events:none;
+  box-shadow:0 0 0 7px rgba(157,140,255,.2),0 10px 28px var(--ar-act-lueur);opacity:0;animation:ar-finpouls 1.4s ease-in-out infinite}
+@keyframes ar-finpouls{50%{opacity:1}}
 
 /* ============ Le plateau ============ */
 .ar-scene{position:relative;z-index:1;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 0;
@@ -169,16 +171,18 @@ body.en-arene .preprod-bandeau{display:none}
    est en fantôme (.ar-place-f, posé par marquerPlacesCarte), dans un liseré
    qui respire lentement. Survolée en glissant, elle se précise. */
 .ar-place.cible{cursor:pointer;background:rgba(157,140,255,.07);
-  box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.62),0 0 0 3px rgba(157,140,255,.08),0 0 18px -4px rgba(157,140,255,.45);
-  animation:ar-dispo 2.4s ease-in-out infinite}
+  box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.62),0 0 0 3px rgba(157,140,255,.08),0 0 18px -4px rgba(157,140,255,.45)}
+.ar-place.cible::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.95),0 0 26px -2px rgba(157,140,255,.6);opacity:0;animation:ar-dispo 2.4s ease-in-out infinite}
 .ar-place.cible::before{display:none}
 .ar-place-f{position:absolute;inset:5.5%;pointer-events:none;opacity:.3;filter:saturate(.45) brightness(1.05);
   transition:opacity .2s,filter .2s;animation:ar-fant-entre .35s cubic-bezier(.2,1,.4,1)}
 .ar-place-f>.ar-c{height:100%;border-radius:6cqi/4.4cqi}
-.ar-place.survol{background:rgba(157,140,255,.16);box-shadow:inset 0 0 0 2px #fff,0 0 26px rgba(157,140,255,.55);animation:none}
+.ar-place.survol{background:rgba(157,140,255,.16);box-shadow:inset 0 0 0 2px #fff,0 0 26px rgba(157,140,255,.55)}
+.ar-place.survol::after{animation:none;opacity:0}
 .ar-place.survol .ar-place-f{opacity:.78;filter:none}
 @media (hover:hover){.ar-place.cible:hover .ar-place-f{opacity:.55;filter:none}}
-@keyframes ar-dispo{50%{box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.95),0 0 0 4px rgba(157,140,255,.1),0 0 26px -2px rgba(157,140,255,.6)}}
+@keyframes ar-dispo{50%{opacity:1}}
 @keyframes ar-fant-entre{from{opacity:0;transform:translateY(-5%) scale(.95)}}
 
 /* La zone d'un camp : ses Essences, à gauche ; ses piles, à droite. */
@@ -238,17 +242,23 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-info.consigne{color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 0 3px rgba(157,140,255,.2),0 6px 18px rgba(157,140,255,.3);
   animation:ar-consigne 1.4s ease-in-out infinite}
-@keyframes ar-consigne{50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 0 6px rgba(157,140,255,.1),0 6px 22px rgba(157,140,255,.45)}}
+@keyframes ar-consigne{50%{opacity:.82}}
 .ar-info.ticker{color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
 .ar-info .ar-fl{font-style:normal;color:var(--ar-act);margin:0 .3em}
 /* L'effet d'une attaque adverse, sous son nom. */
 .ar-info.ticker:has(small){max-width:78cqi;white-space:normal;border-radius:16px;padding:1.4cqi 3.6cqi}
 .ar-info small{display:block;margin-top:2px;font-size:clamp(10.5px,3cqi,12.5px);font-weight:600;line-height:1.3;color:rgba(255,255,255,.78)}
-/* Les deux phases du tour. */
-.ar-info.phases{display:flex;align-items:center;gap:1.4cqi;padding:1.2cqi 1.4cqi;color:rgba(255,255,255,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
-.ar-ph{padding:.9cqi 2.8cqi;border-radius:999px;transition:background .3s,color .3s}
+/* Les quatre phases du tour (règles officielles, version 3.0.12) :
+   Entretien, Action, Combat, Fin ; celle en cours allumée, en lavande
+   pendant son tour, en corail pendant celui d'en face. Au tout premier
+   tour, la phase de Combat est barrée. */
+.ar-info.phases{display:flex;align-items:center;gap:.6cqi;max-width:76cqi;padding:1cqi;color:rgba(255,255,255,.46);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);font-size:clamp(9.5px,2.9cqi,13px);letter-spacing:.01em}
+.ar-ph{padding:.8cqi 2cqi;border-radius:999px;transition:background .3s,color .3s}
 .ar-ph.on{color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
-.ar-ph-fl{font-style:normal;opacity:.6}
+.ar-info.phases.lui .ar-ph.on{background:linear-gradient(180deg,#ff8f8f,#d84f4f);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.ar-ph.sans{text-decoration:line-through;text-decoration-thickness:1.5px;opacity:.55}
+.ar-ph-fl{font-style:normal;opacity:.45}
 /* Les dernières cartes jouées : trois vignettes, la plus récente devant. */
 .ar-histo{position:absolute;right:3.4cqi;top:50%;translate:0 -50%;display:flex;align-items:center;height:10cqi;padding:0 1.4cqi 0 2.6cqi;border:0;border-radius:999px;cursor:pointer;
   background:rgba(18,17,25,.86);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.1)}
@@ -303,25 +313,31 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-cout{width:16px;height:16px}
 
 /* ============ Un Joueur sur le plateau ============ */
-.ar-j{position:absolute;inset:0;cursor:pointer;filter:drop-shadow(0 1.6cqi 2.6cqi rgba(0,0,0,.6));
-  transition:transform .38s cubic-bezier(.3,.8,.3,1),filter .3s}
+.ar-j{position:absolute;inset:0;cursor:pointer;transition:transform .38s cubic-bezier(.3,.8,.3,1)}
+/* L'ombre est portée par la carte (une box-shadow, peinte une fois) : un
+   filtre sur tout le Joueur se repeignait à chaque image d'animation
+   (version 3.0.12). */
+.ar-j>.ar-c{box-shadow:0 1.6cqi 3cqi rgba(0,0,0,.62);transition:transform .45s cubic-bezier(.3,.8,.3,1),filter .3s}
 .ar-j::after{content:"";position:absolute;inset:-2px;z-index:2;border-radius:calc(6.5cqi + 2px);pointer-events:none;transition:box-shadow .2s}
-/* Engagé (version 3.0.7) : la carte reste droite. Tournée de côté, elle
-   faisait tourner sa Défense et ses pastilles avec elle, et un plateau de
-   cartes en travers fatiguait l'œil. Elle s'enfonce un peu, s'assombrit,
-   et porte la mention « Engagé » ; elle se redresse en reprenant ses
-   couleurs. */
-.ar-j.eng{transform:translateY(2.5cqi) scale(.93)}
-.ar-j.eng>.ar-c{filter:brightness(.42) saturate(.3)}
-.ar-engage{position:absolute;left:50%;top:40%;z-index:3;translate:-50% -50%;display:none;align-items:center;gap:1.4cqi;
+/* Engagé (version 3.0.12, règles officielles : « Engager une carte signifie
+   la tourner à 90° sur le côté ») : la carte tourne d'un quart de tour vers
+   la droite (vers la gauche chez l'adversaire, face à soi) et rapetisse
+   pour tenir dans sa case (63/88). Seule l'illustration tourne : sa
+   Défense, ses Objets et ses pastilles restent droits — c'était le défaut
+   de la rotation de la 3.0.6. Un peu assombrie, avec la mention
+   « Engagé » ; elle se redresse à l'entretien. */
+.ar-j.eng>.ar-c{transform:rotate(90deg) scale(.716);filter:brightness(.6) saturate(.6)}
+.ar-camp.lui .ar-j.eng>.ar-c{transform:rotate(-90deg) scale(.716)}
+.ar-engage{position:absolute;left:50%;top:50%;z-index:3;translate:-50% -50%;display:none;align-items:center;gap:1.4cqi;
   padding:max(3px,2.4cqi) max(6px,4.4cqi);border-radius:999px;pointer-events:none;white-space:nowrap;
   font-size:max(8.5px,8.4cqi);font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#fff;
   background:rgba(18,17,25,.88);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.5)}
 .ar-j.eng .ar-engage{display:flex;animation:ar-engage .3s ease-out}
 @keyframes ar-engage{from{opacity:0;transform:scale(.7)}}
-.ar-j.attaquant::after{box-shadow:0 0 0 2px var(--ar-act),0 0 16px var(--ar-act-lueur)}
-.ar-j.attaquant{animation:ar-pret 2s ease-in-out infinite}
-@keyframes ar-pret{50%{filter:drop-shadow(0 1.6cqi 2.6cqi rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(157,140,255,.45))}}
+.ar-j.attaquant::after{box-shadow:0 0 0 2px var(--ar-act),0 0 16px var(--ar-act-lueur);animation:ar-pret 2s ease-in-out infinite}
+/* Un Joueur prêt à attaquer respire par l'opacité de son liseré (et non plus
+   par un filtre sur la carte : version 3.0.12). */
+@keyframes ar-pret{50%{opacity:.5}}
 /* Une cible chez l'adversaire : corail. Une des siennes à choisir pour un
    effet : de l'or, puisque c'est un geste à faire. */
 .ar-j.cible::after{box-shadow:0 0 0 3px var(--ar-adv),0 0 26px var(--ar-adv-lueur);animation:ar-pouls .9s ease-in-out infinite}
@@ -332,8 +348,10 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-j.defend::after{box-shadow:0 0 0 3px #fff,0 0 26px rgba(255,255,255,.5)}
 .ar-j.cible,.ar-j.option{cursor:pointer}
 @keyframes ar-pouls{50%{opacity:.55}}
-.ar-j.assaut{z-index:4;transform:translateY(-7cqi) scale(1.08);filter:drop-shadow(0 0 12px rgba(157,140,255,.75))}
-.ar-camp.lui .ar-j.assaut{transform:translateY(7cqi) scale(1.08);filter:drop-shadow(0 0 12px var(--ar-adv-lueur))}
+.ar-j.assaut{z-index:4;transform:translateY(-7cqi) scale(1.08)}
+.ar-j.assaut>.ar-c{box-shadow:0 0 0 1.5px rgba(200,191,255,.8),0 0 5cqi rgba(157,140,255,.75)}
+.ar-camp.lui .ar-j.assaut{transform:translateY(7cqi) scale(1.08)}
+.ar-camp.lui .ar-j.assaut>.ar-c{box-shadow:0 0 0 1.5px rgba(255,179,179,.8),0 0 5cqi var(--ar-adv-lueur)}
 .ar-j.pose{animation:ar-pose .45s cubic-bezier(.2,1.4,.4,1)}
 @keyframes ar-pose{from{transform:scale(1.18);filter:brightness(1.8)}}
 .ar-j.vaincu{animation:ar-vaincu .6s ease-in forwards;pointer-events:none}
@@ -882,3 +900,69 @@ html.rm .tuto-vise{animation:none}
 @keyframes ar-def-bouge{0%{transform:scale(1)}30%{transform:scale(1.45)}100%{transform:scale(1)}}
 .ar-flot.moins{color:var(--ar-adv2,#ff8f8f)}
 @media (prefers-reduced-motion:reduce){.ar-v-trait{animation:none;stroke-dashoffset:0}.ar-j.vise::before,.ar-ceo.vise .ar-ava::before{animation:none}}
+
+/* ============ Version 3.0.12 : les règles officielles à l'écran ============ */
+/* La mise en place : la main n'apparaît qu'à mesure que la donne arrive
+   (ANIM.main, js/combat/table.js). */
+#arene.mise .ar-m:not(.donne){opacity:0}
+.ar-m.donne{animation:ar-donne .32s cubic-bezier(.2,1.3,.4,1)}
+@keyframes ar-donne{from{transform:translateX(calc(-50% + var(--x) * var(--pas))) translateY(18px) rotate(calc(var(--x) * 2.4deg)) scale(.86)}}
+#arene.mise .ar-m.donne{animation:ar-donne .32s cubic-bezier(.2,1.3,.4,1)}
+
+/* Le remplacement : les trois cases prises, le Joueur non engagé qu'on peut
+   bench pour faire place (une fois par tour) se marque d'un liseré en
+   pointillé et d'une flèche circulaire. */
+.ar-j.remplacable::after{box-shadow:none;outline:2px dashed rgba(200,191,255,.9);outline-offset:1px;border-radius:calc(6.5cqi + 3px)}
+.ar-j.remplacable::before{content:"";position:absolute;right:-5cqi;bottom:12%;z-index:4;width:22cqi;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  background:var(--ar-act) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 11a8 8 0 0 0-14.3-4.9L4 8'/%3E%3Cpath d='M4 3v5h5M4 13a8 8 0 0 0 14.3 4.9L20 16'/%3E%3Cpath d='M20 21v-5h-5'/%3E%3C/svg%3E") center/62% no-repeat;
+  box-shadow:0 0 0 2px #16151e,0 0 12px var(--ar-act-lueur)}
+.ar-remplace{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 6px}
+.ar-remplace>.ar-c{width:78px;box-shadow:0 6px 14px rgba(0,0,0,.55)}
+.ar-remplace>.ar-c:first-child{filter:brightness(.7) saturate(.6)}
+.ar-remplace>i{font-style:normal;font-size:22px;font-weight:900;color:var(--ar-act2)}
+
+/* Le soutien : l'attaque contre la Défense, puis les voisins qui peuvent
+   ajouter la leur. */
+.ar-s-duel{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px 0 10px}
+.ar-s-duel>.ar-c{flex:none;width:52px;box-shadow:0 5px 12px rgba(0,0,0,.55)}
+.ar-s-duel>.ar-c:last-child{box-shadow:0 0 0 2px var(--ar-adv),0 5px 12px rgba(0,0,0,.55)}
+.ar-sd-v{display:flex;flex-direction:column;align-items:center;line-height:1}
+.ar-sd-v small{font-size:10.5px;font-weight:800;color:rgba(255,255,255,.55)}
+.ar-sd-v b{font-family:var(--display);font-weight:900;font-size:26px;font-variant-numeric:tabular-nums}
+.ar-s-duel>i{font-style:normal;font-family:var(--display);font-weight:900;font-size:22px;color:rgba(255,255,255,.7)}
+.ar-s-act.col{flex-direction:column}
+.ar-s-act.col .ar-b{flex:none}
+.ar-b.sout{flex-direction:row;flex-wrap:wrap;gap:4px 8px;justify-content:center}
+.ar-b.sout>small{flex-basis:100%}
+.ar-b.sout.passe{box-shadow:inset 0 0 0 1.5px rgba(157,140,255,.7),inset 0 1px 0 rgba(255,255,255,.18)}
+.ar-b.sout.passe small{color:#8ff0c8;opacity:1}
+.ar-b.sout.court small{color:var(--ar-adv2);opacity:1}
+.ar-sheet.soutien .ar-s-in{box-shadow:inset 0 0 0 1.5px rgba(157,140,255,.6),inset 0 1px 0 rgba(255,255,255,.24),0 -12px 40px rgba(0,0,0,.6)}
+
+/* Le trait du soutien : du voisin à l'attaquant. */
+.ar-lien{position:absolute;inset:0;z-index:7;pointer-events:none}
+.ar-lien svg{position:absolute;inset:0;overflow:visible}
+.ar-lien path{fill:none;stroke:#c8bfff;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:6 7;
+  filter:drop-shadow(0 0 5px rgba(157,140,255,.9));animation:ar-lien 1.1s ease-out forwards}
+@keyframes ar-lien{0%{opacity:0;stroke-dashoffset:40}20%{opacity:1}75%{opacity:1}100%{opacity:0;stroke-dashoffset:0}}
+
+/* Le duel : l'attaque contre la Défense, en grand, au milieu du plateau. */
+.ar-duel{position:absolute;left:50%;top:50%;z-index:10;display:flex;align-items:center;gap:14px;padding:10px 20px;border-radius:24px;pointer-events:none;
+  translate:-50% -50%;background:rgba(14,13,20,.9);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 14px 34px rgba(0,0,0,.6);
+  animation:ar-duel 1.25s cubic-bezier(.2,1.2,.4,1) forwards}
+.ar-du-v{display:flex;flex-direction:column;align-items:center;line-height:1}
+.ar-du-v small{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.ar-du-v b{font-family:var(--display);font-weight:900;font-size:clamp(28px,9vw,40px);font-variant-numeric:tabular-nums}
+.ar-du-v em{margin-top:3px;font-style:normal;font-size:10.5px;font-weight:700;color:var(--ar-act2)}
+.ar-duel>i{font-style:normal;font-family:var(--display);font-weight:900;font-size:clamp(26px,8vw,36px)}
+.ar-duel.passe>i{color:#8ff0c8}
+.ar-duel.tient>i{color:var(--ar-adv2)}
+.ar-duel.lui.passe>i{color:var(--ar-adv)}
+.ar-duel.lui.tient>i{color:#8ff0c8}
+@keyframes ar-duel{0%{opacity:0;transform:scale(.6)}14%{opacity:1;transform:scale(1.06)}24%{transform:none}82%{opacity:1}100%{opacity:0;transform:translateY(-12px)}}
+
+/* « Phase de Combat » : le bandeau, plus court. */
+.ar-bandeau.combat span{letter-spacing:.02em}
+
+html.rm .ar-lien path,html.rm .ar-duel,html.rm .ar-m.donne{animation-duration:.01s}
+@media (prefers-reduced-motion:reduce){.ar-lien path,.ar-duel,.ar-m.donne{animation-duration:.01s}}

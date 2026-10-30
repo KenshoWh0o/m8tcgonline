@@ -1149,7 +1149,9 @@
     const n = (mzDe(p)[k.id] || 0) + 1;
     if (n > 5) refuser('Cette carte est déjà au niveau maximum.');
     const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === k.id && t.status === 'pending').length;
-    const limite = ['L', 'S', 'UN', 'PR'].includes(k.rar) ? 1 : 2;
+    /* limite_copies (23_combats.sql) : trois exemplaires, les règles
+       officielles (3.0.12 ; avant, deux, et un pour L, S, UN, PR). */
+    const limite = Combat.REGLE.COPIES;
     const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
     const copies = MZ_COPIES[k.rar][n - 1];
     const pris = Math.min(copies, dispo);
@@ -1440,9 +1442,9 @@
     r.saisons[sa] = 0;
     return Object.assign(res, { etat: laboEtat(p) });
   };
-  /* limite_copies, 23_combats.sql : deux exemplaires, un pour une
-     Légendaire, une Secrète, une Promo. */
-  const limiteCopies = k => (['L', 'S', 'UN', 'PR'].includes(k.rar) || (k.promo && !k.rev && !k.secrete)) ? 1 : 2;
+  /* limite_copies, 23_combats.sql : trois exemplaires de chaque carte
+     (règles officielles, 3.0.12). */
+  const limiteCopies = () => Combat.REGLE.COPIES;
   RPC.labo_cartes = (p, { p_quoi }) => {
     estAdmin(p);
     const col = colDe(p);

@@ -18,10 +18,11 @@
    carte reste intacte : c'est sa finition qui change (css/maitrise.css).
 
    Ce que coûte un niveau : des Fragments, et des exemplaires de la carte.
-   Le conflit avec les decks (il en faut deux pour jouer une carte deux
+   Le conflit avec les decks (il en faut trois pour jouer une carte trois
    fois) est réglé ainsi : la maîtrise ne prend que les exemplaires EN TROP —
-   au-delà de ce qu'un deck peut contenir (deux, un pour une Légendaire ou
-   une Secrète), au-delà de ce que le joueur a choisi de garder, et hors de
+   au-delà de ce qu'un deck peut contenir (trois, quelle que soit la rareté,
+   depuis les règles officielles de la 3.0.12 ; deux, ou un pour une
+   Légendaire ou une Secrète, avant), au-delà de ce que le joueur a choisi de garder, et hors de
    ce qui est promis dans un échange. Il en manque ? Chacun se remplace par
    son prix de fabrication en Fragments : la maîtrise n'est jamais bloquée,
    même avec une seule Légendaire. La maîtrise vaut pour la carte (toutes
@@ -66,8 +67,9 @@ const niveauMaitrise = (c, niveaux) => {
   const n = k && (niveaux || (save && save.maitrises) || {})[k.id];
   return Math.max(0, Math.min(MAITRISE.max, n || 0));
 };
-/* Ce qu'un deck peut en contenir (REGLE.COPIES, js/combat/moteur.js). */
-const limiteDeck = c => (['L', 'S', 'UN', 'PR'].includes(c.rar) ? 1 : 2);
+/* Ce qu'un deck peut en contenir (REGLE.COPIES, js/combat/moteur.js) :
+   trois, quelle que soit la rareté (règles officielles, 3.0.12). */
+const limiteDeck = () => (typeof Combat !== 'undefined' ? Combat.REGLE.COPIES : 3);
 
 /* Les Fragments du niveau n d'une carte de rareté `rar`. */
 const fragmentsMaitrise = (rar, n) => (MAITRISE.base[rar] || 0) * (MAITRISE.mult[n - 1] || 0);

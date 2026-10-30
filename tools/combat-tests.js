@@ -483,14 +483,17 @@ test('les raids durent deux semaines depuis le premier jour du Choc, sans trou n
 test('une partie de Raid (phase 5) va à son terme, contre chaque boss, avec son réglage', () => {
   const ph = Choc.raidCombat('p5');
   egal([ph.pvBoss, ph.ess], [8, 2], 'les chiffres de la phase');
-  const m = Choc.raidCombat('p5', 'c121');
-  egal([m.pvBoss, m.ess], [7, 1], 'le Marionnettiste : un PV et une Essence de moins');
-  egal(JSON.stringify(Choc.raidCombat('p5', 'c116')), JSON.stringify(ph), 'le Sorcier : ceux de la phase');
+  /* Règles officielles (3.0.12) : les deux boss, un PV et une Essence de
+     moins que la phase. */
+  for (const id of ['c121', 'c116']) {
+    const m = Choc.raidCombat('p5', id);
+    egal([m.pvBoss, m.ess], [7, 1], `${id} : un PV et une Essence de moins`);
+  }
   for (const b of Choc.RAID.bosses) {
     const p = Choc.raidCombat('p5', b.id);
     for (const g of [77, 78, 79]) {
       const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckBoss('2026-11-17', 'p5', b.id))],
-        graine: g, pv: [5, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss(b.id) });
+        graine: g, pv: [p.pvMoi, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss(b.id) });
       egal(E.j[1].pvDepart, p.pvBoss);
       let n = 0;
       while (Combat.demande(E) && n++ < 3000) {
@@ -557,34 +560,62 @@ test('rejouer redonne exactement la même partie', () => {
 console.log('Le tutoriel (js/combat/tutoriel.js)');
 test('la partie écrite se déroule comme les bulles le disent', () => {
   const E = Combat.creer({ decks: [{ club: Tuto.TUTO_MOI, reserve: Array(10).fill('rose') }, { club: Tuto.TUTO_LUI, reserve: Array(10).fill('mauve') }],
-    graine: 7, premier: 0, ordre: true, pv: [5, 3] });
+    graine: 7, premier: 0, ordre: true, pv: Tuto.TUTO_PV });
+  egal(Tuto.TUTO_MOI.length, 40, 'mon Club : 40 cartes');
+  egal(Tuto.TUTO_LUI.length, 40, 'le Club du Rival : 40 cartes');
   const d = () => Combat.demande(E);
   const u = (j, id) => { const P = E.j[j]; const c = P.main.find(x => x.id === id) || P.lignes.find(x => x && x.id === id); return c && c.u; };
-  const coup = f => { const a = Combat.optionsTour(E).find(f); vrai(a, 'coup introuvable'); Combat.agir(E, a); };
-  const rival = () => { let n = 0; while (d() && d().qui === 1 && n++ < 20) Combat.agir(E, Tuto.tutoRival(E)); };
+  const coup = f => { const a = Combat.optionsTour(E).find(f); vrai(a, 'coup introuvable au tour ' + E.tour); Combat.agir(E, a); };
+  const rival = () => { let n = 0; while (d() && d().qui === 1 && n++ < 40) Combat.agir(E, Tuto.tutoRival(E)); };
   Combat.agir(E, { t: 'choix', v: 'oui' }); rival();
-  egal(E.j[0].main.map(c => c.id), ['c012', 'c085', 'c014', 'c097', 'c078'], 'la main');
-  coup(a => a.t === 'deployer' && a.u === u(0, 'c012') && a.ligne === 1);
-  coup(a => a.t === 'lier' && a.u === u(0, 'c085'));
+  /* Tour 1 : l'entretien a pioché Pas Compris ; deux Joueurs, un Objet ;
+     Caprice de Gotaga (Jade) ne se joue pas ; pas d'attaque. */
+  egal(E.j[0].main.map(c => c.id), ['c078', 'c011', 'c085', 'c038', 'c097', 'c013'], 'la main après la pioche du tour 1');
+  egal(E.j[0].pv.length, 4, '4 PV');
+  egal(E.j[1].pv.length, 2, 'le Rival : 2 PV');
+  coup(a => a.t === 'deployer' && a.u === u(0, 'c078') && a.ligne === 1);
+  coup(a => a.t === 'deployer' && a.u === u(0, 'c011') && a.ligne === 0);
+  coup(a => a.t === 'lier' && a.u === u(0, 'c085') && a.cible === u(0, 'c011'));
+  vrai(!Combat.optionsTour(E).some(a => a.u === u(0, 'c038')), 'Caprice de Gotaga : pas d\'Essence Jade');
+  vrai(!Combat.optionsTour(E).some(a => a.t === 'attaquer'), 'pas de combat au premier tour');
   Combat.agir(E, { t: 'finTour' });
   rival();
+  /* Tour 2 : Baby Driver attaque, Vandale défend et tient ; le Rival
+     défausse à la fin de son tour. */
   egal(d().but, 'defense', 'Baby Driver attaque');
-  Combat.agir(E, { t: 'choix', v: u(0, 'c012') });
+  Combat.agir(E, { t: 'choix', v: u(0, 'c011') });
   rival();
   egal(E.tour, 3);
-  coup(a => a.t === 'deployer' && a.u === u(0, 'c013'));
+  egal(E.j[1].main.length, 5, 'le Rival a défaussé jusqu\'à 5 cartes');
+  /* Tour 3 : Provocation, Doig'Dance, l'attaque, la défense de La
+     Planète, le soutien de Vandale, Légion, puis Pas Compris touche. */
+  coup(a => a.t === 'deployer' && a.u === u(0, 'c013') && a.ligne === 2);
   coup(a => a.t === 'jouer' && a.u === u(0, 'c097'));
-  coup(a => a.t === 'jouer' && a.u === u(0, 'c014'));
-  const bd = u(1, 'c059');
-  coup(a => a.t === 'attaquer' && a.u === u(0, 'c012') && a.cible === bd);
+  coup(a => a.t === 'attaquer' && a.u === u(0, 'c078') && a.k === 0);
   rival();
-  vrai(u(1, 'c059'), 'Shield : Baby Driver tient la première attaque');
-  coup(a => a.t === 'attaquer' && a.u === u(0, 'c013') && a.cible === bd);
+  egal(d().but, 'soutien', 'La Planète défend : le soutien est proposé');
+  const sv = d().options.find(o => o.u === u(0, 'c011'));
+  vrai(sv && sv.info.vaincu, 'avec Vandale, La Planète tombe');
+  Combat.agir(E, { t: 'choix', v: sv.v });
   rival();
-  vrai(!u(1, 'c059'), 'Baby Driver vaincu à la seconde');
+  vrai(!E.j[1].lignes[1], 'La Planète vaincue');
+  vrai(E.j[1].main.some(c => c.id === 'c051'), 'Légion : La Planète en main');
+  coup(a => a.t === 'attaquer' && a.u === u(0, 'c013') && a.cible === 'ceo');
+  rival();
+  egal(E.j[1].pv.length, 1, 'le Rival touché');
   Combat.agir(E, { t: 'finTour' });
   rival();
-  egal(d().but, 'resilience', 'touché : la Résilience de Mur Salvateur');
+  /* Tour 4 : Baby Driver touche ; la Résilience de Gros Bonnet. */
+  egal(d().but, 'resilience', 'touché : la Résilience de Gros Bonnet');
+  Combat.agir(E, { t: 'choix', v: 'oui' });
+  egal(d().but, 'lierAllie', 'Gros Bonnet se lie');
+  Combat.agir(E, { t: 'choix', v: d().options[0].v });
+  rival();
+  /* Tour 5 : deux touches gagnent. */
+  egal(E.tour, 5);
+  coup(a => a.t === 'attaquer' && a.u === u(0, 'c011') && a.cible === 'ceo'); rival();
+  coup(a => a.t === 'attaquer' && a.u === u(0, 'c013') && a.cible === 'ceo'); rival();
+  vrai(E.fin && E.fin.gagnant === 0 && E.fin.raison === 'pv', 'la victoire au tour 5');
 });
 
 console.log(`\n${ok} réussis, ${ko} en échec`);

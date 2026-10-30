@@ -117,7 +117,10 @@ const compteursVides = () => ({
      sort ; une revanche le donne au perdant de la partie d'avant),
      pv: [4, 5] et essDepart: [0, 1] (facultatifs : les variantes des modes,
      campagne, Épreuve, Raid) } */
-function creer(o) {
+/* `x` : ce qui ne fait pas partie de la partie et ne se rejoue pas —
+   `capture` (l'arène : les photos des événements dès la mise en place, pour
+   animer la donne, le mulligan, les PV et le tirage du premier). */
+function creer(o, x) {
   const E = {
     rng: (o.graine >>> 0) || 1, seq: 0, tour: 0, actif: 0, premier: 0,
     phase: 'mise', fin: null, temp: [], cpt: compteursVides(),
@@ -135,7 +138,7 @@ function creer(o) {
      elle ne voyait que l'état final, et un Joueur vaincu disparaissait du
      plateau avant même que l'attaque ne le touche. Seule la partie affichée
      l'allume : les copies de l'IA (cloner) ne photographient rien. */
-  cacher(E, 'capture', false);
+  cacher(E, 'capture', !!(x && x.capture));
   [0, 1].forEach(i => {
     const d = o.decks[i];
     E.j[i].club = d.club.map(id => nouvelleInst(E, id, i));
@@ -438,6 +441,7 @@ function* tour(E) {
   /* 02. Phase d'action (`jeu`), puis 03. Phase de Combat (`combat`) : on y
      entre en déclarant la première attaque, et on n'en ressort pas. */
   E.phase = 'jeu';
+  ev(E, { t: 'phaseAction', j });
   while (!E.fin) {
     const a = yield { qui: j, type: 'tour' };
     if (a.t === 'finTour') break;
@@ -445,10 +449,12 @@ function* tour(E) {
   }
   if (E.fin) return;
 
-  /* La fin de la phase de Combat, puis 04. Fin de tour : « Défaussez autant
-     de cartes de votre Main pour en garder 5 maximum. » */
+  /* La fin de la phase de Combat, puis 04. Fin de tour (`cloture`) :
+     « Défaussez autant de cartes de votre Main pour en garder 5 maximum. » */
   yield* declencher(E, 'finCombat', { j });
   if (E.fin) return;
+  E.phase = 'cloture';
+  ev(E, { t: 'cloture', j });
   const trop = P.main.length - REGLE.MAIN_MAX;
   if (trop > 0) {
     const us = yield* choisirCartes(E, j, `Défausse ${trop} carte${trop > 1 ? 's' : ''}`, P.main.map(x => x.u), trop, trop,
@@ -499,7 +505,7 @@ function* actionTour(E, j, a) {
   } else if (a.t === 'jouer') {
     yield* jouerInstant(E, j, a.u);
   } else if (a.t === 'attaquer') {
-    E.phase = 'combat';
+    if (E.phase !== 'combat') { E.phase = 'combat'; ev(E, { t: 'phaseCombat', j }); }
     yield* attaquer(E, j, trouverSurPlateau(E, a.u), a.k, a.cible, !!a.chevaliere);
   }
 }

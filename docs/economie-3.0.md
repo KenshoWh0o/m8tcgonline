@@ -109,6 +109,7 @@ Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière 
 | 5 | 1 200 | 4 ★ | 8 | 2 | 4 boosters |
 | 6 | 1 600 | 5 ★ | 9 | 2 | 5 boosters |
 
+- **[fait] Ce que le joueur affronte vraiment (3.0.11, puis 3.0.12)** : chaque boss a un réglage (`RAID.bosses` › `ajuste`). Depuis les règles officielles (le joueur a 4 PV au lieu de 5), **les deux boss ont un PV et une Essence d'avance de moins que la phase** (phase 1 : 4 PV, 0 Essence ; phase 6 : 8 PV, 1 Essence). **[mesuré]** Un Starter, IA niveau 3, 80 combats par case : le joueur gagne contre le Sorcier 65 %, 51 %, 30 %, 40 %, 15 % et 4 % des phases 1 à 6, contre le Marionnettiste 66 %, 33 %, 26 %, 25 %, 8 % et 3 % (marge ± 10 points). Le serveur garde les chiffres du tableau pour compter les dégâts : une victoire vaut toujours « PV de la phase + 1 + 3 ».
 - Une phase tombée ouvre un **coffre commun** pour **chaque joueur qui a combattu au moins une fois dans la saison**, même s'il n'a pas porté le dernier coup. Il se réclame pendant la saison et la suivante.
 - Trois **paliers personnels** par saison, sur ses propres dégâts : 30 (1 booster), 80 (300 Fragments), 150 (2 boosters).
 - Les six phases tombées, le **mode Infini** : chaque victoire fait monter son propre palier (boss jusqu'à 12 PV et 3 Essences d'avance, puis c'est le joueur qui a moins de PV). Il ne débloque plus rien pour tous : c'est la performance de chacun, avec son classement.
@@ -204,6 +205,23 @@ D'où les trois repères du bilan (`Decks.bilan`) : 16 Joueurs au moins, une Ré
 | Difficile sans méfiance contre Difficile | 47 % | 120 |
 
 **[mesuré]** Les niveaux bas sont bien plus solides qu'avant, et l'échelle monte à chaque marche (le niveau au-dessus gagne 86 %, 54 %, 56 % et 68 % des parties). **[mesuré]** Les marches Facile → Normal et Normal → Difficile restent courtes, dans la marge d'erreur : à deck égal, ces trois niveaux jouent presque aussi bien ; la difficulté de l'Arcade et de la campagne vient aussi du deck adverse, dont les raretés montent avec le niveau. Le seul levier qui a montré un gain est le nombre d'essais par coup (porté à 3 et 4 pour les niveaux 4 et 5) ; la méfiance envers la riposte n'en a montré aucun. **[inconnu]** La force perçue par un humain : à mesurer avec les taux de victoire réels après l'ouverture.
+
+### Avec les règles officielles (3.0.12) [mesuré]
+
+Les mesures ci-dessus datent des règles reconstituées (Club de 30, 5 PV, un Joueur par tour). Refaites avec les règles officielles (`tools/combat-sim.js`, IA contre IA) :
+
+| Ce qui est mesuré | Résultat | Parties |
+|---|---|---|
+| Parties au hasard sans plantage, durée, fins | 13,1 tours ; 1 482 fins aux PV, 18 au Club vide | 1 500 |
+| Copies de l'IA fidèles (`clone`) | oui | 150 |
+| IA Normal contre Normal : le premier CEO gagne | 57 % (aucune compensation pour le second dans les règles officielles) ; 10,4 tours | 400 |
+| Starter Toxique contre des decks tirés au sort (niveau 3) | 64 % | 240 |
+| Starter Déter contre des decks tirés au sort | 58 % (50 % avant d'y mettre trois Fée Rosalie) | 240 |
+| Toxique contre Déter, face à face | Toxique 61 % | 240 |
+
+**[mesuré]** Le Toxique (engager les Joueurs adverses, qui ne peuvent alors plus défendre) profite plus des règles officielles que le Déter : onze variantes du Déter ont été essayées, une seule sortait du bruit (± 3 points). **[inconnu]** Les vraies listes des Starter Decks : quand elles seront connues, elles remplaceront celles-ci, et ces chiffres seront à refaire. Le Raid, réglé de nouveau : [§ 3](#3-lévénement--le-choc-des-sections--21-jours-et-le-raid) et README § 7.9.
+
+Le bilan d'un deck (`Decks.bilan`) suit désormais les conseils officiels : **15 Joueurs au moins** (16 avant, d'après la mesure de la 3.0.6), une Réserve accordée, la moitié des Joueurs qui attaquent pour 1 ou 2 Essences.
 
 ## 3 ter. La maîtrise des cartes (version 3.0.7, rééquilibrée en 3.0.8)
 

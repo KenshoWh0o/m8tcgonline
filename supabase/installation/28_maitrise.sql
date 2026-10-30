@@ -24,8 +24,9 @@
 --          Legendaire             0  0  0  0  1
 --          Secrete                0  0  0  0  0
 --
---  Le conflit avec les decks (deux exemplaires pour jouer une carte deux
---  fois) : la maitrise ne prend que les exemplaires EN TROP — au-dela de ce
+--  Le conflit avec les decks (trois exemplaires pour jouer une carte trois
+--  fois, regles officielles depuis la 3.0.12 ; deux avant) : la maitrise ne
+--  prend que les exemplaires EN TROP — au-dela de ce
 --  qu'un deck peut contenir (limite_copies, 23_combats.sql), au-dela de ce
 --  que le joueur garde (garde_de, 22_garder.sql), hors de ce qui est promis
 --  dans un echange en attente. Il en manque ? Chacun se remplace par son prix
@@ -163,7 +164,7 @@ begin
   select count(*) into reserve from trades
    where from_user = p and offer_card = cid and status = 'pending';
   garde := garde_de(p, cid);
-  dispo := greatest(0, possede - greatest(coalesce(limite_copies(cid), 2), garde) - reserve);
+  dispo := greatest(0, possede - greatest(coalesce(limite_copies(cid), 3), garde) - reserve);
   copies := maitrise_copies(k.rar, n);
   pris := least(copies, dispo);
   manque := copies - pris;

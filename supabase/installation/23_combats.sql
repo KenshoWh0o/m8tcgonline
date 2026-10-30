@@ -119,9 +119,9 @@ insert into public.starters (section, card_id, n) values
   ('toxique', 'c087', 2), ('toxique', 'c088', 1), ('toxique', 'c014', 2), ('toxique', 'c016', 2),
   ('toxique', 'c083', 2), ('toxique', 'c104', 1), ('toxique', 'c096', 2), ('toxique', 'c097', 2),
   ('toxique', 'c020', 1), ('toxique', 'c091', 1), ('toxique', 'c092', 1), ('deter', 'p04', 1),
-  ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c050', 1), ('deter', 'c077', 2),
+  ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c050', 3), ('deter', 'c077', 2),
   ('deter', 'c074', 1), ('deter', 'c076', 1), ('deter', 'c080', 2), ('deter', 'c081', 1),
-  ('deter', 'c078', 2), ('deter', 'c059', 1), ('deter', 'c053', 3), ('deter', 'c087', 2),
+  ('deter', 'c059', 1), ('deter', 'c053', 3), ('deter', 'c087', 2),
   ('deter', 'c088', 2), ('deter', 'c056', 1), ('deter', 'c054', 2), ('deter', 'c055', 2),
   ('deter', 'c083', 2), ('deter', 'c082', 2), ('deter', 'c092', 2), ('deter', 'c093', 1),
   ('deter', 'c072', 1), ('deter', 'c094', 1), ('deter', 'c095', 1);

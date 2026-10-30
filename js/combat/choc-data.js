@@ -40,7 +40,15 @@ const RAID = {
      js/combat/table.js). */
   bosses: [
     { id: 'c116', nom: 'The French Sorcerer', couleur: 'mauve', visage: [.46, .24], cadre: 'f_foudre', tapis: 't_orage',
-      dit: 'Ses éclairs envoient tes Joueurs à la défausse et frappent à 200.' },
+      dit: 'Ses éclairs envoient tes Joueurs à la défausse et frappent à 200.',
+      /* Règles officielles (3.0.12) : le joueur n'a plus que 4 PV (5 avant),
+         et le Sorcier, aux chiffres de la phase, devenait trop dur : 43 %,
+         10 % et 6 % des combats des phases 1, 3 et 5 gagnés (un Starter,
+         IA niveau 3, 80 combats par case ; 53 %, 26 % et 8 % avant). Avec
+         un PV et une Essence d'avance de moins, comme le Marionnettiste :
+         65 %, 30 % et 15 % (phases 2, 4 et 6 : 51 %, 40 %, 4 %). Les
+         Essences seules (un PV de moins, non) laissaient la phase 3 à 10 %. */
+      ajuste: { pv: -1, ess: -1 } },
     { id: 'c121', nom: 'Le Marionnettiste', couleur: 'neutre', visage: [.45, .58], cadre: 'f_nebuleuse', tapis: 't_ficelles',
       dit: 'Il joue les couleurs des autres, deux nouvelles chaque jour, frappe à 160, et riposte quand il tombe.',
       /* À phases égales, il est plus dur que le Sorcier : son attaque ne
@@ -52,7 +60,8 @@ const RAID = {
          8 %, et des dégâts comptés par le serveur équivalents (une victoire
          y vaut les PV de la phase + 4, comme contre le Sorcier). Une IA plus
          douce rendait la phase 1 trop facile (68 %) sans sauver la 5 (3 %).
-         raidCombat(cle, boss). */
+         Avec les règles officielles (3.0.12), le même réglage : 66 %, 33 %,
+         26 %, 25 %, 8 % et 3 % des phases 1 à 6. raidCombat(cle, boss). */
       ajuste: { pv: -1, ess: -1 } }
   ],
   /* Le premier boss (avant la 3.0.11, le seul). */

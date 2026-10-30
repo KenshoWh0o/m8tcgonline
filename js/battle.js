@@ -671,12 +671,12 @@ const GD_ICO = {
   pv: NAVICO.coeur,
   motscles: '<svg viewBox="0 0 24 24"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.4 1.4 0 0 1 0 2l-6.6 6.6a1.4 1.4 0 0 1-2 0Z"/><circle cx="8" cy="8" r="1.5"/></svg>',
   deck: '<svg viewBox="0 0 24 24"><rect x="4.5" y="7.5" width="11" height="14" rx="2"/><path d="M8.5 4.5h9a2 2 0 0 1 2 2V17"/></svg>',
-  modes: NAVICO.trophy, maison: NAVICO.flask
+  modes: NAVICO.trophy, lectures: NAVICO.flask
 };
 const GD_GROUPES = [
   ['Pour commencer', ['essentiel', 'cartes', 'tour', 'attaquer']],
   ['Pour aller plus loin', ['defendre', 'pv', 'motscles', 'deck']],
-  ['Bon à savoir', ['modes', 'maison']]
+  ['Bon à savoir', ['modes', 'lectures']]
 ];
 const GD_CLE = 'mtcg.guides.lus';
 const guidesLus = () => { try { return JSON.parse(localStorage.getItem(GD_CLE) || '[]'); } catch (e) { return []; } };
@@ -723,7 +723,7 @@ function vCbGuides() {
         <button class="btn tiny" data-cb="guide" data-v="${suivant.id}">${n ? 'La suite' : 'Commencer'} : ${h(suivant.titre)}</button></p>
       ${GD_GROUPES.map(([titre, ids]) => `<section class="gd-groupe"><h3>${titre}</h3><div class="gd-liste">${ids.map(id => GUIDES.find(x => x.id === id)).filter(Boolean).map(entree).join('')}</div></section>`).join('')}
     </section>`;
-  const glo = `<div class="gd-cherche"><input id="gd-q" type="search" placeholder="Chercher un mot : Garde, Réserve, Banc…" autocomplete="off" aria-label="Chercher dans le glossaire"></div>
+  const glo = `<div class="gd-cherche"><input id="gd-q" type="search" placeholder="Chercher un mot : Garde, soutien, bench…" autocomplete="off" aria-label="Chercher dans le glossaire"></div>
     <nav class="gd-abc" aria-label="Lettres">${lettres.map(L => `<a href="#" data-lettre-va="${L}">${L}</a>`).join('')}</nav>
     <div class="gd-glossaire" id="gd-glo">${glossaire}<p class="muted gd-rien" hidden>Aucun mot ne correspond.</p></div>`;
   return `${cbSousTete('Guide', 'Le tutoriel, les règles, chaque mot du jeu')}
@@ -738,7 +738,7 @@ function vCbGuides() {
       <button role="tab" aria-selected="${ong === 'glossaire'}" class="${ong === 'glossaire' ? 'on' : ''}" data-cb="gd-ong" data-v="glossaire">${NAVICO.quest}Glossaire · ${mots.length} mots</button>
     </div>
     ${ong === 'regles' ? regles : glo}
-    <p class="muted small">Les règles officielles ne sont pas publiées : elles sont reconstituées à partir des cartes. Ce qui a été inventé est dit dans « Ce qui est maison ».</p>`;
+    <p class="muted small">Ce sont les règles officielles du Gentle Mates TCG. Les quelques points qu'elles ne tranchent pas sont dans « Ce que les règles ne disent pas ».</p>`;
 }
 
 /* La recherche du glossaire filtre sans redessiner la page : le champ garde
