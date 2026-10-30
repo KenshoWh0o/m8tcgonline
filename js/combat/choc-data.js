@@ -41,8 +41,19 @@ const RAID = {
   bosses: [
     { id: 'c116', nom: 'The French Sorcerer', couleur: 'mauve', visage: [.46, .24], cadre: 'f_foudre', tapis: 't_orage',
       dit: 'Ses éclairs renvoient tes Joueurs sur le Banc et frappent à 200.' },
-    { id: 'c121', nom: 'Le Marionnettiste', couleur: 'neutre', visage: [.45, .58], cadre: 'f_choc', tapis: 't_ficelles',
-      dit: 'Il joue les couleurs des autres, deux nouvelles chaque jour, frappe à 160, et riposte quand il tombe.' }
+    { id: 'c121', nom: 'Le Marionnettiste', couleur: 'neutre', visage: [.45, .58], cadre: 'f_nebuleuse', tapis: 't_ficelles',
+      dit: 'Il joue les couleurs des autres, deux nouvelles chaque jour, frappe à 160, et riposte quand il tombe.',
+      /* À phases égales, il est plus dur que le Sorcier : son attaque ne
+         demande que trois Essences de n'importe quelle couleur, il frappe
+         plus tôt. Mesuré (un Starter contre chaque boss, IA niveau 3, 80
+         combats par case) : le joueur gagnait 35 %, 5 % et 0 % des combats
+         des phases 1, 3 et 5, contre 53 %, 26 % et 8 % face au Sorcier. Avec
+         un PV et une Essence d'avance de moins que la phase : 63 %, 29 %,
+         8 %, et des dégâts comptés par le serveur équivalents (une victoire
+         y vaut les PV de la phase + 4, comme contre le Sorcier). Une IA plus
+         douce rendait la phase 1 trop facile (68 %) sans sauver la 5 (3 %).
+         raidCombat(cle, boss). */
+      ajuste: { pv: -1, ess: -1 } }
   ],
   /* Le premier boss (avant la 3.0.11, le seul). */
   boss: 'c116',
@@ -84,12 +95,21 @@ const RAID = {
 };
 
 /* Le combat d'une clé : 'p3' (la phase 3) ou 'i5' (l'Infini, palier 5). */
-function raidCombat(cle) {
+function raidCombat(cle, boss) {
   const s = String(cle || 'p1');
   const n = Math.max(1, parseInt(s.slice(1), 10) || 1);
-  if (s[0] === 'i') return Object.assign({ infini: true, n }, RAID.infini(n));
-  const ph = RAID.phases[Math.min(n, RAID.phases.length) - 1];
-  return { infini: false, n, ia: ph.ia, pvBoss: ph.pv, ess: ph.ess, pvMoi: 5 };
+  let c;
+  if (s[0] === 'i') c = Object.assign({ infini: true, n }, RAID.infini(n));
+  else {
+    const ph = RAID.phases[Math.min(n, RAID.phases.length) - 1];
+    c = { infini: false, n, ia: ph.ia, pvBoss: ph.pv, ess: ph.ess, pvMoi: 5 };
+  }
+  /* Le réglage d'un boss (RAID.bosses › ajuste) : ce qu'il a vraiment en
+     combat. Sans `boss`, les chiffres de la phase — ceux que le serveur
+     garde pour compter les dégâts (raid_combat, 27_raid.sql). */
+  const a = boss ? raidBoss(boss).ajuste : null;
+  if (a) c = Object.assign({}, c, { pvBoss: Math.max(3, c.pvBoss + (a.pv || 0)), ess: Math.max(0, c.ess + (a.ess || 0)) });
+  return c;
 }
 
 /* Le raid (la saison) du jour `j` ('2026-10-20'), à partir de l'ancre (le

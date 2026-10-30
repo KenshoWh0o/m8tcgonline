@@ -117,8 +117,8 @@ function vRaid() {
   const r = rdEtat;
   const infini = rdInfini(r);
   const cle = rdCle(r);
-  const c = raidCombat(cle);
   const b = rdBoss(r);
+  const c = raidCombat(cle, b.id);
   const k = byId[b.id] || {};
   const tr = rdTentatives();
   const sec = cbEtat().section;
@@ -225,7 +225,7 @@ async function lancerRaid() {
   const r = rdEtat;
   const b = rdBoss(r);
   const cle = rdCle(r);
-  const c = raidCombat(cle);
+  const c = raidCombat(cle, b.id);
   await demarrer({
     mode: 'raid', cle, niveau: c.ia, deck,
     deckIA: deckBoss(r.jour, cle, b.id), poses: posesBoss(b.id), boss: true,

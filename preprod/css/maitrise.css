@@ -47,14 +47,14 @@
   mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
 
 /* ---------- I · Satin : un vernis ---------- */
-.mz-s{inset:0;z-index:4;border-radius:inherit;overflow:hidden;
-  background:linear-gradient(158deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.06) 20%,transparent 40%)}
+.mz-s{inset:0;z-index:4;border-radius:inherit;overflow:hidden;box-shadow:inset 0 0 0 .5cqi rgba(255,255,255,.2),inset 0 0 2.4cqi rgba(255,255,255,.12);
+  background:linear-gradient(156deg,rgba(255,255,255,.3) 0%,rgba(255,255,255,.12) 16%,transparent 34%,transparent 74%,rgba(255,255,255,.08) 100%)}
 .mz-s::after{content:'';position:absolute;top:-12%;bottom:-12%;left:0;width:55%;
-  background:linear-gradient(100deg,transparent 0,rgba(255,255,255,.05) 28%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.05) 72%,transparent 100%);
+  background:linear-gradient(100deg,transparent 0,rgba(255,255,255,.06) 28%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.06) 72%,transparent 100%);
   transform:translateX(-130%) skewX(-14deg);animation:mz-satin 7.5s cubic-bezier(.45,0,.3,1) infinite}
 @keyframes mz-satin{0%,52%{transform:translateX(-130%) skewX(-14deg)}100%{transform:translateX(250%) skewX(-14deg)}}
 /* Immobile : la bande reste posée à gauche, le vernis se voit. */
-.mz-calme .mz-s::after{animation:none;transform:translateX(-25%) skewX(-14deg);opacity:.55}
+.mz-calme .mz-s::after{animation:none;transform:translateX(-25%) skewX(-14deg);opacity:.65}
 
 /* ---------- II · Liseré : un bord de métal biseauté ---------- */
 /* Éclairé d'en haut à gauche : clair sur ces deux bords, sombre sur les
@@ -66,7 +66,7 @@
 /* V : le métal devient prismatique — les couleurs du reflet des Secrètes,
    et celle de l'Essence. Plus large d'un rien. */
 .mz-5 .mz-t{padding:1.9cqi;
-  background:conic-gradient(from 210deg,#ffc4e4,#d9c9ff 18%,#b9e4ff 36%,#bff3dc 52%,color-mix(in srgb,var(--mc) 45%,#fff) 70%,#ffd9ec 86%,#ffc4e4)}
+  background:conic-gradient(from 210deg,#ff9fd2,#c9b3ff 17%,#8fd0ff 34%,#8ff0c4 50%,#fff2c2 60%,var(--mc) 74%,#ffb3dc 88%,#ff9fd2)}
 .mz-5 .mz-t::before{inset:1.9cqi}
 
 /* ---------- III · Holo : l'illustration holographique ---------- */
@@ -75,7 +75,9 @@
    teintée de l'Essence, dérive lentement ; quelques paillettes fixes, à des
    places irrégulières (une trame régulière se lit comme une moustiquaire :
    docs/design-3.0.md, § 10). */
-.mz-h{left:0;right:0;top:8cqi;height:68cqi;z-index:3;overflow:hidden;mix-blend-mode:color-dodge;opacity:.55;
+/* En `overlay` : le reflet colore l'illustration sans la brûler (essayé
+   contre color-dodge, screen, soft-light et hard-light, version 3.0.11). */
+.mz-h{left:0;right:0;top:8cqi;height:68cqi;z-index:3;overflow:hidden;mix-blend-mode:overlay;opacity:.72;
   -webkit-mask-image:linear-gradient(180deg,transparent,#000 15%,#000 76%,transparent);
   mask-image:linear-gradient(180deg,transparent,#000 15%,#000 76%,transparent)}
 .mz-h::before{content:'';position:absolute;top:0;bottom:0;left:-100%;width:300%;
@@ -125,21 +127,21 @@
 .mz-g{inset:0;z-index:8}
 .mz-g svg{position:absolute;width:7cqi;height:7cqi;fill:#fff;opacity:0;transform:scale(.2);
   filter:drop-shadow(0 0 .9cqi color-mix(in srgb,var(--mc) 70%,#fff));animation:mz-scintille 5.2s ease-in-out infinite}
-.mz-g svg:nth-child(1){left:5cqi;top:6cqi;width:8.5cqi;height:8.5cqi}
-.mz-g svg:nth-child(2){right:4.5cqi;top:57cqi;width:6cqi;height:6cqi;animation-delay:-1.8s}
-.mz-g svg:nth-child(3){left:8cqi;bottom:11cqi;animation-delay:-3.4s}
+.mz-g svg:nth-child(1){left:3.5cqi;top:4.5cqi;width:11cqi;height:11cqi}
+.mz-g svg:nth-child(2){right:3.5cqi;top:56cqi;width:7.5cqi;height:7.5cqi;animation-delay:-1.8s}
+.mz-g svg:nth-child(3){left:6cqi;bottom:9cqi;width:8.5cqi;height:8.5cqi;animation-delay:-3.4s}
 @keyframes mz-scintille{0%,56%,100%{opacity:0;transform:scale(.2) rotate(0deg)}68%{opacity:1;transform:scale(1) rotate(22deg)}82%{opacity:0;transform:scale(.3) rotate(45deg)}}
-.mz-calme .mz-g svg{animation:none;opacity:.9;transform:scale(.72)}
+.mz-calme .mz-g svg{animation:none;opacity:.95;transform:scale(.8) rotate(12deg)}
 
 /* ---------- Les mouvements réduits : tout s'immobilise ---------- */
 html.rm .mz-s::after,html.rm .mz-h::before,html.rm .mz-b::before,html.rm .mz-a,html.rm .mz-g svg{animation:none}
-html.rm .mz-s::after{transform:translateX(-25%) skewX(-14deg);opacity:.55}
+html.rm .mz-s::after{transform:translateX(-25%) skewX(-14deg);opacity:.65}
 html.rm .mz-b::before{transform:rotate(210deg)}
 html.rm .mz-g svg{opacity:.9;transform:scale(.72)}
 html.rm .mz-p{display:none}
 @media (prefers-reduced-motion:reduce){
   .mz-s::after,.mz-h::before,.mz-b::before,.mz-a,.mz-g svg{animation:none}
-  .mz-s::after{transform:translateX(-25%) skewX(-14deg);opacity:.55}
+  .mz-s::after{transform:translateX(-25%) skewX(-14deg);opacity:.65}
   .mz-b::before{transform:rotate(210deg)}
   .mz-g svg{opacity:.9;transform:scale(.72)}
   .mz-p{display:none}
@@ -300,8 +302,16 @@ html.rm .cwrap.mz-monte::before,html.rm .cwrap.mz-monte::after,html.rm .mz-sceau
    sa couleur tient lieu de halo. */
 .ar-c.mz{container-type:inline-size}
 .ar-c.mz .mz-s,.ar-c.mz .mz-t,.ar-c.mz .mz-b{border-radius:inherit}
-/* Engagé : la carte s'assombrit, son halo aussi. */
+/* Le Joueur posé a une ombre en `filter: drop-shadow` (css/arene.css) :
+   avec une maîtrise animée dedans, elle se recalculait à chaque image. Une
+   carte maîtrisée prend une ombre portée simple à la place. */
+.ar-j.mz-j{filter:none}
+.ar-j.mz-j>.ar-c{box-shadow:0 1.6cqi 2.6cqi rgba(0,0,0,.6)}
+/* Engagé : la carte s'assombrit (un filtre, css/arene.css), son halo
+   aussi ; ses finitions s'arrêtent, sans quoi le filtre se recalculerait à
+   chaque image. */
 .ar-j.eng .mz-a{opacity:.2;animation:none}
+.ar-j.eng .mz-s::after,.ar-j.eng .mz-h::before,.ar-j.eng .mz-b::before,.ar-j.eng .mz-p i,.ar-j.eng .mz-g svg{animation-play-state:paused}
 .ar-m .ar-c.mz-4,.ar-fc .ar-c.mz-4,.ar-montre .ar-c.mz-4{box-shadow:0 0 14px color-mix(in srgb,var(--mc) 65%,transparent)}
 .ar-m .ar-c.mz-5,.ar-fc .ar-c.mz-5,.ar-montre .ar-c.mz-5{box-shadow:0 0 14px color-mix(in srgb,var(--mc) 70%,transparent),0 0 26px rgba(200,190,255,.32)}
 /* Un Objet maîtrisé, lié à son Joueur : son médaillon prend un anneau de sa

@@ -354,13 +354,18 @@ test('les raids durent deux semaines depuis le premier jour du Choc, sans trou n
   egal([v.n, w.n, v.debut], [1, 2, '2026-10-12']);
   egal(Choc.raidBoss(1).id, 'c116'); egal(Choc.raidBoss(2).id, 'c121'); egal(Choc.raidBoss('c121').nom, 'Le Marionnettiste');
 });
-test('une partie de Raid (8 PV, 2 Essences d\'avance) va à son terme, contre chaque boss', () => {
-  const p = Choc.raidCombat('p5');
+test('une partie de Raid (phase 5) va à son terme, contre chaque boss, avec son réglage', () => {
+  const ph = Choc.raidCombat('p5');
+  egal([ph.pvBoss, ph.ess], [8, 2], 'les chiffres de la phase');
+  const m = Choc.raidCombat('p5', 'c121');
+  egal([m.pvBoss, m.ess], [7, 1], 'le Marionnettiste : un PV et une Essence de moins');
+  egal(JSON.stringify(Choc.raidCombat('p5', 'c116')), JSON.stringify(ph), 'le Sorcier : ceux de la phase');
   for (const b of Choc.RAID.bosses) {
+    const p = Choc.raidCombat('p5', b.id);
     for (const g of [77, 78, 79]) {
       const E = Combat.creer({ decks: [Decks.versMoteur(Decks.STARTERS.deter), Decks.versMoteur(Choc.deckBoss('2026-11-17', 'p5', b.id))],
         graine: g, pv: [5, p.pvBoss], essDepart: [0, p.ess], poses: Choc.posesBoss(b.id) });
-      egal(E.j[1].pvDepart, 8);
+      egal(E.j[1].pvDepart, p.pvBoss);
       let n = 0;
       while (Combat.demande(E) && n++ < 3000) {
         const d = Combat.demande(E);
