@@ -425,7 +425,9 @@ const NAVICO = {
   foudre: '<svg viewBox="0 0 24 24"><path d="M13.5 2.5 5.5 13.5h5.6l-1.6 8 8.5-11.4h-5.7Z"/></svg>',
   /* Le niveau de combattant : trois chevrons de grade. */
   niveau: '<svg viewBox="0 0 24 24"><path d="m5 11.5 7-5 7 5"/><path d="m5 16.5 7-5 7 5"/><path d="m5 21.5 7-5 7 5" opacity=".55"/></svg>',
-  epreuve: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="m9.3 14.3 1.9 1.9 3.6-3.8"/></svg>'
+  epreuve: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="m9.3 14.3 1.9 1.9 3.6-3.8"/></svg>',
+  /* Version 3.0.13 : « Personnaliser » (le profil). */
+  crayon: '<svg viewBox="0 0 24 24"><path d="M4.5 19.5h3.8L19.4 8.4a2.2 2.2 0 0 0-3.1-3.1L5.2 16.4v3.1Z"/><path d="m14.6 7 2.9 2.9"/></svg>'
 };
 
 /* ---------- Cartes Promo ---------- */

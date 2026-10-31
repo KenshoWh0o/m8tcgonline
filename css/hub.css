@@ -567,6 +567,76 @@
 .findrow{display:flex;gap:8px;align-items:center;margin-top:8px}
 .findrow input{flex:1;min-width:0}
 
+/* ============ Profil et fiche d'un joueur : la carte de visite (3.0.13) ============
+   La même pour son profil et pour la fiche que voient les autres
+   (vCarteJoueur, js/profile.js). Un en-tête (le fond, l'avatar, le nom, le
+   titre, la devise, la Section), quatre chiffres, puis des blocs pleins :
+   la carte fétiche, la vitrine, les combats et les decks montrés, les
+   succès. Les réglages vivent dans la feuille « Personnaliser » (.pf-perso). */
+.pj{display:flex;flex-direction:column;gap:12px}
+.pj-hero{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px 16px;
+  padding:18px 16px 16px;border-radius:var(--radius-xl);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.pj.elu .pj-hero{box-shadow:inset 0 0 0 1.5px var(--gold),var(--tuile)}
+/* Le fond : l'illustration d'une carte, nette en haut, fondue vers le bas
+   (le texte reste sur un aplat). */
+.pj-hero .idbanniere>i{opacity:.62;filter:saturate(1.15)}
+.pj-hero .idbanniere::after{background:linear-gradient(180deg,rgba(28,27,37,.15) 0%,rgba(28,27,37,.62) 45%,var(--surface) 92%)}
+.pj-id{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.pj-nom{max-width:100%;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:clamp(22px,6.6vw,30px);
+  line-height:1.05;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pj-devise{margin:0;font-size:13px;font-style:italic;line-height:1.35;color:var(--subtle)}
+.pj-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:2px 0 0;font-size:12px;font-weight:700;color:var(--muted)}
+.pj-sec{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 6px;border-radius:999px;color:var(--text);
+  background:color-mix(in srgb,var(--sc) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 45%,transparent)}
+.pj-sec>i{width:8px;height:8px;border-radius:50%;background:var(--sc);box-shadow:0 0 6px color-mix(in srgb,var(--sc) 70%,transparent)}
+.pj-perso{grid-column:1/-1;justify-self:start}
+.pj-perso svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+/* Quatre chiffres, côte à côte. */
+.pj-chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:8px}
+.pj-chiffres>div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:11px 10px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.pj-chiffres b{font-family:var(--display);font-stretch:106%;font-weight:900;font-size:19px;line-height:1.1;color:var(--text);white-space:nowrap}
+.pj-chiffres b small,.pj-cb b small{font-size:.62em;font-weight:800;color:var(--muted);margin-left:1px}
+.pj-chiffres span{font-size:11.5px;font-weight:700;color:var(--muted)}
+/* Un bloc plein. */
+.pj-bloc{padding:14px 14px 12px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.pj .pj-bloc>h2{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 10px;font-size:17px}
+.pj-compte,.pj-niv{font-family:var(--font,inherit);font-style:normal;font-size:12.5px;font-weight:800;color:var(--muted)}
+.pj-bloc .vitrine{margin-bottom:2px}
+.pj .fet{margin:0}
+/* Les combats : les victoires en grand, quatre chiffres à côté. */
+.pj-cb{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px}
+.pj-cb>div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px;border-radius:var(--radius-sm);background:var(--surface-2)}
+.pj-cb-grand{grid-row:span 2;justify-content:center}
+.pj-cb b{font-family:var(--display);font-stretch:106%;font-weight:900;font-size:18px;line-height:1.1;color:var(--text);white-space:nowrap}
+.pj-cb-grand b{font-size:30px}
+.pj-cb b i{font-style:normal;font-weight:700;color:var(--muted);margin:0 1px}
+.pj-cb span{font-size:11.5px;font-weight:700;color:var(--muted)}
+.pj-cb small{font-size:11px;font-weight:600;color:var(--subtle)}
+@media (max-width:370px){.pj-cb{grid-template-columns:1fr 1fr}.pj-cb-grand{grid-row:auto;grid-column:1/-1}}
+/* Les decks montrés : l'illustration de sa carte de couverture, son nom,
+   ses Essences. Touché, il s'ouvre (voirDeckMontre). */
+.pj .pj-sous{margin:14px 0 8px;font-family:inherit;font-stretch:normal;font-style:normal;font-size:13px;font-weight:800;letter-spacing:0;color:var(--subtle)}
+.pj-decks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pj-deck{display:flex;flex-direction:column;min-width:0;padding:0;border:0;border-radius:var(--radius-sm);overflow:hidden;cursor:pointer;
+  font:inherit;color:inherit;text-align:left;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);transition:transform .16s var(--spring)}
+.pj-deck:active{transform:scale(.97)}
+.pj-deck-art{display:block;height:66px;background:var(--bg-2) no-repeat;background-size:128.2% auto;background-position:50% 24%}
+.pj-deck-t{display:flex;flex-direction:column;gap:4px;padding:8px 10px 10px;min-width:0}
+.pj-deck-t b{font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pj-deck-t small{display:flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.pj-deck-t small .ess{width:15px;height:15px}
+.pj-deck-t small span{margin-left:4px}
+.pj-vide{margin:10px 0 0;font-size:12.5px;line-height:1.4;color:var(--muted)}
+/* Dans une feuille (la fiche d'un autre), les blocs se posent sur le verre. */
+.sheet .pj-bloc,.sheet .pj-chiffres>div{background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.sheet .pj-cb>div,.sheet .pj-deck{background:var(--surface-3)}
+.pj-fiche .pj .pj-bloc>h2{font-size:16px}
+.pj-ajoute{margin:12px 2px 0}
+/* La feuille « Personnaliser ». */
+.pf-ongs{margin:0 0 12px}
+.pf-corps .persotitre:first-child{margin-top:0}
+
 /* ============ Réglages ============ */
 /* Un interrupteur qui glisse, pas une case à cocher du navigateur : le réglage
    par défaut du système jurait avec tout le reste et changeait de forme d'un

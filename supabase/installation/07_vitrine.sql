@@ -202,6 +202,9 @@ begin
     -- Version 3.0.7 : sa carte fetiche et sa maitrise (fetiche_de,
     -- 28_maitrise.sql) ; rien s'il n'en a pas, ou plus.
     'fetiche', fetiche_de(o.id),
+    -- Version 3.0.13 : ses combats (sa Section, ses chiffres, ses decks
+    -- publics : combat_public, 23_combats.sql) ; null s'il n'a jamais combattu.
+    'combat', combat_public(o.id),
     'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,

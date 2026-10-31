@@ -504,7 +504,7 @@ async function clicPage(e) {
 
   /* Profil */
   if (d.ava) return agir(() => Backend.setProfile({ p_avatar: d.ava }));
-  if (d.avacard) { closeSheet(); return agir(() => Backend.setProfile({ p_avatar: 'card:' + d.avacard })); }
+  if (d.avacard) { closeSheet(); return agir(() => Backend.setProfile({ p_avatar: 'card:' + d.avacard })).then(revenirPerso); }
   if (d.frame) return agir(() => Backend.setProfile({ p_frame: d.frame }));
 
   switch (d.act) {
@@ -527,6 +527,10 @@ async function clicPage(e) {
     case 'pass-tout': return reclamerTout();
     case 'pf-devise': return enregistrerDevise();
     case 'pf-banniere': return ouvrirChoixBanniere();
+    /* Le profil (3.0.13) : la feuille « Personnaliser », ses onglets, un deck montré. */
+    case 'pf-perso': return ouvrirPerso();
+    case 'pf-ong': persoOnglet = d.v; return rafraichirPerso();
+    case 'pj-deck': return voirDeckMontre(d.qui, d.v);
     case 'col-toggle': colOuvert = !colOuvert; return render();
     case 'col-reset':
       colFilter = essFilter = rarFilter = 'all';

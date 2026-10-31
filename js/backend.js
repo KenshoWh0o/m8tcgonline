@@ -570,6 +570,9 @@ Backend.deckSauver = async function (deck) {
   const err = Decks.verifier(deck, save.col).filter(e => !/manque|de trop|Réserve doit|au moins un Joueur/.test(e));
   if (err.length) throw new Error(err[0]);
   const propre = { id: deck.id, nom: deck.nom, cartes: deck.cartes, reserve: deck.reserve, couverture: deck.couverture };
+  /* Version 3.0.13 : public ou non (montré sur le profil et la fiche) ; sans
+     la clé, le serveur garde l'état du deck. */
+  if (deck.public !== undefined) propre.public = !!deck.public;
   if (Backend.mode !== 'cloud') {
     const c = combatLocal();
     if (!propre.id) propre.id = 'd' + Date.now().toString(36);
@@ -578,6 +581,17 @@ Backend.deckSauver = async function (deck) {
     return persist();
   }
   Backend.apply(await Backend.rpc('deck_sauver', { p_deck: propre }));
+};
+
+/* Version 3.0.13 : montrer un deck sur son profil et sa fiche, ou le
+   reprendre. Seul un deck complet se montre (le serveur le revérifie). */
+Backend.deckPublier = async function (id, on) {
+  if (Backend.mode !== 'cloud') {
+    const d = combatLocal().decks.find(x => x.id === id);
+    if (d) d.public = !!on;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('deck_publier', { p_id: id, p_public: !!on }));
 };
 
 Backend.deckSupprimer = async function (id) {

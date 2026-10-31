@@ -561,6 +561,9 @@ function vCbDecks(e) {
   const bouton = d => d.starter
     ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>`
     : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`;
+  /* Montrer un deck sur son profil (3.0.13) : seulement un deck à soi, complet. */
+  const montrer = d => d.starter || Decks.verifier(d, save.col).length ? ''
+    : `<button class="dk-montre${d.public ? ' on' : ''}" data-cb="montrer" data-v="${h(d.id)}" aria-pressed="${!!d.public}">${d.public ? `${NAVICO.check}Montré sur ton profil` : 'Montrer sur ton profil'}</button>`;
   let une = '';
   if (actif) {
     const b = Decks.bilan(actif);
@@ -568,7 +571,7 @@ function vCbDecks(e) {
       <span class="dk-actif-art"${cbArt(actif.couverture)}></span>
       <div class="dk-actif-t"><small>Ton deck actif</small><b>${h(actif.nom)}</b>
         <button class="dk-note" data-cb="bilan" data-v="${h(actif.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span>${NAVICO.caret}</button>
-        <span class="cb-deck-ess">${essences(actif)}</span></div>
+        <span class="cb-deck-ess">${essences(actif)}</span>${montrer(actif)}</div>
       <div class="dk-actif-act">${bouton(actif)}<button class="btn tiny ghost" data-cb="voir-deck" data-v="${h(actif.id)}">Voir</button></div>
     </section>`;
   }
@@ -580,7 +583,7 @@ function vCbDecks(e) {
       <button class="dk-ligne-art" data-cb="${d.starter ? 'voir-deck' : 'editer'}" data-v="${h(d.id)}"${cbArt(d.couverture)} aria-label="${d.starter ? 'Voir' : 'Modifier'} ${h(d.nom)}"></button>
       <div class="dk-ligne-t"><b>${h(d.nom)}</b>
         <small>${d.starter ? 'Starter Deck · prêté' : err.length ? `<span class="cb-ko">${h(err[0])}</span>` : 'Prêt à jouer'}</small>
-        ${err.length ? '' : `<button class="dk-note petit" data-cb="bilan" data-v="${h(d.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span></button>`}</div>
+        ${err.length ? '' : `<button class="dk-note petit" data-cb="bilan" data-v="${h(d.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span></button>`}${montrer(d)}</div>
       <div class="dk-ligne-act">
         <button class="btn tiny" data-cb="activer" data-v="${h(d.id)}" ${err.length ? 'disabled' : ''}>Utiliser</button>
         ${bouton(d)}</div>
@@ -1021,6 +1024,12 @@ function cbAction(k, el) {
     case 'guide': cbGuide = v || null; render(); return $('#main').scrollTo({ top: 0 });
     case 'gd-ong': cbGuideOnglet = v; return render();
     case 'activer': return agir(() => Backend.combatReglages({ deck_actif: v }), 'Deck activé.');
+    /* 3.0.13 : montrer un deck complet sur son profil et sa fiche, ou le reprendre. */
+    case 'montrer': {
+      const d = cbDecks().find(x => x.id === v);
+      if (!d) return;
+      return agir(() => Backend.deckPublier(v, !d.public), d.public ? 'Ce deck ne se montre plus.' : 'Ce deck se montre sur ton profil.');
+    }
     case 'cosm': return agir(() => Backend.combatReglages({ [el.dataset.t]: v }));
     case 'boutique-cosm': shopVue = 'combat'; return aller('boutique');
     case 'cosm-ev': {

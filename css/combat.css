@@ -884,3 +884,11 @@ button.cb-une:active{transform:scale(.98)}
 .hc-tour li.mal{color:var(--danger)}
 .hc-tour li.bien{color:var(--ok)}
 .hc-tour li.sys{margin-top:2px;font-weight:800;color:var(--text)}
+
+/* Montrer un deck sur son profil (3.0.13) : un interrupteur discret ; montré,
+   il porte une coche (un état, pas une action). */
+.dk-montre{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 10px;border:0;border-radius:999px;
+  font:inherit;font-size:11.5px;font-weight:800;color:var(--subtle);background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px var(--line-2);cursor:pointer}
+.dk-montre svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.dk-montre.on{color:var(--text);background:rgba(79,214,160,.12);box-shadow:inset 0 0 0 1px rgba(79,214,160,.45)}
+.dk-montre.on svg{stroke:var(--ok)}

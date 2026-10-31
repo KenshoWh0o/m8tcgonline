@@ -1068,6 +1068,7 @@
       vitrine: o.vitrine.slice(),
       xp: xpDe(o.id),
       fetiche: feticheDe(o.id),
+      combat: combatPublic(o.id),
       succes: succesDe(o.id),
       ami, moi: o.id === moi,
       col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null,
@@ -1811,6 +1812,25 @@
         S.evt.comptes[id + '|choc'] = { solde: d * 2, total: d * 4 + 30 };
       });
   }
+  /* Version 3.0.13 : les joueurs simulés ont combattu (leurs chiffres sur
+     leur fiche) ; Lumen et Nova.92 montrent un deck, la copie du Starter de
+     leur Section. */
+  function mondeCombats13() {
+    [['b_lumen', 64, 31, 9, 4, 3, 11, 14, true], ['b_mira', 21, 18, 2, 3, 0, 4, 6, false],
+     ['b_kairo', 12, 15, 1, 2, 1, 3, 3, false], ['b_nova', 118, 40, 22, 9, 6, 17, 20, true]]
+      .forEach(([id, v, d, pv, pd, serie, max, faits, montre]) => {
+        if (!S.profils[id]) return;
+        const c = cb(id);
+        if (c.stats.serie_max) return;
+        Object.assign(c.stats, { victoires: v, defaites: d, pvp_v: pv, pvp_d: pd, serie, serie_max: max });
+        c.faits = combatsCampagne(c.section || 'toxique').slice(0, faits).map(x => x.id);
+        if (montre && c.section && !c.decks.some(x => x.public)) {
+          const st = Decks.STARTERS[c.section];
+          c.decks.push({ id: 'd' + (++S.seq), nom: id === 'b_nova' ? 'Mauve, sans pitié' : 'Rose qui pique',
+            cartes: Object.assign({}, st.cartes), reserve: Object.assign({}, st.reserve), couverture: st.couverture, public: true });
+        }
+      });
+  }
   /* Le Raid permanent (27_raid.sql) : à la première visite, les joueurs
      simulés l'ont déjà frappé — le premier niveau est tombé. */
   /* La saison en cours, déjà entamée par les joueurs simulés : deux phases
@@ -1970,8 +1990,25 @@
   const cb = p => {
     S.cb = S.cb || {};
     return (S.cb[p] = S.cb[p] || { section: null, decks: [], deck_actif: null, cosm: {}, faits: [], finie: false,
-      jour: null, recompensees: 0, stats: { victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0 }, ouverts: {}, defis_jour: null, defis_rec: 0 });
+      jour: null, recompensees: 0, stats: { victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0, serie: 0, serie_max: 0 }, ouverts: {}, defis_jour: null, defis_rec: 0 });
   };
+  /* combat_serie (23_combats.sql, 3.0.13) : une victoire allonge la série,
+     une défaite (ou un combat abandonné) la remet à zéro ; la meilleure reste. */
+  const serieDe = (c, gagne) => {
+    c.stats.serie = gagne ? (c.stats.serie || 0) + 1 : 0;
+    c.stats.serie_max = Math.max(c.stats.serie_max || 0, c.stats.serie);
+  };
+  /* combat_public (23_combats.sql) : ce que la fiche d'un joueur montre de
+     ses combats ; null s'il n'a jamais combattu. */
+  function combatPublic(u) {
+    const c = S.cb && S.cb[u];
+    if (!c) return null;
+    return {
+      section: c.section, stats: Object.assign({ serie: 0, serie_max: 0 }, c.stats), campagne: (c.faits || []).length,
+      decks: c.decks.filter(d => d.public).slice().reverse()
+        .map(d => ({ id: d.id, nom: d.nom, cartes: Object.assign({}, d.cartes), reserve: Object.assign({}, d.reserve), couverture: d.couverture || null }))
+    };
+  }
   function combatEtat(p) {
     const c = cb(p);
     const auj = jourParis(now());
@@ -2029,10 +2066,24 @@
     if (err.length) refuser(err[0]);
     if (!d.id && c.decks.length >= 20) refuser('20 decks au plus.');
     const id = d.id && c.decks.some(x => x.id === d.id) ? d.id : 'd' + (++S.seq);
-    const propre = { id, nom, cartes: Object.assign({}, d.cartes), reserve: Object.assign({}, d.reserve || {}), couverture: d.couverture || null };
+    const avant = c.decks.find(x => x.id === id);
+    /* Le drapeau public (3.0.13) : sans la clé, le deck garde son état ; un
+       deck qui n'est plus complet n'est plus public. */
+    const propre = { id, nom, cartes: Object.assign({}, d.cartes), reserve: Object.assign({}, d.reserve || {}), couverture: d.couverture || null,
+      public: 'public' in d ? !!d.public : !!(avant && avant.public) };
+    if (propre.public && Decks.verifier({ cartes: propre.cartes, reserve: propre.reserve }, colDe(p)).length) propre.public = false;
     c.decks = c.decks.filter(x => x.id !== id).concat([propre]);
     if (!c.deck_actif) c.deck_actif = id;
     if (Decks.total(propre.cartes) === Combat.REGLE.CLUB) bump(p, 'deck', 1);
+    return me(p);
+  };
+  /* deck_publier (3.0.13) : montrer un deck sur son profil et sa fiche, ou
+     le reprendre ; seul un deck complet se montre. */
+  RPC.deck_publier = (p, { p_id, p_public }) => {
+    const d = cb(p).decks.find(x => x.id === p_id);
+    if (!d) refuser('Deck introuvable.');
+    if (p_public && Decks.verifier({ cartes: d.cartes, reserve: d.reserve }, colDe(p)).length) refuser('Seul un deck complet se montre : 40 cartes et 10 Essences.');
+    d.public = !!p_public;
     return me(p);
   };
   RPC.deck_supprimer = (p, { p_id }) => {
@@ -2082,7 +2133,7 @@
     const id = 'cb' + (++S.seq);
     c.ouverts = c.ouverts || {};
     /* Un seul combat ouvert à la fois : le précédent compte comme perdu. */
-    Object.keys(c.ouverts).forEach(k => { delete c.ouverts[k]; c.stats.defaites++; });
+    Object.keys(c.ouverts).forEach(k => { delete c.ouverts[k]; c.stats.defaites++; c.stats.serie = 0; });
     if (p_mode === 'campagne') niveau = combatsCampagne(c.section).find(x => x.id === p_cle).niveau;
     c.ouverts[id] = { mode: p_mode, cle: p_cle, niveau, phase, jour: auj, debut: now(), graine };
     return { id, graine };
@@ -2129,6 +2180,7 @@
     bump(p, 'combats', 1);
     historiqueAjouter(p, o.mode, o.cle, o.niveau, !!p_gagne, res.histo);
     if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
+    serieDe(c, !!p_gagne);
     if (o.mode === 'raid') return finRaid(p, c, o, !!p_gagne, res, trop, r);
     if (o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
     if (!p_gagne) {
@@ -2297,6 +2349,7 @@
       if (c.defis_jour !== auj) { c.defis_jour = auj; c.defis_rec = 0; }
       const gagne = E.fin.gagnant === moi;
       c.stats[gagne ? 'pvp_v' : 'pvp_d']++;
+      serieDe(c, gagne);
       const o = profil(moi === 0 ? d.pour : d.de);
       historiqueAjouter(p, 'defi', d.id, 0, gagne, p_histo, { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null });
       bump(p, 'defis', 1);
@@ -2626,6 +2679,7 @@
     monde20();
     monde30();
     mondeRaid();
+    mondeCombats13();
   }
 
   /* Une partie de démo qui ne se relit plus (une sauvegarde d'une version

@@ -2578,6 +2578,9 @@ begin
     -- Version 3.0.7 : sa carte fetiche et sa maitrise (fetiche_de,
     -- 28_maitrise.sql) ; rien s'il n'en a pas, ou plus.
     'fetiche', fetiche_de(o.id),
+    -- Version 3.0.13 : ses combats (sa Section, ses chiffres, ses decks
+    -- publics : combat_public, 23_combats.sql) ; null s'il n'a jamais combattu.
+    'combat', combat_public(o.id),
     'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,
@@ -4673,6 +4676,12 @@ create table if not exists public.decks (
   maj        timestamptz not null default now()
 );
 create index if not exists decks_user_idx on public.decks (user_id);
+-- Version 3.0.13 : un deck public se montre sur le profil et la fiche du
+-- joueur (deck_publier) ; la serie de victoires en cours et la meilleure
+-- (combat_serie), pour les statistiques du profil.
+alter table public.decks add column if not exists public boolean not null default false;
+alter table public.combat_joueurs add column if not exists serie integer not null default 0;
+alter table public.combat_joueurs add column if not exists serie_max integer not null default 0;
 
 -- Un combat contre l'IA, entre son ouverture et sa cloture. Un seul a la
 -- fois par joueur : en ouvrir un autre compte le precedent comme perdu.
@@ -4907,7 +4916,8 @@ begin
   return jsonb_build_object(
     'section', c.section,
     'decks', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'nom', d.nom, 'cartes', d.cartes,
-                                                          'reserve', d.reserve, 'couverture', d.couverture) order by d.maj)
+                                                          'reserve', d.reserve, 'couverture', d.couverture,
+                                                          'public', d.public) order by d.maj)
                          from decks d where d.user_id = p), '[]'::jsonb),
     'deck_actif', c.deck_actif,
     'cosm', c.cosm,
@@ -4918,7 +4928,8 @@ begin
                                'defis', case when c.defis_jour = jour_paris() then c.defis_rec else 0 end,
                                'defis_plafond', 3),
     'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites,
-                                'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d),
+                                'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d,
+                                'serie', c.serie, 'serie_max', c.serie_max),
     -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
     'xp', c.xp,
     'defis', coalesce((
@@ -5008,13 +5019,23 @@ begin
     if (select count(*) from decks where user_id = p) >= 20 then raise exception '20 decks au plus.'; end if;
     did := 'd' || substr(md5(random()::text || clock_timestamp()::text), 1, 12);
   end if;
-  insert into decks (id, user_id, nom, cartes, reserve, couverture, maj)
-  values (did, p, nom, p_deck->'cartes', coalesce(p_deck->'reserve', '{}'::jsonb), left(p_deck->>'couverture', 8), now())
+  insert into decks (id, user_id, nom, cartes, reserve, couverture, maj, public)
+  values (did, p, nom, p_deck->'cartes', coalesce(p_deck->'reserve', '{}'::jsonb), left(p_deck->>'couverture', 8), now(),
+          coalesce((p_deck->>'public')::boolean, false))
   on conflict (id) do update set nom = excluded.nom, cartes = excluded.cartes, reserve = excluded.reserve,
-    couverture = excluded.couverture, maj = now();
+    couverture = excluded.couverture, maj = now(),
+    -- Sans la cle, le deck garde son etat (une page d'avant la 3.0.13).
+    public = case when p_deck ? 'public' then excluded.public else decks.public end;
+  -- Un deck public est un deck qu'on peut jouer : incomplet, il ne l'est plus.
+  if coalesce((p_deck->>'public')::boolean, false) or exists (select 1 from decks where id = did and public) then
+    if deck_erreur(p, p_deck->'cartes', coalesce(p_deck->'reserve', '{}'::jsonb), true) is not null then
+      update decks set public = false where id = did;
+    end if;
+  end if;
   if c.deck_actif is null then update combat_joueurs set deck_actif = did where user_id = p; end if;
   select coalesce(sum(value::text::int), 0) into n from jsonb_each(p_deck->'cartes');
-  if n = 30 then perform bump_quests(p, 'deck', 1); end if;
+  -- Un deck complet : 40 cartes (regles officielles, 3.0.12 ; c'etait 30).
+  if n = 40 then perform bump_quests(p, 'deck', 1); end if;
   return me();
 end $$;
 
@@ -5028,6 +5049,49 @@ begin
   update combat_joueurs set deck_actif = null where user_id = p and deck_actif = p_id;
   return me();
 end $$;
+
+-- Version 3.0.13 : montrer un deck sur son profil et sa fiche, ou le
+-- reprendre. Seul un deck complet se publie (on doit pouvoir le jouer).
+create or replace function public.deck_publier(p_id text, p_public boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); d decks;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into d from decks where id = p_id and user_id = p;
+  if not found then raise exception 'Deck introuvable.'; end if;
+  if coalesce(p_public, false) and deck_erreur(p, d.cartes, d.reserve, true) is not null then
+    raise exception 'Seul un deck complet se montre : 40 cartes et 10 Essences.';
+  end if;
+  update decks set public = coalesce(p_public, false) where id = p_id;
+  return me();
+end $$;
+
+-- La serie de victoires : une victoire l'allonge, une defaite (ou un combat
+-- abandonne, combat_debut) la remet a zero ; la meilleure reste.
+create or replace function public.combat_serie(p uuid, gagne boolean) returns void
+language sql security definer set search_path = public as $$
+  update combat_joueurs
+     set serie = case when gagne then serie + 1 else 0 end,
+         serie_max = greatest(serie_max, case when gagne then serie + 1 else 0 end)
+   where user_id = p
+$$;
+
+-- Ce que la fiche d'un joueur montre de ses combats (player_profile,
+-- 07_vitrine.sql) : sa Section, ses chiffres, sa campagne, ses decks publics.
+create or replace function public.combat_public(u uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'section', c.section,
+    'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites, 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d,
+                                'serie', c.serie, 'serie_max', c.serie_max),
+    'campagne', coalesce(cardinality(c.faits), 0),
+    'decks', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'nom', d.nom, 'cartes', d.cartes,
+                                                           'reserve', d.reserve, 'couverture', d.couverture) order by d.maj desc)
+                         from decks d where d.user_id = u and d.public), '[]'::jsonb))
+    from combat_joueurs c where c.user_id = u
+$$;
+revoke all on function public.combat_serie, public.combat_public from public, anon, authenticated;
 
 -- ===================================================== 6. un combat contre l'IA
 -- combat_debut : le serveur ouvre le combat et tire la graine. Le Raid
@@ -5060,7 +5124,7 @@ begin
   -- Un seul combat ouvert a la fois : le precedent compte comme perdu.
   delete from combats_ouverts where user_id = p;
   get diagnostics ouverts = row_count;
-  if ouverts > 0 then update combat_joueurs set defaites = defaites + ouverts where user_id = p; end if;
+  if ouverts > 0 then update combat_joueurs set defaites = defaites + ouverts, serie = 0 where user_id = p; end if;
   cid := 'cb' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
   insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine)
   values (cid, p, p_mode, p_cle, niv, ph, jour_paris(), gr);
@@ -5091,6 +5155,7 @@ begin
   -- L'historique (section 8) : le deroule que la page a resume.
   perform historique_ajouter(p, o.mode, o.cle, o.niveau, coalesce(p_gagne, false), p_resume->'histo');
 
+  perform combat_serie(p, coalesce(p_gagne, false));
   if not coalesce(p_gagne, false) then
     update combat_joueurs set defaites = defaites + 1 where user_id = p;
   else
@@ -5303,6 +5368,7 @@ begin
     update combat_joueurs set pvp_v = pvp_v + case when gagne then 1 else 0 end,
                               pvp_d = pvp_d + case when gagne then 0 else 1 end
      where user_id = p;
+    perform combat_serie(p, gagne);
     -- L'historique, une fois : l'adversaire tel que le serveur le connait.
     perform historique_ajouter(p, 'defi', d.id, 0, gagne, p_histo,
       (select jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id))
@@ -5427,11 +5493,11 @@ revoke all on function public.jour_paris, public.combat_joueur, public.cle_copie
   public.combat_etat, public.vue_defi, public.historique_ajouter
   from public, anon, authenticated;
 
-revoke all on function public.combat_section, public.combat_reglages, public.deck_sauver,
+revoke all on function public.combat_section, public.combat_reglages, public.deck_sauver, public.deck_publier,
   public.deck_supprimer, public.combat_debut, public.combat_fin, public.defi_lancer,
   public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin,
   public.combats_historique, public.combat_historique from public, anon;
-grant execute on function public.combat_section, public.combat_reglages, public.deck_sauver,
+grant execute on function public.combat_section, public.combat_reglages, public.deck_sauver, public.deck_publier,
   public.deck_supprimer, public.combat_debut, public.combat_fin, public.defi_lancer,
   public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin,
   public.combats_historique, public.combat_historique to authenticated;

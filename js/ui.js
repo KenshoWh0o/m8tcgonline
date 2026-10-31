@@ -323,6 +323,8 @@ async function agir(fn, msg) {
     await fn();
     if (msg) { toast(msg); SFX.jouer('gagne'); }
     render();
+    /* La feuille « Personnaliser » (3.0.13) montre le nouveau choix. */
+    if (typeof rafraichirPerso === 'function') rafraichirPerso();
     return true;
   } catch (e) {
     toast(e.message || 'Quelque chose a raté.');
