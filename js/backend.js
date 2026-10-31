@@ -587,12 +587,32 @@ Backend.combatFin = async function (id, gagne, resume) {
     const c = combatLocal();
     c.stats = c.stats || {};
     c.stats[gagne ? 'victoires' : 'defaites'] = (c.stats[gagne ? 'victoires' : 'defaites'] || 0) + 1;
+    /* L'historique (js/combat/historique.js), comme historique_ajouter. */
+    if (resume && resume.histo) {
+      const x = Object.assign({ id: Date.now(), le: new Date().toISOString(), mode: null, gagne: !!gagne }, resume.histo);
+      c.historique = [x].concat(c.historique || []).slice(0, Historique.MAX);
+    }
     await persist();
     return { recompense: { message: 'Hors ligne : les combats ne rapportent rien.' } };
   }
   const r = await Backend.rpc('combat_fin', { p_id: id, p_gagne: !!gagne, p_resume: resume || {} });
   Backend.apply(r.etat);
   return r;
+};
+
+/* L'historique des combats (js/combat/historique.js, 23_combats.sql) : la
+   liste, sans les déroulés, puis un combat avec le sien. */
+Backend.historique = async function () {
+  if (Backend.mode !== 'cloud') return (combatLocal().historique || []).map(x => Object.assign({}, x, { journal: !!x.journal }));
+  return Backend.rpc('combats_historique');
+};
+Backend.historiqueCombat = async function (id) {
+  if (Backend.mode !== 'cloud') {
+    const x = (combatLocal().historique || []).find(y => String(y.id) === String(id));
+    if (!x) throw new Error('Combat introuvable.');
+    return x;
+  }
+  return Backend.rpc('combat_historique', { p_id: Number(id) });
 };
 
 /* Version 3.0.6 : la partie du tutoriel gagnée (js/combat/tutoriel.js) ;
@@ -624,8 +644,8 @@ Backend.defiRepondre = async function (id, ok, deck) {
 };
 Backend.defiEtat = (id, depuis) => Backend.rpc('defi_etat', { p_id: id, p_depuis: depuis || 0 });
 Backend.defiJouer = (id, n, a) => Backend.rpc('defi_jouer', { p_id: id, p_n: n, p_action: a });
-Backend.defiFin = async function (id, gagnant, tours) {
-  const r = await Backend.rpc('defi_fin', { p_id: id, p_gagnant: gagnant == null ? null : gagnant, p_tours: tours || 0 });
+Backend.defiFin = async function (id, gagnant, tours, histo) {
+  const r = await Backend.rpc('defi_fin', { p_id: id, p_gagnant: gagnant == null ? null : gagnant, p_tours: tours || 0, p_histo: histo || null });
   Backend.apply(r.etat);
   return r;
 };

@@ -7,7 +7,7 @@
    engagé ou non, avec quelles Essences — puis joue des actions et vérifie
    ce que dit la règle (docs/regles-3.0.md). */
 "use strict";
-const { Combat, Decks, Choc, Campagne, Niveaux, Tuto, IA } = require('./combat-sim.js');
+const { Combat, Decks, Choc, Campagne, Niveaux, Tuto, IA, Histo, partie, auHasard, rng } = require('./combat-sim.js');
 
 let ok = 0, ko = 0;
 function test(nom, f) {
@@ -616,6 +616,56 @@ test('la partie écrite se déroule comme les bulles le disent', () => {
   coup(a => a.t === 'attaquer' && a.u === u(0, 'c011') && a.cible === 'ceo'); rival();
   coup(a => a.t === 'attaquer' && a.u === u(0, 'c013') && a.cible === 'ceo'); rival();
   vrai(E.fin && E.fin.gagnant === 0 && E.fin.raison === 'pv', 'la victoire au tour 5');
+});
+
+/* ---------- L'historique des combats (version 3.0.12) ---------- */
+test('l\'historique résume chaque partie tour par tour, et chaque ligne se lit', () => {
+  const r0 = rng(31);
+  let max = 0, total = 0, remplacements = 0;
+  for (let i = 0; i < 150; i++) {
+    const d1 = Decks.aleatoire(r0, {}), d2 = Decks.aleatoire(r0, {});
+    const E = partie([d1, d2], 7000 + i, [auHasard, auHasard]);
+    for (const moi of [0, 1]) {
+      const x = Histo.resumer(E, moi);
+      egal(x.v, 1);
+      egal(x.premier, E.premier === moi ? 0 : 1, 'qui commence, vu par ' + moi);
+      const taille = JSON.stringify(x).length;
+      vrai(taille <= Histo.TAILLE, 'trop long : ' + taille);
+      max = Math.max(max, taille); total += taille;
+      let n = -1;
+      for (const [k, qui, l] of x.tours) {
+        vrai(k > n, 'les tours dans l\'ordre'); n = k;
+        vrai(k === 0 ? qui === null : qui === 0 || qui === 1, 'à qui le tour');
+        for (const y of l) {
+          const t = Histo.ligne(y, 'Rival');
+          vrai(t && !/undefined|NaN|une carte/.test(t), 'ligne illisible : ' + JSON.stringify(y) + ' → ' + t);
+        }
+      }
+      const der = x.tours[x.tours.length - 1][2];
+      if (!x.coupe) egal(der[der.length - 1][0], 'fi', 'la dernière ligne dit la fin');
+      /* Chaque déploiement a sa ligne : déployé, posé au départ, ou en
+         remplacement d'un Joueur bench juste avant. */
+      const dep = E.ev.filter(e => e.t === 'deploie').length;
+      const lignesDep = x.tours.reduce((s, t) => s + t[2].filter(y => ['de', 'po', 'rp'].includes(y[0])).length, 0);
+      if (!x.coupe) egal(lignesDep, dep, 'une ligne par déploiement');
+      remplacements += x.tours.reduce((s, t) => s + t[2].filter(y => y[0] === 'rp').length, 0);
+      const att = E.ev.filter(e => e.t === 'attaque').length;
+      if (!x.coupe) egal(x.tours.reduce((s, t) => s + t[2].filter(y => y[0] === 'at').length, 0), att, 'une ligne par attaque');
+    }
+    const en = Histo.entree(E, 0, { titre: 'Arcade · Normal', adversaire: { nom: 'IA', avatar: 'star' }, deck: 'Mon deck' });
+    egal([en.tours, en.pv, en.pv_adv, en.raison], [E.tour, E.j[0].pv.length, E.j[1].pv.length, E.fin.raison]);
+  }
+  vrai(remplacements > 0, 'aucun remplacement dans 300 résumés : le cas n\'est pas éprouvé');
+  console.log(`      (300 résumés : ${Math.round(total / 300)} signes en moyenne, ${max} au plus, ${remplacements} remplacements)`);
+});
+
+test('l\'historique d\'une partie entre deux IA : taille, et la fin', () => {
+  const E = partie([Decks.STARTERS.toxique, Decks.STARTERS.deter], 4242, [E => IA.choisir(E, { niveau: 3 }), E => IA.choisir(E, { niveau: 3 })]);
+  const x = Histo.resumer(E, 0);
+  const fin = x.tours[x.tours.length - 1][2].slice(-1)[0];
+  egal(fin, ['fi', E.fin.gagnant === 0 ? 0 : 1, E.fin.raison]);
+  vrai(JSON.stringify(x).length < 12000, 'une partie de Starters tient en moins de 12 000 signes : ' + JSON.stringify(x).length);
+  console.log(`      (${E.tour} tours, ${JSON.stringify(x).length} signes)`);
 });
 
 console.log(`\n${ok} réussis, ${ko} en échec`);

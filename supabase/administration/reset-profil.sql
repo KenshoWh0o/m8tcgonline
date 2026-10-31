@@ -23,8 +23,8 @@
 --      et les etoiles et essais de L'Echauffement (2.1.4, 2.5) et de son
 --      mode sans fin, s'ils sont installes ;
 --    · les Combats : Section, XP et niveau, decks, campagne, combats en
---      cours, defis (les siens ET ceux qu'on lui a lances), Epreuve du
---      Choc, participation au Raid ;
+--      cours, historique des combats, defis (les siens ET ceux qu'on lui a
+--      lances), Epreuve du Choc, participation au Raid ;
 --    · la vitrine, la carte fetiche, le titre, la banniere ; un avatar qui
 --      montrait une carte redevient l'etoile ; le cadre revient a celui de
 --      base.
@@ -59,7 +59,7 @@ declare
     'collection', 'gardes', 'favoris', 'maitrises', 'maitrises_journal',
     'recyclages', 'tirages', 'quest_progress', 'inventory', 'cadeaux',
     'notifications', 'evt_comptes', 'evt_piste_prises', 'devine_illu',
-    'combat_joueurs', 'decks', 'combats_ouverts', 'defis', 'choc_joueurs',
+    'combat_joueurs', 'decks', 'combats_ouverts', 'combats_historique', 'defis', 'choc_joueurs',
     'choc_epreuves', 'raid_participants', 'raid_pris', 'raid_tentatives',
     'trades', 'chasse',
     -- L'Echauffement (2.1.4, puis 2.5), s'il a ete installe sur cette base :
@@ -108,6 +108,7 @@ begin
   delete from public.combat_joueurs    where user_id = uid;
   delete from public.decks             where user_id = uid;
   delete from public.combats_ouverts   where user_id = uid;
+  delete from public.combats_historique where user_id = uid;
   delete from public.defis             where de = uid or pour = uid;
   delete from public.choc_joueurs      where user_id = uid;
   delete from public.choc_epreuves     where user_id = uid;

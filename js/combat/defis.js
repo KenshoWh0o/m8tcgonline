@@ -108,7 +108,10 @@ function ouvrirDefi(d) {
       arreterDefi();
       /* Le vrai serveur ne fait pas tourner le moteur : chacun lui dit qui a
          gagné (supabase/installation/23_combats.sql), et il note un désaccord. */
-      const r = await Backend.defiFin(d.id, E2.fin ? E2.fin.gagnant : null, E2.tour).catch(() => null);
+      /* Le déroulé, tour par tour, pour Combats › Historique (js/combat/historique.js). */
+      const histo = Historique.entree(E2, d.moi, { titre: 'Défi entre amis', adversaire: adv });
+      const r = await Backend.defiFin(d.id, E2.fin ? E2.fin.gagnant : null, E2.tour, histo).catch(() => null);
+      cbHisto = null;
       return htmlRecompense(r);
     },
     surQuitter: () => { arreterDefi(); render(); }

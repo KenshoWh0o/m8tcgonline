@@ -124,9 +124,9 @@ button.cb-une:active{transform:scale(.98)}
 .cb-tuto-t em{font-style:normal;font-size:11.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (prefers-reduced-motion:reduce){.cb-tuto{animation:none}}
 
-/* Decks, Missions, Guide : trois petites tuiles. */
-.cb-petits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.cb-petit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;padding:9px 6px;border:0;
+/* Decks, Missions, Guide, Historique : quatre petites tuiles. */
+.cb-petits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cb-petit{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;padding:9px 6px;border:0;
   border-radius:var(--radius);font:inherit;color:var(--text);text-align:center;cursor:pointer;
   background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .18s var(--spring),background .15s}
 .cb-petit:active{transform:scale(.96)}
@@ -799,3 +799,54 @@ button.cb-une:active{transform:scale(.98)}
 @media (min-width:900px){
   .cb-tuto+.cb-portes .cb-porte{min-height:150px}
 }
+
+/* ============ L'historique des combats (version 3.0.12) ============ */
+/* Le bilan des trente derniers, puis une ligne par combat : V ou D, le
+   visage de l'adversaire, le mode, quand et en combien de tours. Une ligne
+   s'ouvre sur son déroulé, tour par tour (js/combat/historique.js). */
+.hc-bilan{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hc-bilan span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 6px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.hc-bilan b{font-family:var(--display);font-weight:900;font-size:20px;line-height:1.1}
+.hc-bilan small{font-size:11px;color:var(--muted);font-weight:700}
+.hc-liste{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.hc-l{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px 12px 8px 8px;border:0;border-radius:var(--radius);
+  font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.04);transition:transform .18s var(--spring),background .15s}
+.hc-l:hover{background:var(--surface-2)}
+.hc-l:active{transform:scale(.985)}
+.hc-res{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;font-family:var(--display);font-weight:900;font-size:14px}
+.hc-l.v .hc-res{color:var(--ok);background:var(--ok-wash);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.hc-l.d .hc-res{color:var(--danger);background:var(--danger-wash);box-shadow:inset 0 0 0 1px var(--danger-line)}
+.hc-l .ava{flex:none}
+.hc-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hc-t b,.hc-t small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-t b{font-size:14px;font-weight:800}
+.hc-t small{font-size:11.5px;color:var(--muted)}
+.hc-d{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:11px;color:var(--muted)}
+.hc-d small:last-child{color:var(--subtle);font-weight:700}
+
+/* Le déroulé, dans une feuille. Un tour par bloc : le sien sur un filet
+   lavande, celui de l'adversaire sur un filet rouge, comme les deux camps
+   de l'arène. */
+.hc-fiche{display:flex;flex-direction:column;gap:8px}
+.hc-tete{display:flex;align-items:center;gap:12px}
+.hc-tete>span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.hc-tete b{font-size:16px;font-weight:800}
+.hc-tete small{font-size:12px;color:var(--muted)}
+.hc-tete small:last-child::first-letter{text-transform:uppercase}
+.hc-chiffres{margin:2px 0 0;font-size:13px;font-weight:700;color:var(--subtle)}
+.hc-fiche>.muted{margin:0}
+.hc-tours{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.hc-tour{padding:8px 10px 9px 12px;border-radius:var(--radius-sm);background:var(--surface);box-shadow:inset 3px 0 0 var(--accent-soft),inset 0 0 0 1px var(--line)}
+.hc-tour.lui{box-shadow:inset 3px 0 0 var(--danger),inset 0 0 0 1px var(--line)}
+.hc-tour.mise{box-shadow:inset 3px 0 0 var(--line-3),inset 0 0 0 1px var(--line)}
+.hc-tour h4{display:flex;align-items:baseline;gap:6px;margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hc-tour h4 small{font-size:11px;letter-spacing:0;text-transform:none;color:var(--text)}
+.hc-tour ul{display:flex;flex-direction:column;gap:3px;margin:0;padding:0;list-style:none}
+.hc-tour li{font-size:13px;line-height:1.4;color:var(--subtle)}
+.hc-tour li i{font-style:normal;font-weight:700;color:var(--text)}
+.hc-tour li b{font-weight:700;color:var(--text)}
+.hc-tour li.mal{color:var(--danger)}
+.hc-tour li.bien{color:var(--ok)}
+.hc-tour li.sys{margin-top:2px;font-weight:800;color:var(--text)}

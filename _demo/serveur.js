@@ -1539,7 +1539,7 @@
       comptes: de(S.evt.comptes, a(p + '|')), prises: de(S.evt.prises, k => k === p || k.startsWith(p + '|')),
       gardes: (S.gardes || {})[p] || {}, favoris: (S.favoris || {})[p] || [], illu: de(S.illu, a(p + '|')),
       tirages: S.tirages.filter(t => t.user_id === p), recyclages: S.recyclages.filter(t => t.user_id === p),
-      cb: c, maitrises: mzDe(p),
+      cb: c, maitrises: mzDe(p), histo: (S.histo || {})[p] || [],
       epreuves: de(ch.epreuves, a(p + '|')), gagnees: de(ch.gagnees, a(p + '|')), choc: ch.joueurs[p] || null,
       raidPart: de(r.part, k => k.split('|')[1] === p), raidPris: de(r.pris, k => k.split('|')[1] === p),
       tentatives: de(r.tentatives, a(p + '|'))
@@ -1556,6 +1556,7 @@
     S.illu = garder(S.illu, pas(p + '|'));
     S.tirages = S.tirages.filter(t => t.user_id !== p); S.recyclages = S.recyclages.filter(t => t.user_id !== p);
     if (S.cb) delete S.cb[p];
+    if (S.histo) delete S.histo[p];
     S.maitrises[p] = {};
     ch.epreuves = garder(ch.epreuves, pas(p + '|')); ch.gagnees = garder(ch.gagnees, pas(p + '|')); delete ch.joueurs[p];
     r.part = garder(r.part, k => k.split('|')[1] !== p); r.pris = garder(r.pris, k => k.split('|')[1] !== p);
@@ -1584,6 +1585,7 @@
     Object.assign(S.illu, c.illu);
     S.tirages.push(...c.tirages); S.recyclages.push(...c.recyclages);
     S.cb = S.cb || {}; S.cb[p] = c.cb;
+    if (c.histo) { S.histo = S.histo || {}; S.histo[p] = c.histo; }
     S.maitrises[p] = c.maitrises;
     Object.assign(ch.epreuves, c.epreuves); Object.assign(ch.gagnees, c.gagnees);
     if (c.choc) ch.joueurs[p] = c.choc;
@@ -2103,6 +2105,7 @@
     const res = p_resume || {};
     const trop = now() - o.debut < CB_MIN_MS;
     bump(p, 'combats', 1);
+    historiqueAjouter(p, o.mode, o.cle, o.niveau, !!p_gagne, res.histo);
     if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
     if (o.mode === 'raid') return finRaid(p, c, o, !!p_gagne, res, trop, r);
     if (o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
@@ -2150,6 +2153,34 @@
     syncCollection(p);
     checkPromos(p);
     return { etat: me(p), recompense: r };
+  };
+
+  /* ---------- l'historique des combats (version 3.0.12) ---------- */
+  /* historique_ajouter, combats_historique, combat_historique (23_combats.sql) :
+     les trente derniers combats, avec leur déroulé. */
+  const histoDe = p => ((S.histo = S.histo || {})[p] = S.histo[p] || []);
+  function historiqueAjouter(p, mode, cle, niveau, gagne, x, adv) {
+    if (!x || typeof x !== 'object') return;
+    let j = x.journal;
+    if (!j || typeof j !== 'object' || !Array.isArray(j.tours) || JSON.stringify(j).length > 30000) j = null;
+    const a = adv || x.adversaire || {};
+    const borne = (v, m) => Math.min(m, Math.max(0, +v || 0));
+    const l = histoDe(p);
+    l.unshift({
+      id: ++S.seq, le: iso(now()), mode, cle: String(cle || '').slice(0, 40), niveau, gagne: !!gagne,
+      titre: String(x.titre || '').slice(0, 60) || null,
+      adversaire: { nom: String(a.nom || '').slice(0, 40), avatar: String(a.avatar || 'star').slice(0, 40), frame: String(a.frame || 'default').slice(0, 40), photo: a.photo || null },
+      raison: ['pv', 'club', 'abandon'].includes(x.raison) ? x.raison : null,
+      tours: borne(x.tours, 999), pv: borne(x.pv, 99), pv_adv: borne(x.pv_adv, 99),
+      deck: x.deck ? String(x.deck).slice(0, 32) : null, journal: j
+    });
+    l.splice(30);
+  }
+  RPC.combats_historique = p => histoDe(p).map(x => Object.assign({}, x, { journal: !!x.journal }));
+  RPC.combat_historique = (p, { p_id }) => {
+    const x = histoDe(p).find(y => y.id === +p_id);
+    if (!x) refuser('Combat introuvable.');
+    return JSON.parse(JSON.stringify(x));
   };
 
   /* ---------- les défis entre amis ---------- */
@@ -2226,7 +2257,7 @@
   };
   /* Le vrai serveur croit chaque joueur sur parole (p_gagnant) ; la démo,
      qui a le moteur, rejoue la partie. */
-  RPC.defi_fin = (p, { p_id }) => {
+  RPC.defi_fin = (p, { p_id, p_histo }) => {
     const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
     if (!d) refuser('Défi introuvable.');
     const E = Combat.rejouer({ decks: [d.deck_de, d.deck_pour], noms: ['', ''], graine: d.graine }, d.actions);
@@ -2242,6 +2273,8 @@
       if (c.defis_jour !== auj) { c.defis_jour = auj; c.defis_rec = 0; }
       const gagne = E.fin.gagnant === moi;
       c.stats[gagne ? 'pvp_v' : 'pvp_d']++;
+      const o = profil(moi === 0 ? d.pour : d.de);
+      historiqueAjouter(p, 'defi', d.id, 0, gagne, p_histo, { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null });
       bump(p, 'defis', 1);
       bump(p, 'combats', 1);
       if (gagne) bump(p, 'victoires', 1);

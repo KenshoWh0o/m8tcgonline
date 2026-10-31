@@ -439,7 +439,7 @@ create or replace function public.labo_tables() returns text[]
 language sql stable as $$
   select coalesce(array_agg(x.t order by x.o), '{}') from unnest(array[
     'collection', 'inventory', 'quest_progress', 'evt_comptes', 'evt_piste_prises', 'gardes', 'favoris',
-    'devine_illu', 'tirages', 'recyclages', 'combat_joueurs', 'decks', 'choc_joueurs', 'choc_epreuves',
+    'devine_illu', 'tirages', 'recyclages', 'combat_joueurs', 'decks', 'combats_historique', 'choc_joueurs', 'choc_epreuves',
     'raid_participants', 'raid_pris', 'raid_tentatives', 'maitrises', 'maitrises_journal',
     'ech_scores', 'ech_paliers', 'ech_essais', 'ech_sf_scores', 'ech_sf_essais']) with ordinality as x(t, o)
    where to_regclass('public.' || x.t) is not null

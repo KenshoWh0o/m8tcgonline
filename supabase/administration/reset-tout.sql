@@ -22,8 +22,9 @@
 --      et les etoiles et essais de L'Echauffement (2.1.4, 2.5) et de son
 --      mode sans fin, s'ils sont installes ;
 --    · les Combats : Sections, XP et niveaux, decks, campagnes, combats en
---      cours, defis, Epreuves du Choc, Raid (participations ET degats de la
---      saison : le boss repart avec tous ses PV) ;
+--      cours, historiques des combats, defis, Epreuves du Choc, Raid
+--      (participations ET degats de la saison : le boss repart avec tous
+--      ses PV) ;
 --    · les vitrines, cartes fetiches, titres, bannieres ; les avatars qui
 --      montraient une carte redeviennent l'etoile ; les cadres reviennent
 --      a celui de base ;
@@ -71,7 +72,7 @@ declare
     'collection', 'gardes', 'favoris', 'maitrises', 'maitrises_journal',
     'recyclages', 'tirages', 'quest_progress', 'inventory', 'cadeaux',
     'notifications', 'evt_comptes', 'evt_piste_prises', 'devine_illu',
-    'combat_joueurs', 'decks', 'combats_ouverts', 'defis', 'choc_joueurs',
+    'combat_joueurs', 'decks', 'combats_ouverts', 'combats_historique', 'defis', 'choc_joueurs',
     'choc_epreuves', 'raid_participants', 'raid_pris', 'raid_tentatives',
     'trades', 'chasse',
     -- L'Echauffement (2.1.4, puis 2.5), s'il a ete installe sur cette base :
@@ -128,6 +129,7 @@ begin
   delete from public.combat_joueurs;
   delete from public.decks;
   delete from public.combats_ouverts;
+  delete from public.combats_historique;
   delete from public.defis;
   delete from public.choc_joueurs;
   delete from public.choc_epreuves;

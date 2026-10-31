@@ -14,7 +14,7 @@
 --   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
 --   annule tout.
 --
---   Assemble le 2026-10-30
+--   Assemble le 2026-10-31
 --
 -- =====================================================================
 
@@ -5037,6 +5037,8 @@ begin
   end if;
   trop := now() - o.debut < interval '20 seconds';
   perform bump_quests(p, 'combats', 1);
+  -- L'historique (section 8) : le deroule que la page a resume.
+  perform historique_ajouter(p, o.mode, o.cle, o.niveau, coalesce(p_gagne, false), p_resume->'histo');
 
   if not coalesce(p_gagne, false) then
     update combat_joueurs set defaites = defaites + 1 where user_id = p;
@@ -5213,7 +5215,12 @@ end $$;
 -- La fin d'un defi, declaree par chacun des deux : qui a gagne (0 : celui
 -- qui a defie). Chacun est paye sur sa propre declaration, une fois ; si
 -- les deux declarations divergent, le defi est marque `desaccord`.
-create or replace function public.defi_fin(p_id text, p_gagnant int default null, p_tours int default 0) returns jsonb
+-- `p_histo` (version 3.0.12) : son deroule, pour l'historique (section 8).
+-- La version a trois arguments est retiree : deux versions de la meme
+-- fonction rendraient l'appel ambigu.
+drop function if exists public.defi_fin(text, integer, integer);
+create or replace function public.defi_fin(p_id text, p_gagnant int default null, p_tours int default 0,
+                                           p_histo jsonb default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); d defis; c combat_joueurs; moi int; gagne boolean;
         g_eclats int := 0; msg text := ''; deja boolean; v_xp jsonb;
@@ -5245,6 +5252,10 @@ begin
     update combat_joueurs set pvp_v = pvp_v + case when gagne then 1 else 0 end,
                               pvp_d = pvp_d + case when gagne then 0 else 1 end
      where user_id = p;
+    -- L'historique, une fois : l'adversaire tel que le serveur le connait.
+    perform historique_ajouter(p, 'defi', d.id, 0, gagne, p_histo,
+      (select jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id))
+         from profiles o where o.id = case when moi = 0 then d.pour else d.de end));
     perform bump_quests(p, 'defis', 1);
     perform bump_quests(p, 'combats', 1);
     -- Un defi ou personne n'a presque rien joue ne paie pas : on ne gagne
@@ -5267,18 +5278,112 @@ begin
     jsonb_build_object('eclats', g_eclats, 'message', msg, 'xp', v_xp));
 end $$;
 
--- ===================================================== 8. droits
+-- ===================================================== 8. l'historique des combats
+-- Version 3.0.12 : les trente derniers combats de chaque joueur, contre l'IA
+-- et entre amis, avec leur deroule tour par tour (js/combat/historique.js).
+-- Pas de replay : la page resume la partie en lignes compactes (un code, des
+-- identifiants de cartes, des valeurs) et l'envoie avec le resultat
+-- (combat_fin : p_resume->'histo' ; defi_fin : p_histo). Le serveur y ajoute
+-- ce qu'il sait mieux qu'elle : le mode, l'heure, le resultat, et
+-- l'adversaire d'un defi. Un souvenir, propre au joueur : rien ne s'y paie,
+-- et personne d'autre ne le lit.
+create table if not exists public.combats_historique (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references public.profiles on delete cascade,
+  le         timestamptz not null default now(),
+  mode       text not null,
+  cle        text,
+  niveau     integer,
+  gagne      boolean not null,
+  titre      text,
+  -- { nom, avatar, frame, photo } : tel qu'il etait ce jour-la.
+  adversaire jsonb not null default '{}'::jsonb,
+  raison     text check (raison in ('pv', 'club', 'abandon')),
+  tours      integer not null default 0,
+  pv         integer,
+  pv_adv     integer,
+  deck       text,
+  -- { v, premier, tours: [[n, qui, [lignes]]], coupe? } ; null : pas de deroule.
+  journal    jsonb
+);
+create index if not exists combats_historique_user_idx on public.combats_historique (user_id, id desc);
+alter table public.combats_historique enable row level security;
+-- Aucune policy : le navigateur passe par combats_historique() et combat_historique().
+revoke all on public.combats_historique from anon, authenticated;
+
+-- Un combat de plus, et seulement les trente derniers. Appelee par
+-- combat_fin et defi_fin : une entree mal formee est laissee de cote, et une
+-- erreur ici n'empeche jamais de payer le combat (le bloc d'exception
+-- l'annule seul).
+create or replace function public.historique_ajouter(p uuid, p_mode text, p_cle text, p_niveau int,
+                                                     p_gagne boolean, x jsonb, p_adv jsonb default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare j jsonb := x->'journal'; a jsonb := coalesce(p_adv, x->'adversaire');
+begin
+  if jsonb_typeof(x) is distinct from 'object' then return; end if;
+  if jsonb_typeof(j) is distinct from 'object' or jsonb_typeof(j->'tours') is distinct from 'array'
+     or length(j::text) > 30000 then
+    j := null;
+  end if;
+  insert into combats_historique (user_id, mode, cle, niveau, gagne, titre, adversaire, raison, tours, pv, pv_adv, deck, journal)
+  values (p, p_mode, left(p_cle, 40), p_niveau, coalesce(p_gagne, false), nullif(left(x->>'titre', 60), ''),
+          case when jsonb_typeof(a) = 'object' then jsonb_strip_nulls(jsonb_build_object(
+                 'nom', left(a->>'nom', 40), 'avatar', left(a->>'avatar', 40), 'frame', left(a->>'frame', 40),
+                 'photo', left(a->>'photo', 300)))
+               else '{}'::jsonb end,
+          case when x->>'raison' in ('pv', 'club', 'abandon') then x->>'raison' end,
+          least(999, greatest(0, coalesce((x->>'tours')::int, 0))),
+          least(99, greatest(0, (x->>'pv')::int)), least(99, greatest(0, (x->>'pv_adv')::int)),
+          nullif(left(x->>'deck', 32), ''), j);
+  delete from combats_historique h
+   where h.user_id = p
+     and h.id not in (select k.id from combats_historique k where k.user_id = p order by k.id desc limit 30);
+exception when others then
+  return;
+end $$;
+
+-- La liste, sans les deroules (le plus recent d'abord).
+create or replace function public.combats_historique() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('id', h.id, 'le', h.le, 'mode', h.mode, 'cle', h.cle, 'niveau', h.niveau,
+                                        'gagne', h.gagne, 'titre', h.titre, 'adversaire', h.adversaire,
+                                        'raison', h.raison, 'tours', h.tours, 'pv', h.pv, 'pv_adv', h.pv_adv,
+                                        'deck', h.deck, 'journal', h.journal is not null)
+                     order by h.id desc)
+      from combats_historique h where h.user_id = p), '[]'::jsonb);
+end $$;
+
+-- Un combat, avec son deroule.
+create or replace function public.combat_historique(p_id bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); r jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select to_jsonb(h) - 'user_id' into r from combats_historique h where h.id = p_id and h.user_id = p;
+  if r is null then raise exception 'Combat introuvable.'; end if;
+  return r;
+end $$;
+
+-- ===================================================== 9. droits
 revoke all on function public.jour_paris, public.combat_joueur, public.cle_copie, public.limite_copies,
   public.deck_erreur, public.deck_depuis_moteur, public.cartes_pretees, public.deck_defi_erreur,
-  public.combat_etat, public.vue_defi
+  public.combat_etat, public.vue_defi, public.historique_ajouter
   from public, anon, authenticated;
 
 revoke all on function public.combat_section, public.combat_reglages, public.deck_sauver,
   public.deck_supprimer, public.combat_debut, public.combat_fin, public.defi_lancer,
-  public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin from public, anon;
+  public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin,
+  public.combats_historique, public.combat_historique from public, anon;
 grant execute on function public.combat_section, public.combat_reglages, public.deck_sauver,
   public.deck_supprimer, public.combat_debut, public.combat_fin, public.defi_lancer,
-  public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin to authenticated;
+  public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin,
+  public.combats_historique, public.combat_historique to authenticated;
 
 
 -- #####################################################################
@@ -6733,7 +6838,7 @@ create or replace function public.labo_tables() returns text[]
 language sql stable as $$
   select coalesce(array_agg(x.t order by x.o), '{}') from unnest(array[
     'collection', 'inventory', 'quest_progress', 'evt_comptes', 'evt_piste_prises', 'gardes', 'favoris',
-    'devine_illu', 'tirages', 'recyclages', 'combat_joueurs', 'decks', 'choc_joueurs', 'choc_epreuves',
+    'devine_illu', 'tirages', 'recyclages', 'combat_joueurs', 'decks', 'combats_historique', 'choc_joueurs', 'choc_epreuves',
     'raid_participants', 'raid_pris', 'raid_tentatives', 'maitrises', 'maitrises_journal',
     'ech_scores', 'ech_paliers', 'ech_essais', 'ech_sf_scores', 'ech_sf_essais']) with ordinality as x(t, o)
    where to_regclass('public.' || x.t) is not null

@@ -2209,7 +2209,9 @@ const Table = (() => {
       case 'impact': return e.cible !== 'ceo' && e.def != null && e.val >= e.def ? noter(`${e.val} contre ${e.def} : le défenseur tombe.`) : undefined;
       case 'vaincu': return noter(`${k(e.id)} est vaincu.`, 'mal');
       case 'touche': return noter(`${n(e.j)} est touché.`, 'mal');
-      case 'pvRecup': return noter(`${n(e.j)} récupère un PV.`);
+      /* Le CEO touché prend en main la carte du dessus de ses PV (règles). */
+      case 'pvRecup': return noter(`${n(e.j)} prend son PV du dessus en main.`);
+      case 'pvDefausse': return noter(`Le PV du dessus de ${n(e.j)} part à la défausse.`, 'mal');
       case 'resilience': return noter(`Résilience : ${k(e.id)}.`, 'bien');
       case 'riposte': return noter(`Riposte de ${k(e.id)} (${e.val}).`);
       case 'banc': return noter(`${k(e.id)} est bench (à la défausse).`);

@@ -4,8 +4,9 @@
    illustré (le chevalier du tapis « La Luxueuse III », centré sur son
    médaillon), la Section et le niveau ; à la une, le Raid (js/raid.js) ;
    deux portes illustrées, Solo (contre l'IA, sur « 99% Faith ») et Versus
-   (entre amis, sur « Marteen Supreme ») ; trois petites tuiles, Decks,
-   Missions et Guide. Solo mène à deux modes bien distincts :
+   (entre amis, sur « Marteen Supreme ») ; quatre petites tuiles, Decks,
+   Missions, Guide et Historique (js/combat/historique.js). Solo mène à deux
+   modes bien distincts :
    la Campagne (vingt rivaux sur un chemin, acte par acte) et l'Arcade (un
    adversaire tiré au sort, cinq difficultés). Chaque page a un retour vers
    la précédente. Le combat se joue dans l'arène, en plein écran
@@ -25,7 +26,7 @@ let cbChoix = { infini: 3, acte: null };
 let cbGuide = null;
 /* L'onglet du Guide : les règles (par défaut) ou le glossaire. */
 let cbGuideOnglet = 'regles';
-const CB_VUES = ['accueil', 'solo', 'campagne', 'arcade', 'raid', 'versus', 'decks', 'missions', 'guides', 'atelier'];
+const CB_VUES = ['accueil', 'solo', 'campagne', 'arcade', 'raid', 'versus', 'decks', 'missions', 'guides', 'historique', 'atelier'];
 /* Les anciennes adresses mènent encore quelque part : la boîte de réception
    ouvre toujours `defis` pour un défi reçu (boiteAller, js/boite.js). */
 const CB_ALIAS = { infini: 'arcade', defis: 'versus' };
@@ -90,7 +91,7 @@ function vCombats() {
   if (cbVue === 'atelier' && typeof vAtelier === 'function') return vAtelier();
   const corps = {
     accueil: vCbAccueil, solo: vCbSolo, campagne: vCbCampagne, arcade: vCbArcade, raid: vCbRaid,
-    versus: vCbDefis, decks: vCbDecks, missions: vCbMissions, guides: vCbGuides
+    versus: vCbDefis, decks: vCbDecks, missions: vCbMissions, guides: vCbGuides, historique: vCbHistorique
   }[cbVue] || vCbAccueil;
   return `<div class="cb sec-${e.section} cb-v-${cbVue}" style="--sc:${SECTIONS[e.section].c};--sc2:${SECTIONS[e.section].c2}">${corps(e)}</div>`;
 }
@@ -201,7 +202,9 @@ const CB_ICO = {
   versus: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="4.5" y="13" width="16" height="23" rx="3" transform="rotate(-14 12.5 24.5)"/><rect class="f" x="27.5" y="13" width="16" height="23" rx="3" transform="rotate(14 35.5 24.5)"/><path class="e" d="M26.5 6.5 19 22h5.2l-3.2 11.5L30 17.5h-5.4z"/></svg>',
   decks: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="9" y="13" width="20" height="28" rx="3.5"/><path d="M15 9h17a3.5 3.5 0 0 1 3.5 3.5V34"/><path d="M21 5h12a6 6 0 0 1 6 6v18"/></svg>',
   missions: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="10" y="8" width="28" height="33" rx="4"/><path d="M17 21.5l4 4 9-9M17 32h14"/></svg>',
-  guide: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M8 11.5c5.5-2 11-1.5 16 1.5v26c-5-3-10.5-3.5-16-1.5z"/><path class="f" d="M40 11.5c-5.5-2-11-1.5-16 1.5v26c5-3 10.5-3.5 16-1.5z"/></svg>'
+  guide: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M8 11.5c5.5-2 11-1.5 16 1.5v26c-5-3-10.5-3.5-16-1.5z"/><path class="f" d="M40 11.5c-5.5-2-11-1.5-16 1.5v26c5-3 10.5-3.5 16-1.5z"/></svg>',
+  /* L'historique : un cadran, et la flèche qui revient en arrière. */
+  histo: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M11.2 17.5A15 15 0 1 1 9.5 28"/><path d="M24.5 16.5v8.5l6 3.6"/><path d="M6.8 12.2l4.4 5.3 5.6-3.9"/></svg>'
 };
 
 /* Les illustrations des portes : Solo sur « 99% Faith » (#068), l'Arcade
@@ -257,6 +260,7 @@ function vCbAccueil(e) {
       ${petit('decks', 'decks', 'Decks', deck ? h(deck.nom) : 'Aucun deck valide')}
       ${petit('missions', 'missions', 'Missions', missions ? `${missions} à récupérer` : 'Quêtes de combat', missions)}
       ${petit('guides', 'guide', 'Guide', 'Règles et glossaire')}
+      ${petit('historique', 'histo', 'Historique', 'Tour par tour')}
     </div>`;
 }
 
@@ -844,7 +848,7 @@ async function demarrer(o) {
   };
   /* Des cartes déjà en jeu au départ (le boss du Raid). */
   if (o.poses) init.poses = o.poses;
-  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss };
+  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss, deck: o.deck.nom };
   ouvrirArene({ init }, meta);
 }
 
@@ -866,7 +870,10 @@ function ouvrirArene(partie, meta) {
 
 async function finirCombat(meta, E, gagne) {
   const resume = resumeCombat(E, 0);
+  /* Le déroulé, tour par tour, pour Combats › Historique (js/combat/historique.js). */
+  resume.histo = Historique.entree(E, 0, meta);
   const r = await Backend.combatFin(meta.id, gagne, resume);
+  cbHisto = null;
   try { localStorage.removeItem(CLE_COMBAT); } catch (err) { /* */ }
   /* Le Raid a bougé (js/raid.js) ; l'Épreuve, l'état de l'événement
      (js/choc.js), comme le Raid pendant le Choc. */
@@ -940,7 +947,15 @@ function oublierCombat() {
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();
         try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ }
-        if (s && s.meta && s.meta.id) await agir(() => Backend.combatFin(s.meta.id, false, { abandon: true }));
+        /* Le déroulé jusqu'à l'abandon, rejoué depuis la sauvegarde. */
+        const resume = { abandon: true };
+        try {
+          const E = Combat.rejouer(s.init, s.journal);
+          if (!E.fin) Combat.agir(E, { t: 'abandon', qui: 0 });
+          resume.histo = Historique.entree(E, 0, s.meta);
+        } catch (e) { /* sans déroulé */ }
+        if (s && s.meta && s.meta.id) await agir(() => Backend.combatFin(s.meta.id, false, resume));
+        cbHisto = null;
         render();
       } },
       { label: 'Garder', fn: closeSheet }
@@ -980,6 +995,7 @@ function cbAction(k, el) {
     case 'voir-deck': return voirDeck(v);
     case 'decks-vue': cbDecksVue = v; return render();
     case 'tuto': return lancerTutoriel();
+    case 'histo': return ouvrirHistoCombat(v);
     case 'labo-fin': cbLabo = null; return aller('labo');
     case 'bilan': return ouvrirBilan(v);
     case 'copier-deck': return copierDeck(v);
