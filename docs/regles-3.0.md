@@ -146,14 +146,13 @@ Défausse, « où sont placées toutes les cartes défaussées ou bench » ; le 
 
 - **[Lecture]** Les deux CEO décident de leur main l'un après l'autre (le CEO
   0, puis le CEO 1), chacun sans voir la main de l'autre.
-- **« Le perdant commencera la partie suivante. »** **[Lecture]** M8 TCG
-  Online n'a pas de match en plusieurs parties : la « partie suivante » est
-  la prochaine partie entre les deux mêmes adversaires — le prochain défi
-  Versus entre deux amis, ou le prochain combat contre le même adversaire de
-  l'IA (§ 7.1 du README dit où c'est appliqué). La toute première partie est
-  tirée au sort, et aussi celle qui suit un défi sans gagnant établi (les
-  deux amis ont déclaré des gagnants différents). Le moteur reçoit qui
-  commence dans `init.premier` ; sans lui, il tire au sort avec la graine.
+- **« Le perdant commencera la partie suivante. »** **[Décision du
+  propriétaire, 31 octobre]** : « oublie-la, joue tout le temps ça au pile ou
+  face ». M8 TCG Online n'a pas de match en plusieurs parties : chaque partie
+  tire au sort qui commence (le moteur, avec la graine). La 3.0.12 l'avait
+  appliquée entre les deux mêmes adversaires ; la 3.0.13 la retire. Le
+  moteur accepte encore `init.premier`, qui ne sert qu'au tutoriel (le
+  joueur commence toujours).
 
 ### 5.2 Le tour (`tour()`)
 
@@ -377,9 +376,9 @@ l'usage). Pour chaque point : la lecture retenue, puis l'autre.
    un texte qui place les cartes l'emporte, un échange de PV garde l'ordre.
    — Autre : tout ce qui touche une pile la mélange, même un placement
    imprimé.
-8. **« Le perdant commencera la partie suivante »** : entre les deux mêmes
-   adversaires (amis en Versus, même adversaire de l'IA). — Autre : seulement
-   dans un match en plusieurs parties, que M8 TCG Online n'a pas.
+8. **« Le perdant commencera la partie suivante »** — **tranché par le
+   propriétaire le 31 octobre** : chaque partie se tire à pile ou face (il
+   n'y a pas de match en plusieurs parties).
 9. **Le remplacement** : le nouveau Joueur prend la case du Joueur bench. —
    Pas d'autre lecture sensée (c'est la seule case disponible).
 10. **Une Essence jouée de la Réserve entre désengagée.**
@@ -395,7 +394,7 @@ l'usage). Pour chaque point : la lecture retenue, puis l'autre.
 | Club | 30 cartes | **40** |
 | Exemplaires | 2 (1 pour les Légendaires, Secrètes, Promos, l'Unique) ; une Reverse avec sa classique | **3**, par nom et couleur |
 | PV | 5, posés après la main | **4**, posés après la main |
-| Qui commence | pile ou face avant la main | tiré au sort après les mains et les PV ; le perdant commence la suivante |
+| Qui commence | pile ou face avant la main | tiré au sort après les mains et les PV, à chaque partie |
 | Pioche | pas au premier tour du premier CEO | **toujours**, en premier dans l'entretien |
 | Second CEO | 2 Essences à son premier tour | rien |
 | Joueurs par tour | 1 | **autant qu'on veut** ; plein, un remplacement par tour |

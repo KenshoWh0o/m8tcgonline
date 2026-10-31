@@ -1620,15 +1620,15 @@ const Table = (() => {
   /* « Déterminez aléatoirement qui commence la partie » : après les mains et
      les PV, comme dans les règles. Une pièce à deux faces, la sienne (son
      avatar) et celle de l'autre ; elle tourne, retombe sur la face de celui
-     qui commence, puis le dit. `T.o.premierRaison` : le perdant de la partie
-     d'avant commence (« Le perdant commencera la partie suivante »). */
+     qui commence, puis le dit. `T.o.premierRaison` : qui commence est
+     décidé d'avance (le tutoriel). */
   async function pileOuFace(premier) {
     const moiDabord = premier === T.moi;
     const inf = T.o.joueurs || [];
     const face = j => `<span class="ar-piece-f">${avatarHTML((inf[j] || {}).avatar || 'star', 'default', 'xl', (inf[j] || {}).photo || null)}</span>`;
     const a = qs('.ar-annonce');
-    /* Décidé d'avance (le perdant de la partie d'avant) : la pièce se pose
-       sans tourner, et le son n'est pas celui d'un tirage. */
+    /* Décidé d'avance (le tutoriel) : la pièce se pose sans tourner, et le
+       son n'est pas celui d'un tirage. */
     const decide = T.o.premierRaison ? ' decide' : '';
     a.className = 'ar-annonce pileface' + decide;
     a.innerHTML = `<p class="ar-pf-titre">${decide ? 'Qui commence' : 'Tirage au sort'}</p>

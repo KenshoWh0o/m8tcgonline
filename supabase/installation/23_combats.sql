@@ -154,12 +154,8 @@ create table if not exists public.defis (
   paye_de      boolean not null default false,
   paye_pour    boolean not null default false,
   desaccord    boolean not null default false,
-  -- Qui commence (version 3.0.12) : le perdant du dernier defi entre les
-  -- deux (0 : celui qui defie) ; null, le moteur tire au sort avec la graine.
-  premier      integer check (premier in (0, 1)),
   constraint defi_pas_soi check (de <> pour)
 );
-alter table public.defis add column if not exists premier integer check (premier in (0, 1));
 create index if not exists defis_de_idx on public.defis (de, statut);
 create index if not exists defis_pour_idx on public.defis (pour, statut);
 
@@ -567,8 +563,7 @@ begin
               'decks', jsonb_build_array(d.deck_de, d.deck_pour),
               'noms', jsonb_build_array((select pseudo from profiles where id = d.de),
                                         (select pseudo from profiles where id = d.pour)),
-              'graine', d.graine)
-              || case when d.premier is null then '{}'::jsonb else jsonb_build_object('premier', d.premier) end end,
+              'graine', d.graine) end,
     'actions', coalesce((select jsonb_agg(x order by i) from jsonb_array_elements(d.actions) with ordinality t(x, i)
                           where i > coalesce(depuis, 0)), '[]'::jsonb),
     'adversaire', jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -576,14 +571,9 @@ begin
                                      'cosm', coalesce((select cosm from combat_joueurs where user_id = o.id), '{}'::jsonb)));
 end $$;
 
--- « Le perdant commencera la partie suivante » (regles officielles) : la
--- partie suivante est le prochain defi entre les deux memes amis. Le dernier
--- defi joue entre eux (fini ou abandonne), s'il a un gagnant sur lequel les
--- deux declarations ne se contredisent pas, dit qui commence ; sinon (pas de
--- defi, aucune declaration, un desaccord) le moteur tire au sort.
 create or replace function public.defi_lancer(p_pseudo text, p_deck jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); o profiles; err text; did text; v_premier int;
+declare p uuid := auth.uid(); o profiles; err text; did text;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -599,21 +589,9 @@ begin
               and ((de = p and pour = o.id) or (de = o.id and pour = p))) then
     raise exception 'Un défi est déjà en cours avec ce joueur.';
   end if;
-  -- w : le gagnant de ce defi-la (0 : celui qui defiait alors). Le perdant
-  -- commence : p (le CEO 0 du nouveau defi) s'il n'a pas gagne, sinon l'ami.
-  select case when x.w is null then null
-              when (case when x.w = 0 then x.de else x.pour end) = p then 1 else 0 end
-    into v_premier
-    from (select d0.de, d0.pour,
-                 case when d0.desaccord then null else coalesce(d0.gagnant_de, d0.gagnant_pour) end as w
-            from defis d0
-           where d0.statut in ('fini', 'abandon')
-             and ((d0.de = p and d0.pour = o.id) or (d0.de = o.id and d0.pour = p))
-           order by d0.cree desc
-           limit 1) x;
   did := 'df' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
-  insert into defis (id, de, pour, deck_de, graine, premier)
-  values (did, p, o.id, p_deck, floor(random() * 4294967295)::bigint + 1, v_premier);
+  insert into defis (id, de, pour, deck_de, graine)
+  values (did, p, o.id, p_deck, floor(random() * 4294967295)::bigint + 1);
   perform notifier(o.id, 'defi', p, did);
   return me();
 end $$;

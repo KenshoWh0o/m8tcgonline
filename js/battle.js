@@ -34,29 +34,6 @@ const CB_ALIAS = { infini: 'arcade', defis: 'versus' };
 const CB_PARENT = { campagne: 'solo', arcade: 'solo' };
 const CLE_COMBAT = 'mtcg.combat.encours';
 
-/* « Le perdant commencera la partie suivante » (règles officielles ;
-   docs/regles-3.0.md, § 5.1). Contre l'IA, la partie suivante est le
-   prochain combat contre le même adversaire : le même rival de campagne, la
-   même difficulté d'Arcade, le même boss, l'adversaire de la même Épreuve.
-   Ce navigateur retient qui a perdu la dernière (0 : toi, 1 : l'IA) ; la
-   première partie contre un adversaire est tirée au sort. Les défis entre
-   amis le font côté serveur (defi_lancer). */
-const CLE_PERDANTS = 'mtcg.combat.perdants';
-const adversaireDe = m => m.mode + ':' + (m.mode === 'epreuve' ? m.cle : (m.adversaire || {}).nom || m.cle);
-function perdants() {
-  try { return JSON.parse(localStorage.getItem(CLE_PERDANTS)) || {}; } catch (e) { return {}; }
-}
-function noterPerdant(meta, gagne) {
-  if (!meta || !meta.mode) return;
-  const l = perdants(), k = adversaireDe(meta);
-  delete l[k];
-  l[k] = gagne ? 1 : 0;
-  /* Au-delà de soixante adversaires (une Épreuve par jour), les plus anciens partent. */
-  const cles = Object.keys(l);
-  cles.slice(0, Math.max(0, cles.length - 60)).forEach(c => delete l[c]);
-  try { localStorage.setItem(CLE_PERDANTS, JSON.stringify(l)); } catch (e) { /* */ }
-}
-
 /* ---------- L'état de combat du joueur ---------- */
 /* Rangé par Backend.apply (save.combat), avec des valeurs par défaut hors
    ligne. */
@@ -874,14 +851,6 @@ async function demarrer(o) {
   /* Des cartes déjà en jeu au départ (le boss du Raid). */
   if (o.poses) init.poses = o.poses;
   const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss, deck: o.deck.nom };
-  /* Qui commence : le perdant de la partie précédente contre cet adversaire
-     (CLE_PERDANTS), sinon le tirage du moteur. Dans `init`, pour que le
-     rejeu d'un combat repris donne la même partie ; la raison, dans `meta`. */
-  const perdant = perdants()[adversaireDe(meta)];
-  if (perdant === 0 || perdant === 1) {
-    init.premier = perdant;
-    meta.premierRaison = `${perdant === 0 ? 'Tu as' : `${o.adversaire.nom} a`} perdu la partie précédente : le perdant commence.`;
-  }
   ouvrirArene({ init }, meta);
 }
 
@@ -895,7 +864,6 @@ function ouvrirArene(partie, meta) {
     cosm: [e.cosm, meta.cosmAdv || { tapis: 't_base', sleeve: 's_base' }],
     brillantes: [brillantesMoi(), []],
     titre: meta.titre, sousTitre: meta.sousTitre, boss: meta.boss,
-    premierRaison: meta.premierRaison || null,
     sauver: CLE_COMBAT, meta,
     surFin: (E, gagne) => finirCombat(meta, E, gagne),
     surQuitter: () => { render(); }
@@ -903,7 +871,6 @@ function ouvrirArene(partie, meta) {
 }
 
 async function finirCombat(meta, E, gagne) {
-  noterPerdant(meta, gagne);
   const resume = resumeCombat(E, 0);
   /* Le déroulé, tour par tour, pour Combats › Historique (js/combat/historique.js). */
   resume.histo = Historique.entree(E, 0, meta);
@@ -1016,7 +983,6 @@ function oublierCombat() {
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();
         try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ }
-        noterPerdant(s && s.meta, false);
         /* Le déroulé jusqu'à l'abandon, rejoué depuis la sauvegarde. */
         const resume = { abandon: true };
         try {
