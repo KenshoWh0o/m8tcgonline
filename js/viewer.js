@@ -96,6 +96,10 @@ function openViewer(c, qui) {
     const hx = (50 + st.ry * 1.6).toFixed(1) + '%';
     if (R.holo) R.holo.style.setProperty('--hx', hx);
     if (R.sec) R.sec.style.setProperty('--hx', hx);
+    /* La maîtrise (3.0.13) : la matière du reflet (II) et du prisme (III et
+       plus) glisse avec l'inclinaison — les couleurs changent quand la carte
+       tourne, comme une vraie feuille holographique. */
+    if (R.mz) R.mz.style.setProperty('--fx', (st.ry * .35).toFixed(1) + 'cqi');
     sh.style.transform = `translateX(${(-st.ry * .8).toFixed(1)}px) scaleX(${(1 - Math.abs(st.ry) / 200).toFixed(3)})`;
     requestAnimationFrame(frame);
   };
@@ -111,7 +115,7 @@ let vwOngletRetenu = 'infos';
 
 /* Les calques de la carte qui suivent l'inclinaison (à relire après chaque
    nouveau dessin de la carte). */
-const refletsVw = () => ({ glare: $('#vwc .vw-glare'), holo: $('#vwc .vw-holo'), sec: $('#vwc .card.r-S') });
+const refletsVw = () => ({ glare: $('#vwc .vw-glare'), holo: $('#vwc .vw-holo'), sec: $('#vwc .card.r-S'), mz: $('#vwc .mz-f') });
 
 /* La carte de la visionneuse, avec sa maîtrise (ou l'aperçu du niveau
    suivant, le temps de le regarder). */

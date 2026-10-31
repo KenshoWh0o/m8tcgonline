@@ -36,13 +36,13 @@
 
 const MAITRISE = {
   max: 5,
-  noms: ['Satin', 'Écrin', 'Holo', 'Lumière', 'Légende'],
+  noms: ['Satin', 'Reflet', 'Holo', 'Lumière', 'Légende'],
   dit: [
-    'Un vernis satiné : un reflet se pose sur la carte, une lumière la traverse de temps en temps.',
-    'Un fin écrin de métal autour de la carte, à la couleur de son Essence : la carte, elle, reste intacte.',
-    'Son illustration devient holographique : un reflet prismatique la traverse, des paillettes s\'y allument.',
-    'Une lumière fait le tour de son écrin, des étincelles montent, un halo l\'entoure. En combat, elle entre dans un éclat, et ses coups brillent.',
-    'Un écrin prismatique et trois étoiles qui scintillent. En combat, une onde de choc traverse le plateau.'
+    'Un vernis : la lumière glisse sur la carte.',
+    'L\'illustration prend un reflet de métal, à la couleur de son Essence.',
+    'L\'illustration devient holographique, des reflets en étoile s\'y allument.',
+    'Éclairée de derrière : son bord brille, des rais tombent sur l\'illustration.',
+    'L\'étoile du logo s\'allume sur son coin. En combat, une onde de choc.'
   ],
   /* Les Fragments d'un niveau : la base de la rareté, fois 1, 2, 4, 7, 11
      — 25 fois la base pour la Légende : 2 000 pour une Commune, 20 000 pour
@@ -123,7 +123,7 @@ const MZ_ETOILE_V = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGr
 const mzDedans = n => '<i class="mz-v" aria-hidden="true"></i>'
   + (n >= 2 ? '<i class="mz-f" aria-hidden="true"></i>' : '')
   + (n >= 3 ? '<i class="mz-e" aria-hidden="true"><b></b><b></b><b></b></i>' : '')
-  + (n >= 4 ? '<i class="mz-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i>' : '');
+  + (n >= 4 ? '<i class="mz-r" aria-hidden="true"></i><i class="mz-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i>' : '');
 const mzAutourDe = n => (n >= 5 ? '<i class="mz-c" aria-hidden="true"></i>' : '')
   + (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '');
 function maitriseEnveloppe(c, n, calme) {
@@ -205,13 +205,13 @@ function vMaitriseAction(k, cout, depuisReverse) {
   const parts = [`${cout.garde > cout.deck ? `<b>${cout.protege}</b> gardés (ton réglage)` : `<b>${cout.deck}</b> restent pour tes decks`}`];
   if (cout.promis) parts.push(`<b>${cout.promis}</b> promis dans un échange`);
   parts.push(`<b>${cout.dispo}</b> en trop`);
-  const d = `<p class="mz-ex">${depuisReverse ? 'Exemplaires de la carte classique : ' : ''}tu en as <b>${cout.possede}</b> : ${parts.join(', ')}.</p>`;
+  const d = `<p class="mz-ex">${depuisReverse ? 'Exemplaires de la carte classique : tu' : 'Tu'} en as <b>${cout.possede}</b> : ${parts.join(', ')}.</p>`;
   const pret = cout.assezEx && cout.assezFrag;
   if (pret && VW && VW.mzConfirme === cout.n) {
     return `${conditions}
       <div class="mz-confirme" role="group" aria-label="Confirmer">
         <p><b>${cout.copies} exemplaire${s}</b> de « ${h(k.nom)} » ${cout.copies > 1 ? 'seront consommés' : 'sera consommé'} et <b>${fmtN(cout.frag)} Fragments</b> dépensés. C'est définitif.</p>
-        <div class="mz-confirme-acts"><button class="btn ghost" data-v="mz-non">Annuler</button><button class="btn" data-v="mz-ok">Monter au niveau ${CHIFFRES_ROMAINS[cout.n]}</button></div>
+        <div class="mz-confirme-acts"><button class="btn" data-v="mz-ok">Monter au niveau ${CHIFFRES_ROMAINS[cout.n]}</button><button class="btn ghost" data-v="mz-non">Annuler</button></div>
       </div>${d}`;
   }
   const pourquoi = pret ? '' : !cout.assezEx
@@ -288,31 +288,67 @@ async function maitriserVw() {
 }
 
 /* La montée d'un niveau, sur une carte affichée (la fiche ; l'aperçu du
-   Labo, js/lab.js) : la carte se soulève, un éclat blanc, un trait de
-   lumière la traverse, et le chiffre du niveau s'inscrit sur elle avec son
-   nom ; des étincelles de sa couleur, un carillon (plus riche de niveau en
-   niveau). `el` contient la carte (son .cwrap) ; elle a déjà sa nouvelle
-   finition. Avec les mouvements réduits : le carillon et un message. */
-function jouerMonteeMaitrise(el, n, mc) {
+   Labo, js/lab.js). Version 3.0.13 : on voit ce qu'elle a coûté. Les
+   exemplaires consommés montent un à un dans la carte et s'y fondent ; la
+   carte, encore à son ancien niveau, se soulève ; un éclat blanc, et elle
+   prend sa nouvelle finition sous les yeux ; le chiffre du niveau
+   s'inscrit sur elle avec son nom ; des étincelles de sa couleur, un
+   carillon plus riche de niveau en niveau.
+   `el` contient la carte (son .cwrap), déjà dessinée à son nouveau niveau ;
+   `o.carte`, `o.copies` : la carte et ce qu'elle a consommé (sans eux, pas
+   d'exemplaires qui volent). Avec les mouvements réduits : le carillon et
+   un message. */
+function jouerMonteeMaitrise(el, n, mc, o) {
+  o = o || {};
   const w = el && el.querySelector('.cwrap');
-  SFX.jouer(n >= 5 ? 'legend' : n >= 3 ? 'epique' : 'rare');
-  vibrer(n >= 5 ? [30, 60, 40] : 30);
+  const copies = Math.max(0, Math.min(o.copies || 0, 8));
+  const carillon = n >= 5 ? 'legend' : n >= 3 ? 'epique' : 'rare';
   if (!w || RM()) {
-    toast(`Maîtrise ${CHIFFRES_ROMAINS[n]} · ${MAITRISE.noms[n - 1]} !`);
+    SFX.jouer(carillon);
+    vibrer(n >= 5 ? [30, 60, 40] : 30);
+    toast(`Maîtrise ${CHIFFRES_ROMAINS[n]} · ${MAITRISE.noms[n - 1]}${copies ? ` · ${copies} exemplaire${copies > 1 ? 's' : ''} consommé${copies > 1 ? 's' : ''}` : ''}`);
     return Promise.resolve();
   }
   w.style.setProperty('--mc', mc);
-  w.classList.remove('mz-monte'); void w.offsetWidth; w.classList.add('mz-monte');
-  const sceau = document.createElement('span');
-  sceau.className = 'mz-sceau';
-  sceau.innerHTML = `<b>${CHIFFRES_ROMAINS[n]}</b><small>${MAITRISE.noms[n - 1]}</small>`;
-  w.appendChild(sceau);
-  if (typeof FX !== 'undefined') {
-    const r = w.getBoundingClientRect();
-    const couleurs = n >= 5 ? ['#fff', mc, '#ffc4e4', '#b9e4ff', '#d9c9ff'] : ['#fff', mc, mc];
-    setTimeout(() => FX.burst(r.left + r.width / 2, r.top + r.height * .45, { n: 30 + n * 12, colors: couleurs, speed: 7, size: 3.2, g: .08 }), 160);
+  /* L'ancien niveau d'abord : la nouvelle finition arrive avec l'éclat. */
+  if (o.carte) poserMaitrise(w, o.carte, n - 1);
+  const img = o.carte && o.carte.img;
+  let t = 0;
+  if (copies && img) {
+    for (let i = 0; i < copies; i++) {
+      const x = document.createElement('i');
+      x.className = 'mz-copie';
+      x.setAttribute('aria-hidden', 'true');
+      x.style.backgroundImage = `url('${img}')`;
+      el.appendChild(x);
+      const dx = (i - (copies - 1) / 2) * Math.min(26, 120 / copies);
+      const r = (i - (copies - 1) / 2) * 7;
+      const d = 120 + i * 110;
+      x.animate([
+        { transform: `translate(${dx}%, 78%) rotate(${r}deg) scale(.36)`, opacity: 0 },
+        { transform: `translate(${dx}%, 62%) rotate(${r}deg) scale(.36)`, opacity: 1, offset: .3 },
+        { transform: 'translate(0, 0) rotate(0deg) scale(.16)', opacity: 0 }
+      ], { duration: 820, delay: d, easing: 'cubic-bezier(.55,0,.7,.25)', fill: 'both' }).finished.then(() => x.remove(), () => x.remove());
+      setTimeout(() => SFX.jouer('carte'), d + 560);
+    }
+    t = 120 + (copies - 1) * 110 + 820;
   }
-  return new Promise(fin => setTimeout(() => { w.classList.remove('mz-monte'); sceau.remove(); fin(); }, 1750));
+  return new Promise(fin => setTimeout(() => {
+    SFX.jouer(carillon);
+    vibrer(n >= 5 ? [30, 60, 40] : 30);
+    if (o.carte) poserMaitrise(w, o.carte, n);
+    w.classList.remove('mz-monte'); void w.offsetWidth; w.classList.add('mz-monte');
+    const sceau = document.createElement('span');
+    sceau.className = 'mz-sceau';
+    sceau.innerHTML = `<b>${CHIFFRES_ROMAINS[n]}</b><small>${MAITRISE.noms[n - 1]}</small>`;
+    w.appendChild(sceau);
+    if (typeof FX !== 'undefined') {
+      const r = w.getBoundingClientRect();
+      const couleurs = n >= 5 ? ['#fff', mc, color2(mc), '#ffffff'] : ['#fff', mc, color2(mc)];
+      setTimeout(() => FX.burst(r.left + r.width / 2, r.top + r.height * .45, { n: 30 + n * 12, colors: couleurs, speed: 7, size: 3.2, g: .08 }), 120);
+    }
+    setTimeout(() => { w.classList.remove('mz-monte'); sceau.remove(); fin(); }, 1750);
+  }, t));
 }
 
 /* En combat (js/combat/table.js) et dans l'aperçu du Labo : ce que fait une
@@ -398,13 +434,19 @@ function voirNiveauVw(m) {
 function poserMaitrise(w, c, n) {
   const e = maitriseEnveloppe(c, n, w.classList.contains('mz-calme'));
   [...w.classList].filter(k => /^mz(-\d)?$/.test(k)).forEach(k => w.classList.remove(k));
-  w.querySelectorAll(':scope>.card>:is(.mz-v,.mz-f,.mz-e,.mz-p),:scope>:is(.mz-a,.mz-c)').forEach(x => x.remove());
-  if (!n) { w.style.removeProperty('--mc'); return; }
+  w.querySelectorAll(':scope>.card>:is(.mz-v,.mz-f,.mz-e,.mz-r,.mz-p),:scope>:is(.mz-a,.mz-c)').forEach(x => x.remove());
+  if (!n) {
+    w.style.removeProperty('--mc');
+    if (typeof VW !== 'undefined' && VW && w.closest('#vwc')) VW.reflets = refletsVw();
+    return;
+  }
   w.classList.add('mz', 'mz-' + n);
   w.style.setProperty('--mc', tcol(carteMaitrise(c)));
   const carte = w.querySelector(':scope>.card');
   if (carte) carte.insertAdjacentHTML('beforeend', e.dedans);
   w.insertAdjacentHTML('beforeend', e.autour);
+  /* Dans la fiche, les calques qui suivent l'inclinaison ont changé. */
+  if (typeof VW !== 'undefined' && VW && w.closest('#vwc')) VW.reflets = refletsVw();
 }
 
 /* ---------- La carte fétiche ---------- */

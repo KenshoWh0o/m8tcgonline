@@ -121,5 +121,14 @@ begin
   exception when others then
     if sqlerrm not like 'Il faut 1 exemplaire en trop de%tu en as 0.' then raise; end if;
   end;
-  raise warning 'OK : maitrise — bareme, refus sans exemplaires en trop (deck, garde, echange), consommation, Fragments, Legende, Reverse';
+  -- Le Labo (3.0.13) : de quoi mener chaque carte en Legende.
+  update profiles set is_admin = true where id = u;
+  perform public.labo_cartes('maitrise');
+  if (select qty from collection where user_id = u and card_id = (select id from cards where rar = 'C' and cat = 'joueur' and not reverse and not promo order by id offset 1 limit 1)) <> 23
+     or (select qty from collection where user_id = u and card_id = (select id from cards where rar = 'L' and not reverse and not promo limit 1)) <> 10
+     or exists (select 1 from collection co join cards k on k.id = co.card_id where co.user_id = u and k.cat = 'essence') then
+    raise exception 'ECHEC : labo_cartes(maitrise)';
+  end if;
+  update profiles set is_admin = false where id = u;
+  raise warning 'OK : maitrise — bareme, refus sans exemplaires en trop (deck, garde, echange), consommation, Fragments, Legende, Reverse, Labo';
 end $t$;

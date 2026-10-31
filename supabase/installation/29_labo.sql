@@ -31,7 +31,7 @@
 --     labo_raid_echelle(x)           l'echelle des seuils du Raid
 --     labo_raid_raz('EFFACER')       le raid en cours a zero
 --   Son propre compte :
---     labo_cartes(quoi)              'master', 'classiques', 'combat', 'vider'
+--     labo_cartes(quoi)              'master', 'classiques', 'combat', 'maitrise', 'vider'
 --     labo_monnaies(valeurs)         Eclats, Fragments, boosters en plus, reserve,
 --                                    monnaie de l'evenement, niveau de combattant
 --     labo_cosmetiques(ids)          cadres, titres, tapis, sleeves
@@ -286,6 +286,9 @@ end $$;
 --               dans tout le jeu) ;
 --   classiques  les 122, un exemplaire ;
 --   combat      les Joueurs, Coachs, Moments et Objets des 122 ;
+--   maitrise    (3.0.13) chaque carte qui se maitrise, avec de quoi la mener
+--               en Legende : les trois d'un deck, plus tous les exemplaires
+--               que ses cinq niveaux consomment (de 8 a 23) ;
 --   vider       plus rien (et ses demandes d'echange en attente sont annulees).
 create or replace function public.labo_cartes(p_quoi text) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -302,6 +305,12 @@ begin
      where case p_quoi when 'master' then k.rar <> 'UN'
                        when 'classiques' then not k.promo
                        else not k.promo and k.cat in ('joueur', 'coach', 'moment', 'objet') end
+    on conflict (user_id, card_id) do update set qty = greatest(collection.qty, excluded.qty);
+  elsif p_quoi = 'maitrise' then
+    insert into collection (user_id, card_id, qty)
+    select p, k.id, coalesce(limite_copies(k.id), 3) + (select sum(maitrise_copies(k.rar, n))::int from generate_series(1, 5) n)
+      from cards k
+     where maitrise_carte(k.id) = k.id
     on conflict (user_id, card_id) do update set qty = greatest(collection.qty, excluded.qty);
   else
     raise exception 'Choix inconnu.';

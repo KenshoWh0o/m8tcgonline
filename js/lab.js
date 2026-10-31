@@ -387,6 +387,7 @@ function vLabCompte() {
         <button class="labbtn tL" data-lab="cartes" data-q="master"><b>Master set</b><span>tout, sauf la carte unique, de quoi faire n'importe quel deck</span></button>
         <button class="labbtn tR" data-lab="cartes" data-q="classiques"><b>Les ${cards.length}</b><span>l'extension, un exemplaire</span></button>
         <button class="labbtn tE" data-lab="cartes" data-q="combat"><b>Les cartes de combat</b><span>Joueurs, Coachs, Moments, Objets, trois de chaque</span></button>
+        <button class="labbtn tL" data-lab="cartes" data-q="maitrise"><b>Pour la maîtrise</b><span>chaque carte, avec de quoi la mener en Légende (8 à 23 exemplaires)</span></button>
         <button class="labbtn labdanger" data-lab="cartes" data-q="vider"><b>Vider</b><span>plus aucune carte</span></button>
       </div>
       <p class="muted small" style="margin-top:8px">Trois exemplaires de chaque carte : la limite d'un deck (règles
@@ -693,7 +694,8 @@ function labAction(a, el) {
     }
     case 'mz-monte': {
       const c = labMzCarte();
-      return jouerMonteeMaitrise($('#labmz'), labMz.n, tcol(carteMaitrise(c)));
+      const k = carteMaitrise(c);
+      return jouerMonteeMaitrise($('#labmz'), labMz.n, tcol(k), { carte: c, copies: (MAITRISE.copies[k.rar] || [])[labMz.n - 1] || 0 });
     }
     case 'mz-fiche': {
       const c = labMzCarte();
@@ -761,7 +763,7 @@ function labAction(a, el) {
         'Restaurer', () => labMoiFaire('labo_restaurer', {}, 'Compte restauré.'));
     case 'cartes': {
       const q = d.q;
-      const msg = { master: 'Master set ajouté.', classiques: `Les ${cards.length} ajoutées.`, combat: 'Les cartes de combat ajoutées.', vider: 'Collection vidée.' }[q];
+      const msg = { master: 'Master set ajouté.', classiques: `Les ${cards.length} ajoutées.`, combat: 'Les cartes de combat ajoutées.', maitrise: 'Les exemplaires pour la maîtrise ajoutés.', vider: 'Collection vidée.' }[q];
       const faire = () => labMoiFaire('labo_cartes', { p_quoi: q }, msg);
       return q === 'vider' ? labConfirmer('Vider ta collection ?', 'Toutes tes cartes partent, et tes demandes d\'échange en attente sont annulées. Tes decks restent, mais ne se jouent plus.', 'Vider', faire) : faire();
     }

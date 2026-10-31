@@ -1473,6 +1473,11 @@
       const liste = p_quoi === 'master' ? cards.concat(reverses, promos, brillantes, secretes)
         : p_quoi === 'classiques' ? cards : cards.filter(k => ['joueur', 'coach', 'moment', 'objet'].includes(k.cat));
       liste.filter(k => k.rar !== 'UN').forEach(k => { col[k.id] = Math.max(col[k.id] || 0, p_quoi === 'classiques' ? 1 : limiteCopies(k)); });
+    } else if (p_quoi === 'maitrise') {
+      /* 3.0.13 : de quoi mener chaque carte en Légende (les trois d'un deck,
+         plus ce que ses cinq niveaux consomment). */
+      cards.concat(secretes).filter(k => (maitriseCarte(k.id) || {}).id === k.id)
+        .forEach(k => { col[k.id] = Math.max(col[k.id] || 0, limiteCopies(k) + MZ_COPIES[k.rar].reduce((a, b) => a + b, 0)); });
     } else refuser('Choix inconnu.');
     syncCollection(p); checkPromos(p);
     return me(p);
