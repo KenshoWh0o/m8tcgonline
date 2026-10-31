@@ -2114,7 +2114,7 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3),
   ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4),
   -- Version 3.0 : les couleurs des deux Sections.
-  ('f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5),
+  ('f_toxique','cosmetique', 'Cadre Toxique','Le vert de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5),
   ('f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,

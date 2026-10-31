@@ -206,16 +206,16 @@ html.rm .cwrap.mz-monte::before,html.rm .cwrap.mz-monte::after,html.rm .mz-sceau
 /* Le fil qui relie les niveaux, rempli jusqu'au niveau atteint. */
 .mz-frise::before,.mz-frise::after{content:'';position:absolute;top:19px;left:10%;height:2px;border-radius:2px;pointer-events:none}
 .mz-frise::before{right:10%;background:var(--line-2)}
-.mz-frise::after{width:calc(80% * max(var(--n) - 1, 0) / 4);background:color-mix(in srgb,var(--mc,#b3a6ff) 70%,#fff)}
+.mz-frise::after{width:calc(80% * max(var(--n) - 1, 0) / 4);background:color-mix(in srgb,var(--mc,var(--accent-soft)) 70%,#fff)}
 .mz-etape{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;border:0;background:none;font:inherit;color:var(--muted);cursor:pointer}
 .mz-etape b{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;font:900 13px/1 var(--display);letter-spacing:.02em;
   background:var(--surface-2);color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line-2);transition:transform .2s var(--spring),box-shadow .2s}
 .mz-etape small{font-size:11px;font-weight:700;white-space:nowrap}
 .mz-etape:active b{transform:scale(.92)}
-.mz-etape.fait b{color:#fff;background:linear-gradient(160deg,color-mix(in srgb,var(--mc,#b3a6ff) 55%,#fff),color-mix(in srgb,var(--mc,#b3a6ff) 85%,#000));box-shadow:0 0 12px color-mix(in srgb,var(--mc,#b3a6ff) 45%,transparent)}
+.mz-etape.fait b{color:#fff;background:linear-gradient(160deg,color-mix(in srgb,var(--mc,var(--accent-soft)) 55%,#fff),color-mix(in srgb,var(--mc,var(--accent-soft)) 85%,#000));box-shadow:0 0 12px color-mix(in srgb,var(--mc,var(--accent-soft)) 45%,transparent)}
 .mz-etape.fait small{color:var(--subtle)}
 .mz-etape.fait.legende b{border:2px solid transparent;box-shadow:0 0 14px rgba(200,190,255,.45);
-  background:linear-gradient(160deg,color-mix(in srgb,var(--mc,#b3a6ff) 55%,#fff),color-mix(in srgb,var(--mc,#b3a6ff) 85%,#000)) padding-box,
+  background:linear-gradient(160deg,color-mix(in srgb,var(--mc,var(--accent-soft)) 55%,#fff),color-mix(in srgb,var(--mc,var(--accent-soft)) 85%,#000)) padding-box,
     conic-gradient(#ffc4e4,#d9c9ff,#b9e4ff,#bff3dc,#ffc4e4) border-box}
 .mz-etape.suivant b{color:#fff;background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--accent)}
 .mz-etape.suivant small{color:#fff}
@@ -288,7 +288,7 @@ html.rm .cwrap.mz-monte::before,html.rm .cwrap.mz-monte::after,html.rm .mz-sceau
 /* Les cinq crans de la maîtrise. */
 .fet-crans{display:flex;gap:4px}
 .fet-crans i{width:18px;height:5px;border-radius:3px;background:rgba(255,255,255,.14)}
-.fet-crans i.on{background:color-mix(in srgb,var(--fc,#b3a6ff) 70%,#fff);box-shadow:0 0 6px color-mix(in srgb,var(--fc,#b3a6ff) 50%,transparent)}
+.fet-crans i.on{background:color-mix(in srgb,var(--fc,var(--accent-soft)) 70%,#fff);box-shadow:0 0 6px color-mix(in srgb,var(--fc,var(--accent-soft)) 50%,transparent)}
 .fet-crans.max i.on{background:linear-gradient(90deg,#ffc4e4,#d9c9ff,#b9e4ff,#bff3dc);box-shadow:0 0 6px rgba(200,190,255,.4)}
 .fet-changer{margin-top:2px}
 /* Pas de carte fétiche encore : la même tuile, une carte fantôme à gauche. */

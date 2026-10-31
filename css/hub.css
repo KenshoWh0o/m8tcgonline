@@ -500,7 +500,7 @@
 /* Dans l'en-tête, sur le verre : le liseré prend le fond de la page. */
 #moi .ava-niv{box-shadow:0 0 0 2px var(--bg),0 2px 4px rgba(0,0,0,.4)}
 /* Dans l'arène, les avatars sont plus petits : la pastille aussi. */
-.ar-ceo .ava-nivw.md .ava-niv{min-width:18px;height:18px;font-size:10px;right:-4px;bottom:-3px;box-shadow:0 0 0 2px #121119}
+.ar-ceo .ava-nivw.md .ava-niv{min-width:18px;height:18px;font-size:10px;right:-4px;bottom:-3px;box-shadow:0 0 0 2px var(--bg)}
 /* Les cadres à texture (Prisme, Sceau, et ceux de la version 2.0) sont dans
    css/reflets.css, « Les cadres d'avatar à texture ». */
 .avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
@@ -627,7 +627,7 @@
 .clligne{display:flex;align-items:center;gap:11px;width:100%;background:var(--surface);
   border:1px solid var(--line);border-radius:var(--radius);padding:8px 13px 8px 9px;text-align:left}
 .clligne:hover{background:var(--hover)}
-.clligne.moi{border-color:rgba(154,115,255,.55);background:linear-gradient(90deg,var(--deco-wash),var(--surface) 70%);box-shadow:inset 0 0 0 1px rgba(154,115,255,.4)}
+.clligne.moi{border-color:rgba(157,140,255,.55);background:linear-gradient(90deg,var(--deco-wash),var(--surface) 70%);box-shadow:inset 0 0 0 1px rgba(157,140,255,.4)}
 .clrang{flex:0 0 30px;text-align:center;font-family:var(--display);font-weight:900;font-size:15px;color:var(--muted)}
 .podium .clrang{height:28px;line-height:28px;border-radius:99px;color:#1a1205}
 /* Teintes fixes et claires, chiffre sombre : lisibles dans les deux thèmes
@@ -1011,7 +1011,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .bmsg{position:relative;display:flex;gap:11px;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--radius);padding:12px 13px;margin-bottom:8px;box-shadow:var(--sh-1)}
 /* Du neuf : un lavis, et un point dans le coin. */
-.bmsg.neuf{border-color:rgba(154,115,255,.35);
+.bmsg.neuf{border-color:rgba(157,140,255,.35);
   background:linear-gradient(135deg,var(--deco-wash),var(--surface) 62%)}
 .bmsg.neuf::after{content:'';position:absolute;top:15px;right:14px;width:8px;height:8px;
   border-radius:50%;background:var(--brand)}

@@ -1418,9 +1418,12 @@ Le gros du code mort a été retiré en 3.0.8 (navigation, données, combat, év
 
 ### 14.3 Écarts à la DA
 
-- `--cta` réécrit en dur 16 fois ; `#5d4bd9`, `#c8bfff`, `#16151e`, `#121119`, `#b3a6ff`, `#ff6b6b` réécrits au lieu de leurs jetons ; le vert de réussite de l'arène est `#8ff0c8` et non `--ok`.
-- Restes de la palette 2.x (`#b38cff` surtout dans `reflets.css`, `rgba(154,115,255,…)`, le dégradé rose de `.colpct`) ; couleurs de rareté hors jetons dans l'ouverture, la fiche, le podium, les succès.
-- Le « choisi » en lavande au lieu du blanc (`.cb-acte-ong.on`, `.filpuce.on`, `.rf-onglets .on::after`…) ; l'or hors des récompenses (`.dk-etoiles`, `.labalerte`…) ; trois roses différents pour le cœur favori ; le vert de Toxique n'est pas le même partout (et `f_toxique` est décrit « rose » dans la boutique).
+La passe de la 3.0.12 ([§ 15](#15-historique-des-versions), le détail dans `docs/design-3.0.md`, § 10 quater) a corrigé ce que cette liste comptait : `--cta` et les couleurs de l'interface réécrites en dur (`#5d4bd9`, `#c8bfff`, `#16151e`, `#121119`, `#b3a6ff`, `#ff6b6b`) prennent leurs jetons ; le vert de réussite de l'arène est `--ok` ; les restes de la 2.x (`#b38cff` de `reflets.css`, `rgba(154,115,255,…)`, le dégradé rose de `.colpct`) sont partis ; le « choisi » est blanc (onglets d'acte, difficultés de l'Arcade, decks, filtres, couverture d'un deck, onglets de l'événement) ; l'or ne sert plus aux étoiles des decks ni aux alertes du Labo ; un seul rose pour le cœur des favoris (`--fav`) ; un seul vert pour Toxique (`#62d84e`, et `f_toxique` n'est plus décrit « rose »). Reste, volontairement ou en question :
+
+- **Les finitions des cartes** (le reflet des Reverses et des Secrètes, `cards.css`, `opening.css`, la Secrète de l'arène) gardent leurs couleurs écrites : ce ne sont pas des couleurs d'interface. De même les couleurs de rareté de l'ouverture, de la fiche, du podium et des succès, et les palettes de particules (`FX`, dessinées dans un canvas qui ne lit pas les variables CSS).
+- **`--warn` a la valeur de l'or** (`#f5c451`) : l'« attention » (une Essence qui manque dans l'atelier, une maintenance en cours au Labo) se lit comme une récompense. Un ambre à part (`#ffb84d`, déjà écrit dans `.dk-bilan li.ko`) le distinguerait : à décider.
+- **Les Étincelles** (le solde du Choc, `choc.css`) s'écrivent en or. C'est une monnaie gagnée, donc une récompense : gardé, mais c'est la seule monnaie en or (les Éclats sont en blanc).
+- Le jeton plein de la réserve de boosters (`.resjeton.plein`) part de `#a98bff`, une lavande intermédiaire sans jeton.
 
 ### 14.4 Documentation et commentaires périmés
 

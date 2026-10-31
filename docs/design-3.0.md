@@ -103,6 +103,10 @@ couleurs ne servent qu'à dire une Section (emblème, cadre, affiche).
 
 Inchangées (`--r-es` … `--r-pr`) : elles appartiennent aux cartes.
 
+Le cœur des favoris a son propre jeton, `--fav` (`#ff7eb6`, le rose des
+Promos) : un seul rose partout, sur la carte, dans la visionneuse et dans le
+filtre (3.0.12).
+
 ## 4. Les matières
 
 | Matière | Où | Recette |
@@ -236,6 +240,19 @@ rendait la carte floue.
 - **L'insigne de maîtrise** : l'étoile du logo et le chiffre romain, sur une pastille graphite ; l'étoile s'éclaire du gris à la lavande pâle (la famille du décor, pas celle de l'action), et prend au V le prisme des Secrètes. Plus de pastille jaune.
 - **Les icônes de l'app, le favicon et l'image de partage** passent au graphite et à la lavande : l'étoile du logo en dégradé du blanc à la lavande, sur le graphite éclairé d'une lueur lavande ; l'image de partage garde le logo du jeu à ses couleurs (la marque ne sert plus qu'au logo), avec cinq Légendaires en éventail et une phrase en Archivo italique.
 - **L'en-tête mobile** : plus de fondu flou sous l'en-tête ; une bande de verre nette apparaît seulement quand la page passe dessous.
+
+## 10 quater. Version 3.0.12 : la passe complète sur la DA
+
+Demandée par le propriétaire le 30 octobre (« fais une passe complète sur la DA »). Une relecture de toutes les feuilles de style contre les règles de ce document, écran par écran, puis des captures aux quatre tailles.
+
+- **Les jetons partout** : le dégradé du bouton principal réécrit seize fois devient `--cta` ; les valeurs de la palette recopiées en dur (`#5d4bd9`, `#c8bfff`, `#16151e`, `#121119`, `#b3a6ff`, `#ff6b6b`) prennent leurs jetons (`--accent-deep`, `--deco-ink`, `--plate`, `--bg`, `--accent-soft`, `--danger`). Rien ne change à l'écran : les valeurs sont les mêmes ; changer une teinte se fait désormais dans `css/tokens.css` pour de bon.
+- **Les restes de la 2.x** : le violet `#b38cff` et `rgba(154,115,255,…)` passent à la lavande ; le pourcentage de la Collection va de la lavande pâle au blanc, au lieu du dégradé violet et rose de la 2.x.
+- **Le vert de la réussite** : l'arène avait le sien (`#8ff0c8`, un vert menthe) ; elle prend `--ok`, celui du site (une Défense qui tient, un bonus, un soutien qui passe, le journal).
+- **Le choisi est blanc** : l'onglet d'acte de la campagne, la difficulté de l'Arcade, le deck choisi, un filtre coché, la carte de couverture d'un deck, le trait sous l'onglet en cours de l'événement. La lavande reste à ce qu'on peut faire.
+- **L'or aux seules récompenses** : les étoiles du bilan d'un deck et le petit titre des guides passent à la lavande ; l'alerte du Labo prend le lavis lavande.
+- **Un seul rose pour les favoris** (`--fav`), **un seul vert pour Toxique** (`#62d84e` : l'emblème de l'en-tête des Combats était d'un autre vert ; le cadre Toxique était décrit « rose » dans la boutique).
+- **Ce qui débordait d'un rien** : l'accueil des Combats (avec la tuile du tutoriel) tient sur un téléphone bas et sur un ordinateur de 800 px de haut ; les quatre petites tuiles (Decks, Missions, Guide, Historique) ne débordent plus à 360 px ; le nom d'un deck trop long finit par « … » dans l'atelier ; les Essences de la Réserve du deck actif ont la pastille de sa note, lisible sur l'illustration.
+- **Gardé, volontairement** : les finitions des cartes (reflets des Reverses et des Secrètes, finitions de maîtrise), les couleurs de rareté, et les particules (dessinées dans un canvas). En question au propriétaire : `--warn` a la valeur de l'or, et les Étincelles s'écrivent en or (README, § 14.3).
 
 ## 11. Sources
 

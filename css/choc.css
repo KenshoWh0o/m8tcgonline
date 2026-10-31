@@ -17,12 +17,12 @@
    pourcentages de la coupe sont les mêmes partout : elle reste droite
    quelle que soit la largeur. L'en-tête est une colonne : les onglets
    restent collés en bas, quelle que soit la hauteur du texte. */
-.ch-tete{background:#16151e;padding-top:18px;min-height:212px;display:flex;flex-direction:column}
+.ch-tete{background:var(--plate);padding-top:18px;min-height:212px;display:flex;flex-direction:column}
 .ch-tete .rf-onglets{margin-top:auto}
 .ch-tete .rf-tetehaut{margin-bottom:16px}
 .ch-tete::before{display:none}
 .ch-tete::after{background:linear-gradient(90deg,rgba(22,21,30,.9) 0%,rgba(22,21,30,.55) 26%,rgba(22,21,30,.05) 48%,rgba(22,21,30,0) 70%),
-  linear-gradient(180deg,rgba(22,21,30,.25) 0%,rgba(22,21,30,0) 30%,rgba(22,21,30,.2) 60%,rgba(22,21,30,.92) 88%,#16151e)}
+  linear-gradient(180deg,rgba(22,21,30,.25) 0%,rgba(22,21,30,0) 30%,rgba(22,21,30,.2) 60%,rgba(22,21,30,.92) 88%,var(--plate))}
 .ch-affiche{position:absolute;inset:0;z-index:-3;pointer-events:none;overflow:hidden}
 .ch-aff-sec{position:absolute;top:0;bottom:0;background-repeat:no-repeat;background-size:cover}
 .ch-aff-sec::after{content:"";position:absolute;inset:0;mix-blend-mode:color}
@@ -92,7 +92,7 @@
 .ch-nv-niv{position:relative;z-index:1;display:grid;place-items:center;width:66px;height:66px;border-radius:50%;
   background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.14) 0)}
 .ch-nv-niv>span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;line-height:1;color:#fff;
-  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+  background:var(--cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .ch-nv-niv b{font-family:var(--display);font-weight:900;font-size:22px}
 .ch-nv-niv small{font-size:8.5px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
 
@@ -113,7 +113,7 @@
 .ch-ico-tapis{width:24px;height:40px;object-fit:cover;border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
 .ch-ico-sleeve{width:28px;height:39px;object-fit:cover;border-radius:4px}
 .rf-palico .etincelleico{width:24px;height:24px}
-.ch-gainico{background:linear-gradient(180deg,#8f7dfb,#5d4bd9)!important}
+.ch-gainico{background:var(--cta)!important}
 .ch-gainico .ch-ico-tapis{width:44px;height:76px}
 .ch-gainico .ch-ico-sleeve{width:50px;height:70px}
 .ch-art-tapis{height:78px;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
@@ -134,7 +134,7 @@
 .ch-lancer:disabled{background:var(--surface-2);color:var(--muted);text-shadow:none}
 .ch-ep-regle{display:flex;align-items:center;gap:14px;padding:16px;border-radius:var(--radius-lg);
   background:radial-gradient(100% 140% at 0% 50%,rgba(157,140,255,.16),transparent 60%),var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
-.ch-ep-ico{flex:0 0 48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9)}
+.ch-ep-ico{flex:0 0 48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;background:var(--cta)}
 .ch-ep-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .ch-ep-regle small{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-soft)}
 .ch-ep-regle b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px}
@@ -178,7 +178,7 @@
   background:url('../assets/card-back.webp') 50% 50%/cover,#2a2540;
   box-shadow:0 0 0 1px rgba(255,255,255,.32),0 0 14px rgba(200,190,255,.35),0 8px 18px rgba(0,0,0,.5)}
 .ch-sec-c::before{content:"";position:absolute;inset:0;mix-blend-mode:soft-light;
-  background:linear-gradient(115deg,transparent 22%,#ff9ad5 33%,#ffe08a 41%,#8ff0c8 49%,#8fd3ff 57%,#c3b2ff 65%,transparent 76%) no-repeat;
+  background:linear-gradient(115deg,transparent 22%,#ff9ad5 33%,#ffe08a 41%,var(--ok) 49%,#8fd3ff 57%,#c3b2ff 65%,transparent 76%) no-repeat;
   background-size:300% 100%;background-position:120% 0;animation:s-reflet 6s ease-in-out infinite;animation-delay:calc(var(--i) * .25s)}
 .ch-sec-c>b{position:relative;font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;line-height:1;color:#fff;
   text-shadow:0 0 10px rgba(255,208,236,.9),0 0 22px rgba(143,211,255,.7)}
@@ -213,8 +213,8 @@ html.rm .ch-sec-c::before{animation:none}
 @keyframes refFlotte{50%{margin-top:-5px}}
 .ch-ref-pal{position:absolute;left:50%;bottom:-4px;translate:-50% 0;display:flex;gap:4px;padding:5px 7px;border-radius:999px;background:rgba(18,17,25,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
 .ch-ref-pal i{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
-.ch-ref-pal i:nth-child(1){background:#121119}.ch-ref-pal i:nth-child(2){background:#24232f}
-.ch-ref-pal i:nth-child(3){background:#8a78f5}.ch-ref-pal i:nth-child(4){background:#c8bfff}
+.ch-ref-pal i:nth-child(1){background:var(--bg)}.ch-ref-pal i:nth-child(2){background:#24232f}
+.ch-ref-pal i:nth-child(3){background:#8a78f5}.ch-ref-pal i:nth-child(4){background:var(--deco-ink)}
 @media (min-width:640px){
   .ch-nv-refonte{grid-template-columns:1fr 330px auto;grid-template-areas:"txt art go";align-items:center;min-height:170px}
   .ch-ref-art{height:150px}.ch-ref-tuile{width:31%;height:124px}}
@@ -224,7 +224,7 @@ html.rm .ch-ref-tuile{animation:none}
 .ch-ep-pips i.ko{background:var(--danger);opacity:.7;box-shadow:none}
 
 /* ============ Les bandeaux (écran Boosters, Combats, Boutique) ============ */
-.chban{background:#16151e}
+.chban{background:var(--plate)}
 .chban::before{display:none}
 /* Le petit bandeau (Boosters, Boutique) reprend l'affiche de l'en-tête :
    les deux illustrations et la coupe, sous un voile à gauche pour le
@@ -242,7 +242,7 @@ html.rm .ch-ref-tuile{animation:none}
 .chban .ch-aff-sec.toxique{width:calc(100% - 109px);clip-path:polygon(0 0,100% 0,calc(100% - 63px) 100%,0 100%)}
 .chban .ch-aff-sec.deter{width:172px;background-size:auto 340%;background-position:right -11px top 5%}
 .chban .ch-aff-coupe i{clip-path:polygon(calc(100% - 111px) 0,calc(100% - 107px) 0,calc(100% - 170px) 100%,calc(100% - 174px) 100%)}
-.chban-n{position:absolute;top:6px;right:8px;min-width:18px;height:18px;padding:0 5px;font-size:11px;box-shadow:0 0 0 2px #16151e}
+.chban-n{position:absolute;top:6px;right:8px;min-width:18px;height:18px;padding:0 5px;font-size:11px;box-shadow:0 0 0 2px var(--plate)}
 .chban-sous{display:inline-flex;align-items:center;gap:4px}
 .chban-sous .etincelleico{width:14px;height:14px}
 .chban-sous strong{font-weight:900;color:#fff}
@@ -265,28 +265,28 @@ html.rm .ch-ref-tuile{animation:none}
 
 /* ============ Les nouveautés de la 3.0 ============ */
 .nvhero.v3{isolation:isolate;background:radial-gradient(90% 140% at 0% 30%,rgba(98,216,78,.4),transparent 60%),
-  radial-gradient(90% 140% at 60% 70%,rgba(124,58,237,.5),transparent 60%),#16151e}
+  radial-gradient(90% 140% at 60% 70%,rgba(124,58,237,.5),transparent 60%),var(--plate)}
 .nvboites{position:relative;flex:0 0 42%;display:flex;align-items:center;justify-content:center}
 .nvboites img{width:52%;filter:drop-shadow(0 10px 16px rgba(0,0,0,.55))}
 .nvboites img:first-child{rotate:-8deg;margin-right:-10%}
 .nvboites img:last-child{rotate:8deg;margin-left:-10%}
 .nvboites i{position:relative;z-index:2;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-style:italic;font-weight:900;
-  font-size:12px;color:#fff;background:#16151e;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+  font-size:12px;color:#fff;background:var(--plate);box-shadow:0 0 0 2px rgba(255,255,255,.25)}
 /* Le second bandeau : les Secrètes, de dos, en éventail (.ch-sec-c). */
 /* La refonte visuelle (version 3.0.7) : trois tuiles de verre qui flottent,
    comme sur l'affiche de l'événement (.ch-ref-*). */
 .nvhero.v3r{isolation:isolate;min-height:126px;background:radial-gradient(60% 110% at 20% 30%,rgba(138,120,245,.5),transparent 70%),linear-gradient(135deg,#221f36,#17151f)}
 .nvhero.v3r .ch-ref-art{flex:0 0 42%;align-self:stretch;height:auto;min-height:100px;perspective:500px}
 .nvhero.v3r .ch-ref-tuile{width:40%;height:76px;top:12px;border-radius:11px;translate:calc(-50% + var(--i) * 72%) calc(var(--a) * 6px)}
-.nvhero.v3r .nvkicker{background:linear-gradient(90deg,#c8bfff,#8a78f5);color:#17151f}
+.nvhero.v3r .nvkicker{background:linear-gradient(90deg,var(--deco-ink),#8a78f5);color:#17151f}
 .nvhero.v3s{isolation:isolate;min-height:118px;background:radial-gradient(50% 90% at 14% 30%,rgba(255,154,213,.32),transparent 70%),
-  radial-gradient(50% 90% at 34% 70%,rgba(143,211,255,.3),transparent 70%),radial-gradient(60% 100% at 24% 50%,rgba(195,178,255,.34),transparent 75%),#16151e}
+  radial-gradient(50% 90% at 34% 70%,rgba(143,211,255,.3),transparent 70%),radial-gradient(60% 100% at 24% 50%,rgba(195,178,255,.34),transparent 75%),var(--plate)}
 .nvhero.v3s .nvkicker{background:linear-gradient(90deg,#ffd0ec,#c9d6ff);color:#1d1830}
 .nvsec{position:relative;flex:0 0 42%;align-self:stretch;min-height:86px}
 .nvsec .ch-sec-c{left:calc(50% - 22px);top:4px;width:44px}
 
 /* ============ Combats : un cosmétique d'événement ============ */
-.cb-cosm-prix.ev{font-size:9.5px;white-space:nowrap;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);color:#fff}
+.cb-cosm-prix.ev{font-size:9.5px;white-space:nowrap;background:var(--cta);color:#fff}
 /* La maîtrise : une carte Légende (son joyau) qui dépasse de sa tuile. */
 .ch-nv.mz .ch-nv-art{background:radial-gradient(70% 90% at 50% 40%,rgba(238,0,115,.28),transparent 70%),var(--surface-2)}
 .ch-nv-mz{position:relative;z-index:1;width:46px;margin-top:22px;transform:rotate(-6deg)}

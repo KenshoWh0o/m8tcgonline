@@ -224,7 +224,7 @@
     ['f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2],
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
     ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4],
-    ['f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5],
+    ['f_toxique','cosmetique', 'Cadre Toxique','Le vert de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5],
     ['f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6],
     /* Version 3.0 (23_combats.sql) : les tapis de jeu et les sleeves. */
     ['t_chateau',   'tapis',  'Tapis « Champions du Monde »', 'L\'illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1],

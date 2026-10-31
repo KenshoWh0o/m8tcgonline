@@ -40,7 +40,7 @@
 .labetat span{font-size:11.5px;font-weight:700;color:var(--muted)}
 .labetat b{font-size:13.5px;font-weight:700;line-height:1.35}
 .labalerte{margin:0 0 10px;padding:9px 12px;border-radius:var(--radius-sm);font-size:12.5px;font-weight:600;
-  background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--text)}
+  background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2);color:var(--text)}
 .labsql{margin:6px 0 0;padding:11px 13px;border-radius:var(--radius-sm);overflow-x:auto;font-size:11.5px;line-height:1.5;
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);white-space:pre}
 
@@ -68,7 +68,7 @@
 .labtab td:first-child{color:var(--text);font-weight:800;white-space:nowrap}
 .cb-labo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:10px 12px;border-radius:var(--radius);
   font-size:12.5px;color:var(--subtle);background:var(--deco-wash);box-shadow:inset 0 0 0 1px var(--line)}
-.ar-fin-apercu{padding:4px 0;--ar-act:#9d8cff;--ar-act2:#c8bfff;--ar-act-encre:#fff;--ar-act-lueur:rgba(157,140,255,.6)}
+.ar-fin-apercu{padding:4px 0;--ar-act:#9d8cff;--ar-act2:var(--deco-ink);--ar-act-encre:#fff;--ar-act-lueur:rgba(157,140,255,.6)}
 .ar-fin-apercu .ar-recompenses{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:8px}
 
 /* Les sous-onglets du Labo. */
@@ -157,9 +157,9 @@
    service, ambre pendant la maintenance. */
 .labmaint-etat{display:flex;align-items:center;gap:10px;margin:0 0 8px}
 .labmaint-etat i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--ok-wash)}
-.labmaint.on .labmaint-etat i{background:var(--warn);box-shadow:0 0 0 4px rgba(245,196,81,.16)}
+.labmaint.on .labmaint-etat i{background:var(--warn);box-shadow:0 0 0 4px color-mix(in srgb,var(--warn) 16%,transparent)}
 .labmaint-etat>span{display:flex;flex-direction:column;gap:1px;min-width:0}
 .labmaint-etat b{font-size:15px}
 .labmaint-etat small{font-size:12.5px;color:var(--muted)}
-.labmaint.on{box-shadow:inset 0 0 0 1px rgba(245,196,81,.5)}
+.labmaint.on{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--warn) 50%,transparent)}
 .labmaint .field textarea{min-height:68px}

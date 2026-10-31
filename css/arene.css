@@ -28,9 +28,10 @@
   font-family:var(--body);user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
   /* L'action (ce que tu peux faire) : la lavande. L'adversaire : le rouge.
-     Ton choix : le blanc. La réussite : le vert (#8ff0c8, écrit en dur). */
-  --ar-act:#9d8cff;--ar-act2:#c8bfff;--ar-act-encre:#ffffff;--ar-act-lueur:rgba(157,140,255,.6);
-  --ar-adv:#ff6b6b;--ar-adv2:#ffb3b3;--ar-adv-lueur:rgba(255,107,107,.55);
+     Ton choix : le blanc. La réussite : le vert, --ok (3.0.12 : celui du site,
+     et non plus un vert menthe à part). */
+  --ar-act:#9d8cff;--ar-act2:var(--deco-ink);--ar-act-encre:#ffffff;--ar-act-lueur:rgba(157,140,255,.6);
+  --ar-adv:var(--danger);--ar-adv2:#ffb3b3;--ar-adv-lueur:rgba(255,107,107,.55);
   --ar-rouge:var(--ar-adv);
   --ar-verre:rgba(26,25,34,.72);--ar-trait:rgba(255,255,255,.14);
   /* Les quatre sortes de cartes. */
@@ -46,7 +47,7 @@ body.en-arene .preprod-bandeau{display:none}
 @keyframes ar-flash{to{opacity:0}}
 
 /* Le fond : le tapis du joueur actif, flouté, qui déborde autour du plateau. */
-.ar-fond{position:absolute;inset:-12%;z-index:0;background:#121119 center/cover no-repeat;filter:blur(30px) brightness(.34) saturate(1.2)}
+.ar-fond{position:absolute;inset:-12%;z-index:0;background:var(--bg) center/cover no-repeat;filter:blur(30px) brightness(.34) saturate(1.2)}
 .ar-fond.base{filter:none;background:
   radial-gradient(ellipse 70% 40% at 50% 8%,rgba(140,120,255,.16),transparent 70%),#0f0e15}
 
@@ -86,7 +87,7 @@ body.en-arene .preprod-bandeau{display:none}
   border:2.5px solid var(--ar-adv);box-shadow:0 0 0 4px rgba(255,107,107,.22),0 0 24px var(--ar-adv-lueur);animation:ar-mire 1s ease-in-out infinite}
 .ar-ceo.cible .ar-ava::after{content:"";position:absolute;right:-5px;bottom:-5px;z-index:3;width:20px;height:20px;border-radius:50%;
   background:var(--ar-rouge) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='6.5'/%3E%3Cpath d='M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4'/%3E%3C/svg%3E") center/76% no-repeat;
-  box-shadow:0 0 0 2px #121119;border:0;animation:none}
+  box-shadow:0 0 0 2px var(--bg);border:0;animation:none}
 @keyframes ar-mire{50%{transform:scale(1.08)}}
 .ar-ceo.touche .ar-ava{animation:ar-touche .6s ease-out}
 @keyframes ar-touche{20%{transform:translateX(-6px);filter:brightness(1.6) sepia(1) hue-rotate(-50deg) saturate(4)}40%{transform:translateX(6px)}60%{transform:translateX(-3px)}}
@@ -106,7 +107,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-chrono{flex:none;position:relative;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
   background:conic-gradient(var(--ar-act) calc(var(--p,1) * 360deg),rgba(255,255,255,.1) 0);transition:background .25s linear}
 .ar-chrono[hidden]{display:none}
-.ar-chrono::before{content:"";position:absolute;inset:3px;border-radius:50%;background:#16151e}
+.ar-chrono::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--plate)}
 .ar-chrono b{position:relative;font-family:var(--display);font-weight:900;font-size:14px}
 .ar-chrono.lui{background:conic-gradient(var(--ar-adv2) calc(var(--p,1) * 360deg),rgba(255,255,255,.1) 0)}
 .ar-chrono.presse{background:conic-gradient(var(--ar-adv) calc(var(--p,1) * 360deg),rgba(255,255,255,.1) 0);animation:ar-presse .9s ease-in-out infinite}
@@ -121,7 +122,7 @@ body.en-arene .preprod-bandeau{display:none}
    ton tour, elle redevient du verre. */
 .ar-fin{flex:none;min-width:118px;height:46px;padding:0 20px;border-radius:999px;border:0;cursor:pointer;
   font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.005em;color:var(--ar-act-encre)!important;
-  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);text-shadow:0 1px 1px rgba(30,16,90,.35);
+  background:var(--cta);text-shadow:0 1px 1px rgba(30,16,90,.35);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(0,0,0,.12),0 10px 24px -8px var(--ar-act-lueur);
   transition:transform .18s cubic-bezier(.2,1.25,.4,1),filter .25s,box-shadow .25s}
 .ar-fin:active:not(:disabled){transform:scale(.96)}
@@ -143,7 +144,7 @@ body.en-arene .preprod-bandeau{display:none}
   width:min(calc(100vw - 10px),560px,calc((100dvh - var(--ar-barres) - var(--ar-main) - 12px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * .82));
   min-height:min(100%,calc(min(100vw,560px) * 1.42));padding:2.6cqi 0;border-radius:26px;transform:rotateX(7deg);transform-origin:50% 70%;
   box-shadow:0 30px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
-.ar-tapis{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;background:#16151e}
+.ar-tapis{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;background:var(--plate)}
 .ar-tapis-c{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity .65s ease}
 .ar-tapis-c.on{opacity:1}
 /* Le tapis de base, aux couleurs du site : le graphite, un trait de lavande
@@ -195,7 +196,7 @@ body.en-arene .preprod-bandeau{display:none}
 /* Une Essence : une gemme qui brille de sa couleur quand elle est libre,
    éteinte quand elle est engagée. */
 .ar-gem{position:relative;display:grid;place-items:center;width:7.6cqi;aspect-ratio:1;border-radius:50%;font-style:normal;
-  background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--ec) 38%,#1e1d28),#121119 74%);
+  background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--ec) 38%,#1e1d28),var(--bg) 74%);
   box-shadow:inset 0 0 0 1.5px var(--ec),0 0 2.6cqi color-mix(in srgb,var(--ec) 65%,transparent);
   transition:transform .3s,box-shadow .3s,background .3s}
 .ar-gem img{width:72%;height:72%;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));transition:filter .3s,opacity .3s}
@@ -205,7 +206,7 @@ body.en-arene .preprod-bandeau{display:none}
 @keyframes ar-gem{from{transform:scale(0) translateY(-6cqi);opacity:0}}
 /* Une Essence Brillante qu'on possède : un anneau irisé qui tourne. */
 .ar-gem.brille::after{content:"";position:absolute;inset:-1.5px;border-radius:50%;pointer-events:none;padding:1.5px;
-  background:conic-gradient(from 0deg,#ff7cc8,#ffc73b,#55e6a6,#39b8ff,#b38cff,#ff7cc8);
+  background:conic-gradient(from 0deg,#ff7cc8,#ffc73b,#55e6a6,#39b8ff,var(--accent-soft),#ff7cc8);
   -webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
   animation:ar-tourne 3s linear infinite}
 .ar-gem.eng.brille::after{opacity:.35}
@@ -239,7 +240,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-info:empty{display:none}
 .ar-info.moi{color:var(--ar-act);box-shadow:inset 0 0 0 1px rgba(157,140,255,.55)}
 /* La consigne du moment (« Choisis la cible ») : c'est à toi d'agir, donc l'or. */
-.ar-info.consigne{color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);
+.ar-info.consigne{color:#fff;background:var(--cta);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 0 3px rgba(157,140,255,.2),0 6px 18px rgba(157,140,255,.3);
   animation:ar-consigne 1.4s ease-in-out infinite}
 @keyframes ar-consigne{50%{opacity:.82}}
@@ -255,7 +256,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-info.phases{display:flex;align-items:center;gap:.6cqi;max-width:76cqi;padding:1cqi;color:rgba(255,255,255,.46);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);font-size:clamp(9.5px,2.9cqi,13px);letter-spacing:.01em}
 .ar-ph{padding:.8cqi 2cqi;border-radius:999px;transition:background .3s,color .3s}
-.ar-ph.on{color:#fff;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.ar-ph.on{color:#fff;background:var(--cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .ar-info.phases.lui .ar-ph.on{background:linear-gradient(180deg,#ff8f8f,#d84f4f);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .ar-ph.sans{text-decoration:line-through;text-decoration-thickness:1.5px;opacity:.55}
 .ar-ph-fl{font-style:normal;opacity:.45}
@@ -298,7 +299,7 @@ body.en-arene .preprod-bandeau{display:none}
   animation:s-eclats 2.6s ease-in-out infinite}
 /* Une carte sans illustration (Promos provisoires) : un visuel en texte. */
 .ar-texte{position:absolute;inset:0;display:flex;flex-direction:column;gap:3%;padding:9% 8%;container-type:inline-size;
-  background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,#22212c),#16151e 70%);border:2.5cqi solid var(--tc);border-radius:inherit}
+  background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 55%,#22212c),var(--plate) 70%);border:2.5cqi solid var(--tc);border-radius:inherit}
 .ar-texte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:11cqi;line-height:1.05}
 .ar-texte small{font-size:6.5cqi;text-transform:uppercase;letter-spacing:.06em;opacity:.75}
 .ar-texte em{margin-top:auto;font-style:normal;font-weight:900;font-size:9cqi}
@@ -374,7 +375,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-def svg{width:max(10px,9cqi);height:max(10px,9cqi);fill:none;stroke:rgba(255,255,255,.62);stroke-width:2.2;stroke-linejoin:round}
 .ar-def b{font-family:var(--display);font-weight:800;font-size:max(10.5px,10cqi);line-height:1;font-variant-numeric:tabular-nums;color:#fff}
 .ar-def.plus{box-shadow:inset 0 0 0 1px rgba(79,214,160,.65),0 2px 6px rgba(0,0,0,.55)}
-.ar-def.plus b{color:#8ff0c8}
+.ar-def.plus b{color:var(--ok)}
 .ar-def.moins{box-shadow:inset 0 0 0 1px rgba(255,107,107,.65),0 2px 6px rgba(0,0,0,.55)}
 .ar-def.moins b{color:var(--ar-adv2)}
 
@@ -387,7 +388,7 @@ body.en-arene .preprod-bandeau{display:none}
    « bloqué », un état subi, prend le corail. */
 .mk-provocation,.mk-garde,.mk-shield,.mk-riposte,.mk-legion{color:#fff}.mk-bloque{color:var(--ar-adv)}
 /* Un effet du tour : vert s'il aide, rouge s'il gêne. Le détail est dans la carte. */
-.mk-buff{color:#8ff0c8;font-size:10cqi}.mk-debuff{color:var(--ar-adv2);font-size:10cqi}
+.mk-buff{color:var(--ok);font-size:10cqi}.mk-debuff{color:var(--ar-adv2);font-size:10cqi}
 
 /* Les Objets liés : des médaillons, sur le bord gauche du Joueur. */
 .ar-objs{position:absolute;left:-8cqi;top:5cqi;z-index:3;display:flex;flex-direction:column;gap:2cqi}
@@ -441,7 +442,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-f-defv small{font-size:11px;font-weight:800;color:rgba(255,255,255,.65)}
 .ar-f-defv b{font-family:var(--display);font-weight:900;font-size:17px}
 .ar-f-defv s{font-size:11.5px;color:rgba(255,255,255,.45)}
-.ar-f-defv.plus{box-shadow:inset 0 0 0 1.5px rgba(143,240,200,.7)}.ar-f-defv.plus b{color:#8ff0c8}
+.ar-f-defv.plus{box-shadow:inset 0 0 0 1.5px rgba(79,214,160,.7)}.ar-f-defv.plus b{color:var(--ok)}
 .ar-f-defv.moins{box-shadow:inset 0 0 0 1.5px rgba(255,143,143,.7)}.ar-f-defv.moins b{color:#ff8f8f}
 .ar-f-pret{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:800;
   color:#c9fbe6;background:rgba(143,240,200,.1);box-shadow:inset 0 0 0 1px rgba(143,240,200,.4)}
@@ -462,14 +463,14 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-f-at .ar-raison{color:#ffb3b3}
 .ar-f-at .ar-pret{color:#e4dfff;font-weight:700}
 .ar-f-atq em{flex:none;display:flex;flex-direction:column;align-items:flex-end;font-style:italic;font-family:var(--display);font-weight:900;font-size:24px;line-height:1}
-.ar-f-atq em.plus{color:#8ff0c8}
+.ar-f-atq em.plus{color:var(--ok)}
 .ar-f-atq em.moins{color:#ff8f8f}
 .ar-f-atq em s{font-family:var(--body);font-style:normal;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.5)}
-.ar-f-atq.ok{cursor:pointer;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1.5px #c8bfff,0 10px 26px -8px rgba(157,140,255,.75);
+.ar-f-atq.ok{cursor:pointer;background:var(--cta);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1.5px var(--deco-ink),0 10px 26px -8px rgba(157,140,255,.75);
   animation:ar-f-ok 1.6s ease-in-out infinite;transition:transform .18s cubic-bezier(.2,1.25,.4,1)}
 .ar-f-atq.ok:active{transform:scale(.97)}
-@keyframes ar-f-ok{50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1.5px #c8bfff,0 4px 12px -6px rgba(157,140,255,.4)}}
+@keyframes ar-f-ok{50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1.5px var(--deco-ink),0 4px 12px -6px rgba(157,140,255,.4)}}
 .ar-f-atq:disabled{cursor:default}
 .ar-f-atq:disabled .ar-f-at b,.ar-f-atq:disabled em{opacity:.7}
 .ar-f-aide{margin:0;font-size:13.5px;line-height:1.4;color:rgba(255,255,255,.85);text-align:center}
@@ -484,7 +485,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-puce.kw{box-shadow:inset 0 0 0 1px rgba(200,191,255,.5)}
 .ar-puce b{color:#fff}
 .ar-f-jouer{align-self:center;min-width:220px;height:50px;padding:0 26px;border-radius:999px;border:0;cursor:pointer;font-family:var(--display);font-weight:800;font-size:16px;
-  color:#fff!important;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);text-shadow:0 1px 1px rgba(30,16,90,.35);
+  color:#fff!important;background:var(--cta);text-shadow:0 1px 1px rgba(30,16,90,.35);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 24px -8px var(--ar-act-lueur);transition:transform .18s cubic-bezier(.2,1.25,.4,1)}
 .ar-f-jouer:active{transform:scale(.97)}
 /* `#arene button` (police héritée) l'emportait sur la classe : le bouton perdait sa police d'affichage et sa graisse. */
@@ -541,7 +542,7 @@ body.en-arene .preprod-bandeau{display:none}
 /* Le geste à faire : une flèche vers son camp, juste dessous. */
 .ar-f-geste{display:flex;align-items:center;gap:10px;margin:2px 0 0;padding:10px 13px;border-radius:15px;font-size:13px;font-weight:700;line-height:1.3;
   color:#e9e5ff;background:rgba(157,140,255,.13);box-shadow:inset 0 0 0 1px rgba(157,140,255,.5)}
-.ar-f-geste svg{flex:none;width:20px;height:20px;fill:none;stroke:#c8bfff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:ar-geste 1.5s ease-in-out infinite}
+.ar-f-geste svg{flex:none;width:20px;height:20px;fill:none;stroke:var(--deco-ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:ar-geste 1.5s ease-in-out infinite}
 @keyframes ar-geste{50%{transform:translateY(3px)}}
 .ar-f-aide.non{font-size:12.5px;color:rgba(255,255,255,.6)}
 .ar-focus.large .ar-f-jouer{align-self:stretch;min-width:0;margin-top:2px}
@@ -605,14 +606,14 @@ html.rm .ar-f-geste svg,html.rm .ar-place-f{animation:none}
   border-radius:999px;border:0;cursor:pointer;background:rgba(255,255,255,.09);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.18);
   font-weight:800;font-size:14.5px;line-height:1.15;transition:transform .18s cubic-bezier(.2,1.25,.4,1),opacity .2s}
 .ar-b small{font-size:11px;font-weight:700;opacity:.82}
-.ar-b.or{color:#fff!important;background:linear-gradient(180deg,#8f7dfb,#5d4bd9);text-shadow:0 1px 1px rgba(30,16,90,.35);
+.ar-b.or{color:#fff!important;background:var(--cta);text-shadow:0 1px 1px rgba(30,16,90,.35);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 8px 20px -8px var(--ar-act-lueur)}
 /* Un geste qu'on ne rattrape pas (abandonner) : corail. */
 .ar-b.rouge{color:#2a0808!important;background:linear-gradient(180deg,#ff8f8f,var(--ar-adv));box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 8px 20px -8px var(--ar-adv-lueur)}
 /* Défendre avec tel Joueur : un choix comme un autre, en verre ; c'est la
    ligne du dessous qui dit l'issue — il tient (vert) ou il tombe (corail). */
 .ar-b.def small{opacity:1}
-.ar-b.def.tient small{color:#8ff0c8}
+.ar-b.def.tient small{color:var(--ok)}
 .ar-b.def.tombe small{color:var(--ar-adv2)}
 .ar-b.ghost{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
 .ar-b:active:not(:disabled){transform:scale(.96)}
@@ -637,7 +638,7 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 .ar-coche-c{position:absolute;top:5px;right:5px;z-index:3;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);box-shadow:inset 0 0 0 2px #fff}
 .ar-lc.pris .ar-coche-c{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='%23120b29' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/80% no-repeat;box-shadow:none}
 .ar-rang{position:absolute;top:-6px;left:-6px;z-index:3;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;
-  background:#fff;color:#16151e;font-size:12px;font-weight:900}
+  background:#fff;color:var(--plate);font-size:12px;font-weight:900}
 .ar-mulligan{display:flex;justify-content:center;gap:6px;margin:10px 0 8px}
 .ar-mulligan>span{flex:1 1 0;max-width:92px;animation:ar-distrib .42s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc(var(--i) * 70ms)}
 .ar-mulligan .ar-c{box-shadow:0 6px 14px rgba(0,0,0,.55)}
@@ -663,7 +664,7 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 .ar-mi svg{flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
 .ar-mi span{flex:1}
 .ar-mi i{font-style:normal;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.1)}
-.ar-mi.on i{background:#fff;color:#16151e}
+.ar-mi.on i{background:#fff;color:var(--plate)}
 .ar-mi.danger{color:var(--ar-adv2)!important;box-shadow:inset 0 0 0 1px rgba(255,107,107,.32)}
 
 /* ============ Annonces ============ */
@@ -689,7 +690,7 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 .ar-piece-a,.ar-piece-b{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;
   backface-visibility:hidden;-webkit-backface-visibility:hidden;
   background:radial-gradient(circle at 34% 28%,#f1edff,var(--ar-act) 42%,#4a3ab8 100%);
-  box-shadow:inset 0 0 0 5px #c8bfff,inset 0 0 0 8px #3a2c99,inset 0 -6px 14px rgba(0,0,0,.3),0 14px 34px rgba(0,0,0,.6)}
+  box-shadow:inset 0 0 0 5px var(--deco-ink),inset 0 0 0 8px #3a2c99,inset 0 -6px 14px rgba(0,0,0,.3),0 14px 34px rgba(0,0,0,.6)}
 /* La face de l'adversaire : le corail, sa couleur dans toute l'arène. */
 .ar-piece-b{transform:rotateY(180deg);background:radial-gradient(circle at 34% 28%,#ffe6e6,var(--ar-adv) 42%,#8f2626 100%);
   box-shadow:inset 0 0 0 5px #ffb3b3,inset 0 0 0 8px #6a1818,inset 0 -6px 14px rgba(0,0,0,.3),0 14px 34px rgba(0,0,0,.6)}
@@ -744,7 +745,7 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 .ar-flot.degats{font-size:32px;color:#fff;text-shadow:0 3px 0 #7a1f17,0 0 18px var(--ar-adv-lueur)}
 .ar-flot.mort{color:var(--ar-adv2)}
 .ar-flot.tient{color:#fff}
-.ar-flot.plus{color:#8ff0c8}
+.ar-flot.plus{color:var(--ok)}
 .ar-flot.info{font-family:var(--body);font-style:normal;font-weight:800;font-size:13.5px;padding:5px 11px;border-radius:999px;
   background:rgba(26,25,34,.9);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);text-shadow:none}
 @keyframes ar-flot{0%{transform:translateY(10px) scale(.6);opacity:0}15%{transform:translateY(0) scale(1.12);opacity:1}30%{transform:scale(1)}80%{opacity:1}100%{transform:translateY(-40px);opacity:0}}
@@ -800,7 +801,7 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 .ar-journal ol{list-style:none;margin:0;padding:10px 14px 30px;overflow:auto;display:flex;flex-direction:column;gap:5px;font-size:13px;color:rgba(255,255,255,.8)}
 .ar-journal li.sys{margin-top:10px;color:rgba(255,255,255,.55);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .ar-journal li.mal{color:var(--ar-adv2)}
-.ar-journal li.bien{color:#8ff0c8}
+.ar-journal li.bien{color:var(--ok)}
 .ar-journal i{font-style:normal;font-weight:700;color:#fff}
 
 /* ============ Un boss en face (le Raid) ============ */
@@ -860,7 +861,7 @@ html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-c.holo::after,html.r
 .ar-tuto-in{width:min(100%,430px);padding:12px 14px 13px;border-radius:20px;color:#fff;
   background:linear-gradient(180deg,rgba(48,42,82,.97),rgba(30,27,46,.98));
   box-shadow:inset 0 0 0 1.5px rgba(179,166,255,.6),0 14px 34px rgba(0,0,0,.55);animation:ar-monte .3s ease}
-.ar-tuto-in small{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#b3a6ff}
+.ar-tuto-in small{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
 .ar-tuto-in>b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:17px;margin:2px 0 4px}
 .ar-tuto-in p{margin:0;font-size:13.5px;line-height:1.45;color:rgba(255,255,255,.88)}
 .ar-tuto-in p b{font-weight:800;color:#fff}
@@ -885,19 +886,19 @@ html.rm .tuto-vise{animation:none}
 .ar-v-trait{fill:none;stroke-width:4;stroke-linecap:round;stroke:var(--vc);filter:drop-shadow(0 0 6px var(--vc));
   stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:ar-trace .38s cubic-bezier(.3,.7,.3,1) forwards}
 .ar-visee marker path{fill:var(--vc)}
-.ar-visee.moi{--vc:#c8bfff}
-.ar-visee.lui{--vc:var(--ar-adv,#ff6b6b)}
+.ar-visee.moi{--vc:var(--deco-ink)}
+.ar-visee.lui{--vc:var(--ar-adv,var(--danger))}
 @keyframes ar-trace{to{stroke-dashoffset:0}}
 .ar-j.vise::before,.ar-ceo.vise .ar-ava::before{content:"";position:absolute;inset:-6%;z-index:6;border-radius:12%;pointer-events:none;
-  box-shadow:0 0 0 3px var(--ar-adv,#ff6b6b),0 0 22px var(--ar-adv-lueur,rgba(255,107,107,.6));animation:ar-vise 1s ease-in-out infinite}
-.ar-camp.lui .ar-j.vise::before{box-shadow:0 0 0 3px #c8bfff,0 0 22px rgba(200,191,255,.7)}
+  box-shadow:0 0 0 3px var(--ar-adv,var(--danger)),0 0 22px var(--ar-adv-lueur,rgba(255,107,107,.6));animation:ar-vise 1s ease-in-out infinite}
+.ar-camp.lui .ar-j.vise::before{box-shadow:0 0 0 3px var(--deco-ink),0 0 22px rgba(200,191,255,.7)}
 .ar-ceo.vise .ar-ava{position:relative}
 .ar-ceo.vise .ar-ava::before{border-radius:50%;inset:-10%}
-.ar-ceo.lui.vise .ar-ava::before{box-shadow:0 0 0 3px #c8bfff,0 0 22px rgba(200,191,255,.7)}
+.ar-ceo.lui.vise .ar-ava::before{box-shadow:0 0 0 3px var(--deco-ink),0 0 22px rgba(200,191,255,.7)}
 @keyframes ar-vise{50%{transform:scale(1.06);opacity:.75}}
 /* Un effet qui touche une carte : un éclat bref sur elle. */
 .ar-j.effet>.ar-c{animation:ar-effet .9s ease-out}
-@keyframes ar-effet{0%{filter:brightness(1)}25%{filter:brightness(1.7) drop-shadow(0 0 10px #c8bfff)}100%{filter:none}}
+@keyframes ar-effet{0%{filter:brightness(1)}25%{filter:brightness(1.7) drop-shadow(0 0 10px var(--deco-ink))}100%{filter:none}}
 /* La pastille de Défense qui vient de changer. */
 .ar-def.bouge{animation:ar-def-bouge .9s ease-out}
 @keyframes ar-def-bouge{0%{transform:scale(1)}30%{transform:scale(1.45)}100%{transform:scale(1)}}
@@ -918,7 +919,7 @@ html.rm .tuto-vise{animation:none}
 .ar-j.remplacable::after{box-shadow:none;outline:2px dashed rgba(200,191,255,.9);outline-offset:1px;border-radius:calc(6.5cqi + 3px)}
 .ar-j.remplacable::before{content:"";position:absolute;right:-5cqi;bottom:12%;z-index:4;width:22cqi;aspect-ratio:1;border-radius:50%;pointer-events:none;
   background:var(--ar-act) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 11a8 8 0 0 0-14.3-4.9L4 8'/%3E%3Cpath d='M4 3v5h5M4 13a8 8 0 0 0 14.3 4.9L20 16'/%3E%3Cpath d='M20 21v-5h-5'/%3E%3C/svg%3E") center/62% no-repeat;
-  box-shadow:0 0 0 2px #16151e,0 0 12px var(--ar-act-lueur)}
+  box-shadow:0 0 0 2px var(--plate),0 0 12px var(--ar-act-lueur)}
 .ar-remplace{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0 6px}
 .ar-remplace>.ar-c{width:78px;box-shadow:0 6px 14px rgba(0,0,0,.55)}
 .ar-remplace>.ar-c:first-child{filter:brightness(.7) saturate(.6)}
@@ -938,14 +939,14 @@ html.rm .tuto-vise{animation:none}
 .ar-b.sout{flex-direction:row;flex-wrap:wrap;gap:4px 8px;justify-content:center}
 .ar-b.sout>small{flex-basis:100%}
 .ar-b.sout.passe{box-shadow:inset 0 0 0 1.5px rgba(157,140,255,.7),inset 0 1px 0 rgba(255,255,255,.18)}
-.ar-b.sout.passe small{color:#8ff0c8;opacity:1}
+.ar-b.sout.passe small{color:var(--ok);opacity:1}
 .ar-b.sout.court small{color:var(--ar-adv2);opacity:1}
 .ar-sheet.soutien .ar-s-in{box-shadow:inset 0 0 0 1.5px rgba(157,140,255,.6),inset 0 1px 0 rgba(255,255,255,.24),0 -12px 40px rgba(0,0,0,.6)}
 
 /* Le trait du soutien : du voisin à l'attaquant. */
 .ar-lien{position:absolute;inset:0;z-index:7;pointer-events:none}
 .ar-lien svg{position:absolute;inset:0;overflow:visible}
-.ar-lien path{fill:none;stroke:#c8bfff;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:6 7;
+.ar-lien path{fill:none;stroke:var(--deco-ink);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:6 7;
   filter:drop-shadow(0 0 5px rgba(157,140,255,.9));animation:ar-lien 1.1s ease-out forwards}
 @keyframes ar-lien{0%{opacity:0;stroke-dashoffset:40}20%{opacity:1}75%{opacity:1}100%{opacity:0;stroke-dashoffset:0}}
 
@@ -958,10 +959,10 @@ html.rm .tuto-vise{animation:none}
 .ar-du-v b{font-family:var(--display);font-weight:900;font-size:clamp(28px,9vw,40px);font-variant-numeric:tabular-nums}
 .ar-du-v em{margin-top:3px;font-style:normal;font-size:10.5px;font-weight:700;color:var(--ar-act2)}
 .ar-duel>i{font-style:normal;font-family:var(--display);font-weight:900;font-size:clamp(26px,8vw,36px)}
-.ar-duel.passe>i{color:#8ff0c8}
+.ar-duel.passe>i{color:var(--ok)}
 .ar-duel.tient>i{color:var(--ar-adv2)}
 .ar-duel.lui.passe>i{color:var(--ar-adv)}
-.ar-duel.lui.tient>i{color:#8ff0c8}
+.ar-duel.lui.tient>i{color:var(--ok)}
 @keyframes ar-duel{0%{opacity:0;transform:scale(.6)}14%{opacity:1;transform:scale(1.06)}24%{transform:none}82%{opacity:1}100%{opacity:0;transform:translateY(-12px)}}
 
 /* « Phase de Combat » : le bandeau, plus court. */
