@@ -1124,13 +1124,12 @@
   /* ============================== version 3.0.7, 28_maitrise.sql */
   /* La maîtrise des cartes : cinq niveaux, payés en Fragments et en
      exemplaires EN TROP (au-delà de la limite de deck, de ce qu'on garde et
-     des échanges en attente) ; chaque exemplaire qui manque se remplace par
-     son prix de fabrication. Les montants sont ceux du serveur. */
-  /* Version 3.0.8 : la base de Fragments dépend de la rareté, fois 1, 2, 4,
-     7, 11 selon le niveau (maitrise_fragments). */
-  const MZ_BASE = { C: 60, PC: 100, R: 200, E: 400, L: 600, S: 600 };
+     des échanges en attente), consommés. Version 3.0.13 : un exemplaire qui
+     manque ne se remplace plus par des Fragments. Les montants sont ceux du
+     serveur (maitrise_fragments, maitrise_copies). */
+  const MZ_BASE = { C: 80, PC: 120, R: 250, E: 500, L: 800, S: 800 };
   const MZ_MULT = [1, 2, 4, 7, 11];
-  const MZ_COPIES = { C: [1, 1, 1, 2, 2], PC: [1, 1, 1, 1, 2], R: [0, 1, 1, 1, 1], E: [0, 0, 1, 0, 1], L: [0, 0, 0, 0, 1], S: [0, 0, 0, 0, 0] };
+  const MZ_COPIES = { C: [2, 3, 4, 5, 6], PC: [2, 2, 3, 4, 5], R: [1, 2, 2, 3, 4], E: [1, 1, 2, 2, 3], L: [1, 1, 1, 2, 2], S: [1, 1, 1, 1, 1] };
   /* maitrise_carte : la carte qui porte la maîtrise (une Reverse : sa carte
      classique), si elle se maîtrise ; null sinon. */
   function maitriseCarte(id) {
@@ -1158,12 +1157,12 @@
     const limite = Combat.REGLE.COPIES;
     const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
     const copies = MZ_COPIES[k.rar][n - 1];
-    const pris = Math.min(copies, dispo);
-    const total = MZ_BASE[k.rar] * MZ_MULT[n - 1] + (copies - pris) * (cfg('fabrication_' + k.rar) || 0);
+    if (dispo < copies) refuser(`Il faut ${copies} exemplaire${copies > 1 ? 's' : ''} en trop de « ${k.nom} » : tu en as ${dispo}.`);
+    const total = MZ_BASE[k.rar] * MZ_MULT[n - 1];
     const pr = profil(p);
     if ((pr.fragments || 0) < total) refuser(`Pas assez de Fragments : il en faut ${total}.`);
     pr.fragments -= total;
-    if (pris) ajouter(p, k.id, -pris);
+    ajouter(p, k.id, -copies);
     mzDe(p)[k.id] = n;
     return me(p);
   };

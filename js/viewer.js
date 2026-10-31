@@ -353,7 +353,9 @@ $('#viewer').addEventListener('click', e => {
   if (e.target.closest('[data-v="fav"]')) return basculerFavoriVw();
   const o = e.target.closest('[data-v="ong"]');
   if (o) return allerOngletVw(o.dataset.o);
-  if (e.target.closest('[data-v="maitriser"]')) return maitriserVw();
+  if (e.target.closest('[data-v="maitriser"]')) return demanderMaitriseVw();
+  if (e.target.closest('[data-v="mz-ok"]')) return maitriserVw();
+  if (e.target.closest('[data-v="mz-non"]')) return annulerMaitriseVw();
   const mv = e.target.closest('[data-v="mz-voir"]');
   if (mv) return voirNiveauVw(+mv.dataset.n);
   if (e.target.closest('[data-v="fetiche"]')) return choisirFeticheVw();

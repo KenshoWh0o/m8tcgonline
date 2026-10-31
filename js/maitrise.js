@@ -44,14 +44,15 @@ const MAITRISE = {
     'Une lumière fait le tour de son écrin, des étincelles montent, un halo l\'entoure. En combat, elle entre dans un éclat, et ses coups brillent.',
     'Un écrin prismatique et trois étoiles qui scintillent. En combat, une onde de choc traverse le plateau.'
   ],
-  /* Les Fragments d'un niveau (version 3.0.8) : la base de la rareté, fois
-     1, 2, 4, 7, 11 — 25 fois la base pour la Légende : 1 500 pour une
-     Commune, 15 000 pour une Légendaire (docs/economie-3.0.md, 3 ter). */
-  base: { C: 60, PC: 100, R: 200, E: 400, L: 600, S: 600 },
+  /* Les Fragments d'un niveau : la base de la rareté, fois 1, 2, 4, 7, 11
+     — 25 fois la base pour la Légende : 2 000 pour une Commune, 20 000 pour
+     une Légendaire (version 3.0.13 ; docs/economie-3.0.md, 3 ter). */
+  base: { C: 80, PC: 120, R: 250, E: 500, L: 800, S: 800 },
   mult: [1, 2, 4, 7, 11],
-  /* Les exemplaires en trop qu'absorbe chaque niveau, selon la rareté : plus
-     une carte est rare, moins on en demande. */
-  copies: { C: [1, 1, 1, 2, 2], PC: [1, 1, 1, 1, 2], R: [0, 1, 1, 1, 1], E: [0, 0, 1, 0, 1], L: [0, 0, 0, 0, 1], S: [0, 0, 0, 0, 0] }
+  /* Les exemplaires que consomme chaque niveau, selon la rareté : plus une
+     carte est rare, moins on en demande, mais toujours au moins un. Depuis
+     la 3.0.13, il faut les avoir : aucun ne se remplace par des Fragments. */
+  copies: { C: [2, 3, 4, 5, 6], PC: [2, 2, 3, 4, 5], R: [1, 2, 2, 3, 4], E: [1, 1, 2, 2, 3], L: [1, 1, 1, 2, 2], S: [1, 1, 1, 1, 1] }
 };
 const CHIFFRES_ROMAINS = ['', 'I', 'II', 'III', 'IV', 'V'];
 
@@ -76,20 +77,31 @@ const limiteDeck = () => (typeof Combat !== 'undefined' ? Combat.REGLE.COPIES : 
 /* Les Fragments du niveau n d'une carte de rareté `rar`. */
 const fragmentsMaitrise = (rar, n) => (MAITRISE.base[rar] || 0) * (MAITRISE.mult[n - 1] || 0);
 
-/* Ce que coûte le niveau suivant. null : déjà au maximum. */
+/* Les exemplaires d'une carte, et ceux que la maîtrise peut prendre : tous,
+   sauf ce qu'un deck peut contenir (trois), ce que le joueur a choisi de
+   garder s'il en garde plus, et ce qu'il a promis dans un échange en
+   attente. Seuls les exemplaires de la carte classique comptent. */
+function exemplairesMaitrise(c) {
+  const k = carteMaitrise(c);
+  const possede = mesEx(k.id);
+  const deck = limiteDeck(k);
+  const garde = aGarder(k);
+  const promis = (typeof Backend !== 'undefined' && Backend.trades || [])
+    .filter(t => t.sens === 'envoyee' && t.status === 'pending' && t.offer === k.id).length;
+  const protege = Math.max(deck, garde);
+  return { possede, deck, garde, promis, protege, dispo: Math.max(0, possede - protege - promis) };
+}
+
+/* Ce que coûte le niveau suivant, et ce qu'on a. null : déjà au maximum. */
 function coutMaitrise(c) {
   const k = carteMaitrise(c);
   const n = niveauMaitrise(k) + 1;
   if (n > MAITRISE.max) return null;
   const copies = (MAITRISE.copies[k.rar] || [])[n - 1] || 0;
-  const reserve = (typeof Backend !== 'undefined' && Backend.trades || [])
-    .filter(t => t.sens === 'envoyee' && t.status === 'pending' && t.offer === k.id).length;
-  const dispo = Math.max(0, mesEx(k.id) - Math.max(limiteDeck(k), aGarder(k)) - reserve);
-  const pris = Math.min(copies, dispo);
-  const manque = copies - pris;
-  const prixCopie = (typeof fabCouts === 'function' ? fabCouts() : {})[k.rar] || 0;
+  const ex = exemplairesMaitrise(k);
   const frag = fragmentsMaitrise(k.rar, n);
-  return { n, frag, copies, pris, manque, prixCopie, dispo, total: frag + manque * prixCopie };
+  const solde = (typeof save !== 'undefined' && save.fragments) || 0;
+  return Object.assign({ n, frag, copies, solde, assezEx: ex.dispo >= copies, assezFrag: solde >= frag }, ex);
 }
 
 /* ---------- L'allure ---------- */
@@ -108,13 +120,12 @@ const MZ_ETOILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .6c1
    porte un identifiant fixe : identique partout, il peut être défini
    plusieurs fois dans la page. */
 const MZ_ETOILE_V = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="mzprisme" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc4e4"/><stop offset=".35" stop-color="#d9c9ff"/><stop offset=".65" stop-color="#b9e4ff"/><stop offset="1" stop-color="#bff3dc"/></linearGradient></defs><path d="M12 .6c1 6.6 4.3 10 11.4 11.4C16.3 13.4 13 16.8 12 23.4 11 16.8 7.7 13.4.6 12 7.7 10.6 11 7.2 12 .6Z"/></svg>';
-const mzDedans = n => '<i class="mz-s" aria-hidden="true"></i>'
-  + (n >= 3 ? '<i class="mz-h" aria-hidden="true"></i>' : '')
-  + (n >= 4 ? '<i class="mz-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i>' : '')
-  + (n >= 5 ? `<i class="mz-g" aria-hidden="true">${MZ_ETOILE}${MZ_ETOILE}${MZ_ETOILE}</i>` : '');
-const mzAutourDe = n => (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '')
-  + (n >= 2 ? '<i class="mz-t" aria-hidden="true"></i>' : '')
-  + (n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : '');
+const mzDedans = n => '<i class="mz-v" aria-hidden="true"></i>'
+  + (n >= 2 ? '<i class="mz-f" aria-hidden="true"></i>' : '')
+  + (n >= 3 ? '<i class="mz-e" aria-hidden="true"><b></b><b></b><b></b></i>' : '')
+  + (n >= 4 ? '<i class="mz-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i>' : '');
+const mzAutourDe = n => (n >= 5 ? '<i class="mz-c" aria-hidden="true"></i>' : '')
+  + (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '');
 function maitriseEnveloppe(c, n, calme) {
   if (!n) return { cls: '', style: '', dedans: '', autour: '' };
   const k = carteMaitrise(c);
@@ -157,16 +168,7 @@ function vMaitriseFiche(c) {
   if (!en) action = '<p class="mz-rien">La maîtrise se joue en ligne.</p>';
   else if (!possede) action = `<p class="mz-rien">Il faut posséder ${c.rev ? 'sa carte classique' : 'la carte'} pour la maîtriser.</p>`;
   else if (!cout) action = `<p class="mz-max">${insigneMaitrise(MAITRISE.max)}Maîtrise au maximum : c'est une Légende.</p>`;
-  else {
-    const assez = (save.fragments || 0) >= cout.total;
-    const morceaux = [`${NAVICO.fragment}<b class="tnum">${fmtN(cout.frag)}</b>`];
-    if (cout.pris) morceaux.push(`${NAVICO.cards}<b class="tnum">${cout.pris}</b> en trop`);
-    if (cout.manque) morceaux.push(`<span class="manque">+<b class="tnum">${fmtN(cout.manque * cout.prixCopie)}</b> pour ${cout.manque} qui manque${cout.manque > 1 ? 'nt' : ''}</span>`);
-    action = `<button class="btn mz-go" data-v="maitriser" ${assez ? '' : 'disabled'}>
-        <span>Passer au niveau ${CHIFFRES_ROMAINS[cout.n]}</span><span class="mz-tot">${NAVICO.fragment}${fmtN(cout.total)}</span></button>
-      <p class="mz-cout">${morceaux.join('<i>·</i>')}<i>·</i>tu as <b class="tnum">${fmtN(save.fragments || 0)}</b></p>
-      ${assez ? '' : `<p class="mz-rien">Il te manque ${fmtN(cout.total - (save.fragments || 0))} Fragments : le recyclage des doublons en rapporte.</p>`}`;
-  }
+  else action = vMaitriseAction(k, cout, c.rev);
   /* Version 3.0.12 : la maîtrise avant les 122 retarde la collection de
      trois à quatre semaines en médiane (simulation, tools/equilibre-maitrise.py) ;
      comme la fiche d'une Reverse à fabriquer, on le rappelle. */
@@ -176,29 +178,113 @@ function vMaitriseFiche(c) {
     ${detail}
     ${action}
     ${manquent > 0 ? `<p class="mz-note mz-rappel">Il te manque ${manquent} carte${manquent > 1 ? 's' : ''} de l'extension : ces Fragments peuvent d'abord ${manquent > 1 ? 'les' : 'la'} fabriquer.</p>` : ''}
-    <p class="mz-note">Seuls les exemplaires en trop sont pris : jamais ceux qu'un deck peut contenir (${limiteDeck(k)}), ni ceux que tu gardes.</p>
+    ${vBaremeMaitrise(k, n)}
   </div>`;
 }
+
+/* Ce qu'il faut pour le niveau suivant (version 3.0.13) : deux conditions,
+   cochées ou non — les exemplaires qu'il consomme, les Fragments —, d'où
+   viennent les exemplaires en trop, et le bouton. Le bouton demande
+   d'abord une confirmation, posée à sa place : des exemplaires consommés ne
+   reviennent pas. */
+const MZ_OUI = '<svg class="mz-coche" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const MZ_NON = '<svg class="mz-coche" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
+function vMaitriseAction(k, cout, depuisReverse) {
+  const s = cout.copies > 1 ? 's' : '';
+  const ex = cout.assezEx
+    ? `${cout.dispo} en trop`
+    : `${cout.dispo} en trop · il en manque ${cout.copies - cout.dispo}`;
+  const fr = cout.assezFrag
+    ? `tu en as ${fmtN(cout.solde)}`
+    : `il en manque ${fmtN(cout.frag - cout.solde)}`;
+  const conditions = `<ul class="mz-req" aria-label="Pour passer au niveau ${CHIFFRES_ROMAINS[cout.n]}">
+      <li class="${cout.assezEx ? 'ok' : 'non'}">${NAVICO.cards}<span><b class="tnum">${cout.copies} exemplaire${s}</b> consommé${s}</span><em class="tnum">${ex}</em>${cout.assezEx ? MZ_OUI : MZ_NON}</li>
+      <li class="${cout.assezFrag ? 'ok' : 'non'}">${NAVICO.fragment}<span><b class="tnum">${fmtN(cout.frag)}</b> Fragments</span><em class="tnum">${fr}</em>${cout.assezFrag ? MZ_OUI : MZ_NON}</li>
+    </ul>`;
+  /* D'où viennent les exemplaires en trop. */
+  const parts = [`${cout.garde > cout.deck ? `<b>${cout.protege}</b> gardés (ton réglage)` : `<b>${cout.deck}</b> restent pour tes decks`}`];
+  if (cout.promis) parts.push(`<b>${cout.promis}</b> promis dans un échange`);
+  parts.push(`<b>${cout.dispo}</b> en trop`);
+  const d = `<p class="mz-ex">${depuisReverse ? 'Exemplaires de la carte classique : ' : ''}tu en as <b>${cout.possede}</b> : ${parts.join(', ')}.</p>`;
+  const pret = cout.assezEx && cout.assezFrag;
+  if (pret && VW && VW.mzConfirme === cout.n) {
+    return `${conditions}
+      <div class="mz-confirme" role="group" aria-label="Confirmer">
+        <p><b>${cout.copies} exemplaire${s}</b> de « ${h(k.nom)} » ${cout.copies > 1 ? 'seront consommés' : 'sera consommé'} et <b>${fmtN(cout.frag)} Fragments</b> dépensés. C'est définitif.</p>
+        <div class="mz-confirme-acts"><button class="btn ghost" data-v="mz-non">Annuler</button><button class="btn" data-v="mz-ok">Monter au niveau ${CHIFFRES_ROMAINS[cout.n]}</button></div>
+      </div>${d}`;
+  }
+  const pourquoi = pret ? '' : !cout.assezEx
+    ? `<p class="mz-rien">Les exemplaires viennent des boosters et des échanges.</p>`
+    : `<p class="mz-rien">Le recyclage des doublons rapporte des Fragments.</p>`;
+  return `${conditions}
+    <button class="btn mz-go" data-v="maitriser" ${pret ? '' : 'disabled'}>Monter au niveau ${CHIFFRES_ROMAINS[cout.n]}</button>
+    ${pourquoi}${d}`;
+}
+
+/* Le coût de chaque niveau, pour cette rareté. */
+function vBaremeMaitrise(k, n) {
+  const cop = MAITRISE.copies[k.rar] || [];
+  let te = 0, tf = 0;
+  const lignes = MAITRISE.noms.map((nom, i) => {
+    const f = fragmentsMaitrise(k.rar, i + 1);
+    te += cop[i] || 0; tf += f;
+    return `<tr class="${i < n ? 'fait' : i === n ? 'suivant' : ''}"><th scope="row">${CHIFFRES_ROMAINS[i + 1]} · ${nom}</th><td class="tnum">${cop[i] || 0}</td><td class="tnum">${fmtN(f)}</td></tr>`;
+  }).join('');
+  return `<table class="mz-bareme">
+    <caption>Le coût de chaque niveau · ${h((RAR[k.rar] || {}).nom || '')}</caption>
+    <thead><tr><th scope="col">Niveau</th><th scope="col">Exemplaires</th><th scope="col">Fragments</th></tr></thead>
+    <tbody>${lignes}</tbody>
+    <tfoot><tr><th scope="row">Jusqu'à la Légende</th><td class="tnum">${te}</td><td class="tnum">${fmtN(tf)}</td></tr></tfoot>
+  </table>`;
+}
+
+/* Le bouton : d'abord la confirmation, à sa place. */
+function demanderMaitriseVw() {
+  const c = VW && VW.c;
+  if (!c) return;
+  const cout = coutMaitrise(c);
+  if (!cout || !cout.assezEx || !cout.assezFrag) return;
+  VW.mzConfirme = cout.n;
+  redessinerMaitriseVw();
+  const b = document.querySelector('#viewer [data-v="mz-ok"]');
+  if (b) b.focus({ preventScroll: true });
+}
+function annulerMaitriseVw() {
+  if (!VW) return;
+  VW.mzConfirme = 0;
+  redessinerMaitriseVw();
+  const b = document.querySelector('#viewer [data-v="maitriser"]');
+  if (b) b.focus({ preventScroll: true });
+}
+function redessinerMaitriseVw() {
+  const p = document.querySelector('#viewer .vw-page[data-p="maitrise"]');
+  if (p && VW) { p.innerHTML = vMaitriseFiche(VW.c); hauteurPagesVw(); }
+}
+
 async function maitriserVw() {
   const c = VW && VW.c;
   if (!c) return;
   const k = carteMaitrise(c);
   const cout = coutMaitrise(k);
   if (!cout) return;
-  const b = document.querySelector('#viewer [data-v="maitriser"]');
+  const b = document.querySelector('#viewer [data-v="mz-ok"]');
   if (b) b.disabled = true;
   try {
     await Backend.maitriser(k.id);
   } catch (e) {
     toast(e.message || 'La maîtrise n\'est pas passée.');
-    if (b) b.disabled = false;
+    if (VW) VW.mzConfirme = 0;
+    redessinerMaitriseVw();
     return;
   }
+  if (VW) VW.mzConfirme = 0;
   /* La carte change d'allure sous les yeux : elle est redessinée en place,
-     puis la montée se joue sur elle (jouerMonteeMaitrise). */
+     puis la montée se joue sur elle (jouerMonteeMaitrise), avec les
+     exemplaires consommés. */
   rafraichirFicheVw();
   render();
-  await jouerMonteeMaitrise(document.querySelector('#vwc'), cout.n, tcol(k));
+  await jouerMonteeMaitrise(document.querySelector('#vwc'), cout.n, tcol(k), { copies: cout.copies, carte: k });
 }
 
 /* La montée d'un niveau, sur une carte affichée (la fiche ; l'aperçu du
@@ -312,7 +398,7 @@ function voirNiveauVw(m) {
 function poserMaitrise(w, c, n) {
   const e = maitriseEnveloppe(c, n, w.classList.contains('mz-calme'));
   [...w.classList].filter(k => /^mz(-\d)?$/.test(k)).forEach(k => w.classList.remove(k));
-  w.querySelectorAll(':scope>.card>:is(.mz-s,.mz-h,.mz-p,.mz-g),:scope>:is(.mz-a,.mz-t,.mz-b)').forEach(x => x.remove());
+  w.querySelectorAll(':scope>.card>:is(.mz-v,.mz-f,.mz-e,.mz-p),:scope>:is(.mz-a,.mz-c)').forEach(x => x.remove());
   if (!n) { w.style.removeProperty('--mc'); return; }
   w.classList.add('mz', 'mz-' + n);
   w.style.setProperty('--mc', tcol(carteMaitrise(c)));

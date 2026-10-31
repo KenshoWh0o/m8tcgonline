@@ -126,10 +126,10 @@ tools/tester-sql.sh [test1.sql …]
 
 Elle démarre un PostgreSQL local (`/var/tmp/pg-m8`, port 5499, laissé allumé), recrée une base `m8`, y joue `tools/sql-stub.sql` (l'imitation de Supabase : rôles `anon` / `authenticated` / `service_role`, schéma `auth`, `auth.users`, `auth.uid()` lu dans `request.jwt.claim.sub`, publication `supabase_realtime`), puis **la base de production** (`supabase/TOUT.sql` d'`origin/main`, la 2.5), puis le `TOUT.sql` de la branche **deux fois** (il doit être rejouable), puis les fichiers de test donnés. Pour l'arrêter : `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pg-m8/data stop"`.
 
-**Les tests SQL versionnés** (3.0.12), dans `tools/tests-sql/` : `regles.sql` (le Club de 40, trois exemplaires par nom et couleur, les Starters), `historique.sql` (l'historique des combats : droits, entrées mal formées, plafond de 30, défis, Labo), `godpack.sql` (3.0.13 : trois Épiques, deux Légendaires, une Secrète, avec `god_odds` ramené à 1 le temps du test) ; chacun dit « OK » étape par étape et s'arrête au premier échec :
+**Les tests SQL versionnés** (3.0.12), dans `tools/tests-sql/` : `regles.sql` (le Club de 40, trois exemplaires par nom et couleur, les Starters), `historique.sql` (l'historique des combats : droits, entrées mal formées, plafond de 30, défis, Labo), `godpack.sql` (3.0.13 : trois Épiques, deux Légendaires, une Secrète, avec `god_odds` ramené à 1 le temps du test), `maitrise.sql` (3.0.13 : le barème, les refus sans exemplaire en trop — deck, réglage « garder », échange en attente —, la consommation, les Fragments, la Légende, la Reverse) ; chacun dit « OK » étape par étape et s'arrête au premier échec :
 
 ```bash
-tools/tester-sql.sh tools/tests-sql/regles.sql tools/tests-sql/historique.sql tools/tests-sql/godpack.sql
+tools/tester-sql.sh tools/tests-sql/regles.sql tools/tests-sql/historique.sql tools/tests-sql/godpack.sql tools/tests-sql/maitrise.sql
 bash tools/tests-sql/maintenance.sh   # une base 2.5 avec deux joueurs reçoit la 3.0, trois fois (base m8mig)
 ```
 
@@ -733,17 +733,18 @@ Les doublons deviennent des **Fragments** (`recycler`, `supabase/installation/12
 ### 6.7 La maîtrise et la carte fétiche (3.0.7, refaite en 3.0.8, puis en 3.0.11 ; l'écrin en 3.0.12)
 
 - **Cinq niveaux** par carte : **I Satin, II Écrin, III Holo, IV Lumière, V Légende** (3.0.12 ; II s'appelait Liseré en 3.0.11 ; avant : Éclat, Liseré, Aura, Arène, Légende). Seules les cartes de l'extension (hors Essence) et les Secrètes se maîtrisent ; **une Reverse partage la maîtrise de sa classique** (`carteMaitrise`, `maitrise_carte`).
-- **Coût (3.0.8, inchangé)** : la **base de la rareté × 1, 2, 4, 7, 11** Fragments (25 fois la base pour la Légende), plus des exemplaires **en trop** :
+- **Coût (3.0.13 : l'endgame du jeu, à la demande du propriétaire)** : à chaque niveau, **des exemplaires de la carte, consommés**, et **des Fragments** (la base de la rareté × 1, 2, 4, 7, 11) :
 
-| Rareté | Base | Fragments niveaux I → V | Total | Exemplaires en trop (I → V) |
-|---|---|---|---|---|
-| C | 60 | 60 · 120 · 240 · 420 · 660 | 1 500 | 1 · 1 · 1 · 2 · 2 |
-| PC | 100 | 100 · 200 · 400 · 700 · 1 100 | 2 500 | 1 · 1 · 1 · 1 · 2 |
-| R | 200 | 200 · 400 · 800 · 1 400 · 2 200 | 5 000 | 0 · 1 · 1 · 1 · 1 |
-| E | 400 | 400 · 800 · 1 600 · 2 800 · 4 400 | 10 000 | 0 · 0 · 1 · 0 · 1 |
-| L, S | 600 | 600 · 1 200 · 2 400 · 4 200 · 6 600 | 15 000 | L : 0 · 0 · 0 · 0 · 1 ; S : aucun |
+| Rareté | Exemplaires consommés (I → V) | Fragments (I → V) | Total jusqu'à la Légende |
+|---|---|---|---|
+| C | 2 · 3 · 4 · 5 · 6 | 80 · 160 · 320 · 560 · 880 | 20 exemplaires, 2 000 |
+| PC | 2 · 2 · 3 · 4 · 5 | 120 · 240 · 480 · 840 · 1 320 | 16, 3 000 |
+| R | 1 · 2 · 2 · 3 · 4 | 250 · 500 · 1 000 · 1 750 · 2 750 | 12, 6 250 |
+| E | 1 · 1 · 2 · 2 · 3 | 500 · 1 000 · 2 000 · 3 500 · 5 500 | 9, 12 500 |
+| L | 1 · 1 · 1 · 2 · 2 | 800 · 1 600 · 3 200 · 5 600 · 8 800 | 7, 20 000 |
+| S | 1 · 1 · 1 · 1 · 1 | 800 · 1 600 · 3 200 · 5 600 · 8 800 | 5, 20 000 |
 
-- **« En trop »** = au-delà de `max(limite de deck (3 depuis les règles officielles de la 3.0.12 ; 1 pour L, S, UN, PR et 2 sinon avant), à garder)`, moins les exemplaires engagés dans un échange. Chaque exemplaire qui manque se paie au **prix de fabrication** : la maîtrise n'est jamais bloquée par la chance. Seuls les exemplaires de la classique sont pris. Pour un joueur régulier (≈ 2 000 Fragments de recyclage par semaine), une Commune en Légende prend moins d'une semaine, une Légendaire de 7 à 11 semaines (`docs/economie-3.0.md`, 3 ter ; simulation : `python3 tools/equilibre-fragments.py`). **La simulation de la 3.0.12** (`python3 tools/equilibre-maitrise.py`, 3 ter du même document) : les 22 cartes du Starter Toxique en Légende ≈ 5 mois après la collection complète pour un régulier ; la maîtrise avant la collection retarde les 122 de 25 jours en médiane, d'où **un rappel dans la fiche** tant qu'il manque des cartes à l'extension (`.mz-rappel`) ; la limite de 3 fait payer le 4ᵉ exemplaire d'une Légendaire à 36 % des joueurs (6 % avant).
+- **Seuls les exemplaires « en trop » sont consommés** : au-delà de `max(limite de deck (3), à garder)`, moins ceux promis dans un échange en attente ; seuls ceux de la classique comptent. **Il en manque ? Le niveau attend** : depuis la 3.0.13, un exemplaire ne se remplace plus par son prix de fabrication (`maitriser` refuse, avec le nombre qui manque). Simulation (`python3 tools/equilibre-maitrise.py`, `docs/economie-3.0.md` 3 ter) : une fois la collection complète, un joueur régulier mène une Commune en Légende en une semaine, une Épique en quatre mois, une Légendaire en dix, une Secrète en deux ans environ (à valider par le propriétaire) ; les 22 cartes du Starter Toxique, en six mois et demi. La maîtrise avant la collection retarde les 122 de 23 jours en médiane, d'où **un rappel dans la fiche** tant qu'il manque des cartes à l'extension (`.mz-rappel`). Test : `tools/tests-sql/maitrise.sql`.
 - **Les finitions (refaites en 3.0.11** : le propriétaire trouvait la 3.0.8 « soit trop sobre soit too much et trop cheap », et détestait le joyau du niveau V). La carte reste **intacte** ; chaque niveau ajoute une finition qu'on reconnaît, comme les versions premium d'une carte imprimée, et garde celles d'avant (`mzDedans`, `mzAutourDe`, `js/maitrise.js` ; `css/maitrise.css`) :
   - **I Satin** (`.mz-s`) : un vernis — un reflet posé en haut à gauche, un filet clair au bord, une bande de lumière qui glisse toutes les 7,5 s ;
   - **II Écrin** (`.mz-t`, 3.0.12) : un fin cadre de métal à la couleur de l'Essence (`--mc`), éclairé d'en haut à gauche, posé **autour** de la carte (un anneau de 1,15 % de sa largeur, juste au-delà de son bord : `mzAutourDe`). Le liseré de la 3.0.11 était posé *sur* le bord imprimé de la carte, et le propriétaire trouvait qu'il la dénaturait ; la carte est désormais intacte à tous les niveaux. En combat, l'écrin d'un Joueur posé est autour de lui (`.ar-j`) ; engagé (la carte tournée), il s'efface et la carte prend un anneau de sa couleur qui tourne avec elle ; dans la main, la carte agrandie, la carte montrée : le même anneau (une ombre portée pleine) ;

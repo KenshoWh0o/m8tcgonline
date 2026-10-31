@@ -7,31 +7,39 @@
 --  Arene, Legende), et chaque niveau change son allure partout ou elle
 --  apparait, en combat compris (js/maitrise.js, css/maitrise.css).
 --
---  Ce que coute un niveau (version 3.0.8, docs/economie-3.0.md partie 3 ter) :
+--  Ce que coute un niveau (version 3.0.13, docs/economie-3.0.md partie 3 ter).
+--  Le proprietaire, le 31 octobre 2026 : « Il faut un certain nombre
+--  d'exemplaire et de fragments pour monter le niveau, et ce nombre
+--  d'exemplaire et de fragments depend de la rarete. Il n'est pas possible
+--  de compenser un manque d'exemplaire avec des fragments. Quand tu montes
+--  la mastery, les exemplaires sont CONSOMMES. Il faut que monter la mastery
+--  soit une tache ardue, c'est un peu l'endgame du jeu. »
 --    · des Fragments : une base selon la rarete, fois 1, 2, 4, 7 et 11
 --      (25 fois la base pour la Legende) :
---          Commune      60    120    240    420    660   =  1 500
---          Peu commune  100   200    400    700  1 100   =  2 500
---          Rare         200   400    800  1 400  2 200   =  5 000
---          Epique       400   800  1 600  2 800  4 400   = 10 000
---          Legendaire,  600 1 200  2 400  4 200  6 600   = 15 000
+--          Commune       80    160    320    560    880   =  2 000
+--          Peu commune  120    240    480    840  1 320   =  3 000
+--          Rare         250    500  1 000  1 750  2 750   =  6 250
+--          Epique       500  1 000  2 000  3 500  5 500   = 12 500
+--          Legendaire,  800  1 600  3 200  5 600  8 800   = 20 000
 --          Secrete
---    · des exemplaires EN TROP, d'autant moins que la carte est rare :
---          Commune                1  1  1  2  2
---          Peu commune            1  1  1  1  2
---          Rare                   0  1  1  1  1
---          Epique                 0  0  1  0  1
---          Legendaire             0  0  0  0  1
---          Secrete                0  0  0  0  0
+--    · des exemplaires de la carte, CONSOMMES, d'autant moins que la carte
+--      est rare (au moins un a chaque niveau) :
+--          Commune                2  3  4  5  6   (20)
+--          Peu commune            2  2  3  4  5   (16)
+--          Rare                   1  2  2  3  4   (12)
+--          Epique                 1  1  2  2  3   ( 9)
+--          Legendaire             1  1  1  2  2   ( 7)
+--          Secrete                1  1  1  1  1   ( 5)
+--    Avant la 3.0.13, un exemplaire qui manquait se remplacait par son prix
+--    de fabrication : ce n'est plus possible, le niveau attend.
 --
 --  Le conflit avec les decks (trois exemplaires pour jouer une carte trois
---  fois, regles officielles depuis la 3.0.12 ; deux avant) : la maitrise ne
---  prend que les exemplaires EN TROP — au-dela de ce
---  qu'un deck peut contenir (limite_copies, 23_combats.sql), au-dela de ce
---  que le joueur garde (garde_de, 22_garder.sql), hors de ce qui est promis
---  dans un echange en attente. Il en manque ? Chacun se remplace par son prix
---  de fabrication (cfg, 01_schema.sql) : la maitrise n'est jamais bloquee
---  par la chance, seulement par les Fragments.
+--  fois, regles officielles depuis la 3.0.12) : la maitrise ne prend que
+--  les exemplaires EN TROP — au-dela de ce qu'un deck peut contenir
+--  (limite_copies, 23_combats.sql), au-dela de ce que le joueur garde
+--  (garde_de, 22_garder.sql), hors de ce qui est promis dans un echange en
+--  attente. Seuls les exemplaires de la carte classique comptent (pas ceux
+--  de sa Reverse).
 --
 --  La maitrise vaut pour la carte (toutes ses copies) ; sa Reverse la
 --  partage — elle se range sous la carte classique (cle_copie). Ni les
@@ -72,25 +80,25 @@ alter table public.profiles add column if not exists fetiche text references pub
 
 -- Les Fragments du niveau n (1 a 5), selon la rarete : la base de la rarete,
 -- fois 1, 2, 4, 7, 11. Version 3.0.8 : la base depend de la rarete (avant,
--- 300 a 6 000 pour toutes, une Commune coutait autant qu'une Legendaire).
+-- 300 a 6 000 pour toutes) ; 3.0.13 : bases relevees d'un tiers.
 drop function if exists public.maitrise_fragments(int);
 create or replace function public.maitrise_fragments(rar text, n int) returns integer
 language sql immutable as $$
-  select (case rar when 'C' then 60 when 'PC' then 100 when 'R' then 200 when 'E' then 400
-                   when 'L' then 600 when 'S' then 600 else 0 end)
+  select (case rar when 'C' then 80 when 'PC' then 120 when 'R' then 250 when 'E' then 500
+                   when 'L' then 800 when 'S' then 800 else 0 end)
          * coalesce((array[1, 2, 4, 7, 11])[n], 0)
 $$;
 
--- Les exemplaires en trop que prend le niveau n, selon la rarete.
+-- Les exemplaires que consomme le niveau n, selon la rarete (3.0.13).
 create or replace function public.maitrise_copies(rar text, n int) returns integer
 language sql immutable as $$
   select coalesce((case rar
-    when 'C'  then array[1, 1, 1, 2, 2]
-    when 'PC' then array[1, 1, 1, 1, 2]
-    when 'R'  then array[0, 1, 1, 1, 1]
-    when 'E'  then array[0, 0, 1, 0, 1]
-    when 'L'  then array[0, 0, 0, 0, 1]
-    when 'S'  then array[0, 0, 0, 0, 0]
+    when 'C'  then array[2, 3, 4, 5, 6]
+    when 'PC' then array[2, 2, 3, 4, 5]
+    when 'R'  then array[1, 2, 2, 3, 4]
+    when 'E'  then array[1, 1, 2, 2, 3]
+    when 'L'  then array[1, 1, 1, 2, 2]
+    when 'S'  then array[1, 1, 1, 1, 1]
   end)[n], 0)
 $$;
 
@@ -136,7 +144,7 @@ create or replace function public.maitriser(p_carte text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   p uuid := auth.uid(); cid text; k cards; n int; possede int; reserve int; garde int;
-  copies int; dispo int; pris int; manque int; prix int; total int; reste int;
+  copies int; dispo int; total int; reste int;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -166,21 +174,20 @@ begin
   garde := garde_de(p, cid);
   dispo := greatest(0, possede - greatest(coalesce(limite_copies(cid), 3), garde) - reserve);
   copies := maitrise_copies(k.rar, n);
-  pris := least(copies, dispo);
-  manque := copies - pris;
-  prix := coalesce(cfg('fabrication_' || k.rar), 0);
-  total := maitrise_fragments(k.rar, n) + manque * prix;
-
+  -- Version 3.0.13 : un exemplaire qui manque ne se paie plus en Fragments.
+  if dispo < copies then
+    raise exception 'Il faut % exemplaire% en trop de « % » : tu en as %.',
+      copies, case when copies > 1 then 's' else '' end, k.nom, dispo;
+  end if;
+  total := maitrise_fragments(k.rar, n);
   if reste < total then raise exception 'Pas assez de Fragments : il en faut %.', total; end if;
 
   update profiles set fragments = fragments - total where id = p;
-  if pris > 0 then
-    update collection set qty = qty - pris where user_id = p and card_id = cid;
-  end if;
+  update collection set qty = qty - copies where user_id = p and card_id = cid;
   insert into maitrises (user_id, card_id, niveau) values (p, cid, n)
     on conflict (user_id, card_id) do update set niveau = excluded.niveau, le = now();
   insert into maitrises_journal (user_id, card_id, niveau, fragments, copies)
-    values (p, cid, n, total, pris);
+    values (p, cid, n, total, copies);
   return me();
 end $$;
 

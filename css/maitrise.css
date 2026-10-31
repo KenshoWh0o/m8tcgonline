@@ -41,111 +41,97 @@
    main comme sur la carte de 320 px de la fiche. */
 
 /* ============ L'enveloppe ============ */
+:root{--mz-etoile:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 .6c1 6.6 4.3 10 11.4 11.4C16.3 13.4 13 16.8 12 23.4 11 16.8 7.7 13.4.6 12 7.7 10.6 11 7.2 12 .6Z'/%3E%3C/svg%3E")}
 .cwrap.mz{position:relative;isolation:isolate}
 .cwrap.mz>.card{z-index:1}
-.mz-s,.mz-t,.mz-h,.mz-b,.mz-p,.mz-g,.mz-a{position:absolute;pointer-events:none}
-/* L'écrin : un calque découpé en anneau, juste AUTOUR de la carte (son
-   rayon, 5,5cqi, plus l'épaisseur de l'anneau) ; sa lumière (IV) passe
-   dedans. Rien ne couvre le bord imprimé de la carte. */
-.mz-t,.mz-b{inset:-1.15cqi;border-radius:6.65cqi;padding:1.15cqi;
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
-  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+.mz-v,.mz-f,.mz-e,.mz-p,.mz-a,.mz-c{position:absolute;pointer-events:none}
 
-/* ---------- I · Satin : un vernis ---------- */
-.mz-s{inset:0;z-index:4;border-radius:inherit;overflow:hidden;box-shadow:inset 0 0 0 .5cqi rgba(255,255,255,.2),inset 0 0 2.4cqi rgba(255,255,255,.12);
-  background:linear-gradient(156deg,rgba(255,255,255,.3) 0%,rgba(255,255,255,.12) 16%,transparent 34%,transparent 74%,rgba(255,255,255,.08) 100%)}
-.mz-s::after{content:'';position:absolute;top:-12%;bottom:-12%;left:0;width:55%;
-  background:linear-gradient(100deg,transparent 0,rgba(255,255,255,.06) 28%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.06) 72%,transparent 100%);
-  transform:translateX(-130%) skewX(-14deg);animation:mz-satin 7.5s cubic-bezier(.45,0,.3,1) infinite}
-@keyframes mz-satin{0%,52%{transform:translateX(-130%) skewX(-14deg)}100%{transform:translateX(250%) skewX(-14deg)}}
-/* Immobile : la bande reste posée à gauche, le vernis se voit. */
-.mz-calme .mz-s::after{animation:none;transform:translateX(-25%) skewX(-14deg);opacity:.65}
+/* ---------- I · Satin : le vernis ---------- */
+.mz-v{inset:0;z-index:6;border-radius:inherit;overflow:hidden}
+.mz-v::before{content:'';position:absolute;inset:0;mix-blend-mode:soft-light;
+  background:radial-gradient(70% 42% at 14% 3%,rgba(255,255,255,.62),rgba(255,255,255,.16) 48%,transparent 72%),
+    linear-gradient(158deg,transparent 52%,rgba(10,6,24,.34))}
+/* Un trait de lumière posé sur le vernis, et qui passe de temps en temps. */
+.mz-v::after{content:'';position:absolute;top:-25%;bottom:-25%;left:0;width:26%;mix-blend-mode:screen;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.04) 30%,rgba(255,255,255,.26) 50%,rgba(255,255,255,.04) 70%,transparent);
+  transform:translateX(-150%) skewX(-14deg);animation:mz-lustre 9s cubic-bezier(.45,0,.3,1) infinite}
+@keyframes mz-lustre{0%,58%{transform:translateX(-150%) skewX(-14deg)}100%{transform:translateX(450%) skewX(-14deg)}}
+.mz-calme .mz-v::after{animation:none;transform:translateX(-20%) skewX(-14deg);opacity:.8}
 
-/* ---------- II · Écrin : un fin cadre de métal, autour ---------- */
-/* Éclairé d'en haut à gauche : clair sur ces deux bords, plus sombre sur
-   les deux autres. Il épouse la carte sans rien en cacher. */
-.mz-t{z-index:2;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--mc) 22%,#fff) 0%,color-mix(in srgb,var(--mc) 70%,#fff) 26%,var(--mc) 52%,color-mix(in srgb,var(--mc) 62%,#000) 100%)}
-/* V : le métal devient prismatique — les couleurs du reflet des Secrètes,
-   et celle de l'Essence. Plus large d'un rien. */
-.mz-5 .mz-t,.mz-5 .mz-b{inset:-1.45cqi;border-radius:6.95cqi;padding:1.45cqi}
-.mz-5 .mz-t{background:conic-gradient(from 210deg,#ff9fd2,#c9b3ff 17%,#8fd0ff 34%,#8ff0c4 50%,#fff2c2 60%,var(--mc) 74%,#ffb3dc 88%,#ff9fd2)}
+/* ---------- II · Reflet, III · Holo : la feuille de l'illustration ---------- */
+/* Un groupe en color-dodge sur le haut de la carte (fondu en haut et en
+   bas) : ce qui est sombre reste sombre, le clair s'allume. Dedans, une
+   matière (::before) multipliée par une fenêtre de lumière (::after) : la
+   lumière ne prend que dans la bande qui passe. II : un métal à peine teinté
+   de l'Essence ; III : un prisme en bandes fines, sombre (il ne délave
+   rien), comme une feuille holographique. */
+.mz-f{left:0;right:0;top:2%;height:58%;z-index:4;overflow:hidden;mix-blend-mode:color-dodge;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 14%,#000 82%,transparent);
+  mask-image:linear-gradient(180deg,transparent,#000 14%,#000 82%,transparent)}
+.mz-f::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(-62deg,rgba(255,255,255,.07) 0 .35cqi,transparent .35cqi 1.1cqi),color-mix(in srgb,var(--mc) 30%,#8a8794)}
+.mz-f::after{content:'';position:absolute;top:0;bottom:0;left:-100%;width:300%;mix-blend-mode:multiply;
+  background:linear-gradient(112deg,#000 34%,#3a3a3a 41%,#fff 47.5%,#3a3a3a 54%,#000 61%);
+  animation:mz-fenetre 10s ease-in-out infinite alternate}
+@keyframes mz-fenetre{from{transform:translateX(-13%)}to{transform:translateX(13%)}}
+.mz-calme .mz-f::after{animation:none;transform:translateX(-4%)}
+:is(.mz-3,.mz-4,.mz-5) .mz-f::before{
+  background:repeating-linear-gradient(112deg,#6a2a58 0,#6a5422 3cqi,#24603e 6cqi,#22506a 9cqi,#46307a 12cqi,#6a2a58 15cqi)}
+:is(.mz-3,.mz-4,.mz-5) .mz-f::after{background:linear-gradient(112deg,#000 26%,#555 38%,#fff 47.5%,#555 57%,#000 69%)}
+/* Les grandes cartes ont le grain du métal ; une petite le perdrait en moiré. */
+@container (max-width:120px){.mz-f::before{background:color-mix(in srgb,var(--mc) 30%,#8a8794)}}
 
-/* ---------- III · Holo : l'illustration holographique ---------- */
-/* Sur le haut de la carte (l'illustration, ou le haut d'une carte pleine),
-   fondu en haut et en bas : pas de rectangle visible. Une bande prismatique,
-   teintée de l'Essence, dérive lentement ; quelques paillettes fixes, à des
-   places irrégulières (une trame régulière se lit comme une moustiquaire :
-   docs/design-3.0.md, § 10). */
-/* En `overlay` : le reflet colore l'illustration sans la brûler (essayé
-   contre color-dodge, screen, soft-light et hard-light, version 3.0.11). */
-.mz-h{left:0;right:0;top:8cqi;height:68cqi;z-index:3;overflow:hidden;mix-blend-mode:overlay;opacity:.72;
-  -webkit-mask-image:linear-gradient(180deg,transparent,#000 15%,#000 76%,transparent);
-  mask-image:linear-gradient(180deg,transparent,#000 15%,#000 76%,transparent)}
-.mz-h::before{content:'';position:absolute;top:0;bottom:0;left:-100%;width:300%;
-  background:linear-gradient(112deg,transparent 31%,color-mix(in srgb,var(--mc) 55%,#ff9fd2) 38%,#ffe08c 42.5%,#9dffd5 47%,#8fd6ff 51.5%,#c7adff 56%,transparent 63%);
-  animation:mz-holo 12s ease-in-out infinite alternate}
-@keyframes mz-holo{from{transform:translateX(-16%)}to{transform:translateX(16%)}}
-.mz-h::after{content:'';position:absolute;inset:0;opacity:.8;background:
-  radial-gradient(circle at 17% 31%,#fff 0 .3cqi,transparent .6cqi),radial-gradient(circle at 66% 21%,#fff 0 .26cqi,transparent .52cqi),
-  radial-gradient(circle at 43% 62%,#fff 0 .3cqi,transparent .6cqi),radial-gradient(circle at 84% 55%,#fff 0 .22cqi,transparent .46cqi),
-  radial-gradient(circle at 28% 79%,#fff 0 .25cqi,transparent .5cqi),radial-gradient(circle at 57% 41%,#fff 0 .2cqi,transparent .44cqi),
-  radial-gradient(circle at 76% 77%,#fff 0 .24cqi,transparent .5cqi),radial-gradient(circle at 9% 58%,#fff 0 .2cqi,transparent .44cqi)}
-.mz-calme .mz-h::before{animation:none;transform:translateX(-4%)}
+/* Les reflets en étoile (III et plus) : de la lumière qui accroche. */
+.mz-e{inset:0;z-index:7;overflow:hidden}
+.mz-e>b{position:absolute;width:6cqi;height:6cqi;background:#fff;transform:scale(0);
+  -webkit-mask:var(--mz-etoile) center/contain no-repeat;mask:var(--mz-etoile) center/contain no-repeat;
+  filter:drop-shadow(0 0 1cqi #fff);animation:mz-glint 5.4s ease-in-out infinite}
+.mz-e>b:nth-child(1){left:20%;top:22%}
+.mz-e>b:nth-child(2){left:72%;top:12%;width:4.5cqi;height:4.5cqi;animation-delay:-1.8s}
+.mz-e>b:nth-child(3){left:61%;top:40%;width:5cqi;height:5cqi;animation-delay:-3.6s}
+@keyframes mz-glint{0%,62%,100%{transform:scale(0) rotate(0)}72%{transform:scale(1) rotate(30deg)}82%{transform:scale(0) rotate(60deg)}}
+.mz-calme .mz-e>b{animation:none;transform:scale(0)}
+.mz-calme .mz-e>b:nth-child(1){transform:scale(.7) rotate(15deg)}
 
-/* ---------- IV · Lumière : elle fait le tour de l'écrin ---------- */
-/* Un grand dégradé conique qui tourne, vu à travers l'anneau. */
-.mz-b{z-index:3;overflow:hidden}
-.mz-b::before{content:'';position:absolute;left:50%;top:50%;width:200cqi;height:200cqi;margin:-100cqi 0 0 -100cqi;
-  background:conic-gradient(transparent 0 70%,color-mix(in srgb,var(--mc) 30%,#fff) 83%,#fff 88.5%,transparent 90.5%);
-  animation:mz-tour 6s linear infinite}
-@keyframes mz-tour{to{transform:rotate(1turn)}}
-.mz-calme .mz-b::before{animation:none;transform:rotate(210deg)}
-/* Des étincelles montent de l'illustration, une à une. */
-.mz-p{left:5cqi;right:5cqi;top:14cqi;height:58cqi;z-index:5;overflow:hidden}
-.mz-p i{position:absolute;bottom:-2cqi;width:1.5cqi;height:1.5cqi;border-radius:50%;opacity:0;
-  background:radial-gradient(circle,#fff 0 32%,color-mix(in srgb,var(--mc) 55%,#fff) 52%,transparent 72%);
+/* ---------- IV · Lumière : la carte est éclairée de derrière ---------- */
+.mz-a{left:-16%;right:-16%;top:-12%;bottom:-12%;z-index:-1;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--mc) 34%,rgba(255,255,255,.18)),color-mix(in srgb,var(--mc) 12%,transparent) 62%,transparent);
+  animation:mz-souffle 6s ease-in-out infinite}
+@keyframes mz-souffle{0%,100%{opacity:.55}50%{opacity:.95}}
+.mz-calme .mz-a{animation:none;opacity:.7}
+.mz-p{left:5cqi;right:5cqi;top:10cqi;height:68cqi;z-index:5;overflow:hidden}
+.mz-p i{position:absolute;bottom:-2cqi;width:1.4cqi;height:1.4cqi;border-radius:50%;opacity:0;
+  background:radial-gradient(circle,#fff 0 30%,color-mix(in srgb,var(--mc) 50%,#fff) 52%,transparent 72%);
   animation:mz-etincelle 6.6s ease-out infinite}
 .mz-p i:nth-child(1){left:13%}
-.mz-p i:nth-child(2){left:34%;width:1.1cqi;height:1.1cqi;animation-duration:7.6s;animation-delay:-2.7s}
+.mz-p i:nth-child(2){left:34%;width:1cqi;height:1cqi;animation-duration:7.6s;animation-delay:-2.7s}
 .mz-p i:nth-child(3){left:54%;animation-delay:-4.3s}
-.mz-p i:nth-child(4){left:73%;width:1.2cqi;height:1.2cqi;animation-duration:8.2s;animation-delay:-1.2s}
+.mz-p i:nth-child(4){left:73%;width:1.1cqi;height:1.1cqi;animation-duration:8.2s;animation-delay:-1.2s}
 .mz-p i:nth-child(5){left:89%;animation-duration:7s;animation-delay:-5.6s}
-@keyframes mz-etincelle{0%{transform:translateY(0);opacity:0}14%{opacity:.95}78%{opacity:.55}100%{transform:translateY(-54cqi);opacity:0}}
+@keyframes mz-etincelle{0%{transform:translateY(0);opacity:0}14%{opacity:.9}78%{opacity:.5}100%{transform:translateY(-62cqi);opacity:0}}
 .mz-calme .mz-p{display:none}
 
-/* ---------- IV, V : le halo ---------- */
-/* Une ombre portée de sa couleur, fixe : rien n'est redessiné. Au niveau V,
-   seule son opacité respire. */
-.mz-4,.mz-5{box-shadow:none}
-.mz-a{inset:.6cqi;z-index:-1;border-radius:6cqi;opacity:.8;
-  box-shadow:0 0 3.4cqi .3cqi color-mix(in srgb,var(--mc) 48%,transparent),0 1.4cqi 4cqi rgba(0,0,0,.5)}
-.mz-5 .mz-a{opacity:.75;box-shadow:0 0 2.6cqi .6cqi color-mix(in srgb,var(--mc) 62%,transparent),0 0 10cqi 1.6cqi color-mix(in srgb,var(--mc) 26%,transparent);
-  animation:mz-souffle 4.8s ease-in-out infinite}
-@keyframes mz-souffle{0%,100%{opacity:.62}50%{opacity:1}}
-.mz-calme .mz-a{animation:none}
-
-/* ---------- V · Légende : les étoiles du logo ---------- */
-.mz-g{inset:0;z-index:8}
-.mz-g svg{position:absolute;width:7cqi;height:7cqi;fill:#fff;opacity:0;transform:scale(.2);
-  filter:drop-shadow(0 0 .9cqi color-mix(in srgb,var(--mc) 70%,#fff));animation:mz-scintille 5.2s ease-in-out infinite}
-.mz-g svg:nth-child(1){left:3.5cqi;top:4.5cqi;width:11cqi;height:11cqi}
-.mz-g svg:nth-child(2){right:3.5cqi;top:56cqi;width:7.5cqi;height:7.5cqi;animation-delay:-1.8s}
-.mz-g svg:nth-child(3){left:6cqi;bottom:9cqi;width:8.5cqi;height:8.5cqi;animation-delay:-3.4s}
-@keyframes mz-scintille{0%,56%,100%{opacity:0;transform:scale(.2) rotate(0deg)}68%{opacity:1;transform:scale(1) rotate(22deg)}82%{opacity:0;transform:scale(.3) rotate(45deg)}}
-.mz-calme .mz-g svg{animation:none;opacity:.95;transform:scale(.8) rotate(12deg)}
+/* ---------- V · Légende : une aurore derrière elle ---------- */
+/* Deux nappes de lumière, de sa couleur et d'une couleur voisine, qui
+   tournent lentement derrière la carte : une lueur vivante, pas un halo
+   uniforme. Toute la carte prend la feuille (le cadre aussi). */
+.mz-c{left:-30%;right:-30%;top:-22%;bottom:-22%;z-index:-2;
+  background:radial-gradient(38% 30% at 30% 30%,color-mix(in srgb,var(--mc) 50%,rgba(255,255,255,.25)),transparent 72%),
+    radial-gradient(40% 32% at 72% 70%,color-mix(in srgb,var(--mc) 40%,rgba(160,200,255,.4)),transparent 72%);
+  animation:mz-aurore 14s linear infinite}
+@keyframes mz-aurore{to{transform:rotate(1turn)}}
+.mz-calme .mz-c{animation:none;opacity:.8}
+.mz-5 .mz-f{top:0;height:100%;-webkit-mask-image:linear-gradient(180deg,#000,#000 60%,rgba(0,0,0,.5));mask-image:linear-gradient(180deg,#000,#000 60%,rgba(0,0,0,.5))}
 
 /* ---------- Les mouvements réduits : tout s'immobilise ---------- */
-html.rm .mz-s::after,html.rm .mz-h::before,html.rm .mz-b::before,html.rm .mz-a,html.rm .mz-g svg{animation:none}
-html.rm .mz-s::after{transform:translateX(-25%) skewX(-14deg);opacity:.65}
-html.rm .mz-b::before{transform:rotate(210deg)}
-html.rm .mz-g svg{opacity:.9;transform:scale(.72)}
+html.rm .mz-v::after,html.rm .mz-f::after,html.rm .mz-e>b,html.rm .mz-a,html.rm .mz-c{animation:none}
+html.rm .mz-v::after{transform:translateX(-20%) skewX(-14deg);opacity:.8}
+html.rm .mz-e>b:nth-child(1){transform:scale(.7) rotate(15deg)}
 html.rm .mz-p{display:none}
 @media (prefers-reduced-motion:reduce){
-  .mz-s::after,.mz-h::before,.mz-b::before,.mz-a,.mz-g svg{animation:none}
-  .mz-s::after{transform:translateX(-25%) skewX(-14deg);opacity:.65}
-  .mz-b::before{transform:rotate(210deg)}
-  .mz-g svg{opacity:.9;transform:scale(.72)}
+  .mz-v::after,.mz-f::after,.mz-e>b,.mz-a,.mz-c{animation:none}
+  .mz-v::after{transform:translateX(-20%) skewX(-14deg);opacity:.8}
+  .mz-e>b:nth-child(1){transform:scale(.7) rotate(15deg)}
   .mz-p{display:none}
 }
 
