@@ -728,14 +728,9 @@
     const god = Math.random() < 1 / cfg('god_odds');
     let ids;
     if (god) {
-      ids = [
-        pickCard(tirage([[90, 'R'], [100, 'E']])),
-        pickCard(tirage([[70, 'R'], [100, 'E']])),
-        pickCard(tirage([[50, 'R'], [100, 'E']])),
-        pickCard(tirage([[90, 'E'], [100, 'L']])),
-        pickCard(tirage([[60, 'E'], [100, 'L']])),
-        pickCard('L')
-      ];
+      /* Le godpack (3.0.13, comme open_pack) : trois Épiques, deux
+         Légendaires, une Secrète en dernier. */
+      ids = [pickCard('E'), pickCard('E'), pickCard('E'), pickCard('L'), pickCard('L'), pickCard('S')];
     } else {
       const ess = dansBooster().filter(c => c.cat === 'essence');
       ids = [

@@ -187,17 +187,18 @@ begin
   -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
   -- derniere carte porte la mise en scene de la revelation.
   --
-  -- Godpack : six cartes qui montent, de la rare a la legendaire garantie.
+  -- Godpack (version 3.0.13, decide par le proprietaire) : trois Epiques,
+  -- deux Legendaires, puis une Secrete, la derniere, qui porte la revelation.
   --
   -- Ces taux doivent rester identiques a RATES dans js/booster.js, qui sert
   -- aux ouvertures de test du Labo.
   if god then
-    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'R' else 'E' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 70.0 then 'R' else 'E' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 50.0 then 'R' else 'E' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'E' else 'L' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'E' else 'L' end);
+    ids := ids || pick_card('E');
+    ids := ids || pick_card('E');
+    ids := ids || pick_card('E');
     ids := ids || pick_card('L');
+    ids := ids || pick_card('L');
+    ids := ids || pick_card('S');
   else
     ids := ids || pick_card('C');
     ids := ids || pick_card('C');

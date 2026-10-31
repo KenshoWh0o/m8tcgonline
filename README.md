@@ -126,10 +126,10 @@ tools/tester-sql.sh [test1.sql …]
 
 Elle démarre un PostgreSQL local (`/var/tmp/pg-m8`, port 5499, laissé allumé), recrée une base `m8`, y joue `tools/sql-stub.sql` (l'imitation de Supabase : rôles `anon` / `authenticated` / `service_role`, schéma `auth`, `auth.users`, `auth.uid()` lu dans `request.jwt.claim.sub`, publication `supabase_realtime`), puis **la base de production** (`supabase/TOUT.sql` d'`origin/main`, la 2.5), puis le `TOUT.sql` de la branche **deux fois** (il doit être rejouable), puis les fichiers de test donnés. Pour l'arrêter : `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pg-m8/data stop"`.
 
-**Les tests SQL versionnés** (3.0.12), dans `tools/tests-sql/` : `regles.sql` (le Club de 40, trois exemplaires par nom et couleur, les Starters), `historique.sql` (l'historique des combats : droits, entrées mal formées, plafond de 30, défis, Labo) ; chacun dit « OK » étape par étape et s'arrête au premier échec :
+**Les tests SQL versionnés** (3.0.12), dans `tools/tests-sql/` : `regles.sql` (le Club de 40, trois exemplaires par nom et couleur, les Starters), `historique.sql` (l'historique des combats : droits, entrées mal formées, plafond de 30, défis, Labo), `godpack.sql` (3.0.13 : trois Épiques, deux Légendaires, une Secrète, avec `god_odds` ramené à 1 le temps du test) ; chacun dit « OK » étape par étape et s'arrête au premier échec :
 
 ```bash
-tools/tester-sql.sh tools/tests-sql/regles.sql tools/tests-sql/historique.sql
+tools/tester-sql.sh tools/tests-sql/regles.sql tools/tests-sql/historique.sql tools/tests-sql/godpack.sql
 bash tools/tests-sql/maintenance.sh   # une base 2.5 avec deux joueurs reçoit la 3.0, trois fois (base m8mig)
 ```
 
@@ -680,7 +680,7 @@ Les paliers ne donnent **que** la carte. `check_promos()` (`supabase/installatio
 | 5 | **Reverse** : C 50 %, PC 35 %, R 15 % |
 | 6 | Le hit : R 79 %, E 16 %, L 4,25 %, **S 0,75 %** |
 
-- **Godpack** : une fois sur 2 000 (`cfg('god_odds')`, `GOD`), six cartes tirées dans les tables `[R90/E10, R70/E30, R50/E50, E90/L10, E60/L40, L100]` (Légendaire garantie à la fin), sans Essence ni Reverse. Il n'est **annoncé par rien** : c'est la lumière qui le raconte (paquet qui s'assombrit et tremble, faisceau à la déchirure, nappe dorée ; `packOpen()` lui donne 860 ms de plus).
+- **Godpack** : une fois sur 2 000 (`cfg('god_odds')`, `GOD`), **trois Épiques, deux Légendaires et une Secrète**, dans cet ordre (3.0.13, décidé par le propriétaire ; avant : six cartes de la Rare à une Légendaire garantie), sans Essence ni Reverse. La Secrète vient en dernier : c'est elle qui porte la révélation (la plus longue, comme une Secrète tirée en hit). Il n'est **annoncé par rien** : c'est la lumière qui le raconte (paquet qui s'assombrit et tremble, faisceau à la déchirure, nappe dorée ; `packOpen()` lui donne 860 ms de plus).
 - **Chasse** : tant que `chasse.active` et que personne ne l'a, l'Unique a une chance sur 250 (`cfg('chasse_odds')`) de **remplacer le hit**. La mise à jour `where gagnant is null` garantit un seul gagnant. Le gagnant reçoit le cadre `f_unique` et une annonce part chez tout le monde.
 - **Repli** : si la rareté visée est vide, `pick_card` / `pickFrom` se rabattent sur la plus proche (S sans Secrète → L), dans le même ordre (`REPLI_RARETE`, `booster.js`, et `REPLI`, `_demo/serveur.js`, recopiés de `pick_card` en 3.0.11).
 - Le visuel du paquet porte la mention imprimée « Booster de 6 cartes » : changer la taille oblige à refaire les images.

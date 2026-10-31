@@ -68,14 +68,15 @@ const RATES = {
   /* Version 3.0 : la Légendaire passe à 4,25 %, la Secrète arrive à 0,75 %
      (la Rare cède le point qu'il fallait). */
   HIT: { R: 79, E: 16, L: 4.25, S: 0.75 },
-  /* Le godpack, case par case : ça monte jusqu'à la légendaire garantie. */
+  /* Le godpack (version 3.0.13) : trois Épiques, deux Légendaires, puis une
+     Secrète, la dernière, qui porte la révélation. */
   GODPACK: [
-    { R: 90, E: 10 },
-    { R: 70, E: 30 },
-    { R: 50, E: 50 },
-    { E: 90, L: 10 },
-    { E: 60, L: 40 },
-    { L: 100 }
+    { E: 100 },
+    { E: 100 },
+    { E: 100 },
+    { L: 100 },
+    { L: 100 },
+    { S: 100 }
   ]
 };
 const GOD = 1 / 2000;
@@ -122,7 +123,7 @@ function weighted(w) {
      6 · le hit : Rare 79 %, Épique 16 %, Légendaire 4,25 %, Secrète 0,75 %
    L'ordre compte : la pile se feuillette de la première à la dernière, et
    c'est la dernière qui porte la mise en scène de la révélation.
-   Godpack : six cartes qui montent, de la rare à la légendaire garantie. */
+   Godpack : trois Épiques, deux Légendaires, une Secrète (3.0.13). */
 function makeBooster(pool, god) {
   const out = [];
 
