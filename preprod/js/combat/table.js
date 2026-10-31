@@ -13,11 +13,21 @@
 
    Un seul geste pour tout : toucher une carte la montre en grand, en haut,
    par-dessus le camp adverse ; son propre camp reste visible dessous. C'est
-   là qu'on choisit : une ligne libre pour un Joueur, un de ses Joueurs pour
-   un Objet, « Jouer » pour un Instant, une attaque pour un Joueur en jeu.
-   Une attaque choisie, la carte retourne à sa place et les cibles
-   s'allument. On peut aussi faire glisser une carte de la main vers sa
-   place. Le tapis affiché est celui du CEO dont c'est le tour. */
+   là qu'on choisit : une case libre pour un Joueur (ou, les trois cases
+   prises, le Joueur à remplacer), un de ses Joueurs pour un Objet, « Jouer »
+   pour un Moment ou un Coach, une attaque pour un Joueur en jeu. Une attaque
+   choisie, la carte retourne à sa place et les cibles s'allument. On peut
+   aussi faire glisser une carte de la main vers sa place. Le tapis affiché
+   est celui du CEO dont c'est le tour.
+
+   Version 3.0.12 : les règles officielles (docs/regles-officielles.md).
+   Chaque étape a son geste : la donne, le mulligan, les PV, le tirage du
+   premier ; l'entretien (pioche, désengagement, Essence) ; les quatre
+   phases, allumées dans la bande du milieu ; le soutien d'un Joueur voisin ;
+   le duel de l'attaque contre la Défense ; tout ce qui est bench ou vaincu
+   file à la défausse ; la défausse de fin de tour. Un Joueur engagé est
+   tourné de côté, comme sur une table (« Engager une carte signifie la
+   tourner à 90° »). */
 "use strict";
 
 const Table = (() => {
@@ -106,7 +116,7 @@ const Table = (() => {
        ia.choisir(E) remplace l'IA (un adversaire scénarisé) } */
   function ouvrir(o) {
     fermer(true);
-    const E = o.E || Combat.creer(o.init);
+    const E = o.E || Combat.creer(o.init, { capture: true });
     E.capture = true;
     const reprise = !!o.E;
     T = {
@@ -122,15 +132,21 @@ const Table = (() => {
     }
     T.el = el;
     el.hidden = false;
-    el.className = o.boss ? 'boss' : '';
+    el.className = (o.boss ? 'boss' : '') + (reprise ? '' : ' mise');
     document.body.classList.add('en-arene');
     el.innerHTML = squelette();
     brancher();
     rendre();
     if (o.minuteur) lancerChrono();
     SFX.jouer('ouvre');
+    /* Une nouvelle partie : ce que le moteur a déjà fait en la créant (la
+       donne du premier CEO) s'anime avant tout le reste. */
     (async () => {
-      if (!reprise) await pileOuFace();
+      if (!reprise) {
+        const evs = E.ev.slice();
+        T.occupe = true;
+        try { await animer(evs); } finally { if (T) { T.occupe = false; rendre(); } }
+      }
       boucle();
     })();
     return T;
@@ -211,7 +227,10 @@ const Table = (() => {
     const peutFinir = monTour && d && d.type === 'tour' && Combat.optionsTour(E).some(a => a.t === 'finTour');
     fin.disabled = !peutFinir || T.occupe || !!T.cible;
     fin.classList.toggle('pulse', peutFinir && !T.occupe && !actionsUtiles());
-    fin.textContent = d && d.type === 'tour' && monTour && !peutFinir && E.cpt.doitAttaquer ? 'Attaque obligée' : monTour ? 'Fin du tour' : 'Tour adverse';
+    /* Pendant la mise en place (mains, mulligan, PV, qui commence), personne
+       n'a encore de tour : « Tour adverse » y était faux pour qui commence second. */
+    fin.textContent = V.phase === 'mise' ? 'Mise en place'
+      : d && d.type === 'tour' && monTour && !peutFinir && E.cpt.doitAttaquer ? 'Attaque obligée' : monTour ? 'Fin du tour' : 'Tour adverse';
 
     surligner();
     if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
@@ -315,21 +334,19 @@ const Table = (() => {
     el.style.setProperty('--n', P.ess.length);
   }
 
-  /* Les piles : la Réserve d'Essences, le Banc s'il y a lieu, la Défausse,
-     le Club. Les toucher dit ce qu'elles sont (et montre leurs cartes quand
-     on peut les voir). */
+  /* Les piles : la Réserve d'Essences, la Défausse (où va aussi tout ce qui
+     est bench : règles officielles), le Club. Les toucher dit ce qu'elles
+     sont (et montre leurs cartes quand on peut les voir). */
   function rendrePiles(j, el) {
     const P = vue().j[j];
     const pile = (k, n, ico, lab, cls) => `<button class="ar-pile ${cls || ''}" data-ar="${k}" data-j="${j}" aria-label="${lab} : ${n}" title="${lab}">${ico}<b>${n}</b></button>`;
     el.innerHTML = pile('reserve', P.reserve.length, ICO_PILE.reserve, 'Réserve d\'Essences', 'p-ess')
-      + (P.banc.length ? pile('banc', P.banc.length, ICO_PILE.banc, 'Banc') : '')
-      + pile('defausse', P.defausse.length, ICO_PILE.defausse, 'Défausse')
+      + pile('defausse', P.defausse.length, ICO_PILE.defausse, 'Défausse', 'p-def')
       + `<button class="ar-pile club" data-ar="club" data-j="${j}" style="--dos:url('${abs(sleeveDe(j))}')" aria-label="Club : ${P.club.length} cartes" title="Club"><i class="ar-dos1"></i><b>${P.club.length}</b></button>`;
   }
   const ICO_PILE = {
     reserve: '<svg viewBox="0 0 24 24"><path d="M12 3 19.5 7.5v9L12 21l-7.5-4.5v-9Z"/><path d="M12 8.2 15.3 10v4L12 15.8 8.7 14v-4Z"/></svg>',
-    defausse: '<svg viewBox="0 0 24 24"><path d="M5 7h14l-1.2 13H6.2Z"/><path d="M9 7V4h6v3M3 7h18"/></svg>',
-    banc: '<svg viewBox="0 0 24 24"><path d="M4 12h16M6 12v6M18 12v6M5 8h14"/></svg>'
+    defausse: '<svg viewBox="0 0 24 24"><path d="M5 7h14l-1.2 13H6.2Z"/><path d="M9 7V4h6v3M3 7h18"/></svg>'
   };
 
   function majJoueur(x, c) {
@@ -425,20 +442,21 @@ const Table = (() => {
     const info = qs('.ar-info');
     rendreHisto();
     if (E.fin) { tourn.textContent = ''; info.textContent = ''; return; }
-    tourn.innerHTML = `<b>${E.tour || 1}</b><small>tour</small>`;
+    tourn.innerHTML = E.tour ? `<b>${E.tour}</b><small>tour</small>` : '';
     if (T.consigne) { info.className = 'ar-info consigne'; info.textContent = T.consigne; return; }
     if (T.ticker) { info.className = 'ar-info ticker'; info.innerHTML = T.ticker; return; }
-    info.className = 'ar-info' + (monTour ? ' moi' : '');
-    if (!monTour) info.textContent = d && d.qui === T.moi ? 'À toi de répondre' : `Au tour de ${nomCEO(E.actif)}`;
-    else if (Combat.premierTourDuPremier(E, T.moi)) info.textContent = 'Premier tour · pas d\'attaque';
-    else if (E.cpt.doitAttaquer > 0) info.textContent = 'Encore une attaque obligatoire';
-    /* Les deux phases du tour, celle en cours allumée : on voit d'un coup
-       d'œil qu'attaquer ferme la phase de jeu. */
-    else {
-      info.className = 'ar-info moi phases';
-      info.innerHTML = `<span class="ar-ph${E.phase === 'combat' ? '' : ' on'}">Jeu</span><i class="ar-ph-fl">›</i><span class="ar-ph${E.phase === 'combat' ? ' on' : ''}">Combat</span>`;
-    }
+    if (E.phase === 'mise') { info.className = 'ar-info'; info.textContent = 'Mise en place'; return; }
+    if (!monTour && d && d.qui === T.moi && d.type !== 'tour') { info.className = 'ar-info moi'; info.textContent = 'À toi de répondre'; return; }
+    if (monTour && E.cpt.doitAttaquer > 0) { info.className = 'ar-info moi'; info.textContent = 'Encore une attaque obligatoire'; return; }
+    /* Les quatre phases du tour (règles officielles), celle en cours
+       allumée : lavande pendant son tour, corail pendant celui d'en face. Au
+       tout premier tour, la phase de Combat est barrée. */
+    const sans = Combat.premierTourDuPremier(E, E.actif);
+    info.className = 'ar-info phases ' + (E.actif === T.moi ? 'moi' : 'lui');
+    info.innerHTML = PHASES.map(([k, n]) => `<span class="ar-ph${E.phase === k ? ' on' : ''}${k === 'combat' && sans ? ' sans' : ''}">${n}</span>`).join('<i class="ar-ph-fl" aria-hidden="true">›</i>');
+    info.setAttribute('aria-label', `Tour de ${nomCEO(E.actif)} : ${(PHASES.find(x => x[0] === E.phase) || [, ''])[1]}`);
   }
+  const PHASES = [['debut', 'Entretien'], ['jeu', 'Action'], ['combat', 'Combat'], ['cloture', 'Fin']];
   function consigne(txt, annulable) {
     if (!T) return;
     T.consigne = txt || null;
@@ -553,7 +571,7 @@ const Table = (() => {
 
   /* ---------- Ce qu'on peut toucher ---------- */
   function surligner() {
-    qsa('.jouable,.cible,.choisi,.option,.attaquant').forEach(x => x.classList.remove('jouable', 'cible', 'choisi', 'option', 'attaquant'));
+    qsa('.jouable,.cible,.choisi,.option,.attaquant,.remplacable').forEach(x => x.classList.remove('jouable', 'cible', 'choisi', 'option', 'attaquant', 'remplacable'));
     allumer();
     /* Les fantômes des places qui ne sont plus à prendre s'en vont. */
     qsa('.ar-place:not(.cible)>.ar-place-f').forEach(x => x.remove());
@@ -586,6 +604,9 @@ const Table = (() => {
     const tenue = T.E.j[T.moi].main.find(x => x.u === u);
     qsa('.ar-m').forEach(b => b.classList.toggle('choisi', +b.dataset.mu === u));
     for (const a of opts) {
+      /* Les trois cases prises : le Joueur qu'on peut remplacer (bench, une
+         fois par tour) s'allume. */
+      if (a.t === 'deployer' && a.remplace) { const x = qs(`.ar-camp.moi .ar-j[data-u="${a.remplace}"]`); if (x) x.classList.add('remplacable'); continue; }
       if (a.t === 'deployer') {
         const p = qs(`.ar-camp.moi .ar-place[data-ligne="${a.ligne}"]`);
         if (!p) continue;
@@ -687,7 +708,11 @@ const Table = (() => {
     /* Une décision qui se prend sur le plateau. */
     if (aMoi && d.type === 'choix' && d.options.some(o => o.u)) {
       const x = e.target.closest('.option');
-      if (x) return choisir({ t: 'choix', v: +(x.dataset.u || x.dataset.mu || x.dataset.e) });
+      /* Une carte qui porte plusieurs options (un soutien à deux attaques) se
+         choisit dans la feuille. */
+      const os = x ? d.options.filter(o => o.u === +(x.dataset.u || x.dataset.mu || x.dataset.e)) : [];
+      if (os.length === 1) return choisir({ t: 'choix', v: os[0].v });
+      if (os.length) return;
     }
     if (aMoi && d.type === 'cartes' && T.multi) {
       const x = e.target.closest('.ar-m,.ar-j');
@@ -713,7 +738,9 @@ const Table = (() => {
       const place = e.target.closest('.ar-camp.moi .ar-place');
       let a = null;
       if (joueur) a = opts.find(o => o.t === 'lier' && o.cible === +joueur.dataset.u);
-      if (!a && place && !place.querySelector('.ar-j')) a = opts.find(o => o.t === 'deployer' && o.ligne === +place.dataset.ligne);
+      if (!a && joueur) a = opts.find(o => o.t === 'deployer' && o.remplace === +joueur.dataset.u);
+      if (!a && place && !place.querySelector('.ar-j')) a = opts.find(o => o.t === 'deployer' && !o.remplace && o.ligne === +place.dataset.ligne);
+      if (a && a.remplace) return confirmerRemplacement(a);
       if (a) return poserDepuisFocus(a, joueur || place);
       /* Ni une place libre ni un Joueur à équiper : on la repose. */
       if (!e.target.closest('.ar-m')) return fermerFocus();
@@ -776,8 +803,8 @@ const Table = (() => {
       bas += ligneEtat(inst, k) + attaquesEnDirect(inst, k, monJoueur);
       place += 54 + (k.atks || []).length * 66;
       if (monJoueur && E.phase === 'jeu' && Combat.optionsTour(E).some(a => a.t === 'attaquer' && a.u === inst.u)
-        && Combat.optionsTour(E).some(a => a.t === 'deployer' || a.t === 'lier')) {
-        bas += '<p class="ar-f-note">Attaquer ouvre la phase de Combat : plus de Joueur à déployer ni d\'Objet à lier ce tour.</p>';
+        && Combat.optionsTour(E).some(a => a.t === 'deployer' || a.t === 'lier' || a.t === 'jouer')) {
+        bas += '<p class="ar-f-note">Attaquer ouvre la phase de Combat : plus de Joueur, d\'Objet, de Moment ni de Coach à jouer ce tour.</p>';
         place += 50;
       }
       const puces = pucesEnCours(inst, k);
@@ -875,8 +902,8 @@ const Table = (() => {
     if (txt.length) l.push(`<div class="ar-f-txt">${txt.join('')}</div>`);
     if (vivant) {
       if (monJoueur && E.phase === 'jeu' && Combat.optionsTour(E).some(a => a.t === 'attaquer' && a.u === inst.u)
-        && Combat.optionsTour(E).some(a => a.t === 'deployer' || a.t === 'lier')) {
-        l.push('<p class="ar-f-note">Attaquer ouvre la phase de Combat : plus de Joueur à déployer ni d\'Objet à lier ce tour.</p>');
+        && Combat.optionsTour(E).some(a => a.t === 'deployer' || a.t === 'lier' || a.t === 'jouer')) {
+        l.push('<p class="ar-f-note">Attaquer ouvre la phase de Combat : plus de Joueur, d\'Objet, de Moment ni de Coach à jouer ce tour.</p>');
       }
       l.push(pucesEnCours(inst, k, true));
     }
@@ -929,29 +956,39 @@ const Table = (() => {
     const opts = Combat.optionsTour(T.E).filter(a => a.u === c.u);
     const geste = t => `<p class="ar-f-geste"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg><span>${t}</span></p>`;
     const non = t => `<p class="ar-f-aide non">${h(t)}</p>`;
-    if (k.cat === 'joueur') return opts.length ? geste('Touche une place libre pour le déployer.') : non(raisonPasDeploiement());
-    if (k.cat === 'objet') return opts.length ? geste('Touche un de tes Joueurs pour lui lier cet Objet.') : non(T.E.phase === 'combat' ? 'Plus d\'Objet en phase de Combat.' : 'Il te faut un Joueur sur le plateau.');
+    if (k.cat === 'joueur') {
+      if (opts.some(a => a.t === 'deployer' && !a.remplace)) return geste('Touche une case libre pour le déployer.');
+      if (opts.length) return geste('Tes trois cases sont prises : touche un de tes Joueurs non engagés pour le remplacer. Il est bench, à la défausse (une fois par tour).');
+      return non(raisonPasDeploiement());
+    }
+    if (T.E.phase === 'combat') return non('Phase de Combat : on n\'y joue plus que des attaques.');
+    if (!Combat.couleurOk(T.E, T.moi, c)) return non(`Restriction par couleur : il te faut une Essence ${(COLORS[k.col] || {}).nom || ''} en jeu pour jouer cette carte.`);
+    if (k.cat === 'objet') return opts.length ? geste('Touche un de tes Joueurs pour lui lier cet Objet.') : non('Il te faut un Joueur sur le Terrain.');
     const a = opts.find(x => x.t === 'jouer');
     if (a) return `<button class="ar-f-jouer" data-ar="jouer" data-u="${c.u}">Jouer ${k.cat === 'coach' ? 'ce Coach' : 'ce Moment'}</button>`;
-    return non(k.cat === 'coach' && T.E.cpt.coachs >= Combat.REGLE.COACHS ? 'Un seul Coach par tour.' : 'Rien à viser pour le moment.');
+    return non(k.cat === 'coach' && T.E.cpt.coachs >= Combat.REGLE.COACHS ? 'Un seul Coach par tour : tu en as déjà joué un.' : 'Rien à viser pour le moment.');
   }
 
+  /* Pourquoi un Joueur ne se déploie pas : la phase, ou trois cases prises
+     et le remplacement déjà fait (ou rien à remplacer : un Joueur engagé ne
+     peut pas être bench pour faire place). */
   function raisonPasDeploiement() {
-    if (T.E.phase === 'combat') return 'Plus de déploiement en phase de Combat.';
-    if (T.E.cpt.deploie >= Combat.REGLE.DEPLOIEMENTS) return 'Un seul Joueur déployé par tour.';
-    return 'Tes trois lignes sont occupées.';
+    if (T.E.phase === 'combat') return 'Phase de Combat : on n\'y déploie plus.';
+    if (T.E.cpt.remplace >= Combat.REGLE.REMPLACEMENTS) return 'Tes trois cases sont prises, et tu as déjà remplacé un Joueur ce tour.';
+    return 'Tes trois cases sont prises, et tes Joueurs sont engagés : seul un Joueur non engagé peut être remplacé.';
   }
 
   /* Ce qui agit sur un Joueur en ce moment, en toutes lettres : sa Défense
      et ses attaques modifiées (Objets, coéquipiers, effets du tour), ses
      mots-clés et ce qu'ils font, ce qui lui est interdit. Les pastilles du
      plateau ne disent que « il y a quelque chose » : c'est ici qu'on le lit. */
+  /* Les textes officiels (docs/regles-officielles.md). */
   const MOTS_CLES = {
-    Provocation: 'l\'attaquant face à lui doit le viser.',
-    Garde: 'il peut défendre n\'importe quelle ligne.',
-    Shield: 'il ignore la première attaque qu\'il subit.',
-    Riposte: 'vaincu, il peut contre-attaquer celui qui l\'a vaincu.',
-    Légion: 'vaincu, il peut revenir en main contre une carte défaussée.'
+    Provocation: 'l\'attaquant face à lui doit le cibler.',
+    Garde: 'il peut défendre n\'importe quelle attaque.',
+    Shield: 'tant qu\'il est en jeu, il ignore la première attaque qu\'il subit.',
+    Riposte: 'vaincu, une de ses attaques, pour une Essence de moins, sur le Joueur qui l\'a vaincu.',
+    Légion: 'vaincu, défausse une carte pour le récupérer dans ta main.'
   };
   function effetsEnCours(c, k) {
     const E = T.E, l = [];
@@ -979,9 +1016,9 @@ const Table = (() => {
   }
   function pourquoiPas(c, k, inf) {
     const E = T.E;
-    if (Combat.premierTourDuPremier(E, T.moi)) return 'Pas d\'attaque au tout premier tour.';
+    if (Combat.premierTourDuPremier(E, T.moi)) return 'Le premier tour de la partie n\'a pas de phase de Combat.';
     if (E.cpt.combatFini) return 'La phase de Combat est finie.';
-    if (c.eng) return 'Engagé : il a déjà attaqué ou défendu.';
+    if (c.eng) return 'Engagé : il a attaqué, soutenu ou défendu. Il se désengage à ton prochain entretien.';
     if (E.temp.some(t => t.type === 'pasAttaque' && t.cible === c.u)) return 'Il ne peut pas attaquer ce tour.';
     if (!inf.payable) return 'Pas assez d\'Essences de la bonne couleur.';
     return '';
@@ -1028,6 +1065,27 @@ const Table = (() => {
     jouer(a);
   }
 
+  /* Le remplacement (règles officielles) : « Si aucune case n'est
+     disponible, il peut une fois par tour, bench un Joueur non engagé pour
+     pouvoir jouer cette carte. » Un geste qui envoie une carte à la défausse
+     se confirme. */
+  function confirmerRemplacement(a) {
+    if (T.o.guide && T.o.guide.permis) {
+      const ok = T.o.guide.permis(a, T.E);
+      if (ok !== true) { if (T.o.guide.refus) T.o.guide.refus(ok); return; }
+    }
+    const P = T.E.j[T.moi];
+    const nouveau = P.main.find(x => x.u === a.u), ancien = Combat.trouverSurPlateau(T.E, a.remplace);
+    if (!nouveau || !ancien) return;
+    fermerFocus();
+    T.remplacement = a;
+    const objs = ancien.obj.length;
+    ouvrirSheet(`<p class="ar-s-titre">Remplacer ${h(carte(ancien.id).nom || '')} ?</p>
+      <div class="ar-remplace">${htmlCarte(ancien.id)}<i aria-hidden="true">→</i>${htmlCarte(nouveau.id)}</div>
+      <p class="ar-s-texte">Tes trois cases sont prises. <b>${h(carte(ancien.id).nom || '')}</b> est bench : il part à la défausse${objs ? `, avec ${objs > 1 ? `ses ${objs} Objets` : 'son Objet'}` : ''}, et <b>${h(carte(nouveau.id).nom || '')}</b> prend sa case. Une fois par tour.</p>
+      <div class="ar-s-act"><button class="ar-b or" data-ar="remplacer-ok">Remplacer</button><button class="ar-b ghost" data-ar="annuler">Annuler</button></div>`, 'decision remplace');
+  }
+
   /* ---------- Les actions des boutons ---------- */
   function action(k, b) {
     if (k === 'menu') return menu();
@@ -1044,8 +1102,9 @@ const Table = (() => {
       b.textContent = t.hidden ? b.dataset.lab : 'Masquer le texte';
       return;
     }
-    if (k === 'annuler') { T.cible = null; consigne(null); fermerFocus(); fermerSheet(); return rendre(); }
-    if (k === 'defausse' || k === 'banc') return voirPile(+b.dataset.j, k);
+    if (k === 'annuler') { T.cible = null; T.remplacement = null; consigne(null); fermerFocus(); fermerSheet(); return rendre(); }
+    if (k === 'remplacer-ok') { const a = T.remplacement; T.remplacement = null; fermerSheet(); return a && jouer(a); }
+    if (k === 'defausse') return voirPile(+b.dataset.j);
     if (k === 'reserve' || k === 'club') return infoPile(+b.dataset.j, k);
     if (k === 'quitter') return quitter();
     if (k === 'vitesse') {
@@ -1149,7 +1208,9 @@ const Table = (() => {
     const joueur = sous.find(x => x.classList && x.classList.contains('ar-j') && x.closest('.ar-camp.moi'));
     let act = null;
     if (joueur) act = opts.find(o => o.t === 'lier' && o.cible === +joueur.dataset.u);
-    if (!act && place) act = opts.find(o => o.t === 'deployer' && o.ligne === +place.dataset.ligne);
+    if (!act && joueur) act = opts.find(o => o.t === 'deployer' && o.remplace === +joueur.dataset.u);
+    if (!act && place) act = opts.find(o => o.t === 'deployer' && !o.remplace && o.ligne === +place.dataset.ligne);
+    if (act && act.remplace) { T.focus = null; rendre(); return confirmerRemplacement(act); }
     if (!act && sous.some(x => x.classList && x.classList.contains('ar-plateau'))) act = opts.find(o => o.t === 'jouer');
     T.focus = null;
     if (act) { T.sauteVol = act.t === 'jouer' ? null : u; jouer(act); } else rendre();
@@ -1216,8 +1277,11 @@ const Table = (() => {
   function sauver() {
     if (!T || !T.o.sauver) return;
     try {
-      if (T.E.fin) localStorage.removeItem(T.o.sauver);
-      else localStorage.setItem(T.o.sauver, JSON.stringify({ init: T.E.init, journal: T.E.journal, meta: T.o.meta || null, le: Date.now() }));
+      /* Version 3.0.12 : une partie finie reste notée (`fini`) jusqu'à ce que
+         le serveur ait pris son résultat (finirCombat, js/battle.js, l'efface
+         alors). Refusé — une maintenance, le réseau —, il se renvoie depuis
+         l'accueil de Combats au lieu d'être perdu. */
+      localStorage.setItem(T.o.sauver, JSON.stringify({ init: T.E.init, journal: T.E.journal, meta: T.o.meta || null, le: Date.now(), fini: !!T.E.fin }));
     } catch (e) { /* stockage plein ou interdit */ }
   }
 
@@ -1270,6 +1334,10 @@ const Table = (() => {
   /* ---------- Les décisions ---------- */
   function montrerDecision(d) {
     ticker(null);
+    /* Une décision hors de son tour d'action (défendre, soutenir, une
+       Résilience, choisir une carte) : la carte agrandie se referme, elle
+       couvrirait la feuille. */
+    if (d.type !== 'tour' && T.focus) fermerFocus();
     rendre();
     if (d.type === 'tour') {
       fermerSheetDecision();
@@ -1310,9 +1378,30 @@ const Table = (() => {
       <div class="ar-s-act"><button class="ar-b or" data-ar="opt" data-v="oui">Garder</button><button class="ar-b ghost" data-ar="opt" data-v="non">Changer de main</button></div>`, 'decision mulligan centre');
   }
 
+  /* Le soutien (règles officielles) : l'adversaire a déclaré un défenseur ;
+     un de tes Joueurs voisins de l'attaquant peut engager son attaque pour
+     ajouter sa valeur. Chaque option dit le total contre la Défense. */
+  function decisionSoutien(d) {
+    const E = T.E;
+    const att = Combat.trouverSurPlateau(E, d.attaquant), def = Combat.trouverSurPlateau(E, d.defenseur);
+    const o0 = d.options.find(o => o.info) || { info: { total: 0, val: 0, def: 0 } };
+    const base = o0.info.total - o0.info.val, dv = o0.info.def;
+    if (att && def) viser(elU(att.u), elU(def.u), true);
+    const boutons = d.options.map(o => o.v === 'non'
+      ? `<button class="ar-b ghost" data-ar="opt" data-v="non">${base >= dv ? 'Pas besoin' : 'Pas de soutien'}</button>`
+      : `<button class="ar-b sout ${o.info.vaincu ? 'passe' : 'court'}" data-ar="opt" data-v="${o.v}">${coutHTML(o.cout || {})}<span>${h(o.label.replace('Soutien de ', ''))}</span><small>${o.info.total} contre ${o.info.def} · ${o.info.vaincu ? 'le défenseur tombe' : 'ne suffit pas'}</small></button>`).join('');
+    ouvrirSheet(`<div class="ar-s-duel">${att ? htmlCarte(att.id, mzDe(att.id, T.moi)) : ''}<span class="ar-sd-v"><small>ton attaque</small><b>${base}</b></span><i>${base >= dv ? '≥' : '&lt;'}</i><span class="ar-sd-v"><small>sa Défense</small><b>${dv}</b></span>${def ? htmlCarte(def.id) : ''}</div>
+      <p class="ar-s-titre">${h(carte(def ? def.id : '').nom || 'Un Joueur')} défend</p>
+      <p class="ar-s-texte">${base >= dv ? 'Ton attaque suffit déjà.' : 'Ton attaque ne suffit pas.'} Un de tes Joueurs <b>voisins</b> peut <b>soutenir</b> : il paie et engage son attaque, et sa valeur s'ajoute à la tienne.</p>
+      <div class="ar-s-act col">${boutons}</div>`, 'decision soutien');
+    surligner();
+    SFX.jouer('notif');
+  }
+
   function decisionChoix(d) {
     const E = T.E;
     let haut = '';
+    if (d.but === 'soutien') return decisionSoutien(d);
     if (d.but === 'defense') {
       const att = Combat.trouverSurPlateau(E, d.attaquant);
       if (att) {
@@ -1326,7 +1415,7 @@ const Table = (() => {
       const boutons = d.options.map(o => o.v === 'non'
         ? `<button class="ar-b ghost" data-ar="opt" data-v="non">${h(o.label)}</button>`
         : `<button class="ar-b def ${o.info && o.info.vaincu ? 'tombe' : 'tient'}" data-ar="opt" data-v="${o.v}">${h(o.label.replace('Défendre avec ', ''))}<small>${o.info ? (o.info.vaincu ? `vaincu · ${o.info.def} contre ${o.info.val}` : `tient · ${o.info.def} contre ${o.info.val}`) : ''}</small></button>`).join('');
-      ouvrirSheet(`${haut}<p class="ar-s-aide">Défendre avec un de tes Joueurs (allumés sur le plateau), ou laisser passer.</p><div class="ar-s-act">${boutons}</div>`, 'decision defense');
+      ouvrirSheet(`${haut}<p class="ar-s-aide">Défendre avec le Joueur de la même ligne (ou un Joueur avec Garde) : il s'engage. Sinon, ton CEO est touché.</p><div class="ar-s-act">${boutons}</div>`, 'decision defense');
       surligner();
       SFX.jouer('notif');
       return;
@@ -1361,7 +1450,7 @@ const Table = (() => {
       return c ? { u, id: c.id } : null;
     }).filter(Boolean);
     ouvrirSheet(`<p class="ar-s-titre">${h(d.titre)}</p>${d.texte ? `<p class="ar-s-texte">${h(d.texte)}</p>` : ''}
-      <p class="ar-s-aide">${d.min === d.max ? `Choisis ${d.min} carte${d.min > 1 ? 's' : ''}.` : `De ${d.min} à ${d.max} cartes.`}</p>
+      <p class="ar-s-aide">${d.min === d.max ? `Choisis ${d.min} carte${d.min > 1 ? 's' : ''}.` : `De ${d.min} à ${d.max} cartes.`}${d.but === 'defausseFin' ? ' Elles vont à la défausse.' : ''}</p>
       <div class="ar-liste">${liste.map(c => `<button class="ar-lc" data-ar="multi" data-u="${c.u}">${htmlCarte(c.id)}<i class="ar-coche-c"></i></button>`).join('')}</div>
       <div class="ar-s-act"><button class="ar-b or" data-ar="multi-ok" ${d.min > 0 ? 'disabled' : ''}>Valider</button></div>`, 'decision cartes');
   }
@@ -1393,11 +1482,11 @@ const Table = (() => {
   }
 
   /* ---------- Les piles ---------- */
-  function voirPile(j, quoi) {
+  function voirPile(j) {
     const P = T.E.j[j];
-    const l = quoi === 'banc' ? P.banc : P.defausse;
-    ouvrirSheet(`<p class="ar-s-titre">${quoi === 'banc' ? 'Banc' : 'Défausse'}${j === T.moi ? '' : ` de ${h(nomCEO(j))}`} · ${l.length}</p>
-      ${quoi === 'banc' ? '<p class="ar-s-texte">Ces cartes reviennent dans la main au début du tour de leur propriétaire.</p>' : ''}
+    const l = P.defausse;
+    ouvrirSheet(`<p class="ar-s-titre">Défausse${j === T.moi ? '' : ` de ${h(nomCEO(j))}`} · ${l.length}</p>
+      <p class="ar-s-texte">Les cartes jouées, défaussées, vaincues, et tout ce qui est bench. La plus récente en premier.</p>
       <div class="ar-liste grille">${l.slice().reverse().map(c => `<span class="ar-lc">${htmlCarte(c.id)}</span>`).join('') || '<p class="ar-s-texte">Vide.</p>'}</div>
       <div class="ar-s-act"><button class="ar-b ghost" data-ar="annuler">Fermer</button></div>`, 'pile');
   }
@@ -1407,8 +1496,8 @@ const Table = (() => {
     const P = T.E.j[j];
     const a = j === T.moi ? 'Ta' : `La`, de = j === T.moi ? '' : ` de ${h(nomCEO(j))}`;
     const txt = quoi === 'reserve'
-      ? `${P.reserve.length} Essence${P.reserve.length > 1 ? 's' : ''} attendent face cachée. Au début de chaque tour, la première entre en jeu : c'est avec elles qu'on paie les attaques.`
-      : `${P.club.length} carte${P.club.length > 1 ? 's' : ''} face cachée. On y pioche une carte au début de son tour. Vide, chaque pioche coûte un PV.`;
+      ? `${P.reserve.length} Essence${P.reserve.length > 1 ? 's' : ''} attendent face cachée, mélangées. À chaque entretien, la première entre en jeu : c'est avec elles qu'on paie les attaques, et c'est leur couleur qui permet de jouer les Objets, les Coachs et les Moments de cette couleur.`
+      : `${P.club.length} carte${P.club.length > 1 ? 's' : ''} face cachée. On y pioche une carte à chaque entretien. Le CEO qui doit piocher dans un Club vide perd la partie.`;
     ouvrirSheet(`<p class="ar-s-titre">${quoi === 'reserve' ? `${a} Réserve d'Essences${de}` : (j === T.moi ? 'Ton Club' : `Le Club${de}`)}</p>
       <p class="ar-s-texte">${txt}</p>
       <div class="ar-s-act"><button class="ar-b ghost" data-ar="annuler">Fermer</button></div>`, 'pile');
@@ -1460,29 +1549,34 @@ const Table = (() => {
     if (!j.hidden) j.querySelector('ol').insertAdjacentHTML('beforeend', `<li class="${c || ''}">${t}</li>`);
   }
 
-  /* ---------- Pile ou face ---------- */
-  /* Une pièce à deux faces : la sienne (son avatar) et celle de l'autre.
-     Elle tourne, retombe sur la face de celui qui commence, puis le dit. */
-  async function pileOuFace() {
-    const E = T.E;
-    const moiDabord = E.premier === T.moi;
+  /* ---------- Qui commence ---------- */
+  /* « Déterminez aléatoirement qui commence la partie » : après les mains et
+     les PV, comme dans les règles. Une pièce à deux faces, la sienne (son
+     avatar) et celle de l'autre ; elle tourne, retombe sur la face de celui
+     qui commence, puis le dit. `T.o.premierRaison` : le perdant de la partie
+     d'avant commence (« Le perdant commencera la partie suivante »). */
+  async function pileOuFace(premier) {
+    const moiDabord = premier === T.moi;
     const inf = T.o.joueurs || [];
     const face = j => `<span class="ar-piece-f">${avatarHTML((inf[j] || {}).avatar || 'star', 'default', 'xl', (inf[j] || {}).photo || null)}</span>`;
     const a = qs('.ar-annonce');
-    a.className = 'ar-annonce pileface';
-    a.innerHTML = `<p class="ar-pf-titre">Pile ou face</p>
-      <div class="ar-piece${moiDabord ? '' : ' revers'}"><div class="ar-piece-a">${face(T.moi)}</div><div class="ar-piece-b">${face(adv(T.moi))}</div></div>
-      <p class="ar-pf-res">${moiDabord ? 'Tu commences' : `${h(nomCEO(E.premier))} commence`}</p>
-      <p class="ar-pf-sous">${moiDabord ? 'Pas d\'attaque à ton premier tour.' : 'Tu joueras deux Essences à ton premier tour.'}</p>`;
+    /* Décidé d'avance (le perdant de la partie d'avant) : la pièce se pose
+       sans tourner, et le son n'est pas celui d'un tirage. */
+    const decide = T.o.premierRaison ? ' decide' : '';
+    a.className = 'ar-annonce pileface' + decide;
+    a.innerHTML = `<p class="ar-pf-titre">${decide ? 'Qui commence' : 'Tirage au sort'}</p>
+      <div class="ar-piece${moiDabord ? '' : ' revers'}${decide}"><div class="ar-piece-a">${face(T.moi)}</div><div class="ar-piece-b">${face(adv(T.moi))}</div></div>
+      <p class="ar-pf-res">${moiDabord ? 'Tu commences' : `${h(nomCEO(premier))} commence`}</p>
+      <p class="ar-pf-sous">${T.o.premierRaison ? `${h(T.o.premierRaison)} ` : ''}${moiDabord ? 'Pas de phase de Combat à ton premier tour.' : `${h(nomCEO(premier))} ne pourra pas attaquer à son premier tour.`}</p>`;
     a.hidden = false;
-    SFX.jouer('piece');
+    SFX.jouer(decide ? 'ouvre' : 'piece');
     /* La pièce a sa propre durée (css/arene.css) : on ne la presse pas avec
        les animations rapides, sinon le résultat disparaît avant d'être lu. */
     await pause(RM() ? 1500 : 2900);
     a.classList.add('part');
     await pause(280);
     a.hidden = true;
-    noter(`${h(nomCEO(E.premier))} commence.`, 'sys');
+    noter(`${h(nomCEO(premier))} commence.`, 'sys');
   }
 
   /* ---------- Les animations ---------- */
@@ -1668,18 +1762,93 @@ const Table = (() => {
     T.visee = null;
   }
 
+  /* La pile de défausse d'un camp, et un vol de carte vers elle. */
+  const pileDef = j => qs(`.ar-camp.${cote(j)} .ar-pile.p-def`);
+  const pileClub = j => qs(`.ar-camp.${cote(j)} .ar-pile.club`);
+  const versMain = j => (j === T.moi ? qs('.ar-main') : qs('.ar-mainadv'));
+  function versDefausse(id, de, j, o) {
+    const p = pileDef(j);
+    if (!de || !p) return attendre(200);
+    const r = rect(de);
+    return vol(id, r, rect(p), Object.assign({ ms: 440, w: Math.max(36, r.width), s1: Math.max(.18, 30 / Math.max(36, r.width)), arc: 26, o1: .55 }, o || {}));
+  }
+  /* Plusieurs vols qui partent l'un après l'autre (la donne, les PV). */
+  async function enRafale(n, pas, f) {
+    const l = [];
+    for (let i = 0; i < n; i++) { l.push(f(i)); await attendre(pas); }
+    await Promise.all(l);
+  }
+
   const ANIM = {
+    /* ---- La mise en place ---- */
+    /* La donne : cinq cartes du Club vers la main, l'une après l'autre. Les
+       siennes apparaissent quand elles arrivent (#arene.mise les cache). */
+    async main(e) {
+      rendre(true);
+      const club = pileClub(e.j);
+      if (e.j === T.moi) {
+        const cs = qsa('.ar-m');
+        await enRafale(cs.length, 110, async i => {
+          const b = cs[i];
+          await vol(null, rect(club), rect(b), { dos: T.moi, ms: 420, w: rect(b).width, s0: .4, arc: 40 });
+          b.classList.add('donne');
+          SFX.jouer('carte');
+        });
+      } else {
+        await enRafale(e.n, 90, () => vol(null, rect(club), rect(qs('.ar-mainadv')), { dos: e.j, ms: 380, w: 40, arc: 20 }));
+      }
+    },
+    /* Le mulligan : la main retourne dans le Club, qui est mélangé, et cinq
+       nouvelles cartes arrivent. */
+    async mulligan(e) {
+      const club = pileClub(e.j);
+      if (e.j === T.moi) {
+        const cs = qsa('.ar-m');
+        await enRafale(cs.length, 60, i => { const r = rect(cs[i]); cs[i].classList.remove('donne'); return vol(null, r, rect(club), { dos: T.moi, ms: 360, w: r.width, s1: .4, arc: 20 }); });
+      } else {
+        flottant(elCEO(e.j), 'Change de main', 'info');
+        await enRafale(5, 50, () => vol(null, rect(qs('.ar-mainadv')), rect(club), { dos: e.j, ms: 320, w: 40, arc: 16 }));
+      }
+      if (club && !RM()) club.animate([{ rotate: '0deg' }, { rotate: '-8deg' }, { rotate: '8deg' }, { rotate: '0deg' }], { duration: 420 });
+      SFX.jouer('woosh');
+      await attendre(380);
+      await ANIM.main(Object.assign({ n: Combat.REGLE.MAIN }, e));
+    },
+    /* Les PV : quatre cartes du dessus du Club, posées face cachée. */
+    async pv(e) {
+      const club = pileClub(e.j), vers = elCEO(e.j);
+      await enRafale(e.n, 120, () => vol(null, rect(club), rect(vers.querySelector('.ar-pvs') || vers), { dos: e.j, ms: 420, w: 34, arc: 30, s1: .5 }));
+      rendre(true);
+      const pv = vers.querySelector('.ar-pvs');
+      if (pv && !RM()) pv.animate([{ transform: 'scale(1.35)' }, { transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,1.4,.4,1)' });
+      SFX.jouer('piece');
+      await attendre(240);
+    },
+    async pileFace(e) {
+      await pileOuFace(e.premier);
+      if (T) T.el.classList.remove('mise');
+    },
+
+    /* ---- Les phases du tour ---- */
+    async phaseAction() { rendre(true); },
+    async phaseCombat(e) {
+      rendre(true);
+      await bandeau('Phase de Combat', e.j === T.moi ? 'moi combat' : 'lui combat', 760);
+    },
+    async cloture() { rendre(true); await attendre(160); },
     async tour(e) {
       consigne(null);
       rendre(true);
       if (e.j === T.moi) { SFX.jouer('notif'); await bandeau('À toi de jouer', 'moi', 1000); }
       else await bandeau(`Tour de ${h(nomCEO(e.j))}`, 'lui', 1000);
     },
+    /* La pioche : une carte (ou plusieurs) du Club vers la main, des deux
+       côtés — celles d'en face restent face cachée. */
     async pioche(e) {
-      if (e.j !== T.moi) { rendre(true); return; }
-      const de = qs('.ar-camp.moi .ar-pile.club');
+      const de = pileClub(e.j);
       SFX.jouer('carte');
-      await vol(null, rect(de), rect(qs('.ar-main')), { dos: T.moi, ms: 360, w: 60, s1: 1.2, arc: 30 });
+      if (e.j === T.moi) await enRafale(e.n || 1, 120, () => vol(null, rect(de), rect(qs('.ar-main')), { dos: T.moi, ms: 380, w: 60, s1: 1.2, arc: 30 }));
+      else await enRafale(e.n || 1, 110, () => vol(null, rect(de), rect(qs('.ar-mainadv')), { dos: e.j, ms: 360, w: 40, arc: 20 }));
       rendre(true);
     },
     async essence(e) {
@@ -1773,6 +1942,9 @@ const Table = (() => {
     async impact(e) {
       const a = elU(e.u);
       const c = e.cible === 'ceo' ? elCEO(adv(ownerOf(e.u))) : elU(e.cible);
+      /* Contre un Joueur : le duel, en grand, au milieu — l'attaque (et son
+         soutien) contre la Défense. */
+      if (e.cible !== 'ceo' && e.def != null) duel(e);
       if (a && c && !e.riposte && !RM()) {
         const ra = rect(a), rc = rect(c);
         const dx = (rc.left + rc.width / 2) - (ra.left + ra.width / 2), dy = (rc.top + rc.height / 2) - (ra.top + ra.height / 2);
@@ -1791,7 +1963,7 @@ const Table = (() => {
         eclats(c, ['#fff', mc, mc, '#fff6c8'], 34);
         if (c && !RM()) c.animate([{ filter: `drop-shadow(0 0 0 ${mc})` }, { filter: `drop-shadow(0 0 14px ${mc}) brightness(1.5)`, offset: .3 }, { filter: 'none' }], { duration: 520 * vitesse() });
       } else eclats(c, ['#fff', '#ff6b6b', '#ffb3b3'], 22);
-      await attendre(420);
+      await attendre(e.cible !== 'ceo' && e.def != null ? 760 : 420);
     },
     async repousse(e) {
       const x = elU(e.u);
@@ -1807,12 +1979,16 @@ const Table = (() => {
       SFX.jouer('rare');
       await attendre(560);
     },
+    /* Vaincu : il éclate, puis file à la défausse, ses Objets avec lui
+       (« vaincu et bench (envoyé à la défausse) »). */
     async vaincu(e) {
       const x = elU(e.u);
+      const r = rect(x);
       if (x) { x.classList.add('vaincu'); eclats(x, ['#fff', '#ff6b6b', '#c8bfff'], 34); }
       SFX.jouer('craque');
       flottant(x, 'Vaincu', 'mort');
-      await attendre(850);
+      await attendre(560);
+      if (r) await versDefausse(e.id, { getBoundingClientRect: () => r }, e.j);
       rendre(true);
     },
     async touche(e) {
@@ -1839,13 +2015,24 @@ const Table = (() => {
       flottant(elU(e.cible), 'Riposte', 'info');
       await attendre(900);
     },
-    async legion(e) { flottant(elCEO(e.j), 'Légion : retour en main', 'info'); await attendre(380); },
+    /* Légion : il revient de la défausse dans la main. */
+    async legion(e) {
+      flottant(elCEO(e.j), 'Légion : retour en main', 'info');
+      SFX.jouer('rare');
+      await vol(e.id, rect(pileDef(e.j)), rect(versMain(e.j)), { ms: 560, w: 60, s0: .5, arc: 44 });
+      rendre(true);
+    },
     async sauve(e) { flottant(elU(e.u), 'Sauvé', 'tient'); await attendre(420); },
+    /* Bench : « une carte déployée est envoyée à la défausse ». Un Joueur,
+       ou un Objet (son médaillon). */
     async banc(e) {
       const x = elU(e.u);
+      flottant(x || elCEO(e.j), 'Bench', 'info');
+      SFX.jouer('woosh');
+      const r = rect(x);
       if (x) x.classList.add('banc');
-      flottant(x || elCEO(e.j), 'Au Banc', 'info');
-      await attendre(420);
+      if (r) await versDefausse(e.id, { getBoundingClientRect: () => r }, e.j);
+      else await attendre(300);
       rendre(true);
     },
     async enMain(e) {
@@ -1863,9 +2050,24 @@ const Table = (() => {
     async finCombatForce() { await bandeau('Fin de la phase de Combat', 'lui', 760); },
     async fin() { await attendre(300); },
     async mulligan(e) { if (e.j !== T.moi) flottant(elCEO(e.j), 'Change de main', 'info'); rendre(true); },
-    async clubVide(e) { await bandeau(`Club vide : ${h(nomCEO(e.j))} pioche dans ses PV`, 'lui', 900); },
+    async clubVide(e) { await bandeau(e.j === T.moi ? 'Ton Club est vide : tu ne peux plus piocher' : `Club vide : ${h(nomCEO(e.j))} ne peut plus piocher`, 'lui', 1200); },
     async echangePlaces() { rendre(true); await attendre(260); },
-    async defausse(e) { if (e.j === T.moi) rendreMain(); },
+    /* Une carte de la main à la défausse (fin de tour, un effet) : face
+       visible, comme toute carte défaussée. */
+    async defausse(e) {
+      const de = e.j === T.moi ? qs(`.ar-m[data-mu="${e.u}"]`) : qs('.ar-mainadv');
+      SFX.jouer('carte');
+      await versDefausse(e.id, de, e.j, { w: e.j === T.moi && de ? rect(de).width : 54, ms: 380 });
+      rendre(true);
+    },
+    /* En slip sur la Faille : les Objets prêtés à la main y retournent. */
+    async retourDefausse(e) {
+      for (const u of e.u) {
+        const de = e.j === T.moi ? qs(`.ar-m[data-mu="${u}"]`) : qs('.ar-mainadv');
+        await versDefausse(trouverId(u), de, e.j, { ms: 360 });
+      }
+      rendre(true);
+    },
     async bonus(e) { flottant(elU(e.u), '+' + e.val, 'plus'); await attendre(260); },
     async gagneMotCle(e) { flottant(elU(e.u), e.kw, 'info'); await attendre(260); },
     async annule(e) { flottant(elU(e.u), 'Attaque annulée', 'info'); await attendre(380); },
@@ -1895,10 +2097,11 @@ const Table = (() => {
       rendre(true);
     },
     async defausseObjet(e) {
-      const x = elU(e.de);
-      flottant(x, `${carte(e.id).nom || 'Objet'} défaussé`, 'info');
+      const x = elU(e.u) || elU(e.de);
+      flottant(elU(e.de), `${carte(e.id).nom || 'Objet'} défaussé`, 'info');
       SFX.jouer('dechire');
-      await attendre(420);
+      const r = rect(x);
+      if (r) await versDefausse(e.id, { getBoundingClientRect: () => r }, e.j);
       rendre(true);
     },
     async defausseLot(e) { await montrerLot(e.cartes, `${h(nomCEO(e.j))} défausse`); rendre(true); },
@@ -1917,10 +2120,56 @@ const Table = (() => {
     async paie() { rendre(true); },
     async essEngage() { rendre(true); },
     async essDesengage() { rendre(true); },
-    async desengagement() { rendre(true); },
+    /* L'entretien : les cartes engagées se redressent (la rotation de
+       css/arene.css). */
+    async desengagement(e) {
+      const avant = qsa(`.ar-camp.${cote(e.j)} .ar-j.eng`).length;
+      rendre(true);
+      if (avant) await attendre(420);
+    },
     async essRendue() { rendre(true); },
-    async retourBanc() { rendre(true); }
+    /* Le soutien : le Joueur voisin se lève, un trait le relie à
+       l'attaquant, sa valeur s'ajoute. */
+    async soutien(e) {
+      rendre(true);
+      const s = elU(e.u), a = elU(e.attaquant);
+      if (s) s.classList.add('assaut');
+      SFX.jouer('woosh');
+      lien(s, a);
+      T.sv = e.val;
+      ticker(`<b>Soutien</b><i class="ar-fl">+</i>${h(carte(trouverId(e.u)).nom || '')} · ${e.val}`);
+      flottant(a, `+${e.val}`, 'plus');
+      await attendre(e.j === T.moi ? 620 : 1000);
+      if (s) s.classList.remove('assaut');
+    }
   };
+
+  /* Le trait du soutien, entre le voisin et l'attaquant : il s'efface seul. */
+  function lien(de, vers) {
+    if (!de || !vers || !T || RM()) return;
+    const a = rect(de), b = rect(vers), r0 = rect(T.el);
+    const z = document.createElement('div');
+    z.className = 'ar-lien';
+    z.innerHTML = `<svg width="${r0.width}" height="${r0.height}" viewBox="0 0 ${r0.width} ${r0.height}" aria-hidden="true"><path d="M${a.left + a.width / 2 - r0.left} ${a.top + a.height / 2 - r0.top} L${b.left + b.width / 2 - r0.left} ${b.top + b.height / 2 - r0.top}"/></svg>`;
+    T.el.appendChild(z);
+    setTimeout(() => z.remove(), 1100 * vitesse() + 200);
+  }
+
+  /* Le duel : l'attaque contre la Défense, en gros chiffres, le temps de
+     l'impact. Le signe dit l'issue (≥ : vaincu ; < : il tient). */
+  function duel(e) {
+    if (!T) return;
+    const passe = e.val >= e.def;
+    const sv = !e.riposte && T.sv ? T.sv : 0;
+    T.sv = 0;
+    const moi = ownerOf(e.u) === T.moi;
+    const z = document.createElement('div');
+    z.className = `ar-duel ${passe ? 'passe' : 'tient'} ${moi ? 'moi' : 'lui'}`;
+    z.innerHTML = `<span class="ar-du-v"><small>${e.riposte ? 'Riposte' : 'Attaque'}</small><b>${e.val}</b>${sv ? `<em>dont ${sv} de soutien</em>` : ''}</span>
+      <i>${passe ? '≥' : '&lt;'}</i><span class="ar-du-v"><small>Défense</small><b>${e.def}</b></span>`;
+    qs('.ar-scene').appendChild(z);
+    setTimeout(() => z.remove(), 1250 * vitesse() + 150);
+  }
 
   /* Retrouver l'id d'une instance, même partie du plateau. */
   /* Dans l'état montré d'abord (la photo de l'événement en cours), puis
@@ -1929,7 +2178,7 @@ const Table = (() => {
     for (const E of (T.vue ? [T.vue, T.E] : [T.E])) {
       const c = Combat.trouverSurPlateau(E, u);
       if (c) return c.id;
-      for (const P of E.j) for (const z of ['main', 'defausse', 'banc', 'club', 'pv']) { const x = P[z].find(k => k.u === u); if (x) return x.id; }
+      for (const P of E.j) for (const z of ['main', 'defausse', 'club', 'pv']) { const x = P[z].find(k => k.u === u); if (x) return x.id; }
     }
     return null;
   }
@@ -1937,7 +2186,7 @@ const Table = (() => {
     for (const j of [0, 1]) {
       const P = T.E.j[j];
       if (P.lignes.some(c => c && c.u === u)) return j;
-      for (const z of ['main', 'defausse', 'banc', 'club', 'pv']) if (P[z].some(c => c.u === u)) return j;
+      for (const z of ['main', 'defausse', 'club', 'pv']) if (P[z].some(c => c.u === u)) return j;
     }
     return T.E.actif;
   }
@@ -1965,13 +2214,21 @@ const Table = (() => {
       case 'lie': return noter(`${n(e.j)} lie ${k(e.id)}.`);
       case 'attaque': return noter(`${k(trouverId(e.u))} attaque${e.cible === 'ceo' ? ' le CEO' : e.cible ? ' ' + k(trouverId(e.cible)) : ''} (${h(e.nom)}).`);
       case 'defend': return noter(`${k(trouverId(e.u))} défend.`);
-      case 'repousse': return noter(`Repoussé : ${e.val} contre ${e.def}.`);
+      case 'repousse': return noter(`Il tient : ${e.val} contre ${e.def}.`);
+      case 'impact': return e.cible !== 'ceo' && e.def != null && e.val >= e.def ? noter(`${e.val} contre ${e.def} : le défenseur tombe.`) : undefined;
       case 'vaincu': return noter(`${k(e.id)} est vaincu.`, 'mal');
       case 'touche': return noter(`${n(e.j)} est touché.`, 'mal');
-      case 'pvRecup': return noter(`${n(e.j)} récupère un PV.`);
+      /* Le CEO touché prend en main la carte du dessus de ses PV (règles). */
+      case 'pvRecup': return noter(`${n(e.j)} prend son PV du dessus en main.`);
+      case 'pvDefausse': return noter(`Le PV du dessus de ${n(e.j)} part à la défausse.`, 'mal');
       case 'resilience': return noter(`Résilience : ${k(e.id)}.`, 'bien');
       case 'riposte': return noter(`Riposte de ${k(e.id)} (${e.val}).`);
-      case 'banc': return noter(`${k(e.id)} part au Banc.`);
+      case 'banc': return noter(`${k(e.id)} est bench (à la défausse).`);
+      case 'soutien': return noter(`${k(trouverId(e.u))} soutient l'attaque (+${e.val}).`);
+      case 'defausse': return noter(`${n(e.j)} défausse ${k(e.id)}.`);
+      case 'mulligan': return noter(`${n(e.j)} change de main.`);
+      case 'clubVide': return noter(`${n(e.j)} doit piocher dans un Club vide.`, 'mal');
+      case 'legion': return noter(`Légion : ${k(e.id)} revient en main.`, 'bien');
       case 'enMain': return noter(`${k(e.id)} retourne en main.`);
       case 'shield': return noter('Shield : l\'attaque est ignorée.');
       case 'fin': return noter(e.gagnant === T.moi ? 'Victoire !' : 'Défaite.', 'sys');
@@ -1989,7 +2246,11 @@ const Table = (() => {
     rendre();
     const E = T.E;
     const gagne = E.fin.gagnant === T.moi;
-    const raisons = { pv: gagne ? 'Le CEO adverse n\'a plus de PV.' : 'Ton CEO n\'a plus de PV.', abandon: gagne ? `${h(nomCEO(adv(T.moi)))} abandonne.` : 'Tu as abandonné.', club: 'Club vide.' };
+    const raisons = {
+      pv: gagne ? 'Attaque réussie sur le CEO adverse, qui n\'avait plus de PV.' : 'Ton CEO a été touché alors qu\'il n\'avait plus de PV.',
+      abandon: gagne ? `${h(nomCEO(adv(T.moi)))} abandonne.` : 'Tu as abandonné.',
+      club: gagne ? `${h(nomCEO(adv(T.moi)))} devait piocher dans un Club vide.` : 'Tu devais piocher dans un Club vide.'
+    };
     if (gagne) { SFX.jouer('legend'); if (typeof FX !== 'undefined') FX.confetti({ colors: ['#f5c451', '#ffdc85', '#b3a6ff', '#fff'] }); }
     else SFX.jouer('erreur');
     const a = qs('.ar-annonce');
@@ -2016,27 +2277,27 @@ const Table = (() => {
    `img` absent : le tapis de base, dessiné par la page (css/arene.css). */
 const TAPIS = {
   t_base:      { nom: 'Nuit M8', img: null, prix: 0 },
-  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=3.0.11', prix: 4000 },
-  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=3.0.11', prix: 4000 },
-  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=3.0.11', prix: 5000 },
-  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=3.0.11', prix: 4000 },
-  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=3.0.11', prix: 4000 },
-  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.11', prix: 4000 },
+  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=3.0.12', prix: 4000 },
+  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=3.0.12', prix: 4000 },
+  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=3.0.12', prix: 5000 },
+  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=3.0.12', prix: 4000 },
+  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=3.0.12', prix: 4000 },
+  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.12', prix: 4000 },
   /* L'événement « Le Choc des Sections » : ni en vente, ni en Éclats.
      `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
-  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.11', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
-  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.11', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
+  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.12', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
+  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.12', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
 };
 /* Les tapis des boss du Raid qui n'en ont pas dans TAPIS (RAID.bosses,
    js/combat/choc-data.js) : sous leurs cartes seulement, ni en vente ni à
    gagner (version 3.0.11). Le Sorcier a le sien dans TAPIS : la boutique du
    Choc le vend. Dessinés par tools/choc-visuels.py. */
 const TAPIS_BOSS = {
-  t_ficelles:  { nom: 'Le Marionnettiste', img: 'assets/combat/tapis/t_ficelles.webp?v=3.0.11' }
+  t_ficelles:  { nom: 'Le Marionnettiste', img: 'assets/combat/tapis/t_ficelles.webp?v=3.0.12' }
 };
 const SLEEVES = {
-  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.11', prix: 0 },
-  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.11', prix: 3000 },
-  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.11', prix: 2500 },
-  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.11', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
+  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.12', prix: 0 },
+  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.12', prix: 3000 },
+  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.12', prix: 2500 },
+  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.12', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
 };

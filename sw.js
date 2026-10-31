@@ -7,7 +7,7 @@
    Rien de ce qui touche au compte n'est mis en cache. */
 "use strict";
 
-const VERSION = 'mtcg-v3.0.11-aef942';
+const VERSION = 'mtcg-v3.0.12-f628af';
 const COQUILLE = VERSION + '-coquille';
 const MEDIAS = VERSION + '-medias';
 
@@ -26,8 +26,8 @@ const ESSENTIEL = [
   'js/combat/ia.js', 'js/combat/campagne.js', 'js/combat/choc-data.js', 'js/combat/niveaux.js',
   'js/combat/guides.js', 'js/combat/table.js', 'js/combat/tutoriel.js', 'js/combat/atelier.js',
   'js/combat/defis.js', 'js/combat/historique.js', 'js/battle.js', 'js/profile.js',
-  'js/settings.js', 'js/bienvenue.js', 'js/cadeaux.js', 'js/reflets.js', 'js/choc.js', 'js/raid.js', 'js/pwa.js', 'js/lab.js',
-  'js/app.js',
+  'js/settings.js', 'js/bienvenue.js', 'js/cadeaux.js', 'js/reflets.js', 'js/choc.js',
+  'js/raid.js', 'js/pwa.js', 'js/lab.js', 'js/app.js',
   'assets/logo-m8.webp', 'assets/card-back.webp', 'assets/pack-star.svg',
   'assets/star-pink.svg', 'assets/extension-logo.svg', 'assets/1st-edition.svg',
   'assets/icon-192.png', 'assets/apple-touch-icon.png', 'assets/favicon.svg'

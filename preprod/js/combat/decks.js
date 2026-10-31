@@ -5,10 +5,11 @@
    nombre }, couverture: id }. Le moteur, lui, veut deux listes à plat : c'est
    versMoteur() qui les déplie.
 
-   Les règles de construction sont « maison » (docs/regles-3.0.md) : un Club
-   de REGLE.CLUB cartes, deux exemplaires au plus d'une même carte — un seul
-   pour une Légendaire, une Secrète, une Promo ou l'Unique —, et une Réserve de
-   REGLE.RESERVE Essences, de la couleur qu'on veut : les Essences ne se
+   Les règles de construction sont les règles officielles (« Construire son
+   jeu ») : un Club de 40 cartes (REGLE.CLUB), pas plus de trois exemplaires
+   d'une même carte — « une carte possédant le même nom et la même couleur,
+   quand bien même son texte ou son art est différent » —, et une Réserve de
+   10 Essences (REGLE.RESERVE) de la couleur qu'on veut : les Essences ne se
    possèdent pas, elles se choisissent. */
 "use strict";
 
@@ -16,20 +17,18 @@
 const Combat = racine.Combat || (typeof require === 'function' ? require('./moteur.js') : null);
 const R = Combat.REGLE;
 
-/* Deux cartes qui n'en font qu'une : l'illustration alternative d'une Promo,
-   la Promo d'une Légendaire. */
-const ALIAS = { p02: 'p01', p06: 'c121' };
 const TYPES = ['joueur', 'coach', 'moment', 'objet'];
 
+/* Une « même carte » : le même nom et la même couleur (une Reverse, une
+   Promo à l'illustration différente, deux cartes de même nom comme les deux
+   Leakof). Le serveur a la même clé (cle_copie, 23_combats.sql). */
 function cleCopie(id) {
   const c = Combat.carte(id);
-  const b = c && c.base && c.cat !== 'essence' ? c.base : id;
-  return ALIAS[b] || b;
+  return c ? Combat.O.sansAccent(c.nom) + '|' + c.col : id;
 }
+/* Trois exemplaires, quelle que soit la rareté (limite_copies). */
 function limite(id) {
-  const c = Combat.carte(id);
-  if (!c) return 0;
-  return ['L', 'S', 'UN', 'PR'].includes(c.rar) || c.promo && !c.rev ? R.COPIES_RARES : R.COPIES;
+  return Combat.carte(id) ? R.COPIES : 0;
 }
 /* Peut entrer dans un Club : un Joueur, un Coach, un Moment, un Objet — et
    pas une Secrète encore floutée (elle n'a pas de texte). */
@@ -44,22 +43,19 @@ function verifier(deck, possede) {
   const cartes = deck.cartes || {};
   const n = total(cartes);
   if (n !== R.CLUB) err.push(n < R.CLUB ? `Il manque ${R.CLUB - n} carte${R.CLUB - n > 1 ? 's' : ''} au Club.` : `Le Club a ${n - R.CLUB} carte${n - R.CLUB > 1 ? 's' : ''} de trop.`);
-  const parCle = {};
-  let joueurs = 0;
+  const parCle = {}, nomDe = {};
   for (const id in cartes) {
     const c = Combat.carte(id), q = +cartes[id] || 0;
     if (!q) continue;
     if (!jouable(c)) { err.push(`« ${c ? c.nom : id} » ne se joue pas en combat.`); continue; }
-    if (c.cat === 'joueur') joueurs += q;
     const k = cleCopie(id);
     parCle[k] = (parCle[k] || 0) + q;
+    nomDe[k] = c.nom;
     if (possede && (possede[id] || 0) < q) err.push(`Tu n'as que ${possede[id] || 0} « ${c.nom} »${c.rev ? ' Reverse' : ''}.`);
   }
   for (const k in parCle) {
-    const lim = limite(k);
-    if (parCle[k] > lim) err.push(`« ${Combat.carte(k).nom} » : ${lim} exemplaire${lim > 1 ? 's' : ''} au plus.`);
+    if (parCle[k] > R.COPIES) err.push(`« ${nomDe[k]} » : ${R.COPIES} exemplaires au plus, toutes versions comprises.`);
   }
-  if (n && !joueurs) err.push('Il faut au moins un Joueur.');
   const r = deck.reserve || {};
   const nr = total(r);
   if (Object.keys(r).some(k => r[k] && !Combat.COULEURS.includes(k))) err.push('Couleur d\'Essence inconnue.');
@@ -108,26 +104,36 @@ function reserveAuto(cartes, defaut) {
 /* ---------- Les Starter Decks ---------- */
 /* M8 vend deux Starter Decks : Section Toxique et Section Déter. Ceux d'ici
    sont reconstitués (leur liste réelle n'est pas connue) : la Section
-   Toxique joue Rose — engager l'adversaire, frapper ses Joueurs engagés —,
+   Toxique joue Rose — engager l'adversaire, des Joueurs qui frappent tôt —,
    la Section Déter joue Mauve — des Joueurs qui reviennent, des coups
-   lourds. Chacun contient sa Promo. Ils sont prêtés : on peut les jouer sans
-   en posséder les cartes. */
+   lourds. 40 cartes chacun, en suivant les conseils des règles officielles :
+   au moins 15 Joueurs (18 ici), une couleur dans la Réserve, des attaques à
+   une ou deux Essences. Chacun contient sa Promo. Ils sont prêtés : on peut
+   les jouer sans en posséder les cartes.
+   Mesuré (3.0.12, IA niveau 3 des deux côtés, places alternées, 240
+   parties) : contre des decks tirés au sort (Decks.aleatoire, niveau 3), le
+   Toxique gagne 64 %, le Déter 58 % ; face à face, le Toxique 61 %. Le Déter
+   joue trois Fée Rosalie (★ bench un Joueur adverse engagé) : avec une
+   seule et deux Chevalier Rose, il gagnait 50 % contre le tirage. Neuf
+   autres variantes (des Épiques, Cooked, Doig'Dance à la place de Leakof et
+   d'Alerte Leak, un Toxique sans un Squeezie ni un Vandale…) ne faisaient
+   pas mieux, au bruit près (± 3 points). */
 const STARTERS = {
   toxique: {
     id: 'starter-toxique', nom: 'Starter · Section Toxique', starter: true, couverture: 'c012',
     cartes: {
-      p03: 1, c010: 2, c011: 2, c012: 2, c013: 2, c017: 1, c073: 2, c074: 1, c078: 2, c079: 1,
-      c015: 2, c085: 2, c087: 1,
-      c014: 1, c016: 2, c083: 2, c104: 1, c096: 1, c097: 1, c020: 1
+      p03: 1, c010: 3, c011: 2, c012: 3, c013: 2, c017: 1, c073: 2, c078: 2, c079: 1, c074: 1,
+      c015: 3, c085: 2, c087: 2, c088: 1,
+      c014: 2, c016: 2, c083: 2, c104: 1, c096: 2, c097: 2, c020: 1, c091: 1, c092: 1
     },
     reserve: { rose: 10 }
   },
   deter: {
     id: 'starter-deter', nom: 'Starter · Section Déter', starter: true, couverture: 'c077',
     cartes: {
-      p04: 1, c051: 2, c052: 2, c050: 1, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c078: 2, c059: 1,
-      c053: 2, c087: 1, c088: 2,
-      c054: 2, c055: 2, c083: 2, c082: 1, c092: 2
+      p04: 1, c051: 3, c052: 3, c050: 3, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c059: 1,
+      c053: 3, c087: 2, c088: 2, c056: 1,
+      c054: 2, c055: 2, c083: 2, c082: 2, c092: 2, c093: 1, c072: 1, c094: 1, c095: 1
     },
     reserve: { mauve: 10 }
   }
@@ -144,7 +150,9 @@ const POIDS = {
   4: { C: 2, PC: 3, R: 3, E: 3, L: 2, S: 0.8, PR: 0.8 },
   5: { C: 1, PC: 2, R: 3, E: 4, L: 4, S: 1.5, PR: 1 }
 };
-const CIBLES = { joueur: 16, objet: 5, instant: 9 };
+/* 40 cartes, en suivant les conseils des règles officielles (« un minimum
+   de 15 Joueur ») : 18 Joueurs, 8 Objets, 14 Coachs et Moments. */
+const CIBLES = { joueur: 18, objet: 8, instant: 14 };
 
 function aleatoire(rand, o) {
   o = o || {};
@@ -237,19 +245,16 @@ function decoder(s) {
 }
 
 /* ---------- Qu'est-ce qu'un bon deck ? ---------- */
-/* Trois repères, mesurés en faisant jouer l'IA (niveau Difficile des deux
-   côtés, 300 parties par point) avec des decks qui ne diffèrent que par un
-   point, contre des decks de référence :
-     - les Joueurs : 8 → 29 % de victoires, 12 → 44 %, 16 → 51 %, 18 → 56 %,
-       22 → 58 %, 26 → 56 % ; au-delà de 16, ça ne se dégrade plus ;
-     - la Réserve : accordée aux attaques 43 %, d'une autre couleur 35 % ;
-     - le coût : des Joueurs qui attaquent tous pour 2 Essences ou moins,
-       59 % (le seuil de la moitié est un choix, pas une mesure).
-   Mesuré aussi, et sans effet visible : le nombre de couleurs (1, 2 ou 3 :
-   51 %, 50 %, 50 %) ; d'où l'absence de repère « couleurs » ou « soutien ».
-   Ce ne sont pas des règles : un deck qui les rate peut gagner, mais il
-   part avec un handicap qu'on sait chiffrer (docs/economie-3.0.md). */
-const BON = { joueurs: 16, accord: 0.8, bas: 0.5 };
+/* Les trois « Conseils » des règles officielles (« Construire son jeu ») :
+     - « Jouez un minimum de 15 Joueur dans votre Club pour être sûr de ne
+       pas manquer » ;
+     - « Il est préférable de ne jouer qu'une couleur ou deux dans votre
+       Réserve et de construire votre Club autour de ces couleurs » : la
+       Réserve accordée aux attaques ;
+     - « jouez majoritairement des Joueur avec une attaque coûtant une
+       Essence ou deux » : la moitié au moins (« majoritairement »).
+   Ce ne sont pas des règles : un deck qui les rate peut gagner. */
+const BON = { joueurs: 15, accord: 0.8, bas: 0.5 };
 
 function bilan(deck) {
   const cartes = deck.cartes || {};
@@ -268,23 +273,23 @@ function bilan(deck) {
   const reperes = [
     { cle: 'joueurs', ok: joueurs >= BON.joueurs, titre: `${BON.joueurs} Joueurs au moins`,
       dit: `${joueurs} Joueur${joueurs > 1 ? 's' : ''}.`,
-      pourquoi: joueurs >= BON.joueurs ? 'Assez de monde pour tenir tes trois lignes tout le combat.'
-        : 'Trop peu : tes lignes se vident, et chaque Joueur vaincu laisse un trou. Mesuré : 12 Joueurs gagnent 44 % du temps, 16 et plus, plus de 50 %.' },
+      pourquoi: joueurs >= BON.joueurs ? 'Assez de monde pour tenir tes trois cases tout le combat.'
+        : 'Le conseil des règles officielles : « un minimum de 15 Joueur dans votre Club pour être sûr de ne pas manquer ».' },
     { cle: 'reserve', ok: accord >= BON.accord, titre: 'Une Réserve accordée',
       dit: `Elle suit tes attaques à ${Math.round(100 * accord)} %.`,
       pourquoi: accord >= BON.accord ? 'Les couleurs de ta Réserve sont celles que tes attaques demandent.'
-        : 'Des Essences qui ne paient aucune de tes attaques. « Réserve auto » la règle d\'après tes cartes.' },
+        : 'Des Essences qui ne paient aucune de tes attaques (et qui n\'autorisent pas tes Objets, Coachs et Moments de couleur). « Réserve auto » la règle d\'après tes cartes.' },
     { cle: 'bas', ok: joueurs > 0 && bas / joueurs >= BON.bas, titre: 'Des attaques qui partent tôt',
       dit: `${bas} Joueur${bas > 1 ? 's' : ''} sur ${joueurs} attaque${bas > 1 ? 'nt' : ''} pour 2 Essences ou moins.`,
       pourquoi: joueurs && bas / joueurs >= BON.bas ? 'Tu peux frapper dès les premiers tours.'
-        : 'Une seule Essence par tour : des attaques chères te laissent sans rien faire au début.' }
+        : 'Le conseil des règles officielles : « jouez majoritairement des Joueur avec une attaque coûtant une Essence ou deux ». Une seule Essence arrive par tour.' }
   ];
   const note = reperes.filter(x => x.ok).length;
   const nom = note >= 3 ? 'Solide' : note >= 2 ? 'Jouable' : 'À revoir';
   return { reperes, note, sur: reperes.length, nom, joueurs, bas, accord };
 }
 
-const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, aleatoire, tirerCouleurs, couverture, encoder, decoder, total, bilan, BON };
+const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, aleatoire, tirerCouleurs, couverture, encoder, decoder, total, bilan, BON, CIBLES };
 if (typeof module !== 'undefined' && module.exports) module.exports = Decks;
 racine.Decks = Decks;
 

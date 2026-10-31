@@ -2,7 +2,7 @@
    L'arène elle-même a sa feuille : css/arene.css. */
 
 /* ============ L'onglet Combats ============ */
-.cb{display:flex;flex-direction:column;gap:12px;--sc:#9d8cff;--sc2:#c8bfff}
+.cb{display:flex;flex-direction:column;gap:12px;--sc:#9d8cff;--sc2:var(--deco-ink)}
 .champ{width:100%;font:inherit;font-size:16px;padding:12px 14px;border-radius:var(--radius-sm);border:0;color:var(--text);
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
 .champ:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent-soft)}
@@ -12,7 +12,8 @@
   background:var(--glass);box-shadow:inset 0 0 0 1px var(--glass-line)}
 .cb-embleme{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;
   background:radial-gradient(circle at 35% 30%,#fff7,var(--ec,#9d8cff))}
-.cb-embleme.sec-toxique{--ec:#4bbf3a}
+.cb-embleme.sec-toxique{--ec:#62d84e}
+.cb-embleme.sec-toxique svg{fill:var(--plate)}
 .cb-embleme.sec-deter{--ec:#7c3aed}
 .cb-embleme svg{width:14px;height:12px;fill:#fff}
 
@@ -28,7 +29,7 @@
 .cb-hero{position:relative;isolation:isolate;height:calc(252px + env(safe-area-inset-top,0px));overflow:hidden;
   margin:calc(-1 * (var(--top-h) + env(safe-area-inset-top,0px) + 8px)) -16px 0}
 /* Cadré sur le médaillon d'or de son plastron, pas sur le casque. */
-.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg) url('../assets/combat/banniere-combats.webp?v=3.0.11') 55% 100%/165% auto no-repeat}
+.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg) url('../assets/combat/banniere-combats.webp?v=3.0.12') 55% 100%/165% auto no-repeat}
 .cb-hero::after{content:"";position:absolute;inset:0;z-index:-1;
   background:radial-gradient(90% 60% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
     linear-gradient(180deg,rgba(18,17,25,.55),rgba(18,17,25,0) 30%,rgba(18,17,25,0) 50%,rgba(18,17,25,.7) 78%,var(--bg))}
@@ -42,7 +43,7 @@
 .cb-anneau{flex:none;display:grid;place-items:center;width:46px;height:46px;padding:0;border:0;border-radius:50%;cursor:pointer;
   background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.18) 0);box-shadow:0 6px 16px rgba(0,0,0,.45)}
 .cb-anneau>span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;line-height:1;color:#fff;
-  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+  background:var(--cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .cb-anneau small{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
 .cb-anneau b{font-family:var(--display);font-weight:900;font-size:15px}
 
@@ -50,7 +51,7 @@
 .cb-niv{display:inline-flex;align-items:center;gap:9px;padding:4px;border:0;border-radius:999px;font:inherit;color:var(--text);cursor:pointer;
   background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);flex:none}
 .cb-niv-n{display:flex;flex-direction:column;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;line-height:1;color:#fff;
-  background:linear-gradient(180deg,#8f7dfb,#5d4bd9);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+  background:var(--cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
 .cb-niv-n small{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
 .cb-niv-n b{font-family:var(--display);font-weight:900;font-size:15px}
 .cb-niv-t{display:none}
@@ -124,9 +125,9 @@ button.cb-une:active{transform:scale(.98)}
 .cb-tuto-t em{font-style:normal;font-size:11.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (prefers-reduced-motion:reduce){.cb-tuto{animation:none}}
 
-/* Decks, Missions, Guide : trois petites tuiles. */
-.cb-petits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.cb-petit{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;padding:9px 6px;border:0;
+/* Decks, Missions, Guide, Historique : quatre petites tuiles. */
+.cb-petits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cb-petit{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;padding:9px 6px;border:0;
   border-radius:var(--radius);font:inherit;color:var(--text);text-align:center;cursor:pointer;
   background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .18s var(--spring),background .15s}
 .cb-petit:active{transform:scale(.96)}
@@ -267,7 +268,7 @@ button.cb-une:active{transform:scale(.98)}
 .cb-acte-ong svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .cb-acte-ong.fini i{color:var(--ok)}
 .cb-acte-ong.ferme{opacity:.45;cursor:not-allowed}
-.cb-acte-ong.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1.5px var(--accent-soft),0 8px 20px -10px var(--accent-glow)}
+.cb-acte-ong.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7),0 8px 20px -10px rgba(0,0,0,.5)}
 .cb-acte{border-radius:var(--radius-xl);overflow:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .cb-acte-tete{position:relative;isolation:isolate;padding:58px 16px 14px;
   background:linear-gradient(180deg,rgba(28,27,37,0),rgba(28,27,37,.6) 45%,var(--surface)),var(--art) 50% 22%/130% auto no-repeat,var(--surface-3)}
@@ -333,7 +334,7 @@ button.cb-une:active{transform:scale(.98)}
 .cb-decks-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .cb-deck-mini{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border:0;border-radius:var(--radius-sm);font:inherit;color:var(--text);cursor:pointer;
   background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.cb-deck-mini.on{background:var(--surface-3);box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.cb-deck-mini.on{background:var(--surface-3);box-shadow:inset 0 0 0 2px rgba(255,255,255,.75)}
 .cb-deck-mini:disabled{opacity:.45;cursor:default}
 .cb-deck-mini>span{width:64px}
 .cb-deck-mini b{font-size:12px;text-align:center;line-height:1.2}
@@ -358,7 +359,7 @@ button.cb-une:active{transform:scale(.98)}
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);transition:transform .18s var(--spring)}
 .cb-arc-diffs button b{font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;line-height:1;color:var(--text)}
 .cb-arc-diffs button small{font-size:10px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cb-arc-diffs button.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 2px var(--accent-soft),0 8px 20px -8px var(--accent-glow);transform:translateY(-2px)}
+.cb-arc-diffs button.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 2px rgba(255,255,255,.75),0 8px 20px -8px rgba(0,0,0,.5);transform:translateY(-2px)}
 .cb-lancer{font-size:17px}
 
 /* ---- Le Raid ----
@@ -380,7 +381,7 @@ button.cb-une:active{transform:scale(.98)}
 .rd-affiche-t em{font-style:normal;font-size:12px;color:var(--subtle)}
 .rd-affiche .rf-pastille{position:absolute;top:10px;right:10px}
 .rd-pv{display:block;height:10px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.rd-pv i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,#ff6b6b);box-shadow:0 0 12px rgba(255,107,107,.5)}
+.rd-pv i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,var(--danger));box-shadow:0 0 12px rgba(255,107,107,.5)}
 .rd-pv.mini{max-width:170px;height:6px;margin:5px 0 3px}
 .rd{display:flex;flex-direction:column;gap:12px}
 .rd-hero{position:relative;isolation:isolate;overflow:hidden;min-height:230px;display:flex;align-items:flex-end;padding:16px;border-radius:var(--radius-xl);background:#17151f;
@@ -403,7 +404,7 @@ button.cb-une:active{transform:scale(.98)}
 .rd-phases{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
 .rd-ph{display:flex;flex-direction:column;align-items:center;gap:5px}
 .rd-ph-barre{display:block;width:100%;height:10px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
-.rd-ph-barre i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,#ff6b6b)}
+.rd-ph-barre i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,var(--danger))}
 .rd-ph.tombee .rd-ph-barre i{background:var(--ok)}
 .rd-ph.encours .rd-ph-barre{box-shadow:inset 0 0 0 1px rgba(255,107,107,.5),0 0 10px rgba(255,107,107,.35)}
 .rd-ph-n{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:11.5px;font-weight:900;color:var(--muted);background:var(--surface-2)}
@@ -447,7 +448,7 @@ button.cb-une:active{transform:scale(.98)}
 .rd-coffre-ico{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:12px;background:var(--bg-2);color:var(--gold)}
 .rd-coffre-ico img{width:28px}
 .rd-coffre-ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2}
-.rd-gainico{background:linear-gradient(180deg,#8f7dfb,#5d4bd9)}
+.rd-gainico{background:var(--cta)}
 .rd-go{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .rd-go p{margin:0}
 .rd-combat{display:flex;flex-wrap:wrap;gap:6px}
@@ -483,7 +484,7 @@ button.cb-une:active{transform:scale(.98)}
 .cb-cosm.tapis .cb-cosm-img{aspect-ratio:9/16}
 .cb-cosm.sleeve .cb-cosm-img{aspect-ratio:63/88}
 .cb-cosm-img img{width:100%;height:100%;object-fit:cover;display:block}
-.cb-tapis-base{display:block;width:100%;height:100%;background:url('../assets/pack-star.svg?v=3.0.11') center/40% no-repeat,radial-gradient(ellipse at 50% 50%,rgba(140,120,255,.4),transparent 70%),linear-gradient(180deg,var(--plate-2),var(--plate))}
+.cb-tapis-base{display:block;width:100%;height:100%;background:url('../assets/pack-star.svg?v=3.0.12') center/40% no-repeat,radial-gradient(ellipse at 50% 50%,rgba(140,120,255,.4),transparent 70%),linear-gradient(180deg,var(--plate-2),var(--plate))}
 .cb-cosm.verrou .cb-cosm-img img,.cb-cosm.verrou .cb-tapis-base{filter:grayscale(.7) brightness(.55)}
 .cb-cosm-prix{position:absolute;left:50%;bottom:6px;translate:-50% 0;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
   font-style:normal;font-size:10.5px;font-weight:900;background:rgba(18,17,25,.85);white-space:nowrap}
@@ -519,7 +520,7 @@ button.cb-une:active{transform:scale(.98)}
   background:rgba(255,255,255,.08);color:var(--text);cursor:pointer}
 .at-retour svg{width:20px;height:20px;transform:rotate(90deg);fill:none;stroke:currentColor;stroke-width:2.2}
 .at-nom{flex:1;min-width:0;font:inherit;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;color:var(--text);
-  padding:6px 10px;border:0;border-radius:10px;background:transparent;box-shadow:inset 0 0 0 1px transparent}
+  padding:6px 10px;border:0;border-radius:10px;background:transparent;box-shadow:inset 0 0 0 1px transparent;text-overflow:ellipsis}
 .at-nom:focus{outline:none;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--accent-soft)}
 .at-compte{flex:none;padding:6px 12px;border-radius:999px;font-weight:800;background:rgba(255,255,255,.08)}
 .at-compte b{font-family:var(--display);font-size:17px}
@@ -596,8 +597,8 @@ button.cb-une:active{transform:scale(.98)}
   color:var(--text);background:var(--surface-3);cursor:pointer}
 .at-ligne-act b{min-width:16px;text-align:center}
 .at-etoile{color:var(--muted)!important;font-size:14px!important;background:transparent!important}
-.at-etoile.on{color:var(--warn)!important}
-.at-ligne.couv{box-shadow:inset 0 0 0 1px var(--gold-line)}
+.at-etoile.on{color:#fff!important}
+.at-ligne.couv{box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
 .at-deckvide{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 14px;text-align:center;border-radius:var(--radius);box-shadow:inset 0 0 0 1.5px var(--line-2)}
 .at-deckvide p{margin:0}
 .at-deckvide .btn,.at-complete{width:auto;padding-inline:18px;align-self:center}
@@ -681,7 +682,7 @@ button.cb-une:active{transform:scale(.98)}
 .gd-schema{margin:14px 0;padding:14px;border-radius:var(--radius);background:linear-gradient(180deg,var(--plate-2),var(--plate));box-shadow:inset 0 0 0 1px var(--line-2);text-align:center}
 .gd-camp{display:flex;justify-content:center;gap:14px}
 .gd-camp i{width:38px;aspect-ratio:63/88;border-radius:5px;background:linear-gradient(160deg,#ff9a9a,#b53a3a);box-shadow:0 4px 10px rgba(0,0,0,.5)}
-.gd-camp.moi i{background:linear-gradient(160deg,#b3a6ff,#5d4bd9)}
+.gd-camp.moi i{background:linear-gradient(160deg,var(--accent-soft),var(--accent-deep))}
 .gd-camp i.eng{transform:rotate(90deg) scale(.8)}
 .gd-camp i.vide{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.25)}
 .gd-ligne-milieu{position:relative;height:30px;display:grid;place-items:center}
@@ -718,9 +719,16 @@ button.cb-une:active{transform:scale(.98)}
   background:rgba(18,17,25,.65);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);cursor:pointer}
 .dk-note svg{width:12px;height:12px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
 .dk-note.petit{padding:2px 8px 2px 6px;font-size:11.5px;background:var(--bg-2);align-self:flex-start}
+/* Sur l'illustration du deck actif, les Essences de la Réserve prennent la
+   même pastille que la note : à 11 px sur une image, l'icône disparaissait. */
+.dk-actif .cb-deck-ess{padding:3px 10px 3px 7px;border-radius:999px;font-size:12.5px;color:var(--text);
+  background:rgba(18,17,25,.65);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.dk-actif .cb-deck-ess .ess{width:16px;height:16px}
+.dk-actif .cb-deck-ess i:last-child{margin-right:0}
+.dk-actif .cb-deck-ess:empty{display:none}
 .dk-etoiles{display:inline-flex;gap:2px}
 .dk-etoiles i{width:11px;height:11px;background:var(--surface-3);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
-.dk-etoiles i.on{background:var(--gold)}
+.dk-etoiles i.on{background:var(--accent-soft)}
 .dk-boutons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
 .dk-nouveau{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:0;border-radius:var(--radius);font:inherit;font-weight:800;font-size:13.5px;
   color:var(--subtle);background:transparent;box-shadow:inset 0 0 0 1.5px var(--line-2);cursor:pointer}
@@ -772,7 +780,7 @@ button.cb-une:active{transform:scale(.98)}
   border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
 .gd-tuto-art{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,.15),rgba(18,17,25,.6) 45%,rgba(24,23,33,.97) 88%),var(--art) 50% 18%/cover no-repeat}
 .gd-tuto-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.gd-tuto-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.gd-tuto-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
 .gd-tuto.fait .gd-tuto-t small{color:var(--accent-soft)}
 .gd-tuto-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.05}
 .gd-tuto-t em{font-style:normal;font-size:12.5px;color:var(--subtle)}
@@ -799,3 +807,80 @@ button.cb-une:active{transform:scale(.98)}
 @media (min-width:900px){
   .cb-tuto+.cb-portes .cb-porte{min-height:150px}
 }
+/* Version 3.0.12 : un écran d'ordinateur de moins de 900 px de haut. À
+   1280 × 800, l'accueil dépassait de 75 px (de 99 avec la tuile du
+   tutoriel) : le bandeau et les portes rapetissent. */
+@media (min-width:900px) and (max-height:900px){
+  .cb-hero{height:250px}
+  .cb-hero-titre{font-size:62px;bottom:74px}
+  .cb-porte{min-height:170px}
+  .cb-tuto+.cb-portes .cb-porte{min-height:116px}
+}
+/* Version 3.0.12 : sur téléphone, la tuile du tutoriel ajoute 90 px. Jusqu'à
+   800 px de haut, l'accueil prend alors la forme resserrée des écrans bas
+   (à 360 × 740, il dépassait de 78 px). */
+@media (max-height:800px) and (max-width:899px){
+  .cb-v-accueil:has(.cb-tuto) .cb-hero{height:calc(200px + env(safe-area-inset-top,0px))}
+  .cb-v-accueil:has(.cb-tuto) .cb-hero-titre{font-size:46px;bottom:54px}
+  .cb-v-accueil:has(.cb-tuto) .cb-porte{min-height:96px}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit{min-height:58px;gap:2px}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit small{display:none}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit-ico{width:30px;height:30px}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit-ico svg{width:22px;height:22px}
+  .cb-v-accueil:has(.cb-tuto) .rd-affiche{min-height:92px;padding:9px 12px}
+  .cb-v-accueil:has(.cb-tuto) .rd-affiche-t b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cb-v-accueil:has(.cb-tuto) .rd-affiche-t em{display:none}
+  .cb-v-accueil:has(.cb-tuto) .cb-tuto{min-height:50px;padding-block:6px}
+  .cb-v-accueil:has(.cb-tuto) .cb-tuto-t em{display:none}
+}
+
+/* ============ L'historique des combats (version 3.0.12) ============ */
+/* Le bilan des trente derniers, puis une ligne par combat : V ou D, le
+   visage de l'adversaire, le mode, quand et en combien de tours. Une ligne
+   s'ouvre sur son déroulé, tour par tour (js/combat/historique.js). */
+.hc-bilan{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hc-bilan span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 6px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.hc-bilan b{font-family:var(--display);font-weight:900;font-size:20px;line-height:1.1}
+.hc-bilan small{font-size:11px;color:var(--muted);font-weight:700}
+.hc-liste{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.hc-l{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px 12px 8px 8px;border:0;border-radius:var(--radius);
+  font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.04);transition:transform .18s var(--spring),background .15s}
+.hc-l:hover{background:var(--surface-2)}
+.hc-l:active{transform:scale(.985)}
+.hc-res{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;font-family:var(--display);font-weight:900;font-size:14px}
+.hc-l.v .hc-res{color:var(--ok);background:var(--ok-wash);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.hc-l.d .hc-res{color:var(--danger);background:var(--danger-wash);box-shadow:inset 0 0 0 1px var(--danger-line)}
+.hc-l .ava{flex:none}
+.hc-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hc-t b,.hc-t small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-t b{font-size:14px;font-weight:800}
+.hc-t small{font-size:11.5px;color:var(--muted)}
+.hc-d{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:11px;color:var(--muted)}
+.hc-d small:last-child{color:var(--subtle);font-weight:700}
+
+/* Le déroulé, dans une feuille. Un tour par bloc : le sien sur un filet
+   lavande, celui de l'adversaire sur un filet rouge, comme les deux camps
+   de l'arène. */
+.hc-fiche{display:flex;flex-direction:column;gap:8px}
+.hc-tete{display:flex;align-items:center;gap:12px}
+.hc-tete>span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.hc-tete b{font-size:16px;font-weight:800}
+.hc-tete small{font-size:12px;color:var(--muted)}
+.hc-tete small:last-child::first-letter{text-transform:uppercase}
+.hc-chiffres{margin:2px 0 0;font-size:13px;font-weight:700;color:var(--subtle)}
+.hc-fiche>.muted{margin:0}
+.hc-tours{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.hc-tour{padding:8px 10px 9px 12px;border-radius:var(--radius-sm);background:var(--surface);box-shadow:inset 3px 0 0 var(--accent-soft),inset 0 0 0 1px var(--line)}
+.hc-tour.lui{box-shadow:inset 3px 0 0 var(--danger),inset 0 0 0 1px var(--line)}
+.hc-tour.mise{box-shadow:inset 3px 0 0 var(--line-3),inset 0 0 0 1px var(--line)}
+.hc-tour h4{display:flex;align-items:baseline;gap:6px;margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hc-tour h4 small{font-size:11px;letter-spacing:0;text-transform:none;color:var(--text)}
+.hc-tour ul{display:flex;flex-direction:column;gap:3px;margin:0;padding:0;list-style:none}
+.hc-tour li{font-size:13px;line-height:1.4;color:var(--subtle)}
+.hc-tour li i{font-style:normal;font-weight:700;color:var(--text)}
+.hc-tour li b{font-weight:700;color:var(--text)}
+.hc-tour li.mal{color:var(--danger)}
+.hc-tour li.bien{color:var(--ok)}
+.hc-tour li.sys{margin-top:2px;font-weight:800;color:var(--text)}

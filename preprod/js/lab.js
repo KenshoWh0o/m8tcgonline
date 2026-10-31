@@ -94,7 +94,52 @@ function vLabServeur() {
   if (labEtat.manque) return vLabManque();
   if (labEtat.erreur) return `<section class="panel"><h2>Le serveur</h2><p class="muted">${h(labEtat.erreur)}</p>
     <button class="btn ghost" data-lab="recharger">Réessayer</button></section>`;
-  return vLabFrise() + vLabChoc() + vLabRaid() + vLabReverses() + vLabVigueur();
+  return vLabMaintenance() + vLabFrise() + vLabChoc() + vLabRaid() + vLabReverses() + vLabVigueur();
+}
+
+/* La maintenance (version 3.0.12, labo_maintenance dans
+   supabase/installation/29_labo.sql) : les joueurs devant l'écran de
+   maintenance (js/gate.js), les administrateurs dans le jeu. Elle ne finit
+   que quand on la lève ici ; l'heure de retour ne fait que s'afficher. */
+function vLabMaintenance() {
+  const m = labEtat.maintenance || {};
+  /* datetime-local veut l'heure de l'appareil, sans fuseau. */
+  const local = iso => { const d = new Date(srvTime(iso)); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+  return `<section class="panel labmaint${m.actif ? ' on' : ''}">
+    <h2>Maintenance <small class="labtag">pour tout le monde</small></h2>
+    <div class="labmaint-etat"><i aria-hidden="true"></i><span>${m.actif
+      ? `<b>En maintenance</b><small>depuis ${h(labQuand(m.depuis))}${m.par ? ` · ${h(m.par)}` : ''}</small>`
+      : '<b>En service</b><small>les joueurs jouent</small>'}</span></div>
+    <p class="muted small">Pendant une maintenance, les joueurs voient l'écran de maintenance et le serveur refuse
+      toutes leurs actions ; les administrateurs jouent, avec une pastille en haut de l'écran. Elle ne finit que
+      quand on la lève ici. Une base 2.x qui reçoit la 3.0 y entre d'office.</p>
+    <label class="field"><span>Le message</span><textarea id="lab-maint-msg" rows="3" maxlength="300"
+      placeholder="${h(MAINT_DEFAUT)}">${h(m.message || '')}</textarea></label>
+    <label class="field"><span>Retour prévu (facultatif, à l'heure de cet appareil)</span>
+      <input id="lab-maint-fin" type="datetime-local" value="${m.fin ? local(m.fin) : ''}"></label>
+    <div class="labgrid">
+      ${m.actif ? `<button class="labbtn" data-lab="maint-maj"><b>Mettre à jour</b><span>le message et l'heure</span></button>
+        <button class="labbtn" data-lab="maint-off"><b>Lever la maintenance</b><span>les joueurs reviennent</span></button>`
+        : '<button class="labbtn" data-lab="maint-on"><b>Mettre en maintenance</b><span>tout de suite</span></button>'}
+      <button class="labbtn" data-lab="maint-voir"><b>Voir l'écran</b><span>tel que les joueurs le verront</span></button>
+    </div>
+  </section>`;
+}
+
+/* Le message et l'heure du formulaire (null : une heure impossible). Hors
+   de l'onglet Serveur (Aperçus), ceux de la maintenance en cours. */
+function labMaintForm() {
+  const t = $('#lab-maint-msg'), f = $('#lab-maint-fin');
+  if (!t || !f) {
+    const m = (labEtat && labEtat.maintenance) || {};
+    return { message: m.actif ? m.message : null, fin: m.actif ? m.fin : null };
+  }
+  const message = t.value.trim() || null;
+  if (!f.value) return { message, fin: null };
+  const d = new Date(f.value);
+  if (isNaN(d)) { toast('Cette heure ne se lit pas.'); return null; }
+  if (d.getTime() <= Date.now()) { toast('L\'heure de retour est déjà passée.'); return null; }
+  return { message, fin: d.toISOString() };
 }
 
 function vLabManque() {
@@ -276,8 +321,10 @@ async function labServeurFaire(fn, args, msg) {
   try {
     const r = await Backend.labo(fn, args);
     labEtat = r && r.etat ? r.etat : r;
-    /* Le jeu suit : me() (l'événement, son récap, les Reverses), le Choc, le Raid. */
+    /* Le jeu suit : me() (l'événement, son récap, les Reverses), le Choc, le
+       Raid, et la porte (la maintenance, 3.0.12). */
     await Backend.pull().catch(() => {});
+    await Porte.lire();
     if (chRecapApercu) { chRecapApercu = null; chRecap = null; }
     chEv = null; chEtat = null;
     if (evenementEnCours() === 'choc') await chargerChoc();
@@ -339,11 +386,11 @@ function vLabCompte() {
       <div class="labgrid">
         <button class="labbtn tL" data-lab="cartes" data-q="master"><b>Master set</b><span>tout, sauf la carte unique, de quoi faire n'importe quel deck</span></button>
         <button class="labbtn tR" data-lab="cartes" data-q="classiques"><b>Les ${cards.length}</b><span>l'extension, un exemplaire</span></button>
-        <button class="labbtn tE" data-lab="cartes" data-q="combat"><b>Les cartes de combat</b><span>Joueurs, Coachs, Moments, Objets, deux de chaque</span></button>
+        <button class="labbtn tE" data-lab="cartes" data-q="combat"><b>Les cartes de combat</b><span>Joueurs, Coachs, Moments, Objets, trois de chaque</span></button>
         <button class="labbtn labdanger" data-lab="cartes" data-q="vider"><b>Vider</b><span>plus aucune carte</span></button>
       </div>
-      <p class="muted small" style="margin-top:8px">Deux exemplaires, un pour une Légendaire, une Secrète ou une Promo : la
-        limite d'un deck. Une carte que tu as déjà garde ses exemplaires en plus.</p>
+      <p class="muted small" style="margin-top:8px">Trois exemplaires de chaque carte : la limite d'un deck (règles
+        officielles). Une carte que tu as déjà garde ses exemplaires en plus.</p>
     </section>
 
     <section class="panel">
@@ -602,6 +649,7 @@ function vLabApercus() {
     <div class="labgrid">
       <button class="labbtn" data-act="t-v2-invitation"><b>Invitation</b><span>un code acheté en boutique</span></button>
       <button class="labbtn" data-act="t-cadeau"><b>Cadeau reçu</b><span>le paquet à ouvrir</span></button>
+      <button class="labbtn" data-lab="maint-voir"><b>Écran de maintenance</b><span>son message en cours, ou celui de la mise à jour</span></button>
     </div>
   </section>
 
@@ -693,6 +741,20 @@ function labAction(a, el) {
         n ? 'Leur recyclage et leur fabrication s\'ouvrent tout de suite, pour tout le monde.'
           : 'Leur recyclage et leur fabrication se ferment, sans date de réouverture.',
         () => labServeurFaire('labo_reverses', { p_ouvertes: !!n }, n ? 'Reverses ouvertes.' : 'Reverses fermées.'));
+    case 'maint-on': case 'maint-maj': {
+      const v = labMaintForm();
+      if (!v) return;
+      const faire = () => labServeurFaire('labo_maintenance', { p_actif: true, p_message: v.message, p_fin: v.fin },
+        a === 'maint-on' ? 'Le jeu est en maintenance.' : 'Maintenance mise à jour.');
+      return a === 'maint-on' ? labPourTous('Mettre le jeu en maintenance ?', 'Les joueurs voient l\'écran de maintenance et ne peuvent plus rien faire tant que tu ne la lèves pas. Les administrateurs jouent.', faire) : faire();
+    }
+    case 'maint-off':
+      return labPourTous('Lever la maintenance ?', 'Les joueurs retrouvent le jeu : leur page se recharge d\'elle-même dans la minute.',
+        () => labServeurFaire('labo_maintenance', { p_actif: false }, 'Maintenance levée.'));
+    case 'maint-voir': {
+      const v = labMaintForm();
+      return v && apercuMaintenance(v);
+    }
     case 'sauver': return labMoiFaire('labo_sauver', {}, 'Ton compte est mis de côté.');
     case 'restaurer':
       return labConfirmer('Restaurer ton compte ?', 'Il redevient tel qu\'il était à la sauvegarde : ce qui a changé depuis est perdu.',

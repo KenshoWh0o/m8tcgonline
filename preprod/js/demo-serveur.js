@@ -224,7 +224,7 @@
     ['f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2],
     ['f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3],
     ['f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4],
-    ['f_toxique','cosmetique', 'Cadre Toxique','Le rose de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5],
+    ['f_toxique','cosmetique', 'Cadre Toxique','Le vert de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5],
     ['f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6],
     /* Version 3.0 (23_combats.sql) : les tapis de jeu et les sleeves. */
     ['t_chateau',   'tapis',  'Tapis « Champions du Monde »', 'L\'illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1],
@@ -655,7 +655,16 @@
   RPC.me = p => me(p);
 
   /* porte, 01_schema.sql : la démo est toujours ouverte. */
-  RPC.porte = () => ({ ouvert: true, lancement: null, serveur: iso(now()) });
+  /* porte() (01_schema.sql) ; version 3.0.12 : la version de la base et la
+     maintenance en cours (le visiteur de la démo est administrateur : elle
+     ne l'arrête pas, la pastille le lui rappelle ; Labo › Aperçus montre
+     l'écran des joueurs). */
+  const maintDemo = () => (S.maintenance = S.maintenance || { actif: false, message: null, fin: null, depuis: null, par: null });
+  RPC.porte = () => {
+    const m = maintDemo();
+    return { ouvert: true, lancement: null, serveur: iso(now()), version: '3.0',
+      maintenance: m.actif ? { message: m.message, fin: m.fin, depuis: m.depuis } : null };
+  };
 
   RPC.set_profile = (p, { p_pseudo, p_avatar, p_frame }) => {
     if (p_pseudo != null) {
@@ -1149,7 +1158,9 @@
     const n = (mzDe(p)[k.id] || 0) + 1;
     if (n > 5) refuser('Cette carte est déjà au niveau maximum.');
     const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === k.id && t.status === 'pending').length;
-    const limite = ['L', 'S', 'UN', 'PR'].includes(k.rar) ? 1 : 2;
+    /* limite_copies (23_combats.sql) : trois exemplaires, les règles
+       officielles (3.0.12 ; avant, deux, et un pour L, S, UN, PR). */
+    const limite = Combat.REGLE.COPIES;
     const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
     const copies = MZ_COPIES[k.rar][n - 1];
     const pris = Math.min(copies, dispo);
@@ -1359,10 +1370,24 @@
       recharge: { minutes: cfg('ticket_minutes'), cap: cfg('ticket_cap') },
       recharges: [],
       joueurs: Object.keys(S.profils).length,
+      maintenance: Object.assign({}, maintDemo()),
       sauvegarde: sv ? { le: iso(sv.le), version: '3.0', cartes: Object.keys(sv.contenu.col || {}).length } : null
     };
   }
   RPC.labo_etat = p => { estAdmin(p); return laboEtat(p); };
+  /* labo_maintenance (29_labo.sql, 3.0.12). */
+  RPC.labo_maintenance = (p, { p_actif, p_message, p_fin }) => {
+    estAdmin(p);
+    const a = !!p_actif, m = maintDemo();
+    if (a && p_fin && Date.parse(p_fin) <= now()) refuser('L\'heure de retour est déjà passée.');
+    const deja = m.actif;
+    m.actif = a;
+    m.message = a ? (String(p_message || '').trim().slice(0, 300) || null) : null;
+    m.fin = a && p_fin ? iso(Date.parse(p_fin)) : null;
+    m.depuis = !a ? null : deja ? m.depuis : iso(now());
+    m.par = !a ? null : deja ? m.par : profil(p).pseudo;
+    return laboEtat(p);
+  };
   RPC.labo_evenement = (p, { p_etat, p_n }) => {
     estAdmin(p);
     const t = now(), D21 = 21 * J_MS;
@@ -1440,9 +1465,9 @@
     r.saisons[sa] = 0;
     return Object.assign(res, { etat: laboEtat(p) });
   };
-  /* limite_copies, 23_combats.sql : deux exemplaires, un pour une
-     Légendaire, une Secrète, une Promo. */
-  const limiteCopies = k => (['L', 'S', 'UN', 'PR'].includes(k.rar) || (k.promo && !k.rev && !k.secrete)) ? 1 : 2;
+  /* limite_copies, 23_combats.sql : trois exemplaires de chaque carte
+     (règles officielles, 3.0.12). */
+  const limiteCopies = () => Combat.REGLE.COPIES;
   RPC.labo_cartes = (p, { p_quoi }) => {
     estAdmin(p);
     const col = colDe(p);
@@ -1537,7 +1562,7 @@
       comptes: de(S.evt.comptes, a(p + '|')), prises: de(S.evt.prises, k => k === p || k.startsWith(p + '|')),
       gardes: (S.gardes || {})[p] || {}, favoris: (S.favoris || {})[p] || [], illu: de(S.illu, a(p + '|')),
       tirages: S.tirages.filter(t => t.user_id === p), recyclages: S.recyclages.filter(t => t.user_id === p),
-      cb: c, maitrises: mzDe(p),
+      cb: c, maitrises: mzDe(p), histo: (S.histo || {})[p] || [],
       epreuves: de(ch.epreuves, a(p + '|')), gagnees: de(ch.gagnees, a(p + '|')), choc: ch.joueurs[p] || null,
       raidPart: de(r.part, k => k.split('|')[1] === p), raidPris: de(r.pris, k => k.split('|')[1] === p),
       tentatives: de(r.tentatives, a(p + '|'))
@@ -1554,6 +1579,7 @@
     S.illu = garder(S.illu, pas(p + '|'));
     S.tirages = S.tirages.filter(t => t.user_id !== p); S.recyclages = S.recyclages.filter(t => t.user_id !== p);
     if (S.cb) delete S.cb[p];
+    if (S.histo) delete S.histo[p];
     S.maitrises[p] = {};
     ch.epreuves = garder(ch.epreuves, pas(p + '|')); ch.gagnees = garder(ch.gagnees, pas(p + '|')); delete ch.joueurs[p];
     r.part = garder(r.part, k => k.split('|')[1] !== p); r.pris = garder(r.pris, k => k.split('|')[1] !== p);
@@ -1582,6 +1608,7 @@
     Object.assign(S.illu, c.illu);
     S.tirages.push(...c.tirages); S.recyclages.push(...c.recyclages);
     S.cb = S.cb || {}; S.cb[p] = c.cb;
+    if (c.histo) { S.histo = S.histo || {}; S.histo[p] = c.histo; }
     S.maitrises[p] = c.maitrises;
     Object.assign(ch.epreuves, c.epreuves); Object.assign(ch.gagnees, c.gagnees);
     if (c.choc) ch.joueurs[p] = c.choc;
@@ -2102,6 +2129,7 @@
     const res = p_resume || {};
     const trop = now() - o.debut < CB_MIN_MS;
     bump(p, 'combats', 1);
+    historiqueAjouter(p, o.mode, o.cle, o.niveau, !!p_gagne, res.histo);
     if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
     if (o.mode === 'raid') return finRaid(p, c, o, !!p_gagne, res, trop, r);
     if (o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
@@ -2151,14 +2179,46 @@
     return { etat: me(p), recompense: r };
   };
 
+  /* ---------- l'historique des combats (version 3.0.12) ---------- */
+  /* historique_ajouter, combats_historique, combat_historique (23_combats.sql) :
+     les trente derniers combats, avec leur déroulé. */
+  const histoDe = p => ((S.histo = S.histo || {})[p] = S.histo[p] || []);
+  function historiqueAjouter(p, mode, cle, niveau, gagne, x, adv) {
+    if (!x || typeof x !== 'object') return;
+    let j = x.journal;
+    if (!j || typeof j !== 'object' || !Array.isArray(j.tours) || JSON.stringify(j).length > 30000) j = null;
+    const a = adv || x.adversaire || {};
+    const borne = (v, m) => Math.min(m, Math.max(0, +v || 0));
+    const l = histoDe(p);
+    l.unshift({
+      id: ++S.seq, le: iso(now()), mode, cle: String(cle || '').slice(0, 40), niveau, gagne: !!gagne,
+      titre: String(x.titre || '').slice(0, 60) || null,
+      adversaire: { nom: String(a.nom || '').slice(0, 40), avatar: String(a.avatar || 'star').slice(0, 40), frame: String(a.frame || 'default').slice(0, 40), photo: a.photo || null },
+      raison: ['pv', 'club', 'abandon'].includes(x.raison) ? x.raison : null,
+      tours: borne(x.tours, 999), pv: borne(x.pv, 99), pv_adv: borne(x.pv_adv, 99),
+      deck: x.deck ? String(x.deck).slice(0, 32) : null, journal: j
+    });
+    l.splice(30);
+  }
+  RPC.combats_historique = p => histoDe(p).map(x => Object.assign({}, x, { journal: !!x.journal }));
+  RPC.combat_historique = (p, { p_id }) => {
+    const x = histoDe(p).find(y => y.id === +p_id);
+    if (!x) refuser('Combat introuvable.');
+    return JSON.parse(JSON.stringify(x));
+  };
+
   /* ---------- les défis entre amis ---------- */
   const defisDe = () => (S.defis = S.defis || []);
+  /* La partie d'un défi, pour le moteur : `premier`, le perdant de leur
+     dernier défi (defi_lancer), sinon le tirage avec la graine. */
+  const initDefi = d => Object.assign({ decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine },
+    d.premier === 0 || d.premier === 1 ? { premier: d.premier } : {});
   const vueDefi = (d, p, depuis) => {
     const moi = d.de === p ? 0 : 1;
     const o = profil(moi === 0 ? d.pour : d.de);
     return {
       id: d.id, statut: d.statut, moi,
-      init: d.statut === 'attente' ? null : { decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine },
+      init: d.statut === 'attente' ? null : initDefi(d),
       actions: (d.actions || []).slice(depuis || 0),
       adversaire: { nom: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null, cosm: (cb(o.id).cosm || {}) }
     };
@@ -2174,8 +2234,13 @@
     if (!p_deck || !Array.isArray(p_deck.club) || p_deck.club.length !== Combat.REGLE.CLUB) refuser('Deck invalide.');
     if (defisDe().some(d => ['attente', 'en_cours'].includes(d.statut) && ((d.de === p && d.pour === o.id) || (d.de === o.id && d.pour === p))))
       refuser('Un défi est déjà en cours avec ce joueur.');
+    /* Le perdant de leur dernier défi commence (defi_lancer, 23_combats.sql) ;
+       la démo, qui rejoue chaque défi, connaît toujours le gagnant. */
+    const dernier = defisDe().filter(d => ['fini', 'abandon'].includes(d.statut) && (d.gagnant === 0 || d.gagnant === 1)
+      && ((d.de === p && d.pour === o.id) || (d.de === o.id && d.pour === p))).sort((a, b) => b.cree - a.cree)[0];
+    const premier = dernier ? ((dernier.gagnant === 0 ? dernier.de : dernier.pour) === p ? 1 : 0) : null;
     const d = { id: 'df' + (++S.seq), de: p, pour: o.id, statut: 'attente', deck_de: p_deck, deck_pour: null,
-      graine: Math.floor(Math.random() * 4294967295) + 1, actions: [], cree: now(), maj: now() };
+      graine: Math.floor(Math.random() * 4294967295) + 1, premier, actions: [], cree: now(), maj: now() };
     defisDe().push(d);
     notifier(o.id, 'defi', p, d.id);
     /* Un ami simulé accepte au bout de quelques secondes. */
@@ -2199,7 +2264,7 @@
   function faireJouerBot(d) {
     const bot = profil(d.de).bot ? 0 : profil(d.pour).bot ? 1 : -1;
     if (bot < 0 || d.statut !== 'en_cours') return;
-    const E = Combat.rejouer({ decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine }, d.actions);
+    const E = Combat.rejouer(initDefi(d), d.actions);
     let n = 0;
     while (Combat.demande(E) && Combat.demande(E).qui === bot && n++ < 80) {
       const a = IA.choisir(E, { niveau: 3 });
@@ -2225,12 +2290,13 @@
   };
   /* Le vrai serveur croit chaque joueur sur parole (p_gagnant) ; la démo,
      qui a le moteur, rejoue la partie. */
-  RPC.defi_fin = (p, { p_id }) => {
+  RPC.defi_fin = (p, { p_id, p_histo }) => {
     const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
     if (!d) refuser('Défi introuvable.');
-    const E = Combat.rejouer({ decks: [d.deck_de, d.deck_pour], noms: ['', ''], graine: d.graine }, d.actions);
+    const E = Combat.rejouer(initDefi(d), d.actions);
     if (!E.fin) refuser('Le défi n\'est pas fini.');
     if (d.statut === 'en_cours') d.statut = 'fini';
+    d.gagnant = E.fin.gagnant;
     const moi = d.de === p ? 0 : 1;
     const c = cb(p);
     const r = { eclats: 0, message: '' };
@@ -2241,6 +2307,8 @@
       if (c.defis_jour !== auj) { c.defis_jour = auj; c.defis_rec = 0; }
       const gagne = E.fin.gagnant === moi;
       c.stats[gagne ? 'pvp_v' : 'pvp_d']++;
+      const o = profil(moi === 0 ? d.pour : d.de);
+      historiqueAjouter(p, 'defi', d.id, 0, gagne, p_histo, { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null });
       bump(p, 'defis', 1);
       bump(p, 'combats', 1);
       if (gagne) bump(p, 'victoires', 1);

@@ -271,6 +271,7 @@ function render() {
     document.body.className = 'inlock';
     $('#main').innerHTML = vPorte();
     bindPorte();
+    majPastilleMaintenance();
     return;
   }
 
@@ -293,6 +294,7 @@ function render() {
   header();
   $('#nav').innerHTML = navHTML();
   majBoutonInstall();
+  majPastilleMaintenance();
 
   tab = ongletValide(tab);
   const vue = VUES[tab] || VUES.boosters;
@@ -536,6 +538,8 @@ async function clicPage(e) {
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();
     case 'porte-code': return porteCode();
+    /* La maintenance (version 3.0.12, js/gate.js). */
+    case 'maint-relire': return relireMaintenance();
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
     case 'pf-carte': return ouvrirChoixAvatar();
@@ -781,8 +785,11 @@ function visiteDuJourFaite() {
   await Backend.init();
 
   /* L'écran d'attente demande au serveur si c'est ouvert, et quelle heure il
-     est chez lui : ni la montre de l'appareil ni la page n'en décident. */
-  if (PORTE.active) await Porte.lire();
+     est chez lui : ni la montre de l'appareil ni la page n'en décident.
+     Version 3.0.12 : toujours, même le jeu ouvert à tous — la réponse dit
+     aussi si la base est en 3.0 et si une maintenance est en cours. Avec une
+     session, Backend.init l'a déjà demandé. */
+  if (!Porte.connu()) await Porte.lire();
 
   if (!porteOuverte()) return render();
 

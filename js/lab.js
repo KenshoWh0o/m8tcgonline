@@ -386,11 +386,11 @@ function vLabCompte() {
       <div class="labgrid">
         <button class="labbtn tL" data-lab="cartes" data-q="master"><b>Master set</b><span>tout, sauf la carte unique, de quoi faire n'importe quel deck</span></button>
         <button class="labbtn tR" data-lab="cartes" data-q="classiques"><b>Les ${cards.length}</b><span>l'extension, un exemplaire</span></button>
-        <button class="labbtn tE" data-lab="cartes" data-q="combat"><b>Les cartes de combat</b><span>Joueurs, Coachs, Moments, Objets, deux de chaque</span></button>
+        <button class="labbtn tE" data-lab="cartes" data-q="combat"><b>Les cartes de combat</b><span>Joueurs, Coachs, Moments, Objets, trois de chaque</span></button>
         <button class="labbtn labdanger" data-lab="cartes" data-q="vider"><b>Vider</b><span>plus aucune carte</span></button>
       </div>
-      <p class="muted small" style="margin-top:8px">Deux exemplaires, un pour une Légendaire, une Secrète ou une Promo : la
-        limite d'un deck. Une carte que tu as déjà garde ses exemplaires en plus.</p>
+      <p class="muted small" style="margin-top:8px">Trois exemplaires de chaque carte : la limite d'un deck (règles
+        officielles). Une carte que tu as déjà garde ses exemplaires en plus.</p>
     </section>
 
     <section class="panel">

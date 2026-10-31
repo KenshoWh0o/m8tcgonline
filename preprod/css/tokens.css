@@ -92,6 +92,8 @@
   --r-e:#a98bff;
   --r-l:#f5c451;
   --r-pr:#ff7eb6;
+  /* Le cœur des favoris (3.0.12) : un seul rose, partout. */
+  --fav:#ff7eb6;
 
   /* --- Le verre : ce qui flotte (barre des onglets, en-tête, feuilles).
      Le flou s'écrit en dur dans les règles (Safari ignore une variable dans

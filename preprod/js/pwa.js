@@ -5,7 +5,7 @@
    marche à suivre, une seule fois, et seulement après quelques minutes de jeu. */
 "use strict";
 
-const APP_VERSION = '3.0.11';
+const APP_VERSION = '3.0.12';
 
 const PWA = { invite: null, dejaVu: false };
 const PWA_CLE = 'mtcg.install';

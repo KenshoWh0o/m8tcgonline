@@ -208,7 +208,7 @@ function vChNouveautes() {
       ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
-      ${tuile('data-cb="vue" data-v="decks"', illuCadre(couv, .5, .3), 'L\'atelier de decks', 'Trente cartes, dix Essences, un code à partager.', 'deck')}
+      ${tuile('data-cb="vue" data-v="decks"', illuCadre(couv, .5, .3), 'L\'atelier de decks', 'Quarante cartes, dix Essences, un code à partager.', 'deck')}
     </div>
   </section>`;
 }
