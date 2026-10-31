@@ -167,10 +167,15 @@ function vMaitriseFiche(c) {
       <p class="mz-cout">${morceaux.join('<i>·</i>')}<i>·</i>tu as <b class="tnum">${fmtN(save.fragments || 0)}</b></p>
       ${assez ? '' : `<p class="mz-rien">Il te manque ${fmtN(cout.total - (save.fragments || 0))} Fragments : le recyclage des doublons en rapporte.</p>`}`;
   }
+  /* Version 3.0.12 : la maîtrise avant les 122 retarde la collection de
+     trois à quatre semaines en médiane (simulation, tools/equilibre-maitrise.py) ;
+     comme la fiche d'une Reverse à fabriquer, on le rappelle. */
+  const manquent = en && cout && typeof possedees === 'function' ? cards.length - possedees(cards) : 0;
   return `<div class="mz-fiche" style="--mc:${tcol(k)}">
     <div class="mz-frise" style="--n:${n}">${etapes}</div>
     ${detail}
     ${action}
+    ${manquent > 0 ? `<p class="mz-note mz-rappel">Il te manque ${manquent} carte${manquent > 1 ? 's' : ''} de l'extension : ces Fragments peuvent d'abord ${manquent > 1 ? 'les' : 'la'} fabriquer.</p>` : ''}
     <p class="mz-note">Seuls les exemplaires en trop sont pris : jamais ceux qu'un deck peut contenir (${limiteDeck(k)}), ni ceux que tu gardes.</p>
   </div>`;
 }

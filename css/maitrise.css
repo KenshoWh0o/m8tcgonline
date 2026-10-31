@@ -243,6 +243,8 @@ html.rm .cwrap.mz-monte::before,html.rm .cwrap.mz-monte::after,html.rm .mz-sceau
   background:linear-gradient(120deg,rgba(255,196,228,.1),rgba(185,228,255,.1));box-shadow:inset 0 0 0 1px rgba(217,201,255,.32)}
 .mz-max .mz-ins{font-size:13px}
 .mz-note{font-size:11px;color:rgba(255,255,255,.42)}
+/* Le rappel des cartes qui manquent (3.0.12) : un ton plus lisible que la note. */
+.mz-note.mz-rappel{font-size:11.5px;color:var(--subtle)}
 
 /* L'insigne sous une carte de la Collection, à côté de son numéro. */
 .gcell .num .mz-ins{margin-left:.3em;font-size:.82em;vertical-align:.08em}

@@ -252,7 +252,7 @@ Un niveau coûte **la base de la rareté, fois 1, 2, 4, 7 puis 11** (25 fois la 
 | Légendaire | 600 | 600 | 1 200 | 2 400 | 4 200 | 6 600 | **15 000** | 0 · 0 · 0 · 0 · 1 (1) |
 | Secrète | 600 | 600 | 1 200 | 2 400 | 4 200 | 6 600 | **15 000** | aucun |
 
-- Seuls les exemplaires **en trop** sont pris : au-delà de la limite de deck (2 ; 1 pour une Légendaire ou une Secrète, `limite_copies`), au-delà de ce que le joueur garde (`garde_de`), hors des échanges en attente. Un deck n'est donc jamais privé d'une carte par la maîtrise.
+- Seuls les exemplaires **en trop** sont pris : au-delà de la limite de deck (`limite_copies` : **3 pour toutes les cartes depuis les règles officielles, 3.0.12** ; 2, et 1 pour une Légendaire ou une Secrète, avant), au-delà de ce que le joueur garde (`garde_de`), hors des échanges en attente. Un deck n'est donc jamais privé d'une carte par la maîtrise.
 - Chaque exemplaire qui manque est remplacé par son **prix de fabrication** en Fragments (`cfg('fabrication_…')` : 40, 100, 400, 2 000, 8 000). La maîtrise n'est jamais bloquée par la chance.
 - La Reverse partage la maîtrise de sa carte ; ni les Essences, ni les Promos (sauf les Secrètes), ni l'Unique.
 
@@ -270,7 +270,56 @@ Un niveau coûte **la base de la rareté, fois 1, 2, 4, 7 puis 11** (25 fois la 
 - **[calcul]** Les premiers niveaux sont à portée de main (une Commune au niveau I : 60 Fragments et un doublon), la Légende d'une Légendaire est un trophée de deux à trois mois. Maîtriser une carte coûte toujours plus que la fabriquer, sans être hors d'atteinte.
 - **[calcul]** Un exemplaire en trop vaut bien plus dans la maîtrise qu'au recyclage : une Commune rapporte 2 Fragments recyclée, mais en économise 40 dans une maîtrise ; une Légendaire, 250 contre 8 000. Une fois la collection complète, la maîtrise devient le meilleur usage des doublons.
 - **[calcul]** S'y ajoutent les sources ponctuelles : 2 800 une fois (campagne), 3 750 pendant le Choc (Pass), 600 par saison de Raid pour qui la finit (coffres et palier), 500 au niveau 25.
-- **[hypothèse]** Combien de cartes un joueur actif maîtrisera par mois : à mesurer après l'ouverture (`maitrises_journal` garde chaque niveau payé : Fragments et exemplaires).
+- **[hypothèse]** Combien de cartes un joueur actif maîtrisera par mois : à mesurer après l'ouverture (`maitrises_journal` garde chaque niveau payé : Fragments et exemplaires). La simulation ci-dessous en donne un modèle.
+
+### La simulation (3.0.12) [calcul] `python3 tools/equilibre-maitrise.py`
+
+Demandée par le propriétaire le 30 octobre 2026 (« fais une simu pour l'économie de la maîtrise »). 300 joueurs par ligne ; les comparaisons sont **appariées** (chaque joueur reçoit les mêmes boosters d'une stratégie à l'autre). Le script lit les raretés (`js/cards-data.js`) et le Starter Toxique (`23_combats.sql`) ; il recopie les barèmes (recyclage, fabrication, prix des Reverses, maîtrise, taux du booster) : à garder d'accord avec leurs sources. **[hypothèse] Tout le modèle** : le joueur recycle chaque soir ce qui dépasse ce qu'il garde (la limite de deck, plus, pour une carte qu'il veut maîtriser, les exemplaires que ses niveaux restants prendront ; une Essence, une Reverse) ; il dépense le soir (la carte la plus chère qu'il peut payer pour la collection, le niveau le moins cher pour la maîtrise) ; ni godpack, ni Pass d'événement, ni échange. Profils : **régulier** 6 boosters par jour ; **combattant** 8 (les Éclats des quêtes et des combats changés en boosters) et des Fragments ponctuels (la campagne, 2 800 ; le niveau 25, 500 ; un raid fini tous les 14 jours, 600) ; **occasionnel** 4 boosters, 5 jours sur 7. Cible de maîtrise : les 22 cartes maîtrisables du Starter Toxique (12 Communes, 7 Peu communes, 3 Rares), soit **50 500 Fragments et 138 exemplaires en trop** pour les mener toutes en Légende.
+
+**1. Ce que la limite de 3 exemplaires coûte au recyclage** (Fragments par semaine, médiane, un joueur parti de zéro) :
+
+| Profil | Limite | Semaine 2 | Semaine 4 | Semaine 8 | Semaine 12 | Semaine 16 |
+|---|---|---|---|---|---|---|
+| Régulier | avant (2 ; 1 pour une L) | 808 | 1 463 | 2 085 | 2 197 | 2 261 |
+| Régulier | officielle (3) | 473 (−41 %) | 1 056 (−28 %) | 1 593 (−24 %) | 1 914 (−13 %) | 2 044 (−10 %) |
+| Occasionnel | avant | 175 | 393 | 670 | 883 | 964 |
+| Occasionnel | officielle (3) | 80 | 247 | 506 | 652 | 746 (−23 %) |
+
+Garder trois exemplaires de chaque carte (pour pouvoir la jouer trois fois) retire au recyclage ce troisième exemplaire : l'effet est fort au début, puis s'efface à mesure que les cartes dépassent trois exemplaires. Sur les 122, il ne coûte que **4 jours** en médiane (9 pour le quart le plus touché) au régulier, 2 (7) au combattant.
+
+**2. Maîtriser les 22 cartes du Starter, une fois la collection complète** (122 et 85 Reverses ; jours après, médiane et quart le plus lent ; la collection d'abord) :
+
+| Profil | Collection complète | Toutes au niveau I | Toutes au III | Toutes en Légende |
+|---|---|---|---|---|
+| Régulier | jour 90 | 16 (17) | 101 (105) | **158 (162)**, ≈ 5 mois |
+| Combattant | jour 66 | 11 (12) | 70 (72) | **108 (111)**, ≈ 3 mois et demi |
+| Occasionnel | jour 191 | 34 (36) | 213 (220) | **332 (341)**, ≈ 11 mois |
+
+Avec l'ancienne limite, 4 à 12 jours de moins pour la Légende, selon le profil. Une fois la collection complète, les exemplaires en trop couvrent tout pour ces cartes (Communes, Peu communes, Rares) : aucun Fragment n'est payé à leur place (médiane 0).
+
+**3. La maîtrise avant la collection** (un joueur parti de zéro, règles officielles) :
+
+| Profil | Ce qu'il fait de ses Fragments | Les 122 | Les 85 Reverses | Le Starter en Légende |
+|---|---|---|---|---|
+| Régulier | la collection d'abord (classiques, Reverses, puis maîtrise) | jour 81 (97) | jour 91 | jour 252 |
+| Régulier | la maîtrise d'abord | jour 112 (140) | jour 116 | jour 199 |
+| Combattant | la collection d'abord | jour 60 (69) | jour 66 | jour 175 |
+| Combattant | la maîtrise d'abord | jour 84 (105) | jour 85 | jour 130 |
+
+La maîtrise d'abord **retarde les 122 de 25 jours** en médiane (de 50 pour le quart le plus touché) chez le régulier, de 22 (43) chez le combattant, et avance d'autant le Starter en Légende. D'où, depuis la 3.0.12, un rappel dans la fiche de maîtrise tant que la collection n'est pas complète (« Il te manque N cartes de l'extension : ces Fragments peuvent d'abord les fabriquer »), comme sur la fiche d'une Reverse à fabriquer.
+
+**4. Une seule carte rare en Légende** (régulier, la collection d'abord ; jours après la collection complète) :
+
+| Carte | Limite | Jours | Joueurs qui paient un exemplaire en Fragments |
+|---|---|---|---|
+| Épique | avant | 30 (32) | 11 % |
+| Épique | officielle (3) | 33 (36) | 20 % |
+| Légendaire | avant (1) | 45 (48) | 6 % |
+| Légendaire | officielle (3) | 53 (72) | **36 %** (8 000 Fragments chacun) |
+
+C'est l'effet le plus net de la limite de 3 : la Légende d'une Légendaire prend désormais un **quatrième** exemplaire en trop (avant : le deuxième) ; plus d'un joueur sur trois le paie 8 000 Fragments, et le quart le plus lent attend 72 jours au lieu de 48. **[hypothèse]** C'est acceptable pour un trophée, mais si le propriétaire veut que la Légende d'une Légendaire reste à portée, deux réglages simples : ne plus demander d'exemplaire au niveau V d'une Légendaire (`maitrise_copies('L', 5)` à 0), ou ne compter pour la maîtrise que la limite d'avant (1 pour une Légendaire). Ni l'un ni l'autre n'est fait : c'est une décision d'économie.
+
+**Ce que la simulation ne dit pas** : le rythme réel des joueurs ; le Pass et la boutique des événements (3 750 et jusqu'à 4 000 Fragments pendant le Choc : ils accélèrent tout d'environ deux semaines pour qui les fait) ; les échanges ; un joueur qui garde moins de trois exemplaires (il recycle plus et maîtrise plus vite, mais ne peut pas jouer une carte trois fois) ; les cartes que chacun voudra vraiment maîtriser (le Starter n'est qu'un exemple, sans Épique ni Légendaire).
 
 ### La carte fétiche [fait] `profiles.fetiche`, `set_fetiche`, `fetiche_de`
 
