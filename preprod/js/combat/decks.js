@@ -110,14 +110,19 @@ function reserveAuto(cartes, defaut) {
    au moins 15 Joueurs (18 ici), une couleur dans la Réserve, des attaques à
    une ou deux Essences. Chacun contient sa Promo. Ils sont prêtés : on peut
    les jouer sans en posséder les cartes.
-   Mesuré (3.0.12, IA niveau 3 des deux côtés, places alternées, 240
-   parties) : contre des decks tirés au sort (Decks.aleatoire, niveau 3), le
-   Toxique gagne 64 %, le Déter 58 % ; face à face, le Toxique 61 %. Le Déter
-   joue trois Fée Rosalie (★ bench un Joueur adverse engagé) : avec une
-   seule et deux Chevalier Rose, il gagnait 50 % contre le tirage. Neuf
-   autres variantes (des Épiques, Cooked, Doig'Dance à la place de Leakof et
-   d'Alerte Leak, un Toxique sans un Squeezie ni un Vandale…) ne faisaient
-   pas mieux, au bruit près (± 3 points). */
+   Mesuré le 31 octobre (3.0.12, IA niveau 3 des deux côtés, places
+   alternées, 240 parties, graines 2000 + i) : contre des decks tirés au sort
+   (Decks.aleatoire, niveau 3), le Toxique gagne 66 %, le Déter 48 % ; face
+   à face, **le Toxique 69 %** (165 sur 240 ; 274 sur 400). Le Toxique
+   engage les Joueurs adverses, qui ne peuvent alors plus défendre : avec
+   les règles officielles, ses attaques passent sur le CEO. Ce déséquilibre
+   est connu et ouvert (feuille de route, § 4) : les chiffres d'abord écrits
+   ici (64 %, 58 %, 61 %) ne se retrouvent pas sur le même code, et aucune
+   des variantes essayées ne le corrige — onze par la première passe (trois
+   Fée Rosalie au lieu d'une, des Épiques, Cooked, Doig'Dance, un Toxique
+   sans un Squeezie ni un Vandale…), quatre le 31 (un Déter à la courbe plus
+   basse : 69 % ; un Toxique sans Tout Commence Ici : 70 % ; les deux :
+   72 %). */
 const STARTERS = {
   toxique: {
     id: 'starter-toxique', nom: 'Starter · Section Toxique', starter: true, couverture: 'c012',

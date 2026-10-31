@@ -215,11 +215,11 @@ Les mesures ci-dessus datent des règles reconstituées (Club de 30, 5 PV, un Jo
 | Parties au hasard sans plantage, durée, fins | 13,1 tours ; 1 482 fins aux PV, 18 au Club vide | 1 500 |
 | Copies de l'IA fidèles (`clone`) | oui | 150 |
 | IA Normal contre Normal : le premier CEO gagne | 57 % (aucune compensation pour le second dans les règles officielles) ; 10,4 tours | 400 |
-| Starter Toxique contre des decks tirés au sort (niveau 3) | 64 % | 240 |
-| Starter Déter contre des decks tirés au sort | 58 % (50 % avant d'y mettre trois Fée Rosalie) | 240 |
-| Toxique contre Déter, face à face | Toxique 61 % | 240 |
+| Starter Toxique contre des decks tirés au sort (niveau 3) | 66 % (mesuré le 31 octobre ; 64 % annoncé d'abord) | 240 |
+| Starter Déter contre des decks tirés au sort | 48 % (mesuré le 31 octobre ; 58 % annoncé d'abord) | 240 |
+| Toxique contre Déter, face à face | **Toxique 69 %** (165 sur 240, 274 sur 400 ; 61 % annoncé d'abord) | 240 et 400 |
 
-**[mesuré]** Le Toxique (engager les Joueurs adverses, qui ne peuvent alors plus défendre) profite plus des règles officielles que le Déter : onze variantes du Déter ont été essayées, une seule sortait du bruit (± 3 points). **[inconnu]** Les vraies listes des Starter Decks : quand elles seront connues, elles remplaceront celles-ci, et ces chiffres seront à refaire. Le Raid, réglé de nouveau : [§ 3](#3-lévénement--le-choc-des-sections--21-jours-et-le-raid) et README § 7.9.
+**[mesuré]** Le Toxique (engager les Joueurs adverses, qui ne peuvent alors plus défendre) profite plus des règles officielles que le Déter. **Les premiers chiffres de ce tableau (64 %, 58 %, 61 %) ne se retrouvent pas** : remesurés le 31 octobre sur le même code (le commit qui les a écrits, `8b403fc`, donne aussi 165 sur 240 face à face), avec la méthode de `tools/combat-sim.js starters` (IA niveau 3 des deux côtés, places alternées, graines 2 000 + i). Onze variantes du Déter ont été essayées par la première passe, quatre le 31 (un Déter à la courbe plus basse : 69 % ; un Toxique sans Tout Commence Ici : 70 % ; les deux : 72 %) : aucune ne corrige le face-à-face. **[ouvert]** Un écart de 69 / 31 entre les deux Starters pèse sur deux nouveaux venus qui s'affrontent en Versus ; la décision (attendre les listes officielles, ou refaire les deux listes) est au propriétaire (feuille de route, § 4). **[inconnu]** Les vraies listes des Starter Decks : quand elles seront connues, elles remplaceront celles-ci, et ces chiffres seront à refaire. Le Raid, réglé de nouveau : [§ 3](#3-lévénement--le-choc-des-sections--21-jours-et-le-raid) et README § 7.9.
 
 Le bilan d'un deck (`Decks.bilan`) suit désormais les conseils officiels : **15 Joueurs au moins** (16 avant, d'après la mesure de la 3.0.6), une Réserve accordée, la moitié des Joueurs qui attaquent pour 1 ou 2 Essences.
 
