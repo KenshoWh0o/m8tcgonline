@@ -60,6 +60,17 @@ Backend.init = async function () {
 
   if (Backend.session) {
     Backend.mode = 'cloud';
+    /* Version 3.0.12 : la porte d'abord (js/gate.js). Une base qui n'a pas
+       encore reçu la 3.0 ne se lit pas : la page montre l'écran de
+       maintenance, et ne mélange pas l'état d'une 2.x avec le sien. */
+    if (typeof Porte !== 'undefined') {
+      await Porte.lire();
+      if (Porte.connu() && !Porte.base30()) {
+        await Backend.loadLocal();
+        Backend.ready = true;
+        return;
+      }
+    }
     try {
       await Backend.pull();
     } catch (e) {
@@ -209,6 +220,9 @@ Backend.rpc = async function (nom, args) {
     const brut = String(error.message || '').replace(/^(?:ERROR|ERREUR|[A-Z0-9]{5})\s*:\s*/, '').trim();
     const e = new Error(MSG_SERVEUR[brut] || brut || 'Le serveur a refusé.');
     e.code = brut;
+    /* Une maintenance a commencé pendant qu'on jouait : on relit la porte, et
+       l'écran de maintenance remplace le jeu (js/gate.js). */
+    if (brut === 'MAINTENANCE' && typeof Porte !== 'undefined') Porte.lire().then(() => render());
     throw e;
   }
   return data;
@@ -217,6 +231,7 @@ Backend.rpc = async function (nom, args) {
 /* Les refus que le serveur signale par un mot-clé, traduits pour le joueur. */
 const MSG_SERVEUR = {
   BETA_FERMEE: "Le jeu n'est pas encore ouvert.",
+  MAINTENANCE: 'Maintenance en cours : le jeu revient très vite.',
   RESERVE_VIDE: 'Plus de booster pour le moment.',
   BONUS_VIDE: 'Plus de booster en plus à ouvrir.',
   BOOSTER_VIDE: 'Ce booster est vide : aucune carte à tirer.',

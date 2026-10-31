@@ -130,6 +130,10 @@ begin
                                    'minutes', e.ticket_minutes) order by e.debut)
                              from evenements e where e.code is null and e.fin > now()), '[]'::jsonb),
     'joueurs', (select count(*) from profiles),
+    -- La maintenance (3.0.12, 01_schema.sql).
+    'maintenance', (select jsonb_build_object('actif', m.actif, 'message', m.message, 'fin', m.fin,
+                                              'depuis', m.depuis, 'par', m.par)
+                      from maintenance m where m.id = 1),
     'sauvegarde', (select jsonb_build_object('le', s.le, 'version', coalesce(s.contenu ->> 'version', '2.5'),
                             'cartes', jsonb_array_length(coalesce(s.contenu -> 'collection', '[]'::jsonb)))
                      from labo_sauvegardes s where s.user_id = p));
@@ -431,6 +435,28 @@ begin
   return me();
 end $$;
 
+-- La maintenance (version 3.0.12, table maintenance de 01_schema.sql) :
+-- l'allumer, changer son message ou son heure de retour prevue, l'eteindre.
+-- Allumee, les joueurs voient l'ecran de maintenance et garde_beta() refuse
+-- leurs actions ; les administrateurs jouent. L'heure de retour ne fait que
+-- s'afficher : la maintenance ne finit que quand on l'eteint ici.
+create or replace function public.labo_maintenance(p_actif boolean, p_message text default null,
+                                                   p_fin timestamptz default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := labo_garde(); a boolean := coalesce(p_actif, false);
+begin
+  if a and p_fin is not null and p_fin <= now() then raise exception 'L''heure de retour est déjà passée.'; end if;
+  update maintenance set
+    actif   = a,
+    message = case when a then nullif(left(trim(p_message), 300), '') end,
+    fin     = case when a then p_fin end,
+    -- Depuis quand : garde l'heure de depart si on ne fait que changer le message.
+    depuis  = case when not a then null when actif then depuis else now() end,
+    par     = case when not a then null when actif then par else (select pseudo from profiles where id = p) end
+   where id = 1;
+  return labo_etat();
+end $$;
+
 -- Ce qu'une sauvegarde emporte, et ce que « repartir de zero » efface : tout
 -- ce qui est a soi, sauf les amis, la boite de reception, les echanges et les
 -- defis entre amis. Les tables de L'Echauffement (la 2.5) n'existent que sur
@@ -542,8 +568,8 @@ revoke all on function public.labo_garde, public.labo_tables from public, anon, 
 revoke all on function public.labo_etat, public.labo_evenement, public.labo_decaler, public.labo_evenement_raz,
   public.labo_reverses, public.labo_raid, public.labo_raid_echelle, public.labo_raid_raz, public.labo_cartes,
   public.labo_monnaies, public.labo_cosmetiques, public.labo_combats_moi, public.labo_sauver,
-  public.labo_restaurer, public.labo_raz_moi from public, anon;
+  public.labo_restaurer, public.labo_raz_moi, public.labo_maintenance from public, anon;
 grant execute on function public.labo_etat, public.labo_evenement, public.labo_decaler, public.labo_evenement_raz,
   public.labo_reverses, public.labo_raid, public.labo_raid_echelle, public.labo_raid_raz, public.labo_cartes,
   public.labo_monnaies, public.labo_cosmetiques, public.labo_combats_moi, public.labo_sauver,
-  public.labo_restaurer, public.labo_raz_moi to authenticated;
+  public.labo_restaurer, public.labo_raz_moi, public.labo_maintenance to authenticated;

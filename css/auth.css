@@ -111,3 +111,63 @@ body.inlock main { padding:0 }
 .lockarret p:last-child{margin:0}
 .lockmatepedia{margin:22px auto 0;max-width:40ch;line-height:1.5}
 .lockmatepedia a{color:var(--accent-soft);font-weight:700}
+
+/* ============ La maintenance (version 3.0.12, js/gate.js) ============ */
+/* L'écran d'attente, en travaux : un anneau lavande tourne autour du paquet
+   (une comète sur un cercle), une barre file sous le titre. Tout s'anime par
+   transform et opacity ; le mouvement réduit les fige. */
+/* La variante maintenance est plus ramassée que l'écran d'attente : elle
+   tient sans défiler, de 360 × 740 à l'ordinateur en passant par 375 × 667. */
+.lockwrap.maint{padding-top:calc(16px + env(safe-area-inset-top,0px))}
+.lockwrap.maint .locklogo{height:clamp(40px,11vw,56px);margin-bottom:0}
+.lockwrap.maint .lockart{height:clamp(132px,24vh,220px);margin:6px auto 14px}
+.lockwrap.maint .locktitle{font-size:clamp(30px,9vw,42px);margin:10px 0 10px}
+.lockwrap.maint .lockentree{margin-top:16px;gap:8px}
+.lockwrap.maint .mentions{margin-top:14px}
+@media (max-height:700px){.lockwrap.maint .lockart{height:118px;margin-bottom:10px}.lockwrap.maint .locktitle{margin:8px 0}}
+/* L'anneau suit la hauteur du paquet : il passe derrière lui, visible sur
+   ses côtés, sans mordre sur le logo. */
+.maint-anneau{position:absolute;height:112%;aspect-ratio:1;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 58%,rgba(179,166,255,.1) 68%,rgba(179,166,255,.8) 95%,#fff 99%,transparent 100%);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
+  animation:maintTour 2.8s linear infinite}
+@keyframes maintTour{to{transform:rotate(1turn)}}
+.lockcard .locktag.maint{background:var(--accent-wash);color:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(179,166,255,.45)}
+.maint-barre{position:relative;overflow:hidden;width:min(220px,62%);height:4px;margin:2px auto 16px;border-radius:999px;background:var(--surface-2)}
+.maint-barre i{position:absolute;inset:0;width:40%;border-radius:inherit;
+  background:linear-gradient(90deg,transparent,var(--accent-soft),#fff,var(--accent-soft),transparent);
+  animation:maintFile 1.6s ease-in-out infinite}
+@keyframes maintFile{from{transform:translateX(-110%)}to{transform:translateX(260%)}}
+.maint-barre.fini i{width:100%;transform:none;background:var(--ok);animation:none}
+.maint-retour{margin:14px 0 0;font-size:14px;color:var(--subtle)}
+.maint-retour b{color:var(--text)}
+.maint-auto{margin:2px auto 0;max-width:36ch}
+.maint-auto.fini{color:var(--ok);font-weight:700}
+.maint-qui{margin:0 auto;max-width:36ch}
+.maint-liens{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;margin-top:2px}
+.maint-liens .linkbtn{font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+@media (prefers-reduced-motion:reduce){
+  .maint-anneau,.maint-barre i{animation:none}
+  .maint-barre i{width:100%;opacity:.45}
+}
+
+/* L'aperçu du Labo : l'écran par-dessus tout, et de quoi le fermer. */
+.maint-apercu{position:fixed;inset:0;z-index:9000;overflow:auto;background:var(--bg)}
+.maint-apercu-x{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:1}
+
+/* La pastille d'un administrateur qui joue pendant une maintenance : elle
+   mène au Labo pour la lever. Juste sous l'en-tête, dont elle ne cache ni
+   les compteurs ni la cloche. */
+.maint-pastille{position:fixed;left:50%;top:calc(var(--top-h) + env(safe-area-inset-top,0px) + 4px);transform:translateX(-50%);z-index:9500;
+  display:flex;align-items:center;gap:7px;max-width:calc(100% - 24px);padding:5px 12px;border:0;border-radius:999px;
+  font:inherit;font-size:11.5px;font-weight:800;color:var(--bg);background:var(--accent-soft);
+  box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.maint-pastille i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--bg);animation:maintPouls 1.4s ease-in-out infinite}
+/* Sur ordinateur, l'en-tête fait 68 px (--top-h n'y est redéfini que dans
+   .top, css/hub.css). */
+@media (min-width:900px){.maint-pastille{top:calc(68px + env(safe-area-inset-top,0px) + 4px)}}
+/* L'aperçu de l'écran passe devant : la pastille s'efface le temps de le regarder. */
+body:has(.maint-apercu) .maint-pastille{display:none}
+@keyframes maintPouls{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.maint-pastille i{animation:none}}

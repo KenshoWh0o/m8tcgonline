@@ -302,15 +302,59 @@ language sql stable as $$
   select now() >= beta_lancement();
 $$;
 
+-- =====================================================================
+--  La maintenance (version 3.0.12)
+-- =====================================================================
+-- Une ligne : en maintenance ou non, le message a montrer, l'heure de retour
+-- prevue (affichee seulement : la maintenance ne finit que quand un
+-- administrateur la leve, Labo › Serveur, labo_maintenance dans
+-- 29_labo.sql), depuis quand, et par qui. Pendant une maintenance,
+-- garde_beta() refuse toute action du jeu a qui n'est pas administrateur, et
+-- la page montre l'ecran de maintenance (js/gate.js) a tous les autres.
+--
+-- Une base 2.x qui recoit la 3.0 avec des joueurs entre d'office en
+-- maintenance : la page de la 2.x encore ouverte chez eux ne doit pas jouer
+-- sur une base 3.0, et le site 3.0 attend que l'administrateur l'ait
+-- verifie. La detection se fait a la creation de la table, donc une seule
+-- fois : sans table `combat_joueurs` (une base qui n'a jamais eu la 3.0) et
+-- avec au moins un profil. Une installation neuve, elle, n'a personne.
+do $$
+begin
+  if to_regclass('public.maintenance') is null then
+    create table public.maintenance (
+      id      int primary key check (id = 1),
+      actif   boolean not null default false,
+      message text,
+      fin     timestamptz,
+      depuis  timestamptz,
+      par     text
+    );
+    insert into public.maintenance (id, actif, message, depuis, par)
+    select 1, true, 'La version 3.0 arrive : le jeu est en maintenance le temps de la mise à jour.', now(), 'la mise à jour 3.0'
+     where to_regclass('public.combat_joueurs') is null and exists (select 1 from public.profiles);
+  end if;
+end $$;
+insert into public.maintenance (id) values (1) on conflict (id) do nothing;
+alter table public.maintenance enable row level security;
+revoke all on public.maintenance from anon, authenticated;
+
 -- Ce que l'ecran d'attente a besoin de savoir, sans compte : est-ce ouvert,
 -- quand ca ouvre, et quelle heure il est ICI. Le navigateur compte ensuite le
 -- temps ecoule avec une horloge que l'utilisateur ne peut pas regler
 -- (performance.now()), jamais avec la date de l'appareil.
+-- Version 3.0.12 : la version de la base (une page 3.0 devant une base qui
+-- n'a pas encore recu la 3.0 montre l'ecran de maintenance, js/gate.js) et
+-- la maintenance en cours. `security definer` : la table maintenance n'est
+-- lisible que par lui.
 create or replace function public.porte() returns jsonb
-language sql stable as $$
+language sql stable security definer set search_path = public as $$
   select jsonb_build_object('ouvert', beta_ouverte(),
                             'lancement', beta_lancement(),
-                            'serveur', now());
+                            'serveur', now(),
+                            'version', '3.0',
+                            'maintenance', (select case when m.actif then jsonb_build_object(
+                                                     'message', m.message, 'fin', m.fin, 'depuis', m.depuis) end
+                                              from maintenance m where m.id = 1));
 $$;
 
 grant execute on function public.porte to anon, authenticated;
@@ -417,6 +461,12 @@ begin
   -- le lancement, et il ne coute alors rien.
   if not beta_ouverte() and not est_invite(auth.uid()) then
     raise exception 'BETA_FERMEE';
+  end if;
+  -- Version 3.0.12 : pendant une maintenance, seuls les administrateurs
+  -- jouent (une ligne lue par sa cle : rien a payer le reste du temps).
+  if exists (select 1 from maintenance where id = 1 and actif)
+     and not exists (select 1 from profiles where id = auth.uid() and is_admin) then
+    raise exception 'MAINTENANCE';
   end if;
 end $$;
 
@@ -6529,6 +6579,10 @@ begin
                                    'minutes', e.ticket_minutes) order by e.debut)
                              from evenements e where e.code is null and e.fin > now()), '[]'::jsonb),
     'joueurs', (select count(*) from profiles),
+    -- La maintenance (3.0.12, 01_schema.sql).
+    'maintenance', (select jsonb_build_object('actif', m.actif, 'message', m.message, 'fin', m.fin,
+                                              'depuis', m.depuis, 'par', m.par)
+                      from maintenance m where m.id = 1),
     'sauvegarde', (select jsonb_build_object('le', s.le, 'version', coalesce(s.contenu ->> 'version', '2.5'),
                             'cartes', jsonb_array_length(coalesce(s.contenu -> 'collection', '[]'::jsonb)))
                      from labo_sauvegardes s where s.user_id = p));
@@ -6830,6 +6884,28 @@ begin
   return me();
 end $$;
 
+-- La maintenance (version 3.0.12, table maintenance de 01_schema.sql) :
+-- l'allumer, changer son message ou son heure de retour prevue, l'eteindre.
+-- Allumee, les joueurs voient l'ecran de maintenance et garde_beta() refuse
+-- leurs actions ; les administrateurs jouent. L'heure de retour ne fait que
+-- s'afficher : la maintenance ne finit que quand on l'eteint ici.
+create or replace function public.labo_maintenance(p_actif boolean, p_message text default null,
+                                                   p_fin timestamptz default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := labo_garde(); a boolean := coalesce(p_actif, false);
+begin
+  if a and p_fin is not null and p_fin <= now() then raise exception 'L''heure de retour est déjà passée.'; end if;
+  update maintenance set
+    actif   = a,
+    message = case when a then nullif(left(trim(p_message), 300), '') end,
+    fin     = case when a then p_fin end,
+    -- Depuis quand : garde l'heure de depart si on ne fait que changer le message.
+    depuis  = case when not a then null when actif then depuis else now() end,
+    par     = case when not a then null when actif then par else (select pseudo from profiles where id = p) end
+   where id = 1;
+  return labo_etat();
+end $$;
+
 -- Ce qu'une sauvegarde emporte, et ce que « repartir de zero » efface : tout
 -- ce qui est a soi, sauf les amis, la boite de reception, les echanges et les
 -- defis entre amis. Les tables de L'Echauffement (la 2.5) n'existent que sur
@@ -6941,11 +7017,11 @@ revoke all on function public.labo_garde, public.labo_tables from public, anon, 
 revoke all on function public.labo_etat, public.labo_evenement, public.labo_decaler, public.labo_evenement_raz,
   public.labo_reverses, public.labo_raid, public.labo_raid_echelle, public.labo_raid_raz, public.labo_cartes,
   public.labo_monnaies, public.labo_cosmetiques, public.labo_combats_moi, public.labo_sauver,
-  public.labo_restaurer, public.labo_raz_moi from public, anon;
+  public.labo_restaurer, public.labo_raz_moi, public.labo_maintenance from public, anon;
 grant execute on function public.labo_etat, public.labo_evenement, public.labo_decaler, public.labo_evenement_raz,
   public.labo_reverses, public.labo_raid, public.labo_raid_echelle, public.labo_raid_raz, public.labo_cartes,
   public.labo_monnaies, public.labo_cosmetiques, public.labo_combats_moi, public.labo_sauver,
-  public.labo_restaurer, public.labo_raz_moi to authenticated;
+  public.labo_restaurer, public.labo_raz_moi, public.labo_maintenance to authenticated;
 
 
 -- =====================================================================

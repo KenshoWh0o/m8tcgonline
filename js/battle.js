@@ -235,7 +235,9 @@ function vCbAccueil(e) {
       <div class="cb-hero-haut"><span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(SECTIONS[e.section].court)}</b></span>${vCbNivAnneau(e)}</div>
       <h1 class="cb-hero-titre">Combats</h1>
     </section>
-    ${enCours ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat en cours</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Reprends-le où tu l'as laissé.</em></span>
+    ${enCours && enCours.fini ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat terminé</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Son résultat n'a pas été enregistré.</em></span>
+      <span class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Envoyer</button><button class="btn tiny ghost" data-cb="oublier">Oublier</button></span></section>`
+      : enCours ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat en cours</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Reprends-le où tu l'as laissé.</em></span>
       <span class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Reprendre</button><button class="btn tiny ghost" data-cb="oublier">Abandonner</button></span></section>`
       : vRaidAffiche()}
     ${tuto ? `<button class="cb-tuto" data-cb="tuto">
@@ -935,11 +937,45 @@ function reprendreCombat() {
   if (!s) return;
   let E;
   try { E = Combat.rejouer(s.init, s.journal); } catch (err) { localStorage.removeItem(CLE_COMBAT); return toast('Ce combat ne peut pas être repris.'); }
-  if (E.fin) { localStorage.removeItem(CLE_COMBAT); return toast('Ce combat était déjà fini.'); }
+  /* Fini, mais le serveur n'a pas pris le résultat (une maintenance, le
+     réseau) : on le lui envoie maintenant, au lieu de le perdre (3.0.12). */
+  if (E.fin) return envoyerCombatFini(s, E);
   ouvrirArene({ E }, s.meta);
+}
+async function envoyerCombatFini(s, E) {
+  const gagne = E.fin.gagnant === 0;
+  try {
+    occupe(true);
+    const html = await finirCombat(s.meta, E, gagne);
+    openSheet({
+      title: gagne ? 'Victoire enregistrée' : 'Défaite enregistrée',
+      body: `<p class="muted">Ce combat était fini : son résultat vient d'être envoyé.</p>${html}`,
+      actions: [{ label: 'Fermer', fn: closeSheet }]
+    });
+  } catch (e) {
+    /* Le serveur l'a déjà refermé (un autre combat ouvert depuis) : rien à
+       envoyer de plus. Sinon, on le garde pour réessayer plus tard. */
+    if (/plus ouvert/.test(e.message || '')) { try { localStorage.removeItem(CLE_COMBAT); } catch (err) { /* */ } }
+    toast(e.message || 'Le résultat n\'a pas pu être envoyé : réessaie plus tard.');
+  } finally {
+    occupe(false);
+    render();
+  }
 }
 function oublierCombat() {
   const s = combatEnCours();
+  /* Un combat fini dont le résultat n'est pas passé : l'oublier ne demande
+     rien au serveur ; il le comptera perdu au prochain combat ouvert. */
+  if (s && s.fini) {
+    return openSheet({
+      title: 'Oublier ce résultat ?',
+      body: '<p class="muted">Il ne sera pas envoyé : le serveur compte ce combat comme perdu au prochain que tu ouvres.</p>',
+      actions: [
+        { label: 'Oublier', primary: true, fn: () => { closeSheet(); try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ } render(); } },
+        { label: 'Garder', fn: closeSheet }
+      ]
+    });
+  }
   openSheet({
     title: 'Abandonner ce combat ?',
     body: '<p class="muted">Il compte comme une défaite.</p>',

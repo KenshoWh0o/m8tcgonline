@@ -655,7 +655,16 @@
   RPC.me = p => me(p);
 
   /* porte, 01_schema.sql : la démo est toujours ouverte. */
-  RPC.porte = () => ({ ouvert: true, lancement: null, serveur: iso(now()) });
+  /* porte() (01_schema.sql) ; version 3.0.12 : la version de la base et la
+     maintenance en cours (le visiteur de la démo est administrateur : elle
+     ne l'arrête pas, la pastille le lui rappelle ; Labo › Aperçus montre
+     l'écran des joueurs). */
+  const maintDemo = () => (S.maintenance = S.maintenance || { actif: false, message: null, fin: null, depuis: null, par: null });
+  RPC.porte = () => {
+    const m = maintDemo();
+    return { ouvert: true, lancement: null, serveur: iso(now()), version: '3.0',
+      maintenance: m.actif ? { message: m.message, fin: m.fin, depuis: m.depuis } : null };
+  };
 
   RPC.set_profile = (p, { p_pseudo, p_avatar, p_frame }) => {
     if (p_pseudo != null) {
@@ -1361,10 +1370,24 @@
       recharge: { minutes: cfg('ticket_minutes'), cap: cfg('ticket_cap') },
       recharges: [],
       joueurs: Object.keys(S.profils).length,
+      maintenance: Object.assign({}, maintDemo()),
       sauvegarde: sv ? { le: iso(sv.le), version: '3.0', cartes: Object.keys(sv.contenu.col || {}).length } : null
     };
   }
   RPC.labo_etat = p => { estAdmin(p); return laboEtat(p); };
+  /* labo_maintenance (29_labo.sql, 3.0.12). */
+  RPC.labo_maintenance = (p, { p_actif, p_message, p_fin }) => {
+    estAdmin(p);
+    const a = !!p_actif, m = maintDemo();
+    if (a && p_fin && Date.parse(p_fin) <= now()) refuser('L\'heure de retour est déjà passée.');
+    const deja = m.actif;
+    m.actif = a;
+    m.message = a ? (String(p_message || '').trim().slice(0, 300) || null) : null;
+    m.fin = a && p_fin ? iso(Date.parse(p_fin)) : null;
+    m.depuis = !a ? null : deja ? m.depuis : iso(now());
+    m.par = !a ? null : deja ? m.par : profil(p).pseudo;
+    return laboEtat(p);
+  };
   RPC.labo_evenement = (p, { p_etat, p_n }) => {
     estAdmin(p);
     const t = now(), D21 = 21 * J_MS;

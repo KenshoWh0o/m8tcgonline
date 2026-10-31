@@ -276,7 +276,8 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
                                    ['choc_etat', {}, 'l\'événement du Choc des Sections'],
                                    ['raid_etat', {}, 'le Raid (27_raid.sql)'],
                                    /* Une carte vide : refusée sans rien changer, même connecté. */
-                                   ['maitriser', { p_carte: '' }, 'la maîtrise des cartes (28_maitrise.sql)']]) {
+                                   ['maitriser', { p_carte: '' }, 'la maîtrise des cartes (28_maitrise.sql)'],
+                                   ['combats_historique', {}, 'l\'historique des combats (3.0.12)']]) {
     const { error } = await sb.rpc(fn, args);
     if (error && error.code === 'PGRST202') manque30.push(quoi);
   }
@@ -284,7 +285,22 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     ? { etat: 'ko', titre: 'La version 3.0 n\'est pas installée sur le serveur',
         detail: `Il manque : ${manque30.join(', ')}. Le jeu en 3.0 ne pourra ni ouvrir un combat, ni en payer un.`,
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
-    : { etat: 'ok', titre: 'Combats, défis, Choc des Sections, Raid et maîtrise de la 3.0 sont installés' });
+    : { etat: 'ok', titre: 'Combats, défis, Choc des Sections, Raid, maîtrise et historique de la 3.0 sont installés' });
+
+  /* ---- 6 quater. La version de la base et la maintenance (3.0.12) ---- */
+  /* porte() le dit à tout le monde, sans compte (supabase/installation/01_schema.sql). */
+  {
+    const { data: pt } = await sb.rpc('porte');
+    const m = pt && pt.maintenance;
+    poser(!pt || !pt.version
+      ? { etat: 'ko', titre: 'La base n\'a pas encore reçu la 3.0',
+          detail: '<code>porte()</code> ne donne pas de version : le site 3.0 montre l\'écran de maintenance à tout le monde, administrateurs compris.',
+          faire: 'Colle <code>supabase/TOUT.sql</code> dans le <b>SQL Editor</b>.' }
+      : m ? { etat: 'warn', titre: 'Le jeu est en maintenance',
+          detail: `Les joueurs voient l'écran de maintenance${m.message ? ` (« ${E(m.message)} »)` : ''} et le serveur refuse leurs actions ; seuls les administrateurs jouent.`,
+          faire: 'Pour la lever : Labo › Serveur › Maintenance.' }
+      : { etat: 'ok', titre: `Base en ${E(pt.version)}, sans maintenance en cours` });
+  }
 
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');

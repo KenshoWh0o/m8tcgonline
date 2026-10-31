@@ -1274,8 +1274,11 @@ const Table = (() => {
   function sauver() {
     if (!T || !T.o.sauver) return;
     try {
-      if (T.E.fin) localStorage.removeItem(T.o.sauver);
-      else localStorage.setItem(T.o.sauver, JSON.stringify({ init: T.E.init, journal: T.E.journal, meta: T.o.meta || null, le: Date.now() }));
+      /* Version 3.0.12 : une partie finie reste notée (`fini`) jusqu'à ce que
+         le serveur ait pris son résultat (finirCombat, js/battle.js, l'efface
+         alors). Refusé — une maintenance, le réseau —, il se renvoie depuis
+         l'accueil de Combats au lieu d'être perdu. */
+      localStorage.setItem(T.o.sauver, JSON.stringify({ init: T.E.init, journal: T.E.journal, meta: T.o.meta || null, le: Date.now(), fini: !!T.E.fin }));
     } catch (e) { /* stockage plein ou interdit */ }
   }
 
