@@ -504,131 +504,199 @@ button.cb-une:active{transform:scale(.98)}
 .a3d-tapis img,.a3d-sleeve img{width:100%;height:100%;object-fit:cover;display:block}
 .a3d-sleeve{width:min(46vw,190px);border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.6)}
 
-/* ============ L'atelier de decks ============ */
-.at{display:flex;flex-direction:column;gap:10px}
-/* La tête de l'atelier reste sous l'en-tête pendant qu'on fait défiler les
-   cartes : une capsule pleine (en verre, le message d'état se lisait au
-   travers en défilant, comme s'ils se chevauchaient).
+/* ============ L'atelier de decks (refait en 3.0.13) ============ */
+/* « Très peu accessible, beaucoup de texte entassé » (le propriétaire, le
+   31 octobre). Une tête collée en haut de l'écran — le nom, Enregistrer, et
+   trois onglets dont deux portent leur jauge —, une ligne pour la prochaine
+   étape, puis un seul contenu à la fois sur téléphone.
    Ce qui défile, c'est <main>, et sa marge intérieure tient déjà compte de
-   l'en-tête et de la barre du bas : les positions collantes se comptent
-   depuis cette marge (top:0, bottom négatif). Compter l'en-tête une seconde
-   fois posait la tête sur le message d'état, et le pied au milieu de
-   l'écran. */
-.at-tete{position:sticky;top:-8px;z-index:5;display:flex;align-items:center;gap:6px;padding:6px;
-  border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),var(--sh-3)}
-.at-retour{display:grid;place-items:center;width:40px;height:40px;flex:none;border:0;border-radius:50%;
-  background:rgba(255,255,255,.08);color:var(--text);cursor:pointer}
-.at-retour svg{width:20px;height:20px;transform:rotate(90deg);fill:none;stroke:currentColor;stroke-width:2.2}
-.at-nom{flex:1;min-width:0;font:inherit;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;color:var(--text);
-  padding:6px 10px;border:0;border-radius:10px;background:transparent;box-shadow:inset 0 0 0 1px transparent;text-overflow:ellipsis}
-.at-nom:focus{outline:none;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--accent-soft)}
-.at-compte{flex:none;padding:6px 12px;border-radius:999px;font-weight:800;background:rgba(255,255,255,.08)}
-.at-compte b{font-family:var(--display);font-size:17px}
-.at-compte.ok{box-shadow:inset 0 0 0 1.5px var(--ok);color:var(--ok)}
-.at-etat{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--danger-line);font-size:13px}
-.at-etat>span{color:var(--danger)}
-.at-etat.ok{background:var(--ok-wash);box-shadow:inset 0 0 0 1px var(--ok-line)}
-.at-etat.ok>span{color:var(--ok)}
-.at-etat p{margin:0}
-.at-etat>span{display:grid;place-items:center;width:24px;height:24px;flex:none}
-.at-etat svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2}
-.at-onglets{display:flex;gap:2px;padding:4px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
-.at-onglets button{flex:1;padding:9px 6px;border:0;border-radius:999px;font:inherit;font-weight:800;font-size:13.5px;color:var(--muted);background:none;cursor:pointer}
-.at-onglets button.on{color:var(--text);background:rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),var(--sh-1)}
-.at-onglets i{font-style:normal;font-size:11px;padding:1px 6px;border-radius:999px;background:var(--bg-2);margin-left:3px}
-.at-corps.ong-cartes .at-deck{display:none}
-.at-corps.ong-deck .at-cartes,.at-corps.ong-reserve .at-cartes{display:none}
-.at-corps.ong-deck .at-reserve{display:none}
-.at-corps.ong-reserve .at-deck>*:not(.at-reserve){display:none}
-.at-filtres{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-.at-cherche input{width:100%;font:inherit;font-size:15px;padding:11px 14px;border:0;border-radius:12px;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+   l'en-tête du site : les positions collantes se comptent depuis cette
+   marge (top négatif). */
+.at{display:flex;flex-direction:column;gap:10px}
+.at-haut{position:sticky;top:-8px;z-index:5;display:flex;flex-direction:column;gap:6px;padding:6px;margin-inline:-6px;
+  border-radius:22px;background:var(--glass-solid);box-shadow:inset 0 0 0 1px var(--line-2),inset 0 1px 0 rgba(255,255,255,.05),var(--sh-3)}
+.at-tete{display:flex;align-items:center;gap:2px}
+.at-retour,.at-menu{display:grid;place-items:center;width:36px;height:44px;flex:none;border:0;border-radius:50%;
+  background:transparent;color:var(--subtle);cursor:pointer}
+.at-retour:hover,.at-menu:hover{background:var(--hover);color:var(--text)}
+.at-retour svg{width:22px;height:22px;transform:rotate(90deg);fill:none;stroke:currentColor;stroke-width:2.2}
+.at-menu svg{width:22px;height:22px;fill:currentColor}
+/* Le nom se modifie sur place : le crayon le dit, juste après le nom
+   (field-sizing : le champ prend la largeur de son texte ; sans lui, sa
+   largeur par défaut), et s'efface pendant la saisie. */
+.at-nomlab{flex:1;min-width:0;display:flex;align-items:center;gap:2px;cursor:text}
+.at-nom{flex:0 1 auto;min-width:4ch;max-width:100%;field-sizing:content;font:inherit;font-family:var(--display);font-style:italic;font-weight:900;font-size:16px;color:var(--text);
+  padding:9px 4px;border:0;border-radius:10px;background:transparent;text-overflow:ellipsis}
+.at-nom:hover{background:var(--hover)}
+.at-nom:focus{outline:none;background:var(--bg-2);box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.at-nomlab>svg{flex:none;width:14px;height:14px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linejoin:round;pointer-events:none}
+.at-nom:focus+svg{opacity:0}
+/* Enregistrer : discret tant que rien n'a changé, l'action principale ensuite. */
+.at-tete .at-sauver{flex:none;min-height:40px;padding:8px 12px;margin-left:2px;background:rgba(255,255,255,.085);color:var(--subtle);text-shadow:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.08)}
+@media (max-width:380px){.at-tete .at-sauver{padding-inline:10px}}
+.at.modifie .at-tete .at-sauver{background:var(--cta);color:var(--on-accent);box-shadow:inset 0 1px 0 var(--gloss),0 8px 20px -8px var(--accent-glow)}
+
+/* Les trois onglets. Le choisi est clair, comme partout (docs/design-3.0.md) ;
+   une jauge pleine passe au vert. */
+.at-onglets{display:grid;grid-template-columns:.8fr 1.1fr 1.1fr;gap:4px;padding:3px;border-radius:16px;background:var(--bg-2)}
+.at-tab{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;min-height:50px;padding:7px 10px;border:0;border-radius:13px;
+  font:inherit;text-align:left;color:var(--muted);background:none;cursor:pointer}
+.at-tab:hover:not(.on){background:var(--hover);color:var(--subtle)}
+.at-tab.on{color:var(--text);background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),var(--sh-1)}
+.at-tab>b{display:flex;align-items:baseline;justify-content:space-between;gap:6px;font-size:13.5px;font-weight:800;white-space:nowrap}
+.at-tab>b>span{font-size:12px;font-weight:800;color:var(--subtle)}
+.at-tab.on>b>span{color:var(--text)}
+.at-tab.plein>b>span{color:var(--ok)}
+.at-tab>small{font-size:11.5px;font-weight:700;color:var(--muted)}
+.at-barre{display:block;height:6px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.1)}
+.at-barre>i{display:block;height:100%;border-radius:inherit;background:var(--progress);transition:width .25s ease-out}
+.at-tab.plein .at-barre>i{background:var(--ok)}
+.at-pastilles{display:flex;gap:3px}
+.at-pastilles>i{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.1)}
+.at-pastilles>i[style]{background:var(--ec)}
+
+/* La prochaine étape : une ligne, et son geste à côté. */
+.at-etape{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-height:28px;margin:0 2px;font-size:13.5px;color:var(--subtle)}
+.at-etape b{color:var(--text)}
+.at-etape .ok{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--ok)}
+.at-etape .ok svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6}
+.at-etape .ko{color:var(--warn);font-weight:700}
+.at-lien{padding:4px 0;border:0;background:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--accent-soft);cursor:pointer;
+  text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.at-lien:hover{color:var(--text)}
+/* Sur téléphone, l'onglet Réserve dit lui-même ce qui reste à faire (la
+   ligne de ce qu'il y a dans les attaques, et son bouton) : la ligne d'étape
+   y ferait doublon, et pousserait les neuf tuiles sous la barre du bas. */
+@media (max-width:899px){.at.ong-reserve .at-etape{display:none}}
+
+/* Un seul contenu à la fois sur téléphone. */
+.at-corps.ong-cartes .at-cote{display:none}
+.at-corps.ong-deck .at-cartes,.at-corps.ong-deck .at-res{display:none}
+.at-corps.ong-reserve .at-cartes,.at-corps.ong-reserve .at-deck{display:none}
+
+/* ---- Cartes ---- */
+.at-filtres{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.at-cherche{display:flex;gap:8px}
+.at-cherche input{flex:1;min-width:0;font:inherit;font-size:15px;padding:11px 14px;border:0;border-radius:12px;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .at-cherche input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent-soft)}
-.at-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-.at-chips::-webkit-scrollbar{display:none}
-.at-chip{flex:none;display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:800;
+.at-filtrer{flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 14px;min-height:44px;border:0;border-radius:12px;font:inherit;font-size:13.5px;font-weight:800;
   color:var(--subtle);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
-.at-chip.e{padding:6px 8px}
-.at-chip .ess{width:18px;height:18px}
-.at-ligne-art:not([style*="http"]){background:linear-gradient(135deg,var(--sc,#9a73ff),var(--plate))}
+.at-filtrer svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.at-filtrer.on{color:var(--text);background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.at-filtrer i{font-style:normal;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;font-size:11px;color:var(--plate);background:#fff}
+.at-filtres-l{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.at-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;touch-action:pan-x}
+.at-chips::-webkit-scrollbar{display:none}
+.at-chip{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:7px 13px;border:0;border-radius:999px;font:inherit;font-size:13px;font-weight:800;
+  color:var(--subtle);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.at-chip.e{padding:6px 9px}
+.at-chip .ess{width:20px;height:20px}
 .at-chip.on{color:var(--text);background:rgba(255,255,255,.17);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.14)}
-.at-toutes{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
-.at-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
-.at-carte{position:relative;display:flex;flex-direction:column;gap:3px}
-.at-carte-c{padding:0;border:0;background:none;cursor:pointer;border-radius:6px;transition:transform .12s}
+.at-toutes{align-self:flex-start}
+.at-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px 10px}
+.at-carte{position:relative;display:flex;flex-direction:column;gap:4px}
+.at-carte-c{padding:0;border:0;background:none;cursor:pointer;border-radius:8px;transition:transform .12s}
 .at-carte-c:active{transform:scale(.96)}
 .at-carte-c[aria-disabled="true"]{cursor:not-allowed}
 .at-carte-c[aria-disabled="true"] .cwrap{filter:brightness(.55)}
 .at-carte.absente .cwrap{filter:grayscale(1) brightness(.45)}
 /* Une carte du deck : choisie, donc blanche (docs/design-3.0.md). */
 .at-carte.dedans .cwrap{box-shadow:0 0 0 2px rgba(255,255,255,.85),var(--sh-2)}
-.at-n{position:absolute;top:-6px;right:-6px;z-index:2;display:grid;place-items:center;min-width:24px;height:24px;padding:0 6px;border-radius:999px;
-  font-weight:900;font-size:13px;color:var(--plate);background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5)}
-.at-moins{position:absolute;top:-6px;left:-6px;z-index:2;display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:50%;
-  font-weight:900;font-size:16px;line-height:1;color:#fff;background:var(--danger);box-shadow:0 2px 6px rgba(0,0,0,.5);cursor:pointer}
-.at-info{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:10.5px;color:var(--muted)}
-.at-i{display:grid;place-items:center;width:18px;height:18px;border:0;border-radius:50%;font:inherit;font-size:11px;font-weight:900;font-style:italic;
-  color:var(--subtle);background:var(--surface-3);cursor:pointer}
+.at-n{position:absolute;top:-7px;right:-7px;z-index:2;display:grid;place-items:center;min-width:26px;height:26px;padding:0 7px;border-radius:999px;
+  font-weight:900;font-size:13px;color:var(--plate);background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:none}
+.at-moins{position:absolute;top:-7px;left:-7px;z-index:2;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:50%;
+  font-weight:900;font-size:17px;line-height:1;color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2),0 2px 6px rgba(0,0,0,.5);cursor:pointer}
+.at-moins:hover{background:var(--danger);color:#fff}
+.at-info{display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:28px;font-size:12px;font-weight:700;color:var(--muted)}
+.at-i{display:grid;place-items:center;width:28px;height:28px;flex:none;border:0;border-radius:50%;font:inherit;font-size:12px;font-weight:900;font-style:italic;
+  color:var(--subtle);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.at-i:hover{color:var(--text);background:var(--surface-3)}
 .at-vide{grid-column:1/-1;text-align:center;padding:20px}
-.at-stats{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06);margin-bottom:10px}
+
+/* ---- Le Club ---- */
+.at-bilan{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2px 10px;width:100%;margin-bottom:12px;padding:10px 12px;border:0;border-radius:14px;
+  font:inherit;color:var(--text);text-align:left;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.at-bilan:hover{background:var(--surface-2)}
+.at-bilan b{font-size:14px}
+.at-bilan small{grid-column:1/3;font-size:12px;color:var(--subtle)}
+.at-bilan svg{grid-row:1/3;grid-column:3;width:16px;height:16px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
+.at-groupe{margin-bottom:12px}
+.at-groupe h4{margin:4px 2px 6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.at-groupe h4 i{font-style:normal;color:var(--text)}
+.at-ligne{position:relative;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;margin-bottom:4px;border-radius:12px;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.at-ligne-art{width:50px;height:40px;flex:none;border-radius:8px;background:var(--art) 50% 22%/cover no-repeat,var(--surface-3)}
+.at-ligne-art:not([style*="http"]){background:linear-gradient(135deg,var(--sc,#9a73ff),var(--plate))}
+.at-ligne-nom{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.at-ligne-nom b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-ligne-nom small{font-size:11.5px;line-height:1.3;color:var(--muted)}
+.at-ligne-act{display:flex;align-items:center;gap:2px}
+.at-ligne-act button{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:10px;font:inherit;font-weight:900;font-size:17px;
+  color:var(--text);background:var(--surface-2);cursor:pointer}
+.at-ligne-act button:hover{background:var(--surface-3)}
+.at-ligne-act b{min-width:20px;text-align:center;font-size:14px}
+.at-etoile{color:var(--muted)!important;font-size:15px!important;background:transparent!important}
+.at-etoile.on{color:#fff!important}
+.at-ligne.couv{box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+.at-deckvide{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 16px;text-align:center;border-radius:var(--radius);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.at-deckvide p{margin:0;color:var(--subtle)}
+.at-deckvide .btn{width:auto;padding-inline:20px;margin-top:4px}
+
+/* ---- La Réserve ---- */
+/* Neuf tuiles en trois colonnes : la couleur se lit d'un coup d'œil, et la
+   Réserve tient dans l'écran (en liste, elle débordait de 300 px sur 375 × 667). */
+.at-reserve{display:flex;flex-direction:column;gap:10px}
+.at-res-dit{margin:0 2px;font-size:13.5px;line-height:1.45;color:var(--subtle)}
+.at-res-dit b{color:var(--ec);font-weight:800;white-space:nowrap}
+.at-res-auto{width:100%}
+.at-res-vide{margin:0 2px;font-size:13px;color:var(--muted)}
+.at-res-ok{display:flex;align-items:center;gap:6px;margin:0 2px;font-size:13px;font-weight:700;color:var(--ok)}
+.at-res-ok svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.6}
+.at-ess{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.at-e{display:flex;flex-direction:column;gap:3px;padding:8px 7px 7px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.at-e.on{background:linear-gradient(180deg,color-mix(in srgb,var(--ec) 16%,transparent),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1.5px var(--ec)}
+.at-e.besoin:not(.on){box-shadow:inset 0 0 0 1.5px var(--warn)}
+.at-e-t{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px}
+.at-e-t .ess{width:24px;height:24px;flex:none}
+.at-e-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1}
+.at-e:not(.on) .at-e-t b{color:var(--muted)}
+.at-e-nom{padding:0 2px;font-size:12.5px;font-weight:700;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-e-act{display:flex;gap:4px;margin-top:2px}
+.at-e-act button{flex:1;display:grid;place-items:center;height:32px;border:0;border-radius:10px;font:inherit;font-weight:900;font-size:18px;color:var(--text);background:var(--surface-2);cursor:pointer}
+.at-e-act button:hover:not(:disabled){background:var(--surface-3)}
+.at-e-act button:disabled{opacity:.3;cursor:default}
+/* Écran bas (375 × 667) : les symboles suffisent, comme dans les filtres ;
+   le nom reste dit aux lecteurs d'écran (aria-label de la tuile). */
+@media (max-height:700px) and (max-width:899px){.at-e-nom{display:none}.at-e{gap:6px}}
+
+/* ---- L'analyse, dans la feuille du bilan (ouvrirBilan, js/battle.js) ---- */
+.at-stats{display:flex;flex-direction:column;gap:10px;margin-top:14px;padding:12px;border-radius:var(--radius);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
 .at-types{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
 .t-joueur{background:#e0628f}.t-objet{background:#d39a2e}.t-coach{background:#4b98dc}.t-moment{background:#8a78f5}
 .at-legende{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--subtle)}
 .at-legende span{display:inline-flex;align-items:center;gap:5px}
 .at-legende i{width:9px;height:9px;border-radius:3px}
-.at-courbe>small{font-size:11px;color:var(--muted)}
-.at-courbe>div{display:flex;align-items:flex-end;gap:10px;height:70px;margin-top:4px}
+.at-courbe>small{font-size:12px;color:var(--muted)}
+.at-courbe>div{display:flex;align-items:flex-end;gap:10px;height:72px;margin-top:6px}
 .at-courbe span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%}
-.at-courbe span i{display:block;width:100%;min-height:2px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--deco-ink),#6b46d8)}
-.at-courbe span b{font-size:11px}
-.at-courbe span small{font-size:10px;color:var(--muted)}
+.at-courbe span i{display:block;width:100%;min-height:2px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--deco-ink),var(--accent-deep))}
+.at-courbe span b{font-size:11.5px}
+.at-courbe span small{font-size:10.5px;color:var(--muted)}
 .at-stats p{margin:0}
 .at-alerte{color:var(--warn);font-size:12.5px;margin:0}
-.at-groupe{margin-bottom:10px}
-.at-groupe h4{margin:6px 0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.at-groupe h4 i{font-style:normal;color:var(--text)}
-.at-ligne{position:relative;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 6px;margin-bottom:4px;border-radius:12px;overflow:hidden;
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.at-ligne-art{width:58px;height:40px;flex:none;border-radius:8px;background:var(--art) 50% 22%/cover no-repeat,var(--surface-3)}
-.at-ligne-nom{flex:1;min-width:0;display:flex;flex-direction:column}
-.at-ligne-nom b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.at-ligne-nom small{font-size:11px;color:var(--muted)}
-.at-ligne-act{display:flex;align-items:center;gap:6px}
-.at-ligne-act button{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;font:inherit;font-weight:900;font-size:16px;
-  color:var(--text);background:var(--surface-3);cursor:pointer}
-.at-ligne-act b{min-width:16px;text-align:center}
-.at-etoile{color:var(--muted)!important;font-size:14px!important;background:transparent!important}
-.at-etoile.on{color:#fff!important}
-.at-ligne.couv{box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
-.at-deckvide{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 14px;text-align:center;border-radius:var(--radius);box-shadow:inset 0 0 0 1.5px var(--line-2)}
-.at-deckvide p{margin:0}
-.at-deckvide .btn,.at-complete{width:auto;padding-inline:18px;align-self:center}
-.at-reserve{margin-top:12px;padding:12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.at-reserve h4{margin:0;font-size:15px}
-.at-reserve h4 i{font-style:normal;font-size:12px;color:var(--muted);margin-left:4px}
-.at-reserve p{margin:4px 0 10px}
-.at-ess{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:10px}
-.at-e{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
-.at-e.on{box-shadow:inset 0 0 0 1.5px var(--ec)}
-.at-e.besoin:not(.on){box-shadow:inset 0 0 0 1.5px var(--warn)}
-.at-e>span{flex:1;display:flex;flex-direction:column;font-size:12.5px;font-weight:700;min-width:0}
-.at-e small{font-size:10.5px;color:var(--muted);font-weight:600}
-.at-e button{display:grid;place-items:center;width:26px;height:26px;border:0;border-radius:8px;font:inherit;font-weight:900;color:var(--text);background:var(--surface-3);cursor:pointer}
-.at-e button:disabled{opacity:.35;cursor:default}
-.at-e b{min-width:14px;text-align:center}
-.at-reserve>.btn{width:100%}
-.at-pied{position:sticky;bottom:-20px;z-index:6;display:flex;gap:8px;padding:8px;margin-top:6px;
-  border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
-  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);box-shadow:var(--glass-hi),var(--sh-3)}
-.at-pied .btn:last-child{width:52px;flex:none;padding:0}
-.at-pied .btn:last-child svg{fill:currentColor}
-.at.modifie .at-pied .btn:first-child{animation:ar-finpouls 1.8s ease-in-out infinite}
+
+/* ---- Sur ordinateur : les cartes à gauche, le Club et la Réserve à droite ---- */
 @media (min-width:900px){
-  .at-onglets{display:none}
-  .at-corps{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
-  .at-corps .at-cartes,.at-corps .at-deck{display:block!important}
-  .at-corps .at-deck>*{display:flex}
-  .at-corps .at-deck .at-groupe,.at-corps .at-deck .at-reserve{display:block!important}
-  .at-corps .at-deck{position:sticky;top:76px;max-height:calc(100vh - 260px);overflow:auto}
+  .at-onglets{grid-template-columns:1fr 1fr}
+  .at-tab[data-v="cartes"]{display:none}
+  .at-tab.on{background:none;box-shadow:none}
+  .at-corps{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+  .at-corps .at-cartes,.at-corps .at-cote,.at-corps .at-deck,.at-corps .at-res{display:block!important}
+  .at-cote{position:sticky;top:132px;max-height:calc(100dvh - 260px);overflow:auto;overscroll-behavior:contain;padding:2px 4px 2px 2px;
+    scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  .at-res{margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+  .at-res::before{content:'Réserve';display:block;margin:0 2px 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 }
 
 /* ============ Les guides ============ */
@@ -768,13 +836,6 @@ button.cb-une:active{transform:scale(.98)}
 .dk-bilan li span{display:flex;flex-direction:column;gap:2px}
 .dk-bilan li b{font-size:13.5px}
 .dk-bilan li small{font-size:12px;line-height:1.4;color:var(--subtle)}
-/* Le bilan, en tête des chiffres de l'atelier. */
-.at-bilan{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2px 8px;padding:8px 10px;border:0;border-radius:12px;font:inherit;color:var(--text);text-align:left;
-  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
-.at-bilan b{font-size:13.5px}
-.at-bilan small{grid-column:1/3;font-size:11.5px;color:var(--subtle)}
-.at-bilan svg{grid-row:1/3;grid-column:3;width:14px;height:14px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
-
 /* ============ Le Guide en glossaire (version 3.0.6) ============ */
 .gd-tuto{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;gap:12px;width:100%;min-height:150px;padding:16px;border:0;
   border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}

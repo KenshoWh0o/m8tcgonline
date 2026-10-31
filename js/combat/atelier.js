@@ -1,8 +1,19 @@
-/* L'atelier de decks (version 3.0).
+/* L'atelier de decks (version 3.0, réorganisé en 3.0.13).
 
-   Trois parties : les cartes qu'on possède, filtrables ; le deck, rangé par
-   type, avec ce qui ne va pas encore ; la Réserve d'Essences. Sur téléphone,
-   elles sont en onglets ; sur ordinateur, côte à côte.
+   Le propriétaire, le 31 octobre : « très fonctionnel, mais très peu
+   accessible, y a beaucoup de texte entassé et mal organisé ». Désormais :
+     · en tête, collés en haut de l'écran : le retour, le nom, le menu,
+       Enregistrer, puis trois onglets — Cartes, Club, Réserve —, les deux
+       derniers avec leur jauge (40 cartes, 10 Essences) : on voit le deck
+       se remplir sans quitter les cartes ;
+     · dessous, une seule ligne : la prochaine étape (« Encore 12 cartes »,
+       « Encore 4 Essences », la première erreur, « Prêt à jouer ») ;
+     · Cartes : toucher une carte l'ajoute, les filtres se replient ;
+       Club : la liste par type ; Réserve : « Régler d'après mes attaques »
+       d'abord. Sur ordinateur, les cartes à gauche, le Club et la Réserve à
+       droite ;
+     · l'analyse (répartition, coûts, Défense) vit dans la feuille du
+       bilan, avec les trois conseils des règles officielles.
 
    Rien n'est enregistré tant qu'on n'a pas appuyé sur « Enregistrer » : le
    serveur revérifie le deck (deck_sauver, supabase/installation/23_combats.sql). */
@@ -58,45 +69,76 @@ function vAtelier() {
   if (!atelier) { cbVue = 'decks'; return vCombats(); }
   const d = atelier.deck;
   const n = Decks.total(d.cartes), nr = Decks.total(d.reserve);
-  const err = Decks.verifier(d, save.col);
   const modifie = JSON.stringify(d) !== atelier.original;
   const ong = atelier.onglet;
-  return `<div class="at${modifie ? ' modifie' : ''}">
-    <header class="at-tete">
-      <button class="at-retour" data-cb="at-retour" aria-label="Retour aux decks">${NAVICO.caret}</button>
-      <input class="at-nom" id="at-nom" value="${h(d.nom)}" maxlength="32" aria-label="Nom du deck" autocomplete="off">
-      <span class="at-compte${n === Combat.REGLE.CLUB ? ' ok' : ''}"><b class="tnum">${n}</b>/${Combat.REGLE.CLUB}</span>
-    </header>
-    <div class="at-etat${err.length ? '' : ' ok'}">${err.length
-      ? `<span>${NAVICO.filtre}</span><p>${h(err[0])}${err.length > 1 ? ` <small>(+${err.length - 1})</small>` : ''}</p>`
-      : `<span>${NAVICO.check}</span><p>Deck prêt à jouer.</p>`}</div>
-    <nav class="at-onglets">
-      <button class="${ong === 'cartes' ? 'on' : ''}" data-cb="at-onglet" data-v="cartes">Cartes</button>
-      <button class="${ong === 'deck' ? 'on' : ''}" data-cb="at-onglet" data-v="deck">Deck <i class="tnum">${n}</i></button>
-      <button class="${ong === 'reserve' ? 'on' : ''}" data-cb="at-onglet" data-v="reserve">Réserve <i class="tnum">${nr}</i></button>
-    </nav>
-    <div class="at-corps ong-${ong}">
-      <section class="at-col at-cartes">${vAtCartes()}</section>
-      <section class="at-col at-deck" data-defil="at-deck">${vAtDeck()}${vAtReserve()}</section>
+  return `<div class="at ong-${ong}${modifie ? ' modifie' : ''}">
+    <div class="at-haut">
+      <header class="at-tete">
+        <button class="at-retour" data-cb="at-retour" aria-label="Retour aux decks">${NAVICO.caret}</button>
+        <label class="at-nomlab"><span class="sr">Nom du deck</span><input class="at-nom" id="at-nom" value="${h(d.nom)}" maxlength="32" autocomplete="off">${NAVICO.crayon}</label>
+        <button class="at-menu" data-cb="at-menu" aria-label="Partager, vider ou supprimer le deck">${NAVICO.more}</button>
+        <button class="btn tiny at-sauver" data-cb="at-sauver">Enregistrer</button>
+      </header>
+      ${vAtOnglets(n, nr)}
     </div>
-    <footer class="at-pied">
-      <button class="btn" data-cb="at-sauver" ${err.length && !d.id ? '' : ''}>Enregistrer</button>
-      <button class="btn ghost" data-cb="at-menu" aria-label="Plus d'actions">${NAVICO.more}</button>
-    </footer>
+    ${vAtEtape(n, nr)}
+    <div class="at-corps ong-${ong}">
+      <section class="at-col at-cartes" id="at-p-cartes" role="tabpanel" aria-labelledby="at-t-cartes">${vAtCartes()}</section>
+      <section class="at-col at-cote" data-defil="at-deck">
+        <div class="at-deck" id="at-p-deck" role="tabpanel" aria-labelledby="at-t-deck">${vAtDeck()}</div>
+        <div class="at-res" id="at-p-reserve" role="tabpanel" aria-labelledby="at-t-reserve">${vAtReserve()}</div>
+      </section>
+    </div>
   </div>`;
+}
+
+/* Les trois onglets ; le Club et la Réserve portent leur jauge. */
+function vAtOnglets(n, nr) {
+  const R = Combat.REGLE;
+  const ong = atelier.onglet;
+  const r = atelier.deck.reserve || {};
+  const pastilles = Combat.COULEURS.flatMap(k => Array.from({ length: r[k] || 0 }, () => `<i style="--ec:${COLORS[k].c}"></i>`));
+  while (pastilles.length < R.RESERVE) pastilles.push('<i></i>');
+  const onglet = (v, plein, contenu, dit) => `<button role="tab" id="at-t-${v}" aria-controls="at-p-${v}" aria-selected="${ong === v}"
+      class="at-tab${ong === v ? ' on' : ''}${plein ? ' plein' : ''}" data-cb="at-onglet" data-v="${v}"${dit ? ` aria-label="${dit}"` : ''}>${contenu}</button>`;
+  return `<nav class="at-onglets" role="tablist" aria-label="Atelier">
+      ${onglet('cartes', false, `<b>Cartes</b><small>Ajouter</small>`)}
+      ${onglet('deck', n === R.CLUB, `<b>Club <span class="tnum">${n}/${R.CLUB}</span></b><span class="at-barre"><i style="width:${Math.min(100, n / R.CLUB * 100)}%"></i></span>`,
+        `Club, ${n} cartes sur ${R.CLUB}`)}
+      ${onglet('reserve', nr === R.RESERVE, `<b>Réserve <span class="tnum">${nr}/${R.RESERVE}</span></b><span class="at-pastilles">${pastilles.slice(0, R.RESERVE).join('')}</span>`,
+        `Réserve, ${nr} Essences sur ${R.RESERVE}`)}
+    </nav>`;
+}
+
+/* La prochaine étape, en une ligne. */
+function vAtEtape(n, nr) {
+  const R = Combat.REGLE;
+  const err = Decks.verifier(atelier.deck, save.col);
+  let etape;
+  if (n < R.CLUB) etape = `<span>Encore <b class="tnum">${R.CLUB - n}</b> carte${R.CLUB - n > 1 ? 's' : ''} à choisir.</span><button class="at-lien" data-cb="at-auto">Compléter pour moi</button>`;
+  else if (nr < R.RESERVE) etape = `<span>Encore <b class="tnum">${R.RESERVE - nr}</b> Essence${R.RESERVE - nr > 1 ? 's' : ''} à choisir.</span><button class="at-lien" data-cb="at-res-auto">Régler d'après mes attaques</button>`;
+  else if (err.length) etape = `<span class="ko">${h(err[0])}</span>`;
+  else etape = `<span class="ok">${NAVICO.check}Prêt à jouer.</span>`;
+  return `<p class="at-etape">${etape}</p>`;
 }
 
 /* ---------- Les cartes ---------- */
 function vAtCartes() {
   const f = atelier.filtres;
+  const actifs = (f.type !== 'tous') + (f.coul !== 'all') + !!f.toutes;
   return `<div class="at-filtres">
-      <div class="at-cherche"><input id="at-q" type="search" placeholder="Chercher une carte, un mot-clé…" value="${h(f.q)}" autocomplete="off"></div>
-      <div class="at-chips" data-defil="at-types">${AT_TYPES.map(([id, nom]) => `<button class="at-chip${f.type === id ? ' on' : ''}" data-cb="at-type" data-v="${id}">${nom}</button>`).join('')}</div>
-      <div class="at-chips coul" data-defil="at-couls">
-        <button class="at-chip${f.coul === 'all' ? ' on' : ''}" data-cb="at-coul" data-v="all">Toutes</button>
-        ${['rose', 'orange', 'jade', 'violette', 'jaune', 'mauve', 'verte', 'bleue', 'azur', 'neutre'].map(k => `<button class="at-chip e${f.coul === k ? ' on' : ''}" data-cb="at-coul" data-v="${k}" title="${COLORS[k].nom}">${essIcon(k)}</button>`).join('')}
+      <div class="at-cherche">
+        <input id="at-q" type="search" placeholder="Chercher une carte" value="${h(f.q)}" autocomplete="off" aria-label="Chercher une carte, un mot-clé">
+        <button class="at-filtrer${atelier.filtresOuverts ? ' on' : ''}" data-cb="at-filtres" aria-expanded="${!!atelier.filtresOuverts}">${NAVICO.filtre}Filtres${actifs ? ` <i class="tnum">${actifs}</i>` : ''}</button>
       </div>
-      <label class="at-toutes"><input type="checkbox" id="at-toutes" ${f.toutes ? 'checked' : ''}> Montrer aussi les cartes que je n'ai pas</label>
+      ${atelier.filtresOuverts ? `<div class="at-filtres-l">
+        <div class="at-chips" data-defil="at-types" role="group" aria-label="Type">${AT_TYPES.map(([id, nom]) => `<button class="at-chip${f.type === id ? ' on' : ''}" data-cb="at-type" data-v="${id}" aria-pressed="${f.type === id}">${nom}</button>`).join('')}</div>
+        <div class="at-chips coul" data-defil="at-couls" role="group" aria-label="Couleur">
+          <button class="at-chip${f.coul === 'all' ? ' on' : ''}" data-cb="at-coul" data-v="all" aria-pressed="${f.coul === 'all'}">Toutes</button>
+          ${['rose', 'orange', 'jade', 'violette', 'jaune', 'mauve', 'verte', 'bleue', 'azur', 'neutre'].map(k => `<button class="at-chip e${f.coul === k ? ' on' : ''}" data-cb="at-coul" data-v="${k}" aria-pressed="${f.coul === k}" aria-label="${COLORS[k].nom}" title="${COLORS[k].nom}">${essIcon(k)}</button>`).join('')}
+        </div>
+        <button class="at-chip at-toutes${f.toutes ? ' on' : ''}" data-cb="at-toutes" aria-pressed="${!!f.toutes}">Aussi celles que je n'ai pas</button>
+      </div>` : ''}
     </div>
     <div class="at-grille" id="at-grille">${grilleAtelier()}</div>`;
 }
@@ -119,7 +161,7 @@ const ordreAtelier = c => ({ joueur: 0, objet: 1000, coach: 2000, moment: 3000 }
 
 function grilleAtelier() {
   const l = filtrerAtelier();
-  if (!l.length) return `<p class="muted at-vide">${atelier.filtres.toutes ? 'Aucune carte ne correspond.' : 'Aucune carte possédée ne correspond. Coche « Montrer aussi les cartes que je n\'ai pas » pour voir toute l\'extension.'}</p>`;
+  if (!l.length) return `<p class="muted at-vide">${atelier.filtres.toutes ? 'Aucune carte ne correspond.' : 'Aucune de tes cartes ne correspond.'}</p>`;
   const d = atelier.deck;
   return l.map(c => {
     const dans = d.cartes[c.id] || 0;
@@ -131,7 +173,7 @@ function grilleAtelier() {
     return `<div class="at-carte${dans ? ' dedans' : ''}${a ? '' : ' absente'}">
       <button class="at-carte-c" data-cb="at-plus" data-v="${c.id}" ${plein ? 'aria-disabled="true"' : ''} aria-label="Ajouter ${h(c.nom)}">${renderCard(c)}</button>
       ${dans ? `<span class="at-n">${dans}</span><button class="at-moins" data-cb="at-moins" data-v="${c.id}" aria-label="Retirer">−</button>` : ''}
-      <span class="at-info"><span class="at-poss">${a ? `${a} possédée${a > 1 ? 's' : ''}` : 'non possédée'}</span><button class="at-i" data-show="${c.id}" aria-label="Voir la carte">i</button></span>
+      <span class="at-info"><span class="at-poss">${a ? `×${a}` : 'pas à toi'}</span><button class="at-i" data-show="${c.id}" aria-label="Voir ${h(c.nom)}">i</button></span>
     </div>`;
   }).join('');
 }
@@ -140,30 +182,31 @@ function grilleAtelier() {
 function vAtDeck() {
   const d = atelier.deck;
   const ids = Object.keys(d.cartes).filter(id => d.cartes[id] > 0);
-  if (!ids.length) return `<div class="at-deckvide"><p><b>Ton deck est vide.</b></p><p class="muted small">Touche les cartes pour les ajouter, ou laisse l'atelier compléter pour toi.</p>
-    <button class="btn ghost" data-cb="at-auto">Compléter automatiquement</button></div>`;
+  if (!ids.length) return `<div class="at-deckvide"><b>Ton Club est vide.</b><p>Ajoute des cartes depuis l'onglet Cartes.</p>
+    <button class="btn ghost" data-cb="at-onglet" data-v="cartes">Choisir des cartes</button></div>`;
   const groupes = [['joueur', 'Joueurs'], ['objet', 'Objets'], ['coach', 'Coachs'], ['moment', 'Moments']];
   const parType = t => ids.filter(id => (byId[id] || {}).cat === t).sort((a, b) => (byId[a].num || 0) - (byId[b].num || 0));
-  const stats = statsDeck(d);
-  return `${vStatsDeck(stats)}
+  const b = Decks.bilan(d);
+  return `<button class="at-bilan" data-cb="bilan">${ETOILES_DECK(b.note)}<b>${b.nom}</b><small>Voir l'analyse</small>${NAVICO.caret}</button>
     ${groupes.map(([t, nom]) => {
       const l = parType(t);
       if (!l.length) return '';
       const n = l.reduce((s, id) => s + d.cartes[id], 0);
       return `<div class="at-groupe"><h4>${nom} <i class="tnum">${n}</i></h4>${l.map(id => {
         const c = byId[id];
-        const atk = c.cat === 'joueur' ? c.atks.map(a => `${Combat.totalCout(a.cout)}`).join('·') : '';
+        /* Le coût de chaque attaque : « 2 Essences », « 1 et 3 Essences ». */
+        const couts = c.cat === 'joueur' ? c.atks.map(a => Combat.totalCout(a.cout)) : [];
+        const atk = couts.length ? `${couts.join(' et ')} Essence${couts.length === 1 && couts[0] <= 1 ? '' : 's'}` : '';
         return `<div class="at-ligne${d.couverture === id ? ' couv' : ''}">
-          <span class="at-ligne-art" style="--art:url('${c.img ? new URL(c.img, document.baseURI).href : ''}')"></span>
-          <span class="at-ligne-nom"><b>${nomH(c)}</b><small>${c.cat === 'joueur' ? `Déf ${c.def} · coût ${atk}` : (RAR[c.rar] || {}).nom || ''}</small></span>
+          <span class="at-ligne-art" style="--art:url('${c.img ? new URL(c.img, document.baseURI).href : ''}');--sc:${tcol(c)}"></span>
+          <span class="at-ligne-nom"><b>${nomH(c)}</b><small>${c.cat === 'joueur' ? `Défense ${c.def} · ${atk}` : (RAR[c.rar] || {}).nom || ''}</small></span>
           <span class="at-ligne-act">
-            <button data-cb="at-couv" data-v="${id}" class="at-etoile${d.couverture === id ? ' on' : ''}" title="Carte de couverture" aria-label="En faire la couverture">★</button>
-            <button data-cb="at-moins" data-v="${id}" aria-label="Retirer">−</button><b class="tnum">${d.cartes[id]}</b>
-            <button data-cb="at-plus" data-v="${id}" aria-label="Ajouter">+</button></span>
+            <button data-cb="at-couv" data-v="${id}" class="at-etoile${d.couverture === id ? ' on' : ''}" aria-pressed="${d.couverture === id}" title="${d.couverture === id ? 'La couverture du deck' : 'En faire la couverture du deck'}" aria-label="${d.couverture === id ? 'Couverture du deck' : 'En faire la couverture du deck'}">★</button>
+            <button data-cb="at-moins" data-v="${id}" aria-label="Retirer un ${h(c.nom)}">−</button><b class="tnum">${d.cartes[id]}</b>
+            <button data-cb="at-plus" data-v="${id}" aria-label="Ajouter un ${h(c.nom)}">+</button></span>
         </div>`;
       }).join('')}</div>`;
-    }).join('')}
-    ${Decks.total(d.cartes) < Combat.REGLE.CLUB ? '<button class="btn ghost at-complete" data-cb="at-auto">Compléter automatiquement</button>' : ''}`;
+    }).join('')}`;
 }
 
 function statsDeck(d) {
@@ -184,39 +227,46 @@ function statsDeck(d) {
   return s;
 }
 
-function vStatsDeck(s) {
-  const tot = Math.max(1, s.joueur + s.objet + s.coach + s.moment);
+/* L'analyse d'un deck, dans la feuille du bilan (ouvrirBilan, js/battle.js). */
+function vStatsDeck(d) {
+  const s = statsDeck(d);
   const maxC = Math.max(1, ...s.couts);
-  const r = atelier.deck.reserve || {};
+  const r = d.reserve || {};
   const manque = Object.keys(s.besoins).filter(k => !(r[k] > 0));
-  const b = Decks.bilan(atelier.deck);
-  const rates = b.reperes.filter(x => !x.ok);
   return `<div class="at-stats">
-    <button class="at-bilan" data-cb="bilan">${ETOILES_DECK(b.note)}<b>${b.nom}</b>
-      <small>${rates.length ? `À revoir : ${rates.map(x => x.titre.toLowerCase()).join(', ')}` : 'Les trois repères d\'un bon deck sont tenus.'}</small>${NAVICO.caret}</button>
-    <div class="at-types" title="Répartition">
+    <div class="at-types" aria-hidden="true">
       ${['joueur', 'objet', 'coach', 'moment'].map(t => s[t] ? `<i class="t-${t}" style="flex:${s[t]}"></i>` : '').join('')}
     </div>
     <div class="at-legende">${[['joueur', 'Joueurs'], ['objet', 'Objets'], ['coach', 'Coachs'], ['moment', 'Moments']].map(([t, n]) => `<span><i class="t-${t}"></i>${n} <b>${s[t]}</b></span>`).join('')}</div>
-    <div class="at-courbe"><small>Coût de la moins chère de leurs attaques</small>
+    <div class="at-courbe"><small>Joueurs, selon le coût de leur attaque la moins chère</small>
       <div>${s.couts.map((n, i) => `<span><i style="height:${Math.round(100 * n / maxC)}%"></i><b>${n}</b><small>${i + 1}${i === 3 ? '+' : ''}</small></span>`).join('')}</div></div>
-    <p class="muted small">Défense moyenne ${s.defMoy || '—'} · ${s.res} carte${s.res > 1 ? 's' : ''} à Résilience${s.joueur && s.joueur < 12 ? ` · <b class="at-alerte">peu de Joueurs (${s.joueur})</b>` : ''}</p>
+    <p class="muted small">Défense moyenne ${s.defMoy || '—'} · ${s.res} carte${s.res > 1 ? 's' : ''} à Résilience</p>
     ${manque.length ? `<p class="at-alerte">Tes attaques demandent ${manque.map(k => COLORS[k].nom).join(', ')}, absent${manque.length > 1 ? 'es' : 'e'} de ta Réserve.</p>` : ''}
   </div>`;
 }
 
 /* ---------- La Réserve ---------- */
+/* Neuf tuiles, une par couleur : l'Essence, combien on en a mis, − et +.
+   Ce que demandent les attaques est dit en une ligne au-dessus. */
 function vAtReserve() {
+  const R = Combat.REGLE;
   const r = atelier.deck.reserve || {};
   const b = Decks.besoins(atelier.deck.cartes);
   const nr = Decks.total(r);
-  return `<div class="at-reserve"><h4>Réserve <i class="tnum">${nr}/${Combat.REGLE.RESERVE}</i></h4>
-    <p class="muted small">Les Essences ne se possèdent pas : choisis-en ${Combat.REGLE.RESERVE}, des couleurs que tu veux. Le Neutre se paie avec n'importe laquelle.</p>
-    <div class="at-ess">${Combat.COULEURS.map(k => `<div class="at-e${r[k] ? ' on' : ''}${b[k] ? ' besoin' : ''}" style="--ec:${COLORS[k].c}">
-        ${essIcon(k)}<span>${COLORS[k].nom}${b[k] ? `<small>${b[k]} symbole${b[k] > 1 ? 's' : ''}</small>` : ''}</span>
-        <button data-cb="at-ess-" data-v="${k}" ${r[k] ? '' : 'disabled'} aria-label="Moins">−</button><b class="tnum">${r[k] || 0}</b>
-        <button data-cb="at-ess+" data-v="${k}" ${nr >= Combat.REGLE.RESERVE ? 'disabled' : ''} aria-label="Plus">+</button></div>`).join('')}</div>
-    <button class="btn ghost" data-cb="at-res-auto">Réserve auto, d'après mes attaques</button>
+  const besoins = Object.keys(b).sort((x, y) => b[y] - b[x]);
+  /* Le bouton n'a rien à faire quand la Réserve est déjà celle qu'il poserait. */
+  const auto = besoins.length ? Decks.reserveAuto(atelier.deck.cartes, 'rose') : null;
+  const accordee = auto && Combat.COULEURS.every(k => (auto[k] || 0) === (r[k] || 0));
+  return `<div class="at-reserve">
+    <p class="at-res-dit">${besoins.length ? `Dans tes attaques : ${besoins.map(k => `<b style="--ec:${COLORS[k].c}">${b[k]} ${COLORS[k].nom}</b>`).join(', ')}. ` : ''}Le Neutre se paie avec n'importe quelle Essence.</p>
+    ${!besoins.length ? '<p class="at-res-vide">Ajoute des Joueurs : leurs attaques diront quelles Essences prendre.</p>'
+      : accordee ? `<p class="at-res-ok">${NAVICO.check}Réglée d'après tes attaques.</p>`
+      : `<button class="btn${nr < R.RESERVE ? '' : ' ghost'} at-res-auto" data-cb="at-res-auto">Régler d'après mes attaques</button>`}
+    <div class="at-ess">${Combat.COULEURS.map(k => `<div class="at-e${r[k] ? ' on' : ''}${b[k] ? ' besoin' : ''}" style="--ec:${COLORS[k].c}" role="group" aria-label="${COLORS[k].nom} : ${r[k] || 0}">
+        <span class="at-e-t">${essIcon(k)}<b class="tnum" aria-hidden="true">${r[k] || 0}</b></span>
+        <span class="at-e-nom" aria-hidden="true">${COLORS[k].nom}</span>
+        <span class="at-e-act"><button data-cb="at-ess-" data-v="${k}" ${r[k] ? '' : 'disabled'} aria-label="Une Essence ${COLORS[k].nom} de moins">−</button><button data-cb="at-ess+" data-v="${k}" ${nr >= R.RESERVE ? 'disabled' : ''} aria-label="Une Essence ${COLORS[k].nom} de plus">+</button></span>
+      </div>`).join('')}</div>
   </div>`;
 }
 
@@ -227,7 +277,17 @@ function atelierAction(k, el) {
   const R = Combat.REGLE;
   switch (k) {
     case 'at-retour': return quitterAtelier();
-    case 'at-onglet': atelier.onglet = v; return render();
+    case 'at-onglet': {
+      atelier.onglet = v;
+      render();
+      /* Sur ordinateur, le Club et la Réserve sont l'un sous l'autre, à
+         droite : l'onglet amène la colonne à la bonne partie. */
+      const cote = $('.at-cote'), part = $('#at-p-' + v);
+      if (cote && part && matchMedia('(min-width:900px)').matches) cote.scrollTo({ top: Math.max(0, part.offsetTop - 4), behavior: RM() ? 'auto' : 'smooth' });
+      return;
+    }
+    case 'at-filtres': atelier.filtresOuverts = !atelier.filtresOuverts; return render();
+    case 'at-toutes': atelier.filtres.toutes = !atelier.filtres.toutes; return majGrille(true);
     case 'at-type': atelier.filtres.type = v; return majGrille(true);
     case 'at-coul': atelier.filtres.coul = v; return majGrille(true);
     case 'at-plus': {
@@ -235,13 +295,20 @@ function atelierAction(k, el) {
       d.cartes[v] = (d.cartes[v] || 0) + 1;
       if (!d.couverture) d.couverture = v;
       SFX.jouer('carte');
-      return render();
+      const n = Decks.total(d.cartes);
+      render();
+      /* Le Club se remplit : on le dit une fois, au 40ᵉ ajout. */
+      if (n === R.CLUB) toast(Decks.total(d.reserve) < R.RESERVE ? `Club complet. Reste la Réserve.` : 'Club complet.');
+      else annonceLecteur(`Ajout : ${(byId[v] || {}).nom || 'une carte'}. ${n} sur ${R.CLUB}.`);
+      return;
     }
-    case 'at-moins':
+    case 'at-moins': {
       if (d.cartes[v] > 1) d.cartes[v]--; else delete d.cartes[v];
       if (d.couverture === v && !d.cartes[v]) d.couverture = Decks.couverture(d.cartes);
       SFX.jouer('retour');
-      return render();
+      render();
+      return annonceLecteur(`Retrait : ${(byId[v] || {}).nom || 'une carte'}. ${Decks.total(d.cartes)} sur ${R.CLUB}.`);
+    }
     case 'at-couv': d.couverture = v; return render();
     case 'at-ess+': d.reserve[v] = (d.reserve[v] || 0) + 1; return render();
     case 'at-ess-': if (d.reserve[v] > 1) d.reserve[v]--; else delete d.reserve[v]; return render();
@@ -275,11 +342,6 @@ function bindAtelier() {
   if (q && !q.dataset.lie) {
     q.dataset.lie = '1';
     q.addEventListener('input', () => { atelier.filtres.q = q.value; majGrille(false); });
-  }
-  const t = $('#at-toutes');
-  if (t && !t.dataset.lie) {
-    t.dataset.lie = '1';
-    t.addEventListener('change', () => { atelier.filtres.toutes = t.checked; majGrille(false); });
   }
   const n = $('#at-nom');
   if (n && !n.dataset.lie) {

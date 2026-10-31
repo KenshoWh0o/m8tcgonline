@@ -599,32 +599,33 @@ function vCbDecks(e) {
     ${vBonDeck()}`;
 }
 
-/* Ce qui fait un bon deck : les trois repères de Decks.bilan, expliqués
-   avec ce qu'ils valent, et le chemin le plus court pour en construire un. */
+/* Un bon deck : les trois conseils des règles officielles (Decks.bilan). */
 function vBonDeck() {
   const B = Decks.BON;
   const point = (t, x) => `<li><b>${t}</b><span>${x}</span></li>`;
   return `<details class="dk-bon" data-garde="bon-deck">
-    <summary><span class="dk-bon-ico">${GD_ICO.deck}</span><span><b>Qu'est-ce qu'un bon deck ?</b><small>Trois repères, mesurés en faisant jouer l'IA</small></span>${NAVICO.caret}</summary>
+    <summary><span class="dk-bon-ico">${GD_ICO.deck}</span><span><b>Un bon deck</b><small>Les trois conseils des règles officielles</small></span>${NAVICO.caret}</summary>
     <ol class="dk-bon-l">
-      ${point(`${B.joueurs} Joueurs au moins.`, 'Ce sont eux qui attaquent et qui tiennent tes lignes. Avec 8, un deck gagne 3 parties sur 10 ; avec 12, un peu plus de 4 ; à partir de 16, la moitié ou plus — et en mettre davantage ne fait pas de mal.')}
-      ${point('Une Réserve accordée à tes attaques.', 'Si tes attaques demandent du Rose, mets du Rose : une Réserve d\'une autre couleur fait perdre environ 8 parties sur 100. « Réserve auto », dans l\'atelier, la règle pour toi.')}
-      ${point('Des attaques qui partent tôt.', 'Tu ne poses qu\'une Essence par tour. Des Joueurs qui attaquent tous pour 2 Essences ou moins ont gagné 59 parties sur 100 : vise au moins la moitié.')}
+      ${point(`${B.joueurs} Joueurs au moins.`, '« Pour être sûr de ne pas manquer. »')}
+      ${point('Une ou deux couleurs.', 'Ta Réserve paie tes attaques et permet de jouer tes cartes de couleur. Dans l\'atelier, « Régler d\'après mes attaques » l\'accorde à ton Club.')}
+      ${point('Des attaques à 1 ou 2 Essences.', 'Une Essence arrive par tour : au moins la moitié de tes Joueurs.')}
     </ol>
-    <p class="muted small">Ce qui n'a pas changé le résultat, mesuré de la même façon : jouer une, deux ou trois couleurs, ou le nombre d'Objets et de Moments. Le plus court chemin : pars d'un Starter Deck (« Dupliquer »), remplace ses cartes par tes meilleures, et laisse l'atelier régler la Réserve. Un repère tenu, une étoile.</p>
+    <p class="muted small">Un conseil suivi, une étoile. Pour démarrer vite : duplique un Starter Deck et remplace ses cartes par les tiennes.</p>
   </details>`;
 }
 
-/* Le bilan d'un deck, repère par repère. */
+/* Le bilan d'un deck : les trois conseils, puis l'analyse (vStatsDeck,
+   js/combat/atelier.js). */
 function ouvrirBilan(id) {
   const d = cbVue === 'atelier' && atelier ? atelier.deck : cbDecks().find(x => x.id === id);
   if (!d) return;
   const b = Decks.bilan(d);
   openSheet({
     title: `${d.nom} · ${b.nom}`,
-    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${b.note} repère${b.note > 1 ? 's' : ''} tenu${b.note > 1 ? 's' : ''} sur ${b.sur}</span></div>
-      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}"><i>${x.ok ? NAVICO.check : '!'}</i>
-        <span><b>${x.titre}</b><small>${h(x.dit)} ${h(x.pourquoi)}</small></span></li>`).join('')}</ul>`,
+    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${b.note} conseil${b.note > 1 ? 's' : ''} suivi${b.note > 1 ? 's' : ''} sur ${b.sur}</span></div>
+      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}"><i aria-hidden="true">${x.ok ? NAVICO.check : '!'}</i>
+        <span><b>${x.titre}</b><small>${h(x.dit)} ${h(x.pourquoi)}</small></span></li>`).join('')}</ul>
+      ${typeof vStatsDeck === 'function' && Decks.total(d.cartes) ? vStatsDeck(d) : ''}`,
     actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
   });
 }

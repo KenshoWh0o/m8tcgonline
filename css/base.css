@@ -16,6 +16,8 @@
 
 /* `display` posé sur une classe l'emporterait sur la règle du navigateur : on tranche. */
 [hidden]{display:none!important}
+/* Un texte pour les lecteurs d'écran seulement (version 3.0.13). */
+.sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
 /* ============ Illustration recadrée (illuCadre, js/ui.js) ============ */
 /* La carte entière est posée derrière la case, assez grande pour que son
@@ -100,15 +102,15 @@ body.intheater #nav,body.intheater .top,body.intheater main,body.intheater .bgde
 /* Pas de flou disponible, ou transparence réduite à la demande du système :
    le verre devient un aplat. Rien ne doit devenir illisible faute de flou.
    Tout élément de verre entre dans les deux listes : la barre, les feuilles,
-   le tiroir, les notifications, les pieds collants (atelier, recyclage), les
+   le tiroir, les notifications, le pied collant du recyclage, les
    capsules des bandeaux illustrés, et le verre de l'arène (boutons, carte
    agrandie, feuilles, journal). */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  #nav,.sheet,.tiroir-panneau,#toast,.qn,.at-pied,.recpied,.rf-solde,.rf-fin,.rf-onglets,.cb-badge,.cb-porte-ico,
+  #nav,.sheet,.tiroir-panneau,#toast,.qn,.recpied,.rf-solde,.rf-fin,.rf-onglets,.cb-badge,.cb-porte-ico,
   .ar-bouton,.ar-mainadv,.ar-fin:disabled,.ar-focus,.ar-s-in,.ar-journal{background:var(--glass-solid)!important}
 }
 @media (prefers-reduced-transparency:reduce){
-  #nav,.sheet,.tiroir-panneau,#toast,.qn,.at-pied,.recpied,.rf-solde,.rf-fin,.rf-onglets,.cb-badge,.cb-porte-ico,
+  #nav,.sheet,.tiroir-panneau,#toast,.qn,.recpied,.rf-solde,.rf-fin,.rf-onglets,.cb-badge,.cb-porte-ico,
   .ar-bouton,.ar-mainadv,.ar-fin:disabled,.ar-focus,.ar-s-in,.ar-journal{background:var(--glass-solid)!important;
     -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
   .top::before{background:var(--veil-2);-webkit-backdrop-filter:none;backdrop-filter:none}

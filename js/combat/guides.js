@@ -157,7 +157,7 @@ const GUIDES = (() => {
         <h3>Les conseils officiels</h3>
         <ul>
           <li>Au moins <b>15 Joueurs</b>, pour ne pas en manquer.</li>
-          <li><b>Une ou deux couleurs</b> dans ta Réserve, et un Club construit autour : sinon tu risques de ne pas pouvoir jouer une carte ou attaquer. Le bouton « Réserve auto » accorde ta Réserve à tes attaques.</li>
+          <li><b>Une ou deux couleurs</b> dans ta Réserve, et un Club construit autour : sinon tu risques de ne pas pouvoir jouer une carte ou attaquer. Dans l'atelier, « Régler d'après mes attaques » l'accorde à tes attaques.</li>
           <li>Surtout des Joueurs dont l'attaque coûte <b>une ou deux Essences</b>.</li>
         </ul>
         ${note('Les Starter Decks des Sections sont prêtés : tu peux les jouer sans en avoir les cartes, et t\'en inspirer. Leurs listes officielles ne sont pas connues : celles du jeu sont reconstituées.')}`

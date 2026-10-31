@@ -264,6 +264,35 @@ const VUES = {
   labo: () => vTest()
 };
 
+/* Le focus à travers un rendu (version 3.0.13). Redessiner la page remplaçait
+   l'élément qui avait le focus : au clavier, ou avec un lecteur d'écran,
+   chaque geste renvoyait au début de la page. On retient de quoi retrouver
+   l'élément — son id, sinon ses attributs d'action et de valeur, et son rang
+   parmi ceux qui ont les mêmes —, puis on rend le focus à son remplaçant,
+   sans faire défiler. Après un toucher ou un clic, le navigateur ne montre
+   pas d'anneau de focus (:focus-visible) : rien ne change à l'œil. */
+const FOCUS_ATTRS = ['data-cb', 'data-act', 'data-v', 'data-tab', 'data-show', 'data-q', 'data-lab', 'data-t', 'data-ech', 'data-ong', 'data-c', 'data-id'];
+function retenirFocus(m) {
+  const el = document.activeElement;
+  if (!el || el === document.body || !m.contains(el)) return null;
+  let sel = el.id ? '#' + CSS.escape(el.id) : '';
+  if (!sel) {
+    const a = FOCUS_ATTRS.filter(x => el.hasAttribute(x)).map(x => `[${x}="${CSS.escape(el.getAttribute(x))}"]`).join('');
+    if (!a) return null;
+    sel = el.tagName.toLowerCase() + a;
+  }
+  const rang = [...m.querySelectorAll(sel)].indexOf(el);
+  const champ = 'selectionStart' in el && typeof el.selectionStart === 'number' ? [el.selectionStart, el.selectionEnd] : null;
+  return { sel, rang: Math.max(0, rang), champ };
+}
+function rendreFocus(m, f) {
+  const l = m.querySelectorAll(f.sel);
+  const el = l[Math.min(f.rang, l.length - 1)];
+  if (!el || el.disabled) return;
+  el.focus({ preventScroll: true });
+  if (f.champ) try { el.setSelectionRange(f.champ[0], f.champ[1]); } catch (e) { /* champ sans curseur */ }
+}
+
 function render() {
   /* L'écran d'attente passe avant tout le reste : tant qu'il est là, le jeu
      n'existe pas pour le visiteur. */
@@ -315,6 +344,7 @@ function render() {
     m.querySelectorAll('details[data-garde]').forEach(d => { gardes[d.dataset.garde] = d.open; });
     m.querySelectorAll('[data-defil]').forEach(x => { defils[x.dataset.defil] = [x.scrollTop, x.scrollLeft]; });
   }
+  const focus = m.className === 'tab-' + tab ? retenirFocus(m) : null;
   /* L'onglet en cours, pour les styles : la classe de #main (`#main.tab-…`).
      Jamais `data-tab` sur <body> : c'est l'attribut des liens vers un onglet
      (clicPage), et il y faisait de chaque clic dans la page un « retour à
@@ -333,6 +363,7 @@ function render() {
     else if (b > n.scrollLeft + n.clientWidth) n.scrollLeft = b - n.clientWidth + 24;
   });
   if (haut) m.scrollTop = haut;
+  if (focus) rendreFocus(m, focus);
   majDefile();
 
   if (tab === 'boosters') bindPack();

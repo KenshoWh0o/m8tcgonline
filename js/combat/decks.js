@@ -278,16 +278,16 @@ function bilan(deck) {
   const reperes = [
     { cle: 'joueurs', ok: joueurs >= BON.joueurs, titre: `${BON.joueurs} Joueurs au moins`,
       dit: `${joueurs} Joueur${joueurs > 1 ? 's' : ''}.`,
-      pourquoi: joueurs >= BON.joueurs ? 'Assez de monde pour tenir tes trois cases tout le combat.'
-        : 'Le conseil des règles officielles : « un minimum de 15 Joueur dans votre Club pour être sûr de ne pas manquer ».' },
+      pourquoi: joueurs >= BON.joueurs ? 'De quoi remplir tes trois cases toute la partie.'
+        : 'Les règles officielles conseillent ce minimum « pour être sûr de ne pas manquer ».' },
     { cle: 'reserve', ok: accord >= BON.accord, titre: 'Une Réserve accordée',
-      dit: `Elle suit tes attaques à ${Math.round(100 * accord)} %.`,
-      pourquoi: accord >= BON.accord ? 'Les couleurs de ta Réserve sont celles que tes attaques demandent.'
-        : 'Des Essences qui ne paient aucune de tes attaques (et qui n\'autorisent pas tes Objets, Coachs et Moments de couleur). « Réserve auto » la règle d\'après tes cartes.' },
+      dit: `Accord avec tes attaques : ${Math.round(100 * accord)} %.`,
+      pourquoi: accord >= BON.accord ? 'Tes Essences paient tes attaques.'
+        : 'Des Essences ne paient aucune de tes attaques et ne permettent pas de jouer tes cartes de couleur. « Régler d\'après mes attaques » la corrige.' },
     { cle: 'bas', ok: joueurs > 0 && bas / joueurs >= BON.bas, titre: 'Des attaques qui partent tôt',
-      dit: `${bas} Joueur${bas > 1 ? 's' : ''} sur ${joueurs} attaque${bas > 1 ? 'nt' : ''} pour 2 Essences ou moins.`,
-      pourquoi: joueurs && bas / joueurs >= BON.bas ? 'Tu peux frapper dès les premiers tours.'
-        : 'Le conseil des règles officielles : « jouez majoritairement des Joueur avec une attaque coûtant une Essence ou deux ». Une seule Essence arrive par tour.' }
+      dit: `${bas} Joueur${bas > 1 ? 's' : ''} sur ${joueurs} attaque${bas > 1 ? 'nt' : ''} pour 1 ou 2 Essences.`,
+      pourquoi: joueurs && bas / joueurs >= BON.bas ? 'Tu frappes dès les premiers tours.'
+        : 'Une seule Essence arrive par tour. Les règles officielles conseillent « majoritairement » des attaques à une ou deux Essences.' }
   ];
   const note = reperes.filter(x => x.ok).length;
   const nom = note >= 3 ? 'Solide' : note >= 2 ? 'Jouable' : 'À revoir';

@@ -41,6 +41,18 @@ function toast(m) {
   clearTimeout(toastT);
   toastT = setTimeout(() => t.classList.remove('on'), 2600);
 }
+/* Ce qui ne se dit qu'aux lecteurs d'écran (version 3.0.13) : un geste dont
+   l'effet se voit, mais ne s'entend pas — une carte ajoutée au deck, un coup
+   en combat. La zone (#annonce, index.html) est invisible ; vidée puis
+   remplie, elle redit un message identique. */
+let annonceT;
+function annonceLecteur(m) {
+  const z = $('#annonce');
+  if (!z) return;
+  z.textContent = '';
+  clearTimeout(annonceT);
+  annonceT = setTimeout(() => { z.textContent = m; }, 60);
+}
 
 /* ---------- Cartes ---------- */
 const colOf = c => COLORS[c.col] || COLORS.neutre;
