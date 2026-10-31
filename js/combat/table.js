@@ -227,7 +227,10 @@ const Table = (() => {
     const peutFinir = monTour && d && d.type === 'tour' && Combat.optionsTour(E).some(a => a.t === 'finTour');
     fin.disabled = !peutFinir || T.occupe || !!T.cible;
     fin.classList.toggle('pulse', peutFinir && !T.occupe && !actionsUtiles());
-    fin.textContent = d && d.type === 'tour' && monTour && !peutFinir && E.cpt.doitAttaquer ? 'Attaque obligée' : monTour ? 'Fin du tour' : 'Tour adverse';
+    /* Pendant la mise en place (mains, mulligan, PV, qui commence), personne
+       n'a encore de tour : « Tour adverse » y était faux pour qui commence second. */
+    fin.textContent = V.phase === 'mise' ? 'Mise en place'
+      : d && d.type === 'tour' && monTour && !peutFinir && E.cpt.doitAttaquer ? 'Attaque obligée' : monTour ? 'Fin du tour' : 'Tour adverse';
 
     surligner();
     if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
@@ -1557,13 +1560,16 @@ const Table = (() => {
     const inf = T.o.joueurs || [];
     const face = j => `<span class="ar-piece-f">${avatarHTML((inf[j] || {}).avatar || 'star', 'default', 'xl', (inf[j] || {}).photo || null)}</span>`;
     const a = qs('.ar-annonce');
-    a.className = 'ar-annonce pileface';
-    a.innerHTML = `<p class="ar-pf-titre">${T.o.premierRaison ? 'Qui commence' : 'Tirage au sort'}</p>
-      <div class="ar-piece${moiDabord ? '' : ' revers'}"><div class="ar-piece-a">${face(T.moi)}</div><div class="ar-piece-b">${face(adv(T.moi))}</div></div>
+    /* Décidé d'avance (le perdant de la partie d'avant) : la pièce se pose
+       sans tourner, et le son n'est pas celui d'un tirage. */
+    const decide = T.o.premierRaison ? ' decide' : '';
+    a.className = 'ar-annonce pileface' + decide;
+    a.innerHTML = `<p class="ar-pf-titre">${decide ? 'Qui commence' : 'Tirage au sort'}</p>
+      <div class="ar-piece${moiDabord ? '' : ' revers'}${decide}"><div class="ar-piece-a">${face(T.moi)}</div><div class="ar-piece-b">${face(adv(T.moi))}</div></div>
       <p class="ar-pf-res">${moiDabord ? 'Tu commences' : `${h(nomCEO(premier))} commence`}</p>
       <p class="ar-pf-sous">${T.o.premierRaison ? `${h(T.o.premierRaison)} ` : ''}${moiDabord ? 'Pas de phase de Combat à ton premier tour.' : `${h(nomCEO(premier))} ne pourra pas attaquer à son premier tour.`}</p>`;
     a.hidden = false;
-    SFX.jouer('piece');
+    SFX.jouer(decide ? 'ouvre' : 'piece');
     /* La pièce a sa propre durée (css/arene.css) : on ne la presse pas avec
        les animations rapides, sinon le résultat disparaît avant d'être lu. */
     await pause(RM() ? 1500 : 2900);

@@ -150,8 +150,10 @@ Défausse, « où sont placées toutes les cartes défaussées ou bench » ; le 
   Online n'a pas de match en plusieurs parties : la « partie suivante » est
   la prochaine partie entre les deux mêmes adversaires — le prochain défi
   Versus entre deux amis, ou le prochain combat contre le même adversaire de
-  l'IA (§ 7 du README dit où c'est appliqué). La toute première partie est
-  tirée au sort.
+  l'IA (§ 7.1 du README dit où c'est appliqué). La toute première partie est
+  tirée au sort, et aussi celle qui suit un défi sans gagnant établi (les
+  deux amis ont déclaré des gagnants différents). Le moteur reçoit qui
+  commence dans `init.premier` ; sans lui, il tire au sort avec la graine.
 
 ### 5.2 Le tour (`tour()`)
 

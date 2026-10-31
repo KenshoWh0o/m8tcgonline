@@ -2208,12 +2208,16 @@
 
   /* ---------- les défis entre amis ---------- */
   const defisDe = () => (S.defis = S.defis || []);
+  /* La partie d'un défi, pour le moteur : `premier`, le perdant de leur
+     dernier défi (defi_lancer), sinon le tirage avec la graine. */
+  const initDefi = d => Object.assign({ decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine },
+    d.premier === 0 || d.premier === 1 ? { premier: d.premier } : {});
   const vueDefi = (d, p, depuis) => {
     const moi = d.de === p ? 0 : 1;
     const o = profil(moi === 0 ? d.pour : d.de);
     return {
       id: d.id, statut: d.statut, moi,
-      init: d.statut === 'attente' ? null : { decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine },
+      init: d.statut === 'attente' ? null : initDefi(d),
       actions: (d.actions || []).slice(depuis || 0),
       adversaire: { nom: o.pseudo, avatar: o.avatar, frame: o.frame, xp: xpDe(o.id), photo: null, cosm: (cb(o.id).cosm || {}) }
     };
@@ -2229,8 +2233,13 @@
     if (!p_deck || !Array.isArray(p_deck.club) || p_deck.club.length !== Combat.REGLE.CLUB) refuser('Deck invalide.');
     if (defisDe().some(d => ['attente', 'en_cours'].includes(d.statut) && ((d.de === p && d.pour === o.id) || (d.de === o.id && d.pour === p))))
       refuser('Un défi est déjà en cours avec ce joueur.');
+    /* Le perdant de leur dernier défi commence (defi_lancer, 23_combats.sql) ;
+       la démo, qui rejoue chaque défi, connaît toujours le gagnant. */
+    const dernier = defisDe().filter(d => ['fini', 'abandon'].includes(d.statut) && (d.gagnant === 0 || d.gagnant === 1)
+      && ((d.de === p && d.pour === o.id) || (d.de === o.id && d.pour === p))).sort((a, b) => b.cree - a.cree)[0];
+    const premier = dernier ? ((dernier.gagnant === 0 ? dernier.de : dernier.pour) === p ? 1 : 0) : null;
     const d = { id: 'df' + (++S.seq), de: p, pour: o.id, statut: 'attente', deck_de: p_deck, deck_pour: null,
-      graine: Math.floor(Math.random() * 4294967295) + 1, actions: [], cree: now(), maj: now() };
+      graine: Math.floor(Math.random() * 4294967295) + 1, premier, actions: [], cree: now(), maj: now() };
     defisDe().push(d);
     notifier(o.id, 'defi', p, d.id);
     /* Un ami simulé accepte au bout de quelques secondes. */
@@ -2254,7 +2263,7 @@
   function faireJouerBot(d) {
     const bot = profil(d.de).bot ? 0 : profil(d.pour).bot ? 1 : -1;
     if (bot < 0 || d.statut !== 'en_cours') return;
-    const E = Combat.rejouer({ decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine }, d.actions);
+    const E = Combat.rejouer(initDefi(d), d.actions);
     let n = 0;
     while (Combat.demande(E) && Combat.demande(E).qui === bot && n++ < 80) {
       const a = IA.choisir(E, { niveau: 3 });
@@ -2283,9 +2292,10 @@
   RPC.defi_fin = (p, { p_id, p_histo }) => {
     const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
     if (!d) refuser('Défi introuvable.');
-    const E = Combat.rejouer({ decks: [d.deck_de, d.deck_pour], noms: ['', ''], graine: d.graine }, d.actions);
+    const E = Combat.rejouer(initDefi(d), d.actions);
     if (!E.fin) refuser('Le défi n\'est pas fini.');
     if (d.statut === 'en_cours') d.statut = 'fini';
+    d.gagnant = E.fin.gagnant;
     const moi = d.de === p ? 0 : 1;
     const c = cb(p);
     const r = { eclats: 0, message: '' };
