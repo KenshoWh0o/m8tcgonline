@@ -254,6 +254,12 @@ Demandée par le propriétaire le 30 octobre (« fais une passe complète sur la
 - **Ce qui débordait d'un rien** : l'accueil des Combats (avec la tuile du tutoriel) tient sur un téléphone bas et sur un ordinateur de 800 px de haut ; les quatre petites tuiles (Decks, Missions, Guide, Historique) ne débordent plus à 360 px ; le nom d'un deck trop long finit par « … » dans l'atelier ; les Essences de la Réserve du deck actif ont la pastille de sa note, lisible sur l'illustration.
 - **Gardé, volontairement** : les finitions des cartes (reflets des Reverses et des Secrètes, finitions de maîtrise), les couleurs de rareté, et les particules (dessinées dans un canvas). En question au propriétaire : `--warn` a la valeur de l'or, et les Étincelles s'écrivent en or (README, § 14.3).
 
+## 10 quinquies. Version 3.0.13 : ce qu'on surligne garde sa forme
+
+- **Le surlignage ne déforme plus rien** (signalé par le propriétaire) : le contour du tutoriel imposait des coins de 12 px (une pilule devenait un rectangle arrondi, une case de carte changeait de format) et se traçait 3 px à l'extérieur (la case paraissait plus grande, et le contour se faisait rogner par la feuille qui le contenait). Il se trace désormais à l'intérieur de l'élément, à sa forme ; l'anneau du focus clavier ne lui impose plus de coins non plus.
+- **La jauge des Spéciales** a sa couleur, comme celle des Reverses : le rose des Promos vers l'or de la carte unique.
+- **Le panneau d'une attaque** dit « Attaque » et « Défense », comme le bandeau du duel (il disait « ton attaque » et « sa Défense »).
+
 ## 11. Sources
 
 Consultées pendant la refonte. Les captures de jeux sont des observations

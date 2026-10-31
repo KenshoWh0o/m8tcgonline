@@ -883,8 +883,12 @@ html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-c.holo::after,html.r
 .ar-tuto.secoue .ar-tuto-in{animation:tuto-secoue .4s}
 @keyframes tuto-secoue{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 /* Ce qu'il faut toucher : un contour blanc qui respire. */
-.tuto-vise{outline:2.5px solid #fff;outline-offset:3px;border-radius:12px;animation:tuto-vise 1.3s ease-in-out infinite}
-@keyframes tuto-vise{0%,100%{outline-color:rgba(255,255,255,.95);box-shadow:0 0 14px 2px rgba(157,140,255,.85)}50%{outline-color:rgba(200,191,255,.6);box-shadow:0 0 28px 8px rgba(157,140,255,.95)}}
+/* Ce que le tutoriel fait toucher (3.0.13) : un contour blanc tracé à
+   l'intérieur de l'élément. Il garde sa forme (pas de coins imposés : une
+   pilule restait un rectangle arrondi, une case changeait de format) et ne
+   déborde pas (un contour à l'extérieur se faisait rogner par la feuille). */
+.tuto-vise{outline:2.5px solid #fff;outline-offset:-2.5px;animation:tuto-vise 1.3s ease-in-out infinite}
+@keyframes tuto-vise{0%,100%{outline-color:rgba(255,255,255,.95)}50%{outline-color:rgba(200,191,255,.55)}}
 html.rm .tuto-vise{animation:none}
 @media (prefers-reduced-motion:reduce){.tuto-vise{animation:none}}
 

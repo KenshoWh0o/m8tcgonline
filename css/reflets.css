@@ -286,6 +286,9 @@
 .colvuebar{position:absolute;left:11px;right:11px;bottom:6px;height:3px;border-radius:999px;background:var(--bg-2);overflow:hidden}
 .colvuebar i{display:block;height:100%;background:var(--progress)}
 .colvue.reverses .colvuebar i{background:linear-gradient(90deg,#ff5bb0,var(--accent-soft),#39b8ff)}
+/* Les Spéciales ont leur jauge, comme les Reverses (3.0.13) : le rose des
+   Promos vers l'or de la carte unique. */
+.colvue.speciales .colvuebar i{background:linear-gradient(90deg,var(--r-pr),var(--gold))}
 .colsous{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px;font-size:12.5px;color:var(--muted)}
 .colsous b{color:var(--text)}
 .colsous .colfab{display:inline-flex;align-items:center;gap:5px}

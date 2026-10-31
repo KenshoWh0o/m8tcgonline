@@ -167,8 +167,10 @@ body{position:relative;height:100%;height:100dvh;margin:0;display:flex;flex-dire
 /* Dans l'app installée, la hauteur mesurée par js/cadrage.js. */
 html.cadre-app body{height:var(--app-h)}
 button{font:inherit;color:inherit;cursor:pointer}
+/* Le contour du focus suit la forme de l'élément (une pilule reste une
+   pilule) : il ne lui impose pas de coins (3.0.13). */
 button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{
-  outline:2px solid var(--accent-soft);outline-offset:3px;border-radius:6px}
+  outline:2px solid var(--accent-soft);outline-offset:2px}
 img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
 
 /* Les chiffres qui changent en place — compteurs, comptes à rebours, scores —

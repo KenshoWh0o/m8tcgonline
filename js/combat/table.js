@@ -1457,7 +1457,7 @@ const Table = (() => {
     const boutons = d.options.map(o => o.v === 'non'
       ? `<button class="ar-b ghost" data-ar="opt" data-v="non">${base >= dv ? 'Pas besoin' : 'Pas de soutien'}</button>`
       : `<button class="ar-b sout ${o.info.vaincu ? 'passe' : 'court'}" data-ar="opt" data-v="${o.v}">${coutHTML(o.cout || {})}<span>${h(o.label.replace('Soutien de ', ''))}</span><small>${o.info.total} contre ${o.info.def} · ${o.info.vaincu ? 'le défenseur tombe' : 'ne suffit pas'}</small></button>`).join('');
-    ouvrirSheet(`<div class="ar-s-duel">${att ? htmlCarte(att.id, mzDe(att.id, T.moi)) : ''}<span class="ar-sd-v"><small>ton attaque</small><b>${base}</b></span><i>${base >= dv ? '≥' : '&lt;'}</i><span class="ar-sd-v"><small>sa Défense</small><b>${dv}</b></span>${def ? htmlCarte(def.id) : ''}</div>
+    ouvrirSheet(`<div class="ar-s-duel">${att ? htmlCarte(att.id, mzDe(att.id, T.moi)) : ''}<span class="ar-sd-v"><small>Attaque</small><b>${base}</b></span><i>${base >= dv ? '≥' : '&lt;'}</i><span class="ar-sd-v"><small>Défense</small><b>${dv}</b></span>${def ? htmlCarte(def.id) : ''}</div>
       <p class="ar-s-titre">${h(carte(def ? def.id : '').nom || 'Un Joueur')} défend</p>
       <p class="ar-s-texte">${base >= dv ? 'Ton attaque suffit déjà.' : 'Ton attaque ne suffit pas.'} Un de tes Joueurs <b>voisins</b> peut <b>soutenir</b> : il paie et engage son attaque, et sa valeur s'ajoute à la tienne.</p>
       <div class="ar-s-act col">${boutons}</div>`, 'decision soutien');
