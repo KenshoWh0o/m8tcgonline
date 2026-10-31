@@ -89,6 +89,58 @@ const Table = (() => {
   }
   const dos = j => `<div class="ar-c dos"><img src="${sleeveDe(j)}" alt="" draggable="false"></div>`;
 
+  /* ---------- Les images, avant qu'on les montre (3.0.12) ---------- */
+  /* Sur un réseau lent, la main de départ arrivait vide : on décidait du
+     mulligan devant des cartes sans image (mesuré : 4,5 s en « 3G rapide »,
+     cache vide ; une carte pèse 107 Ko en moyenne). Sa main se charge avant
+     la donne (`precharger`, au plus `max` ms : la donne n'attend pas un
+     réseau qui ne répond plus) ; ensuite, à chaque rendu, ce qui va se
+     montrer bientôt (`prochaines`), deux images à la fois, sans tout le
+     Club. On ne garde que la promesse : l'image reste dans le cache du
+     navigateur. */
+  const images = new Map(), chargees = new Set();
+  const file = [];
+  let ouvriers = 0;
+  function image(id) {
+    const c = carte(id);
+    if (!c || !c.img) return Promise.resolve();
+    if (!images.has(c.img)) {
+      const i = new Image();
+      i.decoding = 'async';
+      i.src = c.img;
+      images.set(c.img, (i.decode ? i.decode() : new Promise((ok, ko) => { i.onload = ok; i.onerror = ko; }))
+        .catch(() => {}).then(() => { chargees.add(c.img); }));
+    }
+    return images.get(c.img);
+  }
+  const chargee = id => { const c = carte(id); return !c || !c.img || chargees.has(c.img); };
+  const precharger = (ids, max) => Promise.race([Promise.all(ids.map(image)), new Promise(r => setTimeout(r, max))]);
+  function enFile(ids) {
+    for (const id of ids) {
+      const c = carte(id);
+      if (c && c.img && !images.has(c.img) && !file.includes(id)) file.push(id);
+    }
+    /* Chaque chargement de fond attend que la page soit au repos : jamais
+       pendant une animation (Safari n'a pas requestIdleCallback). */
+    const repos = () => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 2000 }) : setTimeout(r, 200)));
+    while (ouvriers < 2 && file.length) {
+      ouvriers++;
+      (async () => { while (file.length) { await repos(); if (file.length) await image(file.shift()); } ouvriers--; })();
+    }
+  }
+  /* Les deux mains, les PV, les trois prochaines cartes de chaque Club (le
+     haut de la pile, `club[0]`, se pioche d'abord). */
+  function prochaines() {
+    if (!T || !T.precharge) return;
+    const ids = [];
+    for (const P of T.E.j) {
+      for (const c of P.main) ids.push(c.id);
+      for (const c of P.pv) ids.push(c.id);
+      for (const c of P.club.slice(0, 3)) ids.push(c.id);
+    }
+    enFile(ids);
+  }
+
   function coutHTML(cout) {
     const l = [];
     for (const k in cout) {
@@ -141,10 +193,17 @@ const Table = (() => {
     SFX.jouer('ouvre');
     /* Une nouvelle partie : ce que le moteur a déjà fait en la créant (la
        donne du premier CEO) s'anime avant tout le reste. */
+    const t0 = T;
+    if (!reprise) T.occupe = true;
     (async () => {
+      /* Sa main d'abord (au plus 2,5 s), puis, une fois qu'elle est là, ce
+         qui va se montrer bientôt. Une partie reprise ne l'attend pas. */
+      const main = E.j[t0.moi].main.map(c => c.id);
+      if (!reprise) await precharger(main, 2500);
+      if (T !== t0) return;
+      Promise.all(main.map(image)).then(() => { if (T === t0) { T.precharge = true; prochaines(); } });
       if (!reprise) {
         const evs = E.ev.slice();
-        T.occupe = true;
         try { await animer(evs); } finally { if (T) { T.occupe = false; rendre(); } }
       }
       boucle();
@@ -233,6 +292,7 @@ const Table = (() => {
       : d && d.type === 'tour' && monTour && !peutFinir && E.cpt.doitAttaquer ? 'Attaque obligée' : monTour ? 'Fin du tour' : 'Tour adverse';
 
     surligner();
+    prochaines();
     if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
   }
 
@@ -1370,8 +1430,15 @@ const Table = (() => {
     T.multi = null;
   }
 
-  function decisionMulligan(d) {
-    const main = T.E.j[T.moi].main;
+  async function decisionMulligan(d) {
+    const t = T, main = T.E.j[T.moi].main;
+    /* On ne décide pas devant des cartes vides : la feuille attend leurs
+       images, au plus 4 s de plus (déjà demandées avant la donne). Déjà là
+       (le cas courant), elle s'ouvre tout de suite, comme avant. */
+    if (!main.every(c => chargee(c.id))) {
+      await precharger(main.map(c => c.id), 4000);
+      if (T !== t || Combat.demande(T.E) !== d) return;
+    }
     ouvrirSheet(`<p class="ar-s-titre">Ta main de départ</p>
       <div class="ar-mulligan">${main.map((c, i) => `<span style="--i:${i}">${htmlCarte(c.id)}</span>`).join('')}</div>
       <p class="ar-s-texte">Tu peux la garder, ou la remélanger une fois pour en piocher une autre.</p>
@@ -1802,6 +1869,9 @@ const Table = (() => {
        nouvelles cartes arrivent. */
     async mulligan(e) {
       const club = pileClub(e.j);
+      /* La nouvelle main (le moteur est déjà à l'état final) se charge
+         pendant que l'ancienne repart. */
+      const nouvelle = e.j === T.moi ? precharger(T.E.j[T.moi].main.map(c => c.id), 2500) : null;
       if (e.j === T.moi) {
         const cs = qsa('.ar-m');
         await enRafale(cs.length, 60, i => { const r = rect(cs[i]); cs[i].classList.remove('donne'); return vol(null, r, rect(club), { dos: T.moi, ms: 360, w: r.width, s1: .4, arc: 20 }); });
@@ -1812,6 +1882,7 @@ const Table = (() => {
       if (club && !RM()) club.animate([{ rotate: '0deg' }, { rotate: '-8deg' }, { rotate: '8deg' }, { rotate: '0deg' }], { duration: 420 });
       SFX.jouer('woosh');
       await attendre(380);
+      if (nouvelle) await nouvelle;
       await ANIM.main(Object.assign({ n: Combat.REGLE.MAIN }, e));
     },
     /* Les PV : quatre cartes du dessus du Club, posées face cachée. */
