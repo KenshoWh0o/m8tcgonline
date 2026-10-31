@@ -14,7 +14,7 @@
 const SECTIONS = {
   toxique: {
     id: 'toxique', nom: 'Section Toxique', court: 'Toxique', c: '#62d84e', c2: '#b7f29a',
-    promo: 'p03', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp?v=3.0.11',
+    promo: 'p03', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp?v=3.0.12',
     /* Les couleurs de ses adversaires de campagne, quand on affronte cette
        Section. */
     couleurs: ['rose', 'orange', 'verte', 'jaune'],
@@ -22,7 +22,7 @@ const SECTIONS = {
   },
   deter: {
     id: 'deter', nom: 'Section Déter', court: 'Déter', c: '#7c3aed', c2: '#c4b5fd',
-    promo: 'p04', starter: 'deter', boite: 'assets/combat/sections/deter.webp?v=3.0.11',
+    promo: 'p04', starter: 'deter', boite: 'assets/combat/sections/deter.webp?v=3.0.12',
     couleurs: ['mauve', 'violette', 'bleue', 'azur'],
     devise: 'Des Joueurs qui reviennent toujours, et des coups qui pèsent.'
   }
@@ -59,7 +59,9 @@ const RIVAUX = {
 /* Les niveaux de l'IA, combat par combat, et ce que chaque combat rapporte
    la première fois. Les boss d'acte donnent des boosters et des Fragments. */
 const NIVEAUX_CAMPAGNE = [1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5];
-const REGLES_CAMPAGNE = { 4: { pv: 6 }, 9: { pv: 6 }, 14: { ess: 1 }, 19: { pv: 6, ess: 1 } };
+/* Les boss d'acte ont un PV de plus que les règles officielles (4), ou une
+   Essence d'avance. */
+const REGLES_CAMPAGNE = { 4: { pv: 5 }, 9: { pv: 5 }, 14: { ess: 1 }, 19: { pv: 5, ess: 1 } };
 const RECOMPENSES_CAMPAGNE = [
   { eclats: 80 }, { eclats: 80 }, { eclats: 100 }, { eclats: 100 }, { eclats: 150, boosters: 2, fragments: 300 },
   { eclats: 120 }, { eclats: 120 }, { eclats: 140 }, { eclats: 140 }, { eclats: 200, boosters: 3, fragments: 500 },

@@ -65,7 +65,8 @@ function evaluer(E, j, o) {
   const moi = E.j[j], lui = E.j[adv(j)];
   const pv = n => 110 * n + (n === 0 ? -120 : 0) + (n === 1 ? -40 : 0);
   let s = pv(moi.pv.length) - pv(lui.pv.length);
-  s += 14 * Math.min(moi.main.length, 8) - 14 * Math.min(lui.main.length, 8);
+  /* La main ne compte que jusqu'à 5 : au-delà, la fin du tour défausse. */
+  s += 14 * Math.min(moi.main.length, 5) - 14 * Math.min(lui.main.length, 5);
   s += 9 * moi.ess.length - 9 * lui.ess.length;
   for (const c of O.joueursDe(E, j)) s += valeurJoueur(E, c);
   for (const c of O.joueursDe(E, adv(j))) s -= valeurJoueur(E, c);
@@ -79,7 +80,9 @@ function evaluer(E, j, o) {
 }
 
 /* Ce que l'attaquant `a` peut probablement infliger au défenseur `d` à son
-   prochain tour : des Joueurs engagés abattus, des PV. */
+   prochain tour (règles officielles : on n'attaque que le CEO, et chaque
+   Joueur désengagé du défenseur peut bloquer une attaque) : des PV, et des
+   bloqueurs vaincus. */
 function menace(E, a, d) {
   const att = O.joueursDe(E, a);
   if (!att.length) return 0;
@@ -95,16 +98,17 @@ function menace(E, a, d) {
   }).filter(v => v > 0).sort((x, y) => y - x);
   if (!valeurs.length) return 0;
   let m = 0;
-  /* Les Joueurs engagés du défenseur, à portée des plus fortes attaques. */
-  const exposes = O.joueursDe(E, d).filter(c => c.eng && !Combat.shieldActif(E, c));
-  let dispo = valeurs.slice();
-  for (const c of exposes.sort((x, y) => valeurJoueur(E, y) - valeurJoueur(E, x))) {
-    const i = dispo.findIndex(v => v >= Combat.defense(E, c));
-    if (i >= 0) { m += 0.55 * valeurJoueur(E, c); dispo.splice(i, 1); }
+  /* Chaque bloqueur prend une attaque (les plus fortes d'abord) ; s'il ne la
+     tient pas, il est vaincu. */
+  const dispo = valeurs.slice();
+  const bloqueurs = O.joueursDe(E, d).filter(c => !c.eng).sort((x, y) => Combat.defense(E, y) - Combat.defense(E, x));
+  for (const b of bloqueurs) {
+    if (!dispo.length) break;
+    const v = dispo.shift();
+    if (v >= Combat.defense(E, b) && !Combat.shieldActif(E, b)) m += 0.5 * valeurJoueur(E, b);
   }
-  /* Le CEO : les attaques que les défenseurs libres ne peuvent pas tenir. */
-  const libres = O.joueursDe(E, d).filter(c => !c.eng).length;
-  const passent = Math.max(0, dispo.length - libres);
+  /* Le CEO : les attaques que personne ne bloque. */
+  const passent = dispo.length;
   m += passent * 70;
   if (E.j[d].pv.length === 0 && passent > 0) m += 400;
   return m;
@@ -126,8 +130,9 @@ function tourRapide(E, j, r, simple) {
   const opts = Combat.optionsTour(E);
   const P = E.j[j];
   const par = t => opts.filter(o => o.t === t);
-  /* Déployer le meilleur Joueur, sur la ligne la plus utile. */
-  const dep = par('deployer');
+  /* Déployer le meilleur Joueur, sur la ligne la plus utile. Remplacer un
+     Joueur (le Terrain plein) seulement si le nouveau vaut nettement mieux. */
+  const dep = par('deployer').filter(o => !o.remplace || scoreDeploiement(E, j, o) > 0);
   if (dep.length) {
     const best = dep.slice().sort((a, b) => scoreDeploiement(E, j, b) - scoreDeploiement(E, j, a))[0];
     return best;
@@ -155,6 +160,10 @@ function tourRapide(E, j, r, simple) {
 function scoreDeploiement(E, j, o) {
   const c = E.j[j].main.find(x => x.u === o.u);
   let s = valeurCarte(c.id);
+  if (o.remplace) {
+    const v = O.trouverSurPlateau(E, o.remplace);
+    return v ? s - valeurJoueur(E, v) - 25 : -1;
+  }
   const face = E.j[adv(j)].lignes[o.ligne];
   /* Face à un Joueur adverse : on le tient. Face au vide : on frappe. */
   if (face) s += Combat.carte(c.id).def >= 100 ? 4 : -2;
@@ -201,6 +210,11 @@ function choixRapide(E, d, j, simple) {
         if (tous.length) return tous.sort((a, b) => valeurJoueur(E, O.trouverSurPlateau(E, a.v)) - valeurJoueur(E, O.trouverSurPlateau(E, b.v)))[0].v;
       }
       return 'non';
+    }
+    case 'soutien': {
+      /* Un soutien qui fait tomber le défenseur, le moins cher ; sinon rien. */
+      const ok = d.options.filter(o => o.info && o.info.vaincu).sort((a, b) => a.info.val - b.info.val);
+      return ok.length ? ok[0].v : non;
     }
     case 'resilience': return 'oui';
     case 'legion': return E.j[j].main.length ? 'oui' : 'non';
@@ -260,7 +274,7 @@ function cartesRapide(E, d, j) {
   };
   const tri = d.parmi.slice().sort((a, b) => val(a) - val(b));
   switch (d.but) {
-    case 'defausse': case 'engagerAllies': return tri.slice(0, d.min);
+    case 'defausse': case 'defausseFin': case 'engagerAllies': return tri.slice(0, d.min);
     case 'm4': return [];
     case 'dessous': return [];
     case 'lierDepuis': case 'buffDef': case 'recycler': return tri.reverse().slice(0, Math.max(d.min, Math.min(d.max, 2)));

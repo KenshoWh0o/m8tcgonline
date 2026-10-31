@@ -5,19 +5,16 @@
    (js/combat/ia.js) choisit parmi les mêmes actions que lui. Les effets des
    cartes sont écrits à part, carte par carte (js/combat/effets.js).
 
-   Les règles sont expliquées dans l'onglet Guides (js/combat/guides.js) et
-   justifiées dans docs/regles-3.0.md : ce qui est imprimé sur les cartes, ce
-   qui s'en déduit, et ce qui est « maison » en attendant les vraies règles.
-   Les valeurs de la partie (taille du Club, nombre de PV…) sont dans REGLE,
-   juste en dessous. C'est là qu'on les change, mais ce n'est pas le seul
-   endroit à reprendre : plusieurs sont recopiées en dur ailleurs. Le serveur
-   (supabase/installation/23_combats.sql) écrit le Club de 30 et la Réserve
+   Depuis la 3.0.12, ce sont les RÈGLES OFFICIELLES du Gentle Mates TCG
+   (docs/regles-officielles.md, copie du document de l'éditeur), appliquées
+   au pied de la lettre ; docs/regles-3.0.md dit, règle par règle, où elles
+   sont dans le code, et ce que le texte officiel ne tranche pas. Les valeurs
+   de la partie (taille du Club, nombre de PV…) sont dans REGLE, juste en
+   dessous. Elles sont recopiées ailleurs : le serveur
+   (supabase/installation/23_combats.sql) écrit le Club de 40 et la Réserve
    de 10 dans deck_erreur, les exemplaires dans limite_copies, et la table
-   starters recopie les deux Starter Decks. Des textes les disent en toutes
-   lettres : le Guide (js/combat/guides.js : « trois lignes », « un Coach par
-   tour »…), le tutoriel (js/combat/tutoriel.js : « 5 PV », « 3 Objets au
-   plus »), les refus de l'arène (js/combat/table.js : « Un seul Joueur
-   déployé par tour »…). Et docs/regles-3.0.md (§ 13) les reprend toutes.
+   starters recopie les deux Starter Decks ; le Guide (js/combat/guides.js)
+   et le tutoriel (js/combat/tutoriel.js) les disent en toutes lettres.
 
    Trois principes :
    - Déterministe. Le hasard vient d'une graine rangée dans l'état : la même
@@ -37,24 +34,18 @@
 (function (racine) {
 
 /* ---------- Les valeurs de la partie ---------- */
-/* Aucune n'est imprimée sur les cartes : ce sont des choix « maison »
-   (docs/regles-3.0.md), réglés par simulation (tools/combat-sim.js). */
+/* Celles des règles officielles, citées. */
 const REGLE = {
-  LIGNES: 3,          /* lignes du plateau, une place par CEO sur chacune */
-  PV: 5,              /* cartes de PV posées face cachée au départ */
-  MAIN: 5,            /* main de départ */
-  CLUB: 30,           /* cartes du Club (le deck) */
-  RESERVE: 10,        /* Essences de la Réserve */
-  OBJETS: 3,          /* Objets liés au plus à un même Joueur */
-  COPIES: 2,          /* exemplaires d'une même carte dans un Club */
-  COPIES_RARES: 1,    /* … d'une Légendaire, d'une Secrète, d'une Promo, de l'Unique */
-  DEPLOIEMENTS: 1,    /* Joueurs déployés depuis la main par tour */
-  COACHS: 1,          /* Coachs joués par tour */
-  ESSENCES: 1,        /* Essences jouées de la Réserve à chaque tour */
-  ESSENCES_P1: 1,     /* … au tout premier tour du premier CEO */
-  ESSENCES_P2: 2      /* … au premier tour du second CEO : sa compensation
-                         (sur 400 parties d'IA, le premier CEO gagne 55 % des
-                         parties avec 1, 49 % avec 2) */
+  LIGNES: 3,          /* « Le Terrain […] comprenant 3 cases où sont déployés les Joueur » */
+  PV: 4,              /* « Piochez et empilez 4 nouvelles cartes […] face cachée » */
+  MAIN: 5,            /* « Piochez les 5 premières cartes du Club pour former votre Main » */
+  MAIN_MAX: 5,        /* fin de tour : « Défaussez […] pour en garder 5 maximum » */
+  CLUB: 40,           /* « Votre Club doit contenir un total de 40 cartes » */
+  RESERVE: 10,        /* « Votre Réserve doit contenir 10 cartes Essence » */
+  COPIES: 3,          /* « pas plus de trois exemplaires d'une même carte » (même nom et même couleur) */
+  COACHS: 1,          /* « Vous ne pouvez jouer qu'une seule carte Coach par tour » */
+  REMPLACEMENTS: 1,   /* « il peut une fois par tour, bench un Joueur non engagé pour pouvoir jouer cette carte » */
+  ESSENCES: 1         /* entretien : « Jouez la première carte de votre Réserve » */
 };
 
 /* Les neuf couleurs d'Essence. Le Neutre n'en est pas une : c'est un coût
@@ -101,7 +92,12 @@ const nouvelleInst = (E, id, j) => ({ u: ++E.seq, id, j });
 function joueurVide(o, i) {
   return {
     nom: (o.noms && o.noms[i]) || (i ? 'Adversaire' : 'Toi'),
-    club: [], main: [], pv: [], reserve: [], ess: [], banc: [], defausse: [],
+    club: [], main: [], pv: [], reserve: [], ess: [], defausse: [],
+    /* Les cartes « bench » : la défausse les reçoit comme les autres (« Le
+       terme Bench signifie qu'une carte déployée est envoyée à la
+       défausse »), mais un effet peut les viser (« Vos Objet bench »,
+       En slip sur la Faille). */
+    bench: [],
     lignes: Array(REGLE.LIGNES).fill(null),
     tours: 0, pvVus: false,
     /* Bonus de départ d'un adversaire de campagne (« maison ») */
@@ -111,15 +107,20 @@ function joueurVide(o, i) {
 }
 
 const compteursVides = () => ({
-  attaques: 0, pvRecup: [0, 0], deploie: 0, coachs: 0,
+  attaques: 0, pvRecup: [0, 0], deploie: 0, coachs: 0, remplace: 0,
   combatFini: false, doitAttaquer: 0
 });
 
 /* Une partie. `o` : {
      decks: [{ club: [ids], reserve: [couleurs] }, …],
-     noms: ['Toi', 'Lumen'], graine: entier, premier: 0 | 1 (sinon pile ou face),
-     pv: [5, 6] et essDepart: [0, 1] (facultatifs, pour la campagne) } */
-function creer(o) {
+     noms: ['Toi', 'Lumen'], graine: entier, premier: 0 | 1 (sinon tiré au
+     sort ; une revanche le donne au perdant de la partie d'avant),
+     pv: [4, 5] et essDepart: [0, 1] (facultatifs : les variantes des modes,
+     campagne, Épreuve, Raid) } */
+/* `x` : ce qui ne fait pas partie de la partie et ne se rejoue pas —
+   `capture` (l'arène : les photos des événements dès la mise en place, pour
+   animer la donne, le mulligan, les PV et le tirage du premier). */
+function creer(o, x) {
   const E = {
     rng: (o.graine >>> 0) || 1, seq: 0, tour: 0, actif: 0, premier: 0,
     phase: 'mise', fin: null, temp: [], cpt: compteursVides(),
@@ -137,13 +138,16 @@ function creer(o) {
      elle ne voyait que l'état final, et un Joueur vaincu disparaissait du
      plateau avant même que l'attaque ne le touche. Seule la partie affichée
      l'allume : les copies de l'IA (cloner) ne photographient rien. */
-  cacher(E, 'capture', false);
+  cacher(E, 'capture', !!(x && x.capture));
   [0, 1].forEach(i => {
     const d = o.decks[i];
     E.j[i].club = d.club.map(id => nouvelleInst(E, id, i));
     E.j[i].reserve = d.reserve.map(coul => ({ u: ++E.seq, coul, eng: false, j: i }));
   });
-  /* Pile ou face : le jeton de l'écran de combat le montre (js/combat/table.js). */
+  /* Qui commence : « Déterminez aléatoirement qui commence la partie ». Tiré
+     ici pour que la partie reste la même d'un rejeu à l'autre, mais annoncé
+     à la fin de la mise en place, comme l'ordre des règles le veut (le
+     jeton de l'écran de combat le montre alors, js/combat/table.js). */
   E.premier = o.premier === 0 || o.premier === 1 ? o.premier : (alea(E) < 0.5 ? 0 : 1);
   E.actif = E.premier;
   E.gen = partie(E, false);
@@ -372,12 +376,14 @@ function* miseEnPlace(E) {
     melanger(E, E.j[i].club);
     melanger(E, E.j[i].reserve);
   }
-  ev(E, { t: 'pileFace', premier: E.premier });
-  for (const i of [E.premier, adv(E.premier)]) {
+  /* 2. « Piochez les 5 premières cartes du Club pour former votre Main. Si
+        votre Main de départ ne vous convient pas, mélangez-la dans votre Club
+        et piochez 5 cartes. Vous ne pouvez effectuer cette action qu'une
+        fois. » */
+  for (const i of [0, 1]) {
     const P = E.j[i];
     P.main = P.club.splice(0, REGLE.MAIN);
     ev(E, { t: 'main', j: i, n: P.main.length });
-    /* Une seule chance de changer de main. */
     const garder = yield* ouiNon(E, i, 'Garder cette main de départ ?',
       { oui: 'Garder', non: 'Changer de main', but: 'mulligan' });
     if (!garder) {
@@ -388,6 +394,8 @@ function* miseEnPlace(E) {
       ev(E, { t: 'mulligan', j: i });
     }
   }
+  /* 3. « Piochez et empilez 4 nouvelles cartes et placez-les face cachée sur
+        le côté de votre Terrain. Ce sont vos Points de Victoire. » */
   for (const i of [0, 1]) {
     const P = E.j[i];
     P.pv = P.club.splice(0, P.pvDepart);
@@ -401,6 +409,8 @@ function* miseEnPlace(E) {
       ev(E, { t: 'deploie', j: i, u: c.u, id: c.id, ligne, eng: false, pose: true });
     }
   }
+  /* 4. « Déterminez aléatoirement qui commence la partie. » */
+  ev(E, { t: 'pileFace', premier: E.premier });
 }
 
 function* tour(E) {
@@ -411,36 +421,27 @@ function* tour(E) {
   E.phase = 'debut';
   ev(E, { t: 'tour', j, n: E.tour });
 
-  /* 1. On se désengage. Le désengagement du début de tour ne déclenche rien :
-        les effets qui guettent un désengagement sont joués pendant le tour. */
+  /* 01. Phase d'entretien, dans l'ordre des règles. « Piochez une carte de
+         votre Club » : un Club vide fait perdre (« Votre adversaire doit
+         piocher dans son Club mais est dans l'incapacité de le faire »). */
+  piocher(E, j, 1);
+  if (E.fin) return;
+  /* « Désengagez toutes vos cartes engagées. » Aucune carte ne guette ce
+     désengagement-là : les deux qui réagissent à un désengagement (#047,
+     #048) ne valent que jusqu'à la fin du tour où elles entrent. */
   for (const c of joueursDe(E, j)) {
     c.eng = false;
     c.nAtt = 0;
   }
   for (const e of P.ess) e.eng = false;
   ev(E, { t: 'desengagement', j });
+  /* « Jouez la première carte de votre Réserve. » */
+  for (let i = 0; i < REGLE.ESSENCES; i++) if (P.reserve.length) jouerReserve(E, j, false);
 
-  /* 2. Ce qui est sur le Banc revient dans la main (« maison »). */
-  if (P.banc.length) {
-    ev(E, { t: 'retourBanc', j, n: P.banc.length });
-    P.main.push(...P.banc.splice(0));
-  }
-
-  /* 3. La pioche — sauf au tout premier tour de la partie. Club vide : on
-        pioche dans ses PV, c'est-à-dire que le CEO est touché (« maison »). */
-  if (!(j === E.premier && P.tours === 1)) {
-    if (!P.club.length) {
-      ev(E, { t: 'clubVide', j });
-      yield* toucher(E, j, null);
-      if (E.fin) return;
-    } else piocher(E, j, 1);
-  }
-
-  /* 4. La Réserve : la première Essence entre en jeu. */
-  const nEss = P.tours === 1 ? (j === E.premier ? REGLE.ESSENCES_P1 : REGLE.ESSENCES_P2) : REGLE.ESSENCES;
-  for (let i = 0; i < nEss; i++) if (P.reserve.length) jouerReserve(E, j, false);
-
+  /* 02. Phase d'action (`jeu`), puis 03. Phase de Combat (`combat`) : on y
+     entre en déclarant la première attaque, et on n'en ressort pas. */
   E.phase = 'jeu';
+  ev(E, { t: 'phaseAction', j });
   while (!E.fin) {
     const a = yield { qui: j, type: 'tour' };
     if (a.t === 'finTour') break;
@@ -448,9 +449,18 @@ function* tour(E) {
   }
   if (E.fin) return;
 
-  /* La fin de la phase de Combat, puis celle du tour. */
+  /* La fin de la phase de Combat, puis 04. Fin de tour (`cloture`) :
+     « Défaussez autant de cartes de votre Main pour en garder 5 maximum. » */
   yield* declencher(E, 'finCombat', { j });
   if (E.fin) return;
+  E.phase = 'cloture';
+  ev(E, { t: 'cloture', j });
+  const trop = P.main.length - REGLE.MAIN_MAX;
+  if (trop > 0) {
+    const us = yield* choisirCartes(E, j, `Défausse ${trop} carte${trop > 1 ? 's' : ''}`, P.main.map(x => x.u), trop, trop,
+      { but: 'defausseFin', zone: 'main', texte: `Fin du tour : tu gardes ${REGLE.MAIN_MAX} cartes au plus en main.` });
+    defausserMain(E, j, us);
+  }
   expirer(E);
   ev(E, { t: 'finTour', j });
 }
@@ -461,8 +471,17 @@ function finir(E, gagnant, raison) {
   ev(E, { t: 'fin', gagnant, raison });
 }
 
-/* Les effets « jusqu'à la fin du tour » s'éteignent. */
+/* Les effets « jusqu'à la fin du tour » s'éteignent. Des cartes prêtées à la
+   main « jusqu'à la fin du tour » (En slip sur la Faille) retournent à la
+   défausse si elles y sont encore. */
 function expirer(E) {
+  for (const t of E.temp) {
+    if (t.type !== 'retourDefausse' || t.jusqua > E.tour) continue;
+    const P = E.j[t.camp];
+    const l = P.main.filter(c => t.us.includes(c.u));
+    for (const c of l) { P.main.splice(P.main.indexOf(c), 1); P.defausse.push(c); }
+    if (l.length) ev(E, { t: 'retourDefausse', j: t.camp, u: l.map(c => c.u) });
+  }
   E.temp = E.temp.filter(t => t.jusqua > E.tour);
 }
 
@@ -472,6 +491,13 @@ function* actionTour(E, j, a) {
   if (a.t === 'deployer') {
     const c = retirerMain(P, a.u);
     E.cpt.deploie++;
+    /* Plus de case libre : « une fois par tour, bench un Joueur non engagé
+       pour pouvoir jouer cette carte » — à sa place. */
+    if (a.remplace) {
+      const x = trouverSurPlateau(E, a.remplace);
+      E.cpt.remplace++;
+      if (x && enJeu(E, x)) bancer(E, x);
+    }
     yield* deployer(E, j, c, a.ligne);
   } else if (a.t === 'lier') {
     const o = retirerMain(P, a.u);
@@ -479,7 +505,7 @@ function* actionTour(E, j, a) {
   } else if (a.t === 'jouer') {
     yield* jouerInstant(E, j, a.u);
   } else if (a.t === 'attaquer') {
-    E.phase = 'combat';
+    if (E.phase !== 'combat') { E.phase = 'combat'; ev(E, { t: 'phaseCombat', j }); }
     yield* attaquer(E, j, trouverSurPlateau(E, a.u), a.k, a.cible, !!a.chevaliere);
   }
 }
@@ -489,27 +515,45 @@ function retirerMain(P, u) {
   return i < 0 ? null : P.main.splice(i, 1)[0];
 }
 
+/* « Restriction par couleur : les cartes Objet, Coach et Moment d'une
+   couleur spécifique ne peuvent être jouées que si vous avez une Essence de
+   la couleur correspondante déployée sur le Terrain » — engagée ou non ; ce
+   n'est pas un coût. Une carte Neutre n'a pas de couleur spécifique. */
+function couleurOk(E, j, c) {
+  const col = (carte(c.id) || {}).col;
+  if (!col || col === 'neutre') return true;
+  return E.j[j].ess.some(e => e.coul === col);
+}
+
 /* Les actions possibles, à ce moment du tour. C'est la liste que l'interface
-   rend cliquable et parmi laquelle l'IA choisit. */
+   rend cliquable et parmi laquelle l'IA choisit. Phase d'action (`jeu`) :
+   « Jouez autant de cartes Joueur, Objet, Moment que vous le voulez. Jouez
+   une carte Coach. » Phase de Combat : les attaques seulement. */
 function optionsTour(E) {
   const j = E.actif, P = E.j[j], out = [];
   if (E.phase === 'jeu') {
-    if (E.cpt.deploie < REGLE.DEPLOIEMENTS) {
-      const libres = P.lignes.map((x, i) => (x ? -1 : i)).filter(i => i >= 0);
-      for (const c of P.main) if (estCat(c, 'joueur')) for (const l of libres) out.push({ t: 'deployer', u: c.u, ligne: l });
+    const libres = P.lignes.map((x, i) => (x ? -1 : i)).filter(i => i >= 0);
+    for (const c of P.main) if (estCat(c, 'joueur')) {
+      for (const l of libres) out.push({ t: 'deployer', u: c.u, ligne: l });
+      /* « Si aucune case n'est disponible, il peut une fois par tour, bench
+         un Joueur non engagé pour pouvoir jouer cette carte. » */
+      if (!libres.length && E.cpt.remplace < REGLE.REMPLACEMENTS) {
+        P.lignes.forEach((x, l) => { if (x && !x.eng) out.push({ t: 'deployer', u: c.u, ligne: l, remplace: x.u }); });
+      }
     }
-    for (const o of P.main) if (estCat(o, 'objet')) {
-      for (const c of joueursDe(E, j)) if (c.obj.length < REGLE.OBJETS) out.push({ t: 'lier', u: o.u, cible: c.u });
+    for (const o of P.main) if (estCat(o, 'objet') && couleurOk(E, j, o)) {
+      for (const c of joueursDe(E, j)) out.push({ t: 'lier', u: o.u, cible: c.u });
     }
-  }
-  for (const c of P.main) {
-    const k = carte(c.id).cat;
-    if (k !== 'coach' && k !== 'moment') continue;
-    if (k === 'coach' && E.cpt.coachs >= REGLE.COACHS) continue;
-    const s = scr(c.id);
-    if (!s.effet) continue;
-    if (s.jouable && !s.jouable(ctxDe(E, j, c))) continue;
-    out.push({ t: 'jouer', u: c.u });
+    for (const c of P.main) {
+      const k = carte(c.id).cat;
+      if (k !== 'coach' && k !== 'moment') continue;
+      if (k === 'coach' && E.cpt.coachs >= REGLE.COACHS) continue;
+      if (!couleurOk(E, j, c)) continue;
+      const s = scr(c.id);
+      if (!s.effet) continue;
+      if (s.jouable && !s.jouable(ctxDe(E, j, c))) continue;
+      out.push({ t: 'jouer', u: c.u });
+    }
   }
   const attaques = optionsAttaque(E, j);
   out.push(...attaques);
@@ -540,9 +584,12 @@ function optionsAttaque(E, j) {
       if (normal) variantes.push(false);
       if (avecChev && !normal) variantes.push(true);
       else if (avecChev && totalCout(coutAttaque(E, c, k, { chevaliere: true })) < totalCout(coutAttaque(E, c, k))) variantes.push(true);
+      /* Une attaque sans valeur imprimée (seulement un effet) est une attaque
+         comme les autres : elle se déclare sur le CEO adverse, se défend, et
+         touche si personne ne défend (règles officielles, « Déroulement de
+         la Phase de Combat » ; sa valeur compte pour 0). */
       for (const chevaliere of variantes) {
-        if (a.degats == null) out.push(Object.assign({ t: 'attaquer', u: c.u, k, cible: null }, chevaliere ? { chevaliere } : {}));
-        else for (const cible of ciblesAttaque(E, c)) {
+        for (const cible of ciblesAttaque(E, c)) {
           out.push(Object.assign({ t: 'attaquer', u: c.u, k, cible }, chevaliere ? { chevaliere } : {}));
         }
       }
@@ -551,16 +598,38 @@ function optionsAttaque(E, j) {
   return out;
 }
 
-/* Qui une attaque peut viser : le CEO adverse, ou un Joueur adverse engagé.
-   Le Joueur d'en face, s'il a Provocation (ou s'il est Slay et désengagé),
-   l'impose. « Jus de bagarre » ouvre le Joueur d'en face, même désengagé. */
+/* Ce qu'une attaque vise : « Le CEO actif engage ce Joueur pour le déclarer
+   comme attaquant sur le CEO adverse. » Deux exceptions, imprimées : le
+   Joueur d'en face, s'il a Provocation (« L'attaquant face à ce Joueur doit
+   le cibler ») ou s'il est Slay et désengagé, l'impose ; « Jus de bagarre »
+   permet d'attaquer le Joueur adverse de sa ligne. */
 function ciblesAttaque(E, c) {
   const A = E.j[adv(c.j)], l = ligneDe(E, c), face = A.lignes[l];
   if (face && (aMotCle(E, face, 'Provocation') || (scr(face.id).provocSiLibre && !face.eng))) return [face.u];
   const cs = ['ceo'];
-  for (const x of A.lignes) if (x && x.eng) cs.push(x.u);
-  if (face && !face.eng && c.obj.some(o => scr(o.id).jusDeBagarre)) cs.push(face.u);
+  if (face && c.obj.some(o => scr(o.id).jusDeBagarre)) cs.push(face.u);
   return cs;
+}
+
+/* Le soutien : « si le CEO adverse déclare un défenseur, le CEO actif peut
+   engager les Essence nécessaires à l'attaque d'un de ses Joueur adjacents,
+   et engager le Joueur pour le déclarer comme soutien. S'il le fait on
+   ajoute la valeur d'attaque du soutien à la valeur du Joueur attaquant. »
+   Adjacent : la case voisine, de son côté du Terrain. Une attaque sans valeur
+   n'ajoute rien : elle ne se propose pas. */
+function soutiens(E, c) {
+  const P = E.j[c.j], l = ligneDe(E, c), out = [];
+  for (const i of [l - 1, l + 1]) {
+    const s = P.lignes[i];
+    if (!s || s.eng) continue;
+    carte(s.id).atks.forEach((a, k) => {
+      const val = valeurAttaque(E, s, k);
+      if (val == null) return;
+      const cout = coutAttaque(E, s, k, { rang: 0 });
+      if (payable(E, c.j, cout)) out.push({ c: s, k, val, cout });
+    });
+  }
+  return out;
 }
 
 /* Qui peut défendre : le Joueur désengagé de la ligne de l'attaquant, et
@@ -597,8 +666,10 @@ function* deployer(E, j, c, ligne, o) {
   return c;
 }
 
+/* « Il n'y a pas de limite au nombre de cartes Objet que l'on peut lier à un
+   Joueur. » */
 function* lier(E, j, o, cible, opts) {
-  if (!cible || !enJeu(E, cible) || cible.obj.length >= REGLE.OBJETS) {
+  if (!cible || !enJeu(E, cible)) {
     E.j[o.j].defausse.push(o);
     return;
   }
@@ -621,7 +692,7 @@ function* jouerInstant(E, j, u) {
 /* Où est une carte ? null : nulle part (en train d'être jouée). */
 function ou(E, c) {
   for (const P of E.j) {
-    for (const z of ['club', 'main', 'pv', 'banc', 'defausse']) if (P[z].includes(c)) return z;
+    for (const z of ['club', 'main', 'pv', 'defausse']) if (P[z].includes(c)) return z;
     for (const x of P.lignes) if (x && (x === c || x.obj.includes(c))) return 'plateau';
   }
   return null;
@@ -658,14 +729,15 @@ function* attaquer(E, j, c, k, cible, chevaliere) {
   yield* declencher(E, 'attaque', X);
   if (E.fin) return;
 
-  if (atk.degats != null) {
+  {
     /* La cible a pu disparaître entre-temps. */
     if (X.cible !== 'ceo' && !enJeu(E, trouverSurPlateau(E, X.cible))) X.cible = 'ceo';
 
-    /* La défense. */
+    /* « Le CEO adverse peut déclarer un Joueur sur la même ligne comme
+       défenseur pour cette attaque en l'engageant. » */
     const defs = defenseurs(E, c, X.cible);
     if (defs.length && enJeu(E, c)) {
-      const val = valeurAttaque(E, c, k, X.bonus);
+      const val = valeurAttaque(E, c, k, X.bonus) || 0;
       const opts = defs.map(d => ({
         v: d.u, u: d.u, label: `Défendre avec ${nomDe(d)}`,
         info: { def: defense(E, d), val, vaincu: val >= defense(E, d) && !shieldActif(E, d) }
@@ -684,6 +756,31 @@ function* attaquer(E, j, c, k, cible, chevaliere) {
         yield* engager(E, d);
         yield* declencher(E, 'defense', X);
         if (E.fin) return;
+        /* Le soutien (soutiens, plus haut) : choisi par l'attaquant, une
+           fois le défenseur connu. */
+        const sout = enJeu(E, c) && !X.annulee && enJeu(E, d) ? soutiens(E, c) : [];
+        if (sout.length) {
+          const def = defense(E, d), base = valeurAttaque(E, c, k, X.bonus) || 0;
+          const opts2 = sout.map(z => ({
+            v: z.c.u + ':' + z.k, u: z.c.u, k: z.k, label: `Soutien de ${nomDe(z.c)} · +${z.val}`, cout: z.cout,
+            info: { val: z.val, total: base + z.val, def, vaincu: base + z.val >= def && !shieldActif(E, d) }
+          }));
+          opts2.push({ v: 'non', label: 'Pas de soutien' });
+          const r = yield {
+            qui: j, type: 'choix', but: 'soutien', titre: `${nomDe(d)} défend`,
+            texte: `Défense ${def}, ton attaque ${base}. Un Joueur voisin peut engager son attaque en soutien : sa valeur s'ajoute.`,
+            attaquant: c.u, defenseur: d.u, options: opts2
+          };
+          if (r.v !== 'non') {
+            const z = sout.find(x => x.c.u + ':' + x.k === r.v);
+            payer(E, j, z.cout);
+            X.soutien = z.c;
+            X.soutienK = z.k;
+            ev(E, { t: 'soutien', j, u: z.c.u, k: z.k, val: z.val, attaquant: c.u });
+            yield* engager(E, z.c);
+            if (E.fin) return;
+          }
+        }
       }
     }
     if (!X.annulee && enJeu(E, c)) yield* resoudre(E, X);
@@ -700,9 +797,15 @@ function* attaquer(E, j, c, k, cible, chevaliere) {
   yield* declencher(E, 'finAttaque', X);
 }
 
+/* « On compare la valeur d'attaque du Joueur attaquant et la valeur de
+   défense du Joueur défenseur, et si la valeur d'attaque est supérieure ou
+   égale à la valeur de défense, le Joueur défenseur est vaincu et bench
+   (envoyé à la défausse). […] S'il ne déclare pas de défenseur, l'attaque
+   touche directement le CEO adverse. » Le soutien s'ajoute à l'attaque. */
 function* resoudre(E, X) {
   const c = X.c, opp = adv(c.j);
-  const val = valeurAttaque(E, c, X.k, X.bonus);
+  const sv = X.soutien && enJeu(E, X.soutien) ? (valeurAttaque(E, X.soutien, X.soutienK) || 0) : 0;
+  const val = (valeurAttaque(E, c, X.k, X.bonus) || 0) + sv;
   if (X.cible === 'ceo') {
     ev(E, { t: 'impact', u: c.u, cible: 'ceo', val });
     yield* toucher(E, opp, c);
@@ -716,7 +819,7 @@ function* resoudre(E, X) {
     return;
   }
   const def = defense(E, t);
-  ev(E, { t: 'impact', u: c.u, cible: t.u, val, def });
+  ev(E, { t: 'impact', u: c.u, cible: t.u, val, def, soutien: X.soutien ? X.soutien.u : null });
   if (val >= def) {
     /* Vaincu seulement si « Invitation » ne l'a pas sauvé (vaincre() rend
        false) : Target Missed (c055) lit X.vaincu à la fin de l'attaque. */
@@ -765,7 +868,7 @@ function* toucher(E, j, par) {
 /* Un Joueur vaincu quitte le plateau ; ses Objets vont à la défausse. */
 function* vaincre(E, t, par) {
   const j = t.j, P = E.j[j];
-  /* « Invitation » : l'Objet part au Banc à la place du Joueur. */
+  /* « Invitation » : l'Objet est bench (à la défausse) à la place du Joueur. */
   const inv = t.obj.find(o => scr(o.id).invitation);
   if (inv) {
     bancer(E, inv);
@@ -778,7 +881,9 @@ function* vaincre(E, t, par) {
   const valeurs = carte(t.id).atks.map((a, k) => valeurAttaque(E, t, k));
   const ligne = ligneDe(E, t);
   P.lignes[ligne] = null;
-  for (const o of t.obj) { P.defausse.push(o); }
+  /* « Les Objet sont bench lorsque la carte Joueur associée quitte le
+     Terrain. » */
+  for (const o of t.obj) { E.j[o.j].defausse.push(o); E.j[o.j].bench.push(o.u); }
   const objets = t.obj.map(o => o.u);
   t.obj = [];
   t.eng = false;
@@ -844,6 +949,12 @@ function piocher(E, j, n) {
   const pris = P.club.splice(0, n);
   P.main.push(...pris);
   if (pris.length) ev(E, { t: 'pioche', j, u: pris.map(c => c.u), n: pris.length });
+  /* « Votre adversaire doit piocher dans son Club mais est dans l'incapacité
+     de le faire » : c'est une condition de victoire pour l'autre CEO. */
+  if (pris.length < n) {
+    ev(E, { t: 'clubVide', j });
+    finir(E, adv(j), 'club');
+  }
   return pris;
 }
 
@@ -889,8 +1000,9 @@ function retirerObjet(E, porteur, o) {
   if (i >= 0) porteur.obj.splice(i, 1);
 }
 
-/* Retirer un Joueur du plateau, pour une autre raison que la défaite : ses
-   Objets le suivent (au Banc, en main) — ou vont à la défausse. */
+/* Retirer un Joueur du plateau, pour une autre raison que la défaite. Ses
+   Objets, rendus à l'appelant, sont bench (« Les Objet sont bench lorsque
+   la carte Joueur associée quitte le Terrain ») : benchObjets(). */
 function quitterPlateau(E, c) {
   const P = E.j[c.j];
   const l = ligneDe(E, c);
@@ -901,25 +1013,34 @@ function quitterPlateau(E, c) {
   return objets;
 }
 
-/* Le Banc (« bench ») : la carte quitte le jeu et revient dans la main de
-   son propriétaire au début de son prochain tour (« maison »). */
+/* Les Objets d'un Joueur qui quitte le Terrain : bench, donc à la défausse. */
+function benchObjets(E, objets) {
+  for (const o of objets) { E.j[o.j].defausse.push(o); E.j[o.j].bench.push(o.u); }
+}
+
+/* « Bench » : « Le terme Bench signifie qu'une carte déployée est envoyée à
+   la défausse. » Un Joueur bench emporte ses Objets avec lui. Ce n'est pas
+   être vaincu : ni Riposte, ni Légion (« Lorsqu'il est vaincu »). */
 function bancer(E, x) {
   const porteur = porteurDe(E, x);
   if (porteur) {
     retirerObjet(E, porteur, x);
-    E.j[x.j].banc.push(x);
+    E.j[x.j].defausse.push(x);
+    E.j[x.j].bench.push(x.u);
     ev(E, { t: 'banc', j: x.j, u: x.u, id: x.id, de: porteur.u });
     return;
   }
   if (enJeu(E, x)) {
     const ligne = ligneDe(E, x);
     const objets = quitterPlateau(E, x);
-    E.j[x.j].banc.push(x, ...objets);
+    E.j[x.j].defausse.push(x);
+    E.j[x.j].bench.push(x.u);
+    benchObjets(E, objets);
     ev(E, { t: 'banc', j: x.j, u: x.u, id: x.id, ligne, objets: objets.map(o => o.u) });
   }
 }
 
-/* Renvoyer en main : un Joueur et ses Objets, ou un Objet seul. */
+/* Renvoyer en main : un Joueur (ses Objets sont bench), ou un Objet seul. */
 function renvoyerMain(E, x) {
   const porteur = porteurDe(E, x);
   if (porteur) {
@@ -932,8 +1053,8 @@ function renvoyerMain(E, x) {
     const ligne = ligneDe(E, x);
     const objets = quitterPlateau(E, x);
     E.j[x.j].main.push(x);
-    objets.forEach(o => E.j[o.j].main.push(o));
-    ev(E, { t: 'enMain', j: x.j, u: x.u, id: x.id, ligne, objets: objets.map(o => o.u) });
+    benchObjets(E, objets);
+    ev(E, { t: 'enMain', j: x.j, u: x.u, id: x.id, ligne, objets: objets.map(o => o.u), benchObjets: true });
   }
 }
 
@@ -1156,7 +1277,7 @@ const Combat = {
   REGLE, COULEURS, catalogue, scripts, carte, toutes, baseId, scr,
   creer, agir, demande, options, optionsTour, cloner, rejouer, valider, cle,
   defense, valeurAttaque, coutAttaque, payable, totalCout, aMotCle, shieldActif,
-  ciblesAttaque, defenseurs, peutAttaquer, infoAttaque, motCleImprime, nomDe,
+  ciblesAttaque, defenseurs, soutiens, couleurOk, peutAttaquer, infoAttaque, motCleImprime, nomDe,
   joueursDe, tousJoueurs, ligneDe, enJeu, trouverSurPlateau, porteurDe, premierTourDuPremier,
   /* Les outils des effets (js/combat/effets.js) */
   O: {
@@ -1165,7 +1286,7 @@ const Combat = {
     defausserMain, defausserPlateau, rendreEssences, deployer, lier, vaincre, toucher, payable, payer,
     ouiNon, choisirUn, choisirCartes, ordonner, ev, aMotCle, motCleImprime, defense, ou, retirerMain,
     porteurDe, trouverSurPlateau, essencesLibres, quitterPlateau, valeurAttaque, retirerObjet, sansAccent,
-    shieldActif, REGLE,
+    shieldActif, couleurOk, benchObjets, REGLE,
     /* Un effet « jusqu'à la fin du tour » (par défaut) ou plus long. Ceux
        qui se voient sur une carte (Défense, attaques, mot-clé, interdiction)
        le disent aussi par un événement, pour que l'arène les montre ; les

@@ -4,8 +4,9 @@
    illustré (le chevalier du tapis « La Luxueuse III », centré sur son
    médaillon), la Section et le niveau ; à la une, le Raid (js/raid.js) ;
    deux portes illustrées, Solo (contre l'IA, sur « 99% Faith ») et Versus
-   (entre amis, sur « Marteen Supreme ») ; trois petites tuiles, Decks,
-   Missions et Guide. Solo mène à deux modes bien distincts :
+   (entre amis, sur « Marteen Supreme ») ; quatre petites tuiles, Decks,
+   Missions, Guide et Historique (js/combat/historique.js). Solo mène à deux
+   modes bien distincts :
    la Campagne (vingt rivaux sur un chemin, acte par acte) et l'Arcade (un
    adversaire tiré au sort, cinq difficultés). Chaque page a un retour vers
    la précédente. Le combat se joue dans l'arène, en plein écran
@@ -25,13 +26,36 @@ let cbChoix = { infini: 3, acte: null };
 let cbGuide = null;
 /* L'onglet du Guide : les règles (par défaut) ou le glossaire. */
 let cbGuideOnglet = 'regles';
-const CB_VUES = ['accueil', 'solo', 'campagne', 'arcade', 'raid', 'versus', 'decks', 'missions', 'guides', 'atelier'];
+const CB_VUES = ['accueil', 'solo', 'campagne', 'arcade', 'raid', 'versus', 'decks', 'missions', 'guides', 'historique', 'atelier'];
 /* Les anciennes adresses mènent encore quelque part : la boîte de réception
    ouvre toujours `defis` pour un défi reçu (boiteAller, js/boite.js). */
 const CB_ALIAS = { infini: 'arcade', defis: 'versus' };
 /* La page d'où l'on vient, pour le bouton retour. */
 const CB_PARENT = { campagne: 'solo', arcade: 'solo' };
 const CLE_COMBAT = 'mtcg.combat.encours';
+
+/* « Le perdant commencera la partie suivante » (règles officielles ;
+   docs/regles-3.0.md, § 5.1). Contre l'IA, la partie suivante est le
+   prochain combat contre le même adversaire : le même rival de campagne, la
+   même difficulté d'Arcade, le même boss, l'adversaire de la même Épreuve.
+   Ce navigateur retient qui a perdu la dernière (0 : toi, 1 : l'IA) ; la
+   première partie contre un adversaire est tirée au sort. Les défis entre
+   amis le font côté serveur (defi_lancer). */
+const CLE_PERDANTS = 'mtcg.combat.perdants';
+const adversaireDe = m => m.mode + ':' + (m.mode === 'epreuve' ? m.cle : (m.adversaire || {}).nom || m.cle);
+function perdants() {
+  try { return JSON.parse(localStorage.getItem(CLE_PERDANTS)) || {}; } catch (e) { return {}; }
+}
+function noterPerdant(meta, gagne) {
+  if (!meta || !meta.mode) return;
+  const l = perdants(), k = adversaireDe(meta);
+  delete l[k];
+  l[k] = gagne ? 1 : 0;
+  /* Au-delà de soixante adversaires (une Épreuve par jour), les plus anciens partent. */
+  const cles = Object.keys(l);
+  cles.slice(0, Math.max(0, cles.length - 60)).forEach(c => delete l[c]);
+  try { localStorage.setItem(CLE_PERDANTS, JSON.stringify(l)); } catch (e) { /* */ }
+}
 
 /* ---------- L'état de combat du joueur ---------- */
 /* Rangé par Backend.apply (save.combat), avec des valeurs par défaut hors
@@ -90,7 +114,7 @@ function vCombats() {
   if (cbVue === 'atelier' && typeof vAtelier === 'function') return vAtelier();
   const corps = {
     accueil: vCbAccueil, solo: vCbSolo, campagne: vCbCampagne, arcade: vCbArcade, raid: vCbRaid,
-    versus: vCbDefis, decks: vCbDecks, missions: vCbMissions, guides: vCbGuides
+    versus: vCbDefis, decks: vCbDecks, missions: vCbMissions, guides: vCbGuides, historique: vCbHistorique
   }[cbVue] || vCbAccueil;
   return `<div class="cb sec-${e.section} cb-v-${cbVue}" style="--sc:${SECTIONS[e.section].c};--sc2:${SECTIONS[e.section].c2}">${corps(e)}</div>`;
 }
@@ -201,7 +225,9 @@ const CB_ICO = {
   versus: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="4.5" y="13" width="16" height="23" rx="3" transform="rotate(-14 12.5 24.5)"/><rect class="f" x="27.5" y="13" width="16" height="23" rx="3" transform="rotate(14 35.5 24.5)"/><path class="e" d="M26.5 6.5 19 22h5.2l-3.2 11.5L30 17.5h-5.4z"/></svg>',
   decks: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="9" y="13" width="20" height="28" rx="3.5"/><path d="M15 9h17a3.5 3.5 0 0 1 3.5 3.5V34"/><path d="M21 5h12a6 6 0 0 1 6 6v18"/></svg>',
   missions: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect class="f" x="10" y="8" width="28" height="33" rx="4"/><path d="M17 21.5l4 4 9-9M17 32h14"/></svg>',
-  guide: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M8 11.5c5.5-2 11-1.5 16 1.5v26c-5-3-10.5-3.5-16-1.5z"/><path class="f" d="M40 11.5c-5.5-2-11-1.5-16 1.5v26c5-3 10.5-3.5 16-1.5z"/></svg>'
+  guide: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M8 11.5c5.5-2 11-1.5 16 1.5v26c-5-3-10.5-3.5-16-1.5z"/><path class="f" d="M40 11.5c-5.5-2-11-1.5-16 1.5v26c5-3 10.5-3.5 16-1.5z"/></svg>',
+  /* L'historique : un cadran, et la flèche qui revient en arrière. */
+  histo: '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="f" d="M11.2 17.5A15 15 0 1 1 9.5 28"/><path d="M24.5 16.5v8.5l6 3.6"/><path d="M6.8 12.2l4.4 5.3 5.6-3.9"/></svg>'
 };
 
 /* Les illustrations des portes : Solo sur « 99% Faith » (#068), l'Arcade
@@ -232,7 +258,9 @@ function vCbAccueil(e) {
       <div class="cb-hero-haut"><span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(SECTIONS[e.section].court)}</b></span>${vCbNivAnneau(e)}</div>
       <h1 class="cb-hero-titre">Combats</h1>
     </section>
-    ${enCours ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat en cours</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Reprends-le où tu l'as laissé.</em></span>
+    ${enCours && enCours.fini ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat terminé</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Son résultat n'a pas été enregistré.</em></span>
+      <span class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Envoyer</button><button class="btn tiny ghost" data-cb="oublier">Oublier</button></span></section>`
+      : enCours ? `<section class="cb-une cb-reprendre"><span class="cb-une-t"><small>Combat en cours</small><b>${h(enCours.meta && enCours.meta.titre || 'Combat')}</b><em>Reprends-le où tu l'as laissé.</em></span>
       <span class="cb-reprendre-act"><button class="btn tiny" data-cb="reprendre">Reprendre</button><button class="btn tiny ghost" data-cb="oublier">Abandonner</button></span></section>`
       : vRaidAffiche()}
     ${tuto ? `<button class="cb-tuto" data-cb="tuto">
@@ -257,6 +285,7 @@ function vCbAccueil(e) {
       ${petit('decks', 'decks', 'Decks', deck ? h(deck.nom) : 'Aucun deck valide')}
       ${petit('missions', 'missions', 'Missions', missions ? `${missions} à récupérer` : 'Quêtes de combat', missions)}
       ${petit('guides', 'guide', 'Guide', 'Règles et glossaire')}
+      ${petit('historique', 'histo', 'Historique', 'Tour par tour')}
     </div>`;
 }
 
@@ -671,12 +700,12 @@ const GD_ICO = {
   pv: NAVICO.coeur,
   motscles: '<svg viewBox="0 0 24 24"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.4 1.4 0 0 1 0 2l-6.6 6.6a1.4 1.4 0 0 1-2 0Z"/><circle cx="8" cy="8" r="1.5"/></svg>',
   deck: '<svg viewBox="0 0 24 24"><rect x="4.5" y="7.5" width="11" height="14" rx="2"/><path d="M8.5 4.5h9a2 2 0 0 1 2 2V17"/></svg>',
-  modes: NAVICO.trophy, maison: NAVICO.flask
+  modes: NAVICO.trophy, lectures: NAVICO.flask
 };
 const GD_GROUPES = [
   ['Pour commencer', ['essentiel', 'cartes', 'tour', 'attaquer']],
   ['Pour aller plus loin', ['defendre', 'pv', 'motscles', 'deck']],
-  ['Bon à savoir', ['modes', 'maison']]
+  ['Bon à savoir', ['modes', 'lectures']]
 ];
 const GD_CLE = 'mtcg.guides.lus';
 const guidesLus = () => { try { return JSON.parse(localStorage.getItem(GD_CLE) || '[]'); } catch (e) { return []; } };
@@ -723,7 +752,7 @@ function vCbGuides() {
         <button class="btn tiny" data-cb="guide" data-v="${suivant.id}">${n ? 'La suite' : 'Commencer'} : ${h(suivant.titre)}</button></p>
       ${GD_GROUPES.map(([titre, ids]) => `<section class="gd-groupe"><h3>${titre}</h3><div class="gd-liste">${ids.map(id => GUIDES.find(x => x.id === id)).filter(Boolean).map(entree).join('')}</div></section>`).join('')}
     </section>`;
-  const glo = `<div class="gd-cherche"><input id="gd-q" type="search" placeholder="Chercher un mot : Garde, Réserve, Banc…" autocomplete="off" aria-label="Chercher dans le glossaire"></div>
+  const glo = `<div class="gd-cherche"><input id="gd-q" type="search" placeholder="Chercher un mot : Garde, soutien, bench…" autocomplete="off" aria-label="Chercher dans le glossaire"></div>
     <nav class="gd-abc" aria-label="Lettres">${lettres.map(L => `<a href="#" data-lettre-va="${L}">${L}</a>`).join('')}</nav>
     <div class="gd-glossaire" id="gd-glo">${glossaire}<p class="muted gd-rien" hidden>Aucun mot ne correspond.</p></div>`;
   return `${cbSousTete('Guide', 'Le tutoriel, les règles, chaque mot du jeu')}
@@ -738,7 +767,7 @@ function vCbGuides() {
       <button role="tab" aria-selected="${ong === 'glossaire'}" class="${ong === 'glossaire' ? 'on' : ''}" data-cb="gd-ong" data-v="glossaire">${NAVICO.quest}Glossaire · ${mots.length} mots</button>
     </div>
     ${ong === 'regles' ? regles : glo}
-    <p class="muted small">Les règles officielles ne sont pas publiées : elles sont reconstituées à partir des cartes. Ce qui a été inventé est dit dans « Ce qui est maison ».</p>`;
+    <p class="muted small">Ce sont les règles officielles du Gentle Mates TCG. Les quelques points qu'elles ne tranchent pas sont dans « Ce que les règles ne disent pas ».</p>`;
 }
 
 /* La recherche du glossaire filtre sans redessiner la page : le champ garde
@@ -844,7 +873,15 @@ async function demarrer(o) {
   };
   /* Des cartes déjà en jeu au départ (le boss du Raid). */
   if (o.poses) init.poses = o.poses;
-  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss };
+  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss, deck: o.deck.nom };
+  /* Qui commence : le perdant de la partie précédente contre cet adversaire
+     (CLE_PERDANTS), sinon le tirage du moteur. Dans `init`, pour que le
+     rejeu d'un combat repris donne la même partie ; la raison, dans `meta`. */
+  const perdant = perdants()[adversaireDe(meta)];
+  if (perdant === 0 || perdant === 1) {
+    init.premier = perdant;
+    meta.premierRaison = `${perdant === 0 ? 'Tu as' : `${o.adversaire.nom} a`} perdu la partie précédente : le perdant commence.`;
+  }
   ouvrirArene({ init }, meta);
 }
 
@@ -858,6 +895,7 @@ function ouvrirArene(partie, meta) {
     cosm: [e.cosm, meta.cosmAdv || { tapis: 't_base', sleeve: 's_base' }],
     brillantes: [brillantesMoi(), []],
     titre: meta.titre, sousTitre: meta.sousTitre, boss: meta.boss,
+    premierRaison: meta.premierRaison || null,
     sauver: CLE_COMBAT, meta,
     surFin: (E, gagne) => finirCombat(meta, E, gagne),
     surQuitter: () => { render(); }
@@ -865,8 +903,12 @@ function ouvrirArene(partie, meta) {
 }
 
 async function finirCombat(meta, E, gagne) {
+  noterPerdant(meta, gagne);
   const resume = resumeCombat(E, 0);
+  /* Le déroulé, tour par tour, pour Combats › Historique (js/combat/historique.js). */
+  resume.histo = Historique.entree(E, 0, meta);
   const r = await Backend.combatFin(meta.id, gagne, resume);
+  cbHisto = null;
   try { localStorage.removeItem(CLE_COMBAT); } catch (err) { /* */ }
   /* Le Raid a bougé (js/raid.js) ; l'Épreuve, l'état de l'événement
      (js/choc.js), comme le Raid pendant le Choc. */
@@ -928,11 +970,45 @@ function reprendreCombat() {
   if (!s) return;
   let E;
   try { E = Combat.rejouer(s.init, s.journal); } catch (err) { localStorage.removeItem(CLE_COMBAT); return toast('Ce combat ne peut pas être repris.'); }
-  if (E.fin) { localStorage.removeItem(CLE_COMBAT); return toast('Ce combat était déjà fini.'); }
+  /* Fini, mais le serveur n'a pas pris le résultat (une maintenance, le
+     réseau) : on le lui envoie maintenant, au lieu de le perdre (3.0.12). */
+  if (E.fin) return envoyerCombatFini(s, E);
   ouvrirArene({ E }, s.meta);
+}
+async function envoyerCombatFini(s, E) {
+  const gagne = E.fin.gagnant === 0;
+  try {
+    occupe(true);
+    const html = await finirCombat(s.meta, E, gagne);
+    openSheet({
+      title: gagne ? 'Victoire enregistrée' : 'Défaite enregistrée',
+      body: `<p class="muted">Ce combat était fini : son résultat vient d'être envoyé.</p>${html}`,
+      actions: [{ label: 'Fermer', fn: closeSheet }]
+    });
+  } catch (e) {
+    /* Le serveur l'a déjà refermé (un autre combat ouvert depuis) : rien à
+       envoyer de plus. Sinon, on le garde pour réessayer plus tard. */
+    if (/plus ouvert/.test(e.message || '')) { try { localStorage.removeItem(CLE_COMBAT); } catch (err) { /* */ } }
+    toast(e.message || 'Le résultat n\'a pas pu être envoyé : réessaie plus tard.');
+  } finally {
+    occupe(false);
+    render();
+  }
 }
 function oublierCombat() {
   const s = combatEnCours();
+  /* Un combat fini dont le résultat n'est pas passé : l'oublier ne demande
+     rien au serveur ; il le comptera perdu au prochain combat ouvert. */
+  if (s && s.fini) {
+    return openSheet({
+      title: 'Oublier ce résultat ?',
+      body: '<p class="muted">Il ne sera pas envoyé : le serveur compte ce combat comme perdu au prochain que tu ouvres.</p>',
+      actions: [
+        { label: 'Oublier', primary: true, fn: () => { closeSheet(); try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ } render(); } },
+        { label: 'Garder', fn: closeSheet }
+      ]
+    });
+  }
   openSheet({
     title: 'Abandonner ce combat ?',
     body: '<p class="muted">Il compte comme une défaite.</p>',
@@ -940,7 +1016,16 @@ function oublierCombat() {
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();
         try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ }
-        if (s && s.meta && s.meta.id) await agir(() => Backend.combatFin(s.meta.id, false, { abandon: true }));
+        noterPerdant(s && s.meta, false);
+        /* Le déroulé jusqu'à l'abandon, rejoué depuis la sauvegarde. */
+        const resume = { abandon: true };
+        try {
+          const E = Combat.rejouer(s.init, s.journal);
+          if (!E.fin) Combat.agir(E, { t: 'abandon', qui: 0 });
+          resume.histo = Historique.entree(E, 0, s.meta);
+        } catch (e) { /* sans déroulé */ }
+        if (s && s.meta && s.meta.id) await agir(() => Backend.combatFin(s.meta.id, false, resume));
+        cbHisto = null;
         render();
       } },
       { label: 'Garder', fn: closeSheet }
@@ -980,6 +1065,7 @@ function cbAction(k, el) {
     case 'voir-deck': return voirDeck(v);
     case 'decks-vue': cbDecksVue = v; return render();
     case 'tuto': return lancerTutoriel();
+    case 'histo': return ouvrirHistoCombat(v);
     case 'labo-fin': cbLabo = null; return aller('labo');
     case 'bilan': return ouvrirBilan(v);
     case 'copier-deck': return copierDeck(v);

@@ -6,22 +6,25 @@
    où elle apparaît, en combat compris (version 3.0.11, refonte entière) :
 
      1 · Satin    un vernis : un reflet posé, une lumière qui glisse ;
-     2 · Liseré   un bord de métal biseauté, à la couleur de son Essence ;
+     2 · Écrin    un fin cadre de métal autour de la carte, à la couleur de
+                  son Essence (le liseré de la 3.0.11, posé sur le bord de
+                  la carte, la dénaturait : version 3.0.12) ;
      3 · Holo     son illustration devient holographique ;
-     4 · Lumière  une lumière fait le tour du liseré, des étincelles
+     4 · Lumière  une lumière fait le tour de l'écrin, des étincelles
                   montent, un halo ; en combat, elle entre dans un éclat, et
                   ses coups brillent ;
-     5 · Légende  un liseré prismatique et trois étoiles du logo qui
+     5 · Légende  un écrin prismatique et trois étoiles du logo qui
                   scintillent ; en combat, une onde de choc.
    En combat, chaque niveau se voit à l'entrée de la carte — un Joueur posé,
    mais aussi un Moment ou un Coach joué, un Objet lié (mzEffetCombat). La
    carte reste intacte : c'est sa finition qui change (css/maitrise.css).
 
    Ce que coûte un niveau : des Fragments, et des exemplaires de la carte.
-   Le conflit avec les decks (il en faut deux pour jouer une carte deux
+   Le conflit avec les decks (il en faut trois pour jouer une carte trois
    fois) est réglé ainsi : la maîtrise ne prend que les exemplaires EN TROP —
-   au-delà de ce qu'un deck peut contenir (deux, un pour une Légendaire ou
-   une Secrète), au-delà de ce que le joueur a choisi de garder, et hors de
+   au-delà de ce qu'un deck peut contenir (trois, quelle que soit la rareté,
+   depuis les règles officielles de la 3.0.12 ; deux, ou un pour une
+   Légendaire ou une Secrète, avant), au-delà de ce que le joueur a choisi de garder, et hors de
    ce qui est promis dans un échange. Il en manque ? Chacun se remplace par
    son prix de fabrication en Fragments : la maîtrise n'est jamais bloquée,
    même avec une seule Légendaire. La maîtrise vaut pour la carte (toutes
@@ -33,13 +36,13 @@
 
 const MAITRISE = {
   max: 5,
-  noms: ['Satin', 'Liseré', 'Holo', 'Lumière', 'Légende'],
+  noms: ['Satin', 'Écrin', 'Holo', 'Lumière', 'Légende'],
   dit: [
     'Un vernis satiné : un reflet se pose sur la carte, une lumière la traverse de temps en temps.',
-    'Un bord de métal biseauté, à la couleur de son Essence.',
+    'Un fin écrin de métal autour de la carte, à la couleur de son Essence : la carte, elle, reste intacte.',
     'Son illustration devient holographique : un reflet prismatique la traverse, des paillettes s\'y allument.',
-    'Une lumière fait le tour de son liseré, des étincelles montent, un halo l\'entoure. En combat, elle entre dans un éclat, et ses coups brillent.',
-    'Un liseré prismatique et trois étoiles qui scintillent. En combat, une onde de choc traverse le plateau.'
+    'Une lumière fait le tour de son écrin, des étincelles montent, un halo l\'entoure. En combat, elle entre dans un éclat, et ses coups brillent.',
+    'Un écrin prismatique et trois étoiles qui scintillent. En combat, une onde de choc traverse le plateau.'
   ],
   /* Les Fragments d'un niveau (version 3.0.8) : la base de la rareté, fois
      1, 2, 4, 7, 11 — 25 fois la base pour la Légende : 1 500 pour une
@@ -66,8 +69,9 @@ const niveauMaitrise = (c, niveaux) => {
   const n = k && (niveaux || (save && save.maitrises) || {})[k.id];
   return Math.max(0, Math.min(MAITRISE.max, n || 0));
 };
-/* Ce qu'un deck peut en contenir (REGLE.COPIES, js/combat/moteur.js). */
-const limiteDeck = c => (['L', 'S', 'UN', 'PR'].includes(c.rar) ? 1 : 2);
+/* Ce qu'un deck peut en contenir (REGLE.COPIES, js/combat/moteur.js) :
+   trois, quelle que soit la rareté (règles officielles, 3.0.12). */
+const limiteDeck = () => (typeof Combat !== 'undefined' ? Combat.REGLE.COPIES : 3);
 
 /* Les Fragments du niveau n d'une carte de rareté `rar`. */
 const fragmentsMaitrise = (rar, n) => (MAITRISE.base[rar] || 0) * (MAITRISE.mult[n - 1] || 0);
@@ -90,12 +94,13 @@ function coutMaitrise(c) {
 
 /* ---------- L'allure ---------- */
 /* Ce que renderCard ajoute à une carte maîtrisée : des classes sur son
-   enveloppe, et les couches des finitions — dans la carte (le vernis, le
-   liseré, l'holo, la lumière, les étincelles, les étoiles : la carte les
-   découpe à sa forme), autour d'elle (le halo). `calme` : sans animation
+   enveloppe, et les couches des finitions — dans la carte (le vernis,
+   l'holo, les étincelles, les étoiles : la carte les découpe à sa forme),
+   autour d'elle (le halo, l'écrin et sa lumière). `calme` : sans animation
    (une grille de cent cartes). L'arène fait de même (js/combat/table.js,
-   htmlCarte et mzAutour). L'ordre des couches compte : l'holo sous le
-   liseré, la lumière par-dessus, les étoiles au-dessus de tout. */
+   htmlCarte et mzAutour). L'ordre des couches compte : le halo sous
+   l'écrin, sa lumière par-dessus ; dans la carte, les étoiles au-dessus de
+   tout. */
 /* L'étoile du logo, à quatre branches : l'insigne, les étoiles de la
    Légende. */
 const MZ_ETOILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .6c1 6.6 4.3 10 11.4 11.4C16.3 13.4 13 16.8 12 23.4 11 16.8 7.7 13.4.6 12 7.7 10.6 11 7.2 12 .6Z"/></svg>';
@@ -106,10 +111,10 @@ const MZ_ETOILE_V = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGr
 const mzDedans = n => '<i class="mz-s" aria-hidden="true"></i>'
   + (n >= 3 ? '<i class="mz-h" aria-hidden="true"></i>' : '')
   + (n >= 4 ? '<i class="mz-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></i>' : '')
-  + (n >= 2 ? '<i class="mz-t" aria-hidden="true"></i>' : '')
-  + (n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : '')
   + (n >= 5 ? `<i class="mz-g" aria-hidden="true">${MZ_ETOILE}${MZ_ETOILE}${MZ_ETOILE}</i>` : '');
-const mzAutourDe = n => (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '');
+const mzAutourDe = n => (n >= 4 ? '<i class="mz-a" aria-hidden="true"></i>' : '')
+  + (n >= 2 ? '<i class="mz-t" aria-hidden="true"></i>' : '')
+  + (n >= 4 ? '<i class="mz-b" aria-hidden="true"></i>' : '');
 function maitriseEnveloppe(c, n, calme) {
   if (!n) return { cls: '', style: '', dedans: '', autour: '' };
   const k = carteMaitrise(c);
@@ -162,10 +167,15 @@ function vMaitriseFiche(c) {
       <p class="mz-cout">${morceaux.join('<i>·</i>')}<i>·</i>tu as <b class="tnum">${fmtN(save.fragments || 0)}</b></p>
       ${assez ? '' : `<p class="mz-rien">Il te manque ${fmtN(cout.total - (save.fragments || 0))} Fragments : le recyclage des doublons en rapporte.</p>`}`;
   }
+  /* Version 3.0.12 : la maîtrise avant les 122 retarde la collection de
+     trois à quatre semaines en médiane (simulation, tools/equilibre-maitrise.py) ;
+     comme la fiche d'une Reverse à fabriquer, on le rappelle. */
+  const manquent = en && cout && typeof possedees === 'function' ? cards.length - possedees(cards) : 0;
   return `<div class="mz-fiche" style="--mc:${tcol(k)}">
     <div class="mz-frise" style="--n:${n}">${etapes}</div>
     ${detail}
     ${action}
+    ${manquent > 0 ? `<p class="mz-note mz-rappel">Il te manque ${manquent} carte${manquent > 1 ? 's' : ''} de l'extension : ces Fragments peuvent d'abord ${manquent > 1 ? 'les' : 'la'} fabriquer.</p>` : ''}
     <p class="mz-note">Seuls les exemplaires en trop sont pris : jamais ceux qu'un deck peut contenir (${limiteDeck(k)}), ni ceux que tu gardes.</p>
   </div>`;
 }
@@ -288,10 +298,27 @@ function voirNiveauVw(m) {
   const n = niveauMaitrise(c);
   /* Touché encore, ou son niveau actuel : on revient à la carte telle qu'elle est. */
   VW.apercu = VW.apercu === m || m === n ? 0 : m;
-  const carteEl = document.querySelector('#vwc');
-  if (carteEl) { carteEl.innerHTML = vCarteVw(c); VW.reflets = refletsVw(); }
+  /* La carte change de finition en place : ses classes et ses calques, pas
+     son image (version 3.0.12 ; la redessiner rechargeait l'illustration). */
+  const w = document.querySelector('#vwc .cwrap');
+  if (w) poserMaitrise(w, c, VW.apercu || n);
   const p = document.querySelector('#viewer .vw-page[data-p="maitrise"]');
   if (p) { p.innerHTML = vMaitriseFiche(c); hauteurPagesVw(); }
+}
+
+/* La finition d'une carte déjà affichée (renderCard), changée sans la
+   redessiner : les classes de son enveloppe, les calques dans la carte et
+   autour d'elle. */
+function poserMaitrise(w, c, n) {
+  const e = maitriseEnveloppe(c, n, w.classList.contains('mz-calme'));
+  [...w.classList].filter(k => /^mz(-\d)?$/.test(k)).forEach(k => w.classList.remove(k));
+  w.querySelectorAll(':scope>.card>:is(.mz-s,.mz-h,.mz-p,.mz-g),:scope>:is(.mz-a,.mz-t,.mz-b)').forEach(x => x.remove());
+  if (!n) { w.style.removeProperty('--mc'); return; }
+  w.classList.add('mz', 'mz-' + n);
+  w.style.setProperty('--mc', tcol(carteMaitrise(c)));
+  const carte = w.querySelector(':scope>.card');
+  if (carte) carte.insertAdjacentHTML('beforeend', e.dedans);
+  w.insertAdjacentHTML('beforeend', e.autour);
 }
 
 /* ---------- La carte fétiche ---------- */

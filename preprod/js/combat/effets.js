@@ -111,11 +111,15 @@ function* echangerPV(x) {
 }
 
 /* « Jouez cette carte » : la Résilience la plus courante. Un Instant joue son
-   effet ; un Objet se lie à un de vos Joueurs. Hors de son tour, elle ne
-   compte pas dans la limite d'un Coach. */
+   effet ; un Objet se lie à un de vos Joueurs. Jouer une carte, c'est
+   respecter la restriction par couleur (une Essence de sa couleur déployée,
+   Combat.couleurOk). Le texte officiel ne dit pas si un Coach joué ainsi,
+   hors de son tour, compte dans la limite d'un Coach par tour : il n'y
+   compte pas (docs/regles-3.0.md, « Ce que les règles ne tranchent pas »). */
 function* jouerCetteCarte(x) {
+  if (!O.couleurOk(x.E, x.j, x.c)) return;
   if (estObjet(x.c)) {
-    const t = yield* choisirAllie(x, 'Lier à quel Joueur ?', c => c.obj.length < R.OBJETS, 'lierAllie');
+    const t = yield* choisirAllie(x, 'Lier à quel Joueur ?', null, 'lierAllie');
     if (t) yield* O.lier(x.E, x.j, x.c, t);
     return;
   }
@@ -123,7 +127,8 @@ function* jouerCetteCarte(x) {
   if (s.effet) yield* s.effet(x);
 }
 function peutJouerCetteCarte(x) {
-  if (estObjet(x.c)) return joueurs(x).some(c => c.obj.length < R.OBJETS);
+  if (!O.couleurOk(x.E, x.j, x.c)) return false;
+  if (estObjet(x.c)) return joueurs(x).length > 0;
   const s = O.scr(x.c.id);
   return !!s.effet && (!s.jouable || s.jouable(x));
 }
@@ -368,12 +373,13 @@ S.c031 = {
 S.c032 = {
   invitation: true,
   *resilience(x) {
-    const o = yield* O.choisirUn(x.E, x.j, 'Quel Objet jouer ?', x.P.main.filter(estObjet), { zone: 'main', but: 'objetMain' });
+    /* « Jouer une carte Objet » : une que la restriction par couleur permet. */
+    const o = yield* O.choisirUn(x.E, x.j, 'Quel Objet jouer ?', x.P.main.filter(c => estObjet(c) && O.couleurOk(x.E, x.j, c)), { zone: 'main', but: 'objetMain' });
     if (!o) return;
-    const t = yield* choisirAllie(x, 'Lier à quel Joueur ?', c => c.obj.length < R.OBJETS, 'lierAllie');
+    const t = yield* choisirAllie(x, 'Lier à quel Joueur ?', null, 'lierAllie');
     if (t) { O.retirerMain(x.P, o.u); yield* O.lier(x.E, x.j, o, t); }
   },
-  resPossible: x => x.P.main.some(estObjet) && joueurs(x).some(c => c.obj.length < R.OBJETS)
+  resPossible: x => x.P.main.some(c => estObjet(c) && O.couleurOk(x.E, x.j, c)) && joueurs(x).length > 0
 };
 
 /* 033 Visa Refusé — Un Joueur adverse sans Objet ne peut pas attaquer
@@ -856,7 +862,7 @@ S.c075 = {
     *0(x) {
       const top = x.P.club.slice(0, 5);
       O.ev(x.E, { t: 'regarde', j: x.j, cartes: top.map(c => ({ u: c.u, id: c.id })) });
-      const autres = joueurs(x).filter(c => c !== x.c && c.obj.length < R.OBJETS);
+      const autres = joueurs(x).filter(c => c !== x.c);
       const objs = top.filter(estObjet);
       if (!autres.length || !objs.length) return;
       const o = yield* O.choisirUn(x.E, x.j, 'Lier un de ces Objets ?', objs, { zone: 'liste', montrer: top, optionnel: true, passer: 'Non', but: 'lierDepuis' });
@@ -866,12 +872,12 @@ S.c075 = {
     }
   },
   *entree(x) {
-    const autres = joueurs(x).filter(c => c !== x.c && c.obj.length < R.OBJETS);
+    const autres = joueurs(x).filter(c => c !== x.c);
     const objs = x.P.defausse.filter(estObjet);
     if (!autres.length || !objs.length) return;
     const t = yield* O.choisirUn(x.E, x.j, 'À quel Joueur lier 2 Objets ?', autres, { but: 'lierAllie' });
     if (!t) return;
-    const n = Math.min(2, R.OBJETS - t.obj.length, objs.length);
+    const n = Math.min(2, objs.length);
     const us = yield* O.choisirCartes(x.E, x.j, `Quels Objets lier (${n}) ?`, objs.map(c => c.u), n, n, { zone: 'liste', cartes: objs.map(c => ({ u: c.u, id: c.id })), but: 'lierDepuis' });
     for (const u of us) {
       /* Un déclencheur (Pollo) a pu déplacer l'Objet entre-temps. */
@@ -920,8 +926,8 @@ S.c080 = {
       const t = yield* O.choisirUn(x.E, x.j, 'Meet & Greeter — qui défend à sa place ?', cs, { zone: 'main', optionnel: true, passer: 'Il reste', but: 'deployer' });
       if (!t) return;
       const l = O.ligneDe(x.E, x.c);
-      const objets = O.quitterPlateau(x.E, x.c);
-      objets.forEach(o => x.P.defausse.push(o));
+      /* Il quitte le Terrain : ses Objets sont bench. */
+      O.benchObjets(x.E, O.quitterPlateau(x.E, x.c));
       x.P.club.push(x.c);
       O.melanger(x.E, x.P.club);
       O.ev(x.E, { t: 'auClub', j: x.j, u: x.c.u, id: x.c.id, ligne: l });
@@ -978,7 +984,10 @@ S.c085 = {
 
 /* 086 En slip sur la Faille — Lorsque ce Joueur est engagé, vous pouvez
    bench cet Objet pour le désengager ; il ne peut plus attaquer ce tour.
-   Résilience : vos Objets au Banc reviennent dans votre main. */
+   Résilience : « Vos Objet bench sont ajoutés à votre main jusqu'à la fin du
+   tour. » Bench, c'est la défausse (règles officielles) : les Objets qui y
+   sont arrivés par un bench (P.bench) passent en main, et ceux qui y sont
+   encore à la fin du tour retournent à la défausse (expirer, moteur). */
 S.c086 = {
   sur: {
     *engage(x, d) {
@@ -992,11 +1001,14 @@ S.c086 = {
     }
   },
   *resilience(x) {
-    const objs = x.P.banc.filter(estObjet);
-    for (const o of objs) { prendre(x.P.banc, o); x.P.main.push(o); }
-    if (objs.length) O.ev(x.E, { t: 'retourBanc', j: x.j, n: objs.length });
+    const objs = x.P.defausse.filter(o => estObjet(o) && x.P.bench.includes(o.u));
+    for (const o of objs) { prendre(x.P.defausse, o); x.P.main.push(o); }
+    if (objs.length) {
+      mod(x, { type: 'retourDefausse', camp: x.j, us: objs.map(o => o.u) });
+      O.ev(x.E, { t: 'ajouteLot', j: x.j, cartes: objs.map(o => ({ u: o.u, id: o.id })) });
+    }
   },
-  resPossible: x => x.P.banc.some(estObjet)
+  resPossible: x => x.P.defausse.some(o => estObjet(o) && x.P.bench.includes(o.u))
 };
 
 /* 087 Gros Bonnet — +30 Défense. Résilience : jouez cette carte. */

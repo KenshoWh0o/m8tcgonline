@@ -129,9 +129,6 @@ function vRaid() {
       <span><small>${x.saison !== r.n ? `Raid ${x.saison} · ` : ''}${h(x.dit)}</small><b>${h(x.titre)}</b></span>
       <button class="btn tiny" data-rd="coffre" data-s="${x.saison}" data-q="${x.quoi}" data-v="${x.n}" data-snd="piece">Ouvrir</button>
     </div>`).join('');
-  /* Plusieurs coffres : un seul geste, comme les quêtes (version 3.0.11). */
-  const nc = rdCoffres();
-  const tout = nc > 1 ? `<button class="btn rf-tout" data-rd="coffres-tout" data-snd="piece">${NAVICO.check}Tout ouvrir · ${nc} coffres</button>` : '';
   const pips = Array.from({ length: r.max }, (_, i) => `<i class="${i < tr ? 'on' : ''}"></i>`).join('');
   return `<div class="rd">
     <section class="rd-hero">
@@ -144,7 +141,7 @@ function vRaid() {
       </div>
     </section>
     ${vRaidPiste(r)}
-    ${coffres ? `<section class="rd-coffres">${tout}${coffres}</section>` : ''}
+    ${coffres ? `<section class="rd-coffres">${coffres}</section>` : ''}
     <section class="rd-go">
       <div class="rd-go-tete"><b>${infini ? `Infini · palier ${c.n}` : `Combattre la phase ${c.n}`}</b>
         <span class="rd-combat"><span class="rd-chip">IA ${etoiles(c.ia)}</span><span class="rd-chip">${c.pvBoss} PV</span>
@@ -270,48 +267,8 @@ async function ouvrirCoffre(saison, quoi, n) {
   }
 }
 
-/* Tous les coffres d'un geste : un à un (le serveur vérifie chacun), puis
-   une seule fenêtre qui dit tout ce qui est arrivé. Un refus arrête la suite :
-   les coffres restants attendent sur la page. */
-async function ouvrirTousCoffres() {
-  const liste = rdCoffresListe().slice();
-  if (!liste.length) return;
-  const pris = [], cartes = [];
-  let refus = null;
-  occupe(true);
-  try {
-    for (const x of liste) {
-      try {
-        const ids = await Backend.raidReclamer(x.saison, x.quoi, x.n);
-        pris.push(x);
-        for (const id of ids || []) if (byId[id]) cartes.push(byId[id]);
-      } catch (e) { refus = e.message || 'Un coffre n\'a pas pu être ouvert.'; break; }
-    }
-    rdEtat = await Backend.raidEtat().catch(() => rdEtat);
-  } finally {
-    occupe(false);
-  }
-  if (!pris.length) { toast(refus || 'Aucun coffre n\'a pu être ouvert.'); SFX.jouer('erreur'); return render(); }
-  SFX.jouer('gagne');
-  if (!RM()) FX.sparkle({ n: 110, colors: ['#b3a6ff', '#c8bfff', '#f5c451', '#fff'], size: 3.4 });
-  const boosters = pris.some(x => x.type === 'boosters');
-  openSheet({
-    title: `${pris.length} coffre${pris.length > 1 ? 's' : ''} ouvert${pris.length > 1 ? 's' : ''}`,
-    body: `<div class="rf-gain">
-        ${cartes.length ? `<div class="rf-gaincartes">${cartes.map(c => `<button data-show="${c.id}">${renderCard(c)}</button>`).join('')}</div>` : ''}
-        <ul class="rd-tous">${pris.map(x => `<li><span class="rd-coffre-ico">${raidIco(x)}</span><span><small>${x.quoi === 'commun' ? `Phase ${x.n}` : 'Personnel'}${x.saison !== (rdEtat && rdEtat.n) ? ` · Raid ${x.saison}` : ''}</small><b>${h(x.titre)}</b></span></li>`).join('')}</ul>
-        <p class="muted small">${refus ? `${h(refus)} Les autres coffres attendent sur la page du Raid.` : 'Tout est sur ton compte.'}</p>
-      </div>`,
-    actions: boosters
-      ? [{ label: 'Ouvrir mes boosters', primary: true, fn: () => { closeSheet(); aller('boosters'); setTimeout(() => openBooster({ bonus: true }), 350); } },
-         { label: 'Plus tard', fn: () => { closeSheet(); render(); } }]
-      : [{ label: 'Super', primary: true, fn: () => { closeSheet(); render(); } }]
-  });
-}
-
 function raidAction(k, el) {
   if (k === 'go') return lancerRaid();
   if (k === 'coffre') return ouvrirCoffre(+el.dataset.s, el.dataset.q, +el.dataset.v);
-  if (k === 'coffres-tout') return ouvrirTousCoffres();
   if (k === 'top') { rdTop = el.dataset.v; return render(); }
 }

@@ -301,17 +301,14 @@ function vBoosters() {
 }
 
 /* Les boutons d'ouverture : un booster de la réserve, un booster en plus
-   (achetés ou offerts), et depuis la version 3.0.11 « Tout ouvrir » (dix au
-   plus d'un coup, ouvrirTout dans js/opening.js) dès qu'il y en a deux, posé
-   à côté du bouton principal plutôt qu'en troisième rangée. */
+   (achetés ou offerts). Pas de « Tout ouvrir » : la 3.0.11 en avait un, retiré
+   en 3.0.12 à la demande du propriétaire — un geste qu'on rate du doigt, et
+   chaque booster mérite sa révélation. */
 function vBoutonsOuvrir(can, bonus) {
-  const tous = boostersDispos();
-  const tout = tous >= 2 ? `<button class="btn ghost packtout" data-act="open-tout" aria-label="Tout ouvrir : ${tous} boosters">Tout<span class="rc-reste">${tous}</span></button>` : '';
-  const duo = (btn) => (tout ? `<div class="packduo">${btn}${tout}</div>` : btn);
   const principal = bonus && !can ? '' : `<button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>`;
   const enPlus = bonus ? `<button class="btn packbtn bonusbtn${can ? ' ghost' : ''}" data-act="open-bonus">
         ${NAVICO.promo}${can ? 'Un booster en plus' : 'Ouvrir un booster en plus'}<span class="rc-reste">${bonus}</span></button>` : '';
-  return principal ? duo(principal) + enPlus : duo(enPlus);
+  return principal + enPlus;
 }
 
 /* La réserve : une rangée de jetons, un par booster disponible, et la recharge
