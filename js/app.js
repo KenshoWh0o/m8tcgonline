@@ -412,6 +412,9 @@ function aller(id) {
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     /* Version 2.0 : l'événement se charge en arrivant. */
     if (tab === 'illu') chargerIllu();
+    /* 3.0.13 : le bloc « Aujourd'hui » des Quêtes lit l'Épreuve, le Raid et
+       Devine l'illu, qui ne se chargent sinon qu'en visitant leur écran. */
+    if (tab === 'quetes') chargerAujourdhui();
     if (tab === 'reflets' && recapReflets()) chargerRecap();
     else if (tab === 'reflets') {
       passPlace = false;
@@ -458,7 +461,13 @@ async function clicPage(e) {
 
   /* Un lien vers une vue précise de la Collection porte les deux : la vue
      d'abord, puis l'onglet (data-tab passe avant tout le reste). */
-  if (d.tab) { if (d.colvue) colVue = d.colvue; return aller(d.tab); }
+  if (d.tab) {
+    if (d.colvue) colVue = d.colvue;
+    /* 3.0.13 : une vue des Combats ou du Choc (le bloc « Aujourd'hui »). */
+    if (d.cbv) return allerCb(d.cbv);
+    if (d.chv) chVue = d.chv;
+    return aller(d.tab);
+  }
   /* Version 3.0 : l'onglet Combats et son atelier (js/battle.js). */
   if (d.cb) return cbAction(d.cb, el);
   /* Version 3.0 : l'événement « Le Choc des Sections » (js/choc.js). */

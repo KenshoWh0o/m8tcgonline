@@ -41,7 +41,7 @@ async function chargerRaid() {
   } catch (e) {
     rdErreur = e.message || 'Le Raid n\'a pas pu être chargé.';
   }
-  if ((tab === 'combats' || tab === 'choc') && !ecranOccupe()) render();
+  if ((tab === 'combats' || tab === 'choc' || tab === 'quetes') && !ecranOccupe()) render();
   else if (typeof majDiscrete === 'function') majDiscrete(false);
 }
 /* Relu au plus toutes les vingt secondes : la barre bouge avec le serveur. */

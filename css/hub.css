@@ -272,6 +272,36 @@
    compteur, et le compte à rebours reste — c'est lui qui dit quand revenir. */
 .qperiode.fini{background:linear-gradient(135deg,var(--ok-wash),var(--surface) 64%);border-color:var(--ok-line)}
 .qperiode.fini .qpico{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+
+/* ============ Aujourd'hui (3.0.13), en tête des Quêtes ============ */
+/* Les rendez-vous du jour : une rangée qui défile au doigt, une grille sur
+   ordinateur. Ce qui reste à faire porte la lavande de l'action ; ce qui
+   est fait se coche en vert et s'efface d'un ton. */
+.auj{margin:0 0 var(--gap-3)}
+.auj-tete{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 2px 8px}
+.auj-tete h2{margin:0;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;font-size:17px;letter-spacing:-.02em}
+.auj-tete small{font-size:12.5px;color:var(--muted)}
+.auj-l{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+  scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;scroll-padding-inline:16px}
+.auj-l::-webkit-scrollbar{display:none}
+.auj-c{flex:0 0 auto;display:flex;align-items:center;gap:10px;min-width:0;max-width:220px;padding:10px 14px 10px 10px;
+  border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);text-align:left;scroll-snap-align:start;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.auj-c:active{transform:scale(.97);transition:transform .18s var(--spring)}
+.auj-ico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--accent-wash-2);color:var(--accent-soft)}
+.auj-ico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.auj-tx{min-width:0}
+.auj-tx b{display:block;font-size:14px;font-weight:800;line-height:1.2;white-space:nowrap}
+.auj-tx small{display:block;font-size:12px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auj-c.fait{background:transparent;border-color:var(--line)}
+.auj-c.fait .auj-ico{background:var(--ok-wash);color:var(--ok)}
+.auj-c.fait .auj-tx b{color:var(--subtle)}
+.auj-c.fait .auj-tx small{color:var(--muted)}
+@media (min-width:900px){
+  .auj-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));overflow:visible;margin:0;padding:0}
+  .auj-c{max-width:none}
+}
 .qperiode.fini .qpreste small{color:var(--ok)}
 .qpok{display:grid;place-items:center;width:26px;height:26px;margin:0 0 3px auto;border-radius:50%;
   background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
