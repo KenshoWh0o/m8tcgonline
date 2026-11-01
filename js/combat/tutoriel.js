@@ -127,7 +127,7 @@ const tuEss = c => (typeof essIcon === 'function' ? essIcon(c, 'tu-ico') : '');
 const TU_DEF = '<svg class="tu-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7Z" fill="#1e1d28" stroke="#fff" stroke-width="1.8"/></svg>';
 const ETAPES = [
   { info: true, quand: (E, d) => d && d.but === 'mulligan', titre: 'Bienvenue dans l\'arène',
-    texte: () => 'Deux <b>CEO</b> s\'affrontent : toi en bas, le Rival en haut. Chacun a des <b>Points de Victoire</b> (PV), des cartes posées face cachée : 4 dans une vraie partie, 2 seulement pour le Rival aujourd\'hui. Quand ton CEO est <b>touché</b>, il prend son premier PV <b>dans sa main</b>. On gagne en touchant le CEO adverse <b>quand il n\'a plus de PV</b> — ou s\'il doit piocher dans un Club vide.' },
+    texte: () => 'Deux <b>CEO</b> : toi en bas, le Rival en haut. Chacun a des <b>Points de Victoire</b> (PV), des cartes face cachée (4 dans une vraie partie, 2 pour le Rival aujourd\'hui). <b>Touché</b>, un CEO prend son premier PV <b>en main</b>. Tu gagnes en touchant le CEO adverse <b>quand il n\'a plus de PV</b>, ou s\'il doit piocher dans un Club vide.' },
   { quand: (E, d) => d && d.but === 'mulligan', titre: 'Ta main de départ',
     texte: () => 'Cinq cartes. Une fois, tu peux les remélanger dans ton Club pour en piocher cinq autres. Celle-ci est bonne : <b>garde-la</b>. Ensuite viennent les PV, puis le tirage au sort de qui commence.',
     attend: a => a.t === 'choix' && a.v === 'oui', vise: () => ['[data-ar="opt"][data-v="oui"]'] },
@@ -193,7 +193,7 @@ const ETAPES = [
     attend: a => a.t === 'choix',
     vise: E => { const d = Combat.demande(E); return ((d && d.options) || []).filter(o => o.u).map(o => `.ar-j[data-u="${o.u}"]`); } },
   { info: true, quand: (E, d) => tourDe(E, d, 5), titre: 'À toi de jouer',
-    texte: E => `Le Rival n'a plus que <b>${E.j[1].pv.length} PV</b>. Baby Driver est engagé : la ligne de Vandale est libre, celle de Pas Compris aussi. Touche son CEO jusqu'à ce qu'il n'ait plus de PV, puis <b>une dernière fois</b>. Les bulles reviendront quand il se passera quelque chose de nouveau.`,
+    texte: E => `Le Rival n'a plus que <b>${E.j[1].pv.length} PV</b>. Baby Driver est engagé : la ligne de Vandale est libre, celle de Pas Compris aussi. Touche son CEO jusqu'à ce qu'il n'ait plus de PV, puis <b>une dernière fois</b>. Une bulle reviendra si quelque chose de nouveau arrive.`,
     alors: () => { tuto.libre = true; } }
 ];
 
@@ -207,7 +207,7 @@ const REMARQUES = [
   { id: 'planete', evs: evs => evs.some(e => e.t === 'deploie' && e.id === 'c051'), titre: 'La Planète',
     texte: () => 'Elle a <b>Légion</b> : vaincue, elle peut revenir dans la main du Rival s\'il défausse une carte.' },
   { id: 'tient', evs: evs => evs.some(e => e.t === 'repousse'), titre: 'Il tient',
-    texte: () => '40 contre 90 : l\'attaque ne passe pas, et il ne reste aucune trace. Mais défendre <b>engage</b> : Vandale est tourné de côté, il ne pourra ni attaquer ni défendre avant ton prochain entretien.' },
+    texte: () => '40 contre 90 : l\'attaque ne passe pas, et les dégâts ne restent pas. Mais défendre <b>engage</b> : Vandale est tourné de côté, il ne pourra ni attaquer ni défendre avant ton prochain entretien.' },
   { id: 'defausse-fin', evs: (evs, E) => E.tour <= 3 && evs.some(e => e.t === 'defausse' && e.j === 1), titre: 'La fin de son tour',
     texte: () => 'Le Rival avait <b>6 cartes</b> en main : à la fin du tour, on en garde <b>5 au plus</b>. Il en défausse une.' },
   { id: 'vaincu', evs: evs => evs.some(e => e.t === 'vaincu'), titre: 'Vaincu',
@@ -232,7 +232,7 @@ const REMARQUES = [
   { id: 'banc', evs: evs => evs.some(e => e.t === 'banc'), titre: 'Bench',
     texte: () => '« Bench » une carte, c\'est l\'envoyer à la <b>défausse</b>. Ce n\'est pas être vaincu : ni Riposte, ni Légion.' },
   { id: 'defense-libre', dec: (E, d) => tuto.libre && d.but === 'defense', titre: 'Défendre ?',
-    texte: () => 'Défendre engage ton Joueur, et il tombe si l\'Attaque atteint sa Défense. Ne pas défendre coûte un PV… mais te donne une carte. À toi de peser.' },
+    texte: () => 'Défendre engage ton Joueur, et il tombe si l\'Attaque atteint sa Défense. Ne pas défendre coûte un PV, mais ce PV arrive dans ta main.' },
   { id: 'soutien-libre', dec: (E, d) => tuto.libre && d.but === 'soutien', titre: 'Soutenir ?',
     texte: () => 'Un soutien engage aussi ton voisin : il ne pourra plus défendre jusqu\'à ton prochain entretien.' },
   { id: 'touche-moi', evs: (evs, E) => E.tour > 4 && evs.some(e => e.t === 'touche' && e.j === 0), titre: 'Touché',

@@ -218,7 +218,7 @@ const TITRES = {
   t_elu:       { nom: 'L\'Élu',                    ton: 'UN', comment: 'Posséder la carte unique' },
   /* Version 3.0 : les combats. */
   t_sections:  { nom: 'Champion des Sections',     ton: 'L',  comment: 'Finir la campagne des Combats' },
-  t_legende:   { nom: 'Tombeur de Légende',        ton: 'E',  comment: 'Battre l\'IA Légende' },
+  t_legende:   { nom: 'Tombeur de Légende',        ton: 'E',  comment: 'Gagner en Arcade, difficulté Légende' },
   t_stratege:  { nom: 'Stratège',                  ton: 'R',  comment: 'Gagner 100 combats' },
   /* L'événement de la 3.0, « Le Choc des Sections » (js/combat/choc-data.js). */
   t_recrue:    { nom: 'Recrue du Choc',            ton: 'EV', comment: 'Palier 3 du Pass du Choc' },

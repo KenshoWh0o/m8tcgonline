@@ -147,7 +147,7 @@ function vRaid() {
     ${coffres ? `<section class="rd-coffres">${coffres}</section>` : ''}
     <section class="rd-go">
       <div class="rd-go-tete"><b>${infini ? `Infini · palier ${c.n}` : `Combattre la phase ${c.n}`}</b>
-        <span class="rd-combat"><span class="rd-chip">IA ${etoiles(c.ia)}</span><span class="rd-chip">${c.pvBoss} PV</span>
+        <span class="rd-combat"><span class="rd-chip" aria-label="Difficulté ${c.ia} sur 5">Difficulté ${etoiles(c.ia)}</span><span class="rd-chip">${c.pvBoss} PV</span>
         ${c.ess ? `<span class="rd-chip">${c.ess} Essence${c.ess > 1 ? 's' : ''} d'avance</span>` : ''}
         ${c.pvMoi < Combat.REGLE.PV ? `<span class="rd-chip rouge">Toi : ${c.pvMoi} PV</span>` : ''}</span></div>
       ${sec ? vChoixDeck() : ''}
@@ -163,9 +163,9 @@ function vRaid() {
       <summary>Comment ça marche</summary>
       <ol>
         <li><b>Un raid dure deux semaines</b>, trois tentatives par jour. Puis un nouveau boss arrive, et tout recommence.</li>
-        <li><b>Tout le serveur frappe le même boss.</b> Chaque PV que tu lui prends s'ajoute aux dégâts de tous. À chaque palier, une phase tombe, et son coffre commun s'ouvre pour tous ceux qui ont combattu dans le raid — même une seule fois.</li>
+        <li><b>Tout le serveur frappe le même boss.</b> Chaque PV pris compte pour tous. À chaque palier, une phase tombe et ouvre un coffre pour tous ceux qui ont combattu, ne serait-ce qu'une fois.</li>
         <li><b>Tes dégâts comptent aussi pour toi :</b> trois paliers personnels, à ${RAID.perso.map(p => fmtN(p.seuil)).join(', ')} dégâts.</li>
-        <li><b>Les six phases abattues</b> (si vous y arrivez), le mode Infini : chaque victoire fait monter ton palier, et le boss se durcit. C'est le classement Infini.</li>
+        <li><b>Après la sixième phase</b>, le mode Infini : chaque victoire te fait monter d'un palier, contre un boss plus dur, avec son propre classement.</li>
       </ol>
     </details>
     ${vTopRaid(5)}

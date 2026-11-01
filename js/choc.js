@@ -203,7 +203,7 @@ function vChNouveautes() {
     ${vChSecretes()}
     ${vChRefonte()}
     <div class="ch-nv-grille">
-      ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Tes Fragments font briller une carte, en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
+      ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Exemplaires en trop et Fragments font monter une carte en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
       ${tuile('data-cb="vue" data-v="raid"', illuCadre(rdBoss().id, rdBoss().visage[0], rdBoss().visage[1], 1.2), 'Le Raid', 'Un boss pour tout le serveur, et un nouveau toutes les deux semaines.', 'raid')}
       ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
@@ -225,7 +225,7 @@ function vChRefonte() {
         <span class="ch-ref-pal"><i></i><i></i><i></i><i></i></span>
       </span>
       <span class="ch-nv-une-t"><small>Un nouveau visage</small><b>La refonte visuelle</b>
-        <span>Tout le site redessiné : graphite et lavande, des tuiles pleines, les illustrations du jeu en grand, du verre qui flotte, et une seule couleur pour ce qu'on peut faire.</span>
+        <span>Tout le site redessiné en graphite et lavande, les illustrations du jeu en grand.</span>
         <span class="ch-nv-modes"><i>Graphite et lavande</i><i>Verre</i><i>Illustrations en grand</i></span></span>
       <span class="cb-une-go">Tout voir</span>
     </button>`;
@@ -256,7 +256,7 @@ function vChSecretes() {
   return `<button class="ch-nv-une ch-nv-sec" data-colvue="classiques" data-tab="collection">
       <span class="ch-sec-fan" aria-hidden="true">${liste.map(carte).join('')}</span>
       <span class="ch-nv-une-t"><small>L'autre grand ajout</small><b>Les Secrètes</b>
-        <span>${liste.length} cartes cachées au-delà des 122, avec la finition la plus rare du jeu. À toi de les trouver.</span>
+        <span>${liste.length} cartes au-delà des 122, avec la finition la plus rare du jeu.</span>
         <span class="ch-nv-modes"><i class="tnum">${eues} / ${liste.length} trouvée${eues > 1 ? 's' : ''}</i><i>Reflet irisé</i><i>Cadre Secrète</i></span></span>
       <span class="cb-une-go">Voir</span>
     </button>`;
@@ -292,7 +292,7 @@ function vChEpreuve() {
       <span class="ch-ep-ico">${NAVICO.epreuve}</span>
       <div><small>${num}Règle du jour</small><b>${h(x.regle.nom)}</b><p>${h(x.regle.texte)}</p></div>
     </section>
-    <div class="ch-ep-decks">${deck(x.moi, 'Ton deck imposé', 'moi')}<span class="cb-vs">VS</span>${deck(x.adv, `L'IA · ${h(DIFFICULTES[CHOC.epreuve.ia - 1].nom)}`, 'adv')}</div>
+    <div class="ch-ep-decks">${deck(x.moi, 'Ton deck imposé', 'moi')}<span class="cb-vs">VS</span>${deck(x.adv, `Adversaire · ${h(DIFFICULTES[CHOC.epreuve.ia - 1].nom)}`, 'adv')}</div>
     <section class="ch-ep-etat">
       <div class="ch-ep-pips">${pips}</div>
       <p><b>Ton meilleur :</b> ${h(texteScore(ep.meilleur))}</p>

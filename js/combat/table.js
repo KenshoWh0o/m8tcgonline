@@ -1601,7 +1601,7 @@ const Table = (() => {
     const P = T.E.j[j];
     const a = j === T.moi ? 'Ta' : `La`, de = j === T.moi ? '' : ` de ${h(nomCEO(j))}`;
     const txt = quoi === 'reserve'
-      ? `${P.reserve.length} Essence${P.reserve.length > 1 ? 's' : ''} attendent face cachée, mélangées. À chaque entretien, la première entre en jeu : c'est avec elles qu'on paie les attaques, et c'est leur couleur qui permet de jouer les Objets, les Coachs et les Moments de cette couleur.`
+      ? `${P.reserve.length} Essence${P.reserve.length > 1 ? 's' : ''}, face cachée. La première entre en jeu à chaque entretien. Les Essences paient les attaques, et leur couleur permet de jouer les cartes de cette couleur.`
       : `${P.club.length} carte${P.club.length > 1 ? 's' : ''} face cachée. On y pioche une carte à chaque entretien. Le CEO qui doit piocher dans un Club vide perd la partie.`;
     ouvrirSheet(`<p class="ar-s-titre">${quoi === 'reserve' ? `${a} Réserve d'Essences${de}` : (j === T.moi ? 'Ton Club' : `Le Club${de}`)}</p>
       <p class="ar-s-texte">${txt}</p>

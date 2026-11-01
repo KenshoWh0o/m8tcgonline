@@ -101,7 +101,7 @@ function vCombatsJoueur(f, niv, o) {
     <h2>Combats${niv ? ` <span class="pj-niv">Niveau ${niv}</span>` : ''}</h2>
     <div class="pj-cb">
       <div class="pj-cb-grand"><b class="tnum">${fmtN(v)}</b><span>victoire${v > 1 ? 's' : ''}</span><small>${tous ? `${pct} % sur ${fmtN(tous)} combat${tous > 1 ? 's' : ''}` : 'Aucun combat'}</small></div>
-      <div><b class="tnum">${fmtN(s.victoires || 0)}<i>–</i>${fmtN(s.defaites || 0)}</b><span>contre l'IA</span></div>
+      <div><b class="tnum">${fmtN(s.victoires || 0)}<i>–</i>${fmtN(s.defaites || 0)}</b><span>en solo</span></div>
       <div><b class="tnum">${fmtN(s.pvp_v || 0)}<i>–</i>${fmtN(s.pvp_d || 0)}</b><span>entre amis</span></div>
       <div><b class="tnum">${fmtN(s.serie || 0)}</b><span>série en cours</span><small>record ${fmtN(s.serie_max || 0)}</small></div>
       <div><b class="tnum">${fmtN(c.campagne || 0)}<small>/20</small></b><span>campagne</span></div>

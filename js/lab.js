@@ -1007,9 +1007,9 @@ function laboRecompenses() {
   for (let n = 2; n <= 60; n++) { const r = recompenseNiveau(n); if (r && (r.boosters || r.cadre || r.titre || r.fragments)) niveaux.push([n, fmtN(xpRequis(n - 1)), gain(Object.assign({}, r, { eclats: 0 }))]); }
   const ev = typeof chEv !== 'undefined' && chEv && chEv.piste;
   const R = RAID;
-  return `<p class="muted small">Rejouer un combat de campagne gagné : ${RECOMPENSE_REJOUER.eclats} Éclats. Au plus ${PVE_PLAFOND} victoires récompensées par jour contre l'IA.</p>
+  return `<p class="muted small">Rejouer un combat de campagne gagné : ${RECOMPENSE_REJOUER.eclats} Éclats. Au plus ${PVE_PLAFOND} victoires récompensées par jour en solo.</p>
     <h3>Campagne (la même pour les deux Sections)</h3>
-    ${tableau(['n°', 'Acte', 'IA', 'Règle', 'Première victoire'], camp)}
+    ${tableau(['n°', 'Acte', 'Difficulté', 'Règle', 'Première victoire'], camp)}
     <p class="muted small">Au bout : la Promo de l'autre Section, le titre « Champion des Sections », son Starter Deck prêté.</p>
     <h3>Arcade</h3>
     ${tableau(['Niveau', 'Nom', 'Victoire'], DIFFICULTES.map(d => [`${d.niveau}★`, h(d.nom), `${d.eclats} Éclats`]))}
@@ -1018,9 +1018,9 @@ function laboRecompenses() {
     ${tableau(['Niveau', 'XP pour y monter', 'En plus'], niveaux)}
     <h3>Le Raid · ${R.bosses.map(b => h(b.nom)).join(', puis ')}</h3>
     ${tableau(['Phase', 'Seuil', 'Combat', 'Coffre commun'], R.phases.map((ph, i) => [i + 1, `${fmtN(ph.seuil)} × échelle`,
-      `IA ${ph.ia} ★ · ${ph.pv} PV${ph.ess ? ` · +${ph.ess} Ess.` : ''}`, h(ph.commun.titre)]))}
+      `difficulté ${ph.ia} ★ · ${ph.pv} PV${ph.ess ? ` · +${ph.ess} Ess.` : ''}`, h(ph.commun.titre)]))}
     ${tableau(['Palier perso', 'Dégâts', 'Coffre'], R.perso.map((x, i) => [i + 1, fmtN(x.seuil), h(x.titre)]))}
-    ${tableau(['Infini', 'Combat'], [1, 2, 3, 4, 6, 9].map(n => { const c = R.infini(n); return [`palier ${n}`, `IA ${c.ia} ★ · boss ${c.pvBoss} PV · +${c.ess} Ess. · toi ${c.pvMoi} PV`]; }))}
+    ${tableau(['Infini', 'Combat'], [1, 2, 3, 4, 6, 9].map(n => { const c = R.infini(n); return [`palier ${n}`, `difficulté ${c.ia} ★ · boss ${c.pvBoss} PV · +${c.ess} Ess. · toi ${c.pvMoi} PV`]; }))}
     <p class="muted small">Pendant le Choc : ${R.parDegat} Étincelles par dégât, +${R.victoire} si le boss tombe. Sinon : ${R.parDegatEclats} Éclats par dégât, +${R.victoireEclats}. ${R.tentatives} tentatives par jour ; des raids de ${R.saison.jours} jours, comptés depuis le premier jour du Choc, aux boss à tour de rôle.</p>
     ${tableau(['Boss', 'Raids', 'Son deck', 'En combat'], R.bosses.map((b, i) => [h(b.nom), i ? 'pairs (2, 4…)' : 'impairs (1, 3…)', h(b.dit),
       `${b.ajuste ? `${-b.ajuste.pv} PV et ${-b.ajuste.ess} Essence d'avance de moins que la phase · ` : 'les chiffres de la phase · '}cadre ${h((FRAMES[b.cadre] || {}).nom || b.cadre)} · tapis ${h(((typeof TAPIS !== 'undefined' && TAPIS[b.tapis]) || (typeof TAPIS_BOSS !== 'undefined' && TAPIS_BOSS[b.tapis]) || {}).nom || b.tapis)}`]))}

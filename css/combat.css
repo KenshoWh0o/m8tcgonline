@@ -64,6 +64,11 @@
 .cb-paliers li{display:flex;gap:10px;align-items:baseline;padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface-2)}
 .cb-paliers b{flex:none;font-family:var(--display);font-style:italic;color:var(--accent-soft)}
 .cb-paliers span{font-size:13px;color:var(--subtle)}
+/* Ce que rapporte un combat (3.0.13) : une ligne par cas, plutôt qu'une phrase. */
+.cb-xp{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px}
+.cb-xp li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 10px;border-radius:var(--radius-sm);background:var(--surface-2);color:var(--subtle)}
+.cb-xp b{color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
+.cb-xp b small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
 
 /* Les étoiles d'une difficulté : cinq places, pleines ou vides. */
 .etoiles{display:inline-flex;gap:1px;vertical-align:middle}

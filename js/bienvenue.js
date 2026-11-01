@@ -154,7 +154,7 @@ function montrerNouveautes30() {
         <div class="nvtexte">
           <span class="nvkicker">Et aussi</span>
           <b>Les Secrètes</b>
-          <small>${nbS || 'Cinq'} cartes cachées au-delà des 122. À toi de les trouver.</small>
+          <small>${nbS || 'Cinq'} cartes au-delà des 122, à trouver dans les boosters.</small>
         </div>
       </div>
       <div class="nvhero v3r">
@@ -163,19 +163,19 @@ function montrerNouveautes30() {
         <div class="nvtexte">
           <span class="nvkicker">Un nouveau visage</span>
           <b>La refonte visuelle</b>
-          <small>Tout le site redessiné, en graphite et lavande : des tuiles pleines, les illustrations en grand, du verre qui flotte.</small>
+          <small>Tout le site redessiné, en graphite et lavande.</small>
         </div>
       </div>
       <ol class="bvpoints nvpoints">
-        ${point('sword', 'Les Combats.', 'Solo contre l\'IA (une campagne de vingt rivaux, et l\'Arcade, cinq difficultés) et Versus en direct contre tes amis, 60 secondes par tour, dans une arène en plein écran. Pour commencer, un tutoriel : une partie guidée, bulle après bulle (et 200 Éclats la première fois).')}
-        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes cachées au-delà des 122, avec la finition la plus rare du jeu : un reflet irisé, et un cadre pour qui trouve la première. La Légendaire passe à 4,25 %.`)}
-        ${point('foudre', 'Le Raid.', 'Un boss pour tout le serveur, et un nouveau toutes les deux semaines. Six phases à abattre ensemble : chacune qui tombe ouvre un coffre pour tous ceux qui ont combattu, et tes dégâts paient aussi tes coffres à toi. La dernière abattue, place au mode Infini.')}
-        ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP, sans limite par jour. Chaque niveau paie, et certains donnent boosters, cadres et titres.')}
-        ${point('fragment', 'La maîtrise des cartes.', 'Des Fragments et des exemplaires en trop font monter une carte en cinq niveaux — Satin, Reflet, Holo, Lumière, Légende — et chacun ajoute une finition, en combat aussi. Les exemplaires sont consommés, jamais ceux qu\'il te faut pour tes decks. Et une carte fétiche, en grand en haut de ton profil.')}
-        ${point('cards', 'Tes decks.', 'Un atelier pour en construire autant que tu veux, des codes pour les partager, et le Starter Deck de ta Section, prêté.')}
-        ${point('user', 'Le cadre Secrète.', 'Le plus rare du jeu : le reflet irisé des Secrètes autour de ton avatar, pour qui trouve sa première. Et huit autres cadres : Arène (niveaux 10 à 50), Toxique et Déter, ceux de l\'événement ; ton profil montre où gagner chacun.')}
-        ${point('shop', 'Tapis et sleeves.', 'Des tapis de jeu et des sleeves en boutique ; en combat, c\'est le tapis de celui qui joue qui s\'affiche.')}
-        ${choc ? point('choc', 'Le Choc des Sections.', `L'Épreuve du jour, le Raid payé en Étincelles, un Pass de vingt paliers et ses exclusifs — pendant deux semaines.`) : ''}
+        ${point('sword', 'Les Combats.', 'En solo (une campagne de vingt rivaux, l\'Arcade en cinq difficultés) ou en direct contre tes amis. Le tutoriel rapporte 200 Éclats.')}
+        ${point('promo', 'Les Secrètes.', `${nbS || 'Cinq'} cartes au-delà des 122, la finition la plus rare du jeu. La Légendaire passe à 4,25 %.`)}
+        ${point('foudre', 'Le Raid.', 'Un boss commun à tout le serveur, un nouveau toutes les deux semaines. Chaque phase abattue ouvre un coffre pour ceux qui ont combattu.')}
+        ${point('niveau', 'Ton niveau de combattant.', 'Chaque combat rapporte de l\'XP. Chaque niveau paie ; certains donnent un booster, un cadre ou un titre.')}
+        ${point('fragment', 'La maîtrise des cartes.', 'Cinq niveaux par carte, chacun avec sa finition, en combat aussi. Ils se paient en Fragments et en exemplaires en trop.')}
+        ${point('cards', 'Tes decks.', 'Un atelier, des codes de partage, et le Starter Deck de ta Section, prêté.')}
+        ${point('user', 'Neuf cadres.', 'Le cadre Secrète pour ta première Secrète, Arène (niveaux 10 à 50), Toxique, Déter et ceux de l\'événement.')}
+        ${point('shop', 'Tapis et sleeves.', 'En boutique. En combat, chacun voit le tapis de celui qui joue.')}
+        ${choc ? point('choc', 'Le Choc des Sections.', 'L\'Épreuve du jour, le Raid en Étincelles et un Pass de vingt paliers, pendant deux semaines.') : ''}
       </ol>`,
     actions: choc
       ? [{ label: 'Voir l\'événement', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); aller('choc'); } },

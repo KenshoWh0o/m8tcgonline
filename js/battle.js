@@ -138,7 +138,13 @@ function ouvrirNiveau() {
         <ul class="cb-paliers">${prochainsPaliers(n.niveau, 4).map(r => `<li><b>Niveau ${r.niveau}</b><span>${palier(r)}${r.eclats ? ` et ${r.eclats} Éclats` : ''}</span></li>`).join('')}</ul>
         <p class="muted small">Chaque niveau rapporte aussi ${NIVEAUX.eclats} Éclats.</p>
         <h4>Gagner de l'XP</h4>
-        <p class="small">Chaque combat fini en rapporte, <b>sans limite par jour</b> : ${NIVEAUX.victoire} pour une victoire en Normal, ${NIVEAUX.defaite} pour une défaite, plus pour un adversaire plus fort (×${NIVEAUX.facteur[5]} en Légende), +${NIVEAUX.parVaincu} par Joueur adverse vaincu. Un défi entre amis : ${NIVEAUX.defi.victoire} ou ${NIVEAUX.defi.defaite}. Ne comptent pas : les combats de moins de 20 secondes, et les défaites de moins de ${NIVEAUX.toursDefaite} tours.</p>
+        <ul class="cb-xp small">
+          <li><span>Victoire</span><b>${NIVEAUX.victoire} XP<small>en Normal · ×${String(NIVEAUX.facteur[5]).replace('.', ',')} en Légende</small></b></li>
+          <li><span>Défaite</span><b>${NIVEAUX.defaite} XP</b></li>
+          <li><span>Joueur adverse vaincu</span><b>+${NIVEAUX.parVaincu} XP</b></li>
+          <li><span>Défi entre amis</span><b>${NIVEAUX.defi.victoire} XP<small>${NIVEAUX.defi.defaite} en cas de défaite</small></b></li>
+        </ul>
+        <p class="muted small">Sans limite par jour. Ne comptent pas : les combats de moins de 20 secondes, les défaites de moins de ${NIVEAUX.toursDefaite} tours.</p>
       </div>`,
     actions: [{ label: 'Voir les missions', primary: true, fn: () => { closeSheet(); allerCb('missions'); } }, { label: 'Fermer', fn: closeSheet }]
   });
@@ -153,7 +159,7 @@ function vChoixSection() {
     </button>`;
   return `<div class="cb-choix">
     <div class="cb-choix-tete">
-      <small>Version 3.0 · Pré-build</small>
+      <small>Les Combats</small>
       <h1>Choisis ta Section</h1>
       <p class="muted">Deux Sections, comme les deux Starter Decks. Ta Section te donne sa Promo et son deck, et tu affronteras l'autre en campagne.</p>
     </div>
@@ -181,7 +187,7 @@ function proposerTutoriel() {
   if (typeof tutoFait !== 'function' || tutoFait()) return;
   openSheet({
     title: 'Apprendre en jouant ?',
-    body: '<p>Une partie guidée, bulle après bulle : déployer, attaquer, défendre, les PV, la Résilience, les mots-clés. Quelques minutes, et 200 Éclats la première fois. Elle se rejoue quand tu veux, depuis le Guide.</p>',
+    body: '<p>Une partie guidée pour apprendre les bases, en quelques minutes. 200 Éclats la première fois ; elle se rejoue depuis le Guide.</p>',
     actions: [
       { label: 'Lancer le tutoriel', primary: true, fn: () => { closeSheet(); lancerTutoriel(); } },
       { label: 'Plus tard', fn: closeSheet }
@@ -274,7 +280,7 @@ function vCbSolo(e) {
   const adverse = SECTIONS[autreSection(e.section)];
   const acte = prochain ? prochain.acte : ACTES[ACTES.length - 1];
   const n = cbChoix.infini || 3;
-  return `${cbSousTete('Solo', 'Contre l\'IA')}
+  return `${cbSousTete('Solo', 'Campagne et Arcade')}
     <button class="cb-mode campagne" data-cb="vue" data-v="campagne">
       <span class="cb-mode-art"${cbArt(prochain ? prochain.rival : adverse.promo)}></span>
       <span class="cb-mode-t">
@@ -303,7 +309,7 @@ function vCbJour(e) {
   const fait = Math.min(e.jour.recompensees, e.jour.plafond);
   return `<section class="cb-jour">
     <div class="cb-jour-l"><b>Éclats du jour</b>${cbPips(fait, e.jour.plafond)}<span class="tnum">${fait}/${e.jour.plafond}</span></div>
-    <p>Contre l'IA, tes ${e.jour.plafond} premières victoires de la journée rapportent des Éclats (en Arcade, et en rejouant un combat de campagne déjà gagné). Battre un rival de campagne pour la première fois paie toujours, en plus. L'XP, elle, n'a pas de limite.</p>
+    <p>Tes ${e.jour.plafond} premières victoires du jour en Arcade ou en campagne rejouée rapportent des Éclats. Un rival de campagne battu pour la première fois paie toujours. L'XP n'a pas de limite.</p>
   </section>`;
 }
 const cbPips = (n, max) => `<span class="cb-pips" aria-hidden="true">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -830,7 +836,7 @@ async function lancerInfini() {
   await demarrer({
     mode: 'infini', cle: String(n), niveau: n, deck,
     deckIA: null, /* tiré avec la graine du serveur */
-    adversaire: { nom: `IA · ${diff.nom}`, avatar: 'star', frame: n >= 5 ? 'f_or' : n >= 4 ? 'f_rose' : 'default' },
+    adversaire: { nom: `Adversaire · ${diff.nom}`, avatar: 'star', frame: n >= 5 ? 'f_or' : n >= 4 ? 'f_rose' : 'default' },
     titre: `Arcade · ${diff.nom}`, sousTitre: 'Un adversaire tiré au sort'
   });
 }

@@ -569,7 +569,7 @@ async function clicPage(e) {
       return render();
     /* Une Secrète qu'on n'a pas : elle ne se fabrique pas, on dit d'où elle
        vient — mais pas son taux. */
-    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle se cache dans les boosters (à quelle fréquence ? c\'est un secret), ou s\'échange contre une autre Secrète.');
+    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle sort des boosters, ou s\'échange contre une autre Secrète.');
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();
     case 'porte-code': return porteCode();
