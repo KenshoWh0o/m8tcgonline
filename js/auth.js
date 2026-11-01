@@ -31,16 +31,19 @@ function lireErreurRetour() {
   if (!msg) return;
 
   authErr = /beta_fermee|beta/i.test(msg)
-    ? "Le jeu n'est pas encore ouvert : ce compte n'y a pas encore accès."
+    ? "Ce compte n'a pas accès au jeu."
     : 'La connexion a échoué. Réessaie dans un instant.';
 
-  /* Avant l'ouverture, un refus à l'inscription vient presque toujours de là :
-     le serveur refuse de créer un compte qui n'a pas d'accès (handle_new_user,
+  /* Un refus à l'inscription vient presque toujours de là : le serveur refuse
+     de créer un compte qui n'a pas d'accès (handle_new_user,
      supabase/01_schema.sql), et Supabase ne renvoie qu'une erreur générique.
-     L'écran d'attente le dit, au lieu de revenir sans un mot. */
-  porteRefus = PORTE.active
-    ? "Ce compte n'a pas encore accès au jeu. Rendez-vous à l'ouverture !"
-    : '';
+     L'écran d'annonce le dit, au lieu de revenir sans un mot. Le projet est
+     annulé (js/gate.js) : rien n'ouvrira, la phrase ne promet donc rien.
+     Seule exception : la personne a elle-même refusé l'autorisation chez
+     Discord (`access_denied`), ce n'est alors pas une question d'accès. */
+  porteRefus = !PORTE.active ? ''
+    : /access_denied/i.test(src.get('error') || '') ? 'Connexion annulée.'
+    : "Ce compte n'a pas accès au jeu.";
 
   /* On efface l'erreur de l'adresse : recharger la page ne doit pas la
      remontrer, et un lien recopié ne doit pas la transporter. */
