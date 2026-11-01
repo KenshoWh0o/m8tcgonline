@@ -128,8 +128,11 @@ function makePromo(meta) {
   c.promo = true;
   c.obtention = meta.obtention || 'boutique';
   c.illustrateur = meta.illustrateur || '';
-  /* Version 3.0 : une Promo dont on ne connaît pas encore le contenu. */
-  if (meta.provisoire) { c.provisoire = true; c.section = meta.section || null; }
+  /* Version 3.0 : la Promo d'un Starter Deck dit sa Section ; une Promo
+     dont on ne connaît pas encore le contenu est `provisoire` (aucune depuis
+     la 3.0.13). */
+  if (meta.section) c.section = meta.section;
+  if (meta.provisoire) c.provisoire = true;
   return c;
 }
 

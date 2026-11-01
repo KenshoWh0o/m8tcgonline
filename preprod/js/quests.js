@@ -211,8 +211,70 @@ function vQuetes() {
       </div>
       <span class="wallet pageact">${shardIco}<b>${fmtN(save.shards)}</b></span>
     </div>
-    <div class="segbar">${onglets}</div>
+    ${vAujourdhui()}
+    <div class="segbar" role="tablist" aria-label="Période">${onglets}</div>
     ${vQuetesSection(qVue)}`;
+}
+
+/* ---------- Aujourd'hui (3.0.13) ---------- */
+/* Ce qu'il reste à faire aujourd'hui, en une rangée, en tête des Quêtes :
+   les rendez-vous qui ont un plafond par jour — les boosters de la réserve,
+   Devine l'illu, l'Épreuve du Choc, les tentatives du Raid, les victoires
+   payées en solo, les défis payés entre amis. Pas un onglet de plus (le
+   propriétaire : « il y a déjà beaucoup d'onglets »), et pas une pastille
+   de plus : chaque rendez-vous a déjà la sienne là où il vit. Un toucher y
+   mène. Ce qui reste à faire passe devant ; ce qui est fait se coche. */
+function chargerAujourdhui() {
+  if (Backend.mode !== 'cloud' || !save) return;
+  if (typeof illuData !== 'undefined' && !illuData) chargerIllu();
+  if (cbEtat().section) relireRaid();
+  if (evenementEnCours() === 'choc' && !chEtat) chargerChoc();
+}
+
+function vAujourdhui() {
+  if (Backend.mode !== 'cloud') return '';
+  const l = [];
+  const ajoute = (fait, ico, titre, etat, lien) => l.push({ fait, html:
+    `<button class="auj-c${fait ? ' fait' : ''}" ${lien}>
+      <span class="auj-ico" aria-hidden="true">${NAVICO[fait ? 'check' : ico]}</span>
+      <span class="auj-tx"><b>${titre}</b><small>${etat}</small></span>
+    </button>` });
+
+  const n = save.unlimited ? 1 : (save.tickets || 0) + (save.bonus || 0);
+  ajoute(n <= 0, 'star', 'Boosters',
+    save.unlimited ? 'illimités' : n > 0 ? `${n} à ouvrir` : `le prochain dans ${timerClock()}`, 'data-tab="boosters"');
+
+  if (typeof illuData !== 'undefined' && illuData) {
+    ajoute(!!illuData.fini, 'illu', 'Devine l\'illu',
+      illuData.fini ? (illuData.trouve ? 'trouvée' : 'à demain') : 'l\'illustration du jour', 'data-tab="illu"');
+  }
+
+  if (evenementEnCours() === 'choc' && typeof chEtat !== 'undefined' && chEtat && chEtat.epreuve) {
+    const r = chEtat.epreuve.max - chEtat.epreuve.essais.length;
+    ajoute(r <= 0, 'epreuve', 'L\'Épreuve', r > 0 ? `${r} essai${r > 1 ? 's' : ''}` : 'faite', 'data-tab="choc" data-chv="epreuve"');
+  }
+
+  const e = cbEtat();
+  if (e.section) {
+    if (typeof rdEtat !== 'undefined' && rdEtat) {
+      const t = rdTentatives();
+      ajoute(t <= 0, 'foudre', 'Le Raid', t > 0 ? `${t} tentative${t > 1 ? 's' : ''}` : 'à demain', 'data-tab="combats" data-cbv="raid"');
+    }
+    const j = e.jour;
+    ajoute(j.recompensees >= j.plafond, 'sword', 'Solo',
+      `${Math.min(j.recompensees, j.plafond)}/${j.plafond} victoires payées`, 'data-tab="combats" data-cbv="solo"');
+    ajoute(j.defis >= j.defis_plafond, 'amis', 'Versus',
+      `${Math.min(j.defis, j.defis_plafond)}/${j.defis_plafond} défis payés`, 'data-tab="combats" data-cbv="versus"');
+  } else {
+    ajoute(false, 'sword', 'Combats', 'choisis ta Section', 'data-tab="combats"');
+  }
+
+  const reste = l.filter(x => !x.fait).length;
+  l.sort((a, b) => a.fait - b.fait);
+  return `<section class="auj" aria-labelledby="auj-titre">
+      <div class="auj-tete"><h2 id="auj-titre">Aujourd'hui</h2><small>${reste ? `${reste} à faire` : 'Tout est fait'}</small></div>
+      <div class="auj-l" data-defil="auj">${l.map(x => x.html).join('')}</div>
+    </section>`;
 }
 
 function vQuetesSection(scope) {

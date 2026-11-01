@@ -4,12 +4,18 @@
 "use strict";
 
 /* ---------- Feuille modale ---------- */
+/* Une vraie fenêtre de dialogue (3.0.13) : nommée par son titre, le focus y
+   entre à l'ouverture, Tab y tourne en rond sans s'échapper derrière, Échap
+   la ferme (sauf verrouillée), et le focus revient à ce qui l'a ouverte. */
 let sheetLocked = false;
+let sheetRetour = null;
+const FOCUSABLES = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 
 function openSheet({ title, body, actions, locked }) {
   sheetLocked = !!locked;
   const w = $('#sheet');
-  w.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${title ? `<h3>${h(title)}</h3>` : ''}${body || ''}<div class="acts">${(actions || []).map((a, i) => `<button class="btn ${a.primary ? '' : 'ghost'}" data-si="${i}" ${a.disabled ? 'disabled' : ''}>${h(a.label)}</button>`).join('')}</div></div>`;
+  if (w.hidden) sheetRetour = document.activeElement;
+  w.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" tabindex="-1"${title ? ' aria-labelledby="sheet-titre"' : ''}>${title ? `<h3 id="sheet-titre">${h(title)}</h3>` : ''}${body || ''}<div class="acts">${(actions || []).map((a, i) => `<button class="btn ${a.primary ? '' : 'ghost'}" data-si="${i}" ${a.disabled ? 'disabled' : ''}>${h(a.label)}</button>`).join('')}</div></div>`;
   w.hidden = false;
   w.querySelectorAll('[data-si]').forEach(b => {
     b.onclick = e => {
@@ -18,13 +24,37 @@ function openSheet({ title, body, actions, locked }) {
       if (a && a.fn) a.fn();
     };
   });
+  const d = w.querySelector('.sheet');
+  if (d && !d.contains(document.activeElement)) d.focus({ preventScroll: true });
 }
 
 function closeSheet() {
   $('#sheet').hidden = true;
   $('#sheet').innerHTML = '';
   sheetLocked = false;
+  const r = sheetRetour;
+  sheetRetour = null;
+  if (r && r.isConnected && typeof r.focus === 'function' && r !== document.body) r.focus({ preventScroll: true });
 }
+
+document.addEventListener('keydown', e => {
+  const w = $('#sheet');
+  if (w.hidden) return;
+  /* Échap ferme la feuille, et rien d'autre (preventDefault : la fiche ou
+     le tiroir dessous le lisent). Verrouillée, elle ne se ferme pas, et rien
+     dessous non plus. */
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (!sheetLocked) closeSheet();
+    return;
+  }
+  if (e.key !== 'Tab') return;
+  const f = [...w.querySelectorAll(FOCUSABLES)].filter(x => x.getClientRects().length);
+  if (!f.length) { e.preventDefault(); return; }
+  const i = f.indexOf(document.activeElement);
+  if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && (i < 0 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+});
 
 $('#sheet').addEventListener('click', e => {
   if (e.target.id === 'sheet' && !sheetLocked) closeSheet();
@@ -323,6 +353,8 @@ async function agir(fn, msg) {
     await fn();
     if (msg) { toast(msg); SFX.jouer('gagne'); }
     render();
+    /* La feuille « Personnaliser » (3.0.13) montre le nouveau choix. */
+    if (typeof rafraichirPerso === 'function') rafraichirPerso();
     return true;
   } catch (e) {
     toast(e.message || 'Quelque chose a raté.');

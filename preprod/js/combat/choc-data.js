@@ -4,8 +4,9 @@
    un « raid » (une « saison » en base : raid_saisons…). Depuis la version
    3.0.11, ils se comptent depuis le premier jour du Choc des Sections : le
    raid 1 (The French Sorcerer) commence avec lui, le raid 2 (Le
-   Marionnettiste) quatorze jours plus tard, une semaine avant la fin de
-   l'événement, puis les deux boss alternent. Avant, ils se comptaient depuis
+   Marionnettiste) quatorze jours plus tard — depuis la 3.0.13, le
+   lendemain de la fin du Choc, qui dure deux semaines —, puis les deux
+   boss alternent. La page ne nomme pas un boss avant son arrivée. Avant, ils se comptaient depuis
    le 12 octobre 2026 : le premier raid du Choc s'appelait « saison 2 ».
    Chaque raid, le boss a six phases : chaque PV que les joueurs lui
    prennent en combat s'ajoute aux dégâts de tout le serveur, et chaque
@@ -19,8 +20,9 @@
    L'événement (CHOC) ajoute l'Épreuve du jour : le même combat pour tout le
    monde — les mêmes deux decks imposés, la même donne, une règle du jour.
    Trois essais, le meilleur compte, et un classement du jour. Une Épreuve
-   par jour de l'événement, numérotée de 1 à 21 (version 3.0.11), et un
-   calendrier des règles sur les trois semaines (CHOC.epreuve.calendrier).
+   par jour de l'événement, numérotée de 1 à 14 (de 1 à 21 de la 3.0.11 à la
+   3.0.12, quand le Choc durait trois semaines), et un calendrier des règles
+   sur les deux semaines (CHOC.epreuve.calendrier).
 
    Ce fichier est lu par la page et par le serveur de démo
    (_demo/serveur.js). Le serveur réel en a la copie dans
@@ -162,17 +164,17 @@ const CHOC = {
       { id: 'marathon', nom: 'Marathon', texte: 'Six PV chacun : une partie longue, où chaque carte compte.', pv: [6, 6], ess: [0, 0] },
       { id: 'classique', nom: 'Classique', texte: 'Les règles officielles, rien de plus.', pv: [4, 4], ess: [0, 0] }
     ],
-    /* Les trois semaines de l'événement, jour par jour (version 3.0.11) :
-       chaque semaine a les sept règles, dans un ordre à elle ; jamais la
-       même règle deux jours de suite, ni le même jour de la semaine d'une
-       semaine à l'autre. La première Épreuve est « Classique », pour
-       apprendre. Hors de ces 21 jours (un événement plus long), la règle
-       tourne avec la date (regleEpreuve). Les decks, eux, changent chaque
-       jour avec la graine du serveur. */
+    /* Les deux semaines de l'événement, jour par jour (version 3.0.11 ; la
+       troisième semaine retirée en 3.0.13) : chaque semaine a les sept
+       règles, dans un ordre à elle ; jamais la même règle deux jours de
+       suite, ni le même jour de la semaine d'une semaine à l'autre. La
+       première Épreuve est « Classique », pour apprendre. Hors de ces 14
+       jours (un événement plus long), la règle tourne avec la date
+       (regleEpreuve). Les decks, eux, changent chaque jour avec la graine du
+       serveur. */
     calendrier: [
       'classique', 'renforts', 'siege', 'miroir', 'eclair', 'outsider', 'marathon',
-      'siege', 'eclair', 'marathon', 'classique', 'renforts', 'miroir', 'outsider',
-      'renforts', 'marathon', 'outsider', 'eclair', 'miroir', 'classique', 'siege'
+      'siege', 'eclair', 'marathon', 'classique', 'renforts', 'miroir', 'outsider'
     ]
   }
 };

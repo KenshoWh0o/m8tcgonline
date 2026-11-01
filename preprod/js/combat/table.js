@@ -228,7 +228,7 @@ const Table = (() => {
 
   /* ---------- Le squelette ---------- */
   function squelette() {
-    const zone = j => `<div class="ar-zone ${cote(j)}"><div class="ar-ess-zone"></div><div class="ar-piles"></div></div>`;
+    const zone = j => `<div class="ar-zone ${cote(j)}"><div class="ar-ess-zone" role="group"></div><div class="ar-piles"></div></div>`;
     return `<div class="ar-fond"></div>
     <header class="ar-barre lui">
       <button class="ar-bouton" data-ar="menu" aria-label="Menu du combat">${NAVICO.menu}</button>
@@ -332,6 +332,12 @@ const Table = (() => {
     if (el.dataset.k === cle) return;
     el.dataset.k = cle;
     el.innerHTML = htmlCEO(j);
+    /* Le CEO adverse est une cible : il se prend au clavier (3.0.13). */
+    if (j !== T.moi) {
+      el.tabIndex = 0;
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', `CEO adverse, ${V.j[j].nom}, ${V.j[j].pv.length} PV`);
+    }
   }
 
   /* Un CEO : son avatar, son nom, ses PV — des cartes face cachée, comme
@@ -366,11 +372,13 @@ const Table = (() => {
         const m = mzDe(c.id, j);
         x.className = 'ar-j' + (m ? ` mz-j mz-${m}` : '');
         x.dataset.u = c.u;
+        x.tabIndex = 0;
+        x.setAttribute('role', 'button');
         if (m) x.style.setProperty('--mc', mzCouleur(c.id));
-        x.innerHTML = `${mzAutour(c.id, m)}${htmlCarte(c.id, m)}<span class="ar-objs"></span><span class="ar-def"></span><span class="ar-marques"></span><span class="ar-engage" aria-hidden="true">Engagé</span>`;
+        x.innerHTML = `${mzAutour(c.id, m)}${htmlCarte(c.id, m)}<span class="ar-eclair" aria-hidden="true"></span><span class="ar-objs"></span><span class="ar-def"></span><span class="ar-marques"></span><span class="ar-engage" aria-hidden="true">Engagé</span>`;
         place.appendChild(x);
       }
-      majJoueur(x, c);
+      majJoueur(x, c, j);
     });
     rendreEssences(j, el.querySelector('.ar-ess-zone'));
     rendrePiles(j, el.querySelector('.ar-piles'));
@@ -409,7 +417,7 @@ const Table = (() => {
     defausse: '<svg viewBox="0 0 24 24"><path d="M5 7h14l-1.2 13H6.2Z"/><path d="M9 7V4h6v3M3 7h18"/></svg>'
   };
 
-  function majJoueur(x, c) {
+  function majJoueur(x, c, j) {
     const E = vue();
     const k = carte(c.id);
     x.classList.toggle('eng', !!c.eng);
@@ -439,6 +447,10 @@ const Table = (() => {
     x.querySelector('.ar-def').className = 'ar-def' + (bonus > 0 ? ' plus' : bonus < 0 ? ' moins' : '') + (x.querySelector('.ar-def').classList.contains('bouge') ? ' bouge' : '');
     x.querySelector('.ar-def').innerHTML = `${MARQUES.Garde}<b>${def}</b>`;
     x.querySelector('.ar-def').setAttribute('aria-label', `Défense ${def}`);
+    /* Ce qu'un lecteur d'écran dit de la carte (3.0.13). */
+    const camp = j === T.moi ? 'Ton Joueur' : 'Joueur adverse';
+    const mots = ['Provocation', 'Garde', 'Riposte', 'Légion'].filter(mc => Combat.aMotCle(E, c, mc));
+    x.setAttribute('aria-label', `${camp} ${k.nom || ''}, Défense ${def}${att != null ? `, attaque ${att}` : ''}, ${c.eng ? 'engagé' : 'prêt'}${c.obj.length ? `, ${c.obj.length} Objet${c.obj.length > 1 ? 's' : ''}` : ''}${mots.length ? ', ' + mots.join(', ') : ''}`);
     const ids = c.obj.map(o => o.u).join(',');
     const objs = x.querySelector('.ar-objs');
     if (objs.dataset.k !== ids) {
@@ -635,6 +647,7 @@ const Table = (() => {
     allumer();
     /* Les fantômes des places qui ne sont plus à prendre s'en vont. */
     qsa('.ar-place:not(.cible)>.ar-place-f').forEach(x => x.remove());
+    qsa('.ar-place[role]:not(.cible)').forEach(x => { x.removeAttribute('role'); x.removeAttribute('tabindex'); x.removeAttribute('aria-label'); });
   }
   function allumer() {
     if (!T || T.occupe || T.E.fin) return;
@@ -671,6 +684,9 @@ const Table = (() => {
         const p = qs(`.ar-camp.moi .ar-place[data-ligne="${a.ligne}"]`);
         if (!p) continue;
         p.classList.add('cible');
+        p.tabIndex = 0;
+        p.setAttribute('role', 'button');
+        p.setAttribute('aria-label', `Place libre, ligne ${a.ligne + 1} : y poser ${tenue ? carte(tenue.id).nom || 'la carte' : 'la carte'}`);
         const f = p.querySelector('.ar-place-f');
         if (tenue && (!f || f.dataset.id !== tenue.id)) {
           if (f) f.remove();
@@ -694,9 +710,18 @@ const Table = (() => {
     const el = T.el;
     el.addEventListener('click', clic);
     el.addEventListener('contextmenu', e => e.preventDefault());
+    /* Au clavier (3.0.13) : les Joueurs posés, les places libres et les CEO
+       se prennent avec Tab, et Entrée ou Espace les touche. */
+    el.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const x = e.target.closest('[role="button"]:not(button)');
+      if (!x || !el.contains(x)) return;
+      e.preventDefault();
+      x.click();
+    });
     /* Échap, sur ordinateur : referme ce qui est ouvert, du plus haut au plus bas. */
     T.echap = e => {
-      if (!T || e.key !== 'Escape') return;
+      if (!T || e.key !== 'Escape' || e.defaultPrevented) return;
       const jr = qs('.ar-journal');
       const sh = qs('.ar-sheet');
       if (jr && !jr.hidden) jr.hidden = true;
@@ -880,10 +905,17 @@ const Table = (() => {
     }
 
     const z = qs('.ar-focus');
+    /* Le focus (3.0.13) : une carte qui s'ouvre le prend (son geste
+       principal, sinon « Fermer ») ; refermée, elle le rend à ce qui l'a
+       ouverte. Au clavier et au lecteur d'écran, on ne repart plus du haut. */
+    const ouverture = z.hidden;
+    if (ouverture) { const ae = document.activeElement; T.focusDe = ae && T.el.contains(ae) && !z.contains(ae) ? ae : null; }
     const r = qs('.ar-camp.moi').getBoundingClientRect();
     const a = T.el.getBoundingClientRect();
     z.style.bottom = garde ? `${Math.max(0, a.bottom - r.top + 4)}px` : '0px';
     z.className = 'ar-focus' + (garde ? ' haut' : '') + (large ? ' large' : '');
+    z.setAttribute('role', 'dialog');
+    z.setAttribute('aria-label', k.nom || 'Carte');
     z.innerHTML = `<div class="ar-f-in" style="--bas:${place}px">
       <div class="ar-fc">${htmlCarte(id, f.u != null && (f.main || ownerOf(f.u) === T.moi) ? mzDe(id, T.moi) : 0)}</div>
       <div class="ar-f-bas">${bas}</div>
@@ -893,6 +925,7 @@ const Table = (() => {
     if (f.main) rendre();
     /* Le tutoriel allume aussi ce qui est sous la carte (son attaque). */
     else if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
+    if (ouverture) { const b = z.querySelector('.ar-f-atq.ok,.ar-f-jouer,.ar-f-x'); if (b) b.focus({ preventScroll: true }); }
   }
 
   /* La ligne d'état d'un Joueur en jeu : sa Défense réelle, prêt ou engagé,
@@ -1007,6 +1040,9 @@ const Table = (() => {
     T.focus = null;
     qsa('.ar-m.choisi').forEach(x => x.classList.remove('choisi'));
     rendre();
+    const de = T.focusDe;
+    T.focusDe = null;
+    if (de && de.isConnected && T.el.contains(de)) de.focus({ preventScroll: true });
   }
 
   /* Le geste à faire pour une carte de sa main : où la poser (une flèche
@@ -1034,6 +1070,7 @@ const Table = (() => {
      peut pas être bench pour faire place). */
   function raisonPasDeploiement() {
     if (T.E.phase === 'combat') return 'Phase de Combat : on n\'y déploie plus.';
+    if (!Combat.joueurPermis(T.E, T.moi)) return 'GP Explorer II : plus de Joueur à jouer ce tour.';
     if (T.E.cpt.remplace >= Combat.REGLE.REMPLACEMENTS) return 'Tes trois cases sont prises, et tu as déjà remplacé un Joueur ce tour.';
     return 'Tes trois cases sont prises, et tes Joueurs sont engagés : seul un Joueur non engagé peut être remplacé.';
   }
@@ -1062,13 +1099,14 @@ const Table = (() => {
       if (b) l.push({ s: b > 0 ? 'plus' : 'moins', t: `Attaques ${signe(b)} de dégâts` });
     }
     for (const t of E.temp) {
-      const vise = t.cible != null ? t.cible === c.u : t.camp === c.j && (t.type === 'def' || t.type === 'atk');
+      const vise = t.cible != null ? t.cible === c.u : t.camp === c.j && (t.type === 'def' || t.type === 'atk' || t.type === 'doublePremiere');
       if (!vise) continue;
       if (t.type === 'def') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} Défense ${duree(t)}` });
       else if (t.type === 'atk') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} aux attaques ${duree(t)}` });
       else if (t.type === 'pasAttaque') l.push({ s: 'moins', t: `Ne peut pas attaquer ${duree(t)}` });
       else if (t.type === 'pasDefenseFace') l.push({ s: 'plus', t: `Le Joueur d'en face ne peut pas défendre contre lui ${duree(t)}` });
       else if (t.type === 'kw') l.push({ s: 'plus', t: `Gagne ${t.kw} ${duree(t)}` });
+      else if (t.type === 'doublePremiere' && E.cpt.attaques === 0) l.push({ s: 'plus', t: 'La première attaque du tour vaut double (Paris Gentle Mates)' });
     }
     for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) l.push({ s: 'kw', t: `<b>${m}</b> : ${MOTS_CLES[m]}` });
     if (Combat.shieldActif(E, c)) l.push({ s: 'kw', t: `<b>Shield</b> : ${MOTS_CLES.Shield}` });
@@ -1457,7 +1495,7 @@ const Table = (() => {
     const boutons = d.options.map(o => o.v === 'non'
       ? `<button class="ar-b ghost" data-ar="opt" data-v="non">${base >= dv ? 'Pas besoin' : 'Pas de soutien'}</button>`
       : `<button class="ar-b sout ${o.info.vaincu ? 'passe' : 'court'}" data-ar="opt" data-v="${o.v}">${coutHTML(o.cout || {})}<span>${h(o.label.replace('Soutien de ', ''))}</span><small>${o.info.total} contre ${o.info.def} · ${o.info.vaincu ? 'le défenseur tombe' : 'ne suffit pas'}</small></button>`).join('');
-    ouvrirSheet(`<div class="ar-s-duel">${att ? htmlCarte(att.id, mzDe(att.id, T.moi)) : ''}<span class="ar-sd-v"><small>ton attaque</small><b>${base}</b></span><i>${base >= dv ? '≥' : '&lt;'}</i><span class="ar-sd-v"><small>sa Défense</small><b>${dv}</b></span>${def ? htmlCarte(def.id) : ''}</div>
+    ouvrirSheet(`<div class="ar-s-duel">${att ? htmlCarte(att.id, mzDe(att.id, T.moi)) : ''}<span class="ar-sd-v"><small>Attaque</small><b>${base}</b></span><i>${base >= dv ? '≥' : '&lt;'}</i><span class="ar-sd-v"><small>Défense</small><b>${dv}</b></span>${def ? htmlCarte(def.id) : ''}</div>
       <p class="ar-s-titre">${h(carte(def ? def.id : '').nom || 'Un Joueur')} défend</p>
       <p class="ar-s-texte">${base >= dv ? 'Ton attaque suffit déjà.' : 'Ton attaque ne suffit pas.'} Un de tes Joueurs <b>voisins</b> peut <b>soutenir</b> : il paie et engage son attaque, et sa valeur s'ajoute à la tienne.</p>
       <div class="ar-s-act col">${boutons}</div>`, 'decision soutien');
@@ -1563,7 +1601,7 @@ const Table = (() => {
     const P = T.E.j[j];
     const a = j === T.moi ? 'Ta' : `La`, de = j === T.moi ? '' : ` de ${h(nomCEO(j))}`;
     const txt = quoi === 'reserve'
-      ? `${P.reserve.length} Essence${P.reserve.length > 1 ? 's' : ''} attendent face cachée, mélangées. À chaque entretien, la première entre en jeu : c'est avec elles qu'on paie les attaques, et c'est leur couleur qui permet de jouer les Objets, les Coachs et les Moments de cette couleur.`
+      ? `${P.reserve.length} Essence${P.reserve.length > 1 ? 's' : ''}, face cachée. La première entre en jeu à chaque entretien. Les Essences paient les attaques, et leur couleur permet de jouer les cartes de cette couleur.`
       : `${P.club.length} carte${P.club.length > 1 ? 's' : ''} face cachée. On y pioche une carte à chaque entretien. Le CEO qui doit piocher dans un Club vide perd la partie.`;
     ouvrirSheet(`<p class="ar-s-titre">${quoi === 'reserve' ? `${a} Réserve d'Essences${de}` : (j === T.moi ? 'Ton Club' : `Le Club${de}`)}</p>
       <p class="ar-s-texte">${txt}</p>
@@ -1614,21 +1652,32 @@ const Table = (() => {
     T.journal.push({ t, c });
     const j = qs('.ar-journal');
     if (!j.hidden) j.querySelector('ol').insertAdjacentHTML('beforeend', `<li class="${c || ''}">${t}</li>`);
+    raconter(t);
+  }
+  /* Le combat raconté aux lecteurs d'écran (3.0.13) : les lignes du journal
+     d'un même geste (une attaque, sa défense, son issue) sont dites ensemble,
+     un instant après, par la zone #annonce (annonceLecteur, js/utils.js). */
+  let recit = [], recitT = 0;
+  function raconter(t) {
+    if (typeof annonceLecteur !== 'function') return;
+    recit.push(String(t).replace(/<[^>]+>/g, '').replace(/^— /, ''));
+    clearTimeout(recitT);
+    recitT = setTimeout(() => { annonceLecteur(recit.join(' ')); recit = []; }, 450);
   }
 
   /* ---------- Qui commence ---------- */
   /* « Déterminez aléatoirement qui commence la partie » : après les mains et
      les PV, comme dans les règles. Une pièce à deux faces, la sienne (son
      avatar) et celle de l'autre ; elle tourne, retombe sur la face de celui
-     qui commence, puis le dit. `T.o.premierRaison` : le perdant de la partie
-     d'avant commence (« Le perdant commencera la partie suivante »). */
+     qui commence, puis le dit. `T.o.premierRaison` : qui commence est
+     décidé d'avance (le tutoriel). */
   async function pileOuFace(premier) {
     const moiDabord = premier === T.moi;
     const inf = T.o.joueurs || [];
     const face = j => `<span class="ar-piece-f">${avatarHTML((inf[j] || {}).avatar || 'star', 'default', 'xl', (inf[j] || {}).photo || null)}</span>`;
     const a = qs('.ar-annonce');
-    /* Décidé d'avance (le perdant de la partie d'avant) : la pièce se pose
-       sans tourner, et le son n'est pas celui d'un tirage. */
+    /* Décidé d'avance (le tutoriel) : la pièce se pose sans tourner, et le
+       son n'est pas celui d'un tirage. */
     const decide = T.o.premierRaison ? ' decide' : '';
     a.className = 'ar-annonce pileface' + decide;
     a.innerHTML = `<p class="ar-pf-titre">${decide ? 'Qui commence' : 'Tirage au sort'}</p>
@@ -1681,6 +1730,15 @@ const Table = (() => {
   }
 
   const rect = el => el && el.getBoundingClientRect();
+  /* Un éclair de couleur sur un Joueur (3.0.13) : l'opacité de son voile
+     .ar-eclair, jamais un filtre (qui repeignait la carte à chaque image). */
+  function eclair(x, couleur, ms) {
+    const v = x && x.querySelector(':scope>.ar-eclair');
+    if (!v || RM()) return;
+    v.style.background = couleur;
+    v.animate([{ opacity: 0 }, { opacity: .6, offset: .3 }, { opacity: 0 }], { duration: ms || 500, easing: 'ease-out' })
+      .finished.then(() => { v.style.background = ''; }, () => {});
+  }
   const elU = u => T.el.querySelector(`.ar-j[data-u="${u}"]`) || T.el.querySelector(`.ar-obj[data-u="${u}"]`);
   const elCEO = j => qs(`.ar-ceo.${cote(j)}`);
 
@@ -1708,10 +1766,10 @@ const Table = (() => {
   /* Un nombre ou un mot qui monte au-dessus d'une carte. Deux qui se
      suivent sur la même carte ne se chevauchent pas : le second part plus
      haut. */
-  function flottant(x, txt, cls) {
+  function flottant(x, txt, cls, cleR) {
     if (!x || !T) return;
-    const r = rect(x);
-    const cle = x.dataset.u || x.className;
+    const r = rectDe(x);
+    const cle = cleR || (x.dataset ? x.dataset.u || x.className : `${Math.round(r.left)},${Math.round(r.top)}`);
     T.flots = T.flots || {};
     const n = T.flots[cle] = (T.flots[cle] || 0) + 1;
     setTimeout(() => { if (T && T.flots) T.flots[cle] = Math.max(0, (T.flots[cle] || 1) - 1); }, 900);
@@ -1741,9 +1799,14 @@ const Table = (() => {
     return mzEffetCombat(x, m, mzCouleur(id), { scene: qs('.ar-scene'), secousse, vitesse: vitesse() });
   }
 
+  /* Un élément, ou un rectangle déjà mesuré (3.0.13) : relire la position
+     d'un élément juste après avoir redessiné le plateau forçait le
+     navigateur à tout remettre en page au milieu de l'animation (mesuré :
+     les deux tiers du temps de script d'un déploiement). */
+  const rectDe = x => x && (x.getBoundingClientRect ? x.getBoundingClientRect() : x);
   function eclats(x, couleurs, n) {
     if (!x || typeof FX === 'undefined') return;
-    const r = rect(x);
+    const r = rectDe(x);
     FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: n || 26, colors: couleurs || ['#fff', '#f5c451', '#c8bfff'], speed: 6, size: 3, g: .1 });
   }
 
@@ -1804,28 +1867,67 @@ const Table = (() => {
     z.remove();
   }
 
-  /* La visée : une flèche lumineuse de l'attaquant à sa cible, et un cercle
-     sur la cible. Un seul à la fois ; elle part à l'impact. */
+  /* La visée (refaite en 3.0.13 ; le propriétaire, de la flèche : « pas
+     très esthétique, trouve mieux »). Plus rien n'est tendu à travers le
+     plateau : un trait de lumière part de l'attaquant, file vers sa cible et
+     s'y résorbe (0,4 s) ; la cible reçoit une mire — quatre coins qui se
+     referment sur elle, et un halo qui respire —, de la couleur de
+     l'attaquant (lavande pour soi, corail pour l'adversaire), jusqu'à
+     l'impact. Un défenseur qui s'interpose reprend la mire. Mouvements
+     réduits : la mire seule, posée d'emblée. */
+  /* Un trait de lumière d'un rectangle à un autre (3.0.13) : il file et se
+     résorbe dans sa cible. Dessiné dans la seule boîte qui l'entoure (et non
+     sur tout le plateau), sans filtre : un halo large et pâle, un cœur blanc. */
+  function trait(a, b, genre, ms) {
+    const r0 = rect(T.el);
+    const x1 = a.left + a.width / 2 - r0.left, y1 = a.top + a.height / 2 - r0.top;
+    const x2 = b.left + b.width / 2 - r0.left, y2 = b.top + b.height / 2 - r0.top;
+    const qx = (x1 + x2) / 2 + (y2 - y1) * .14, qy = (y1 + y2) / 2 - (x2 - x1) * .14;
+    const pad = 10;
+    const gx = Math.min(x1, x2, qx) - pad, gy = Math.min(y1, y2, qy) - pad;
+    const w = Math.max(x1, x2, qx) + pad - gx, hh = Math.max(y1, y2, qy) + pad - gy;
+    const f = v => v.toFixed(1);
+    const d = `M${f(x1 - gx)} ${f(y1 - gy)} Q ${f(qx - gx)} ${f(qy - gy)} ${f(x2 - gx)} ${f(y2 - gy)}`;
+    const z = document.createElement('div');
+    z.className = 'ar-trait ' + genre;
+    z.setAttribute('aria-hidden', 'true');
+    z.style.cssText = `left:${f(gx)}px;top:${f(gy)}px;width:${f(w)}px;height:${f(hh)}px`;
+    z.innerHTML = `<svg width="${f(w)}" height="${f(hh)}" viewBox="0 0 ${f(w)} ${f(hh)}"><path class="h" d="${d}"/><path class="c" d="${d}"/></svg>`;
+    T.el.appendChild(z);
+    const ps = z.querySelectorAll('path');
+    const L = ps[0].getTotalLength();
+    ps.forEach(p => {
+      p.style.strokeDasharray = `${L} ${L}`;
+      p.animate([{ strokeDashoffset: L }, { strokeDashoffset: 0, offset: .55 }, { strokeDashoffset: -L }],
+        { duration: ms, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+    });
+    setTimeout(() => z.remove(), ms + 60);
+    return z;
+  }
   function viser(de, vers, moi) {
     effacerVisee();
     if (!de || !vers || !T) return;
-    const a = rect(de), b = rect(vers), r0 = rect(T.el);
-    const x1 = a.left + a.width / 2 - r0.left, y1 = a.top + a.height / 2 - r0.top;
-    const x2 = b.left + b.width / 2 - r0.left, y2 = b.top + b.height / 2 - r0.top;
-    const z = document.createElement('div');
-    z.className = 'ar-visee ' + (moi ? 'moi' : 'lui');
-    const len = Math.hypot(x2 - x1, y2 - y1);
-    z.innerHTML = `<svg width="${r0.width}" height="${r0.height}" viewBox="0 0 ${r0.width} ${r0.height}" aria-hidden="true">
-      <defs><marker id="ar-pointe" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z"/></marker></defs>
-      <path class="ar-v-trait" d="M${x1} ${y1} Q ${(x1 + x2) / 2 + (y2 - y1) * .12} ${(y1 + y2) / 2 - (x2 - x1) * .12} ${x2} ${y2}" style="--len:${len}" marker-end="url(#ar-pointe)"/></svg>`;
-    T.el.appendChild(z);
-    vers.classList.add('vise');
-    T.visee = { z, vers, de, moi };
+    const ceo = vers.classList.contains('ar-ceo');
+    const cible = ceo ? (vers.querySelector('.ar-ava') || vers) : vers;
+    const r0 = rect(T.el), a = rect(de), rc = rect(cible);
+    const m = document.createElement('div');
+    m.className = `ar-mire ${moi ? 'moi' : 'lui'}${ceo ? ' ceo' : ''}`;
+    m.setAttribute('aria-hidden', 'true');
+    m.style.cssText = `left:${rc.left - r0.left}px;top:${rc.top - r0.top}px;width:${rc.width}px;height:${rc.height}px`;
+    m.innerHTML = '<i></i><i></i><i></i><i></i>';
+    let z = null;
+    if (!RM()) {
+      const ms = 420 * vitesse();
+      z = trait(a, rc, moi ? 'moi' : 'lui', ms);
+      m.style.setProperty('--retard', Math.round(ms * .5) + 'ms');
+    }
+    T.el.appendChild(m);
+    T.visee = { z, m, vers, de, moi };
   }
   function effacerVisee() {
     if (!T || !T.visee) return;
-    T.visee.z.remove();
-    if (T.visee.vers) T.visee.vers.classList.remove('vise');
+    if (T.visee.z) T.visee.z.remove();
+    T.visee.m.remove();
     T.visee = null;
   }
 
@@ -1931,20 +2033,22 @@ const Table = (() => {
     async deploie(e) {
       if (e.pose) { rendre(true); return; }
       const place = qs(`.ar-camp.${cote(e.j)} .ar-place[data-ligne="${e.ligne}"]`);
+      /* La place est mesurée une fois, avant de redessiner (rectDe). */
+      const rp = rect(place);
       if (T.sauteVol !== e.u) {
         const de = e.j === T.moi ? (qs(`.ar-m[data-mu="${e.u}"]`) || qs('.ar-main')) : qs('.ar-mainadv');
         SFX.jouer('carte');
-        await vol(e.id, rect(de), rect(place), { ms: e.j === T.moi ? 440 : 600, w: rect(place) ? rect(place).width : 92, s0: 0.8, arc: 40, m: mzDe(e.id, e.j) });
+        await vol(e.id, rect(de), rp, { ms: e.j === T.moi ? 440 : 600, w: rp ? rp.width : 92, s0: 0.8, arc: 40, m: mzDe(e.id, e.j) });
       }
       rendre(true);
       const x = elU(e.u);
-      if (x) { x.classList.add('pose'); eclats(x, [coulDe(carte(e.id)).c, '#fff'], 16); }
+      if (x) { x.classList.add('pose'); eclats(rp || x, [coulDe(carte(e.id)).c, '#fff'], 16); }
       /* Une carte maîtrisée entre avec sa maîtrise (entreeMaitrisee). */
       const m = mzDe(e.id, e.j);
       if (x && m) await entreeMaitrisee(x, e.id, m);
       SFX.jouer('retourne');
       /* Le Joueur adverse se nomme en arrivant. */
-      if (e.j !== T.moi) flottant(x, carte(e.id).nom || '', 'info');
+      if (e.j !== T.moi) flottant(rp || x, carte(e.id).nom || '', 'info', String(e.u));
       await attendre(e.j === T.moi ? 260 : 700);
     },
     async entree(e) {
@@ -1963,6 +2067,7 @@ const Table = (() => {
        depuis la carte en grand, y va directement. */
     async lie(e) {
       const vers = elU(e.cible);
+      const rv = rect(vers);
       const k = carte(e.id), sur = carte(trouverId(e.cible)).nom || 'un Joueur';
       if (e.j !== T.moi) {
         SFX.jouer('carte');
@@ -1972,7 +2077,7 @@ const Table = (() => {
       } else if (T.sauteVol !== e.u) {
         const de = qs(`.ar-m[data-mu="${e.u}"]`) || qs('.ar-main');
         SFX.jouer('carte');
-        await vol(e.id, rect(de), rect(vers), { ms: 400, s1: 0.4, arc: 30, m: mzDe(e.id, e.j) });
+        await vol(e.id, rect(de), rv, { ms: 400, s1: 0.4, arc: 30, m: mzDe(e.id, e.j) });
       }
       rendre(true);
       const x = elU(e.cible);
@@ -1980,7 +2085,7 @@ const Table = (() => {
       /* Un Objet maîtrisé (à soi) : sa maîtrise se joue sur le Joueur qui le reçoit. */
       const mo = mzDe(e.id, e.j);
       if (x && mo) await entreeMaitrisee(x, e.id, mo);
-      else eclats(x, ['#c8bfff', '#fff'], 14);
+      else eclats(rv || x, ['#c8bfff', '#fff'], 14);
       SFX.jouer('retourne');
       await attendre(e.j === T.moi ? 220 : 520);
     },
@@ -2032,7 +2137,7 @@ const Table = (() => {
       if (mA >= 4) {
         const mc = mzCouleur(idA);
         eclats(c, ['#fff', mc, mc, '#fff6c8'], 34);
-        if (c && !RM()) c.animate([{ filter: `drop-shadow(0 0 0 ${mc})` }, { filter: `drop-shadow(0 0 14px ${mc}) brightness(1.5)`, offset: .3 }, { filter: 'none' }], { duration: 520 * vitesse() });
+        eclair(c, mc, 520 * vitesse());
       } else eclats(c, ['#fff', '#ff6b6b', '#ffb3b3'], 22);
       await attendre(e.cible !== 'ceo' && e.def != null ? 760 : 420);
     },
@@ -2040,7 +2145,7 @@ const Table = (() => {
       const x = elU(e.u);
       flottant(x, 'Repoussé', 'tient');
       SFX.jouer('piece');
-      if (x) x.animate([{ filter: 'brightness(2)' }, { filter: 'none' }], { duration: 400 });
+      eclair(x, '#fff', 400);
       await attendre(420);
     },
     async shield(e) {
@@ -2145,6 +2250,14 @@ const Table = (() => {
     async attaquePerdue(e) { effacerVisee(); flottant(elU(e.u), 'Attaque perdue', 'info'); await attendre(380); },
     /* Version 3.0.7 : les effets qui passaient sans un geste. */
     async mod(e) {
+      /* Ce qui vise un CEO plutôt qu'un Joueur (3.0.13) : GP Explorer II,
+         Paris Gentle Mates. Les attaques doublées se voient au redessin. */
+      if (e.type === 'pasJoueur' || e.type === 'doublePremiere') {
+        flottant(elCEO(e.camp), e.type === 'pasJoueur' ? 'Plus de Joueur ce tour' : 'Première attaque doublée', 'info');
+        rendre(true);
+        await attendre(560);
+        return;
+      }
       const cibles = e.cible != null ? [elU(e.cible)] : qsa(`.ar-camp.${cote(e.camp)} .ar-j`);
       cibles.filter(Boolean).forEach(x => { x.classList.remove('effet'); void x.offsetWidth; x.classList.add('effet'); setTimeout(() => x && x.classList.remove('effet'), 900); });
       /* La Défense et les attaques : les chiffres montent d'eux-mêmes au
@@ -2206,7 +2319,7 @@ const Table = (() => {
       const s = elU(e.u), a = elU(e.attaquant);
       if (s) s.classList.add('assaut');
       SFX.jouer('woosh');
-      lien(s, a);
+      lien(s, a, e.j === T.moi);
       T.sv = e.val;
       ticker(`<b>Soutien</b><i class="ar-fl">+</i>${h(carte(trouverId(e.u)).nom || '')} · ${e.val}`);
       flottant(a, `+${e.val}`, 'plus');
@@ -2215,15 +2328,11 @@ const Table = (() => {
     }
   };
 
-  /* Le trait du soutien, entre le voisin et l'attaquant : il s'efface seul. */
-  function lien(de, vers) {
+  /* Le soutien : le même trait de lumière, du voisin à l'attaquant (3.0.13 ;
+     avant, un pointillé tendu sur tout le plateau). */
+  function lien(de, vers, moi) {
     if (!de || !vers || !T || RM()) return;
-    const a = rect(de), b = rect(vers), r0 = rect(T.el);
-    const z = document.createElement('div');
-    z.className = 'ar-lien';
-    z.innerHTML = `<svg width="${r0.width}" height="${r0.height}" viewBox="0 0 ${r0.width} ${r0.height}" aria-hidden="true"><path d="M${a.left + a.width / 2 - r0.left} ${a.top + a.height / 2 - r0.top} L${b.left + b.width / 2 - r0.left} ${b.top + b.height / 2 - r0.top}"/></svg>`;
-    T.el.appendChild(z);
-    setTimeout(() => z.remove(), 1100 * vitesse() + 200);
+    trait(rect(de), rect(vers), 'soutien ' + (moi ? 'moi' : 'lui'), 520 * vitesse());
   }
 
   /* Le duel : l'attaque contre la Défense, en gros chiffres, le temps de
@@ -2348,27 +2457,27 @@ const Table = (() => {
    `img` absent : le tapis de base, dessiné par la page (css/arene.css). */
 const TAPIS = {
   t_base:      { nom: 'Nuit M8', img: null, prix: 0 },
-  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=3.0.12', prix: 4000 },
-  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=3.0.12', prix: 4000 },
-  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=3.0.12', prix: 5000 },
-  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=3.0.12', prix: 4000 },
-  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=3.0.12', prix: 4000 },
-  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.12', prix: 4000 },
+  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=3.0.13', prix: 4000 },
+  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=3.0.13', prix: 4000 },
+  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=3.0.13', prix: 5000 },
+  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=3.0.13', prix: 4000 },
+  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=3.0.13', prix: 4000 },
+  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=3.0.13', prix: 4000 },
   /* L'événement « Le Choc des Sections » : ni en vente, ni en Éclats.
      `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
-  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.12', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
-  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.12', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
+  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=3.0.13', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
+  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=3.0.13', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
 };
 /* Les tapis des boss du Raid qui n'en ont pas dans TAPIS (RAID.bosses,
    js/combat/choc-data.js) : sous leurs cartes seulement, ni en vente ni à
    gagner (version 3.0.11). Le Sorcier a le sien dans TAPIS : la boutique du
    Choc le vend. Dessinés par tools/choc-visuels.py. */
 const TAPIS_BOSS = {
-  t_ficelles:  { nom: 'Le Marionnettiste', img: 'assets/combat/tapis/t_ficelles.webp?v=3.0.12' }
+  t_ficelles:  { nom: 'Le Marionnettiste', img: 'assets/combat/tapis/t_ficelles.webp?v=3.0.13' }
 };
 const SLEEVES = {
-  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.12', prix: 0 },
-  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.12', prix: 3000 },
-  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.12', prix: 2500 },
-  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.12', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
+  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=3.0.13', prix: 0 },
+  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=3.0.13', prix: 3000 },
+  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=3.0.13', prix: 2500 },
+  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=3.0.13', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
 };

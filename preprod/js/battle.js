@@ -34,29 +34,6 @@ const CB_ALIAS = { infini: 'arcade', defis: 'versus' };
 const CB_PARENT = { campagne: 'solo', arcade: 'solo' };
 const CLE_COMBAT = 'mtcg.combat.encours';
 
-/* « Le perdant commencera la partie suivante » (règles officielles ;
-   docs/regles-3.0.md, § 5.1). Contre l'IA, la partie suivante est le
-   prochain combat contre le même adversaire : le même rival de campagne, la
-   même difficulté d'Arcade, le même boss, l'adversaire de la même Épreuve.
-   Ce navigateur retient qui a perdu la dernière (0 : toi, 1 : l'IA) ; la
-   première partie contre un adversaire est tirée au sort. Les défis entre
-   amis le font côté serveur (defi_lancer). */
-const CLE_PERDANTS = 'mtcg.combat.perdants';
-const adversaireDe = m => m.mode + ':' + (m.mode === 'epreuve' ? m.cle : (m.adversaire || {}).nom || m.cle);
-function perdants() {
-  try { return JSON.parse(localStorage.getItem(CLE_PERDANTS)) || {}; } catch (e) { return {}; }
-}
-function noterPerdant(meta, gagne) {
-  if (!meta || !meta.mode) return;
-  const l = perdants(), k = adversaireDe(meta);
-  delete l[k];
-  l[k] = gagne ? 1 : 0;
-  /* Au-delà de soixante adversaires (une Épreuve par jour), les plus anciens partent. */
-  const cles = Object.keys(l);
-  cles.slice(0, Math.max(0, cles.length - 60)).forEach(c => delete l[c]);
-  try { localStorage.setItem(CLE_PERDANTS, JSON.stringify(l)); } catch (e) { /* */ }
-}
-
 /* ---------- L'état de combat du joueur ---------- */
 /* Rangé par Backend.apply (save.combat), avec des valeurs par défaut hors
    ligne. */
@@ -161,7 +138,13 @@ function ouvrirNiveau() {
         <ul class="cb-paliers">${prochainsPaliers(n.niveau, 4).map(r => `<li><b>Niveau ${r.niveau}</b><span>${palier(r)}${r.eclats ? ` et ${r.eclats} Éclats` : ''}</span></li>`).join('')}</ul>
         <p class="muted small">Chaque niveau rapporte aussi ${NIVEAUX.eclats} Éclats.</p>
         <h4>Gagner de l'XP</h4>
-        <p class="small">Chaque combat fini en rapporte, <b>sans limite par jour</b> : ${NIVEAUX.victoire} pour une victoire en Normal, ${NIVEAUX.defaite} pour une défaite, plus pour un adversaire plus fort (×${NIVEAUX.facteur[5]} en Légende), +${NIVEAUX.parVaincu} par Joueur adverse vaincu. Un défi entre amis : ${NIVEAUX.defi.victoire} ou ${NIVEAUX.defi.defaite}. Ne comptent pas : les combats de moins de 20 secondes, et les défaites de moins de ${NIVEAUX.toursDefaite} tours.</p>
+        <ul class="cb-xp small">
+          <li><span>Victoire</span><b>${NIVEAUX.victoire} XP<small>en Normal · ×${String(NIVEAUX.facteur[5]).replace('.', ',')} en Légende</small></b></li>
+          <li><span>Défaite</span><b>${NIVEAUX.defaite} XP</b></li>
+          <li><span>Joueur adverse vaincu</span><b>+${NIVEAUX.parVaincu} XP</b></li>
+          <li><span>Défi entre amis</span><b>${NIVEAUX.defi.victoire} XP<small>${NIVEAUX.defi.defaite} en cas de défaite</small></b></li>
+        </ul>
+        <p class="muted small">Sans limite par jour. Ne comptent pas : les combats de moins de 20 secondes, les défaites de moins de ${NIVEAUX.toursDefaite} tours.</p>
       </div>`,
     actions: [{ label: 'Voir les missions', primary: true, fn: () => { closeSheet(); allerCb('missions'); } }, { label: 'Fermer', fn: closeSheet }]
   });
@@ -176,7 +159,7 @@ function vChoixSection() {
     </button>`;
   return `<div class="cb-choix">
     <div class="cb-choix-tete">
-      <small>Version 3.0 · Pré-build</small>
+      <small>Les Combats</small>
       <h1>Choisis ta Section</h1>
       <p class="muted">Deux Sections, comme les deux Starter Decks. Ta Section te donne sa Promo et son deck, et tu affronteras l'autre en campagne.</p>
     </div>
@@ -204,7 +187,7 @@ function proposerTutoriel() {
   if (typeof tutoFait !== 'function' || tutoFait()) return;
   openSheet({
     title: 'Apprendre en jouant ?',
-    body: '<p>Une partie guidée, bulle après bulle : déployer, attaquer, défendre, les PV, la Résilience, les mots-clés. Quelques minutes, et 200 Éclats la première fois. Elle se rejoue quand tu veux, depuis le Guide.</p>',
+    body: '<p>Une partie guidée pour apprendre les bases, en quelques minutes. 200 Éclats la première fois ; elle se rejoue depuis le Guide.</p>',
     actions: [
       { label: 'Lancer le tutoriel', primary: true, fn: () => { closeSheet(); lancerTutoriel(); } },
       { label: 'Plus tard', fn: closeSheet }
@@ -297,7 +280,7 @@ function vCbSolo(e) {
   const adverse = SECTIONS[autreSection(e.section)];
   const acte = prochain ? prochain.acte : ACTES[ACTES.length - 1];
   const n = cbChoix.infini || 3;
-  return `${cbSousTete('Solo', 'Contre l\'IA')}
+  return `${cbSousTete('Solo', 'Campagne et Arcade')}
     <button class="cb-mode campagne" data-cb="vue" data-v="campagne">
       <span class="cb-mode-art"${cbArt(prochain ? prochain.rival : adverse.promo)}></span>
       <span class="cb-mode-t">
@@ -326,7 +309,7 @@ function vCbJour(e) {
   const fait = Math.min(e.jour.recompensees, e.jour.plafond);
   return `<section class="cb-jour">
     <div class="cb-jour-l"><b>Éclats du jour</b>${cbPips(fait, e.jour.plafond)}<span class="tnum">${fait}/${e.jour.plafond}</span></div>
-    <p>Contre l'IA, tes ${e.jour.plafond} premières victoires de la journée rapportent des Éclats (en Arcade, et en rejouant un combat de campagne déjà gagné). Battre un rival de campagne pour la première fois paie toujours, en plus. L'XP, elle, n'a pas de limite.</p>
+    <p>Tes ${e.jour.plafond} premières victoires du jour en Arcade ou en campagne rejouée rapportent des Éclats. Un rival de campagne battu pour la première fois paie toujours. L'XP n'a pas de limite.</p>
   </section>`;
 }
 const cbPips = (n, max) => `<span class="cb-pips" aria-hidden="true">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -571,7 +554,7 @@ const DEFI_GAIN = { victoire: 40, defaite: 15, plafond: 3 };
    Brillantes). Le deck actif en tête, en grand, avec sa note ; les autres
    en lignes ; et ce qui fait un bon deck, à portée de main. */
 let cbDecksVue = 'decks';
-const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" aria-label="${n} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" role="img" aria-label="${n} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 function vCbDecks(e) {
   const seg = `<div class="dk-seg" role="tablist">
       <button class="${cbDecksVue === 'decks' ? 'on' : ''}" data-cb="decks-vue" data-v="decks" role="tab">Mes decks</button>
@@ -584,6 +567,9 @@ function vCbDecks(e) {
   const bouton = d => d.starter
     ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>`
     : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`;
+  /* Montrer un deck sur son profil (3.0.13) : seulement un deck à soi, complet. */
+  const montrer = d => d.starter || Decks.verifier(d, save.col).length ? ''
+    : `<button class="dk-montre${d.public ? ' on' : ''}" data-cb="montrer" data-v="${h(d.id)}" aria-pressed="${!!d.public}">${d.public ? `${NAVICO.check}Montré sur ton profil` : 'Montrer sur ton profil'}</button>`;
   let une = '';
   if (actif) {
     const b = Decks.bilan(actif);
@@ -591,7 +577,7 @@ function vCbDecks(e) {
       <span class="dk-actif-art"${cbArt(actif.couverture)}></span>
       <div class="dk-actif-t"><small>Ton deck actif</small><b>${h(actif.nom)}</b>
         <button class="dk-note" data-cb="bilan" data-v="${h(actif.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span>${NAVICO.caret}</button>
-        <span class="cb-deck-ess">${essences(actif)}</span></div>
+        <span class="cb-deck-ess">${essences(actif)}</span>${montrer(actif)}</div>
       <div class="dk-actif-act">${bouton(actif)}<button class="btn tiny ghost" data-cb="voir-deck" data-v="${h(actif.id)}">Voir</button></div>
     </section>`;
   }
@@ -603,7 +589,7 @@ function vCbDecks(e) {
       <button class="dk-ligne-art" data-cb="${d.starter ? 'voir-deck' : 'editer'}" data-v="${h(d.id)}"${cbArt(d.couverture)} aria-label="${d.starter ? 'Voir' : 'Modifier'} ${h(d.nom)}"></button>
       <div class="dk-ligne-t"><b>${h(d.nom)}</b>
         <small>${d.starter ? 'Starter Deck · prêté' : err.length ? `<span class="cb-ko">${h(err[0])}</span>` : 'Prêt à jouer'}</small>
-        ${err.length ? '' : `<button class="dk-note petit" data-cb="bilan" data-v="${h(d.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span></button>`}</div>
+        ${err.length ? '' : `<button class="dk-note petit" data-cb="bilan" data-v="${h(d.id)}">${ETOILES_DECK(b.note)}<span>${b.nom}</span></button>`}${montrer(d)}</div>
       <div class="dk-ligne-act">
         <button class="btn tiny" data-cb="activer" data-v="${h(d.id)}" ${err.length ? 'disabled' : ''}>Utiliser</button>
         ${bouton(d)}</div>
@@ -619,32 +605,33 @@ function vCbDecks(e) {
     ${vBonDeck()}`;
 }
 
-/* Ce qui fait un bon deck : les trois repères de Decks.bilan, expliqués
-   avec ce qu'ils valent, et le chemin le plus court pour en construire un. */
+/* Un bon deck : les trois conseils des règles officielles (Decks.bilan). */
 function vBonDeck() {
   const B = Decks.BON;
   const point = (t, x) => `<li><b>${t}</b><span>${x}</span></li>`;
   return `<details class="dk-bon" data-garde="bon-deck">
-    <summary><span class="dk-bon-ico">${GD_ICO.deck}</span><span><b>Qu'est-ce qu'un bon deck ?</b><small>Trois repères, mesurés en faisant jouer l'IA</small></span>${NAVICO.caret}</summary>
+    <summary><span class="dk-bon-ico">${GD_ICO.deck}</span><span><b>Un bon deck</b><small>Les trois conseils des règles officielles</small></span>${NAVICO.caret}</summary>
     <ol class="dk-bon-l">
-      ${point(`${B.joueurs} Joueurs au moins.`, 'Ce sont eux qui attaquent et qui tiennent tes lignes. Avec 8, un deck gagne 3 parties sur 10 ; avec 12, un peu plus de 4 ; à partir de 16, la moitié ou plus — et en mettre davantage ne fait pas de mal.')}
-      ${point('Une Réserve accordée à tes attaques.', 'Si tes attaques demandent du Rose, mets du Rose : une Réserve d\'une autre couleur fait perdre environ 8 parties sur 100. « Réserve auto », dans l\'atelier, la règle pour toi.')}
-      ${point('Des attaques qui partent tôt.', 'Tu ne poses qu\'une Essence par tour. Des Joueurs qui attaquent tous pour 2 Essences ou moins ont gagné 59 parties sur 100 : vise au moins la moitié.')}
+      ${point(`${B.joueurs} Joueurs au moins.`, '« Pour être sûr de ne pas manquer. »')}
+      ${point('Une ou deux couleurs.', 'Ta Réserve paie tes attaques et permet de jouer tes cartes de couleur. Dans l\'atelier, « Régler d\'après mes attaques » l\'accorde à ton Club.')}
+      ${point('Des attaques à 1 ou 2 Essences.', 'Une Essence arrive par tour : au moins la moitié de tes Joueurs.')}
     </ol>
-    <p class="muted small">Ce qui n'a pas changé le résultat, mesuré de la même façon : jouer une, deux ou trois couleurs, ou le nombre d'Objets et de Moments. Le plus court chemin : pars d'un Starter Deck (« Dupliquer »), remplace ses cartes par tes meilleures, et laisse l'atelier régler la Réserve. Un repère tenu, une étoile.</p>
+    <p class="muted small">Un conseil suivi, une étoile. Pour démarrer vite : duplique un Starter Deck et remplace ses cartes par les tiennes.</p>
   </details>`;
 }
 
-/* Le bilan d'un deck, repère par repère. */
+/* Le bilan d'un deck : les trois conseils, puis l'analyse (vStatsDeck,
+   js/combat/atelier.js). */
 function ouvrirBilan(id) {
   const d = cbVue === 'atelier' && atelier ? atelier.deck : cbDecks().find(x => x.id === id);
   if (!d) return;
   const b = Decks.bilan(d);
   openSheet({
     title: `${d.nom} · ${b.nom}`,
-    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${b.note} repère${b.note > 1 ? 's' : ''} tenu${b.note > 1 ? 's' : ''} sur ${b.sur}</span></div>
-      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}"><i>${x.ok ? NAVICO.check : '!'}</i>
-        <span><b>${x.titre}</b><small>${h(x.dit)} ${h(x.pourquoi)}</small></span></li>`).join('')}</ul>`,
+    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${b.note} conseil${b.note > 1 ? 's' : ''} suivi${b.note > 1 ? 's' : ''} sur ${b.sur}</span></div>
+      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}"><i aria-hidden="true">${x.ok ? NAVICO.check : '!'}</i>
+        <span><b>${x.titre}</b><small>${h(x.dit)} ${h(x.pourquoi)}</small></span></li>`).join('')}</ul>
+      ${typeof vStatsDeck === 'function' && Decks.total(d.cartes) ? vStatsDeck(d) : ''}`,
     actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
   });
 }
@@ -849,7 +836,7 @@ async function lancerInfini() {
   await demarrer({
     mode: 'infini', cle: String(n), niveau: n, deck,
     deckIA: null, /* tiré avec la graine du serveur */
-    adversaire: { nom: `IA · ${diff.nom}`, avatar: 'star', frame: n >= 5 ? 'f_or' : n >= 4 ? 'f_rose' : 'default' },
+    adversaire: { nom: `Adversaire · ${diff.nom}`, avatar: 'star', frame: n >= 5 ? 'f_or' : n >= 4 ? 'f_rose' : 'default' },
     titre: `Arcade · ${diff.nom}`, sousTitre: 'Un adversaire tiré au sort'
   });
 }
@@ -874,14 +861,6 @@ async function demarrer(o) {
   /* Des cartes déjà en jeu au départ (le boss du Raid). */
   if (o.poses) init.poses = o.poses;
   const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss, deck: o.deck.nom };
-  /* Qui commence : le perdant de la partie précédente contre cet adversaire
-     (CLE_PERDANTS), sinon le tirage du moteur. Dans `init`, pour que le
-     rejeu d'un combat repris donne la même partie ; la raison, dans `meta`. */
-  const perdant = perdants()[adversaireDe(meta)];
-  if (perdant === 0 || perdant === 1) {
-    init.premier = perdant;
-    meta.premierRaison = `${perdant === 0 ? 'Tu as' : `${o.adversaire.nom} a`} perdu la partie précédente : le perdant commence.`;
-  }
   ouvrirArene({ init }, meta);
 }
 
@@ -895,7 +874,6 @@ function ouvrirArene(partie, meta) {
     cosm: [e.cosm, meta.cosmAdv || { tapis: 't_base', sleeve: 's_base' }],
     brillantes: [brillantesMoi(), []],
     titre: meta.titre, sousTitre: meta.sousTitre, boss: meta.boss,
-    premierRaison: meta.premierRaison || null,
     sauver: CLE_COMBAT, meta,
     surFin: (E, gagne) => finirCombat(meta, E, gagne),
     surQuitter: () => { render(); }
@@ -903,7 +881,6 @@ function ouvrirArene(partie, meta) {
 }
 
 async function finirCombat(meta, E, gagne) {
-  noterPerdant(meta, gagne);
   const resume = resumeCombat(E, 0);
   /* Le déroulé, tour par tour, pour Combats › Historique (js/combat/historique.js). */
   resume.histo = Historique.entree(E, 0, meta);
@@ -1016,7 +993,6 @@ function oublierCombat() {
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();
         try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ }
-        noterPerdant(s && s.meta, false);
         /* Le déroulé jusqu'à l'abandon, rejoué depuis la sauvegarde. */
         const resume = { abandon: true };
         try {
@@ -1055,6 +1031,12 @@ function cbAction(k, el) {
     case 'guide': cbGuide = v || null; render(); return $('#main').scrollTo({ top: 0 });
     case 'gd-ong': cbGuideOnglet = v; return render();
     case 'activer': return agir(() => Backend.combatReglages({ deck_actif: v }), 'Deck activé.');
+    /* 3.0.13 : montrer un deck complet sur son profil et sa fiche, ou le reprendre. */
+    case 'montrer': {
+      const d = cbDecks().find(x => x.id === v);
+      if (!d) return;
+      return agir(() => Backend.deckPublier(v, !d.public), d.public ? 'Ce deck ne se montre plus.' : 'Ce deck se montre sur ton profil.');
+    }
     case 'cosm': return agir(() => Backend.combatReglages({ [el.dataset.t]: v }));
     case 'boutique-cosm': shopVue = 'combat'; return aller('boutique');
     case 'cosm-ev': {

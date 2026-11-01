@@ -286,6 +286,9 @@
 .colvuebar{position:absolute;left:11px;right:11px;bottom:6px;height:3px;border-radius:999px;background:var(--bg-2);overflow:hidden}
 .colvuebar i{display:block;height:100%;background:var(--progress)}
 .colvue.reverses .colvuebar i{background:linear-gradient(90deg,#ff5bb0,var(--accent-soft),#39b8ff)}
+/* Les Spéciales ont leur jauge, comme les Reverses (3.0.13) : le rose des
+   Promos vers l'or de la carte unique. */
+.colvue.speciales .colvuebar i{background:linear-gradient(90deg,var(--r-pr),var(--gold))}
 .colsous{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px;font-size:12.5px;color:var(--muted)}
 .colsous b{color:var(--text)}
 .colsous .colfab{display:inline-flex;align-items:center;gap:5px}
@@ -350,16 +353,16 @@
 .ava.xl.fx{box-shadow:0 0 22px var(--violet-glow)}
 .fx-deco{position:absolute;inset:-14%;z-index:2;pointer-events:none;background:center/contain no-repeat;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
-.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=3.0.12')}
-.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=3.0.12')}
-.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=3.0.12')}
-.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=3.0.12')}
-.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=3.0.12')}
-.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=3.0.12')}
-.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=3.0.12')}
+.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=3.0.13')}
+.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=3.0.13')}
+.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=3.0.13')}
+.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=3.0.13')}
+.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=3.0.13')}
+.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=3.0.13')}
+.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=3.0.13')}
 /* Version 2.5 : le Pass de L'Échauffement. */
-.ava.fx-braise .fx-deco{background-image:url('../assets/cadres/braise.svg?v=3.0.12')}
-.ava.fx-ardeur .fx-deco{background-image:url('../assets/cadres/ardeur.svg?v=3.0.12')}
+.ava.fx-braise .fx-deco{background-image:url('../assets/cadres/braise.svg?v=3.0.13')}
+.ava.fx-ardeur .fx-deco{background-image:url('../assets/cadres/ardeur.svg?v=3.0.13')}
 
 /* ============ Boutique : invitations, limites ============ */
 .ofbadge.limite{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}

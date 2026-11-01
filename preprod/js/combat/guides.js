@@ -73,7 +73,7 @@ const GUIDES = (() => {
           <li>Chacun mélange son Club et sa Réserve.</li>
           <li>Chacun pioche ${R().MAIN} cartes. Une fois, il peut les remélanger dans son Club et en piocher ${R().MAIN} autres.</li>
           <li>Chacun pose les ${R().PV} cartes suivantes face cachée : ses PV. On ne les regarde pas.</li>
-          <li>Le sort désigne qui commence. Contre le même adversaire, <b>le perdant commence la partie suivante</b>.</li>
+          <li>Un pile ou face désigne qui commence, à chaque partie.</li>
           <li>Au tout premier tour de la partie, celui qui commence <b>n'a pas de phase de Combat</b>. Il pioche quand même.</li>
         </ul>`
     },
@@ -89,7 +89,7 @@ const GUIDES = (() => {
         <p>L'adversaire peut déclarer un défenseur : son Joueur <b>désengagé</b> de la <b>même ligne</b> (ou un Joueur avec Garde). S'il le fait, tu peux engager l'attaque d'un de tes Joueurs <b>voisins</b> de l'attaquant, en payant ses Essences : c'est un <b>soutien</b>, et sa valeur <b>s'ajoute</b> à la tienne.</p>
         <h3>Frapper</h3>
         <div class="gd-duel">
-          <div><b>Contre un défenseur</b><p>Si l'<b>Attaque</b> (avec son soutien) est au moins égale à sa <b>Défense</b>, il est <b>vaincu</b> : à la défausse, avec ses Objets. Sinon, il ne se passe rien, et il ne garde aucune trace.</p></div>
+          <div><b>Contre un défenseur</b><p>Si l'<b>Attaque</b> (avec son soutien) est au moins égale à sa <b>Défense</b>, il est <b>vaincu</b> : à la défausse, avec ses Objets. Sinon, rien : les dégâts ne restent pas.</p></div>
           <div><b>Sans défenseur</b><p>L'attaque <b>touche le CEO</b> : il prend son premier PV. La valeur de l'attaque ne compte pas — une touche, un PV.</p></div>
         </div>
         <p>Tu peux attaquer encore tant qu'il te reste des Essences et des Joueurs désengagés. Mais attaquer expose : un Joueur engagé ne défendra pas pendant le tour adverse.</p>`
@@ -106,7 +106,7 @@ const GUIDES = (() => {
         </ul>
         <p>L'écran te dit d'avance si ton défenseur <b>tient</b> ou s'il sera <b>vaincu</b>. Attention : l'attaquant peut encore ajouter un <b>soutien</b> après ta déclaration.</p>
         <h3>Bien défendre</h3>
-        <p>Un défenseur qui tient ne perd rien, mais il est engagé jusqu'à ton prochain entretien. Ne pas défendre coûte un PV… et te donne une carte, peut-être une Résilience.</p>`
+        <p>Un défenseur qui tient ne perd rien, mais il reste engagé jusqu'à ton prochain entretien. Ne pas défendre coûte un PV, qui arrive dans ta main (ou joue sa Résilience).</p>`
     },
     {
       id: 'pv', titre: 'PV et Résilience', ico: 'coeur',
@@ -116,7 +116,6 @@ const GUIDES = (() => {
         <h3>La Résilience</h3>
         <p>Beaucoup de Coachs, Moments et Objets ont une <b>Résilience</b>. Si ton premier PV en a une, tu peux la <b>révéler et jouer son effet</b> tout de suite, gratuitement — en plein tour adverse — <b>au lieu</b> de prendre la carte en main. Elle part ensuite à la défausse, sauf si elle dit le contraire.</p>
         <p>« <b>Jouez cette carte</b> » : la carte fait son effet normal (un Objet se lie à un de tes Joueurs). C'est la jouer : la restriction par couleur s'applique.</p>
-        ${note('Être touché n\'est donc pas qu\'une perte : chaque PV est une carte de plus, ou un coup de théâtre.')}
         <h3>La fin</h3>
         <p>Une attaque qui touche un CEO <b>sans PV</b> gagne la partie. Un CEO qui doit piocher dans un <b>Club vide</b> perd aussi. Et on peut abandonner.</p>`
     },
@@ -157,10 +156,10 @@ const GUIDES = (() => {
         <h3>Les conseils officiels</h3>
         <ul>
           <li>Au moins <b>15 Joueurs</b>, pour ne pas en manquer.</li>
-          <li><b>Une ou deux couleurs</b> dans ta Réserve, et un Club construit autour : sinon tu risques de ne pas pouvoir jouer une carte ou attaquer. Le bouton « Réserve auto » accorde ta Réserve à tes attaques.</li>
+          <li><b>Une ou deux couleurs</b> dans ta Réserve, et un Club construit autour : sinon tu risques de ne pas pouvoir jouer une carte ou attaquer. Dans l'atelier, « Régler d'après mes attaques » l'accorde à tes attaques.</li>
           <li>Surtout des Joueurs dont l'attaque coûte <b>une ou deux Essences</b>.</li>
         </ul>
-        ${note('Les Starter Decks des Sections sont prêtés : tu peux les jouer sans en avoir les cartes, et t\'en inspirer. Leurs listes officielles ne sont pas connues : celles du jeu sont reconstituées.')}`
+        ${note('Les Starter Decks des Sections sont prêtés : tu peux les jouer sans en avoir les cartes.')}`
     },
     {
       id: 'modes', titre: 'Les modes', ico: 'trophy',
@@ -171,10 +170,10 @@ const GUIDES = (() => {
         <h3>Campagne</h3>
         <p>Vingt rivaux de la Section adverse, en quatre actes, de plus en plus forts. Chaque rival battu pour la première fois paie ; la finir te donne la Promo de l'autre Section. Quatre combats ont une règle de plus, annoncée avant (plus de PV, une Essence d'avance).</p>
         <h3>Arcade</h3>
-        <p>Choisis la difficulté, de 1 à 5 : l'IA reçoit un deck tiré au sort, différent à chaque partie. Plus c'est dur, plus ça rapporte.</p>
-        ${note('Contre l\'IA, les cinq premières victoires de la journée rapportent des Éclats (Arcade, et combats de campagne rejoués). L\'XP, elle, n\'a pas de limite.')}
+        <p>Choisis la difficulté, de 1 à 5 : ton adversaire reçoit un deck tiré au sort, différent à chaque partie. Plus c'est dur, plus ça rapporte.</p>
+        ${note('En solo, les cinq premières victoires du jour rapportent des Éclats (Arcade, et combats de campagne rejoués). L\'XP n\'a pas de limite.')}
         <h3>Raid</h3>
-        <p>Un boss pour tout le serveur, <b>deux semaines chacun</b> : The French Sorcerer, puis Le Marionnettiste, à tour de rôle. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>. Trois tentatives par jour.</p>
+        <p>Un boss pour tout le serveur, <b>un nouveau toutes les deux semaines</b>. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>. Trois tentatives par jour.</p>
         <h3>Versus</h3>
         <p>Pas de recherche d'adversaire : tu défies un de tes amis, il accepte, et vous jouez en direct, 60 secondes par tour. Les trois premiers défis de la journée rapportent des Éclats.</p>`
     },
@@ -182,7 +181,7 @@ const GUIDES = (() => {
       id: 'lectures', titre: 'Ce que les règles ne disent pas', ico: 'flask',
       resume: 'Les points que le texte officiel ne tranche pas.',
       html: () => `
-        <p>Les règles officielles laissent quelques questions ouvertes. Voici la lecture que fait le jeu, la plus proche du texte :</p>
+        <p>Là où le texte officiel ne tranche pas, le jeu retient la lecture la plus proche du texte :</p>
         <ul class="gd-maison">
           <li><b>Provocation</b> : l'attaque se déclare sur ce Joueur, qui n'est pas engagé ; on compare à sa Défense. Un Joueur avec Garde peut encore défendre à sa place.</li>
           <li><b>Une attaque sans valeur</b> (seulement un effet) est une attaque comme les autres : elle se défend, et touche le CEO si personne ne la défend.</li>
@@ -190,10 +189,12 @@ const GUIDES = (() => {
           <li><b>La Riposte</b> ne se défend pas, et seule sa valeur compte.</li>
           <li><b>Un Coach joué par sa Résilience</b> ne compte pas dans la limite d'un Coach par tour.</li>
           <li><b>Le mélange des piles</b> : un texte qui dit où placer les cartes (« dessus », « dessous », « dans l'ordre de votre choix ») l'emporte.</li>
-          <li><b>« Le perdant commence la partie suivante »</b> : contre le même adversaire (le même ami, le même rival).</li>
+          <li><b>Qui commence</b> : un pile ou face, à chaque partie.</li>
           <li><b>Remplacer un Joueur</b> : le nouveau prend la case de celui qui est bench.</li>
+          <li><b>GP Explorer II</b> : celui qui la joue choisit ses deux Joueurs, puis l'adversaire. Ce tour-là, il ne joue plus de Joueur, même par un effet qui dit « jouez ».</li>
+          <li><b>Paris Gentle Mates</b> : les deux Essences Mauves rendues à la Réserve sont d'abord celles qui ont déjà payé ; seule la valeur de l'attaque double, pas un soutien.</li>
         </ul>
-        ${note('Les Starter Decks, les Promos P03 et P04 et trois Secrètes n\'ont pas encore leur texte officiel : ce qu\'on en voit est provisoire.')}`
+        ${note('La composition des deux Starter Decks est provisoire : leur liste officielle n\'est pas encore connue.')}`
     }
   ];
 })();
@@ -206,7 +207,7 @@ const GLOSSAIRE = (() => {
   const m = (mot, def, voir) => ({ mot, def, voir });
   return () => [
     m('Action (phase d\')', 'La deuxième phase du tour : jouer des Joueurs, des Objets, des Moments (autant qu\'on veut) et un Coach, dans l\'ordre qu\'on veut.', 'tour'),
-    m('Arcade', 'Un combat contre l\'IA, à la difficulté choisie (1 à 5 étoiles), avec un deck adverse tiré au sort.', 'modes'),
+    m('Arcade', 'Un combat en solo, à la difficulté choisie (1 à 5 étoiles), contre un deck tiré au sort.', 'modes'),
     m('Attaque', 'Une ligne d\'un Joueur précédée d\'Essences : c\'est son coût. Elle se déclare sur le CEO adverse ; contre un défenseur, son nombre se compare à sa Défense.', 'attaquer'),
     m('Bench', 'Une carte déployée envoyée à la défausse. Un Joueur bench emporte ses Objets. Ce n\'est pas être vaincu.', 'motscles'),
     m('Buff', 'Mot-clé : tes autres Joueurs ont +X Attaque ou +X Défense.', 'motscles'),
@@ -246,7 +247,7 @@ const GLOSSAIRE = (() => {
     m('Pioche', 'Une carte du Club à chaque entretien, même au tout premier tour. Un CEO qui doit piocher dans un Club vide a perdu.', 'tour'),
     m('Provocation', 'Mot-clé : l\'attaquant face à ce Joueur doit le cibler.', 'motscles'),
     m('PV', `Les Points de Victoire : ${R().PV} cartes de ton Club posées face cachée. Touché, ton CEO prend le premier en main, ou en joue la Résilience.`, 'pv'),
-    m('Raid', 'Un boss pour tout le serveur, deux semaines chacun (The French Sorcerer, puis Le Marionnettiste) : six phases, des coffres communs et personnels, puis l\'Infini.', 'modes'),
+    m('Raid', 'Un boss pour tout le serveur, un nouveau toutes les deux semaines : six phases, des coffres communs et personnels, puis l\'Infini.', 'modes'),
     m('Remplacer', 'Les trois cases prises, une fois par tour : bench un Joueur non engagé pour déployer le nouveau à sa place.', 'tour'),
     m('Réserve', `Tes ${R().RESERVE} Essences, mélangées, face cachée. La première entre en jeu à chaque entretien.`, 'tour'),
     m('Résilience', 'Sur un Coach, un Moment ou un Objet : quand c\'est le PV que tu prends, tu peux jouer son effet tout de suite, gratuitement, au lieu de le garder en main.', 'pv'),

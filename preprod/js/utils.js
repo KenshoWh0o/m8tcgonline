@@ -41,6 +41,18 @@ function toast(m) {
   clearTimeout(toastT);
   toastT = setTimeout(() => t.classList.remove('on'), 2600);
 }
+/* Ce qui ne se dit qu'aux lecteurs d'écran (version 3.0.13) : un geste dont
+   l'effet se voit, mais ne s'entend pas — une carte ajoutée au deck, un coup
+   en combat. La zone (#annonce, index.html) est invisible ; vidée puis
+   remplie, elle redit un message identique. */
+let annonceT;
+function annonceLecteur(m) {
+  const z = $('#annonce');
+  if (!z) return;
+  z.textContent = '';
+  clearTimeout(annonceT);
+  annonceT = setTimeout(() => { z.textContent = m; }, 60);
+}
 
 /* ---------- Cartes ---------- */
 const colOf = c => COLORS[c.col] || COLORS.neutre;
@@ -66,8 +78,13 @@ const essIcon = (k, cls) => {
 
 /* ---------- Accessibilité ---------- */
 /* Les mouvements réduits : le réglage du jeu (Réglages › Animations réduites,
-   la classe `rm` de <html>) ou celui du système, l'un ou l'autre suffit. */
-const RM = () => document.documentElement.classList.contains('rm') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+   la classe `rm` de <html>) ou celui du système, l'un ou l'autre suffit.
+   La requête du système est créée une fois (3.0.13) : RM() est appelée à
+   chaque image par les animations, et matchMedia() en refaisait une à
+   chaque appel (mesuré : près d'une demi-seconde par minute de combat,
+   processeur ralenti quatre fois). Sa valeur, elle, suit le système. */
+const MQ_RM = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+const RM = () => document.documentElement.classList.contains('rm') || MQ_RM.matches;
 
 /* ---------- Gyroscope ---------- */
 /* Incliner l'appareil fait tourner la carte. Deux écrans s'en servent —

@@ -234,7 +234,7 @@ function choixRapide(E, d, j, simple) {
       if (!cs.length) return non;
       return cs.sort((a, b) => valeurJoueur(E, O.trouverSurPlateau(E, b.v) || { id: b.id, obj: [] }) - valeurJoueur(E, O.trouverSurPlateau(E, a.v) || { id: a.id, obj: [] }))[0].v;
     }
-    case 'buffDef': case 'desengagerAllie': case 'lierAllie': {
+    case 'buffDef': case 'desengagerAllie': case 'lierAllie': case 'garderJoueur': {
       const cs = d.options.filter(o => o.v !== 'non');
       if (!cs.length) return non;
       return cs.sort((a, b) => valeurJoueur(E, O.trouverSurPlateau(E, b.v)) - valeurJoueur(E, O.trouverSurPlateau(E, a.v)))[0].v;

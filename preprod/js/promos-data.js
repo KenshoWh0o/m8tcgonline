@@ -30,27 +30,34 @@ const PROMO_DATA = [
     illustrateur: 'Rexpo',
     obtention: 'boutique'
   },
-  /* Version 3.0 : les Promos des deux Starter Decks. Leur contenu n'est pas
-     encore connu : ces deux cartes sont provisoires (`provisoire`), sans
-     illustration — renderCard leur dessine un visuel en texte — et avec des
-     valeurs de combat sobres, sans talent, en attendant les vraies. On les
-     reçoit en rejoignant sa Section, puis en finissant la campagne. */
+  /* Les Promos des deux Starter Decks : on reçoit celle de sa Section en la
+     rejoignant, l'autre en finissant la campagne. Jusqu'à la 3.0.12, deux
+     cartes provisoires, sans illustration ni talent. Version 3.0.13 : les
+     vraies, d'après les photos du propriétaire (1er novembre 2026) — P03
+     est celle de la Section Déter (Brawks Déter, la #077 en Promo), P04
+     celle de Toxique (Squeezie le Toxique, la #012), l'inverse des
+     provisoires. Visuels : les photos redressées (tools/redresser-photo.js),
+     en attendant des scans propres. */
   {
-    code: 'P03', nom: 'Section Toxique', provisoire: true, section: 'toxique',
-    categorie: 'Joueur', couleur: 'Rose', def: 120,
+    code: 'P03', fichier: 'promos/P03-Brawks_Deter.webp', nom: 'Brawks Déter', section: 'deter',
+    categorie: 'Joueur', couleur: 'Neutre', def: 90,
     attaques: [
-      { nom: 'Toxicité', cout: { rose: 1, neutre: 1 }, degats: 120 }
+      { nom: "Déboîtement d'épaule", cout: { neutre: 1 }, degats: 90 }
     ],
-    ambiance: 'Promo du Starter Deck Section Toxique — visuel à venir.',
+    mot_cle: { nom: 'Signature', icone: 'declencheur', texte: "Lorsque votre adversaire récupère un PV suite à l'attaque de ce Joueur, piochez une carte." },
+    illustrateur: 'Hugo Lucas',
+    ambiance: '185 CM, 89KG, 34 ANS',
     obtention: 'section'
   },
   {
-    code: 'P04', nom: 'Section Déter', provisoire: true, section: 'deter',
-    categorie: 'Joueur', couleur: 'Mauve', def: 130,
+    code: 'P04', fichier: 'promos/P04-Squeezie_Le_Toxique.webp', nom: 'Squeezie le Toxique', section: 'toxique',
+    categorie: 'Joueur', couleur: 'Rose', def: 110,
     attaques: [
-      { nom: 'Déter', cout: { mauve: 1, neutre: 1 }, degats: 120 }
+      { nom: 'Trash-talk', cout: { rose: 1, neutre: 1 }, degats: 110 }
     ],
-    ambiance: 'Promo du Starter Deck Section Déter — visuel à venir.',
+    mot_cle: { nom: 'Signature', icone: 'etoile', texte: 'Engagez un Joueur adverse.' },
+    illustrateur: 'Manon Tsukui & HL',
+    ambiance: 'Prout.',
     obtention: 'section'
   },
   {
@@ -98,9 +105,12 @@ const UNIQUE_DATA = [
    (« 123/122 »), elles sortent des boosters — 0,75 % de la dernière carte —
    mais ne comptent pas dans les 122 : comme les Promos, elles sont hors du
    total et du pourcentage. Elles s'échangent ; elles ne se recyclent ni ne
-   se fabriquent. Trois ne sont pas encore révélées (`cachee`) : leur visuel
-   est flouté, et elles n'ont ni nom ni texte connus — on peut les obtenir,
-   pas les jouer. Le serveur les tire dans public.cards (supabase/installation/23_combats.sql). */
+   se fabriquent. Le serveur les tire dans public.cards
+   (supabase/installation/24_secretes.sql). Une Secrète pas encore révélée
+   (`cachee`) a son visuel flouté et ni nom ni texte : on peut l'obtenir, pas
+   la jouer. Depuis la 3.0.13, les cinq sont révélées : 124, 126 et 127
+   d'après les photos du propriétaire (1er novembre 2026), redressées
+   (tools/redresser-photo.js) en attendant des scans propres. */
 const SECRET_DATA = [
   {
     fichier: '123_S_Joueur_Orange_Le-Quatrieme-du-Nom.avif', num: 123, nom: 'Le Quatrième du Nom',
@@ -112,7 +122,17 @@ const SECRET_DATA = [
     illustrateur: 'Levinky',
     ambiance: 'Vous savez que j\'ai participé à la première World Cup moi ?'
   },
-  { fichier: '124_S_Secrete.avif', num: 124, cachee: true },
+  {
+    fichier: '124_S_Joueur_Violette_Brawks-Trop-Deter.webp', num: 124, nom: 'Brawks Trop Déter',
+    categorie: 'Joueur', couleur: 'Violette', def: 130,
+    attaques: [
+      /* « Sermont » : tel qu'imprimé sur la carte photographiée. */
+      { nom: 'Sermont', cout: { violette: 1, neutre: 1 }, degats: 110 }
+    ],
+    mot_cle: { nom: 'Signature', icone: 'declencheur', texte: 'Lorsque votre adversaire récupère un PV suite à l\'attaque de ce Joueur, désengagez tous vos Joueurs.' },
+    illustrateur: 'Tan Zhi Hui',
+    ambiance: 'Je vais aller le chercher après.'
+  },
   {
     fichier: '125_S_Joueur_Mauve_6W26L.avif', num: 125, nom: '6W26L',
     categorie: 'Joueur', couleur: 'Mauve', def: 60,
@@ -123,6 +143,22 @@ const SECRET_DATA = [
     illustrateur: 'Gobli Prin',
     ambiance: 'Je reviens mais à une condition...'
   },
-  { fichier: '126_S_Secrete.avif', num: 126, cachee: true },
-  { fichier: '127_S_Secrete.avif', num: 127, cachee: true }
+  {
+    fichier: '126_S_Moment-Instant_Neutre_GP-Explorer-II.webp', num: 126, nom: 'GP Explorer II',
+    categorie: 'Moment', sous_type: 'Instant', couleur: 'Neutre',
+    effets: [
+      { icone: 'etoile', texte: 'Les CEO choisissent chacun 2 de leurs Joueurs et récupèrent les autres en main. Vous ne pouvez plus jouer de Joueur pour le reste de ce tour.' }
+    ],
+    illustrateur: 'Hugo Lucas',
+    ambiance: 'On s\'émerveille, yeux dans les yeux'
+  },
+  {
+    fichier: '127_S_Moment-Instant_Mauve_Paris-Gentle-Mates.webp', num: 127, nom: 'Paris Gentle Mates',
+    categorie: 'Moment', sous_type: 'Instant', couleur: 'Mauve',
+    effets: [
+      { icone: 'etoile', texte: 'Mélangez 2 de vos Essences Mauves dans votre Réserve pour doubler la valeur de la première attaque que vous déclenchez ce tour.' }
+    ],
+    illustrateur: 'Dexter Maurer',
+    ambiance: 'Ça aurait dû être La Rochelle...'
+  }
 ];

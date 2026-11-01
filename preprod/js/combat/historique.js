@@ -188,7 +188,7 @@ function vCbHistorique() {
   const tete = cbSousTete('Historique', `Tes ${Historique.MAX} derniers combats, tour par tour`);
   if (cbHistoErreur) return tete + vide('Historique indisponible', cbHistoErreur);
   if (!cbHisto) { chargerHisto(); return tete + '<p class="muted boitecharge">Chargement…</p>'; }
-  if (!cbHisto.length) return tete + vide('Aucun combat pour l\'instant', 'Chaque combat contre l\'IA et chaque défi entre amis s\'y ajoutent à la fin, avec son déroulé tour par tour.');
+  if (!cbHisto.length) return tete + vide('Aucun combat pour l\'instant', 'Tes combats en solo et tes défis entre amis arrivent ici, tour par tour.');
   const v = cbHisto.filter(x => x.gagne).length;
   return tete + `<div class="hc-bilan">
       <span><b class="tnum">${v}</b><small>victoire${v > 1 ? 's' : ''}</small></span>

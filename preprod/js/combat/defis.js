@@ -7,9 +7,8 @@
    action impossible ne passe pas.
 
    Le défi : A défie B avec son deck ; B accepte avec le sien ; le serveur
-   tire la graine, et dit qui commence si les deux ont déjà joué un défi
-   (le perdant du dernier, `init.premier`) ; sinon le moteur tire au sort
-   avec la graine. A est le CEO 0, B le CEO 1. */
+   tire la graine, et le moteur, avec elle, qui commence (pile ou face, à
+   chaque partie). A est le CEO 0, B le CEO 1. */
 "use strict";
 
 let defiActif = null;
@@ -87,13 +86,9 @@ function ouvrirDefi(d) {
   arreterDefi();
   defiActif = { id: d.id, moi: d.moi, n: (d.actions || []).length, poll: null, file: Promise.resolve() };
   const adv = d.adversaire || {};
-  /* Le perdant de leur dernier défi commence (defi_lancer) ; sans dernier
-     défi, le moteur tire au sort. */
-  const pr = d.init.premier;
   Table.ouvrir({
     E: E.journal.length || E.fin ? E : null, init: d.init,
     moi: d.moi, ia: null,
-    premierRaison: pr === 0 || pr === 1 ? `${pr === d.moi ? 'Tu as' : `${adv.nom || 'Ton ami'} a`} perdu votre dernier défi : le perdant commence.` : null,
     joueurs: d.moi === 0 ? [joueurMoi(), adv] : [adv, joueurMoi()],
     cosm: d.moi === 0 ? [e.cosm, adv.cosm || {}] : [adv.cosm || {}, e.cosm],
     brillantes: d.moi === 0 ? [brillantesMoi(), adv.brillantes || []] : [adv.brillantes || [], brillantesMoi()],

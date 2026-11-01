@@ -789,7 +789,7 @@ S.c069 = { plus: { 0: (E, c) => 20 * E.j[c.j].main.length }, nucleaire: true };
    bench-les. */
 S.c070 = {
   *effet(x) { mod(x, { type: 'guet', quand: 'finAttaque', src: 'c070', nom: 'fin', camp: x.j }); },
-  jouable: x => x.E.cpt.attaques === 0 && x.P.main.some(c => c !== x.c && estJoueur(c)),
+  jouable: x => x.E.cpt.attaques === 0 && O.joueurPermis(x.E, x.j) && x.P.main.some(c => c !== x.c && estJoueur(c)),
   guets: {
     *fin(x, X) {
       if (x.guet.fini || X.j !== x.guet.camp) return;
@@ -798,7 +798,7 @@ S.c070 = {
       const P = x.E.j[x.guet.camp];
       const l = O.ligneDe(x.E, X.c);
       O.renvoyerMain(x.E, X.c);
-      const cs = P.main.filter(c => c !== X.c && estJoueur(c));
+      const cs = O.joueurPermis(x.E, x.guet.camp) ? P.main.filter(c => c !== X.c && estJoueur(c)) : [];
       const t = yield* O.choisirUn(x.E, x.guet.camp, 'Worlds Japon — quel Joueur entre ?', cs, { zone: 'main', but: 'deployer' });
       if (t) { O.retirerMain(P, t.u); yield* O.deployer(x.E, x.guet.camp, t, l); }
     },
@@ -814,7 +814,7 @@ S.c070 = {
   *resilience(x) {
     const uids = [];
     for (let i = 0; i < 2; i++) {
-      if (!x.P.lignes.some(l => !l)) break;
+      if (!x.P.lignes.some(l => !l) || !O.joueurPermis(x.E, x.j)) break;
       const cs = x.P.main.filter(estJoueur);
       const t = yield* O.choisirUn(x.E, x.j, `Worlds Japon — Joueur ${i + 1} sur 2`, cs, { zone: 'main', optionnel: i > 0, passer: 'Plus de Joueur', but: 'deployer' });
       if (!t) break;
@@ -824,7 +824,7 @@ S.c070 = {
     }
     if (uids.length) mod(x, { type: 'guet', quand: 'finCombat', src: 'c070', nom: 'bench', camp: x.j, uids });
   },
-  resPossible: x => x.P.main.some(estJoueur) && x.P.lignes.some(l => !l)
+  resPossible: x => x.P.main.some(estJoueur) && x.P.lignes.some(l => !l) && O.joueurPermis(x.E, x.j)
 };
 
 /* 071 Versus Fighting — →↓↘ + 👊 : à la fin de l'attaque, ajoutez ce Joueur
@@ -836,7 +836,7 @@ S.c071 = {
       if (!O.enJeu(x.E, x.c)) return;
       const l = O.ligneDe(x.E, x.c);
       O.renvoyerMain(x.E, x.c);
-      const cs = x.P.main.filter(c => c !== x.c && estJoueur(c));
+      const cs = O.joueurPermis(x.E, x.j) ? x.P.main.filter(c => c !== x.c && estJoueur(c)) : [];
       const t = yield* O.choisirUn(x.E, x.j, 'Quel Joueur prend sa place ?', cs, { zone: 'main', optionnel: true, passer: 'Personne', but: 'deployer' });
       if (t) { O.retirerMain(x.P, t.u); yield* O.deployer(x.E, x.j, t, l); }
     }
@@ -920,7 +920,7 @@ S.c079 = {
 S.c080 = {
   sur: {
     *defense(x, X) {
-      if (X.defenseur !== x.c) return;
+      if (X.defenseur !== x.c || !O.joueurPermis(x.E, x.j)) return;
       const cs = x.P.main.filter(estJoueur);
       if (!cs.length) return;
       const t = yield* O.choisirUn(x.E, x.j, 'Meet & Greeter — qui défend à sa place ?', cs, { zone: 'main', optionnel: true, passer: 'Il reste', but: 'deployer' });
@@ -1213,7 +1213,7 @@ S.c105 = {
   *resilience(x) {
     const c = x.P.club[0];
     O.ev(x.E, { t: 'revele', j: x.j, cartes: [{ u: c.u, id: c.id }] });
-    if (estJoueur(c) && x.P.lignes.some(l => !l)) {
+    if (estJoueur(c) && x.P.lignes.some(l => !l) && O.joueurPermis(x.E, x.j)) {
       x.P.club.shift();
       yield* O.deployer(x.E, x.j, c, null);
     }
@@ -1354,9 +1354,65 @@ S.p01 = S.p02 = {
   jouable: x => x.P.club.some(c => estJoueur(c) && O.carte(c.id).col === 'mauve') || x.P.reserve.some(e => e.coul === 'mauve')
 };
 
+/* P03 Brawks Déter, P04 Squeezie le Toxique (3.0.13) : les cartes #077 et
+   #012 en Promo, même texte (photos du propriétaire, 1er novembre 2026). */
+S.p03 = S.c077;
+S.p04 = S.c012;
+
 /* P05 Tout Commence Ici — Légion (version Promo) : il revient en main sans
    rien défausser. */
 S.p05 = { legionGratuite: true };
+
+/* ---------------------------------------------------------- Secrètes */
+/* Les trois Secrètes révélées en 3.0.13 (photos du propriétaire). Ce que
+   leur texte ne tranche pas est dit ici et dans docs/regles-3.0.md § 11. */
+
+/* 124 Brawks Trop Déter — Signature ⚡ : « Lorsque votre adversaire
+   récupère un PV suite à l'attaque de ce Joueur, désengagez tous vos
+   Joueurs. » Le même déclencheur que Brawks Déter (#077). */
+S.c124 = { sur: { *recupPV(x, d) {
+  if (d.j === x.j || d.par !== x.c) return;
+  for (const c of joueurs(x)) if (c.eng) yield* O.desengager(x.E, c);
+} } };
+
+/* 126 GP Explorer II (Moment Instant) — « Les CEO choisissent chacun 2 de
+   leurs Joueurs et récupèrent les autres en main. Vous ne pouvez plus jouer
+   de Joueur pour le reste de ce tour. » Lecture retenue : celui qui joue la
+   carte choisit d'abord, puis l'adversaire ; un CEO qui a deux Joueurs ou
+   moins n'en reprend aucun ; les Objets des Joueurs repris sont bench (« Les
+   Objet sont bench lorsque la carte Joueur associée quitte le Terrain »). */
+S.c126 = {
+  *effet(x) {
+    for (const j of [x.j, adv(x.j)]) {
+      const js = O.joueursDe(x.E, j);
+      if (js.length <= 2) continue;
+      const garde = [];
+      for (let i = 0; i < 2; i++) {
+        const t = yield* O.choisirUn(x.E, j, `GP Explorer II : garde un Joueur (${i + 1} sur 2)`, js.filter(c => !garde.includes(c)), { but: 'garderJoueur', texte: 'Les autres reviennent dans ta main ; leurs Objets vont à la défausse.' });
+        if (t) garde.push(t);
+      }
+      for (const c of js) if (!garde.includes(c)) O.renvoyerMain(x.E, c);
+    }
+    mod(x, { type: 'pasJoueur', camp: x.j });
+  }
+};
+
+/* 127 Paris Gentle Mates (Moment Instant) — « Mélangez 2 de vos Essences
+   Mauves dans votre Réserve pour doubler la valeur de la première attaque
+   que vous déclenchez ce tour. » Lectures retenues : les deux Essences sont
+   prises parmi celles en jeu, engagées d'abord (celles qui ont déjà payé) ;
+   seule la valeur de l'attaque est doublée, pas un soutien qui s'y ajoute
+   (comme Just Passion, #062). Un Moment se joue avant la première attaque
+   du tour (la phase de Combat les ferme) : « la première attaque » est
+   donc toujours à venir. */
+S.c127 = {
+  *effet(x) {
+    if (x.P.ess.filter(e => e.coul === 'mauve').length < 2) return;
+    O.rendreEssences(x.E, x.j, 'mauve', 2);
+    mod(x, { type: 'doublePremiere', camp: x.j });
+  },
+  jouable: x => x.P.ess.filter(e => e.coul === 'mauve').length >= 2
+};
 
 /* U01 L'Unique Chevalière — comme La Chevalière, mais l'Objet est défaussé. */
 S.u01 = Object.assign({ chevaliere: 'defausse' }, CHEVALIERE_RES);

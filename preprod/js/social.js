@@ -94,10 +94,6 @@ async function ouvrirFiche(pseudo) {
   }
   if (!f) return toast('Joueur introuvable.');
 
-  const pct = f.total ? Math.round(f.possede / f.total * 100) : 0;
-  /* Ses Secrètes au-delà du total (« 127 / 122 », version 3.0.11), comme dans
-     la Collection : le pourcentage, lui, reste celui de l'extension. */
-  const nCol = f.possede + (f.secretes || 0);
 
   /* Entre amis, sa collection est lisible. Mais ce qui se décide dans une
      fiche, c'est « est-ce que ça vaut le coup de lui demander quelque chose ? »
@@ -142,34 +138,12 @@ async function ouvrirFiche(pseudo) {
       </div>`;
   }
 
-  /* L'en-tête porte le pseudo lui-même (la feuille n'a plus de titre) : à
-     côté de l'avatar, le nom, depuis quand, et où en est sa collection. Les
-     titres de joueur (version 2.0) viendront se poser sous le nom. */
+  /* Version 3.0.13 : la fiche est la carte de visite du joueur, la même que
+     son profil (vCarteJoueur, js/profile.js) ; entre amis, sa collection
+     vient ensuite. */
   openSheet({
-    body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}${f.banniere ? ' banniere' : ''}">
-      ${vBanniere(f.banniere)}
-      ${avatarHTML(f.avatar, f.frame, 'xl', f.photo, f.xp)}
-      <div class="fichemeta">
-        <b class="fichenom">${h(f.pseudo)}</b>
-        ${vTitreLigne(f.titre)}
-        ${f.devise ? `<p class="iddevise">« ${h(f.devise)} »</p>` : ''}
-        <p class="fichesous">${f.is_admin ? '<span class="qtag ok">Admin</span>' : ''}Membre depuis ${h(dateCourte(f.membre_depuis).split(' à ')[0])}</p>
-        <div class="prog fiche-prog"><div class="bar"><i style="width:${pct}%"></i></div>
-          <span class="tnum"><b>${nCol}</b> / ${f.total}</span></div>
-      </div>
-    </div>
-    ${vElu(f.succes, f.moi)}
-    ${f.fetiche ? vFetiche(f.fetiche.carte, f.fetiche.niveau, { moi: f.moi }) : ''}
-    ${(f.vitrine || []).length ? vVitrine(f.vitrine, false) : ''}
-    <div class="stats">
-      <div class="stat"><b>${nCol} / ${f.total}</b><span>collection (${pct} %)</span></div>
-      ${f.reverses_total ? `<div class="stat"><b>${f.reverses} / ${f.reverses_total}</b><span>Reverses</span></div>` : ''}
-      <div class="stat"><b>${fmtN(f.packs_opened)}</b><span>boosters ouverts</span></div>
-      <div class="stat"><b>${fmtN(f.trades_done)}</b><span>échanges conclus</span></div>
-      <div class="stat"><b>${fmtN(f.streak)}</b><span>jours d'affilée</span></div>
-    </div>
-    ${(f.succes || []).length ? `<h2>Succès</h2>${vSucces(f.succes, false)}` : ''}
-    ${f.ami ? collection : '<p class="muted small">Ajoute-le en ami pour voir sa collection et lui proposer un échange.</p>'}`,
+    body: `<div class="pj-fiche">${vCarteJoueur(f, {})}
+    ${f.ami ? `<section class="pj-bloc">${collection}</section>` : f.moi ? '' : '<p class="muted small pj-ajoute">Ajoute-le en ami pour voir sa collection.</p>'}</div>`,
     actions: f.moi ? [{ label: 'Fermer', fn: closeSheet }]
       : f.ami
         ? [{ label: 'Proposer un échange', primary: true, fn: () => { closeSheet(); versEchange(f.pseudo); } },

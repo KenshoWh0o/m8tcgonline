@@ -264,6 +264,36 @@ const VUES = {
   labo: () => vTest()
 };
 
+/* Le focus à travers un rendu (version 3.0.13). Redessiner la page remplaçait
+   l'élément qui avait le focus : au clavier, ou avec un lecteur d'écran,
+   chaque geste renvoyait au début de la page. On retient de quoi retrouver
+   l'élément — son id, sinon ses attributs d'action et de valeur, et son rang
+   parmi ceux qui ont les mêmes —, puis on rend le focus à son remplaçant,
+   sans faire défiler. Après un toucher ou un clic, le navigateur ne montre
+   pas d'anneau de focus (:focus-visible) : rien ne change à l'œil. */
+const FOCUS_ATTRS = ['data-cb', 'data-act', 'data-v', 'data-tab', 'data-show', 'data-q', 'data-lab', 'data-t', 'data-ech', 'data-ong', 'data-c', 'data-id',
+  'data-colvue', 'data-clv', 'data-qv', 'data-ch', 'data-rfvue', 'data-rd'];
+function retenirFocus(m) {
+  const el = document.activeElement;
+  if (!el || el === document.body || !m.contains(el)) return null;
+  let sel = el.id ? '#' + CSS.escape(el.id) : '';
+  if (!sel) {
+    const a = FOCUS_ATTRS.filter(x => el.hasAttribute(x)).map(x => `[${x}="${CSS.escape(el.getAttribute(x))}"]`).join('');
+    if (!a) return null;
+    sel = el.tagName.toLowerCase() + a;
+  }
+  const rang = [...m.querySelectorAll(sel)].indexOf(el);
+  const champ = 'selectionStart' in el && typeof el.selectionStart === 'number' ? [el.selectionStart, el.selectionEnd] : null;
+  return { sel, rang: Math.max(0, rang), champ };
+}
+function rendreFocus(m, f) {
+  const l = m.querySelectorAll(f.sel);
+  const el = l[Math.min(f.rang, l.length - 1)];
+  if (!el || el.disabled) return;
+  el.focus({ preventScroll: true });
+  if (f.champ) try { el.setSelectionRange(f.champ[0], f.champ[1]); } catch (e) { /* champ sans curseur */ }
+}
+
 function render() {
   /* L'écran d'attente passe avant tout le reste : tant qu'il est là, le jeu
      n'existe pas pour le visiteur. */
@@ -315,6 +345,7 @@ function render() {
     m.querySelectorAll('details[data-garde]').forEach(d => { gardes[d.dataset.garde] = d.open; });
     m.querySelectorAll('[data-defil]').forEach(x => { defils[x.dataset.defil] = [x.scrollTop, x.scrollLeft]; });
   }
+  const focus = m.className === 'tab-' + tab ? retenirFocus(m) : null;
   /* L'onglet en cours, pour les styles : la classe de #main (`#main.tab-…`).
      Jamais `data-tab` sur <body> : c'est l'attribut des liens vers un onglet
      (clicPage), et il y faisait de chaque clic dans la page un « retour à
@@ -332,7 +363,9 @@ function render() {
     if (a < n.scrollLeft) n.scrollLeft = Math.max(0, a - 24);
     else if (b > n.scrollLeft + n.clientWidth) n.scrollLeft = b - n.clientWidth + 24;
   });
+  normaliserOnglets(m);
   if (haut) m.scrollTop = haut;
+  if (focus) rendreFocus(m, focus);
   majDefile();
 
   if (tab === 'boosters') bindPack();
@@ -379,6 +412,9 @@ function aller(id) {
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     /* Version 2.0 : l'événement se charge en arrivant. */
     if (tab === 'illu') chargerIllu();
+    /* 3.0.13 : le bloc « Aujourd'hui » des Quêtes lit l'Épreuve, le Raid et
+       Devine l'illu, qui ne se chargent sinon qu'en visitant leur écran. */
+    if (tab === 'quetes') chargerAujourdhui();
     if (tab === 'reflets' && recapReflets()) chargerRecap();
     else if (tab === 'reflets') {
       passPlace = false;
@@ -425,7 +461,13 @@ async function clicPage(e) {
 
   /* Un lien vers une vue précise de la Collection porte les deux : la vue
      d'abord, puis l'onglet (data-tab passe avant tout le reste). */
-  if (d.tab) { if (d.colvue) colVue = d.colvue; return aller(d.tab); }
+  if (d.tab) {
+    if (d.colvue) colVue = d.colvue;
+    /* 3.0.13 : une vue des Combats ou du Choc (le bloc « Aujourd'hui »). */
+    if (d.cbv) return allerCb(d.cbv);
+    if (d.chv) chVue = d.chv;
+    return aller(d.tab);
+  }
   /* Version 3.0 : l'onglet Combats et son atelier (js/battle.js). */
   if (d.cb) return cbAction(d.cb, el);
   /* Version 3.0 : l'événement « Le Choc des Sections » (js/choc.js). */
@@ -504,7 +546,7 @@ async function clicPage(e) {
 
   /* Profil */
   if (d.ava) return agir(() => Backend.setProfile({ p_avatar: d.ava }));
-  if (d.avacard) { closeSheet(); return agir(() => Backend.setProfile({ p_avatar: 'card:' + d.avacard })); }
+  if (d.avacard) { closeSheet(); return agir(() => Backend.setProfile({ p_avatar: 'card:' + d.avacard })).then(revenirPerso); }
   if (d.frame) return agir(() => Backend.setProfile({ p_frame: d.frame }));
 
   switch (d.act) {
@@ -527,6 +569,10 @@ async function clicPage(e) {
     case 'pass-tout': return reclamerTout();
     case 'pf-devise': return enregistrerDevise();
     case 'pf-banniere': return ouvrirChoixBanniere();
+    /* Le profil (3.0.13) : la feuille « Personnaliser », ses onglets, un deck montré. */
+    case 'pf-perso': return ouvrirPerso();
+    case 'pf-ong': persoOnglet = d.v; return rafraichirPerso();
+    case 'pj-deck': return voirDeckMontre(d.qui, d.v);
     case 'col-toggle': colOuvert = !colOuvert; return render();
     case 'col-reset':
       colFilter = essFilter = rarFilter = 'all';
@@ -534,7 +580,7 @@ async function clicPage(e) {
       return render();
     /* Une Secrète qu'on n'a pas : elle ne se fabrique pas, on dit d'où elle
        vient — mais pas son taux. */
-    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle se cache dans les boosters (à quelle fréquence ? c\'est un secret), ou s\'échange contre une autre Secrète.');
+    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle sort des boosters, ou s\'échange contre une autre Secrète.');
     case 'porte-discord': return porteConnexion();
     case 'porte-sortir': return porteSortir();
     case 'porte-code': return porteCode();
@@ -647,8 +693,41 @@ $('#tiroir').addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && tiroirOuvert) fermerTiroir();
+  if (e.key === 'Escape' && tiroirOuvert && !e.defaultPrevented) fermerTiroir();
 });
+
+/* Les rangées d'onglets au clavier (3.0.13) : les flèches passent d'un
+   onglet à l'autre et l'ouvrent, Début et Fin vont aux bouts. */
+document.addEventListener('keydown', e => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const t = e.target.closest && e.target.closest('[role="tab"]');
+  const l = t && t.closest('[role="tablist"]');
+  if (!l) return;
+  const tabs = [...l.querySelectorAll('[role="tab"]')].filter(b => b.closest('[role="tablist"]') === l && !b.disabled);
+  const i = tabs.indexOf(t);
+  if (i < 0) return;
+  const k = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  e.preventDefault();
+  tabs[k].focus();
+  tabs[k].click();
+});
+
+/* Chaque rangée d'onglets dit qui est qui (3.0.13) : ses boutons sont des
+   onglets, celui en cours le dit, et lui seul prend le Tab (les flèches
+   mènent aux autres). Posé après chaque rendu : les écrans n'ont pas à y
+   penser. */
+function normaliserOnglets(racine) {
+  racine.querySelectorAll('[role="tablist"]').forEach(l => {
+    const tabs = [...l.querySelectorAll('button')].filter(b => b.closest('[role="tablist"]') === l);
+    if (!tabs.length) return;
+    const on = tabs.find(b => b.getAttribute('aria-selected') === 'true') || tabs.find(b => b.classList.contains('on')) || tabs[0];
+    tabs.forEach(b => {
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', b === on ? 'true' : 'false');
+      b.tabIndex = b === on ? 0 : -1;
+    });
+  });
+}
 
 /* ---------- Boucle de la réserve ---------- */
 /* Hors ligne, les boosters se rechargent ici. En ligne, seul le serveur les
