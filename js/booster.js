@@ -414,15 +414,27 @@ function bindPack() {
     }
   });
 
+  /* Le paquet ne bouge que s'il se voit (3.0.13) : la boucle tournait sous
+     l'arène, une fenêtre ou une ouverture, et onglet caché, à chaque image. */
+  let vu = true, raf = 0, io = null;
+  const relancer = () => { if (!raf && alive()) raf = requestAnimationFrame(frame); };
+  if ('IntersectionObserver' in window) {
+    io = new IntersectionObserver(l => { vu = l[l.length - 1].isIntersecting; if (vu) relancer(); });
+    io.observe(pk);
+  }
+  const cache = () => document.hidden || document.body.classList.contains('en-arene') || document.body.classList.contains('intheater');
   const frame = now => {
-    if (!alive()) return;
+    raf = 0;
+    if (!alive()) { if (io) io.disconnect(); return; }
+    if (!vu) return;
+    if (cache()) { setTimeout(relancer, 500); return; }
     const trx = T.manual ? T.mrx : (RM() ? 0 : Math.sin(now / 2400) * 3.5);
     const tryy = T.manual ? T.mry : (RM() ? 0 : Math.sin(now / 1900) * 6);
     T.rx += (trx - T.rx) * .12;
     T.ry += (tryy - T.ry) * .12;
     box.style.transform = `rotateX(${T.rx.toFixed(2)}deg) rotateY(${T.ry.toFixed(2)}deg)`;
     pk.style.setProperty('--fx', (50 + T.ry * 1.8).toFixed(1) + '%');
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
+  relancer();
 }

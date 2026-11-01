@@ -280,18 +280,23 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-c{position:relative;width:100%;aspect-ratio:63/88;border-radius:6.5%/4.7%;overflow:hidden;background:#1a1923}
 .ar-c img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
 .ar-c.dos{background:#262433}
-.ar-c.holo::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:.32;
+/* Les reflets (3.0.13) : une bande large qui glisse (transform), et non
+   plus un fond dont on déplace la position — repeint à chaque image, sur
+   chaque Légendaire, Reverse et Secrète du plateau et de la main. */
+.ar-c.holo::after{content:"";position:absolute;top:0;bottom:0;left:0;width:260%;pointer-events:none;mix-blend-mode:color-dodge;opacity:.32;
   background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.5) 38%,rgba(223,109,232,.35) 46%,rgba(57,184,255,.35) 54%,transparent 66%);
-  background-size:260% 100%;animation:holo 4.5s ease-in-out infinite}
-.ar-c.rev .ar-rev{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.35;
-  background:linear-gradient(125deg,rgba(255,124,200,.4),rgba(127,216,255,.35),rgba(255,231,140,.35),rgba(179,140,255,.4));background-size:300% 300%;animation:ar-rev 6s ease-in-out infinite}
-@keyframes ar-rev{50%{background-position:100% 100%}}
+  transform:translateX(-80%);animation:ar-holo 4.5s ease-in-out infinite}
+@keyframes ar-holo{0%{transform:translateX(-80%)}78%,100%{transform:translateX(80%)}}
+.ar-c.rev .ar-rev{position:absolute;left:0;top:0;width:300%;height:300%;pointer-events:none;mix-blend-mode:screen;opacity:.35;
+  background:linear-gradient(125deg,rgba(255,124,200,.4),rgba(127,216,255,.35),rgba(255,231,140,.35),rgba(179,140,255,.4));animation:ar-rev 6s ease-in-out infinite}
+@keyframes ar-rev{50%{transform:translate(-66.67%,-66.67%)}}
 /* Une Secrète : le même reflet irisé que dans la collection, posé en clair
    (le plateau est en 3D, les modes de mélange n'y passent pas), et ses
    éclats qui scintillent. */
-.ar-c.secrete::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.24;
+.ar-c.secrete::before{content:"";position:absolute;top:0;bottom:0;left:0;width:300%;z-index:1;pointer-events:none;opacity:.24;
   background:linear-gradient(115deg,transparent 22%,#ff9ad5 33%,#ffe08a 41%,#8ff0c8 49%,#8fd3ff 57%,#c3b2ff 65%,transparent 76%) no-repeat;
-  background-size:300% 100%;animation:s-reflet 6s ease-in-out infinite}
+  transform:translateX(-80%);animation:ar-s-reflet 6s ease-in-out infinite}
+@keyframes ar-s-reflet{0%{transform:translateX(-80%)}65%,100%{transform:translateX(13.3%)}}
 .ar-c.secrete::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
   background:radial-gradient(circle at 17% 21%,#fff 0 .7px,transparent 2px),radial-gradient(circle at 76% 13%,#fff 0 .7px,transparent 2px),
     radial-gradient(circle at 88% 47%,#fff 0 .7px,transparent 2px),radial-gradient(circle at 29% 57%,#fff 0 .7px,transparent 2px),
@@ -354,13 +359,23 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-camp.lui .ar-j.assaut{transform:translateY(7cqi) scale(1.08)}
 .ar-camp.lui .ar-j.assaut>.ar-c{box-shadow:0 0 0 1.5px rgba(255,179,179,.8),0 0 5cqi var(--ar-adv-lueur)}
 .ar-j.pose{animation:ar-pose .45s cubic-bezier(.2,1.4,.4,1)}
-@keyframes ar-pose{from{transform:scale(1.18);filter:brightness(1.8)}}
+@keyframes ar-pose{from{transform:scale(1.18)}}
+/* L'éclair d'une carte (3.0.13) : un voile clair posé sur elle, dont seule
+   l'opacité s'anime — les filtres animés (luminosité, flou) repeignaient
+   la carte à chaque image. */
+.ar-eclair{position:absolute;inset:0;z-index:2;border-radius:6.5%/4.7%;pointer-events:none;background:#fff;mix-blend-mode:screen;opacity:0}
+.ar-j.eng>.ar-eclair{display:none}
+.ar-j.pose>.ar-eclair{animation:ar-eclair .45s ease-out}
+.ar-j.brille>.ar-eclair{animation:ar-eclair .9s ease-out}
+.ar-j.effet>.ar-eclair{background:var(--deco-ink);animation:ar-eclair .9s ease-out}
+.ar-j.vaincu>.ar-eclair{animation:ar-eclair-v .6s ease-in forwards}
+@keyframes ar-eclair{30%{opacity:.55}}
+@keyframes ar-eclair-v{30%{opacity:.8}100%{opacity:.9}}
 .ar-j.vaincu{animation:ar-vaincu .6s ease-in forwards;pointer-events:none}
-@keyframes ar-vaincu{30%{filter:brightness(2.4) saturate(0)}100%{transform:scale(.55);opacity:0;filter:brightness(3) blur(4px)}}
+@keyframes ar-vaincu{30%{transform:scale(1.04)}100%{transform:scale(.55);opacity:0}}
 .ar-j.banc{animation:ar-banc .45s ease-in forwards;pointer-events:none}
 @keyframes ar-banc{to{transform:translateY(40%) scale(.5);opacity:0}}
-.ar-j.brille>.ar-c{animation:ar-brille .9s ease-out}
-@keyframes ar-brille{30%{filter:brightness(1.7)}}
+
 .ar-j.shield>.ar-c::before{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;pointer-events:none;
   box-shadow:inset 0 0 6cqi rgba(232,236,255,.7),inset 0 0 0 1.5cqi rgba(232,236,255,.4)}
 .ar-j.bulle-shield::after{animation:ar-bulle .6s ease-out}
@@ -404,10 +419,16 @@ body.en-arene .preprod-bandeau{display:none}
   --x:calc(var(--i) - (var(--n) - 1) / 2);--dy:0px;--s:1;
   --pas:min(calc(var(--w) * .76),calc((100vw - var(--w) - 20px) / max(var(--n) - 1,1)));
   transform:translateX(calc(-50% + var(--x) * var(--pas))) translateY(var(--dy)) rotate(calc(var(--x) * 2.4deg)) scale(var(--s));
-  transform-origin:50% 100%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));
-  transition:transform .22s cubic-bezier(.3,.8,.3,1),filter .2s,opacity .2s}
+  transform-origin:50% 100%;
+  transition:transform .22s cubic-bezier(.3,.8,.3,1),opacity .2s}
+/* L'ombre est portée par la carte, et une carte qu'on ne peut pas jouer
+   s'assombrit sous un voile (3.0.13) : un filtre sur le bouton entier se
+   recalculait pendant chaque glissement de la main. */
+.ar-m>.ar-c{box-shadow:0 6px 14px rgba(0,0,0,.5)}
+.ar-m::before{content:"";position:absolute;inset:0;z-index:3;border-radius:calc(var(--w) * .065);background:rgba(12,11,18,.48);pointer-events:none;
+  opacity:0;transition:opacity .2s}
 .ar-m::after{content:"";position:absolute;inset:-2px;z-index:2;border-radius:calc(var(--w) * .065 + 2px);pointer-events:none;transition:box-shadow .2s}
-#arene.mon-tour .ar-m:not(.jouable):not(.option){filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)) brightness(.6) saturate(.7)}
+#arene.mon-tour .ar-m:not(.jouable):not(.option)::before{opacity:1}
 .ar-m.jouable{--dy:-7px}
 .ar-m.jouable::after{box-shadow:0 0 0 2px var(--ar-act),0 0 14px var(--ar-act-lueur)}
 .ar-m.option::after{box-shadow:0 0 0 3px var(--ar-act),0 0 16px var(--ar-act-lueur)}
@@ -415,7 +436,8 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-m.choisi::after{box-shadow:0 0 0 3px #fff,0 0 20px rgba(255,255,255,.4)}
 .ar-m.leve{opacity:.2}
 @media (hover:hover){.ar-m:hover{z-index:6;--dy:-24%;--s:1.06}}
-.ar-fantome{position:fixed;left:0;top:0;z-index:70;pointer-events:none;filter:drop-shadow(0 16px 26px rgba(0,0,0,.6))}
+.ar-fantome{position:fixed;left:0;top:0;z-index:70;pointer-events:none}
+.ar-fantome>.ar-c{box-shadow:0 16px 30px rgba(0,0,0,.6)}
 .ar-fantome::after{content:"";position:absolute;inset:-2px;border-radius:8px;box-shadow:0 0 0 2px #fff}
 
 /* ============ La carte en grand (version 3.0.7) ============ */
@@ -423,8 +445,7 @@ body.en-arene .preprod-bandeau{display:none}
    qui vit en ce moment (.ar-f-bas). --bas : la place que prend le dessous
    (calculée par ouvrirFocus), pour que la carte prenne tout le reste. */
 .ar-focus{position:absolute;left:0;right:0;top:0;z-index:12;display:flex;align-items:center;justify-content:center;container-type:size;
-  padding:calc(14px + env(safe-area-inset-top,0px)) 14px 14px;background:rgba(8,7,12,.84);
-  backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);animation:fadein .16s}
+  padding:calc(14px + env(safe-area-inset-top,0px)) 14px 14px;background:rgba(8,7,12,.9);animation:fadein .16s}
 .ar-focus[hidden]{display:none}
 .ar-focus.haut{border-radius:0 0 30px 30px;box-shadow:inset 0 -1px 0 rgba(255,255,255,.16),0 20px 40px rgba(0,0,0,.55)}
 .ar-f-in{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;height:100%;min-height:0}
@@ -466,11 +487,13 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-f-atq em.plus{color:var(--ok)}
 .ar-f-atq em.moins{color:#ff8f8f}
 .ar-f-atq em s{font-family:var(--body);font-style:normal;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.5)}
-.ar-f-atq.ok{cursor:pointer;background:var(--cta);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1.5px var(--deco-ink),0 10px 26px -8px rgba(157,140,255,.75);
-  animation:ar-f-ok 1.6s ease-in-out infinite;transition:transform .18s cubic-bezier(.2,1.25,.4,1)}
+.ar-f-atq.ok{position:relative;cursor:pointer;background:var(--cta);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1.5px var(--deco-ink),0 4px 12px -6px rgba(157,140,255,.4);
+  transition:transform .18s cubic-bezier(.2,1.25,.4,1)}
+.ar-f-atq.ok::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 10px 26px -8px rgba(157,140,255,.75);
+  animation:ar-f-ok 1.6s ease-in-out infinite}
 .ar-f-atq.ok:active{transform:scale(.97)}
-@keyframes ar-f-ok{50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1.5px var(--deco-ink),0 4px 12px -6px rgba(157,140,255,.4)}}
+@keyframes ar-f-ok{50%{opacity:0}}
 .ar-f-atq:disabled{cursor:default}
 .ar-f-atq:disabled .ar-f-at b,.ar-f-atq:disabled em{opacity:.7}
 .ar-f-aide{margin:0;font-size:13.5px;line-height:1.4;color:rgba(255,255,255,.85);text-align:center}
@@ -501,7 +524,8 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-tres b{color:#fff}
 .ar-tprov{color:var(--ar-act)}
 .ar-tobj{color:rgba(255,255,255,.62)}
-@media (prefers-reduced-motion:reduce){.ar-f-atq.ok{animation:none}}
+@media (prefers-reduced-motion:reduce){.ar-f-atq.ok::after{animation:none}}
+html.rm .ar-f-atq.ok::after{animation:none}
 
 /* ============ La zone de détails (version 3.0.8) ============ */
 /* Pendant son tour, une carte de sa main ou un de ses Joueurs posés : la
@@ -577,8 +601,7 @@ html.rm .ar-f-geste svg,html.rm .ar-place-f{animation:none}
 .ar-sheet[hidden]{display:none}
 /* Le verre couvrant, comme les feuilles du site. */
 .ar-s-in{pointer-events:auto;width:min(100%,480px);max-height:min(74dvh,640px);overflow:auto;overscroll-behavior:contain;padding:16px 16px 14px;border-radius:30px;
-  background:linear-gradient(180deg,rgba(38,37,50,.86),rgba(24,23,32,.94));
-  -webkit-backdrop-filter:blur(28px) saturate(160%);backdrop-filter:blur(28px) saturate(160%);
+  background:linear-gradient(180deg,rgba(38,37,50,.96),rgba(24,23,32,.98));
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.24),0 -12px 40px rgba(0,0,0,.6);
   animation:ar-monte .28s cubic-bezier(.2,1.2,.4,1)}
 @keyframes ar-monte{from{transform:translateY(24px);opacity:0}}
@@ -749,7 +772,8 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 .ar-lot .ar-c:nth-child(5){animation-delay:.24s}.ar-lot .ar-c:nth-child(6){animation-delay:.3s}
 
 /* Une carte qui vole ; un nombre ou un mot qui monte. */
-.ar-vol{position:fixed;left:0;top:0;z-index:70;pointer-events:none;filter:drop-shadow(0 14px 22px rgba(0,0,0,.6))}
+.ar-vol{position:fixed;left:0;top:0;z-index:70;pointer-events:none}
+.ar-vol>.ar-c{box-shadow:0 14px 26px rgba(0,0,0,.55)}
 .ar-flot{position:fixed;z-index:72;translate:-50% -50%;pointer-events:none;white-space:nowrap;font-family:var(--display);font-style:italic;font-weight:900;
   font-size:20px;color:#fff;text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.8);animation:ar-flot 1.3s ease-out forwards}
 .ar-flot.degats{font-size:32px;color:#fff;text-shadow:0 3px 0 #7a1f17,0 0 18px var(--ar-adv-lueur)}
@@ -802,7 +826,7 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 
 /* ============ Le journal ============ */
 .ar-journal{position:absolute;top:0;right:0;bottom:0;z-index:18;width:min(86vw,340px);display:flex;flex-direction:column;
-  background:linear-gradient(180deg,rgba(38,37,50,.88),rgba(24,23,32,.95));-webkit-backdrop-filter:blur(28px) saturate(160%);backdrop-filter:blur(28px) saturate(160%);
+  background:linear-gradient(180deg,rgba(38,37,50,.97),rgba(24,23,32,.99));
   box-shadow:-1px 0 0 rgba(255,255,255,.14),-20px 0 40px rgba(0,0,0,.5);
   padding-top:env(safe-area-inset-top,0px);animation:ar-glisse .2s ease-out}
 .ar-journal[hidden]{display:none}
@@ -846,11 +870,13 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 @media (prefers-reduced-motion:reduce){
   .ar-j,.ar-m,.ar-gem{transition:none}
   .ar-place.cible,.ar-j.cible::after,.ar-j.option::after,.ar-j.attaquant,.ar-fin.pulse,.ar-info.consigne,.ar-ava.actif::after{animation:none}
+  .ar-c.holo::after,.ar-c.rev .ar-rev,.ar-c.secrete::before,.ar-c.secrete::after,.ar-eclair{animation:none!important}
   .ar-piece{animation:none}
   .ar-piece.revers{transform:rotateY(180deg)}
   .ar-pf-res,.ar-pf-sous{animation-delay:0s}
 }
-html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-c.holo::after,html.rm .ar-c.secrete::before,html.rm .ar-c.secrete::after,html.rm .ar-gem.brille::after{animation:none}
+html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-c.holo::after,html.rm .ar-c.rev .ar-rev,html.rm .ar-c.secrete::before,html.rm .ar-c.secrete::after,html.rm .ar-gem.brille::after{animation:none}
+html.rm .ar-eclair{animation:none!important}
 /* Une feuille sans décision (menu, pile) : un voile qui la referme. */
 .ar-sheet.voile{top:0;align-items:flex-end;pointer-events:auto;background:rgba(8,7,12,.5);animation:ar-voile .2s ease-out}
 @keyframes ar-voile{from{background:rgba(8,7,12,0)}}
@@ -893,31 +919,53 @@ html.rm .tuto-vise{animation:none}
 @media (prefers-reduced-motion:reduce){.tuto-vise{animation:none}}
 
 /* ============ Version 3.0.7 : la visée, les effets qui se voient ============ */
-/* La flèche de l'attaquant à sa cible : tracée d'un trait, lavande pour soi,
-   rouge pour l'adversaire. La cible est cerclée tant que l'attaque vole. */
-.ar-visee{position:absolute;inset:0;z-index:8;pointer-events:none}
-.ar-visee svg{position:absolute;inset:0;overflow:visible}
-.ar-v-trait{fill:none;stroke-width:4;stroke-linecap:round;stroke:var(--vc);filter:drop-shadow(0 0 6px var(--vc));
-  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:ar-trace .38s cubic-bezier(.3,.7,.3,1) forwards}
-.ar-visee marker path{fill:var(--vc)}
-.ar-visee.moi{--vc:var(--deco-ink)}
-.ar-visee.lui{--vc:var(--ar-adv,var(--danger))}
-@keyframes ar-trace{to{stroke-dashoffset:0}}
-.ar-j.vise::before,.ar-ceo.vise .ar-ava::before{content:"";position:absolute;inset:-6%;z-index:6;border-radius:12%;pointer-events:none;
-  box-shadow:0 0 0 3px var(--ar-adv,var(--danger)),0 0 22px var(--ar-adv-lueur,rgba(255,107,107,.6));animation:ar-vise 1s ease-in-out infinite}
-.ar-camp.lui .ar-j.vise::before{box-shadow:0 0 0 3px var(--deco-ink),0 0 22px rgba(200,191,255,.7)}
-.ar-ceo.vise .ar-ava{position:relative}
-.ar-ceo.vise .ar-ava::before{border-radius:50%;inset:-10%}
-.ar-ceo.lui.vise .ar-ava::before{box-shadow:0 0 0 3px var(--deco-ink),0 0 22px rgba(200,191,255,.7)}
-@keyframes ar-vise{50%{transform:scale(1.06);opacity:.75}}
-/* Un effet qui touche une carte : un éclat bref sur elle. */
-.ar-j.effet>.ar-c{animation:ar-effet .9s ease-out}
-@keyframes ar-effet{0%{filter:brightness(1)}25%{filter:brightness(1.7) drop-shadow(0 0 10px var(--deco-ink))}100%{filter:none}}
+/* La visée (refaite en 3.0.13, viser() dans js/combat/table.js) : un trait
+   de lumière qui file de l'attaquant à sa cible et s'y résorbe, puis une
+   mire — quatre coins qui se referment, un halo qui respire — sur la cible.
+   La couleur est celle de l'attaquant : lavande pour soi, corail pour
+   l'adversaire. Rien ne reste tendu à travers le plateau, et rien ne
+   s'anime que la trace du trait, l'opacité et le transform. */
+.ar-trait{position:absolute;z-index:8;pointer-events:none;--vc:var(--deco-ink)}
+.ar-trait.lui,.ar-mire.lui{--vc:var(--ar-adv,var(--danger))}
+.ar-trait svg{display:block;overflow:visible}
+.ar-trait path{fill:none;stroke-linecap:round}
+.ar-trait .h{stroke-width:11;stroke:var(--vc);opacity:.28}
+.ar-trait .c{stroke-width:3;stroke:#fff}
+.ar-mire{position:absolute;z-index:9;pointer-events:none;--vc:var(--deco-ink)}
+.ar-mire::before{content:"";position:absolute;inset:-3%;border-radius:8%;box-shadow:0 0 28px 4px var(--vc);opacity:0;
+  animation:ar-mire-halo 1.1s ease-in-out var(--retard,0ms) infinite}
+.ar-mire.ceo::before{border-radius:50%;inset:-12%}
+.ar-mire i{position:absolute;width:22%;aspect-ratio:1;border:3px solid var(--vc);
+  animation:ar-mire-coin .42s cubic-bezier(.2,1.3,.4,1) var(--retard,0ms) both}
+.ar-mire i:nth-child(1){left:-10%;top:-7%;border-right:0;border-bottom:0;border-top-left-radius:9px;--dx:-55%;--dy:-55%}
+.ar-mire i:nth-child(2){right:-10%;top:-7%;border-left:0;border-bottom:0;border-top-right-radius:9px;--dx:55%;--dy:-55%}
+.ar-mire i:nth-child(3){left:-10%;bottom:-7%;border-right:0;border-top:0;border-bottom-left-radius:9px;--dx:-55%;--dy:55%}
+.ar-mire i:nth-child(4){right:-10%;bottom:-7%;border-left:0;border-top:0;border-bottom-right-radius:9px;--dx:55%;--dy:55%}
+.ar-mire.ceo i{width:36%}
+.ar-mire.ceo i:nth-child(1),.ar-mire.ceo i:nth-child(3){left:-16%}
+.ar-mire.ceo i:nth-child(2),.ar-mire.ceo i:nth-child(4){right:-16%}
+.ar-mire.ceo i:nth-child(1),.ar-mire.ceo i:nth-child(2){top:-16%}
+.ar-mire.ceo i:nth-child(3),.ar-mire.ceo i:nth-child(4){bottom:-16%}
+@keyframes ar-mire-coin{from{transform:translate(var(--dx),var(--dy)) scale(1.25);opacity:0}}
+/* Le focus au clavier (3.0.13) : un anneau blanc qui suit l'arrondi de ce
+   qu'il entoure — jamais un rectangle posé sur une carte arrondie. */
+.ar-j:focus{outline:none}
+.ar-j:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:6.5cqi}
+.ar-ceo.lui:focus{outline:none}
+.ar-ceo.lui:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:999px}
+.ar-place:focus{outline:none}
+.ar-place:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.ar-m:focus{outline:none}
+.ar-m:focus-visible::after{box-shadow:0 0 0 3px #fff,0 0 18px rgba(255,255,255,.45)}
+@keyframes ar-mire-halo{50%{opacity:.55}}
+/* Un effet qui touche une carte : un éclat bref sur elle (.ar-eclair). */
 /* La pastille de Défense qui vient de changer. */
 .ar-def.bouge{animation:ar-def-bouge .9s ease-out}
 @keyframes ar-def-bouge{0%{transform:scale(1)}30%{transform:scale(1.45)}100%{transform:scale(1)}}
 .ar-flot.moins{color:var(--ar-adv2,#ff8f8f)}
-@media (prefers-reduced-motion:reduce){.ar-v-trait{animation:none;stroke-dashoffset:0}.ar-j.vise::before,.ar-ceo.vise .ar-ava::before{animation:none}}
+@media (prefers-reduced-motion:reduce){.ar-mire::before{animation:none;opacity:.7}.ar-mire i{animation:none}}
+html.rm .ar-mire::before{animation:none;opacity:.7}
+html.rm .ar-mire i{animation:none}
 
 /* ============ Version 3.0.12 : les règles officielles à l'écran ============ */
 /* La mise en place : la main n'apparaît qu'à mesure que la donne arrive
@@ -958,11 +1006,8 @@ html.rm .tuto-vise{animation:none}
 .ar-sheet.soutien .ar-s-in{box-shadow:inset 0 0 0 1.5px rgba(157,140,255,.6),inset 0 1px 0 rgba(255,255,255,.24),0 -12px 40px rgba(0,0,0,.6)}
 
 /* Le trait du soutien : du voisin à l'attaquant. */
-.ar-lien{position:absolute;inset:0;z-index:7;pointer-events:none}
-.ar-lien svg{position:absolute;inset:0;overflow:visible}
-.ar-lien path{fill:none;stroke:var(--deco-ink);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:6 7;
-  filter:drop-shadow(0 0 5px rgba(157,140,255,.9));animation:ar-lien 1.1s ease-out forwards}
-@keyframes ar-lien{0%{opacity:0;stroke-dashoffset:40}20%{opacity:1}75%{opacity:1}100%{opacity:0;stroke-dashoffset:0}}
+/* Le soutien : le trait de lumière de la visée (.ar-trait.soutien), plus large. */
+.ar-trait.soutien .h{stroke-width:14;opacity:.32}
 
 /* Le duel : l'attaque contre la Défense, en grand, au milieu du plateau. */
 .ar-duel{position:absolute;left:50%;top:50%;z-index:10;display:flex;align-items:center;gap:14px;padding:10px 20px;border-radius:24px;pointer-events:none;
@@ -982,5 +1027,5 @@ html.rm .tuto-vise{animation:none}
 /* « Phase de Combat » : le bandeau, plus court. */
 .ar-bandeau.combat span{letter-spacing:.02em}
 
-html.rm .ar-lien path,html.rm .ar-duel,html.rm .ar-m.donne{animation-duration:.01s}
-@media (prefers-reduced-motion:reduce){.ar-lien path,.ar-duel,.ar-m.donne{animation-duration:.01s}}
+html.rm .ar-duel,html.rm .ar-m.donne{animation-duration:.01s}
+@media (prefers-reduced-motion:reduce){.ar-duel,.ar-m.donne{animation-duration:.01s}}
