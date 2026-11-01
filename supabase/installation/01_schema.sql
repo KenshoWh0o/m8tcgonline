@@ -426,28 +426,37 @@ $$;
 -- donnait acces a tout le jeu sans aucun compte. Tant que la beta est fermee,
 -- une action n'aboutit que pour une personne invitee — et c'est le serveur qui
 -- le dit, pas la page.
-create or replace function public.garde_beta() returns void
+-- Version 3.0.14 : la meme garde pour un joueur donne. La fonction qui
+-- verifie les combats (supabase/functions/combat-verifier) appelle le
+-- serveur avec la cle de service : auth.uid() y est vide, elle dit pour qui.
+create or replace function public.garde_beta_de(p uuid) returns void
 language plpgsql security definer set search_path = public as $$
 begin
   -- L'ordre des deux tests compte : passe la date d'ouverture, on ne consulte
   -- plus la liste du tout. C'est le cas de la quasi-totalite des appels apres
   -- le lancement, et il ne coute alors rien.
-  if not beta_ouverte() and not est_invite(auth.uid()) then
+  if not beta_ouverte() and not est_invite(p) then
     raise exception 'BETA_FERMEE';
   end if;
   -- Version 3.0.12 : pendant une maintenance, seuls les administrateurs
   -- jouent (une ligne lue par sa cle : rien a payer le reste du temps).
   if exists (select 1 from maintenance where id = 1 and actif)
-     and not exists (select 1 from profiles where id = auth.uid() and is_admin) then
+     and not exists (select 1 from profiles where id = p and is_admin) then
     raise exception 'MAINTENANCE';
   end if;
+end $$;
+
+create or replace function public.garde_beta() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  perform garde_beta_de(auth.uid());
 end $$;
 
 -- `public` d'abord : Postgres accorde l'execution a tout le monde par defaut,
 -- et `anon` en herite. Ne retirer le droit qu'a `anon` et `authenticated`
 -- laissait donc ces deux fonctions appelables sans compte — on pouvait sonder
 -- la liste des invites identifiant par identifiant.
-revoke all on function public.est_invite, public.garde_beta from public, anon, authenticated;
+revoke all on function public.est_invite, public.garde_beta, public.garde_beta_de from public, anon, authenticated;
 
 -- =====================================================================
 --  Creation du profil a l'inscription

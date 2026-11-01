@@ -20,7 +20,7 @@ ctx.window = ctx;
 for (const f of ['js/config.js', 'js/utils.js', 'js/cards-data.js', 'js/promos-data.js', 'js/cards.js',
   'js/combat/moteur.js', 'js/combat/effets.js', 'js/combat/decks.js', 'js/combat/ia.js',
   'js/combat/campagne.js', 'js/combat/choc-data.js', 'js/combat/niveaux.js', 'js/combat/tutoriel.js',
-  'js/combat/historique.js']) {
+  'js/combat/historique.js', 'js/combat/verif.js']) {
   const p = path.join(RACINE, f);
   if (!fs.existsSync(p)) continue;
   vm.runInContext(fs.readFileSync(p, 'utf8'), ctx, { filename: f });
@@ -42,6 +42,7 @@ const Tuto = vm.runInContext('({ TUTO_MOI, TUTO_LUI, TUTO_PV, tutoRival })', ctx
    nombres avec fmtN (js/ui.js) — deux fichiers qui ne se chargent pas ici. */
 vm.runInContext('var byId = {}; var fmtN = n => String(n == null ? 0 : n);', ctx);
 const Histo = vm.runInContext('Historique', ctx);
+const Verif = vm.runInContext('Verif', ctx);
 
 function rng(seed) {
   let s = seed >>> 0;
@@ -164,4 +165,4 @@ if ((mode === 'ia' || mode === 'starters') && IA) {
     `— ${(ms / N).toFixed(0)} ms/partie, ${(ms / decisions).toFixed(2)} ms/décision`);
 }
 
-module.exports = { Combat, Decks, IA, Choc, Campagne, Niveaux, Tuto, Histo, partie, auHasard, rng };
+module.exports = { Combat, Decks, IA, Choc, Campagne, Niveaux, Tuto, Histo, Verif, partie, auHasard, rng };

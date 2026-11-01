@@ -79,6 +79,35 @@ create table if not exists public.combats_ouverts (
   debut   timestamptz not null default now()
 );
 create index if not exists combats_ouverts_user_idx on public.combats_ouverts (user_id);
+-- Version 3.0.14 : ce qu'il faut pour rejouer le combat (le serveur verifie
+-- le resultat : supabase/functions/combat-verifier). `deck` : le deck du
+-- joueur au format du moteur, tel qu'il l'a ouvert ; `section`, `boss`, `n`
+-- (le n-ieme jour du Choc, pour l'Epreuve) : ce qui choisit le deck adverse ;
+-- `journal` : la partie, ecrite une fois ; `meta` : le titre et l'adversaire
+-- pour l'historique ; `verif_k` : jusqu'ou elle est deja verifiee.
+alter table public.combats_ouverts add column if not exists deck    jsonb;
+alter table public.combats_ouverts add column if not exists section text;
+alter table public.combats_ouverts add column if not exists boss    text;
+alter table public.combats_ouverts add column if not exists n       integer;
+alter table public.combats_ouverts add column if not exists journal jsonb;
+alter table public.combats_ouverts add column if not exists meta    jsonb;
+alter table public.combats_ouverts add column if not exists verif_k integer not null default 0;
+
+-- Les combats dont le resultat n'a pas pu etre verifie (un coup refuse, un
+-- coup de l'adversaire qui n'est pas le sien) : ils ne rapportent rien ; le
+-- Labo les montre (labo_combats_refuses, 29_labo.sql).
+create table if not exists public.combats_refuses (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles on delete cascade,
+  le      timestamptz not null default now(),
+  mode    text not null,
+  cle     text,
+  raison  text,
+  coup    integer
+);
+create index if not exists combats_refuses_le_idx on public.combats_refuses (le desc);
+alter table public.combats_refuses enable row level security;
+revoke all on public.combats_refuses from anon, authenticated;
 
 -- La campagne : vingt combats, le niveau de l'IA et ce que paie la premiere
 -- victoire. Copie de NIVEAUX_CAMPAGNE et RECOMPENSES_CAMPAGNE.
@@ -163,6 +192,10 @@ create table if not exists public.defis (
   constraint defi_pas_soi check (de <> pour)
 );
 create index if not exists defis_de_idx on public.defis (de, statut);
+-- Version 3.0.14 : qui a envoye chaque coup (0 : celui qui a defie, 1 :
+-- l'autre), pour que le serveur rejoue le defi et sache qui a joue hors de
+-- son tour (Verif.defi, js/combat/verif.js).
+alter table public.defis add column if not exists auteurs jsonb not null default '[]'::jsonb;
 create index if not exists defis_pour_idx on public.defis (pour, statut);
 
 alter table public.combat_joueurs  enable row level security;
@@ -479,16 +512,30 @@ revoke all on function public.combat_serie, public.combat_public from public, an
 -- combat_debut : le serveur ouvre le combat et tire la graine. Le Raid
 -- (27_raid.sql) et l'Epreuve du jour (25_choc.sql) fixent eux-memes le
 -- niveau de l'IA, le niveau du boss (`phase`) et la graine.
-create or replace function public.combat_debut(p_mode text, p_cle text, p_niveau int) returns jsonb
+-- Version 3.0.14 : `p_deck`, le deck du joueur au format du moteur ({ club,
+-- reserve }), possede ou prete (deck_defi_erreur) ; l'Epreuve impose le sien.
+-- Le serveur note tout ce qui fait la partie, et le rend : la page batit la
+-- sienne avec (Verif.partie, js/combat/verif.js), le serveur rejouera la
+-- meme. La version a trois arguments est retiree.
+drop function if exists public.combat_debut(text, text, integer);
+create or replace function public.combat_debut(p_mode text, p_cle text, p_niveau int, p_deck jsonb default null)
+returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; v_n int; niv int := p_niveau; ph int; gr bigint; x jsonb;
-        cid text; ouverts int;
+        cid text; ouverts int; err text; v_boss text; v_jour int; deck jsonb := p_deck;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   c := combat_joueur(p);
   if c.section is null then raise exception 'Rejoins d''abord une Section.'; end if;
   if p_mode not in ('campagne', 'infini', 'raid', 'epreuve') then raise exception 'Mode inconnu.'; end if;
+  if p_mode = 'epreuve' then
+    deck := null;
+  else
+    if deck is null then raise exception 'Choisis un deck.'; end if;
+    err := deck_defi_erreur(p, deck);
+    if err is not null then raise exception '%', err; end if;
+  end if;
   gr := floor(random() * 4294967295)::bigint + 1;
   if p_mode = 'campagne' then
     if p_cle !~ '^cp(0[1-9]|1[0-9]|20)$' then raise exception 'Combat inconnu.'; end if;
@@ -502,6 +549,7 @@ begin
   else
     x := case when p_mode = 'raid' then raid_debut(p, p_cle) else choc_debut(p, p_mode, p_cle) end;
     niv := (x->>'niveau')::int; ph := (x->>'phase')::int; gr := (x->>'graine')::bigint;
+    v_boss := x->>'boss'; v_jour := (x->>'n')::int;
   end if;
   -- Un seul combat ouvert a la fois : le precedent est abandonne. Version
   -- 3.0.14 (le proprietaire : « Les combats abandonnes comptent comme une
@@ -511,72 +559,68 @@ begin
   select count(*) filter (where mode = 'raid') into ouverts from fermes;
   if ouverts > 0 then update combat_joueurs set defaites = defaites + ouverts, serie = 0 where user_id = p; end if;
   cid := 'cb' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
-  insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine)
-  values (cid, p, p_mode, p_cle, niv, ph, jour_paris(), gr);
-  return jsonb_build_object('id', cid, 'graine', gr);
+  insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine, deck, section, boss, n)
+  values (cid, p, p_mode, p_cle, niv, ph, jour_paris(), gr, deck, c.section, v_boss, v_jour);
+  return jsonb_build_object('id', cid, 'graine', gr, 'mode', p_mode, 'cle', p_cle, 'niveau', niv, 'jour', jour_paris(),
+                            'section', c.section, 'boss', v_boss, 'n', v_jour);
 end $$;
 
--- combat_fin : le resultat, et ce qu'il rapporte. `p_resume` : ce que le
--- navigateur dit du combat (vaincus, touches, tours, PV) — pour les quetes,
--- et pour les degats du Raid. `p_resume.abandon` (3.0.14) : le joueur a
--- abandonne. Un abandon ne fait avancer aucune quete ; en solo (campagne,
+-- Ce que rapporte un combat, une fois verifie (combat_fin_verifie) : le
+-- resultat, et ce qu'il paie. `v` : le verdict du serveur (Verif.rejouer,
+-- js/combat/verif.js) — gagne, abandon, tours, vaincus, touches, pv. Un
+-- abandon (3.0.14) ne fait avancer aucune quete ; en solo (campagne,
 -- Arcade, Epreuve), il ne compte pas du tout (ni defaite, ni serie, ni XP :
 -- l'historique le garde) ; au Raid, il compte comme une defaite.
-create or replace function public.combat_fin(p_id text, p_gagne boolean, p_resume jsonb) returns jsonb
+create or replace function public.combat_payer(p uuid, o public.combats_ouverts, v jsonb, histo jsonb)
+returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); c combat_joueurs; o combats_ouverts; r jsonb; trop boolean;
+declare c combat_joueurs; r jsonb; trop boolean; p_gagne boolean := coalesce((v->>'gagne')::boolean, false);
         v_n int; pc pve_campagne; pd pve_difficultes; g_eclats int := 0; g_boosters int := 0; g_fragments int := 0;
         carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb; v_abandon boolean;
 begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  select * into o from combats_ouverts where id = p_id and user_id = p for update;
-  if not found then raise exception 'Ce combat n''est plus ouvert.'; end if;
-  delete from combats_ouverts where id = p_id;
   c := combat_joueur(p);
   if c.jour is distinct from jour_paris() then
     update combat_joueurs set jour = jour_paris(), recompensees = 0 where user_id = p;
     c.recompensees := 0;
   end if;
   trop := now() - o.debut < interval '20 seconds';
-  v_abandon := coalesce((p_resume->>'abandon')::boolean, false) and not coalesce(p_gagne, false);
-  -- L'historique (section 8) : le deroule que la page a resume.
-  perform historique_ajouter(p, o.mode, o.cle, o.niveau, coalesce(p_gagne, false), p_resume->'histo');
+  v_abandon := coalesce((v->>'abandon')::boolean, false) and not p_gagne;
+  -- L'historique (section 8) : le deroule, bati par le serveur en rejouant.
+  perform historique_ajouter(p, o.mode, o.cle, o.niveau, p_gagne, histo);
   -- Un abandon en solo ne compte pas (l'essai d'une Epreuve reste pris : il
   -- est compte a l'ouverture, choc_debut).
   if v_abandon and o.mode <> 'raid' then
-    return jsonb_build_object('etat', me(), 'recompense', jsonb_build_object(
-      'message', 'Combat abandonné : il ne compte pas.'));
+    return jsonb_build_object('message', 'Combat abandonné : il ne compte pas.');
   end if;
   if not v_abandon then perform bump_quests(p, 'combats', 1); end if;
 
-  perform combat_serie(p, coalesce(p_gagne, false));
-  if not coalesce(p_gagne, false) then
+  perform combat_serie(p, p_gagne);
+  if not p_gagne then
     update combat_joueurs set defaites = defaites + 1 where user_id = p;
   else
     update combat_joueurs set victoires = victoires + 1 where user_id = p;
     perform bump_quests(p, 'victoires', 1);
-    perform bump_quests(p, 'vaincus', least(20, greatest(0, coalesce((p_resume->>'vaincus')::int, 0))));
+    perform bump_quests(p, 'vaincus', least(20, greatest(0, coalesce((v->>'vaincus')::int, 0))));
     if o.niveau >= 4 then perform bump_quests(p, 'victoires_dures', 1); end if;
     if o.niveau >= 5 and o.mode = 'infini' then perform bump_quests(p, 'legende', 1); end if;
   end if;
   -- L'XP, sans limite par jour (26_niveaux.sql) : tout combat fini en
   -- rapporte, sauf un combat trop court.
   if not trop then
-    v_xp := gagner_xp(p, xp_combat(o.mode, o.niveau, coalesce(p_gagne, false),
-                                 coalesce((p_resume->>'vaincus')::int, 0), coalesce((p_resume->>'tours')::int, 0)));
+    v_xp := gagner_xp(p, xp_combat(o.mode, o.niveau, p_gagne,
+                                 coalesce((v->>'vaincus')::int, 0), coalesce((v->>'tours')::int, 0)));
   end if;
 
   -- Le Raid (27_raid.sql : Etincelles pendant le Choc, Eclats sinon) et
   -- l'Epreuve du jour (25_choc.sql, en Etincelles).
   if o.mode in ('raid', 'epreuve') then
     r := case when o.mode = 'raid'
-              then raid_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb) || jsonb_build_object('abandon', v_abandon), trop)
-              else choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop) end;
-    return jsonb_build_object('etat', me(), 'recompense', r || jsonb_build_object('xp', v_xp));
+              then raid_fin(p, o, p_gagne, v || jsonb_build_object('abandon', v_abandon), trop)
+              else choc_fin(p, o, p_gagne, v, trop) end;
+    return r || jsonb_build_object('xp', v_xp);
   end if;
 
-  if not coalesce(p_gagne, false) then
+  if not p_gagne then
     msg := 'Pas d''Éclats pour une défaite, mais l''XP compte.';
   elsif trop then
     msg := 'Combat trop court pour être récompensé.';
@@ -621,9 +665,79 @@ begin
     perform check_promos(p);
   end if;
 
-  return jsonb_build_object('etat', me(), 'recompense', jsonb_build_object(
-    'eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments,
-    'carte', carte, 'titre', null, 'message', msg, 'xp', v_xp));
+  return jsonb_build_object('eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments,
+    'carte', carte, 'titre', null, 'message', msg, 'xp', v_xp);
+end $$;
+
+-- Version 3.0.14 : le navigateur ne dit plus qui a gagne. combat_fin (qu'il
+-- appelait avec son resultat) est retiree ; il envoie la partie a la
+-- fonction du serveur (supabase/functions/combat-verifier), qui la rejoue
+-- et appelle les trois fonctions qui suivent, avec la cle de service. Elles
+-- ne sont ouvertes qu'a elle (section 9).
+drop function if exists public.combat_fin(text, boolean, jsonb);
+
+-- Le combat a verifier : ce que le serveur a note a l'ouverture, et la
+-- partie. Le journal s'ecrit une fois : une passe suivante (une partie
+-- longue se verifie en plusieurs fois) ne peut pas en changer.
+create or replace function public.combat_a_verifier(p_user uuid, p_id text, p_journal jsonb, p_meta jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare o combats_ouverts;
+begin
+  perform garde_beta_de(p_user);
+  select * into o from combats_ouverts where id = p_id and user_id = p_user for update;
+  if not found then raise exception 'Ce combat n''est plus ouvert.'; end if;
+  if o.journal is null then
+    if jsonb_typeof(p_journal) is distinct from 'array' or jsonb_array_length(p_journal) > 5000
+       or length(p_journal::text) > 800000 then
+      raise exception 'Partie illisible.';
+    end if;
+    update combats_ouverts set journal = p_journal,
+           meta = case when jsonb_typeof(p_meta) = 'object' and length(p_meta::text) < 2000 then p_meta end
+     where id = p_id returning * into o;
+  end if;
+  return jsonb_build_object('mode', o.mode, 'cle', o.cle, 'niveau', o.niveau, 'phase', o.phase, 'jour', o.jour,
+                            'graine', o.graine, 'deck', o.deck, 'section', o.section, 'boss', o.boss, 'n', o.n,
+                            'journal', o.journal, 'meta', coalesce(o.meta, '{}'::jsonb), 'verif_k', o.verif_k);
+end $$;
+
+-- Une passe de plus : la partie est verifiee jusqu'au coup `p_k`.
+create or replace function public.combat_verif_avance(p_user uuid, p_id text, p_k int) returns void
+language sql security definer set search_path = public as $$
+  update combats_ouverts set verif_k = greatest(verif_k, coalesce(p_k, 0)) where id = p_id and user_id = p_user;
+$$;
+
+-- La partie est verifiee : le serveur paie ce que le moteur a confirme. Le
+-- navigateur relit l'etat ensuite (me()).
+create or replace function public.combat_fin_verifie(p_user uuid, p_id text, p_verdict jsonb, p_histo jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare o combats_ouverts;
+begin
+  perform garde_beta_de(p_user);
+  select * into o from combats_ouverts where id = p_id and user_id = p_user for update;
+  if not found then raise exception 'Ce combat n''est plus ouvert.'; end if;
+  delete from combats_ouverts where id = p_id;
+  return jsonb_build_object('recompense', combat_payer(p_user, o, coalesce(p_verdict, '{}'::jsonb), p_histo),
+                            'verdict', p_verdict);
+end $$;
+
+-- La partie n'a pas tenu (un coup refuse par les regles, un coup de
+-- l'adversaire qui n'est pas le sien, une partie pas finie) : le combat se
+-- ferme sans rien rapporter, et le Labo le montre. L'essai du Raid ou de
+-- l'Epreuve, compte a l'ouverture, reste pris.
+create or replace function public.combat_refuse(p_user uuid, p_id text, p_raison text, p_k int)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare o combats_ouverts;
+begin
+  select * into o from combats_ouverts where id = p_id and user_id = p_user for update;
+  if not found then raise exception 'Ce combat n''est plus ouvert.'; end if;
+  delete from combats_ouverts where id = p_id;
+  insert into combats_refuses (user_id, mode, cle, raison, coup) values (p_user, o.mode, o.cle, left(p_raison, 300), p_k);
+  delete from combats_refuses where le < now() - interval '90 days';
+  return jsonb_build_object('recompense', jsonb_build_object(
+    'message', 'Ce combat n''a pas pu être vérifié par le serveur : il ne rapporte rien.'), 'refuse', true);
 end $$;
 
 -- ===================================================== 7. les defis entre amis
@@ -719,25 +833,43 @@ begin
   if p_n <> jsonb_array_length(d.actions) then raise exception 'Actions désynchronisées.'; end if;
   if jsonb_array_length(d.actions) >= 5000 then raise exception 'Ce défi est trop long.'; end if;
   if jsonb_typeof(p_action) <> 'object' or length(p_action::text) > 2000 then raise exception 'Action invalide.'; end if;
-  update defis set actions = actions || jsonb_build_array(p_action), maj = now() where id = d.id;
+  update defis set actions = actions || jsonb_build_array(p_action),
+                   auteurs = auteurs || to_jsonb(case when d.de = p then 0 else 1 end), maj = now()
+   where id = d.id;
   return jsonb_build_object('n', jsonb_array_length(d.actions) + 1);
 end $$;
 
--- La fin d'un defi, declaree par chacun des deux : qui a gagne (0 : celui
--- qui a defie). Chacun est paye sur sa propre declaration, une fois ; si
--- les deux declarations divergent, le defi est marque `desaccord`.
--- `p_histo` (version 3.0.12) : son deroule, pour l'historique (section 8).
--- La version a trois arguments est retiree : deux versions de la meme
--- fonction rendraient l'appel ambigu.
+-- La fin d'un defi. Jusqu'a la 3.0.13, chacun declarait qui avait gagne, et
+-- etait paye sur sa propre declaration. Version 3.0.14 : la fonction du
+-- serveur (supabase/functions/combat-verifier) rejoue les coups que le
+-- serveur a ranges (Verif.defi, js/combat/verif.js) et dit qui a gagne ; un
+-- coup envoye hors de son tour, ou refuse par les regles, fait perdre celui
+-- qui l'a envoye (`p_verdict.fautif`). defi_fin est retiree (les versions a
+-- trois et quatre arguments).
 drop function if exists public.defi_fin(text, integer, integer);
-create or replace function public.defi_fin(p_id text, p_gagnant int default null, p_tours int default 0,
-                                           p_histo jsonb default null) returns jsonb
+drop function if exists public.defi_fin(text, integer, integer, jsonb);
+
+-- Le defi a verifier : les decks, la graine, les coups et leurs auteurs.
+create or replace function public.defi_a_verifier(p_user uuid, p_id text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); d defis; c combat_joueurs; moi int; gagne boolean;
+declare d defis;
+begin
+  perform garde_beta_de(p_user);
+  select * into d from defis where id = p_id and (pour = p_user or de = p_user);
+  if not found then raise exception 'Défi introuvable.'; end if;
+  if d.statut not in ('en_cours', 'fini', 'abandon') then raise exception 'Ce défi n''a pas été joué.'; end if;
+  return jsonb_build_object('decks', jsonb_build_array(d.deck_de, d.deck_pour), 'graine', d.graine,
+                            'actions', d.actions, 'auteurs', d.auteurs, 'moi', case when d.de = p_user then 0 else 1 end);
+end $$;
+
+create or replace function public.defi_fin_verifie(p_user uuid, p_id text, p_verdict jsonb, p_histo jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := p_user; d defis; c combat_joueurs; moi int; gagne boolean;
+        p_gagnant int := (p_verdict->>'gagnant')::int; p_tours int := coalesce((p_verdict->>'tours')::int, 0);
         g_eclats int := 0; msg text := ''; deja boolean; v_xp jsonb; v_abandon boolean;
 begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
+  perform garde_beta_de(p);
   select * into d from defis where id = p_id and (pour = p or de = p) for update;
   if not found then raise exception 'Défi introuvable.'; end if;
   if d.statut not in ('en_cours', 'fini', 'abandon') then raise exception 'Ce défi n''a pas été joué.'; end if;
@@ -770,8 +902,10 @@ begin
          from profiles o where o.id = case when moi = 0 then d.pour else d.de end));
     -- Version 3.0.14 : un defi abandonne (par l'un ou l'autre) compte, comme
     -- une defaite pour qui abandonne, mais ne fait avancer aucune quete :
-    -- s'accorder des victoires entre amis n'avance a rien.
-    v_abandon := exists (select 1 from jsonb_array_elements(d.actions) x where x->>'t' = 'abandon');
+    -- s'accorder des victoires entre amis n'avance a rien. Un coup refuse
+    -- (`fautif`) vaut un abandon de son auteur.
+    v_abandon := exists (select 1 from jsonb_array_elements(d.actions) x where x->>'t' = 'abandon')
+                 or (p_verdict->>'fautif') is not null;
     if not v_abandon then
       perform bump_quests(p, 'defis', 1);
       perform bump_quests(p, 'combats', 1);
@@ -792,8 +926,8 @@ begin
       end if;
     end if;
   end if;
-  return jsonb_build_object('etat', me(), 'recompense',
-    jsonb_build_object('eclats', g_eclats, 'message', msg, 'xp', v_xp));
+  return jsonb_build_object('recompense',
+    jsonb_build_object('eclats', g_eclats, 'message', msg, 'xp', v_xp), 'verdict', p_verdict);
 end $$;
 
 -- ===================================================== 8. l'historique des combats
@@ -891,14 +1025,21 @@ end $$;
 -- ===================================================== 9. droits
 revoke all on function public.jour_paris, public.combat_joueur, public.cle_copie, public.limite_copies,
   public.deck_erreur, public.deck_depuis_moteur, public.cartes_pretees, public.deck_defi_erreur,
-  public.combat_etat, public.vue_defi, public.historique_ajouter
+  public.combat_etat, public.vue_defi, public.historique_ajouter, public.combat_payer
   from public, anon, authenticated;
 
 revoke all on function public.combat_section, public.combat_reglages, public.deck_sauver, public.deck_publier,
-  public.deck_supprimer, public.combat_debut, public.combat_fin, public.defi_lancer,
-  public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin,
+  public.deck_supprimer, public.combat_debut, public.defi_lancer,
+  public.defi_repondre, public.defi_etat, public.defi_jouer,
   public.combats_historique, public.combat_historique from public, anon;
 grant execute on function public.combat_section, public.combat_reglages, public.deck_sauver, public.deck_publier,
-  public.deck_supprimer, public.combat_debut, public.combat_fin, public.defi_lancer,
-  public.defi_repondre, public.defi_etat, public.defi_jouer, public.defi_fin,
+  public.deck_supprimer, public.combat_debut, public.defi_lancer,
+  public.defi_repondre, public.defi_etat, public.defi_jouer,
   public.combats_historique, public.combat_historique to authenticated;
+
+-- Version 3.0.14 : ce que paie un combat ne s'appelle qu'avec la cle de
+-- service, celle de la fonction qui verifie (supabase/functions/combat-verifier).
+revoke all on function public.combat_a_verifier, public.combat_verif_avance, public.combat_fin_verifie,
+  public.combat_refuse, public.defi_a_verifier, public.defi_fin_verifie from public, anon, authenticated;
+grant execute on function public.combat_a_verifier, public.combat_verif_avance, public.combat_fin_verifie,
+  public.combat_refuse, public.defi_a_verifier, public.defi_fin_verifie to service_role;

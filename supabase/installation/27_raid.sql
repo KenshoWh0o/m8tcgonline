@@ -18,8 +18,10 @@
 --  de chacun). Les six phases abattues (si le serveur y arrive), le mode
 --  Infini : un palier par joueur, qui monte a chaque victoire, pour le
 --  classement. Trois tentatives par jour. Au raid suivant, tout recommence.
---  Le serveur ne fait pas tourner le combat : le deck du boss se tire dans
---  la page (deckBoss, js/combat/choc-data.js), le serveur dit lequel.
+--  Le deck du boss se tire dans la page (deckBoss, js/combat/choc-data.js),
+--  le serveur dit lequel ; depuis la 3.0.14, il rejoue le combat
+--  (supabase/functions/combat-verifier) : les degats comptes sont ceux de la
+--  partie rejouee, pas ceux que la page annonce.
 --
 --  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
 --  Etincelles ; le reste du temps, en Eclats.
@@ -215,8 +217,10 @@ begin
   insert into raid_participants (saison, user_id) values (s, p) on conflict do nothing;
   update raid_participants set combats = combats + 1 where saison = s and user_id = p;
   c := raid_combat(attendu);
+  -- `boss` (3.0.14) : le deck adverse s'en deduit (deckBoss) ; le serveur
+  -- le garde pour rejouer le combat.
   return jsonb_build_object('niveau', (c->>'ia')::int, 'phase', case when ph <= 6 then ph end,
-                            'graine', floor(random() * 4294967295)::bigint + 1);
+                            'graine', floor(random() * 4294967295)::bigint + 1, 'boss', raid_boss(s));
 end $$;
 
 -- Les degats : les PV pris au boss (plafonnes a ses PV + 1), ou tous et 3

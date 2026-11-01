@@ -116,7 +116,7 @@ drop function if exists public.choc_jour_ev();
 -- Appeles par combat_debut et combat_fin (23_combats.sql).
 create or replace function public.choc_debut(p uuid, p_mode text, p_cle text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare j date := jour_paris(); e choc_epreuves;
+declare j date := jour_paris(); e choc_epreuves; ev evenements;
 begin
   if evenement_en_cours() is distinct from 'choc' then raise exception 'L''événement est terminé.'; end if;
   if p_mode <> 'epreuve' then raise exception 'Mode inconnu.'; end if;
@@ -128,7 +128,12 @@ begin
   if jsonb_array_length(e.essais) >= 3 then raise exception 'Épreuve terminée : une nouvelle demain.'; end if;
   update choc_epreuves set essais = essais || '[{"gagne":false,"tours":0,"pv":0,"touches":0,"abandon":true}]'::jsonb
    where user_id = p and jour = j;
-  return jsonb_build_object('niveau', 3, 'phase', null, 'graine', choc_graine(j));
+  -- `n` (3.0.14) : le n-ieme jour de l'evenement, comme choc_etat : il
+  -- choisit la regle du jour ; le serveur le garde pour rejouer le combat.
+  select * into ev from evenements x where x.code = 'choc' and now() >= x.debut and now() < x.fin
+   order by x.debut desc limit 1;
+  return jsonb_build_object('niveau', 3, 'phase', null, 'graine', choc_graine(j),
+                            'n', j - (ev.debut at time zone 'Europe/Paris')::date + 1);
 end $$;
 
 create or replace function public.choc_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)

@@ -7,7 +7,7 @@
    engagé ou non, avec quelles Essences — puis joue des actions et vérifie
    ce que dit la règle (docs/regles-3.0.md). */
 "use strict";
-const { Combat, Decks, Choc, Campagne, Niveaux, Tuto, IA, Histo, partie, auHasard, rng } = require('./combat-sim.js');
+const { Combat, Decks, Choc, Campagne, Niveaux, Tuto, IA, Histo, Verif, partie, auHasard, rng } = require('./combat-sim.js');
 
 let ok = 0, ko = 0;
 function test(nom, f) {
@@ -792,6 +792,153 @@ test('un Starter ne se copie qu\'avec ses propres cartes, toutes versions compri
   /* Il en manque deux : ni copie, ni carte inventée. */
   r = Decks.copieStarter(st, Object.assign({}, st.cartes, { c015: 1 }));
   egal([r.ok, r.nManque, r.manque], [false, 2, [{ nom: Combat.carte('c015').nom, n: 2 }]]);
+});
+
+/* ---------- La vérification des combats (3.0.14) ---------- */
+/* Une partie comme l'arène la joue (capture : les photos de l'animation),
+   le joueur tenu par l'IA d'un niveau donné, l'adversaire par le sien. */
+function jouerVerif(o, nivJoueur) {
+  const p = Verif.partie(o);
+  const E = Combat.creer(p.init, { capture: true });
+  let g = 0;
+  while (Combat.demande(E) && g++ < 4000) {
+    const d = Combat.demande(E);
+    Combat.agir(E, IA.choisir(E, { niveau: d.qui === 0 ? (nivJoueur || 2) : p.niveau }));
+  }
+  return { E, journal: JSON.parse(JSON.stringify(E.journal)), p };
+}
+const deckMoteur = s => Decks.versMoteur(Decks.STARTERS[s]);
+const OUVERTURES = [
+  { mode: 'campagne', cle: 'cp01', section: 'toxique', graine: 11, deck: deckMoteur('toxique') },
+  { mode: 'campagne', cle: 'cp12', section: 'deter', graine: 12, deck: deckMoteur('deter') },
+  { mode: 'infini', cle: '1', niveau: 1, graine: 13, deck: deckMoteur('deter') },
+  { mode: 'infini', cle: '3', niveau: 3, graine: 14, deck: deckMoteur('toxique') },
+  { mode: 'raid', cle: 'p2', jour: '2026-11-03', boss: 'c116', graine: 15, deck: deckMoteur('toxique') },
+  { mode: 'raid', cle: 'p3', jour: '2026-11-17', boss: 'c121', graine: 16, deck: deckMoteur('deter') },
+  { mode: 'epreuve', cle: '2026-11-04', jour: '2026-11-04', n: 4, graine: 17 },
+  { mode: 'epreuve', cle: '2026-11-07', jour: '2026-11-07', n: 7, graine: 18 }
+];
+const PARTIES = OUVERTURES.map(o => Object.assign({ o }, jouerVerif(o)));
+
+test('le serveur rejoue chaque mode et confirme le résultat de la page', () => {
+  for (const { o, E, journal } of PARTIES) {
+    const r = Verif.rejouer(o, journal, { meta: { titre: 'Test' } });
+    egal(r.etat, 'fini', o.mode + ' ' + o.cle + ' : ' + (r.raison || ''));
+    const v = Verif.verdict(E, 0);
+    egal(r.verdict, v, o.mode + ' ' + o.cle);
+    vrai(r.histo && r.histo.titre === 'Test' && r.histo.journal, 'l\'historique est bâti par le serveur');
+  }
+});
+
+test('la partie de la page est celle du serveur (deck, PV, Essences, boss, niveau)', () => {
+  const raid = Verif.partie(OUVERTURES[4]);
+  const c = Choc.raidCombat('p2', 'c116');
+  egal([raid.init.pv, raid.init.essDepart, raid.niveau, raid.init.poses], [[c.pvMoi, c.pvBoss], [0, c.ess], c.ia, Choc.posesBoss('c116')]);
+  const ep = Verif.partie(OUVERTURES[6]);
+  const x = Choc.epreuveDuJour('2026-11-04', 17, 4);
+  egal([ep.init.decks, ep.init.pv, ep.niveau], [[Decks.versMoteur(x.moi), Decks.versMoteur(x.adv)], x.regle.pv, Choc.CHOC.epreuve.ia]);
+  const cp = Verif.partie(OUVERTURES[1]);
+  const f = Campagne.combatsCampagne('deter')[11];
+  egal([cp.init.decks[1], cp.niveau], [Decks.versMoteur(Campagne.deckRival(f, 'deter')), f.niveau]);
+  let err = null;
+  try { Verif.partie({ mode: 'infini', niveau: 3, graine: 1 }); } catch (e) { err = e.message; }
+  egal(err, 'Deck du joueur absent.');
+});
+
+test('un coup de l\'adversaire falsifié, un coup impossible, un abandon prêté à l\'adversaire : refusés', () => {
+  const { o, journal } = PARTIES[3];
+  /* Le premier coup de l'adversaire qui avait une autre possibilité : on la lui fait jouer. */
+  const p = Verif.partie(o);
+  const E = Combat.creer(p.init);
+  let faux = null;
+  for (let k = 0; k < journal.length && !faux; k++) {
+    const d = Combat.demande(E);
+    if (d.qui === 1) {
+      const autre = Combat.options(E).find(a => Verif.canon(a) !== Verif.canon(journal[k]));
+      if (autre) faux = { k, autre };
+    }
+    Combat.agir(E, journal[k]);
+  }
+  vrai(faux, 'une décision de l\'adversaire avait un autre choix');
+  const j1 = journal.slice(0, faux.k).concat([faux.autre], journal.slice(faux.k + 1));
+  let r = Verif.rejouer(o, j1);
+  egal([r.etat, r.k], ['refus', faux.k]);
+  vrai(/pas celui qu'il aurait joué/.test(r.raison), r.raison);
+  /* Un coup du joueur que les règles refusent. */
+  const E2 = Combat.creer(p.init);
+  let kj = -1;
+  for (let k = 0; k < journal.length; k++) {
+    const d = Combat.demande(E2);
+    if (d.qui === 0 && d.type === 'tour' && kj < 0 && E2.tour >= 3) { kj = k; break; }
+    Combat.agir(E2, journal[k]);
+  }
+  vrai(kj >= 0);
+  const j2 = journal.slice(0, kj).concat([{ t: 'attaquer', u: 99999, k: 0, cible: 'ceo' }], journal.slice(kj + 1));
+  r = Verif.rejouer(o, j2);
+  egal([r.etat, r.k], ['refus', kj]);
+  vrai(/refusé par les règles/.test(r.raison), r.raison);
+  /* L'adversaire « abandonne » : la page ne peut pas le dire. */
+  r = Verif.rejouer(o, journal.slice(0, 10).concat([{ t: 'abandon', qui: 1 }]));
+  egal(r.etat, 'refus');
+  vrai(/n'abandonne jamais/.test(r.raison), r.raison);
+});
+
+test('un abandon se vérifie (perdu), une partie inachevée est refusée, rien après la fin', () => {
+  const { o, journal } = PARTIES[2];
+  let r = Verif.rejouer(o, journal.slice(0, 12).concat([{ t: 'abandon', qui: 0 }]));
+  egal([r.etat, r.verdict && r.verdict.gagne, r.verdict && r.verdict.abandon, r.verdict && r.verdict.raison], ['fini', false, true, 'abandon']);
+  r = Verif.rejouer(o, journal.slice(0, 12));
+  egal(r.etat, 'refus');
+  vrai(/pas finie/.test(r.raison), r.raison);
+  r = Verif.rejouer(o, journal.concat([{ t: 'choix', v: 'oui' }]));
+  egal([r.etat, r.k], ['refus', journal.length]);
+  r = Verif.rejouer(o, journal.slice(0, 5).concat([{ t: 'abandon', qui: 0 }, { t: 'choix', v: 'oui' }]));
+  egal(r.etat, 'refus');
+});
+
+test('vérifier en plusieurs passes donne le même verdict qu\'en une', () => {
+  const { o, journal } = PARTIES[4];
+  const une = Verif.rejouer(o, journal);
+  let k = 0, passes = 0, r;
+  do {
+    r = Verif.rejouer(o, journal, { depuis: k, budget: 1 });
+    passes++;
+    if (r.etat === 'suite') { vrai(r.k > k || passes === 1, 'chaque passe avance (' + k + ' → ' + r.k + ')'); k = r.k; }
+    /* Un budget d'1 ms laisse au moins un coup par passe : jamais plus de passes que de coups. */
+    vrai(passes <= journal.length + 2, 'trop de passes');
+  } while (r.etat === 'suite');
+  egal(r.etat, 'fini');
+  egal(r.verdict, une.verdict);
+  vrai(passes > 1, 'il a fallu plusieurs passes (' + passes + ')');
+});
+
+test('un défi entre amis : le gagnant se rejoue ; un coup hors de son tour fait perdre son auteur', () => {
+  const decks = [deckMoteur('toxique'), deckMoteur('deter')];
+  const E = Combat.creer({ decks, noms: ['A', 'B'], graine: 21 });
+  let g = 0;
+  const auteurs = [];
+  while (Combat.demande(E) && g++ < 4000) { const d = Combat.demande(E); auteurs.push(d.qui); Combat.agir(E, IA.choisir(E, { niveau: 2 })); }
+  const actions = JSON.parse(JSON.stringify(E.journal));
+  let r = Verif.defi({ decks, graine: 21, actions, auteurs });
+  egal([r.fini, r.gagnant, r.fautif], [true, E.fin.gagnant, null]);
+  /* Le coup 6 envoyé par l'autre joueur. */
+  const a2 = auteurs.slice(); a2[6] = 1 - a2[6];
+  r = Verif.defi({ decks, graine: 21, actions, auteurs: a2 });
+  egal([r.fini, r.fautif, r.gagnant], [true, a2[6], 1 - a2[6]]);
+  /* Un coup impossible : son auteur perd. */
+  const a3 = actions.slice(); a3[8] = { t: 'attaquer', u: 424242, k: 0, cible: 'ceo' };
+  r = Verif.defi({ decks, graine: 21, actions: a3, auteurs });
+  egal([r.fautif, r.gagnant], [auteurs[8], 1 - auteurs[8]]);
+  /* Un abandon envoyé au nom de l'autre. */
+  const a4 = actions.slice(0, 9).concat([{ t: 'abandon', qui: 1 - auteurs[9] }]);
+  r = Verif.defi({ decks, graine: 21, actions: a4, auteurs: auteurs.slice(0, 9).concat([auteurs[9]]) });
+  egal([r.fautif, r.gagnant], [auteurs[9], 1 - auteurs[9]]);
+  /* Un vrai abandon : l'autre gagne. */
+  r = Verif.defi({ decks, graine: 21, actions: actions.slice(0, 9).concat([{ t: 'abandon', qui: 0 }]), auteurs: auteurs.slice(0, 9).concat([0]) });
+  egal([r.fini, r.gagnant, r.fautif, r.raison], [true, 1, null, 'abandon']);
+  /* Pas fini : rien à payer. */
+  r = Verif.defi({ decks, graine: 21, actions: actions.slice(0, 9), auteurs });
+  egal([r.fini, r.gagnant], [false, null]);
 });
 
 console.log(`\n${ok} réussis, ${ko} en échec`);
