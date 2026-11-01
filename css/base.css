@@ -212,6 +212,9 @@ summary{font-weight:700;cursor:pointer}
   display:flex;align-items:flex-end;justify-content:center;z-index:50;animation:fadein .2s}
 .sheet-wrap[hidden]{display:none}
 @keyframes fadein{from{opacity:0}}
+/* Le focus posé sur la feuille elle-même à son ouverture (js/ui.js) : pas
+   de contour autour de tout le panneau. */
+.sheet:focus{outline:none}
 .sheet{position:relative;background:var(--glass-strong);
   -webkit-backdrop-filter:blur(32px) saturate(160%);backdrop-filter:blur(32px) saturate(160%);
   border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-bottom:0;

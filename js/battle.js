@@ -554,7 +554,7 @@ const DEFI_GAIN = { victoire: 40, defaite: 15, plafond: 3 };
    Brillantes). Le deck actif en tête, en grand, avec sa note ; les autres
    en lignes ; et ce qui fait un bon deck, à portée de main. */
 let cbDecksVue = 'decks';
-const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" aria-label="${n} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" role="img" aria-label="${n} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 function vCbDecks(e) {
   const seg = `<div class="dk-seg" role="tablist">
       <button class="${cbDecksVue === 'decks' ? 'on' : ''}" data-cb="decks-vue" data-v="decks" role="tab">Mes decks</button>

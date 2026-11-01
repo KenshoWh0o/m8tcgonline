@@ -147,12 +147,12 @@ function vRaid() {
     ${coffres ? `<section class="rd-coffres">${coffres}</section>` : ''}
     <section class="rd-go">
       <div class="rd-go-tete"><b>${infini ? `Infini · palier ${c.n}` : `Combattre la phase ${c.n}`}</b>
-        <span class="rd-combat"><span class="rd-chip" aria-label="Difficulté ${c.ia} sur 5">Difficulté ${etoiles(c.ia)}</span><span class="rd-chip">${c.pvBoss} PV</span>
+        <span class="rd-combat"><span class="rd-chip" role="img" aria-label="Difficulté ${c.ia} sur 5">Difficulté ${etoiles(c.ia)}</span><span class="rd-chip">${c.pvBoss} PV</span>
         ${c.ess ? `<span class="rd-chip">${c.ess} Essence${c.ess > 1 ? 's' : ''} d'avance</span>` : ''}
         ${c.pvMoi < Combat.REGLE.PV ? `<span class="rd-chip rouge">Toi : ${c.pvMoi} PV</span>` : ''}</span></div>
       ${sec ? vChoixDeck() : ''}
       <div class="rd-lancer">
-        <span class="rd-pips" aria-label="${tr} tentative${tr > 1 ? 's' : ''} sur ${r.max}">${pips}</span>
+        <span class="rd-pips" role="img" aria-label="${tr} tentative${tr > 1 ? 's' : ''} sur ${r.max}">${pips}</span>
         ${sec ? `<button class="btn cb-lancer" data-rd="go" ${tr ? '' : 'disabled'}>${tr ? 'Affronter' : 'Reviens demain'}</button>`
           : '<button class="btn cb-lancer" data-tab="combats">Choisis d\'abord ta Section</button>'}
       </div>

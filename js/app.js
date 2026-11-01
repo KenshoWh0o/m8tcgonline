@@ -271,7 +271,8 @@ const VUES = {
    parmi ceux qui ont les mêmes —, puis on rend le focus à son remplaçant,
    sans faire défiler. Après un toucher ou un clic, le navigateur ne montre
    pas d'anneau de focus (:focus-visible) : rien ne change à l'œil. */
-const FOCUS_ATTRS = ['data-cb', 'data-act', 'data-v', 'data-tab', 'data-show', 'data-q', 'data-lab', 'data-t', 'data-ech', 'data-ong', 'data-c', 'data-id'];
+const FOCUS_ATTRS = ['data-cb', 'data-act', 'data-v', 'data-tab', 'data-show', 'data-q', 'data-lab', 'data-t', 'data-ech', 'data-ong', 'data-c', 'data-id',
+  'data-colvue', 'data-clv', 'data-qv', 'data-ch', 'data-rfvue', 'data-rd'];
 function retenirFocus(m) {
   const el = document.activeElement;
   if (!el || el === document.body || !m.contains(el)) return null;
@@ -362,6 +363,7 @@ function render() {
     if (a < n.scrollLeft) n.scrollLeft = Math.max(0, a - 24);
     else if (b > n.scrollLeft + n.clientWidth) n.scrollLeft = b - n.clientWidth + 24;
   });
+  normaliserOnglets(m);
   if (haut) m.scrollTop = haut;
   if (focus) rendreFocus(m, focus);
   majDefile();
@@ -682,8 +684,41 @@ $('#tiroir').addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && tiroirOuvert) fermerTiroir();
+  if (e.key === 'Escape' && tiroirOuvert && !e.defaultPrevented) fermerTiroir();
 });
+
+/* Les rangées d'onglets au clavier (3.0.13) : les flèches passent d'un
+   onglet à l'autre et l'ouvrent, Début et Fin vont aux bouts. */
+document.addEventListener('keydown', e => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const t = e.target.closest && e.target.closest('[role="tab"]');
+  const l = t && t.closest('[role="tablist"]');
+  if (!l) return;
+  const tabs = [...l.querySelectorAll('[role="tab"]')].filter(b => b.closest('[role="tablist"]') === l && !b.disabled);
+  const i = tabs.indexOf(t);
+  if (i < 0) return;
+  const k = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  e.preventDefault();
+  tabs[k].focus();
+  tabs[k].click();
+});
+
+/* Chaque rangée d'onglets dit qui est qui (3.0.13) : ses boutons sont des
+   onglets, celui en cours le dit, et lui seul prend le Tab (les flèches
+   mènent aux autres). Posé après chaque rendu : les écrans n'ont pas à y
+   penser. */
+function normaliserOnglets(racine) {
+  racine.querySelectorAll('[role="tablist"]').forEach(l => {
+    const tabs = [...l.querySelectorAll('button')].filter(b => b.closest('[role="tablist"]') === l);
+    if (!tabs.length) return;
+    const on = tabs.find(b => b.getAttribute('aria-selected') === 'true') || tabs.find(b => b.classList.contains('on')) || tabs[0];
+    tabs.forEach(b => {
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', b === on ? 'true' : 'false');
+      b.tabIndex = b === on ? 0 : -1;
+    });
+  });
+}
 
 /* ---------- Boucle de la réserve ---------- */
 /* Hors ligne, les boosters se rechargent ici. En ligne, seul le serveur les

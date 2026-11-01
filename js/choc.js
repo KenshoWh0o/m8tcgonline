@@ -115,7 +115,7 @@ function vChTete(fin) {
     const n = id === 'quetes' ? chQuetesPretes() : id === 'pass' ? chPaliersPrets() : id === 'raid' ? rdCoffres() : 0;
     if (n) return `<i class="rf-pastille">${n}</i>`;
     const aJouer = (id === 'raid' && rdTentatives() > 0) || (id === 'epreuve' && chEpreuveAJouer() && !chEtat.epreuve.gagnee);
-    return aJouer ? '<i class="rf-point" aria-label="À jouer"></i>' : '';
+    return aJouer ? '<i class="rf-point" role="img" aria-label="À jouer"></i>' : '';
   };
   return `<header class="rf-tete ch-tete">
     ${chAffiche()}
@@ -522,7 +522,7 @@ function vBandeauChoc(lieu) {
       <b>Le Choc des Sections</b>
       ${boutique ? `<em class="chban-sous">${etincelleIco}<strong class="tnum">${fmtN(save.prismes || 0)}</strong> ${h(CHOC.monnaie.nom)} à dépenser</em>` : ''}
     </span>
-    ${n ? `<span class="rfban-n chban-n" aria-label="${n} à récupérer">${n}</span>` : ''}
+    ${n ? `<span class="rfban-n chban-n" role="img" aria-label="${n} à récupérer">${n}</span>` : ''}
     <span class="rfban-fl" aria-hidden="true">›</span>
   </button>`;
 }

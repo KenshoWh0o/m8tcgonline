@@ -367,7 +367,9 @@ $('#viewer').addEventListener('click', e => {
   if (g) changerGardeVw(g.dataset.v === 'g+' ? 1 : g.dataset.v === 'g-' ? -1 : 0);
 });
 
+/* Échap ferme la fiche — pas quand il a déjà fermé une feuille ouverte
+   par-dessus (js/ui.js, qui le marque d'un preventDefault). */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && VW) closeViewer();
+  if (e.key === 'Escape' && VW && !e.defaultPrevented) closeViewer();
 });
 

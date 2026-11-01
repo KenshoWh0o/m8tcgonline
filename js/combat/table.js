@@ -228,7 +228,7 @@ const Table = (() => {
 
   /* ---------- Le squelette ---------- */
   function squelette() {
-    const zone = j => `<div class="ar-zone ${cote(j)}"><div class="ar-ess-zone"></div><div class="ar-piles"></div></div>`;
+    const zone = j => `<div class="ar-zone ${cote(j)}"><div class="ar-ess-zone" role="group"></div><div class="ar-piles"></div></div>`;
     return `<div class="ar-fond"></div>
     <header class="ar-barre lui">
       <button class="ar-bouton" data-ar="menu" aria-label="Menu du combat">${NAVICO.menu}</button>
@@ -721,7 +721,7 @@ const Table = (() => {
     });
     /* Échap, sur ordinateur : referme ce qui est ouvert, du plus haut au plus bas. */
     T.echap = e => {
-      if (!T || e.key !== 'Escape') return;
+      if (!T || e.key !== 'Escape' || e.defaultPrevented) return;
       const jr = qs('.ar-journal');
       const sh = qs('.ar-sheet');
       if (jr && !jr.hidden) jr.hidden = true;
