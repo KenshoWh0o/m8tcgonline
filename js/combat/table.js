@@ -1753,13 +1753,27 @@ const Table = (() => {
   const elU = u => T.el.querySelector(`.ar-j[data-u="${u}"]`) || T.el.querySelector(`.ar-obj[data-u="${u}"]`);
   const elCEO = j => qs(`.ar-ceo.${cote(j)}`);
 
-  /* Une carte qui vole d'un endroit à un autre. */
+  /* Une carte qui vole d'un endroit à un autre. `o.html` : ce qu'elle montre
+     au départ (la carte telle qu'elle est dans la main) ; `o.retourne` :
+     l'autre face, qu'elle montre en se retournant pendant le vol (le
+     mulligan, 3.0.14 : la main rendue au Club). Le retournement change de face
+     au quart de tour, carte sur la tranche : pas de backface-visibility. */
   function vol(id, de, vers, o) {
     o = o || {};
     if (!de || !vers || !T) return Promise.resolve();
     const f = document.createElement('div');
     f.className = 'ar-vol';
-    f.innerHTML = o.dos != null && o.dos !== false ? dos(o.dos) : htmlCarte(id, o.m || 0);
+    const face = o.html || (o.dos != null && o.dos !== false ? dos(o.dos) : htmlCarte(id, o.m || 0));
+    f.innerHTML = o.retourne ? `<div class="ar-vol-in">${face}</div>` : face;
+    if (o.retourne && !RM()) {
+      const inn = f.firstElementChild, d = (o.ms || 480) * vitesse();
+      inn.animate([{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(90deg)' }], { duration: d * .2, delay: d * .12, easing: 'ease-in', fill: 'forwards' })
+        .finished.then(() => {
+          if (!f.isConnected) return;
+          inn.innerHTML = o.retourne;
+          inn.animate([{ transform: 'rotateY(-90deg)' }, { transform: 'rotateY(0deg)' }], { duration: d * .2, easing: 'ease-out', fill: 'forwards' });
+        }, () => {});
+    } else if (o.retourne) f.firstElementChild.innerHTML = o.retourne;
     const w = o.w || 92;
     f.style.width = w + 'px';
     document.body.appendChild(f);
@@ -1959,6 +1973,63 @@ const Table = (() => {
     await Promise.all(l);
   }
 
+  /* Le paquet du mulligan (3.0.14) : posé à `place` (un rectangle de
+     l'écran), il apparaît sous la première carte rendue, se tasse à chaque
+     carte qui arrive, se mélange (deux moitiés qui s'écartent et se
+     croisent, deux fois), puis rentre dans le Club. Deux dos de carte, rien
+     de plus : seuls transform et opacity s'animent. */
+  function paquet(j, place) {
+    const z = document.createElement('div');
+    z.className = 'ar-paquet';
+    z.setAttribute('aria-hidden', 'true');
+    z.style.cssText = `left:${place.left}px;top:${place.top}px;width:${place.width}px`;
+    z.innerHTML = dos(j) + dos(j);
+    document.body.appendChild(z);
+    const [g, d] = z.children;
+    let vu = false;
+    return {
+      arrive() {
+        if (!vu) { vu = true; z.classList.add('vu'); return; }
+        z.animate([{ transform: 'scale(1.045)' }, { transform: 'none' }], { duration: 160 * vitesse(), easing: 'ease-out' });
+      },
+      async melanger() {
+        if (!z.isConnected) return;
+        z.classList.add('vu');
+        await attendre(40);
+        /* Une passe : les moitiés s'écartent, celle du dessus passe dessous
+           à mi-course (le croisement), puis elles se rejoignent. */
+        const passe = (sens, ms) => {
+          /* Le temps s'écoule à vitesse constante ; chaque segment a sa
+             courbe (une courbe sur toute la passe la figeait au début et à
+             la fin : le paquet restait immobile entre deux passes). */
+          const o = { duration: ms * vitesse(), easing: 'linear' };
+          const ouvre = 'cubic-bezier(.2,.7,.3,1)', croise = 'ease-in-out', ferme = 'cubic-bezier(.5,0,.6,1)';
+          g.animate([{ transform: 'none', zIndex: 1, easing: ouvre }, { transform: `translate(${-58 * sens}%,3%) rotate(${-11 * sens}deg)`, zIndex: 1, offset: .38, easing: croise },
+            { transform: `translate(${-14 * sens}%,1%) rotate(${-3 * sens}deg)`, zIndex: 3, offset: .7, easing: ferme }, { transform: 'none', zIndex: 3 }], o);
+          setTimeout(() => SFX.jouer('melange'), ms * vitesse() * .36);
+          return d.animate([{ transform: 'none', zIndex: 2, easing: ouvre }, { transform: `translate(${58 * sens}%,-4%) rotate(${11 * sens}deg)`, zIndex: 2, offset: .38, easing: croise },
+            { transform: `translate(${14 * sens}%,-1%) rotate(${3 * sens}deg)`, zIndex: 0, offset: .7, easing: ferme }, { transform: 'none', zIndex: 0 }], o).finished.catch(() => {});
+        };
+        await passe(1, 400);
+        await passe(-1, 360);
+        z.animate([{ transform: 'scale(1.06)' }, { transform: 'none' }], { duration: 150 * vitesse(), easing: 'ease-out' });
+        await attendre(110);
+      },
+      async rentrer(club) {
+        const ico = club && (club.querySelector('.ar-dos1') || club);
+        if (!ico || !z.isConnected) { z.remove(); return; }
+        const a = z.getBoundingClientRect(), b = ico.getBoundingClientRect();
+        const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+        await z.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(${Math.max(.12, b.width / a.width)})`, opacity: .85 }],
+          { duration: 330 * vitesse(), easing: 'cubic-bezier(.5,0,.7,.2)', fill: 'forwards' }).finished.catch(() => {});
+        z.remove();
+        if (club.isConnected) club.animate([{ transform: 'scale(1.28)' }, { transform: 'none' }], { duration: 320 * vitesse(), easing: 'cubic-bezier(.2,1.4,.4,1)' });
+        SFX.jouer('carte');
+        await attendre(100);
+      }
+    };
+  }
+
   const ANIM = {
     /* ---- La mise en place ---- */
     /* La donne : cinq cartes du Club vers la main, l'une après l'autre. Les
@@ -1978,8 +2049,15 @@ const Table = (() => {
         await enRafale(e.n, 90, () => vol(null, rect(club), rect(qs('.ar-mainadv')), { dos: e.j, ms: 380, w: 40, arc: 20 }));
       }
     },
-    /* Le mulligan : la main retourne dans le Club, qui est mélangé, et cinq
-       nouvelles cartes arrivent. */
+    /* Le mulligan (3.0.14 : l'animation existait, mais une seconde entrée
+       `mulligan` plus bas dans cet objet, restée de la première arène,
+       l'écrasait — la main changeait d'un coup, sans geste, et quatre des cinq
+       nouvelles cartes restaient cachées jusqu'à la fin de la mise en place).
+       Sa main : les cinq cartes se retournent en volant au centre, s'y
+       empilent, le paquet est mélangé sous les yeux (deux passes), puis il
+       rentre dans le Club, et cinq nouvelles cartes en sortent. Celle d'en
+       face : ses cartes rentrent dans son Club, qui est mélangé, et en
+       ressortent. Avec « Animations réduites » : les vols seuls, courts. */
     async mulligan(e) {
       const club = pileClub(e.j);
       /* La nouvelle main (le moteur est déjà à l'état final) se charge
@@ -1987,14 +2065,35 @@ const Table = (() => {
       const nouvelle = e.j === T.moi ? precharger(T.E.j[T.moi].main.map(c => c.id), 2500) : null;
       if (e.j === T.moi) {
         const cs = qsa('.ar-m');
-        await enRafale(cs.length, 60, i => { const r = rect(cs[i]); cs[i].classList.remove('donne'); return vol(null, r, rect(club), { dos: T.moi, ms: 360, w: r.width, s1: .4, arc: 20 }); });
+        const m = qs('.ar-milieu');
+        if (RM() || !cs.length || !m) {
+          await enRafale(cs.length, 60, i => { const r = rect(cs[i]); cs[i].classList.remove('donne'); return vol(null, r, rect(club), { dos: T.moi, ms: 360, w: r.width, s1: .4, arc: 20 }); });
+          SFX.jouer('woosh');
+          await attendre(200);
+        } else {
+          const w = Math.round(rect(cs[0]).width), rm = rect(m);
+          const cx = rm.left + rm.width / 2, cy = rm.top + rm.height / 2;
+          const place = { left: cx - w / 2, top: cy - w * 44 / 63, width: w, height: w * 88 / 63 };
+          const p = paquet(T.moi, place);
+          const dosH = dos(T.moi);
+          SFX.jouer('woosh');
+          await enRafale(cs.length, 45, i => {
+            const b = cs[i], r = rect(b);
+            const html = b.innerHTML;
+            b.classList.remove('donne');
+            return vol(null, r, place, { html, retourne: dosH, ms: 420, w: r.width, s1: w / r.width, arc: 34 })
+              .then(() => { p.arrive(); SFX.jouer('carte'); });
+          });
+          await p.melanger();
+          await p.rentrer(club);
+        }
       } else {
         flottant(elCEO(e.j), 'Change de main', 'info');
         await enRafale(5, 50, () => vol(null, rect(qs('.ar-mainadv')), rect(club), { dos: e.j, ms: 320, w: 40, arc: 16 }));
+        if (club && !RM()) club.animate([{ rotate: '0deg' }, { rotate: '-8deg' }, { rotate: '8deg' }, { rotate: '-5deg' }, { rotate: '0deg' }], { duration: 520 * vitesse() });
+        SFX.jouer('melange');
+        await attendre(520);
       }
-      if (club && !RM()) club.animate([{ rotate: '0deg' }, { rotate: '-8deg' }, { rotate: '8deg' }, { rotate: '0deg' }], { duration: 420 });
-      SFX.jouer('woosh');
-      await attendre(380);
       if (nouvelle) await nouvelle;
       await ANIM.main(Object.assign({ n: Combat.REGLE.MAIN }, e));
     },
@@ -2236,7 +2335,6 @@ const Table = (() => {
     async revelePV(e) { await montrerLot(e.cartes, `PV de ${h(nomCEO(e.j))}`); },
     async finCombatForce() { await bandeau('Fin de la phase de Combat', 'lui', 760); },
     async fin() { await attendre(300); },
-    async mulligan(e) { if (e.j !== T.moi) flottant(elCEO(e.j), 'Change de main', 'info'); rendre(true); },
     async clubVide(e) { await bandeau(e.j === T.moi ? 'Ton Club est vide : tu ne peux plus piocher' : `Club vide : ${h(nomCEO(e.j))} ne peut plus piocher`, 'lui', 1200); },
     async echangePlaces() { rendre(true); await attendre(260); },
     /* Une carte de la main à la défausse (fin de tour, un effet) : face

@@ -779,7 +779,14 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 
 /* Une carte qui vole ; un nombre ou un mot qui monte. */
 .ar-vol{position:fixed;left:0;top:0;z-index:70;pointer-events:none}
-.ar-vol>.ar-c{box-shadow:0 14px 26px rgba(0,0,0,.55)}
+.ar-vol>.ar-c,.ar-vol-in>.ar-c{box-shadow:0 14px 26px rgba(0,0,0,.55)}
+/* Le mulligan (3.0.14) : la carte qui se retourne en volant, et le paquet
+   qu'on mélange au centre (ANIM.mulligan, js/combat/table.js). */
+.ar-vol-in{transform-origin:50% 50%}
+.ar-paquet{position:fixed;z-index:69;pointer-events:none;aspect-ratio:63/88;opacity:0}
+.ar-paquet.vu{opacity:1}
+.ar-paquet>.ar-c{position:absolute;inset:0;width:100%;
+  box-shadow:1.5px 1.5px 0 rgba(255,255,255,.16),3px 3px 0 rgba(255,255,255,.08),0 12px 24px rgba(0,0,0,.55)}
 .ar-flot{position:fixed;z-index:72;translate:-50% -50%;pointer-events:none;white-space:nowrap;font-family:var(--display);font-style:italic;font-weight:900;
   font-size:20px;color:#fff;text-shadow:0 2px 0 #000,0 0 12px rgba(0,0,0,.8);animation:ar-flot 1.3s ease-out forwards}
 .ar-flot.degats{font-size:32px;color:#fff;text-shadow:0 3px 0 #7a1f17,0 0 18px var(--ar-adv-lueur)}

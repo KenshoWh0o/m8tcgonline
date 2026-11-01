@@ -215,6 +215,12 @@ const RECETTES = {
       souffle({ f0: 3000 + Math.random() * 4000, duree: .03, gain: .06, q: 3, delai: .04 + i * .035 });
   },
   woosh:  () => { souffle({ f0: 300, f1: 2600, duree: .28, gain: .15, q: .6, attaque: .08 }); },
+  /* Un paquet qu'on mélange (le mulligan, 3.0.14) : une rafale de petits
+     claquements de carton, puis le paquet qu'on tasse. */
+  melange: () => { for (let i = 0; i < 13; i++)
+                     souffle({ f0: 1600 + Math.random() * 2600, duree: .03, gain: .05 + Math.random() * .03, q: 1.8,
+                               delai: i * .021 + Math.random() * .006 });
+                   souffle({ f0: 900, f1: 420, duree: .09, gain: .09, q: .8, delai: .3 }); },
 
   /* Révélations : trois paliers, même geste, de plus en plus large. */
   monte:  d => { const dur = (d || 800) / 1000;
