@@ -73,8 +73,9 @@ responsable du projet.
 ### L'action : la lavande
 
 `--accent` `#8a78f5`, `--accent-soft` `#b3a6ff`, `--cta` (le dégradé du
-bouton principal, `#8f7dfb` → `#5d4bd9`, texte blanc à 4,4:1 au milieu au
-moins).
+bouton principal, `#8370f6` → `#5442cf` depuis la 3.0.13 : texte blanc à
+4,5:1 au moins sous le texte ; `#8f7dfb` → `#5d4bd9` avant, 4,4:1 au
+milieu).
 
 Elle marque **ce qu'on peut faire** : le bouton principal, l'onglet en
 cours, une carte jouable, une place libre, une attaque payable. Le décor
@@ -92,7 +93,8 @@ d'autre.**
 | --- | --- | --- |
 | `--ok` | `#4fd6a0` | Fait, réussi, gagné. |
 | `--danger` | `#ff6b6b` | Erreur, défaite ; dans l'arène, l'adversaire. |
-| `--brand` | `#ff5f7e` | Les pastilles rouges qui réclament l'attention (une quête à récupérer). |
+| `--brand` | `#ff5f7e` | Le rose de la marque. |
+| `--badge` | `#d6294a` | Les pastilles qui réclament l'attention (une quête à récupérer) : le rose de la marque, plus profond, pour que leur chiffre blanc se lise (4,9:1 ; 2,9:1 sur `--brand`, 3.0.13). |
 
 ### Les Sections
 
@@ -262,6 +264,15 @@ Demandée par le propriétaire le 30 octobre (« fais une passe complète sur la
 
 - **La maîtrise, refaite une quatrième fois** (le propriétaire : « l'esthétique ne me plait pas du tout […] les upgrades sont moches »). Ce qui n'allait pas, vu en capture : les niveaux se distinguaient à peine, l'écrin rose autour de la carte faisait bon marché, l'holo délavait l'illustration. **Le principe désormais : la lumière, jamais un trait.** Plus aucun cadre ni liseré sur ou autour de la carte ; la couleur de l'Essence n'arrive que dans la lumière. I **Satin** : un vernis (lumière d'en haut à gauche, une bande qui passe). II **Reflet** : l'illustration sur une feuille de métal, une fenêtre de lumière qui passe en color-dodge (le sombre reste sombre, le clair s'allume). III **Holo** : la même fenêtre sur un prisme en bandes fines, sombre pour ne rien délaver ; trois reflets en étoile ; dans la fiche, le prisme glisse avec l'inclinaison de la carte. IV **Lumière** : une source derrière la carte, en haut à droite — le bord s'éclaire de ce côté, une lueur pâle déborde du coin, des rais tombent sur l'illustration, des grains montent. V **Légende** : la source devient l'étoile du logo, posée sur le coin. Essayé et écarté en chemin : la teinte de l'Essence en color-dodge (elle rougissait Squeezie), un prisme clair (il délavait), des rayons tournants derrière la carte (un autocollant), une aurore floue (une tache), une lueur d'un seul côté découpée par sa boîte. Dans la Collection, l'étoile du V s'efface (elle tomberait sous la pastille du nombre d'exemplaires) ; sur le plateau et dans la main, la finition est posée, immobile, et l'entrée de la carte la met en scène.
 - **La fiche de maîtrise dit ce qu'il faut** : deux lignes cochées ou non (les exemplaires consommés, les Fragments), d'où viennent les exemplaires en trop, une confirmation posée à la place du bouton (rien ne se consomme sans un second geste), et le coût de chaque niveau en table. Le vert et le rouge disent un état ; la lavande reste l'action.
+
+## 10 sexies. Version 3.0.13 : l'accessibilité
+
+Deux couleurs bougent, pour les contrastes mesurés (README, § 4.13) : la
+pastille d'attention prend `--badge` (`#d6294a`), et le bouton principal
+s'assombrit d'un cran (`#8370f6` → `#5442cf`). À l'œil, la pastille est un
+rouge franc au lieu d'un rose ; le bouton ne change presque pas. Le contour
+du focus (`--accent-soft`, 2 px, décalé de 2 px) vaut désormais aussi pour
+les liens et les interrupteurs.
 
 ## 11. Sources
 

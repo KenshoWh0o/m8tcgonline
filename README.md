@@ -382,7 +382,7 @@ La boîte de réception n'a pas d'onglet visible : on l'ouvre par **la cloche** 
 
 ### 4.8 Feuilles, toasts, notifications, fenêtres d'accueil
 
-- **Feuille** : `openSheet({title, body, actions: [{label, fn, primary}], locked})` (`js/ui.js`). `body` est du HTML brut (échapper avec `h()`). L'action `primary` devient un bouton plein, les autres des boutons « ghost ». Sur mobile elle monte du bas et se ferme d'un glissé vers le bas ; sur ordinateur elle se centre. `locked` empêche de la fermer en touchant le fond.
+- **Feuille** : `openSheet({title, body, actions: [{label, fn, primary}], locked})` (`js/ui.js`). `body` est du HTML brut (échapper avec `h()`). L'action `primary` devient un bouton plein, les autres des boutons « ghost ». Sur mobile elle monte du bas et se ferme d'un glissé vers le bas ; sur ordinateur elle se centre. `locked` empêche de la fermer en touchant le fond ou par Échap. **Depuis la 3.0.13, c'est une vraie fenêtre de dialogue** : nommée par son titre (`aria-labelledby="sheet-titre"`), le focus y entre à l'ouverture, Tab et Maj+Tab y tournent en rond, Échap la ferme (et seulement elle : `preventDefault`, que la fiche de carte, le tiroir et l'arène lisent avant de se fermer à leur tour), et le focus revient à ce qui l'a ouverte s'il existe encore.
 - **Toast** : `toast(message)` (2,6 s). **Notification** en haut d'écran : `notifQuete()` (quêtes), `notifBoite()` (boîte).
 - **Fenêtres d'accueil** (`js/bienvenue.js`) : une seule proposition par session, par `quandCalme()` qui attend que l'écran soit libre. Ordre de `proposerAccueil()` : bienvenue, fin de chasse, récap Reflets, récap Choc, nouveautés, Discord. La fenêtre des **nouveautés** se montre une fois par valeur de `NOUVEAUTES_VERSION` (aujourd'hui `'3.0'`) et à l'annonce puis au début d'un événement ; `montrerNouveautes()` choisit la fonction selon la version (le test `=== '3.0'` est écrit en dur).
 
@@ -433,6 +433,33 @@ IndexedDB : base `premier-lobby` (en pré-prod `premier-lobby-preprod`), magasin
 - **Sons** (`js/sfx.js`) : tout est synthétisé en Web Audio, il n'y a aucun fichier son. Une recette par son dans `RECETTES` (`tap`, `onglet`, `carte`, `retourne`, `dechire`, `rare`, `epique`, `legend`, `gagne`, `erreur`…) ; `SFX.jouer(nom)`. Chaque `button` sonne seul ; `data-snd="nom"` choisit le son, `data-snd="non"` le coupe. Sur mobile, le contexte audio est réveillé au premier geste et repris au retour sur l'onglet (sur iPhone, l'interrupteur silencieux coupe tout).
 - **Particules** (`js/fx.js`) : `FX.burst`, `FX.sparkle`, `FX.confetti` sur `canvas#fx`.
 
+### 4.13 Accessibilité (état des lieux du 1er novembre 2026, 3.0.13)
+
+Demandé par le propriétaire (« état des lieux sur l'accessibilité et refonte nécessaire en conséquence »). **Comment c'est mesuré** : axe-core 4.10.2, le moteur de référence des audits automatiques, sur 31 vues de la pré-prod (chaque onglet, les sous-vues des Combats, l'atelier, trois onglets du Choc, la fiche d'une carte, l'arène en plein combat), règles WCAG 2.0, 2.1 et 2.2 de niveaux A et AA, au téléphone (390 × 844) et à l'ordinateur (1 280 × 800) ; puis à la main : le clavier, les fenêtres, la refusion à 320 px, les contrastes des jetons. Les scripts sont dans les sessions de travail, pas dans le dépôt.
+
+**Ce qu'axe trouvait avant** (identique aux deux tailles), et ce qui est fait :
+
+| Constat | Gravité (axe) | Correctif |
+|---|---|---|
+| Le zoom interdit (`maximum-scale=1, user-scalable=no`), sur les 31 vues | critique (WCAG 1.4.4) | retiré d'`index.html` et `verif.html` ; le double toucher ne zoome pas (`touch-action:manipulation` sur `html`) ; au doigt, un champ fait 16 px au moins (sinon l'iPhone zoome dès qu'on le touche) |
+| Le chiffre blanc des pastilles sur `#ff5f7e` : 2,9:1 | sérieux (1.4.3) | `--badge` `#d6294a`, le même rose plus profond : 4,9:1 |
+| `aria-label` sur des `span`/`div` sans rôle (tentatives du Raid, Essences de l'arène ; et, vus à la main, la difficulté du Raid, les étoiles d'un deck, deux marques du Choc) | sérieux (4.1.2) | `role="img"` (ou `group` pour les Essences) |
+| Les sous-onglets du Classement : `role="tablist"` sans onglets | critique (1.3.1) | `normaliserOnglets()` (`js/app.js`), après chaque rendu : dans toute rangée `role="tablist"`, chaque bouton devient un onglet, celui en cours le dit (`aria-selected`), lui seul prend le Tab |
+
+**Vus à la main, corrigés** : les feuilles n'étaient des dialogues que de nom (pas de nom, le focus restait derrière, Tab s'échappait sous la feuille, pas d'Échap) : voir [§ 4.8](#48-feuilles-toasts-notifications-fenêtres-daccueil). Les rangées d'onglets se parcourent aux flèches, Début et Fin (`js/app.js`), et le focus suit l'onglet ouvert d'un rendu à l'autre (`FOCUS_ATTRS`). Le contour du focus vaut aussi pour les liens et les interrupteurs (`label:has(input:focus-visible)`, dans une règle à part : un navigateur sans `:has()` ne perd qu'elle). Le texte blanc du bouton principal descendait à 4,4:1 au milieu du dégradé : `--cta` passe à `#8370f6` → `#5442cf` (4,55:1 au tiers de la hauteur, 5,0:1 au milieu). À 320 px de large (WCAG 1.4.10), seul l'écran Boosters défilait de côté (le halo du paquet, 124vw, transparent sur les bords) : `.packstage{overflow-x:clip}`.
+
+**Après** : axe ne trouve plus rien, sur les 31 vues, aux deux tailles ; à 320 px, aucune des 27 vues mesurées ne défile de côté ; seize vérifications au clavier (une feuille ouverte, Tab, Maj+Tab, Échap, le retour du focus, une feuille verrouillée, une feuille sur la fiche d'une carte, les onglets de la Collection et du Classement) passent toutes.
+
+**Ce qui était déjà là** : `lang="fr"` ; `#toast` en `role="status"` ; `#annonce` (`annonceLecteur()`, `js/utils.js`) pour ce qui se voit sans se dire (une carte ajoutée au deck, les coups du combat) ; `RM()` et le réglage « Animations réduites » ; le combat au clavier ([§ 7.6](#76-larène-jscombattablejs-cssarenecss)) ; un geste de glisser a toujours son équivalent en touchers (poser une carte, fermer une feuille).
+
+**Ce qui reste, et ce qui n'a pas été vérifié** :
+- **Aucun lecteur d'écran réel** (VoiceOver, TalkBack, NVDA) n'a été essayé : axe vérifie que les noms et les rôles existent, pas qu'un parcours se comprend à l'oreille. L'arène, très visuelle, est la plus douteuse.
+- **Les contrastes posés sur une image ou un dégradé** (le texte des tuiles illustrées, des bandeaux, des cartes) : axe ne sait pas les calculer et les classe « à vérifier » ; ils n'ont pas été mesurés un à un.
+- **Le temps limité du Versus** (60 s par tour, sans réglage) : WCAG 2.2.1 en exempte le temps réel « essentiel », ce qu'est un défi en direct ; un Versus en différé (feuille de route, suggestion 1) le rendrait jouable sans chrono.
+- **Les flashs** (le godpack, la Légende d'une carte maîtrisée, les secousses) ne sont pas mesurés contre la règle des trois flashs par seconde (2.3.1) ; « Animations réduites » les coupe.
+- **Les images des cartes** portent leur texte : la fiche d'une carte le redonne en clair, mais une case de la Collection ne dit que le nom.
+- **Le zoom au doigt dans l'arène** n'a pas été essayé sur un vrai téléphone (rien ne l'empêche ; les glisser de cartes restent sur leurs éléments, `touch-action:none`).
+
 ---
 
 ## 5. Direction artistique
@@ -470,8 +497,9 @@ Les principaux jetons de `css/tokens.css` (onze jetons inutilisés en ont été 
 | `--accent-deep` | `#5d4bd9` | Bas du dégradé d'action |
 | `--accent-wash` / `-2` | lavande à 12 / 22 % | Lavis |
 | `--accent-glow` | `rgba(140,120,255,.45)` | Lueur sous un bouton, halos |
-| `--cta` | `linear-gradient(180deg,#8f7dfb,#5d4bd9)` | **Le** bouton principal (un par écran) |
-| `--brand` | `#ff5f7e` | Le rouge des **pastilles d'attention** (malgré son nom) |
+| `--cta` | `linear-gradient(180deg,#8370f6,#5442cf)` | **Le** bouton principal (un par écran) ; un cran plus profond depuis la 3.0.13 (texte blanc à 4,5:1 au moins) |
+| `--brand` | `#ff5f7e` | Le rose de la marque |
+| `--badge` | `#d6294a` | Les **pastilles d'attention** (3.0.13 : le chiffre blanc à 4,9:1 ; sur `--brand`, 2,9:1) |
 | `--brand-light` | `#e6e1ff` | Montants en Éclats |
 | `--deco-wash` / `--deco-ink` | `rgba(157,140,255,.13)` / `#c8bfff` | Le décor : tuile d'icône au trait, lavis d'en-tête |
 | `--progress` | `linear-gradient(90deg,#7a68ec,#b3a6ff)` | Toutes les jauges |
@@ -501,7 +529,7 @@ Les « salles obscures » (`#theater`, `#viewer`, `.promoscene`) redéfinissent 
 |---|---|---|
 | **Lavande** | Ce que tu peux faire maintenant | `--cta`, `--accent`, ce qui est jouable en combat |
 | **Blanc** | Ce que tu as choisi | puce ou segment `.on` (blanc à 12–17 % et filets intérieurs), carte choisie |
-| **Rouge** | Attention, adversaire | pastilles `--brand`, `--danger`, `--ar-adv` |
+| **Rouge** | Attention, adversaire | pastilles `--badge`, `--danger`, `--ar-adv` |
 | **Vert** | Réussi | `--ok` |
 | **Or** | Récompenses et Légendaire | `--gold` |
 
@@ -603,7 +631,7 @@ L'arène (`#arene`, `css/arene.css`) a ses variables locales : `--ar-act` `#9d8c
 ### 5.12 Recettes
 
 - **Un écran d'onglet** : `<div class="pagehead"><div><h1>Titre</h1><p>Une ligne.</p></div></div>`, puis des tuiles, un seul `.btn`, des `.btn ghost` à côté, une `.segbar` pour les sous-pages. Un nouveau préfixe, dans le fichier de l'écran. **Uniquement des jetons** (les rgba blancs et noirs sont tolérés pour les filets et les voiles).
-- **Une couleur nouvelle** : un jeton dans `tokens.css`, documenté dans `docs/design-3.0.md`. Ne jamais réécrire `#8f7dfb, #5d4bd9` : `var(--cta)`.
+- **Une couleur nouvelle** : un jeton dans `tokens.css`, documenté dans `docs/design-3.0.md`. Ne jamais réécrire le dégradé du bouton principal : `var(--cta)`.
 - **Une image en variable CSS** : une URL **absolue** (`new URL(img, location.href)`) ; une URL relative dans `--art` se résout depuis `css/`.
 - **Un élément de verre** : la recette du [§ 5.6](#56-les-matières), les deux préfixes, et l'ajout aux deux listes de repli.
 - **Une animation** : `@keyframes` préfixée, état de repos sous `html.rm` et la media query, et en JS le double test.
