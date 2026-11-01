@@ -60,7 +60,10 @@ function vCarteJoueur(f, o) {
         ${f.devise ? `<p class="pj-devise">« ${h(f.devise)} »</p>` : ''}
         ${meta ? `<p class="pj-meta">${meta}</p>` : ''}
       </div>
-      ${o.moi ? `<button class="btn tiny ghost pj-perso" data-act="pf-perso">${NAVICO.crayon}Personnaliser</button>` : ''}
+      ${o.moi ? `<div class="pj-actes">
+        <button class="btn tiny ghost pj-perso" data-act="pf-perso">${NAVICO.crayon}Personnaliser</button>
+        <button class="btn tiny ghost pj-perso" data-fiche="${h(f.pseudo)}">${NAVICO.oeil}Ma fiche</button>
+      </div>` : ''}
     </section>
     <div class="pj-chiffres">
       ${chiffre(fmtN(nCol), f.total, 'Collection')}

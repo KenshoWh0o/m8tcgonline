@@ -619,7 +619,10 @@
 .pj-sec{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 6px;border-radius:999px;color:var(--text);
   background:color-mix(in srgb,var(--sc) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 45%,transparent)}
 .pj-sec>i{width:8px;height:8px;border-radius:50%;background:var(--sc);box-shadow:0 0 6px color-mix(in srgb,var(--sc) 70%,transparent)}
-.pj-perso{grid-column:1/-1;justify-self:start}
+/* Personnaliser, et « Ma fiche » (3.0.14) : la fiche telle que les autres
+   l'ouvrent, dans sa feuille. */
+.pj-actes{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.pj-perso{justify-self:start}
 .pj-perso svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 /* Quatre chiffres, côte à côte. */
 .pj-chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:8px}
@@ -1055,8 +1058,12 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .compo-regle{margin:0;text-align:center;font-size:11.5px;line-height:1.5;color:var(--muted)}
 
 /* Les amis, d'un geste : c'est le chemin normal vers un échange. */
+/* 3.0.14 : de l'air autour des puces (rendu aussitôt par la marge négative).
+   Une bande qui défile de côté coupe aussi en hauteur : les cadres décorés
+   (qui débordent du cercle de 14 à 26 %) et la pastille de niveau étaient
+   rognés en rectangle. */
 .amirow{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
-  touch-action:pan-x;padding:2px 0 4px;scrollbar-width:none}
+  touch-action:pan-x;padding:10px 8px 10px;margin:-8px -8px -6px;scrollbar-width:none}
 .amirow::-webkit-scrollbar{display:none}
 .amichip{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;border:0;
   background:var(--surface-2);color:var(--subtle);border-radius:999px;padding:5px 15px 5px 5px;

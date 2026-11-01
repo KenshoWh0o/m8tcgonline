@@ -17,14 +17,12 @@ const SECTIONS = {
     promo: 'p04', starter: 'toxique', boite: 'assets/combat/sections/toxique.webp',
     /* Les couleurs de ses adversaires de campagne, quand on affronte cette
        Section. */
-    couleurs: ['rose', 'orange', 'verte', 'jaune'],
-    devise: 'Engager l\'adversaire, et frapper ce qui est à terre.'
+    couleurs: ['rose', 'orange', 'verte', 'jaune']
   },
   deter: {
     id: 'deter', nom: 'Section Déter', court: 'Déter', c: '#7c3aed', c2: '#c4b5fd',
     promo: 'p03', starter: 'deter', boite: 'assets/combat/sections/deter.webp',
-    couleurs: ['mauve', 'violette', 'bleue', 'azur'],
-    devise: 'Des Joueurs qui reviennent toujours, et des coups qui pèsent.'
+    couleurs: ['mauve', 'violette', 'bleue', 'azur']
   }
 };
 const autreSection = s => (s === 'toxique' ? 'deter' : 'toxique');

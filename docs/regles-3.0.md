@@ -251,6 +251,15 @@ Ce que le texte ne tranche pas (**[Lecture]**, repris au § 11) :
   pas dans « votre deuxième attaque… », ne déclenche pas « Lorsque ce Joueur
   attaque »). Ses bonus d'Attaque (Objets, Buff) comptent dans sa valeur. On
   le déclare après les effets qui réagissent à la défense.
+- **Le soutien ne se propose que s'il change l'issue** (3.0.14, demande du
+  propriétaire le 1er novembre 2026 : « Ne propose pas de soutenir si
+  l'attaque seule suffit à vaincre une carte ») : pas quand l'attaque seule
+  atteint la Défense, pas quand même avec lui elle ne l'atteindrait pas, pas
+  contre un bouclier (il absorbe l'attaque quelle que soit sa valeur). C'est
+  un choix d'interface, pas une règle : un soutien sans effet sur l'issue ne
+  ferait que payer des Essences et engager un Joueur, et aucune carte ne
+  réagit au soutien ni à l'engagement (si une carte venait à le faire, il
+  faudrait revoir ce filtre, dans `attaquer()`).
 - **L'effet imprimé sous une attaque** se joue après l'attaque, qu'elle ait
   été défendue ou non, sauf si une carte l'annule (Trahison++…).
 

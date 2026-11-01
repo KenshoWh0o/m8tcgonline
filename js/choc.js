@@ -184,8 +184,6 @@ function vChAccueil() {
    (illuCadre, js/ui.js), jamais sur le titre ou le cadre de la carte. */
 function vChNouveautes() {
   const n = niveauDe(cbEtat().xp || 0);
-  const deck = cbDeckActif();
-  const couv = (deck && byId[deck.couverture]) || byId[COUV.solo];
   const tuile = (attrs, art, titre, texte, cls) => `<button class="ch-nv${cls ? ' ' + cls : ''}" ${attrs}>
       <span class="ch-nv-art">${art}</span>
       <span class="ch-nv-t"><b>${titre}</b><small>${texte}</small></span>
@@ -208,9 +206,18 @@ function vChNouveautes() {
       ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
-      ${tuile('data-cb="vue" data-v="decks"', illuCadre(couv, .5, .3), 'L\'atelier de decks', 'Quarante cartes, dix Essences, un code à partager.', 'deck')}
+      ${tuile('data-tab="profil"', vChProfilArt(), 'Le profil, refait', 'Une carte de visite : ton titre, tes combats, les decks que tu montres.', 'pf')}
     </div>
   </section>`;
+}
+
+/* La refonte du profil (3.0.13), à la place de l'atelier de decks (le
+   propriétaire, 1er novembre 2026) : une carte de visite en miniature, avec
+   l'avatar, le cadre et le pseudo du joueur. */
+function vChProfilArt() {
+  const s = save || {};
+  return `<span class="ch-nv-pf" aria-hidden="true">${avatarHTML(s.avatar, s.cadre, '', maPhoto())}
+    <span class="ch-nv-pf-t"><b>${h(s.pseudo || 'Toi')}</b><i class="l1"></i><span><i></i><i></i><i></i></span></span></span>`;
 }
 
 /* La refonte visuelle (version 3.0.7) : une affiche à elle, à la hauteur des

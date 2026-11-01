@@ -769,10 +769,17 @@ function* attaquer(E, j, c, k, cible, chevaliere) {
         yield* declencher(E, 'defense', X);
         if (E.fin) return;
         /* Le soutien (soutiens, plus haut) : choisi par l'attaquant, une
-           fois le défenseur connu. */
-        const sout = enJeu(E, c) && !X.annulee && enJeu(E, d) ? soutiens(E, c) : [];
+           fois le défenseur connu. Version 3.0.14 (le propriétaire, 1er
+           novembre 2026) : il ne se propose que s'il change l'issue — pas
+           quand l'attaque seule suffit à vaincre le défenseur, ni quand
+           même avec lui elle ne suffirait pas, ni contre un bouclier (qui
+           absorbe l'attaque quelle que soit sa valeur). Un soutien sans
+           effet ne ferait que payer des Essences et engager un Joueur :
+           aucune carte ne réagit au soutien ni à l'engagement. */
+        const def = enJeu(E, d) ? defense(E, d) : 0, base = valeurAttaque(E, c, k, X.bonus) || 0;
+        const sout = enJeu(E, c) && !X.annulee && enJeu(E, d) && base < def && !shieldActif(E, d)
+          ? soutiens(E, c).filter(z => base + z.val >= def) : [];
         if (sout.length) {
-          const def = defense(E, d), base = valeurAttaque(E, c, k, X.bonus) || 0;
           const opts2 = sout.map(z => ({
             v: z.c.u + ':' + z.k, u: z.c.u, k: z.k, label: `Soutien de ${nomDe(z.c)} · +${z.val}`, cout: z.cout,
             info: { val: z.val, total: base + z.val, def, vaincu: base + z.val >= def && !shieldActif(E, d) }

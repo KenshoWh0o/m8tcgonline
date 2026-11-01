@@ -332,7 +332,7 @@ def v5_promos():
         'cards/promos/P01-Major_De_Paris.webp',
         'cards/promos/P02-Major_De_Paris.webp',
         'cards/promos/P05-Tout_Commence_Ici.webp',
-        'cards/promos/P06-Le_Marionnettiste.webp',
+        'cards/promos/P06-Le_Marionnettiste_v2.webp',
     ], l / 2, 452, 398, 200, 7, 16)
     texte(im, (l / 2, 828), 'Introuvables\nen booster.', TITRE(54), BLANC,
           halo=(255, 91, 176), interligne=1.12)

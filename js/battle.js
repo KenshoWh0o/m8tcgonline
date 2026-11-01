@@ -154,14 +154,14 @@ function ouvrirNiveau() {
 function vChoixSection() {
   const carte = (id, s) => `<button class="cb-sec sec-${id}" data-cb="section" data-v="${id}" style="--sc:${s.c};--sc2:${s.c2}">
       <span class="cb-sec-boite"><img src="${s.boite}" alt="Starter Deck ${h(s.nom)}"></span>
-      <span class="cb-sec-txt"><b>${h(s.nom)}</b><small>${h(s.devise)}</small>
-        <em>Tu reçois sa Promo et son Starter Deck</em></span>
+      <span class="cb-sec-txt"><b>${h(s.nom)}</b>
+        <em>Sa Promo et son Starter Deck</em></span>
     </button>`;
   return `<div class="cb-choix">
     <div class="cb-choix-tete">
       <small>Les Combats</small>
       <h1>Choisis ta Section</h1>
-      <p class="muted">Deux Sections, comme les deux Starter Decks. Ta Section te donne sa Promo et son deck, et tu affronteras l'autre en campagne.</p>
+      <p class="muted">Ta Section te donne sa Promo et son deck, et tu affronteras l'autre en campagne.</p>
     </div>
     <div class="cb-secs">${carte('toxique', SECTIONS.toxique)}<span class="cb-vs">VS</span>${carte('deter', SECTIONS.deter)}</div>
     <p class="muted small cb-choix-pied">Ce choix est définitif. La Promo de l'autre Section se gagne en finissant la campagne.</p>
@@ -173,7 +173,7 @@ function choisirSection(id) {
   const s = SECTIONS[id];
   openSheet({
     title: `Rejoindre la ${s.nom} ?`,
-    body: `<div class="cb-confirm sec-${id}"><img src="${s.boite}" alt=""><p class="muted">${h(s.devise)}</p>
+    body: `<div class="cb-confirm sec-${id}"><img src="${s.boite}" alt="">
       <p>Tu reçois la Promo <b>${h((byId[s.promo] || {}).nom || s.promo)}</b> et le Starter Deck. Ce choix est définitif.</p></div>`,
     actions: [
       { label: 'Rejoindre', primary: true, fn: () => { closeSheet(); agir(() => Backend.combatSection(id), `Bienvenue dans la ${s.nom} !`).then(ok => { if (ok) { cbVue = 'accueil'; render(); proposerTutoriel(); } }); } },
@@ -564,9 +564,11 @@ function vCbDecks(e) {
   const l = cbDecks();
   const actif = cbDeckActif();
   const essences = d => Object.keys(d.reserve || {}).filter(k => d.reserve[k]).map(k => `${essIcon(k)}<i>${d.reserve[k]}</i>`).join('');
-  const bouton = d => d.starter
-    ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>`
-    : `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`;
+  /* Un Starter ne se duplique qu'avec ses propres cartes (3.0.14,
+     Decks.copieStarter) ; sinon, on peut le regarder. */
+  const bouton = d => !d.starter ? `<button class="btn tiny ghost" data-cb="editer" data-v="${h(d.id)}">Modifier</button>`
+    : Decks.copieStarter(d, save.col).ok ? `<button class="btn tiny ghost" data-cb="copier-deck" data-v="${h(d.id)}">Dupliquer</button>`
+    : d === actif ? '' : `<button class="btn tiny ghost" data-cb="voir-deck" data-v="${h(d.id)}">Voir</button>`;
   /* Montrer un deck sur son profil (3.0.13) : seulement un deck à soi, complet. */
   const montrer = d => d.starter || Decks.verifier(d, save.col).length ? ''
     : `<button class="dk-montre${d.public ? ' on' : ''}" data-cb="montrer" data-v="${h(d.id)}" aria-pressed="${!!d.public}">${d.public ? `${NAVICO.check}Montré sur ton profil` : 'Montrer sur ton profil'}</button>`;
@@ -616,7 +618,7 @@ function vBonDeck() {
       ${point('Une ou deux couleurs.', 'Ta Réserve paie tes attaques et permet de jouer tes cartes de couleur. Dans l\'atelier, « Régler d\'après mes attaques » l\'accorde à ton Club.')}
       ${point('Des attaques à 1 ou 2 Essences.', 'Une Essence arrive par tour : au moins la moitié de tes Joueurs.')}
     </ol>
-    <p class="muted small">Un conseil suivi, une étoile. Pour démarrer vite : duplique un Starter Deck et remplace ses cartes par les tiennes.</p>
+    <p class="muted small">Un conseil suivi, une étoile. Pour démarrer vite : un Starter Deck se joue sans en posséder les cartes.</p>
   </details>`;
 }
 
@@ -666,14 +668,19 @@ function voirDeck(id) {
   const d = cbDecks().find(x => x.id === id);
   if (!d) return;
   const ids = Object.keys(d.cartes).sort((a, b) => ordreType(a) - ordreType(b) || (byId[a] || {}).num - (byId[b] || {}).num);
+  /* Un Starter se copie avec ses propres cartes seulement (3.0.14) : sinon,
+     la fiche dit ce qui manque, sans bouton. */
+  const cp = d.starter ? Decks.copieStarter(d, save.col) : { ok: true };
+  const manque = cp.ok ? '' : `<p class="cb-starter-manque"><b>Pour le dupliquer, il te faut ses cartes.</b>
+      Il t'en manque ${cp.nManque} : ${cp.manque.slice(0, 6).map(x => `${h(x.nom)}${x.n > 1 ? ` ×${x.n}` : ''}`).join(', ')}${cp.manque.length > 6 ? '…' : '.'}</p>`;
   openSheet({
     title: d.nom,
     body: `<div class="cb-liste-deck">${ids.map(id => `<span class="cb-ld">${renderCard(byId[id] || {})}${d.cartes[id] > 1 ? `<i>×${d.cartes[id]}</i>` : ''}</span>`).join('')}</div>
-      <p class="muted small">Réserve : ${Object.keys(d.reserve).map(k => `${d.reserve[k]} ${COLORS[k].nom}`).join(', ')}.</p>`,
-    actions: [
+      <p class="muted small">Réserve : ${Object.keys(d.reserve).map(k => `${d.reserve[k]} ${COLORS[k].nom}`).join(', ')}.</p>${manque}`,
+    actions: cp.ok ? [
       { label: 'Dupliquer pour le modifier', primary: true, fn: () => { closeSheet(); copierDeck(id); } },
       { label: 'Fermer', fn: closeSheet }
-    ]
+    ] : [{ label: 'Fermer', primary: true, fn: closeSheet }]
   });
 }
 const ordreType = id => ({ joueur: 0, objet: 1, coach: 2, moment: 3 }[(byId[id] || {}).cat] ?? 4);

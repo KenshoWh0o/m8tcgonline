@@ -33,7 +33,14 @@ function cartesJouables() {
 function ouvrirAtelier(id) {
   const d = id ? cbDecks().find(x => x.id === id) : null;
   const deck = d ? JSON.parse(JSON.stringify(d)) : { id: null, nom: 'Nouveau deck', cartes: {}, reserve: {}, couverture: null };
-  if (d && d.starter) { deck.id = null; deck.nom = d.nom.replace('Starter · ', '') + ' (copie)'; delete deck.starter; }
+  /* Un Starter ne se copie qu'avec ses propres cartes (Decks.copieStarter) :
+     la copie prend les versions qu'on possède. */
+  if (d && d.starter) {
+    const cp = Decks.copieStarter(d, save.col);
+    if (!cp.ok) return toast(`Il te manque ${cp.nManque} carte${cp.nManque > 1 ? 's' : ''} de ce Starter pour le copier.`);
+    deck.cartes = cp.cartes;
+    deck.id = null; deck.nom = d.nom.replace('Starter · ', '') + ' (copie)'; delete deck.starter;
+  }
   atelier = { deck, original: JSON.stringify(deck), filtres: { q: '', type: 'tous', coul: 'all', toutes: false }, onglet: 'cartes' };
   cbVue = 'atelier';
   if (tab !== 'combats') return aller('combats');

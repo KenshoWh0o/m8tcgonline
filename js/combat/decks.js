@@ -298,7 +298,46 @@ function bilan(deck) {
   return { reperes, note, sur: reperes.length, nom, joueurs, bas, accord };
 }
 
-const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, aleatoire, tirerCouleurs, couverture, encoder, decoder, total, bilan, BON, CIBLES };
+/* ---------- La copie d'un Starter (3.0.14) ---------- */
+/* Un Starter se joue prêté, mais ne se copie qu'avec ses propres cartes (le
+   propriétaire, 1er novembre 2026). Chaque carte du Starter se prend dans la
+   collection, toutes versions comprises — même nom, même couleur, comme la
+   limite de trois exemplaires : celle que liste le Starter d'abord, puis la
+   classique, la Reverse, la Promo. `possede` : id → exemplaires. Rend la
+   copie (`cartes`), ou ce qui manque (`manque` : { nom, n }, `nManque`). */
+function copieStarter(deck, possede) {
+  possede = possede || {};
+  const rang = id => ({ c: 0, r: 1, p: 2 }[id[0]] ?? 3);
+  const versions = {};
+  for (const id in possede) {
+    if (!(possede[id] > 0) || !jouable(Combat.carte(id))) continue;
+    (versions[cleCopie(id)] = versions[cleCopie(id)] || []).push(id);
+  }
+  const besoin = {}, prefere = {};
+  for (const id in deck.cartes || {}) {
+    const k = cleCopie(id);
+    besoin[k] = (besoin[k] || 0) + (+deck.cartes[id] || 0);
+    (prefere[k] = prefere[k] || []).push(id);
+  }
+  const cartes = {}, manque = [];
+  const prendre = (id, n) => { if (n > 0) cartes[id] = (cartes[id] || 0) + n; return Math.max(0, n); };
+  for (const k in besoin) {
+    let reste = besoin[k];
+    /* D'abord chaque carte que liste le Starter, à sa quantité… */
+    for (const id of prefere[k]) reste -= prendre(id, Math.min(+deck.cartes[id] || 0, possede[id] || 0, reste));
+    /* …puis ce qui reste de chaque version possédée. */
+    const l = (versions[k] || []).slice().sort((a, b) => rang(a) - rang(b) || (a < b ? -1 : 1));
+    for (const id of l) {
+      if (!reste) break;
+      reste -= prendre(id, Math.min(reste, possede[id] - (cartes[id] || 0)));
+    }
+    if (reste) manque.push({ nom: Combat.carte(prefere[k][0]).nom, n: reste });
+  }
+  const nManque = manque.reduce((s, x) => s + x.n, 0);
+  return { ok: !nManque, cartes: nManque ? null : cartes, manque, nManque };
+}
+
+const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, copieStarter, aleatoire, tirerCouleurs, couverture, encoder, decoder, total, bilan, BON, CIBLES };
 if (typeof module !== 'undefined' && module.exports) module.exports = Decks;
 racine.Decks = Decks;
 

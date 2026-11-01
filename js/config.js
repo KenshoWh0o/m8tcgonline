@@ -427,7 +427,9 @@ const NAVICO = {
   niveau: '<svg viewBox="0 0 24 24"><path d="m5 11.5 7-5 7 5"/><path d="m5 16.5 7-5 7 5"/><path d="m5 21.5 7-5 7 5" opacity=".55"/></svg>',
   epreuve: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="m9.3 14.3 1.9 1.9 3.6-3.8"/></svg>',
   /* Version 3.0.13 : « Personnaliser » (le profil). */
-  crayon: '<svg viewBox="0 0 24 24"><path d="M4.5 19.5h3.8L19.4 8.4a2.2 2.2 0 0 0-3.1-3.1L5.2 16.4v3.1Z"/><path d="m14.6 7 2.9 2.9"/></svg>'
+  crayon: '<svg viewBox="0 0 24 24"><path d="M4.5 19.5h3.8L19.4 8.4a2.2 2.2 0 0 0-3.1-3.1L5.2 16.4v3.1Z"/><path d="m14.6 7 2.9 2.9"/></svg>',
+  /* Voir (3.0.14) : un œil, pour « Ma fiche » au Profil. */
+  oeil: '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>'
 };
 
 /* ---------- Cartes Promo ---------- */

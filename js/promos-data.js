@@ -72,14 +72,14 @@ const PROMO_DATA = [
     obtention: 'master'
   },
   {
-    code: 'P06', fichier: 'promos/P06-Le_Marionnettiste.webp', nom: 'Le Marionnettiste',
+    code: 'P06', fichier: 'promos/P06-Le_Marionnettiste_v2.webp', nom: 'Le Marionnettiste',
     categorie: 'Joueur', couleur: 'Neutre', def: 140,
     attaques: [
       { nom: 'Coup de fil', cout: { neutre: 3 }, degats: 160 }
     ],
     mot_cle: { nom: 'Riposte', texte: "Lorsqu'il est vaincu, ce Joueur active sa Capacité d'Attaque la plus puissante." },
-    illustrateur: 'Gobli Prim',
-    ambiance: 'Merci, Ô grand Squeezie, pour la générosité',
+    illustrateur: 'Gobli Prin',
+    ambiance: 'Merci, Ô grand Squeezie, pour ta générosité',
     obtention: 'palier'
   }
 ];

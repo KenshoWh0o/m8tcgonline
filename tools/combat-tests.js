@@ -150,6 +150,32 @@ test('le soutien : un Joueur voisin ajoute la valeur de son attaque', () => {
   vrai(L(E, 0, 0).eng, 'le soutien est engagé');
   egal(E.j[0].ess.filter(e => !e.eng).length, 0, 'trois Essences engagées');
 });
+test('le soutien ne se propose que s\'il change l\'issue (3.0.14)', () => {
+  /* Serment 120 contre La Planète 110 : l'attaque seule suffit, pas de
+     soutien proposé, alors qu'un Chevalier voisin pourrait le donner. */
+  const E = situation({ lignes: [['c078', 'c078'], [null, 'c051']], ess: [['rose', 'rose', 'rose']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 1).u, k: 1, cible: 'ceo' });
+  repondre(E, L(E, 1, 1).u);
+  vrai(!Combat.demande(E) || Combat.demande(E).but !== 'soutien', 'aucun soutien quand l\'attaque suffit');
+  vrai(!L(E, 0, 0).eng, 'le voisin reste désengagé');
+  /* Assaut 90 contre Broken Brawks 130 : repoussé seul. Il reste une
+     Essence, le soutien payable (l'Assaut du voisin, 90) donne 180 : il
+     change l'issue, il est proposé — et seulement les soutiens qui
+     suffisent. */
+  const E2 = situation({ lignes: [['c078', 'c078'], [null, 'c010']], ess: [['rose', 'rose']] });
+  Combat.agir(E2, { t: 'attaquer', u: L(E2, 0, 1).u, k: 0, cible: 'ceo' });
+  repondre(E2, L(E2, 1, 1).u);
+  const d2 = Combat.demande(E2);
+  egal(d2 && d2.but, 'soutien', '90 + 90 = 180 ≥ 130 : proposé');
+  vrai(d2.options.filter(o => o.v !== 'non').every(o => o.info.total >= 130), 'chaque soutien proposé suffit');
+  /* Estafilade 90 contre Mon Cogneur 170, le seul voisin (Le Roi des rois)
+     n'apporte que 50 : 140 ne suffit pas, rien n'est proposé. */
+  const E3 = situation({ lignes: [['c049', 'c078'], [null, 'c081']], ess: [['rose', 'rose']] });
+  Combat.agir(E3, { t: 'attaquer', u: L(E3, 0, 1).u, k: 0, cible: 'ceo' });
+  repondre(E3, L(E3, 1, 1).u);
+  vrai(!Combat.demande(E3) || Combat.demande(E3).but !== 'soutien', 'aucun soutien quand rien ne suffit');
+  vrai(Combat.soutiens(E3, L(E3, 0, 1)).length > 0, 'un soutien était possible : c\'est le filtre qui l\'écarte');
+});
 test('pas de soutien sans défenseur, ni d\'une case qui n\'est pas voisine', () => {
   const E = situation({ lignes: [['c078', null, 'c078'], [null, null, null]], ess: [['rose', 'rose', 'rose']] });
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 2).u, k: 0, cible: 'ceo' });
@@ -740,6 +766,32 @@ test('l\'historique d\'une partie entre deux IA : taille, et la fin', () => {
   egal(fin, ['fi', E.fin.gagnant === 0 ? 0 : 1, E.fin.raison]);
   vrai(JSON.stringify(x).length < 12000, 'une partie de Starters tient en moins de 12 000 signes : ' + JSON.stringify(x).length);
   console.log(`      (${E.tour} tours, ${JSON.stringify(x).length} signes)`);
+});
+
+/* ---------- La copie d'un Starter (version 3.0.14) ---------- */
+test('un Starter ne se copie qu\'avec ses propres cartes, toutes versions comprises', () => {
+  const st = Decks.STARTERS.toxique;
+  let r = Decks.copieStarter(st, {});
+  egal([r.ok, r.nManque, r.cartes], [false, 40, null], 'sans rien');
+  const exact = Object.assign({}, st.cartes);
+  r = Decks.copieStarter(st, exact);
+  const tri = o => Object.fromEntries(Object.entries(o).sort());
+  egal(tri(r.cartes), tri(st.cartes), 'avec exactement ses cartes, la copie est le Starter');
+  /* Sans P04 mais avec trois Squeezie classiques : même nom, même couleur. */
+  const sansPromo = Object.assign({}, st.cartes, { c012: 3 }); delete sansPromo.p04;
+  r = Decks.copieStarter(st, sansPromo);
+  egal([r.ok, r.cartes.c012, r.cartes.p04], [true, 3, undefined], 'la classique remplace la Promo');
+  /* Une Reverse compte comme sa classique ; la copie reste valide contre la collection. */
+  const reverse = Object.assign({}, st.cartes, { c010: 1, r010: 2 });
+  r = Decks.copieStarter(st, reverse);
+  egal([r.cartes.c010, r.cartes.r010], [1, 2]);
+  egal(Decks.verifier({ cartes: r.cartes, reserve: st.reserve }, reverse), [], 'copie valide');
+  /* Plus d'exemplaires qu'il n'en faut : la Promo du Starter garde sa place. */
+  r = Decks.copieStarter(st, Object.assign({}, st.cartes, { c012: 5 }));
+  egal([r.cartes.p04, r.cartes.c012, Decks.total(r.cartes)], [1, 2, 40]);
+  /* Il en manque deux : ni copie, ni carte inventée. */
+  r = Decks.copieStarter(st, Object.assign({}, st.cartes, { c015: 1 }));
+  egal([r.ok, r.nManque, r.manque], [false, 2, [{ nom: Combat.carte('c015').nom, n: 2 }]]);
 });
 
 console.log(`\n${ok} réussis, ${ko} en échec`);
