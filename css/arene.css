@@ -454,6 +454,12 @@ body.en-arene .preprod-bandeau{display:none}
 @keyframes ar-f-entre{from{transform:translateY(26px) scale(.86);opacity:0}}
 .ar-fc>.ar-c{width:100%}
 .ar-f-bas{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:min(100%,440px);flex:0 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+/* 3.0.14 (le propriétaire, image 15 : « les lueurs sont croppées
+   rectangulairement ») : la colonne défile, donc elle coupe tout ce qui
+   dépasse de sa boîte — la lueur de « Jouer ce Moment » et des attaques
+   s'arrêtait net sur son bord. Elle prend de la marge autour (reprise
+   aussitôt par une marge négative : rien ne bouge). */
+.ar-f-bas{padding:6px 16px 28px;margin:-6px -16px -28px;box-sizing:content-box}
 .ar-f-x{position:absolute;top:0;right:0;z-index:4}
 /* La ligne d'état : Défense, prêt ou engagé, Objets liés. */
 .ar-f-etat{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px}
@@ -534,7 +540,7 @@ html.rm .ar-f-atq.ok::after{animation:none}
    carte s'ouvre ainsi (.large). Tout est écrit : rien à déplier. */
 .ar-focus.large .ar-f-in{flex-direction:row;align-items:center;gap:clamp(12px,3.4cqw,30px);width:min(100%,780px);margin:0 auto}
 .ar-focus.large .ar-fc{width:min(40cqw,calc((100cqh - 8px) * .716),330px);min-width:0}
-.ar-focus.large .ar-f-bas{flex:1;min-width:0;width:auto;max-height:100%;align-self:center;gap:9px;padding:2px 2px 6px}
+.ar-focus.large .ar-f-bas{flex:1;min-width:0;width:auto;max-height:100%;align-self:center;gap:9px;padding:6px 16px 28px;margin:-6px -16px -28px}
 .ar-focus.large .ar-f-etat,.ar-focus.large .ar-f-puces{justify-content:flex-start}
 .ar-focus.large .ar-f-aide,.ar-focus.large .ar-f-note{text-align:left}
 /* L'en-tête : son nom (la croix de fermeture à sa droite), puis sa sorte et
@@ -915,8 +921,20 @@ html.rm .ar-eclair{animation:none!important}
    déborde pas (un contour à l'extérieur se faisait rogner par la feuille). */
 .tuto-vise{outline:2.5px solid #fff;outline-offset:-2.5px;animation:tuto-vise 1.3s ease-in-out infinite}
 @keyframes tuto-vise{0%,100%{outline-color:rgba(255,255,255,.95)}50%{outline-color:rgba(200,191,255,.55)}}
-html.rm .tuto-vise{animation:none}
-@media (prefers-reduced-motion:reduce){.tuto-vise{animation:none}}
+/* 3.0.14 (le propriétaire : « le surlignage rectangulaire est très moche,
+   adapte la forme ») : un regroupement ne se cerne plus d'un rectangle —
+   la zone des Essences, les trois cases, la main, le CEO — et une carte
+   ne se cerne plus par sa boîte (aux coins carrés) : ce sont les formes
+   elles-mêmes qui s'allument, chacune avec son arrondi (une gemme ronde,
+   une case, une carte, l'avatar). Les gemmes et l'avatar, que rien ne
+   rogne, prennent leur anneau à l'extérieur ; les cartes, dans une main ou
+   une ligne qui coupe ce qui dépasse, à l'intérieur. */
+.tuto-vise:is(.ar-ess-zone,.ar-lignes,.ar-main,.ar-ceo,.ar-m,.ar-j){outline:none;animation:none}
+:is(.tuto-vise.ar-ess-zone .ar-gem,.tuto-vise.ar-ceo .ar-ava,.tuto-vise.ar-lignes .ar-place,.tuto-vise.ar-main .ar-c,.tuto-vise.ar-m .ar-c,.tuto-vise.ar-j .ar-c){
+  outline:2.5px solid #fff;outline-offset:-2.5px;animation:tuto-vise 1.3s ease-in-out infinite}
+:is(.tuto-vise.ar-ess-zone .ar-gem,.tuto-vise.ar-ceo .ar-ava){outline-offset:2px}
+html.rm :is(.tuto-vise,.tuto-vise *){animation:none}
+@media (prefers-reduced-motion:reduce){:is(.tuto-vise,.tuto-vise *){animation:none}}
 
 /* ============ Version 3.0.7 : la visée, les effets qui se voient ============ */
 /* La visée (refaite en 3.0.13, viser() dans js/combat/table.js) : un trait

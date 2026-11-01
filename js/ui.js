@@ -364,3 +364,98 @@ async function agir(fn, msg) {
     occupe(false);
   }
 }
+
+/* ---------- Les bandes qui défilent de côté (3.0.14) ---------- */
+/* Les rangées de puces (filtres de la Collection et de l'atelier, onglets
+   d'un événement, amis d'un échange, rendez-vous du jour…) défilent au doigt
+   sur téléphone, mais une souris ne sait pas « glisser » : sur ordinateur,
+   ce qui dépassait à droite était hors d'atteinte (le propriétaire, 1er
+   novembre 2026 : « C'est un gros problème »). Trois gestes, pour toutes
+   les bandes à la fois, trouvées d'après leur style (overflow-x qui défile
+   et un contenu plus large que la bande) :
+   - tirer à la souris, bouton enfoncé : la bande suit ; le clic qui finit
+     un glissé ne déclenche rien ;
+   - la molette, sur une bande basse (une rangée de puces ou d'onglets) :
+     elle défile de côté, et rend la main à la page une fois au bout ;
+   - un fondu sur le bord qui cache encore quelque chose (`bd-g`, `bd-d`,
+     css/base.css), pour qu'on sache qu'il y a une suite.
+   Les pavés de texte (code SQL du Labo) et les pages d'une fiche de carte,
+   qui ont leur propre geste, sont exclus. */
+(function () {
+  const EXCLUS = '.vw-pages,.labsql,input,textarea,select,[data-nodrag]';
+  const defile = x => {
+    if (x.scrollWidth <= x.clientWidth + 1) return false;
+    const o = getComputedStyle(x).overflowX;
+    return o === 'auto' || o === 'scroll';
+  };
+  /* La bande sous le pointeur : le premier ancêtre qui défile de côté. */
+  function bande(el) {
+    for (let x = el; x && x.nodeType === 1 && x !== document.body; x = x.parentElement) {
+      if (x.matches(EXCLUS)) return null;
+      if (defile(x)) return x;
+    }
+    return null;
+  }
+  /* Les fondus des bords. */
+  function bords(x) {
+    const max = x.scrollWidth - x.clientWidth;
+    const d = max > 1 && getComputedStyle(x).overflowX !== 'visible';
+    x.classList.toggle('bd-g', d && x.scrollLeft > 2);
+    x.classList.toggle('bd-d', d && x.scrollLeft < max - 2);
+  }
+  const SEL = '.chips,.essrow,.at-chips,.souschips,.auj-l,.amirow,.segbar,.rf-onglets,.ar-liste,.dk-seg,.cb-chips';
+  let attente = 0;
+  function tousLesBords() {
+    attente = 0;
+    document.querySelectorAll(SEL).forEach(bords);
+  }
+  const plusTard = () => { if (!attente) attente = requestAnimationFrame(tousLesBords); };
+  document.addEventListener('scroll', e => { const x = e.target; if (x && x.nodeType === 1 && x.matches(SEL)) bords(x); }, true);
+  addEventListener('resize', plusTard);
+  /* Les bandes vivent dans la page et dans les feuilles : on n'observe
+     qu'elles (l'arène, qui change à chaque coup, n'a pas à payer ce suivi). */
+  const obs = new MutationObserver(plusTard);
+  ['main', 'sheet'].forEach(id => { const n = document.getElementById(id); if (n) obs.observe(n, { childList: true, subtree: true }); });
+
+  /* Tirer à la souris. */
+  let tir = null;
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    const x = bande(e.target);
+    if (x) tir = { x, depart: e.clientX, gauche: x.scrollLeft, glisse: false, id: e.pointerId };
+  });
+  document.addEventListener('pointermove', e => {
+    if (!tir || e.pointerId !== tir.id) return;
+    const dx = e.clientX - tir.depart;
+    if (!tir.glisse && Math.abs(dx) < 6) return;
+    if (!tir.glisse) { tir.glisse = true; tir.x.classList.add('bd-tire'); }
+    tir.x.scrollLeft = tir.gauche - dx;
+    e.preventDefault();
+  });
+  const lacher = e => {
+    if (!tir || (e && e.pointerId !== tir.id)) return;
+    const t = tir;
+    tir = null;
+    if (!t.glisse) return;
+    t.x.classList.remove('bd-tire');
+    /* Le clic qui suit un glissé n'est pas un choix. */
+    const avaler = c => { c.stopPropagation(); c.preventDefault(); };
+    document.addEventListener('click', avaler, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', avaler, true), 60);
+  };
+  document.addEventListener('pointerup', lacher);
+  document.addEventListener('pointercancel', lacher);
+
+  /* La molette, sur une bande basse. Un pavé tactile qui glisse déjà de côté
+     (deltaX) et le zoom (Ctrl) passent tels quels. */
+  document.addEventListener('wheel', e => {
+    if (e.ctrlKey || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+    const x = bande(e.target);
+    if (!x || x.clientHeight > 72) return;
+    const d = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? x.clientWidth : 1);
+    const max = x.scrollWidth - x.clientWidth;
+    if ((d < 0 && x.scrollLeft <= 0) || (d > 0 && x.scrollLeft >= max - 1)) return;
+    x.scrollLeft += d;
+    e.preventDefault();
+  }, { passive: false });
+})();
