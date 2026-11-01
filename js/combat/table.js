@@ -456,7 +456,7 @@ const Table = (() => {
       if (aPrec != null && aPrec !== '' && att != null && +aPrec !== att) flottant(x, `${signe(att - aPrec)} Att`, att > aPrec ? 'plus' : 'moins');
     }
     x.querySelector('.ar-def').className = 'ar-def' + (bonus > 0 ? ' plus' : bonus < 0 ? ' moins' : '') + (x.querySelector('.ar-def').classList.contains('bouge') ? ' bouge' : '');
-    x.querySelector('.ar-def').innerHTML = `${MARQUES.Garde}<b>${def}</b>`;
+    x.querySelector('.ar-def').innerHTML = `${ICO_DEF}<b>${def}</b>`;
     x.querySelector('.ar-def').setAttribute('aria-label', `Défense ${def}`);
     /* Ce qu'un lecteur d'écran dit de la carte (3.0.13). */
     const camp = j === T.moi ? 'Ton Joueur' : 'Joueur adverse';
@@ -469,26 +469,58 @@ const Table = (() => {
       /* Un Objet maîtrisé (à soi) : un anneau de sa couleur (version 3.0.11). */
       objs.innerHTML = c.obj.map(o => { const m = mzDe(o.id, ownerOf(o.u)); return `<i class="ar-obj${m >= 2 ? ` mzo mzo-${m}` : ''}" data-u="${o.u}" data-id="${o.id}" style="background-image:url('${abs(carte(o.id).img || '')}')${m >= 2 ? `;--mc:${mzCouleur(o.id)}` : ''}"></i>`; }).join('');
     }
+    /* Les médaillons (3.0.14, le propriétaire : « plus jolis et
+       esthétiques, là c'est juste des pictogrammes ») : un mot-clé, un état,
+       un effet du tour, chacun son glyphe plein dans un médaillon serti ; la
+       Défense et les attaques ont chacune le leur, avec le sens (une petite
+       pastille verte qui monte, corail qui descend). Seul un médaillon qui
+       vient d'arriver s'anime (`neuf`) : rien ne rejoue à chaque rendu. */
     const mk = [];
-    for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) mk.push(`<i class="ar-mk mk-${O_.sansAccent(m)}" title="${m}">${MARQUES[m]}</i>`);
-    if (Combat.shieldActif(E, c)) mk.push(`<i class="ar-mk mk-shield" title="Shield">${MARQUES.Shield}</i>`);
-    if (E.temp.some(t => t.type === 'pasAttaque' && t.cible === c.u)) mk.push('<i class="ar-mk mk-bloque" title="Ne peut pas attaquer ce tour">⊘</i>');
-    /* Un effet du tour (Défense, attaques) : une flèche, vers le haut ou le bas. */
-    const tmp = E.temp.filter(t => (t.type === 'def' || t.type === 'atk') && (t.cible != null ? t.cible === c.u : t.camp === c.j));
-    if (tmp.length) {
-      const haut = tmp.reduce((a, t) => a + Math.sign(t.val), 0) >= 0;
-      mk.push(`<i class="ar-mk mk-${haut ? 'buff' : 'debuff'}" title="Un effet du tour : touche la carte pour le lire">${haut ? '▲' : '▼'}</i>`);
+    for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) mk.push([O_.sansAccent(m), marque(O_.sansAccent(m), '', m)]);
+    if (Combat.shieldActif(E, c)) mk.push(['shield', marque('shield', '', 'Shield')]);
+    if (E.temp.some(t => t.type === 'pasAttaque' && t.cible === c.u)) mk.push(['bloque', marque('bloque', 'corail', 'Ne peut pas attaquer ce tour')]);
+    const tmp = E.temp.filter(t => t.cible != null ? t.cible === c.u : t.camp === c.j && (t.type === 'def' || t.type === 'atk'));
+    for (const [ty, g, nom] of [['def', 'ecu', 'Défense'], ['atk', 'epee', 'attaques']]) {
+      const l = tmp.filter(t => t.type === ty);
+      if (!l.length) continue;
+      const v = l.reduce((a, t) => a + (t.val || 0), 0);
+      const sens = v >= 0 ? 'plus' : 'moins';
+      mk.push([ty + sens, marque(g, sens === 'plus' ? 'vert' : 'corail', `${v >= 0 ? '+' : '−'}${Math.abs(v)} ${nom} ce tour`, sens)]);
     }
-    x.querySelector('.ar-marques').innerHTML = mk.join('');
+    if (tmp.some(t => !['def', 'atk', 'pasAttaque', 'kw'].includes(t.type))) mk.push(['autre', marque('etoile', '', 'Un effet du tour : touche la carte pour le lire')]);
+    const zm = x.querySelector('.ar-marques');
+    const cle = mk.map(m => m[0]).join(',');
+    if (zm.dataset.k !== cle) {
+      const avant = new Set((zm.dataset.k || '').split(',').filter(Boolean));
+      zm.dataset.k = cle;
+      zm.innerHTML = mk.map(([k, html]) => avant.has(k) || zm.dataset.vu !== '1' ? html : html.replace('class="ar-mk ', 'class="ar-mk neuf ')).join('');
+    }
+    zm.dataset.vu = '1';
   }
   const O_ = Combat.O;
-  const MARQUES = {
-    Provocation: '<svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7Z"/><path d="M12 8v5M12 16v.5"/></svg>',
-    Garde: '<svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7Z"/></svg>',
-    Shield: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M7 12h10" opacity=".6"/></svg>',
-    Riposte: '<svg viewBox="0 0 24 24"><path d="M5 12h12M13 7l5 5-5 5"/><path d="M5 7v10"/></svg>',
-    Légion: '<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4h4"/></svg>'
+  /* Les glyphes des médaillons (24 × 24, pleins) : `om` est leur ombre
+     portée, dessinée (pas de filtre : il repeignait à chaque image), `o` la
+     moitié dans l'ombre, `t` un trait. */
+  const GLYPHES = {
+    garde: '<path class="om" d="M4.6 21V8.6l1.7-1.2V4.4h2.8v1.8h1.5V4.4h2.8v1.8h1.5V4.4h2.8v3l1.7 1.2V21Z"/><path class="p" d="M4.6 21V8.6l1.7-1.2V4.4h2.8v1.8h1.5V4.4h2.8v1.8h1.5V4.4h2.8v3l1.7 1.2V21Z"/><path class="o" d="M12 4.4h1.4v1.8h1.5V4.4h2.8v3l1.7 1.2V21H12Z"/><path class="trou" d="M10.1 21v-4.1a1.9 1.9 0 0 1 3.8 0V21Z"/>',
+    provocation: '<path class="om" d="M3.5 9.6h3.4l7.6-4.9v14.6l-7.6-4.9H3.5a1 1 0 0 1-1-1v-2.8a1 1 0 0 1 1-1Z"/><path class="p" d="M3.5 9.6h3.4l7.6-4.9v14.6l-7.6-4.9H3.5a1 1 0 0 1-1-1v-2.8a1 1 0 0 1 1-1Z"/><path class="p" d="M7.2 14.6h2.7l1.3 4.1a1.3 1.3 0 0 1-2.5.8Z"/><path class="o" d="M10.7 7.1 14.5 4.7v14.6l-3.8-2.4Z"/><path class="tom" d="M17.4 9.2a4.4 4.4 0 0 1 0 5.6M19.8 7a7.6 7.6 0 0 1 0 10"/><path class="t" d="M17.4 9.2a4.4 4.4 0 0 1 0 5.6M19.8 7a7.6 7.6 0 0 1 0 10"/>',
+    shield: '<circle class="om" cx="12" cy="12" r="8.6"/><circle class="bulle" cx="12" cy="12" r="8.6"/><path class="t" d="M7.4 10.4a5 5 0 0 1 3.4-3.6"/><circle class="p" cx="15.8" cy="15.6" r="1.25"/>',
+    riposte: '<path class="om" d="M10.4 3.6 3.4 9.9l7 6.3v-3.9h3.9a3.3 3.3 0 0 1 0 6.6h-1.9v2.9h1.9a6.2 6.2 0 0 0 0-12.4h-3.9Z"/><path class="p" d="M10.4 3.6 3.4 9.9l7 6.3v-3.9h3.9a3.3 3.3 0 0 1 0 6.6h-1.9v2.9h1.9a6.2 6.2 0 0 0 0-12.4h-3.9Z"/>',
+    legion: '<path class="om" d="M12 3.8a8.2 8.2 0 0 1 7.6 5.1l1.6-.9-.6 5.6-5-2.6 1.7-.9A5.4 5.4 0 0 0 6.8 10L4.2 9.2A8.2 8.2 0 0 1 12 3.8ZM12 20.2a8.2 8.2 0 0 1-7.6-5.1l-1.6.9.6-5.6 5 2.6-1.7.9a5.4 5.4 0 0 0 10.5-.9l2.6.8A8.2 8.2 0 0 1 12 20.2Z"/><path class="p" d="M12 3.8a8.2 8.2 0 0 1 7.6 5.1l1.6-.9-.6 5.6-5-2.6 1.7-.9A5.4 5.4 0 0 0 6.8 10L4.2 9.2A8.2 8.2 0 0 1 12 3.8ZM12 20.2a8.2 8.2 0 0 1-7.6-5.1l-1.6.9.6-5.6 5 2.6-1.7.9a5.4 5.4 0 0 0 10.5-.9l2.6.8A8.2 8.2 0 0 1 12 20.2Z"/>',
+    epee: '<path class="om" d="M20.4 3.6l-.5 4.3-8.4 8.4-3.8-3.8 8.4-8.4ZM6.2 11.7l6.1 6.1-1.4 1.4-1.3-1.3-2.7 2.7a1.6 1.6 0 0 1-2.3-2.3l2.7-2.7-1.3-1.3Z"/><path class="p" d="M20.4 3.6l-.5 4.3-8.4 8.4-3.8-3.8 8.4-8.4ZM6.2 11.7l6.1 6.1-1.4 1.4-1.3-1.3-2.7 2.7a1.6 1.6 0 0 1-2.3-2.3l2.7-2.7-1.3-1.3Z"/><path class="o" d="M20.4 3.6l-.5 4.3-8.4 8.4-1.9-1.9Z"/>',
+    ecu: '<path class="om" d="M12 2.8 4.8 5.6v5.6c0 4.6 3.1 8.5 7.2 9.8 4.1-1.3 7.2-5.2 7.2-9.8V5.6Z"/><path class="p" d="M12 2.8 4.8 5.6v5.6c0 4.6 3.1 8.5 7.2 9.8 4.1-1.3 7.2-5.2 7.2-9.8V5.6Z"/><path class="o" d="M12 2.8v18.2c4.1-1.3 7.2-5.2 7.2-9.8V5.6Z"/>',
+    bloque: '<path class="om" d="M20.4 3.6l-.5 4.3-8.4 8.4-3.8-3.8 8.4-8.4ZM6.2 11.7l6.1 6.1-1.4 1.4-1.3-1.3-2.7 2.7a1.6 1.6 0 0 1-2.3-2.3l2.7-2.7-1.3-1.3Z"/><path class="p" d="M20.4 3.6l-.5 4.3-8.4 8.4-3.8-3.8 8.4-8.4ZM6.2 11.7l6.1 6.1-1.4 1.4-1.3-1.3-2.7 2.7a1.6 1.6 0 0 1-2.3-2.3l2.7-2.7-1.3-1.3Z" opacity=".55"/><path class="barre-f" d="M4.5 4.5l15 15"/><path class="barre" d="M4.5 4.5l15 15"/>',
+    etoile: '<path class="om" d="M12 3c.7 5.1 3.2 7.6 9 9-5.8 1.4-8.3 3.9-9 9-.7-5.1-3.2-7.6-9-9 5.8-1.4 8.3-3.9 9-9Z"/><path class="p" d="M12 3c.7 5.1 3.2 7.6 9 9-5.8 1.4-8.3 3.9-9 9-.7-5.1-3.2-7.6-9-9 5.8-1.4 8.3-3.9 9-9Z"/><path class="o" d="M12 3c.7 5.1 3.2 7.6 9 9H12Z"/>'
   };
+  const SENS = {
+    plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14.5 12 8.5l6 6"/></svg>',
+    moins: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5 12 15.5l6-6"/></svg>'
+  };
+  const glyphe = g => `<svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHES[g] || ''}</svg>`;
+  const marque = (g, teinte, titre, sens) => `<i class="ar-mk mk-${g}${teinte ? ' ' + teinte : ''}" title="${h(titre)}">${glyphe(g)}${sens ? `<b class="mk-sens ${sens}">${SENS[sens]}</b>` : ''}</i>`;
+  /* La Défense (la pastille sous la carte, la fiche) : un écu au trait —
+     l'écu plein est l'effet du tour sur la Défense, la tour la Garde. */
+  const ICO_DEF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7Z"/></svg>';
 
   /* La main : les cartes déjà tenues restent (leur image ne se recharge
      pas), les nouvelles s'ajoutent, et chacune glisse à sa place. */
@@ -945,7 +977,7 @@ const Table = (() => {
     const def = Combat.defense(T.E, c), d0 = k.def || 0;
     const sens = def > d0 ? 'plus' : def < d0 ? 'moins' : '';
     return `<div class="ar-f-etat">
-      <span class="ar-f-defv ${sens}" aria-label="Défense ${def}">${MARQUES.Garde}<small>Déf</small><b>${def}</b>${def !== d0 ? `<s>${d0}</s>` : ''}</span>
+      <span class="ar-f-defv ${sens}" aria-label="Défense ${def}">${ICO_DEF}<small>Déf</small><b>${def}</b>${def !== d0 ? `<s>${d0}</s>` : ''}</span>
       <span class="ar-f-pret${c.eng ? ' eng' : ''}">${c.eng ? 'Engagé' : 'Prêt'}</span>
       ${c.obj.map(o => { const ko = carte(o.id); return `<button class="ar-f-obj" data-ar="voir-carte" data-id="${o.id}" aria-label="Objet lié : ${h(ko.nom || '')}"><i style="background-image:url('${abs(ko.img || '')}')"></i><span>${h(ko.nom || '')}</span></button>`; }).join('')}
     </div>`;
@@ -992,7 +1024,7 @@ const Table = (() => {
     const ty = typeDe(k), co = coulDe(k);
     const l = [`<header class="ar-f-tete"><b class="ar-f-nom">${h(k.nom || '')}</b><span class="ar-f-type t-${k.cat || ''}" style="--cc:${co.c}">${ty.ico}<span>${ty.nom}</span>${essIcon(k.col || 'neutre', 'ar-f-coul')}<span class="ar-f-cn">${h(co.nom)}</span></span></header>`];
     if (vivant) l.push(ligneEtat(inst, k));
-    else if (k.cat === 'joueur' && k.def != null) l.push(`<div class="ar-f-etat"><span class="ar-f-defv" aria-label="Défense ${k.def}">${MARQUES.Garde}<small>Déf</small><b>${k.def}</b></span></div>`);
+    else if (k.cat === 'joueur' && k.def != null) l.push(`<div class="ar-f-etat"><span class="ar-f-defv" aria-label="Défense ${k.def}">${ICO_DEF}<small>Déf</small><b>${k.def}</b></span></div>`);
     if (k.cat === 'joueur') {
       l.push(vivant ? attaquesEnDirect(inst, k, monJoueur, true)
         : `<div class="ar-f-atqs">${(k.atks || []).map(a => `<div class="ar-f-atq lu">${coutHTML(a.cout)}<span class="ar-f-at"><b>${h(a.nom)}</b>${a.effet ? `<small>${h(a.effet)}</small>` : ''}</span>${a.degats == null ? '' : `<em>${a.degats}</em>`}</div>`).join('')}</div>`);
@@ -1025,7 +1057,9 @@ const Table = (() => {
   function pucesEnCours(c, k, detail) {
     const l = effetsEnCours(c, k).filter(x => !/^Défense [+−]/.test(x.t) && !(detail && k.kw && x.t.startsWith(`<b>${k.kw.nom}</b>`)));
     if (!l.length) return '';
-    return `<div class="ar-f-puces">${l.map(x => `<span class="ar-puce ${x.s}">${x.t}</span>`).join('')}</div>`;
+    /* Chaque ligne porte le médaillon qu'on voit sur le plateau (3.0.14). */
+    const teinte = x => (x.g === 'bloque' || x.s === 'moins' ? 'corail' : x.s === 'plus' && (x.g === 'ecu' || x.g === 'epee') ? 'vert' : '');
+    return `<div class="ar-f-puces">${l.map(x => `<span class="ar-puce ${x.s}">${x.g && GLYPHES[x.g] ? `<i class="ar-mk mini ${teinte(x)}" aria-hidden="true">${glyphe(x.g)}</i>` : ''}<span>${x.t}</span></span>`).join('')}</div>`;
   }
   /* Après une animation, la carte ouverte se remet à jour : ouverte pendant
      le tour adverse (en lecture seule), elle montre ses actions dès que
@@ -1103,24 +1137,24 @@ const Table = (() => {
     const duree = t => (t.jusqua > E.tour ? 'jusqu\'au tour suivant' : 'ce tour');
     const signe = v => (v > 0 ? '+' : '−') + Math.abs(v);
     const def = Combat.defense(E, c), d0 = k.def || 0;
-    if (def !== d0) l.push({ s: def > d0 ? 'plus' : 'moins', t: `Défense ${signe(def - d0)} : ${def} au lieu de ${d0}` });
+    if (def !== d0) l.push({ s: def > d0 ? 'plus' : 'moins', g: 'ecu', t: `Défense ${signe(def - d0)} : ${def} au lieu de ${d0}` });
     const a0 = (k.atks || []).findIndex(a => a.degats != null);
     if (a0 >= 0) {
       const b = Combat.infoAttaque(E, c, a0).val - k.atks[a0].degats;
-      if (b) l.push({ s: b > 0 ? 'plus' : 'moins', t: `Attaques ${signe(b)} de dégâts` });
+      if (b) l.push({ s: b > 0 ? 'plus' : 'moins', g: 'epee', t: `Attaques ${signe(b)} de dégâts` });
     }
     for (const t of E.temp) {
       const vise = t.cible != null ? t.cible === c.u : t.camp === c.j && (t.type === 'def' || t.type === 'atk' || t.type === 'doublePremiere');
       if (!vise) continue;
-      if (t.type === 'def') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} Défense ${duree(t)}` });
-      else if (t.type === 'atk') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} aux attaques ${duree(t)}` });
-      else if (t.type === 'pasAttaque') l.push({ s: 'moins', t: `Ne peut pas attaquer ${duree(t)}` });
-      else if (t.type === 'pasDefenseFace') l.push({ s: 'plus', t: `Le Joueur d'en face ne peut pas défendre contre lui ${duree(t)}` });
-      else if (t.type === 'kw') l.push({ s: 'plus', t: `Gagne ${t.kw} ${duree(t)}` });
-      else if (t.type === 'doublePremiere' && E.cpt.attaques === 0) l.push({ s: 'plus', t: 'La première attaque du tour vaut double (Paris Gentle Mates)' });
+      if (t.type === 'def') l.push({ s: t.val > 0 ? 'plus' : 'moins', g: 'ecu', t: `${signe(t.val)} Défense ${duree(t)}` });
+      else if (t.type === 'atk') l.push({ s: t.val > 0 ? 'plus' : 'moins', g: 'epee', t: `${signe(t.val)} aux attaques ${duree(t)}` });
+      else if (t.type === 'pasAttaque') l.push({ s: 'moins', g: 'bloque', t: `Ne peut pas attaquer ${duree(t)}` });
+      else if (t.type === 'pasDefenseFace') l.push({ s: 'plus', g: 'etoile', t: `Le Joueur d'en face ne peut pas défendre contre lui ${duree(t)}` });
+      else if (t.type === 'kw') l.push({ s: 'plus', g: O_.sansAccent(t.kw), t: `Gagne ${t.kw} ${duree(t)}` });
+      else if (t.type === 'doublePremiere' && E.cpt.attaques === 0) l.push({ s: 'plus', g: 'etoile', t: 'La première attaque du tour vaut double (Paris Gentle Mates)' });
     }
-    for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) l.push({ s: 'kw', t: `<b>${m}</b> : ${MOTS_CLES[m]}` });
-    if (Combat.shieldActif(E, c)) l.push({ s: 'kw', t: `<b>Shield</b> : ${MOTS_CLES.Shield}` });
+    for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) l.push({ s: 'kw', g: O_.sansAccent(m), t: `<b>${m}</b> : ${MOTS_CLES[m]}` });
+    if (Combat.shieldActif(E, c)) l.push({ s: 'kw', g: 'shield', t: `<b>Shield</b> : ${MOTS_CLES.Shield}` });
     return l;
   }
   function pourquoiPas(c, k, inf) {

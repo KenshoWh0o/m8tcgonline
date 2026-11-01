@@ -207,9 +207,9 @@ La lecture du jeu :
   page ne se redessine pas : toucher une carte ou ouvrir le menu reste
   possible (en lecture seule), et le combat continue derrière.
 - **Ce qui touche une carte se lit sur elle.** La Défense est une pastille
-  sobre (plus d'écusson ni de grand chiffre qui déborde) ; une marque
-  lavande (bonus) ou rouge (malus) signale un effet en cours, et la fiche
-  de la carte les écrit en clair (« En ce moment »). Plus de signe de sorte
+  sobre (plus d'écusson ni de grand chiffre qui déborde) ; un médaillon
+  signale chaque mot-clé, état ou effet en cours (§ 10 septies), et la fiche
+  de la carte les écrit en clair, chaque ligne derrière le même médaillon. Plus de signe de sorte
   de carte : le joueur la reconnaît à son illustration.
 - **Un défi a un chrono.** 60 secondes par tour entre amis ; le compte
   s'affiche dans la barre de celui qui joue. Passé le temps, le tour se
@@ -273,6 +273,38 @@ s'assombrit d'un cran (`#8370f6` → `#5442cf`). À l'œil, la pastille est un
 rouge franc au lieu d'un rose ; le bouton ne change presque pas. Le contour
 du focus (`--accent-soft`, 2 px, décalé de 2 px) vaut désormais aussi pour
 les liens et les interrupteurs.
+
+## 10 septies. Version 3.0.14 : les médaillons des effets
+
+Le propriétaire : « Revoit les icones des buffs, effets etc, pour qu'ils
+soient plus jolis et esthétiques. Là c'est juste des pictogrammes. » Les
+pastilles du plateau étaient des ronds noirs cerclés de blanc, avec un
+pictogramme au trait (ou un ▲, un ▼, un ⊘ en caractère). Elles deviennent
+des **médaillons sertis** : un cœur graphite éclairé d'en haut, une monture
+dont le dégradé tourne (elle accroche la lumière), un glyphe **plein** et
+son ombre portée, dessinée dans le glyphe (pas de filtre, qui repeignait la
+carte à chaque image).
+
+- **Un glyphe par sens** : Provocation, un porte-voix ; Garde, une tour
+  crénelée (l'écu reste la Défense, pour ne plus confondre les deux) ;
+  Shield, une bulle et son reflet ; Riposte, une flèche qui revient ;
+  Légion, deux flèches en cercle ; ne peut pas attaquer, une épée barrée ;
+  un effet sur la Défense, un écu plein ; sur les attaques, une épée ; un
+  autre effet du tour, une étoile à quatre branches.
+- **Les couleurs disent l'état, pas le mot-clé** (la règle de la 3.0.12) :
+  les mots-clés restent neutres, une monture lavande ; un effet qui aide,
+  vert ; un effet qui gêne ou un état subi, corail. Un effet du tour porte
+  en plus une petite pastille, en bas à droite, qui monte ou qui descend.
+  Toutes ces teintes viennent des jetons (`--ar-act`, `--ok`, `--ar-adv`).
+- **La Défense et les attaques ont chacune leur médaillon** (avant, une
+  seule flèche disait « quelque chose bouge »). Le titre du médaillon dit
+  la somme (« +20 Défense ce tour »).
+- **Un médaillon qui arrive s'anime** (il grossit d'un coup, une fois) ;
+  les autres ne bougent pas, et rien ne rejoue au rendu suivant. Avec
+  « Animations réduites », rien ne s'anime.
+- **La fiche de la carte reprend les mêmes médaillons**, en petit, devant
+  chaque ligne de « ce qui agit sur elle » : ce qu'on voit sur le plateau se
+  retrouve en clair au même endroit.
 
 ## 11. Sources
 

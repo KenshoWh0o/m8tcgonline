@@ -394,16 +394,46 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-def.moins{box-shadow:inset 0 0 0 1px rgba(255,107,107,.65),0 2px 6px rgba(0,0,0,.55)}
 .ar-def.moins b{color:var(--ar-adv2)}
 
-/* Les mots-clés et états : des pastilles, en haut à droite. */
-.ar-marques{position:absolute;top:-5cqi;right:-6cqi;z-index:3;display:flex;flex-direction:column;gap:2cqi;pointer-events:none}
-.ar-mk{display:grid;place-items:center;width:23cqi;aspect-ratio:1;border-radius:50%;font-style:normal;font-size:13cqi;font-weight:900;
-  background:rgba(26,25,34,.94);box-shadow:inset 0 0 0 1.5px currentColor,0 2px 4px rgba(0,0,0,.5);color:#fff}
-.ar-mk svg{width:62%;height:62%;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
-/* Les mots-clés sont neutres : la forme de l'icône les distingue. Seul
-   « bloqué », un état subi, prend le corail. */
-.mk-provocation,.mk-garde,.mk-shield,.mk-riposte,.mk-legion{color:#fff}.mk-bloque{color:var(--ar-adv)}
-/* Un effet du tour : vert s'il aide, rouge s'il gêne. Le détail est dans la carte. */
-.mk-buff{color:var(--ok);font-size:10cqi}.mk-debuff{color:var(--ar-adv2);font-size:10cqi}
+/* Les mots-clés, les états et les effets du tour : des médaillons sertis,
+   en haut à droite (3.0.14 ; avant, des pictogrammes au trait dans un rond
+   noir). Un cœur graphite éclairé d'en haut, une monture qui accroche la
+   lumière, un glyphe plein et son ombre dessinée (pas de filtre). Les
+   mots-clés restent neutres (lavande) : la forme les distingue ; un état
+   subi prend le corail, un effet du tour le vert ou le corail selon son
+   sens, avec une pastille qui le dit (monte, descend). Les couleurs viennent
+   des jetons (`--ar-act`, `--ok`, `--ar-adv`). */
+.ar-marques{position:absolute;top:-5cqi;right:-6cqi;z-index:3;display:flex;flex-direction:column;gap:2.6cqi;pointer-events:none}
+.ar-mk{--c1:color-mix(in srgb,var(--ar-act) 12%,#34313f);--c2:#16151d;
+  --r1:color-mix(in srgb,var(--ar-act) 16%,#fff);--r2:color-mix(in srgb,var(--ar-act) 78%,#24203a);--g:#fff;
+  position:relative;display:grid;place-items:center;width:23cqi;aspect-ratio:1;border-radius:50%;font-style:normal;
+  border:max(1.2px,1.5cqi) solid transparent;
+  background:radial-gradient(circle at 35% 28%,var(--c1),var(--c2) 74%) padding-box,
+    conic-gradient(from 210deg,var(--r1),var(--r2),var(--r1),var(--r2),var(--r1)) border-box;
+  box-shadow:0 2cqi 5cqi rgba(0,0,0,.6),inset 0 1.2cqi 0 rgba(255,255,255,.16),inset 0 -2cqi 3cqi rgba(0,0,0,.45)}
+.ar-mk>svg{width:66%;height:66%;overflow:visible}
+.ar-mk .p{fill:var(--g)}
+.ar-mk .om{fill:rgba(8,7,14,.6);transform:translateY(1.1px)}
+.ar-mk .o{fill:rgba(20,18,30,.22)}
+.ar-mk .t{fill:none;stroke:var(--g);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.ar-mk .tom{fill:none;stroke:rgba(8,7,14,.6);stroke-width:2.1;stroke-linecap:round;transform:translateY(1.1px)}
+.ar-mk .trou{fill:rgba(20,18,30,.55)}
+.ar-mk .bulle{fill:rgba(200,215,255,.28);stroke:var(--g);stroke-width:1.9}
+.ar-mk .barre-f{fill:none;stroke:#17161e;stroke-width:5;stroke-linecap:round}
+.ar-mk .barre{fill:none;stroke:color-mix(in srgb,var(--ar-adv) 70%,#fff);stroke-width:2.6;stroke-linecap:round}
+.ar-mk.vert{--c1:color-mix(in srgb,var(--ok) 34%,#1a1a22);--c2:color-mix(in srgb,var(--ok) 10%,#0e0e14);
+  --r1:color-mix(in srgb,var(--ok) 28%,#fff);--r2:color-mix(in srgb,var(--ok) 82%,#000)}
+.ar-mk.corail{--c1:color-mix(in srgb,var(--ar-adv) 34%,#1a1a22);--c2:color-mix(in srgb,var(--ar-adv) 10%,#0e0e14);
+  --r1:color-mix(in srgb,var(--ar-adv) 28%,#fff);--r2:color-mix(in srgb,var(--ar-adv) 85%,#000)}
+.ar-mk .mk-sens{position:absolute;right:-22%;bottom:-22%;width:54%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--ok) 72%,#fff),color-mix(in srgb,var(--ok) 70%,#000));
+  box-shadow:0 0 0 max(1px,1.2cqi) #15141c,0 1px 2px rgba(0,0,0,.5)}
+.ar-mk .mk-sens.moins{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--ar-adv) 72%,#fff),color-mix(in srgb,var(--ar-adv) 75%,#000))}
+.ar-mk .mk-sens svg{width:80%;height:80%;fill:none;stroke:#fff;stroke-width:3.6;stroke-linecap:round;stroke-linejoin:round}
+/* Un médaillon qui arrive (un effet qui tombe, un mot-clé gagné). */
+.ar-mk.neuf{animation:ar-mk-pop .44s cubic-bezier(.2,1.5,.4,1)}
+@keyframes ar-mk-pop{from{transform:scale(.2);opacity:0}55%{opacity:1}}
+html.rm .ar-mk.neuf{animation:none}
+@media (prefers-reduced-motion:reduce){.ar-mk.neuf{animation:none}}
 
 /* Les Objets liés : des médaillons, sur le bord gauche du Joueur. */
 .ar-objs{position:absolute;left:-8cqi;top:5cqi;z-index:3;display:flex;flex-direction:column;gap:2cqi}
@@ -507,8 +537,11 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-f-note{margin:0;padding:8px 11px;border-radius:12px;font-size:12px;line-height:1.35;color:rgba(255,255,255,.72);text-align:center;
   background:rgba(157,140,255,.08);box-shadow:inset 0 0 0 1px rgba(157,140,255,.25)}
 .ar-f-puces{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.ar-puce{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.25;color:rgba(255,255,255,.9);background:rgba(255,255,255,.07);
+.ar-puce{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.25;color:rgba(255,255,255,.9);background:rgba(255,255,255,.07);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+/* Le médaillon du plateau, en petit, devant la ligne (3.0.14). */
+.ar-puce:has(.ar-mk){padding-left:5px}
+.ar-mk.mini{flex:none;width:20px;border-width:1.2px;box-shadow:0 1px 3px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.16)}
 .ar-puce.plus{box-shadow:inset 0 0 0 1px rgba(143,240,200,.5);color:#c9fbe6}
 .ar-puce.moins{box-shadow:inset 0 0 0 1px rgba(255,143,143,.5);color:#ffd0d0}
 .ar-puce.kw{box-shadow:inset 0 0 0 1px rgba(200,191,255,.5)}
