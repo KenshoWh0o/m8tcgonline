@@ -93,6 +93,7 @@ function ouvrirDefi(d) {
     cosm: d.moi === 0 ? [e.cosm, adv.cosm || {}] : [adv.cosm || {}, e.cosm],
     brillantes: d.moi === 0 ? [brillantesMoi(), adv.brillantes || []] : [adv.brillantes || [], brillantesMoi()],
     titre: `Défi · ${adv.nom || ''}`, sousTitre: 'Entre amis · 60 secondes par tour',
+    abandon: 'defaite',
     /* Soixante secondes par tour : pas d'attente sans fin (js/combat/table.js). */
     minuteur: 60,
     /* Le compte avance tout de suite (la relève demande la suite à partir de

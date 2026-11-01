@@ -30,6 +30,17 @@
    tourner à 90° »). */
 "use strict";
 
+/* Ce que coûte un abandon (3.0.14, le propriétaire : « Les combats
+   abandonnés comptent comme une défaite seulement en online ou en raid. Et
+   ils n'aident pas à avancer des quêtes ») : `defaite` (Raid, Versus),
+   `tuto` (le tutoriel), sinon rien (solo). Les mêmes règles côté serveur :
+   combat_fin, defi_fin, raid_fin. */
+function texteAbandon(k) {
+  return k === 'defaite' ? 'Il compte comme une défaite, et ne fait avancer aucune quête.'
+    : k === 'tuto' ? 'Le tutoriel se rejoue depuis le Guide.'
+    : 'Il ne compte pas : ni défaite, ni XP, ni quête.';
+}
+
 const Table = (() => {
   let T = null;
 
@@ -1621,7 +1632,7 @@ const Table = (() => {
       <div class="ar-s-act"><button class="ar-b ghost" data-ar="annuler">Reprendre</button></div>`, 'menu');
   }
   function confirmerAbandon() {
-    ouvrirSheet(`<p class="ar-s-titre">Abandonner ?</p><p class="ar-s-texte">Le combat compte comme une défaite.</p>
+    ouvrirSheet(`<p class="ar-s-titre">Abandonner ?</p><p class="ar-s-texte">${texteAbandon(T.o.abandon)}</p>
       <div class="ar-s-act"><button class="ar-b rouge" data-ar="abandon-ok">Abandonner</button><button class="ar-b ghost" data-ar="annuler">Continuer</button></div>`, 'menu');
   }
 

@@ -882,6 +882,8 @@ function ouvrirArene(partie, meta) {
     brillantes: [brillantesMoi(), []],
     titre: meta.titre, sousTitre: meta.sousTitre, boss: meta.boss,
     sauver: CLE_COMBAT, meta,
+    /* Ce que coûte un abandon (3.0.14) : une défaite au Raid, rien en solo. */
+    abandon: meta.mode === 'raid' ? 'defaite' : 'rien',
     surFin: (E, gagne) => finirCombat(meta, E, gagne),
     surQuitter: () => { render(); }
   }));
@@ -908,7 +910,10 @@ function resumeCombat(E, j) {
     if (ev.t === 'vaincu' && ev.j !== j) vaincus++;
     if (ev.t === 'touche' && ev.j !== j) touches++;
   }
-  return { tours: E.tour, vaincus, touches, pv: E.j[j].pv.length, actions: E.journal.length };
+  /* `abandon` (3.0.14) : le serveur ne fait avancer aucune quête, et en
+     solo ne compte rien (combat_fin). */
+  return { tours: E.tour, vaincus, touches, pv: E.j[j].pv.length, actions: E.journal.length,
+    abandon: !!(E.fin && E.fin.raison === 'abandon' && E.fin.gagnant !== j) };
 }
 
 function htmlRecompense(r) {
@@ -986,7 +991,7 @@ function oublierCombat() {
   if (s && s.fini) {
     return openSheet({
       title: 'Oublier ce résultat ?',
-      body: '<p class="muted">Il ne sera pas envoyé : le serveur compte ce combat comme perdu au prochain que tu ouvres.</p>',
+      body: `<p class="muted">Il ne sera pas envoyé.${s.meta && s.meta.mode === 'raid' ? ' Au Raid, le serveur compte ce combat comme perdu au prochain que tu ouvres.' : ''}</p>`,
       actions: [
         { label: 'Oublier', primary: true, fn: () => { closeSheet(); try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ } render(); } },
         { label: 'Garder', fn: closeSheet }
@@ -995,7 +1000,7 @@ function oublierCombat() {
   }
   openSheet({
     title: 'Abandonner ce combat ?',
-    body: '<p class="muted">Il compte comme une défaite.</p>',
+    body: `<p class="muted">${texteAbandon(s && s.meta && s.meta.mode === 'raid' ? 'defaite' : 'rien')}</p>`,
     actions: [
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();

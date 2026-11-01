@@ -229,7 +229,9 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare s int := raid_saison(jour_paris()); c jsonb; pb int; d int; gain int; msg text := '';
         avant int; apres int; k int; est_infini boolean;
 begin
-  perform bump_quests(p, 'raid', 1);
+  -- Un combat abandonne (3.0.14) compte comme une defaite (ses degats
+  -- comptent), mais ne fait avancer aucune quete.
+  if not coalesce((res->>'abandon')::boolean, false) then perform bump_quests(p, 'raid', 1); end if;
   if trop then
     return jsonb_build_object('degats', 0, 'message', 'Combat trop court pour compter.');
   end if;
@@ -263,8 +265,10 @@ begin
     end if;
   end if;
   if d = 0 and msg = '' then msg := 'Pas un PV de pris : il rira moins la prochaine fois.'; end if;
-  perform bump_quests(p, 'raid_degats', d);
-  if gagne then perform bump_quests(p, 'raid_victoires', 1); end if;
+  if not coalesce((res->>'abandon')::boolean, false) then
+    perform bump_quests(p, 'raid_degats', d);
+    if gagne then perform bump_quests(p, 'raid_victoires', 1); end if;
+  end if;
   if evenement_en_cours() = 'choc' then
     gain := d * 3 + case when gagne then 15 else 0 end;
     perform crediter_prismes(p, 'choc', gain);

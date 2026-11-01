@@ -2135,8 +2135,10 @@
     } else if (!(p_niveau >= 1 && p_niveau <= 5)) refuser('Difficulté inconnue.');
     const id = 'cb' + (++S.seq);
     c.ouverts = c.ouverts || {};
-    /* Un seul combat ouvert à la fois : le précédent compte comme perdu. */
-    Object.keys(c.ouverts).forEach(k => { delete c.ouverts[k]; c.stats.defaites++; c.stats.serie = 0; });
+    /* Un seul combat ouvert à la fois : le précédent est abandonné. Version
+       3.0.14 (combat_debut, 23_combats.sql) : seul un combat de Raid laissé
+       compte comme perdu. */
+    Object.keys(c.ouverts).forEach(k => { if (c.ouverts[k].mode === 'raid') { c.stats.defaites++; c.stats.serie = 0; } delete c.ouverts[k]; });
     if (p_mode === 'campagne') niveau = combatsCampagne(c.section).find(x => x.id === p_cle).niveau;
     c.ouverts[id] = { mode: p_mode, cle: p_cle, niveau, phase, jour: auj, debut: now(), graine };
     return { id, graine };
@@ -2180,8 +2182,12 @@
     const r = { eclats: 0, boosters: 0, fragments: 0, carte: null, titre: null, message: '' };
     const res = p_resume || {};
     const trop = now() - o.debut < CB_MIN_MS;
-    bump(p, 'combats', 1);
+    /* Un abandon (3.0.14, combat_fin) : aucune quête ; en solo, il ne compte
+       pas du tout ; au Raid, comme une défaite. */
+    const abandon = !!res.abandon && !p_gagne;
     historiqueAjouter(p, o.mode, o.cle, o.niveau, !!p_gagne, res.histo);
+    if (abandon && o.mode !== 'raid') return { etat: me(p), recompense: Object.assign(r, { message: 'Combat abandonné : il ne compte pas.' }) };
+    if (!abandon) bump(p, 'combats', 1);
     if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
     serieDe(c, !!p_gagne);
     if (o.mode === 'raid') return finRaid(p, c, o, !!p_gagne, res, trop, r);
@@ -2355,9 +2361,9 @@
       serieDe(c, gagne);
       const o = profil(moi === 0 ? d.pour : d.de);
       historiqueAjouter(p, 'defi', d.id, 0, gagne, p_histo, { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null });
-      bump(p, 'defis', 1);
-      bump(p, 'combats', 1);
-      if (gagne) bump(p, 'victoires', 1);
+      /* Un défi abandonné (3.0.14, defi_fin) : aucune quête. */
+      const abandon = d.actions.some(a => a && a.t === 'abandon');
+      if (!abandon) { bump(p, 'defis', 1); bump(p, 'combats', 1); if (gagne) bump(p, 'victoires', 1); }
       r.xp = gagnerXp(p, xpCombat('defi', 0, gagne, 0, E.tour));
       if (c.defis_rec < DEFI_GAIN.plafond) { c.defis_rec++; r.eclats = gagne ? DEFI_GAIN.victoire : DEFI_GAIN.defaite; profil(p).shards += r.eclats; }
       else r.message = 'Défis récompensés du jour atteints.';
@@ -2424,7 +2430,7 @@
     if (gagne) { c.stats.victoires++; bump(p, 'victoires', 1); bump(p, 'vaincus', Math.min(20, Math.max(0, +res.vaincus || 0))); }
     else c.stats.defaites++;
     if (o.niveau >= 4 && gagne) bump(p, 'victoires_dures', 1);
-    bump(p, 'raid', 1);
+    if (!res.abandon) bump(p, 'raid', 1);
     if (trop) { r.message = 'Combat trop court pour compter.'; return { etat: me(p), recompense: r }; }
     const x = raidCombat(o.cle);
     let d = Math.max(0, Math.min(x.pvBoss + 1, Math.floor(+res.touches || 0)));
@@ -2449,8 +2455,7 @@
       }
     }
     if (!d && !r.message) r.message = 'Pas un PV de pris : il rira moins la prochaine fois.';
-    bump(p, 'raid_degats', d);
-    if (gagne) bump(p, 'raid_victoires', 1);
+    if (!res.abandon) { bump(p, 'raid_degats', d); if (gagne) bump(p, 'raid_victoires', 1); }
     if (evenementEnCours() === 'choc') {
       r.insignes = d * RAID.parDegat + (gagne ? RAID.victoire : 0);
       const cj = (chocDe().joueurs[p] = chocDe().joueurs[p] || { degats: 0, victoires: 0 });

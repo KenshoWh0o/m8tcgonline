@@ -5125,9 +5125,12 @@ begin
     x := case when p_mode = 'raid' then raid_debut(p, p_cle) else choc_debut(p, p_mode, p_cle) end;
     niv := (x->>'niveau')::int; ph := (x->>'phase')::int; gr := (x->>'graine')::bigint;
   end if;
-  -- Un seul combat ouvert a la fois : le precedent compte comme perdu.
-  delete from combats_ouverts where user_id = p;
-  get diagnostics ouverts = row_count;
+  -- Un seul combat ouvert a la fois : le precedent est abandonne. Version
+  -- 3.0.14 (le proprietaire : « Les combats abandonnes comptent comme une
+  -- defaite seulement en online ou en raid ») : seul un combat de Raid
+  -- laisse compte comme perdu ; un combat solo laisse ne compte pas.
+  with fermes as (delete from combats_ouverts where user_id = p returning mode)
+  select count(*) filter (where mode = 'raid') into ouverts from fermes;
   if ouverts > 0 then update combat_joueurs set defaites = defaites + ouverts, serie = 0 where user_id = p; end if;
   cid := 'cb' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
   insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine)
@@ -5137,12 +5140,15 @@ end $$;
 
 -- combat_fin : le resultat, et ce qu'il rapporte. `p_resume` : ce que le
 -- navigateur dit du combat (vaincus, touches, tours, PV) — pour les quetes,
--- et pour les degats du Raid.
+-- et pour les degats du Raid. `p_resume.abandon` (3.0.14) : le joueur a
+-- abandonne. Un abandon ne fait avancer aucune quete ; en solo (campagne,
+-- Arcade, Epreuve), il ne compte pas du tout (ni defaite, ni serie, ni XP :
+-- l'historique le garde) ; au Raid, il compte comme une defaite.
 create or replace function public.combat_fin(p_id text, p_gagne boolean, p_resume jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; o combats_ouverts; r jsonb; trop boolean;
         v_n int; pc pve_campagne; pd pve_difficultes; g_eclats int := 0; g_boosters int := 0; g_fragments int := 0;
-        carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb;
+        carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb; v_abandon boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -5155,9 +5161,16 @@ begin
     c.recompensees := 0;
   end if;
   trop := now() - o.debut < interval '20 seconds';
-  perform bump_quests(p, 'combats', 1);
+  v_abandon := coalesce((p_resume->>'abandon')::boolean, false) and not coalesce(p_gagne, false);
   -- L'historique (section 8) : le deroule que la page a resume.
   perform historique_ajouter(p, o.mode, o.cle, o.niveau, coalesce(p_gagne, false), p_resume->'histo');
+  -- Un abandon en solo ne compte pas (l'essai d'une Epreuve reste pris : il
+  -- est compte a l'ouverture, choc_debut).
+  if v_abandon and o.mode <> 'raid' then
+    return jsonb_build_object('etat', me(), 'recompense', jsonb_build_object(
+      'message', 'Combat abandonné : il ne compte pas.'));
+  end if;
+  if not v_abandon then perform bump_quests(p, 'combats', 1); end if;
 
   perform combat_serie(p, coalesce(p_gagne, false));
   if not coalesce(p_gagne, false) then
@@ -5180,7 +5193,7 @@ begin
   -- l'Epreuve du jour (25_choc.sql, en Etincelles).
   if o.mode in ('raid', 'epreuve') then
     r := case when o.mode = 'raid'
-              then raid_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop)
+              then raid_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb) || jsonb_build_object('abandon', v_abandon), trop)
               else choc_fin(p, o, coalesce(p_gagne, false), coalesce(p_resume, '{}'::jsonb), trop) end;
     return jsonb_build_object('etat', me(), 'recompense', r || jsonb_build_object('xp', v_xp));
   end if;
@@ -5343,7 +5356,7 @@ create or replace function public.defi_fin(p_id text, p_gagnant int default null
                                            p_histo jsonb default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); d defis; c combat_joueurs; moi int; gagne boolean;
-        g_eclats int := 0; msg text := ''; deja boolean; v_xp jsonb;
+        g_eclats int := 0; msg text := ''; deja boolean; v_xp jsonb; v_abandon boolean;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -5377,14 +5390,20 @@ begin
     perform historique_ajouter(p, 'defi', d.id, 0, gagne, p_histo,
       (select jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id))
          from profiles o where o.id = case when moi = 0 then d.pour else d.de end));
-    perform bump_quests(p, 'defis', 1);
-    perform bump_quests(p, 'combats', 1);
+    -- Version 3.0.14 : un defi abandonne (par l'un ou l'autre) compte, comme
+    -- une defaite pour qui abandonne, mais ne fait avancer aucune quete :
+    -- s'accorder des victoires entre amis n'avance a rien.
+    v_abandon := exists (select 1 from jsonb_array_elements(d.actions) x where x->>'t' = 'abandon');
+    if not v_abandon then
+      perform bump_quests(p, 'defis', 1);
+      perform bump_quests(p, 'combats', 1);
+    end if;
     -- Un defi ou personne n'a presque rien joue ne paie pas : on ne gagne
     -- rien a s'accorder des victoires entre amis en trois clics.
     if jsonb_array_length(d.actions) < 12 then
       msg := 'Défi trop court pour être récompensé.';
     else
-      if gagne then perform bump_quests(p, 'victoires', 1); end if;
+      if gagne and not v_abandon then perform bump_quests(p, 'victoires', 1); end if;
       v_xp := gagner_xp(p, xp_combat('defi', 0, gagne, 0, coalesce(p_tours, 0)));
       if c.defis_rec < 3 then
         update combat_joueurs set defis_rec = defis_rec + 1 where user_id = p;
@@ -6156,7 +6175,9 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare s int := raid_saison(jour_paris()); c jsonb; pb int; d int; gain int; msg text := '';
         avant int; apres int; k int; est_infini boolean;
 begin
-  perform bump_quests(p, 'raid', 1);
+  -- Un combat abandonne (3.0.14) compte comme une defaite (ses degats
+  -- comptent), mais ne fait avancer aucune quete.
+  if not coalesce((res->>'abandon')::boolean, false) then perform bump_quests(p, 'raid', 1); end if;
   if trop then
     return jsonb_build_object('degats', 0, 'message', 'Combat trop court pour compter.');
   end if;
@@ -6190,8 +6211,10 @@ begin
     end if;
   end if;
   if d = 0 and msg = '' then msg := 'Pas un PV de pris : il rira moins la prochaine fois.'; end if;
-  perform bump_quests(p, 'raid_degats', d);
-  if gagne then perform bump_quests(p, 'raid_victoires', 1); end if;
+  if not coalesce((res->>'abandon')::boolean, false) then
+    perform bump_quests(p, 'raid_degats', d);
+    if gagne then perform bump_quests(p, 'raid_victoires', 1); end if;
+  end if;
   if evenement_en_cours() = 'choc' then
     gain := d * 3 + case when gagne then 15 else 0 end;
     perform crediter_prismes(p, 'choc', gain);

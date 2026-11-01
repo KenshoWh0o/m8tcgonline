@@ -67,6 +67,7 @@ function lancerTutoriel() {
     cosm: [e.cosm, { tapis: 't_base', sleeve: 's_base' }],
     brillantes: [brillantesMoi(), []],
     titre: 'Tutoriel', sousTitre: 'Une partie pour tout apprendre',
+    abandon: 'tuto',
     premierRaison: 'Pour le tutoriel, tu commences.',
     guide: { permis: tutoPermis, refus: tutoRefus, apresRendu: tutoSurligner, surDecision: tutoDecision, apresAction: tutoApres, avantIA: tutoAvantIA },
     surFin: tutoFin,

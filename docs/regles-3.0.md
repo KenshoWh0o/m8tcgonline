@@ -35,6 +35,9 @@ Les valeurs (taille du Club, PV, main…) sont dans `REGLE`, en tête de
   piocher dans son Club mais est dans l'incapacité de le faire » ; ou il
   concède. Dans le code : `toucher()` (`finir(…, 'pv')`), `piocher()`
   (`finir(…, 'club')`, événement `clubVide`), l'action `abandon`.
+- **Ce que coûte un abandon** (hors règles du jeu, une règle du site ; le
+  propriétaire, 1er novembre 2026) : une défaite au Raid et en Versus,
+  rien en solo ; jamais une quête (`combat_fin`, `defi_fin`, `raid_fin`).
 - Seule une **attaque** touche un CEO : aucune carte ne le touche autrement
   (`toucher()` n'est appelé que par `resoudre()`).
 - **[Lecture]** Un effet qui fait piocher plus de cartes que le Club n'en a

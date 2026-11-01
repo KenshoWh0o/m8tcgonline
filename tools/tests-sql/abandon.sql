@@ -1,0 +1,71 @@
+\set ON_ERROR_STOP 1
+-- 3.0.14 : un combat abandonne ne fait avancer aucune quete ; en solo, il ne
+-- compte pas (ni defaite, ni serie) ; au Raid, il compte comme une defaite ;
+-- un combat solo laisse ouvert ne compte plus comme perdu.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-0000000014a1', 'ab1@t', '{"full_name": "Abandon Un"}') on conflict do nothing;
+insert into public.beta_invites (cle) values ('ab1@t') on conflict do nothing;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000014a1', false);
+select public.combat_section('toxique') is not null;
+do $t$
+declare
+  u uuid := '00000000-0000-0000-0000-0000000014a1';
+  x jsonb; cid text; d int; s int; q int; h int; m text;
+  combats_q int;
+begin
+  -- Ce que le joueur a fait avancer dans les quetes « combats ».
+  select coalesce(sum(qp.progress), 0) into combats_q from quest_progress qp join quests k on k.id = qp.quest_id
+   where qp.user_id = u and k.metric = 'combats';
+
+  -- 1. Un combat de campagne abandonne : rien ne compte, l'historique le garde.
+  x := public.combat_debut('campagne', 'cp01', null);
+  cid := x->>'id';
+  update combats_ouverts set debut = now() - interval '5 minutes' where combats_ouverts.id = cid;
+  x := public.combat_fin(cid, false, '{"abandon": true, "tours": 3, "histo": {"tours": 3, "raison": "abandon"}}'::jsonb);
+  select defaites, serie into d, s from combat_joueurs where user_id = u;
+  select coalesce(sum(qp.progress), 0) into q from quest_progress qp join quests k on k.id = qp.quest_id
+   where qp.user_id = u and k.metric = 'combats';
+  select count(*) into h from combats_historique where user_id = u;
+  m := x->'recompense'->>'message';
+  if d <> 0 or q <> combats_q or h <> 1 or m not like 'Combat abandonné%' then
+    raise exception 'ECHEC : abandon solo — defaites %, quetes % (avant %), historique %, message %', d, q, combats_q, h, m;
+  end if;
+  if (x->'recompense'->'xp') is not null then raise exception 'ECHEC : de l''XP pour un abandon solo'; end if;
+
+  -- 2. Une defaite jouee jusqu'au bout compte, elle (defaite, quete « combats »).
+  x := public.combat_debut('infini', '1', 1);
+  cid := x->>'id';
+  update combats_ouverts set debut = now() - interval '5 minutes' where combats_ouverts.id = cid;
+  x := public.combat_fin(cid, false, '{"tours": 8, "histo": {"tours": 8, "raison": "pv"}}'::jsonb);
+  select defaites into d from combat_joueurs where user_id = u;
+  select coalesce(sum(qp.progress), 0) into q from quest_progress qp join quests k on k.id = qp.quest_id
+   where qp.user_id = u and k.metric = 'combats';
+  if d <> 1 or q <= combats_q then raise exception 'ECHEC : defaite jouee — defaites %, quetes % (avant %)', d, q, combats_q; end if;
+  combats_q := q;
+
+  -- 3. Un combat solo laisse ouvert, puis un autre ouvert : le premier ne compte pas.
+  x := public.combat_debut('infini', '1', 1);
+  x := public.combat_debut('infini', '1', 1);
+  select defaites into d from combat_joueurs where user_id = u;
+  if d <> 1 then raise exception 'ECHEC : un combat solo laisse compte comme perdu (defaites %)', d; end if;
+  delete from combats_ouverts where user_id = u;
+
+  -- 4. Au Raid, un abandon compte comme une defaite, sans quete.
+  insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine, debut)
+    values ('cb-raid-ab', u, 'raid', 'p1', 3, 1, jour_paris(), 1, now() - interval '5 minutes');
+  x := public.combat_fin('cb-raid-ab', false, '{"abandon": true, "touches": 1, "tours": 4, "histo": {"tours": 4, "raison": "abandon"}}'::jsonb);
+  select defaites, serie into d, s from combat_joueurs where user_id = u;
+  select coalesce(sum(qp.progress), 0) into q from quest_progress qp join quests k on k.id = qp.quest_id
+   where qp.user_id = u and k.metric in ('combats', 'raid', 'raid_degats');
+  if d <> 2 or s <> 0 then raise exception 'ECHEC : abandon au Raid — defaites %, serie %', d, s; end if;
+  if q <> combats_q then raise exception 'ECHEC : abandon au Raid — quetes % (avant %)', q, combats_q; end if;
+
+  -- 5. Un combat de Raid laisse ouvert compte comme perdu au suivant.
+  insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine)
+    values ('cb-raid-laisse', u, 'raid', 'p1', 3, 1, jour_paris(), 1);
+  x := public.combat_debut('infini', '1', 1);
+  select defaites into d from combat_joueurs where user_id = u;
+  if d <> 3 then raise exception 'ECHEC : un combat de Raid laisse ne compte pas comme perdu (defaites %)', d; end if;
+  raise warning 'OK : abandons — solo sans rien (ni defaite, ni XP, ni quete, historique garde), defaite jouee comptee, combat solo laisse sans perte, Raid : defaite sans quete, Raid laisse perdu';
+end $t$;
+select set_config('request.jwt.claim.sub', '', false);
