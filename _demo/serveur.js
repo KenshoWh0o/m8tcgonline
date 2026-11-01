@@ -1131,7 +1131,7 @@
      serveur (maitrise_fragments, maitrise_copies). */
   const MZ_BASE = { C: 80, PC: 120, R: 250, E: 500, L: 800, S: 800 };
   const MZ_MULT = [1, 2, 4, 7, 11];
-  const MZ_COPIES = { C: [2, 3, 4, 5, 6], PC: [2, 2, 3, 4, 5], R: [1, 2, 2, 3, 4], E: [1, 1, 2, 2, 3], L: [1, 1, 1, 2, 2], S: [1, 1, 1, 1, 1] };
+  const MZ_COPIES = { C: [2, 3, 4, 5, 6], PC: [2, 2, 3, 4, 5], R: [1, 2, 2, 3, 4], E: [1, 1, 2, 2, 3], L: [1, 1, 1, 1, 1], S: [1, 0, 0, 0, 1] };
   /* maitrise_carte : la carte qui porte la maîtrise (une Reverse : sa carte
      classique), si elle se maîtrise ; null sinon. */
   function maitriseCarte(id) {
@@ -1154,10 +1154,10 @@
     const n = (mzDe(p)[k.id] || 0) + 1;
     if (n > 5) refuser('Cette carte est déjà au niveau maximum.');
     const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === k.id && t.status === 'pending').length;
-    /* limite_copies (23_combats.sql) : trois exemplaires, les règles
-       officielles (3.0.12 ; avant, deux, et un pour L, S, UN, PR). */
-    const limite = Combat.REGLE.COPIES;
-    const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
+    /* Ce qui reste (3.0.14, maitriser() de 28_maitrise.sql) : un
+       exemplaire, ce qu'on garde, le plus qu'en contient un de ses decks. */
+    const endeck = Math.max(0, ...cb(p).decks.map(d => +(d.cartes || {})[k.id] || 0));
+    const dispo = Math.max(0, possedees - Math.max(1, gardeDe(p, k.id), endeck) - reserve);
     const copies = MZ_COPIES[k.rar][n - 1];
     if (dispo < copies) refuser(`Il faut ${copies} exemplaire${copies > 1 ? 's' : ''} en trop de « ${k.nom} » : tu en as ${dispo}.`);
     const total = MZ_BASE[k.rar] * MZ_MULT[n - 1];

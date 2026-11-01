@@ -90,6 +90,14 @@ language sql immutable as $$
 $$;
 
 -- Les exemplaires que consomme le niveau n, selon la rarete (3.0.13).
+-- Version 3.0.14 (le proprietaire, 1er novembre 2026 : « 2 ans pour maxer
+-- une secrete c'est un peu too much ») : une Legendaire en consomme 5 (au
+-- lieu de 7), une Secrete 2, aux niveaux I et V — une Secrete precise sort
+-- environ une fois tous les 111 jours a six boosters par jour : chaque
+-- exemplaire demande y pese plus que tous les Fragments. Simulation
+-- (tools/equilibre-maitrise.py, docs/economie-3.0.md 3 ter) : un joueur
+-- regulier, collection complete, mene une Epique en Legende en 3 mois, une
+-- Legendaire en 4 et demi, une Secrete en 6 (mediane).
 create or replace function public.maitrise_copies(rar text, n int) returns integer
 language sql immutable as $$
   select coalesce((case rar
@@ -97,8 +105,8 @@ language sql immutable as $$
     when 'PC' then array[2, 2, 3, 4, 5]
     when 'R'  then array[1, 2, 2, 3, 4]
     when 'E'  then array[1, 1, 2, 2, 3]
-    when 'L'  then array[1, 1, 1, 2, 2]
-    when 'S'  then array[1, 1, 1, 1, 1]
+    when 'L'  then array[1, 1, 1, 1, 1]
+    when 'S'  then array[1, 0, 0, 0, 1]
   end)[n], 0)
 $$;
 
@@ -143,7 +151,7 @@ revoke all on function public.maitrise_fragments, public.maitrise_copies, public
 create or replace function public.maitriser(p_carte text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
-  p uuid := auth.uid(); cid text; k cards; n int; possede int; reserve int; garde int;
+  p uuid := auth.uid(); cid text; k cards; n int; possede int; reserve int; garde int; endeck int;
   copies int; dispo int; total int; reste int;
 begin
   if p is null then raise exception 'non connecte'; end if;
@@ -167,12 +175,19 @@ begin
   n := coalesce((select niveau from maitrises where user_id = p and card_id = cid), 0) + 1;
   if n > 5 then raise exception 'Cette carte est déjà au niveau maximum.'; end if;
 
-  -- Les exemplaires en trop : ni ceux d'un deck, ni ceux qu'on garde, ni ceux
-  -- qu'on a promis dans un echange.
+  -- Les exemplaires en trop : au-dela d'un (la carte reste dans la
+  -- collection), de ceux qu'on garde (son reglage), de ceux que ses decks
+  -- utilisent (le plus qu'en contient un de ses decks : aucun ne doit
+  -- devenir injouable), et de ceux qu'on a promis dans un echange. Avant la
+  -- 3.0.14, la maitrise laissait toujours trois exemplaires (la limite d'un
+  -- deck), meme a qui ne la jouait dans aucun : une Secrete en demandait
+  -- huit, deux ans de boosters.
   select count(*) into reserve from trades
    where from_user = p and offer_card = cid and status = 'pending';
   garde := garde_de(p, cid);
-  dispo := greatest(0, possede - greatest(coalesce(limite_copies(cid), 3), garde) - reserve);
+  select coalesce(max(case when jsonb_typeof(d.cartes -> cid) = 'number' then (d.cartes ->> cid)::int end), 0)
+    into endeck from decks d where d.user_id = p;
+  dispo := greatest(0, possede - greatest(1, garde, endeck) - reserve);
   copies := maitrise_copies(k.rar, n);
   -- Version 3.0.13 : un exemplaire qui manque ne se paie plus en Fragments.
   if dispo < copies then

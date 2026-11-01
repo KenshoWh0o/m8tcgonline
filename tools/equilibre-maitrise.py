@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""L'economie de la maitrise (version 3.0.12, bareme refait en 3.0.13), simulee.
+"""L'economie de la maitrise (version 3.0.12, bareme refait en 3.0.13 et 3.0.14), simulee.
     python3 tools/equilibre-maitrise.py [joueurs par ligne, 300 par defaut]
 
 Version 3.0.13 (le proprietaire, 31 octobre) : chaque niveau demande des
 exemplaires de la carte, CONSOMMES, et des Fragments, selon la rarete ; un
 exemplaire qui manque ne se remplace plus par des Fragments. La maitrise est
 l'endgame : elle doit etre ardue.
+Version 3.0.14 (le proprietaire, 1er novembre : « 2 ans pour maxer une
+secrete c'est un peu too much ») : la maitrise laisse UN exemplaire (plus
+ceux qu'on garde et ceux de ses decks), et non plus trois ; une Legendaire
+consomme 5 exemplaires (au lieu de 7), une Secrete 2 (niveaux I et V). Le
+plancher simule est F = 1 : la carte ne joue dans aucun deck (pour une carte
+jouee en trois exemplaires, il faut en plus attendre deux exemplaires).
 
 Quatre questions (docs/economie-3.0.md, partie 3 ter) :
   1. Combien de temps pour mener UNE carte en Legende, selon sa rarete, une
@@ -64,7 +70,10 @@ PRIX_REV = {'C': 400, 'PC': 500, 'R': 2400}
 BASE = {'C': 80, 'PC': 120, 'R': 250, 'E': 500, 'L': 800, 'S': 800}
 FOIS = [1, 2, 4, 7, 11]
 COPIES = {'C': [2, 3, 4, 5, 6], 'PC': [2, 2, 3, 4, 5], 'R': [1, 2, 2, 3, 4],
-          'E': [1, 1, 2, 2, 3], 'L': [1, 1, 1, 2, 2], 'S': [1, 1, 1, 1, 1]}
+          'E': [1, 1, 2, 2, 3], 'L': [1, 1, 1, 1, 1], 'S': [1, 0, 0, 0, 1]}
+# Ce que la maitrise laisse d'une carte qu'on maitrise (3.0.14) : un exemplaire
+# (maitriser(), 28_maitrise.sql : un, ce qu'on garde, ce que ses decks jouent).
+PLANCHER = {'C': 1, 'PC': 1, 'R': 1, 'E': 1, 'L': 1, 'S': 1}
 HIT = (('R', 79), ('E', 16), ('L', 4.25), ('S', .75))
 REVERSE = (('C', 50), ('PC', 35), ('R', 15))
 CLASSIQUES = ('ES', 'C', 'PC', 'R', 'E', 'L')
@@ -110,9 +119,10 @@ def cout_niveau(r, n, surplus):
     return BASE[r] * FOIS[n], besoin
 
 
-def joueur(graine, profil, politique, K, depart, horizon=900, cibles=None):
+def joueur(graine, profil, politique, K, depart, horizon=900, cibles=None, F=None):
     """Un joueur. La meme graine donne les memes boosters d'une politique a
     l'autre : les comparaisons sont appariees."""
+    F = F or PLANCHER
     rng = random.Random(graine)
     par_jour, jours, extra = profil
     cartes = {(r, i): 0 for r in CLASSIQUES + ('S',) for i in range(N[r])}
@@ -144,7 +154,7 @@ def joueur(graine, profil, politique, K, depart, horizon=900, cibles=None):
             r = c[0]
             if r == 'S' or q <= 1:
                 continue
-            garde = 1 if r == 'ES' else K[r]
+            garde = 1 if r == 'ES' else (F[r] if c in niveau else K[r])
             if c in niveau:
                 garde += sum(COPIES[r][niveau[c]:])
             if q > garde:
@@ -161,7 +171,7 @@ def joueur(graine, profil, politique, K, depart, horizon=900, cibles=None):
             maitrise = []
             for c, n in niveau.items():
                 if n < 5 and cartes[c] > 0:
-                    cout = cout_niveau(c[0], n, max(0, cartes[c] - K[c[0]]))
+                    cout = cout_niveau(c[0], n, max(0, cartes[c] - F[c[0]]))
                     if cout and cout[0] <= frag:
                         maitrise.append((cout[0], 'mz', c, cout[1]))
             if politique == 'collection':

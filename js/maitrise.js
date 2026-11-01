@@ -50,9 +50,13 @@ const MAITRISE = {
   base: { C: 80, PC: 120, R: 250, E: 500, L: 800, S: 800 },
   mult: [1, 2, 4, 7, 11],
   /* Les exemplaires que consomme chaque niveau, selon la rareté : plus une
-     carte est rare, moins on en demande, mais toujours au moins un. Depuis
-     la 3.0.13, il faut les avoir : aucun ne se remplace par des Fragments. */
-  copies: { C: [2, 3, 4, 5, 6], PC: [2, 2, 3, 4, 5], R: [1, 2, 2, 3, 4], E: [1, 1, 2, 2, 3], L: [1, 1, 1, 2, 2], S: [1, 1, 1, 1, 1] }
+     carte est rare, moins on en demande. Depuis la 3.0.13, il faut les
+     avoir : aucun ne se remplace par des Fragments. Version 3.0.14 : une
+     Légendaire en demande 5, une Secrète 2 (niveaux I et V ; ses niveaux II
+     à IV ne demandent que des Fragments) — une Secrète précise sort une fois
+     tous les 111 jours environ (maitrise_copies, 28_maitrise.sql ;
+     docs/economie-3.0.md, 3 ter). */
+  copies: { C: [2, 3, 4, 5, 6], PC: [2, 2, 3, 4, 5], R: [1, 2, 2, 3, 4], E: [1, 1, 2, 2, 3], L: [1, 1, 1, 1, 1], S: [1, 0, 0, 0, 1] }
 };
 const CHIFFRES_ROMAINS = ['', 'I', 'II', 'III', 'IV', 'V'];
 
@@ -70,25 +74,30 @@ const niveauMaitrise = (c, niveaux) => {
   const n = k && (niveaux || (save && save.maitrises) || {})[k.id];
   return Math.max(0, Math.min(MAITRISE.max, n || 0));
 };
-/* Ce qu'un deck peut en contenir (REGLE.COPIES, js/combat/moteur.js) :
-   trois, quelle que soit la rareté (règles officielles, 3.0.12). */
-const limiteDeck = () => (typeof Combat !== 'undefined' ? Combat.REGLE.COPIES : 3);
+/* Le plus d'exemplaires qu'en contient un de ses decks (3.0.14) : la
+   maîtrise les laisse, aucun deck ne devient injouable. Les Starters
+   (prêtés) ne comptent pas. */
+const enDeck = k => Math.max(0, ...(((save && save.combat && save.combat.decks) || []).filter(d => !d.starter)
+  .map(d => +(d.cartes || {})[k.id] || 0)));
 
 /* Les Fragments du niveau n d'une carte de rareté `rar`. */
 const fragmentsMaitrise = (rar, n) => (MAITRISE.base[rar] || 0) * (MAITRISE.mult[n - 1] || 0);
 
 /* Les exemplaires d'une carte, et ceux que la maîtrise peut prendre : tous,
-   sauf ce qu'un deck peut contenir (trois), ce que le joueur a choisi de
-   garder s'il en garde plus, et ce qu'il a promis dans un échange en
-   attente. Seuls les exemplaires de la carte classique comptent. */
+   sauf un (la carte reste dans la collection), ce que le joueur a choisi de
+   garder, le plus qu'en contient un de ses decks, et ce qu'il a promis dans
+   un échange en attente — comme maitriser() (28_maitrise.sql). Avant la
+   3.0.14, trois restaient toujours (la limite d'un deck), même pour une
+   carte jouée dans aucun. Seuls les exemplaires de la carte classique
+   comptent. */
 function exemplairesMaitrise(c) {
   const k = carteMaitrise(c);
   const possede = mesEx(k.id);
-  const deck = limiteDeck(k);
+  const deck = enDeck(k);
   const garde = aGarder(k);
   const promis = (typeof Backend !== 'undefined' && Backend.trades || [])
     .filter(t => t.sens === 'envoyee' && t.status === 'pending' && t.offer === k.id).length;
-  const protege = Math.max(deck, garde);
+  const protege = Math.max(1, deck, garde);
   return { possede, deck, garde, promis, protege, dispo: Math.max(0, possede - protege - promis) };
 }
 
@@ -197,12 +206,18 @@ function vMaitriseAction(k, cout, depuisReverse) {
   const fr = cout.assezFrag
     ? `tu en as ${fmtN(cout.solde)}`
     : `il en manque ${fmtN(cout.frag - cout.solde)}`;
+  /* Un niveau qui ne consomme aucun exemplaire (une Secrète, niveaux II à
+     IV) : la ligne le dit, sans condition. */
+  const ligneEx = cout.copies
+    ? `<li class="${cout.assezEx ? 'ok' : 'non'}">${NAVICO.cards}<span><b class="tnum">${cout.copies} exemplaire${s}</b> consommé${s}</span><em class="tnum">${ex}</em>${cout.assezEx ? MZ_OUI : MZ_NON}</li>`
+    : `<li class="ok">${NAVICO.cards}<span><b>Aucun exemplaire</b> à ce niveau</span><em></em>${MZ_OUI}</li>`;
   const conditions = `<ul class="mz-req" aria-label="Pour passer au niveau ${CHIFFRES_ROMAINS[cout.n]}">
-      <li class="${cout.assezEx ? 'ok' : 'non'}">${NAVICO.cards}<span><b class="tnum">${cout.copies} exemplaire${s}</b> consommé${s}</span><em class="tnum">${ex}</em>${cout.assezEx ? MZ_OUI : MZ_NON}</li>
+      ${ligneEx}
       <li class="${cout.assezFrag ? 'ok' : 'non'}">${NAVICO.fragment}<span><b class="tnum">${fmtN(cout.frag)}</b> Fragments</span><em class="tnum">${fr}</em>${cout.assezFrag ? MZ_OUI : MZ_NON}</li>
     </ul>`;
-  /* D'où viennent les exemplaires en trop. */
-  const parts = [`${cout.garde > cout.deck ? `<b>${cout.protege}</b> gardés (ton réglage)` : `<b>${cout.deck}</b> restent pour tes decks`}`];
+  /* D'où viennent les exemplaires en trop : ce qui reste, et pourquoi. */
+  const parts = [cout.deck > 1 && cout.deck >= cout.garde ? `<b>${cout.deck}</b> restent pour tes decks`
+    : cout.garde > 1 ? `<b>${cout.garde}</b> gardés (ton réglage)` : '<b>1</b> reste dans ta collection'];
   if (cout.promis) parts.push(`<b>${cout.promis}</b> promis dans un échange`);
   parts.push(`<b>${cout.dispo}</b> en trop`);
   const d = `<p class="mz-ex">${depuisReverse ? 'Exemplaires de la carte classique : tu' : 'Tu'} en as <b>${cout.possede}</b> : ${parts.join(', ')}.</p>`;
@@ -210,7 +225,7 @@ function vMaitriseAction(k, cout, depuisReverse) {
   if (pret && VW && VW.mzConfirme === cout.n) {
     return `${conditions}
       <div class="mz-confirme" role="group" aria-label="Confirmer">
-        <p><b>${cout.copies} exemplaire${s}</b> de « ${h(k.nom)} » ${cout.copies > 1 ? 'seront consommés' : 'sera consommé'} et <b>${fmtN(cout.frag)} Fragments</b> dépensés. C'est définitif.</p>
+        <p>${cout.copies ? `<b>${cout.copies} exemplaire${s}</b> de « ${h(k.nom)} » ${cout.copies > 1 ? 'seront consommés' : 'sera consommé'} et ` : ''}<b>${fmtN(cout.frag)} Fragments</b> ${cout.copies ? 'dépensés' : 'seront dépensés'}. C'est définitif.</p>
         <div class="mz-confirme-acts"><button class="btn" data-v="mz-ok">Monter au niveau ${CHIFFRES_ROMAINS[cout.n]}</button><button class="btn ghost" data-v="mz-non">Annuler</button></div>
       </div>${d}`;
   }
