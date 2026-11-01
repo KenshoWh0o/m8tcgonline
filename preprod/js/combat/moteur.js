@@ -113,8 +113,8 @@ const compteursVides = () => ({
 
 /* Une partie. `o` : {
      decks: [{ club: [ids], reserve: [couleurs] }, …],
-     noms: ['Toi', 'Lumen'], graine: entier, premier: 0 | 1 (sinon tiré au
-     sort ; une revanche le donne au perdant de la partie d'avant),
+     noms: ['Toi', 'Lumen'], graine: entier, premier: 0 | 1 (le tutoriel ;
+     sinon pile ou face, à chaque partie),
      pv: [4, 5] et essDepart: [0, 1] (facultatifs : les variantes des modes,
      campagne, Épreuve, Raid) } */
 /* `x` : ce qui ne fait pas partie de la partie et ne se rejoue pas —
@@ -172,6 +172,11 @@ function ev(E, e) {
 const adv = j => 1 - j;
 const joueursDe = (E, j) => E.j[j].lignes.filter(Boolean);
 const tousJoueurs = E => joueursDe(E, 0).concat(joueursDe(E, 1));
+/* GP Explorer II (#126, 3.0.13) : « Vous ne pouvez plus jouer de Joueur pour
+   le reste de ce tour. » Jouer un Joueur, c'est le mettre en jeu sur une case
+   (« Jouer une carte ») : l'action de la phase d'action, mais aussi un effet
+   qui dit « jouez » (Worlds Japon, Versus Fighting, Meet & Greeter, M16). */
+const joueurPermis = (E, j) => !E.temp.some(t => t.type === 'pasJoueur' && t.camp === j);
 const ligneDe = (E, c) => E.j[c.j].lignes.indexOf(c);
 const enJeu = (E, c) => !!c && E.j[c.j].lignes.includes(c);
 const nomDe = c => (carte(c.id) || {}).nom || '?';
@@ -263,6 +268,11 @@ function valeurAttaque(E, c, k, bonus) {
   let v = a.degats + bonusAttaque(E, c) + (bonus || 0);
   if (s.plus && s.plus[k]) v += s.plus[k](E, c);
   if (s.double && s.double(E, c)) v *= 2;
+  /* Paris Gentle Mates (#127, 3.0.13) : la première attaque du tour de ce
+     camp vaut double — avant qu'elle parte, toutes ses attaques possibles
+     l'affichent ; ensuite, seulement celle qui est partie. */
+  if (E.temp.some(t => t.type === 'doublePremiere' && t.camp === c.j)
+      && (E.cpt.attaques === 0 || (E.cpt.attaques === 1 && E.cpt.premierAttaquant === c.u))) v *= 2;
   return Math.max(0, v);
 }
 
@@ -533,7 +543,8 @@ function optionsTour(E) {
   const j = E.actif, P = E.j[j], out = [];
   if (E.phase === 'jeu') {
     const libres = P.lignes.map((x, i) => (x ? -1 : i)).filter(i => i >= 0);
-    for (const c of P.main) if (estCat(c, 'joueur')) {
+    const permis = joueurPermis(E, j);
+    for (const c of P.main) if (estCat(c, 'joueur') && permis) {
       for (const l of libres) out.push({ t: 'deployer', u: c.u, ligne: l });
       /* « Si aucune case n'est disponible, il peut une fois par tour, bench
          un Joueur non engagé pour pouvoir jouer cette carte. » */
@@ -716,6 +727,7 @@ function* attaquer(E, j, c, k, cible, chevaliere) {
   }
   payer(E, j, cout);
   E.cpt.attaques = rang;
+  if (rang === 1) E.cpt.premierAttaquant = c.u;
   if (E.cpt.doitAttaquer > 0) E.cpt.doitAttaquer--;
   c.nAtt = (c.nAtt || 0) + 1;
 
@@ -1271,17 +1283,17 @@ function infoAttaque(E, c, k) {
   };
 }
 
-const MODS_VISIBLES = ['def', 'atk', 'kw', 'pasAttaque', 'pasDefenseFace'];
+const MODS_VISIBLES = ['def', 'atk', 'kw', 'pasAttaque', 'pasDefenseFace', 'pasJoueur', 'doublePremiere'];
 
 const Combat = {
   REGLE, COULEURS, catalogue, scripts, carte, toutes, baseId, scr,
   creer, agir, demande, options, optionsTour, cloner, rejouer, valider, cle,
   defense, valeurAttaque, coutAttaque, payable, totalCout, aMotCle, shieldActif,
   ciblesAttaque, defenseurs, soutiens, couleurOk, peutAttaquer, infoAttaque, motCleImprime, nomDe,
-  joueursDe, tousJoueurs, ligneDe, enJeu, trouverSurPlateau, porteurDe, premierTourDuPremier,
+  joueursDe, tousJoueurs, joueurPermis, ligneDe, enJeu, trouverSurPlateau, porteurDe, premierTourDuPremier,
   /* Les outils des effets (js/combat/effets.js) */
   O: {
-    adv, joueursDe, tousJoueurs, ligneDe, enJeu, nomDe, estCat, carte, baseId, scr, alea, melanger,
+    adv, joueursDe, tousJoueurs, joueurPermis, ligneDe, enJeu, nomDe, estCat, carte, baseId, scr, alea, melanger,
     piocher, jouerReserve, engager, desengager, desengagerEssence, engagerEssence, bancer, renvoyerMain,
     defausserMain, defausserPlateau, rendreEssences, deployer, lier, vaincre, toucher, payable, payer,
     ouiNon, choisirUn, choisirCartes, ordonner, ev, aMotCle, motCleImprime, defense, ou, retirerMain,

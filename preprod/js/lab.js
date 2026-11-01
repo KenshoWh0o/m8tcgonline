@@ -32,7 +32,7 @@ let labEtatCharge = false;
 
 const labManque = e => /could not find the function|schema cache/i.test(String(e && e.message));
 const J_LAB = 86400000;
-const CHOC_JOURS = 21;
+const CHOC_JOURS = 14;
 
 async function labCharger() {
   labEtatCharge = true;
@@ -192,7 +192,7 @@ function vLabChoc() {
   const jours = Array.from({ length: CHOC_JOURS }, (x, i) => i + 1);
   return `<section class="panel">
     <h2>Le Choc des Sections <small class="labtag">pour tout le monde</small></h2>
-    <p class="muted small">Trois semaines. Les joueurs voient le nouvel état à leur prochain rafraîchissement ;
+    <p class="muted small">Deux semaines. Les joueurs voient le nouvel état à leur prochain rafraîchissement ;
       un autre événement en cours (Reflets) est clos.</p>
     <div class="labgrid">
       <button class="labbtn" data-lab="choc" data-etat="avant" data-n="2"><b>Avant</b><span>il commence dans 2 min</span></button>
@@ -299,7 +299,7 @@ const fait = (l, v) => `<div class="labfait"><span>${h(l)}</span><b>${h(String(v
 
 /* Ce que chaque état du Choc fait aux joueurs, dit avant de confirmer. */
 const LAB_EFFETS = {
-  avant: n => `Le Choc commence dans ${n >= 60 ? n / 60 + ' h' : n + ' min'}, pour trois semaines. D'ici là, il s'annonce.`,
+  avant: n => `Le Choc commence dans ${n >= 60 ? n / 60 + ' h' : n + ' min'}, pour deux semaines. D'ici là, il s'annonce.`,
   jour: n => `Le Choc en est à son jour ${n} sur ${CHOC_JOURS} : l'Épreuve du jour, ses quêtes, son Pass, et le Raid en ${MONNAIES_EV.choc.nom}.`,
   recap: () => 'Le Choc est fini depuis une heure : son récap court pendant près de trois jours.',
   fini: () => 'Le Choc et son récap sont finis : l\'onglet de l\'événement disparaît.'
@@ -387,6 +387,7 @@ function vLabCompte() {
         <button class="labbtn tL" data-lab="cartes" data-q="master"><b>Master set</b><span>tout, sauf la carte unique, de quoi faire n'importe quel deck</span></button>
         <button class="labbtn tR" data-lab="cartes" data-q="classiques"><b>Les ${cards.length}</b><span>l'extension, un exemplaire</span></button>
         <button class="labbtn tE" data-lab="cartes" data-q="combat"><b>Les cartes de combat</b><span>Joueurs, Coachs, Moments, Objets, trois de chaque</span></button>
+        <button class="labbtn tL" data-lab="cartes" data-q="maitrise"><b>Pour la maîtrise</b><span>chaque carte, avec de quoi la mener en Légende (8 à 23 exemplaires)</span></button>
         <button class="labbtn labdanger" data-lab="cartes" data-q="vider"><b>Vider</b><span>plus aucune carte</span></button>
       </div>
       <p class="muted small" style="margin-top:8px">Trois exemplaires de chaque carte : la limite d'un deck (règles
@@ -693,7 +694,8 @@ function labAction(a, el) {
     }
     case 'mz-monte': {
       const c = labMzCarte();
-      return jouerMonteeMaitrise($('#labmz'), labMz.n, tcol(carteMaitrise(c)));
+      const k = carteMaitrise(c);
+      return jouerMonteeMaitrise($('#labmz'), labMz.n, tcol(k), { carte: c, copies: (MAITRISE.copies[k.rar] || [])[labMz.n - 1] || 0 });
     }
     case 'mz-fiche': {
       const c = labMzCarte();
@@ -761,7 +763,7 @@ function labAction(a, el) {
         'Restaurer', () => labMoiFaire('labo_restaurer', {}, 'Compte restauré.'));
     case 'cartes': {
       const q = d.q;
-      const msg = { master: 'Master set ajouté.', classiques: `Les ${cards.length} ajoutées.`, combat: 'Les cartes de combat ajoutées.', vider: 'Collection vidée.' }[q];
+      const msg = { master: 'Master set ajouté.', classiques: `Les ${cards.length} ajoutées.`, combat: 'Les cartes de combat ajoutées.', maitrise: 'Les exemplaires pour la maîtrise ajoutés.', vider: 'Collection vidée.' }[q];
       const faire = () => labMoiFaire('labo_cartes', { p_quoi: q }, msg);
       return q === 'vider' ? labConfirmer('Vider ta collection ?', 'Toutes tes cartes partent, et tes demandes d\'échange en attente sont annulées. Tes decks restent, mais ne se jouent plus.', 'Vider', faire) : faire();
     }
@@ -1005,9 +1007,9 @@ function laboRecompenses() {
   for (let n = 2; n <= 60; n++) { const r = recompenseNiveau(n); if (r && (r.boosters || r.cadre || r.titre || r.fragments)) niveaux.push([n, fmtN(xpRequis(n - 1)), gain(Object.assign({}, r, { eclats: 0 }))]); }
   const ev = typeof chEv !== 'undefined' && chEv && chEv.piste;
   const R = RAID;
-  return `<p class="muted small">Rejouer un combat de campagne gagné : ${RECOMPENSE_REJOUER.eclats} Éclats. Au plus ${PVE_PLAFOND} victoires récompensées par jour contre l'IA.</p>
+  return `<p class="muted small">Rejouer un combat de campagne gagné : ${RECOMPENSE_REJOUER.eclats} Éclats. Au plus ${PVE_PLAFOND} victoires récompensées par jour en solo.</p>
     <h3>Campagne (la même pour les deux Sections)</h3>
-    ${tableau(['n°', 'Acte', 'IA', 'Règle', 'Première victoire'], camp)}
+    ${tableau(['n°', 'Acte', 'Difficulté', 'Règle', 'Première victoire'], camp)}
     <p class="muted small">Au bout : la Promo de l'autre Section, le titre « Champion des Sections », son Starter Deck prêté.</p>
     <h3>Arcade</h3>
     ${tableau(['Niveau', 'Nom', 'Victoire'], DIFFICULTES.map(d => [`${d.niveau}★`, h(d.nom), `${d.eclats} Éclats`]))}
@@ -1016,9 +1018,9 @@ function laboRecompenses() {
     ${tableau(['Niveau', 'XP pour y monter', 'En plus'], niveaux)}
     <h3>Le Raid · ${R.bosses.map(b => h(b.nom)).join(', puis ')}</h3>
     ${tableau(['Phase', 'Seuil', 'Combat', 'Coffre commun'], R.phases.map((ph, i) => [i + 1, `${fmtN(ph.seuil)} × échelle`,
-      `IA ${ph.ia} ★ · ${ph.pv} PV${ph.ess ? ` · +${ph.ess} Ess.` : ''}`, h(ph.commun.titre)]))}
+      `difficulté ${ph.ia} ★ · ${ph.pv} PV${ph.ess ? ` · +${ph.ess} Ess.` : ''}`, h(ph.commun.titre)]))}
     ${tableau(['Palier perso', 'Dégâts', 'Coffre'], R.perso.map((x, i) => [i + 1, fmtN(x.seuil), h(x.titre)]))}
-    ${tableau(['Infini', 'Combat'], [1, 2, 3, 4, 6, 9].map(n => { const c = R.infini(n); return [`palier ${n}`, `IA ${c.ia} ★ · boss ${c.pvBoss} PV · +${c.ess} Ess. · toi ${c.pvMoi} PV`]; }))}
+    ${tableau(['Infini', 'Combat'], [1, 2, 3, 4, 6, 9].map(n => { const c = R.infini(n); return [`palier ${n}`, `difficulté ${c.ia} ★ · boss ${c.pvBoss} PV · +${c.ess} Ess. · toi ${c.pvMoi} PV`]; }))}
     <p class="muted small">Pendant le Choc : ${R.parDegat} Étincelles par dégât, +${R.victoire} si le boss tombe. Sinon : ${R.parDegatEclats} Éclats par dégât, +${R.victoireEclats}. ${R.tentatives} tentatives par jour ; des raids de ${R.saison.jours} jours, comptés depuis le premier jour du Choc, aux boss à tour de rôle.</p>
     ${tableau(['Boss', 'Raids', 'Son deck', 'En combat'], R.bosses.map((b, i) => [h(b.nom), i ? 'pairs (2, 4…)' : 'impairs (1, 3…)', h(b.dit),
       `${b.ajuste ? `${-b.ajuste.pv} PV et ${-b.ajuste.ess} Essence d'avance de moins que la phase · ` : 'les chiffres de la phase · '}cadre ${h((FRAMES[b.cadre] || {}).nom || b.cadre)} · tapis ${h(((typeof TAPIS !== 'undefined' && TAPIS[b.tapis]) || (typeof TAPIS_BOSS !== 'undefined' && TAPIS_BOSS[b.tapis]) || {}).nom || b.tapis)}`]))}

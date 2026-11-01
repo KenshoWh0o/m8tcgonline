@@ -26,10 +26,10 @@
 .ch-affiche{position:absolute;inset:0;z-index:-3;pointer-events:none;overflow:hidden}
 .ch-aff-sec{position:absolute;top:0;bottom:0;background-repeat:no-repeat;background-size:cover}
 .ch-aff-sec::after{content:"";position:absolute;inset:0;mix-blend-mode:color}
-.ch-aff-sec.toxique{left:0;width:72%;background-image:url('../assets/combat/choc-toxique.webp?v=3.0.12');background-position:12% 24%;
+.ch-aff-sec.toxique{left:0;width:72%;background-image:url('../assets/combat/choc-toxique.webp?v=3.0.13');background-position:12% 24%;
   clip-path:polygon(0 0,100% 0,77.8% 100%,0 100%)}
 .ch-aff-sec.toxique::after{background:radial-gradient(80% 90% at 70% 40%,rgba(98,216,78,.3),rgba(98,216,78,.12))}
-.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp?v=3.0.12');background-position:0% 0%;
+.ch-aff-sec.deter{right:0;width:44%;background-image:url('../assets/combat/choc-deter.webp?v=3.0.13');background-position:0% 0%;
   clip-path:polygon(36.4% 0,100% 0,100% 100%,0 100%)}
 .ch-aff-sec.deter::after{background:rgba(124,58,237,.2)}
 .ch-aff-coupe{position:absolute;inset:0;filter:drop-shadow(0 0 5px rgba(255,255,255,.7)) drop-shadow(0 0 14px rgba(179,166,255,.8))}
@@ -59,7 +59,7 @@
   border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
   background:linear-gradient(180deg,rgba(18,17,25,0) 20%,rgba(18,17,25,.55) 55%,rgba(24,23,33,.97) 88%),
     radial-gradient(70% 80% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
-    url('../assets/combat/banniere-combats.webp?v=3.0.12') 55% 100%/165% auto no-repeat,var(--surface);
+    url('../assets/combat/banniere-combats.webp?v=3.0.13') 55% 100%/165% auto no-repeat,var(--surface);
   box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
 /* Le chevalier est cadré comme dans l'onglet Combats (.cb-hero-art) : sur le
    médaillon d'or de son plastron, pas sur le casque. Plus large que haute,
@@ -175,7 +175,7 @@
   .ch-sec-fan{height:124px;align-self:start}}
 .ch-sec-c{position:absolute;left:-31px;top:4px;display:grid;place-items:center;width:62px;aspect-ratio:1000/1397;overflow:hidden;border-radius:5px;
   transform-origin:50% 190%;transform:rotate(calc(var(--i) * 10deg)) translateY(calc(var(--i) * var(--i) * 1.5px));
-  background:url('../assets/card-back.webp?v=3.0.12') 50% 50%/cover,#2a2540;
+  background:url('../assets/card-back.webp?v=3.0.13') 50% 50%/cover,#2a2540;
   box-shadow:0 0 0 1px rgba(255,255,255,.32),0 0 14px rgba(200,190,255,.35),0 8px 18px rgba(0,0,0,.5)}
 .ch-sec-c::before{content:"";position:absolute;inset:0;mix-blend-mode:soft-light;
   background:linear-gradient(115deg,transparent 22%,#ff9ad5 33%,#ffe08a 41%,var(--ok) 49%,#8fd3ff 57%,#c3b2ff 65%,transparent 76%) no-repeat;
@@ -248,20 +248,20 @@ html.rm .ch-ref-tuile{animation:none}
 .chban-sous strong{font-weight:900;color:#fff}
 
 /* ============ Les cadres décorés de l'événement ============ */
-.ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg?v=3.0.12')}
-.ava.fx-foudre .fx-deco{background-image:url('../assets/cadres/foudre.svg?v=3.0.12')}
+.ava.fx-choc .fx-deco{background-image:url('../assets/cadres/choc.svg?v=3.0.13')}
+.ava.fx-foudre .fx-deco{background-image:url('../assets/cadres/foudre.svg?v=3.0.13')}
 /* Les autres cadres de la 3.0 (tools/cadres-30.py). */
-.ava.fx-niv10 .fx-deco{background-image:url('../assets/cadres/niv10.svg?v=3.0.12')}
-.ava.fx-niv20 .fx-deco{background-image:url('../assets/cadres/niv20.svg?v=3.0.12')}
-.ava.fx-niv30 .fx-deco{background-image:url('../assets/cadres/niv30.svg?v=3.0.12')}
-.ava.fx-niv50 .fx-deco{background-image:url('../assets/cadres/niv50.svg?v=3.0.12')}
+.ava.fx-niv10 .fx-deco{background-image:url('../assets/cadres/niv10.svg?v=3.0.13')}
+.ava.fx-niv20 .fx-deco{background-image:url('../assets/cadres/niv20.svg?v=3.0.13')}
+.ava.fx-niv30 .fx-deco{background-image:url('../assets/cadres/niv30.svg?v=3.0.13')}
+.ava.fx-niv50 .fx-deco{background-image:url('../assets/cadres/niv50.svg?v=3.0.13')}
 /* Version 3.0.7 : l'Arène (ses ailes) et la Foudre ont 12 unités de décor
    en plus de chaque côté (tools/cadres-30.py, `marge`) : 152 au lieu de 128,
    l'avatar toujours au rayon 50 — le décor déborde de 26 % au lieu de 14. */
 .ava.fx-niv10 .fx-deco,.ava.fx-niv20 .fx-deco,.ava.fx-niv30 .fx-deco,.ava.fx-niv50 .fx-deco,.ava.fx-foudre .fx-deco{inset:-26%}
-.ava.fx-toxique .fx-deco{background-image:url('../assets/cadres/toxique.svg?v=3.0.12')}
-.ava.fx-deter .fx-deco{background-image:url('../assets/cadres/deter.svg?v=3.0.12')}
-.ava.fx-secrete .fx-deco{background-image:url('../assets/cadres/secrete.svg?v=3.0.12')}
+.ava.fx-toxique .fx-deco{background-image:url('../assets/cadres/toxique.svg?v=3.0.13')}
+.ava.fx-deter .fx-deco{background-image:url('../assets/cadres/deter.svg?v=3.0.13')}
+.ava.fx-secrete .fx-deco{background-image:url('../assets/cadres/secrete.svg?v=3.0.13')}
 
 /* ============ Les nouveautés de la 3.0 ============ */
 .nvhero.v3{isolation:isolate;background:radial-gradient(90% 140% at 0% 30%,rgba(98,216,78,.4),transparent 60%),

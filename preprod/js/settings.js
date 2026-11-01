@@ -91,9 +91,8 @@ function vReglages() {
     ${bascule('set-sfx', 'Bruitages', 'Cartes, paquets, boutons', r.sfx)}
     ${curseur('set-volsfx', 'Volume', r.volSfx, r.sfx)}
     <div class="row"><button class="btn ghost tiny" data-act="son-test">Tester le son</button></div>
-    <p class="muted small" style="margin-top:10px">Sur iPhone, le petit interrupteur
-      « silencieux » sur la tranche coupe aussi le son des sites : si tu n'entends rien,
-      c'est la première chose à vérifier.</p>
+    <p class="muted small" style="margin-top:10px">Sur iPhone, l'interrupteur « silencieux »
+      coupe aussi le son des sites.</p>
   </section>
 
   <section class="panel">

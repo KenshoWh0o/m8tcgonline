@@ -62,6 +62,7 @@
   const deux = n => String(n).padStart(2, '0');
   const jourParis = t => { const p = paris(t); return `${p.year}-${deux(p.month)}-${deux(p.day)}`; };
   const hier = j => { const d = new Date(j + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
+  const plusJours = (j, n) => { const d = new Date(j + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
   /* Les jours de `a` à `b` ('2026-11-02'), et minuit (heure de Paris) d'une date. */
   const ecartJours = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86400000);
   const minuitDe = j => ['+02:00', '+01:00'].map(o => Date.parse(`${j}T00:00:00${o}`))
@@ -136,14 +137,14 @@
     ['w_revR',    'weekly',    'rev_R',           5,  250, null, 'Cinq reflets',         'Décroche 5 Reverses Rares cette semaine.', 7],
     ['m_revC',    'milestone', 'rset_C',       null,  400, null, 'Reverses Communes',    'Possède toutes les Reverses Communes.', 17],
     /* Version 3.0 (23_combats.sql) : les combats. */
-    ['d_combat',   'daily',     'combats',          1,   20, null, 'Sur le terrain',         'Joue un combat, contre l\'IA ou un ami.', 8],
+    ['d_combat',   'daily',     'combats',          1,   20, null, 'Sur le terrain',         'Joue un combat, en solo ou contre un ami.', 8],
     ['d_victoire', 'daily',     'victoires',        1,   40, null, 'Première victoire',      'Gagne un combat.', 9],
     ['d_vaincus',  'daily',     'vaincus',          5,   30, null, 'Faucheur',               'Vaincs 5 Joueurs adverses en combat.', 10],
     ['w_victoires','weekly',    'victoires',       10,  250, null, 'Série de victoires',     'Gagne 10 combats cette semaine.', 8],
     ['w_dur',      'weekly',    'victoires_dures',  3,  300, null, 'Sans trembler',          'Gagne 3 combats en Difficile ou plus.', 9],
     ['w_defi',     'weekly',    'defis',            1,  150, null, 'Entre amis',             'Joue un défi contre un ami.', 10],
     ['m_campagne', 'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 20],
-    ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Bats l\'IA en Légende.', 21],
+    ['m_legende',  'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Gagne en Arcade, difficulté Légende.', 21],
     ['m_cent',     'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 22],
     ['m_secrete',  'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d\'un booster.', 23],
     ['m_tutoriel', 'milestone', 'tutoriel',         1,  200, null,         'Premiers pas',          'Gagne la partie du tutoriel (Combats, Guide).', 24],
@@ -190,22 +191,22 @@
        en Étincelles — la colonne `monnaie` dit « prismes » pour toute monnaie
        d'événement, c'est l'événement qui lui donne son nom. */
     ['c_visite',  'ev_jour', 'ev_visite',         1, 10, null, 'Au rapport',           'Passe voir l\'événement aujourd\'hui.', 1, 'choc', 'prismes'],
-    ['c_combats', 'ev_jour', 'combats',           2, 15, null, 'Deux combats',         'Joue 2 combats, contre l\'IA ou un ami.', 2, 'choc', 'prismes'],
+    ['c_combats', 'ev_jour', 'combats',           2, 15, null, 'Deux combats',         'Joue 2 combats, en solo ou contre un ami.', 2, 'choc', 'prismes'],
     ['c_raid',    'ev_jour', 'raid',              1, 15, null, 'Paratonnerre',         'Affronte le boss du Raid.', 3, 'choc', 'prismes'],
     ['c_epreuve', 'ev_jour', 'epreuve',           1, 10, null, 'L\'Épreuve du jour',   'Tente l\'Épreuve du jour.', 4, 'choc', 'prismes'],
     ['c_vaincus', 'ev_jour', 'vaincus',           6, 15, null, 'Six de chute',         'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'],
     ['c_packs',   'ev_jour', 'packs',             3, 10, null, 'Trois boosters',       'Ouvre 3 boosters aujourd\'hui.', 6, 'choc', 'prismes'],
-    ['c_deg100',  'ev',      'raid_degats',     100, 80, null, 'Cent dégâts',          'Inflige 100 dégâts au boss du Raid.', 1, 'choc', 'prismes'],
-    ['c_raidv5',  'ev',      'raid_victoires',    5, 60, null, 'Cinq fois à terre',    'Fais tomber le boss du Raid 5 fois.', 2, 'choc', 'prismes'],
-    ['c_ep7',     'ev',      'epreuve_victoires', 7, 80, null, 'Sept Épreuves',        'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'],
-    ['c_ep15',    'ev',      'epreuve',          15, 60, null, 'Quinze essais',        'Tente 15 fois l\'Épreuve du jour.', 4, 'choc', 'prismes'],
-    ['c_vic30',   'ev',      'victoires',        30, 60, null, 'Trente victoires',     'Gagne 30 combats pendant l\'événement.', 5, 'choc', 'prismes'],
+    ['c_deg100',  'ev',      'raid_degats',      70, 80, null, 'Soixante-dix dégâts',  'Inflige 70 dégâts au boss du Raid.', 1, 'choc', 'prismes'],
+    ['c_raidv5',  'ev',      'raid_victoires',    4, 60, null, 'Quatre fois à terre',  'Fais tomber le boss du Raid 4 fois.', 2, 'choc', 'prismes'],
+    ['c_ep7',     'ev',      'epreuve_victoires', 5, 80, null, 'Cinq Épreuves',        'Gagne 5 Épreuves du jour.', 3, 'choc', 'prismes'],
+    ['c_ep15',    'ev',      'epreuve',          10, 60, null, 'Dix essais',           'Tente 10 fois l\'Épreuve du jour.', 4, 'choc', 'prismes'],
+    ['c_vic30',   'ev',      'victoires',        20, 60, null, 'Vingt victoires',      'Gagne 20 combats pendant l\'événement.', 5, 'choc', 'prismes'],
     ['c_dur5',    'ev',      'victoires_dures',   5, 60, null, 'Sans trembler',        'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'],
-    ['c_legende', 'ev',      'legende',           1, 50, null, 'Tombeur de Légende',   'Bats l\'IA en Légende, en Arcade.', 7, 'choc', 'prismes'],
+    ['c_legende', 'ev',      'legende',           1, 50, null, 'Tombeur de Légende',   'Gagne en Arcade, difficulté Légende.', 7, 'choc', 'prismes'],
     ['c_defis',   'ev',      'defis',             5, 50, null, 'Entre amis',           'Joue 5 défis contre des amis.', 8, 'choc', 'prismes'],
     ['c_deck',    'ev',      'deck',              1, 20, null, 'Mon deck à moi',       'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'],
     ['c_cosm',    'ev',      'cosm',              1, 20, null, 'À mes couleurs',       'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'],
-    ['c_packs60', 'ev',      'packs',            60, 50, null, 'Soixante boosters',    'Ouvre 60 boosters pendant l\'événement.', 11, 'choc', 'prismes'],
+    ['c_packs60', 'ev',      'packs',            40, 50, null, 'Quarante boosters',    'Ouvre 40 boosters pendant l\'événement.', 11, 'choc', 'prismes'],
     ['c_trade',   'ev',      'trades',            3, 30, null, 'Bonnes affaires',      'Conclus 3 échanges.', 12, 'choc', 'prismes'],
     ['c_invite',  'ev',      'invite',            1, 50, null, 'Un ami de plus',       'Un ami entre dans le jeu avec ton invitation.', 13, 'choc', 'prismes']
   ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie]) =>
@@ -243,9 +244,9 @@
     ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
     /* Le Choc des Sections (25_choc.sql), en Étincelles. */
     // Deux colonnes : le tapis (4) et le cadre (6) du Sorcier l'un sous l'autre.
-    ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10],
-    ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3],
-    ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8],
+    ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 7],
+    ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 2],
+    ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 5],
     ['t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L\'illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l\'événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null],
     ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
     ['f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l\'événement.', 400, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
@@ -266,24 +267,24 @@
     [17, 910, 'boosters', 4, null, '4 boosters'], [18, 980, 'reverse_R', 2, null, 'Deux Reverses Rares'],
     [19, 1040, 'titre', 0, 't_ame', 'Titre « Âme des Reflets »'], [20, 1100, 'cadre', 0, 'f_nebuleuse', 'Cadre « Nébuleuse »']
   ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
-  /* Le Pass du Choc des Sections (25_choc.sql) : trente paliers. */
+  /* Le Pass du Choc des Sections (25_choc.sql) : vingt paliers (3.0.13 ;
+     trente pour les trois semaines d'avant). */
   const PISTE_CHOC = [
-    [1, 20, 'boosters', 2, null, '2 boosters'], [2, 50, 'eclats', 150, null, '150 Éclats'],
-    [3, 90, 'titre', 0, 't_recrue', 'Titre « Recrue du Choc »'], [4, 140, 'fragments', 250, null, '250 Fragments'],
-    [5, 200, 'boosters', 2, null, '2 boosters'], [6, 270, 'reverse_R', 1, null, 'Une Reverse Rare'],
-    [7, 350, 'eclats', 250, null, '250 Éclats'], [8, 440, 'sleeve', 0, 's_choc', 'Sleeve « Le Choc »'],
-    [9, 540, 'boosters', 3, null, '3 boosters'], [10, 650, 'fragments', 400, null, '400 Fragments'],
-    [11, 770, 'eclats', 300, null, '300 Éclats'], [12, 900, 'cadre', 0, 'f_choc', 'Cadre « Choc »'],
-    [13, 1040, 'boosters', 3, null, '3 boosters'], [14, 1180, 'reverse_R', 1, null, 'Une Reverse Rare'],
-    [15, 1320, 'brillante', 1, null, 'Une Essence Brillante'], [16, 1460, 'eclats', 400, null, '400 Éclats'],
-    [17, 1600, 'fragments', 600, null, '600 Fragments'], [18, 1740, 'boosters', 4, null, '4 boosters'],
-    [19, 1880, 'titre', 0, 't_veteran', 'Titre « Vétéran du Choc »'], [20, 2020, 'reverse_R', 1, null, 'Une Reverse Rare'],
-    [21, 2160, 'eclats', 500, null, '500 Éclats'], [22, 2300, 'reverse_R', 2, null, 'Deux Reverses Rares'],
-    [23, 2440, 'boosters', 4, null, '4 boosters'], [24, 2580, 'fragments', 800, null, '800 Fragments'],
-    [25, 2720, 'fragments', 700, null, '700 Fragments'], [26, 2860, 'eclats', 600, null, '600 Éclats'],
-    [27, 3000, 'boosters', 5, null, '5 boosters'], [28, 3150, 'fragments', 1000, null, '1 000 Fragments'],
-    [29, 3300, 'titre', 0, 't_maitre_choc', 'Titre « Maître du Choc »'], [30, 3500, 'tapis', 0, 't_arene', 'Tapis « Le Choc des Sections »']
+    [1, 20, 'boosters', 2, null, '2 boosters'], [2, 50, 'titre', 0, 't_recrue', 'Titre « Recrue du Choc »'],
+    [3, 90, 'eclats', 200, null, '200 Éclats'], [4, 140, 'fragments', 400, null, '400 Fragments'],
+    [5, 200, 'sleeve', 0, 's_choc', 'Sleeve « Le Choc »'], [6, 270, 'boosters', 3, null, '3 boosters'],
+    [7, 350, 'reverse_R', 1, null, 'Une Reverse Rare'], [8, 440, 'eclats', 400, null, '400 Éclats'],
+    [9, 540, 'cadre', 0, 'f_choc', 'Cadre « Choc »'], [10, 650, 'boosters', 3, null, '3 boosters'],
+    [11, 770, 'fragments', 700, null, '700 Fragments'], [12, 900, 'brillante', 1, null, 'Une Essence Brillante'],
+    [13, 1040, 'eclats', 500, null, '500 Éclats'], [14, 1200, 'boosters', 4, null, '4 boosters'],
+    [15, 1380, 'titre', 0, 't_veteran', 'Titre « Vétéran du Choc »'], [16, 1580, 'reverse_R', 2, null, 'Deux Reverses Rares'],
+    [17, 1800, 'fragments', 1000, null, '1 000 Fragments'], [18, 2040, 'boosters', 4, null, '4 boosters'],
+    [19, 2280, 'titre', 0, 't_maitre_choc', 'Titre « Maître du Choc »'], [20, 2500, 'tapis', 0, 't_arene', 'Tapis « Le Choc des Sections »']
   ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
+  /* Le Choc dure deux semaines depuis la 3.0.13 (trois avant) ; son texte ne
+     nomme pas le boss du raid suivant (le propriétaire, 1er novembre 2026). */
+  const CHOC_DUREE = 14;
+  const CHOC_TEXTE = 'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l\'Épreuve du jour.';
   const PISTES = { reflets: PISTE, choc: PISTE_CHOC };
   const pisteDe = code => PISTES[code] || PISTE;
 
@@ -728,14 +729,9 @@
     const god = Math.random() < 1 / cfg('god_odds');
     let ids;
     if (god) {
-      ids = [
-        pickCard(tirage([[90, 'R'], [100, 'E']])),
-        pickCard(tirage([[70, 'R'], [100, 'E']])),
-        pickCard(tirage([[50, 'R'], [100, 'E']])),
-        pickCard(tirage([[90, 'E'], [100, 'L']])),
-        pickCard(tirage([[60, 'E'], [100, 'L']])),
-        pickCard('L')
-      ];
+      /* Le godpack (3.0.13, comme open_pack) : trois Épiques, deux
+         Légendaires, une Secrète en dernier. */
+      ids = [pickCard('E'), pickCard('E'), pickCard('E'), pickCard('L'), pickCard('L'), pickCard('S')];
     } else {
       const ess = dansBooster().filter(c => c.cat === 'essence');
       ids = [
@@ -1073,6 +1069,7 @@
       vitrine: o.vitrine.slice(),
       xp: xpDe(o.id),
       fetiche: feticheDe(o.id),
+      combat: combatPublic(o.id),
       succes: succesDe(o.id),
       ami, moi: o.id === moi,
       col: ami ? Object.fromEntries(Object.entries(c).filter(([, n]) => n > 0)) : null,
@@ -1129,13 +1126,12 @@
   /* ============================== version 3.0.7, 28_maitrise.sql */
   /* La maîtrise des cartes : cinq niveaux, payés en Fragments et en
      exemplaires EN TROP (au-delà de la limite de deck, de ce qu'on garde et
-     des échanges en attente) ; chaque exemplaire qui manque se remplace par
-     son prix de fabrication. Les montants sont ceux du serveur. */
-  /* Version 3.0.8 : la base de Fragments dépend de la rareté, fois 1, 2, 4,
-     7, 11 selon le niveau (maitrise_fragments). */
-  const MZ_BASE = { C: 60, PC: 100, R: 200, E: 400, L: 600, S: 600 };
+     des échanges en attente), consommés. Version 3.0.13 : un exemplaire qui
+     manque ne se remplace plus par des Fragments. Les montants sont ceux du
+     serveur (maitrise_fragments, maitrise_copies). */
+  const MZ_BASE = { C: 80, PC: 120, R: 250, E: 500, L: 800, S: 800 };
   const MZ_MULT = [1, 2, 4, 7, 11];
-  const MZ_COPIES = { C: [1, 1, 1, 2, 2], PC: [1, 1, 1, 1, 2], R: [0, 1, 1, 1, 1], E: [0, 0, 1, 0, 1], L: [0, 0, 0, 0, 1], S: [0, 0, 0, 0, 0] };
+  const MZ_COPIES = { C: [2, 3, 4, 5, 6], PC: [2, 2, 3, 4, 5], R: [1, 2, 2, 3, 4], E: [1, 1, 2, 2, 3], L: [1, 1, 1, 2, 2], S: [1, 1, 1, 1, 1] };
   /* maitrise_carte : la carte qui porte la maîtrise (une Reverse : sa carte
      classique), si elle se maîtrise ; null sinon. */
   function maitriseCarte(id) {
@@ -1163,12 +1159,12 @@
     const limite = Combat.REGLE.COPIES;
     const dispo = Math.max(0, possedees - Math.max(limite, gardeDe(p, k.id)) - reserve);
     const copies = MZ_COPIES[k.rar][n - 1];
-    const pris = Math.min(copies, dispo);
-    const total = MZ_BASE[k.rar] * MZ_MULT[n - 1] + (copies - pris) * (cfg('fabrication_' + k.rar) || 0);
+    if (dispo < copies) refuser(`Il faut ${copies} exemplaire${copies > 1 ? 's' : ''} en trop de « ${k.nom} » : tu en as ${dispo}.`);
+    const total = MZ_BASE[k.rar] * MZ_MULT[n - 1];
     const pr = profil(p);
     if ((pr.fragments || 0) < total) refuser(`Pas assez de Fragments : il en faut ${total}.`);
     pr.fragments -= total;
-    if (pris) ajouter(p, k.id, -pris);
+    ajouter(p, k.id, -copies);
     mzDe(p)[k.id] = n;
     return me(p);
   };
@@ -1390,25 +1386,28 @@
   };
   RPC.labo_evenement = (p, { p_etat, p_n }) => {
     estAdmin(p);
-    const t = now(), D21 = 21 * J_MS;
-    let d;
+    const t = now(), DUREE = CHOC_DUREE * J_MS;
+    let d, f = null;
     if (p_etat === 'avant') {
       const n = p_n == null ? 2 : p_n;
       if (!(n >= 1 && n <= 10080)) refuser('Entre 1 minute et 7 jours.');
       d = t + n * 60000;
     } else if (p_etat === 'jour') {
       const n = p_n == null ? 1 : p_n;
-      if (!(n >= 1 && n <= 21)) refuser('Un jour de 1 à 21.');
+      if (!(n >= 1 && n <= CHOC_DUREE)) refuser(`Un jour de 1 à ${CHOC_DUREE}.`);
       /* À minuit, heure de Paris (labo_evenement, 3.0.11) : l'Épreuve n. */
       let j = jourParis(t);
       for (let k = 1; k < n; k++) j = hier(j);
       d = minuitDe(j);
-    } else if (p_etat === 'recap') d = t - D21 - 3600000;
-    else if (p_etat === 'fini') d = t - D21 - 4 * J_MS;
+      /* La fin à minuit, quatorze dates plus tard (labo_evenement, 3.0.13) :
+         pas 14 × 24 h, qui finissait à 23 h après le passage à l'heure d'hiver. */
+      f = minuitDe(plusJours(j, CHOC_DUREE));
+    } else if (p_etat === 'recap') d = t - DUREE - 3600000;
+    else if (p_etat === 'fini') d = t - DUREE - 4 * J_MS;
     else refuser('État inconnu.');
     /* Un seul événement dans la démo : celui d'avant (Reflets) laisse la place. */
-    S.evenement = { titre: CHOC.nom, code: 'choc', debut: d, fin: d + D21, recap_jusqua: null,
-      texte: 'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l\'Épreuve du jour.' };
+    S.evenement = { titre: CHOC.nom, code: 'choc', debut: d, fin: f || d + DUREE, recap_jusqua: null,
+      texte: CHOC_TEXTE };
     return laboEtat(p);
   };
   RPC.labo_decaler = (p, { p_heures }) => {
@@ -1479,6 +1478,11 @@
       const liste = p_quoi === 'master' ? cards.concat(reverses, promos, brillantes, secretes)
         : p_quoi === 'classiques' ? cards : cards.filter(k => ['joueur', 'coach', 'moment', 'objet'].includes(k.cat));
       liste.filter(k => k.rar !== 'UN').forEach(k => { col[k.id] = Math.max(col[k.id] || 0, p_quoi === 'classiques' ? 1 : limiteCopies(k)); });
+    } else if (p_quoi === 'maitrise') {
+      /* 3.0.13 : de quoi mener chaque carte en Légende (les trois d'un deck,
+         plus ce que ses cinq niveaux consomment). */
+      cards.concat(secretes).filter(k => (maitriseCarte(k.id) || {}).id === k.id)
+        .forEach(k => { col[k.id] = Math.max(col[k.id] || 0, limiteCopies(k) + MZ_COPIES[k.rar].reduce((a, b) => a + b, 0)); });
     } else refuser('Choix inconnu.');
     syncCollection(p); checkPromos(p);
     return me(p);
@@ -1793,7 +1797,7 @@
   /* La version 3.0 : « Le Choc des Sections » prend la suite de Reflets,
      pour trois semaines. Dans la démo, il a commencé quatre jours avant la
      première visite en 3.0, à minuit (heure de Paris, comme le conseille
-     25_choc.sql : 21 Épreuves) — on arrive à l'Épreuve 5. Les joueurs
+     25_choc.sql : 14 Épreuves) — on arrive à l'Épreuve 5. Les joueurs
      simulés ont rejoint une Section. */
   function monde30() {
     if (S.choc) return;
@@ -1802,14 +1806,32 @@
     let j0 = jourParis(t);
     for (let k = 0; k < 4; k++) j0 = hier(j0);
     const debut = minuitDe(j0);
-    S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: debut + 21 * 86400000,
-      texte: 'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l\'Épreuve du jour.' };
+    S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: minuitDe(plusJours(j0, CHOC_DUREE)), texte: CHOC_TEXTE };
     [['b_lumen', 'toxique', 24], ['b_mira', 'toxique', 15], ['b_kairo', 'deter', 9], ['b_nova', 'deter', 30]]
       .forEach(([id, sec, d]) => {
         if (!S.profils[id]) return;
         const c = cb(id);
         if (!c.section) { c.section = sec; ajouter(id, SEC_PROMO[sec], 1); }
         S.evt.comptes[id + '|choc'] = { solde: d * 2, total: d * 4 + 30 };
+      });
+  }
+  /* Version 3.0.13 : les joueurs simulés ont combattu (leurs chiffres sur
+     leur fiche) ; Lumen et Nova.92 montrent un deck, la copie du Starter de
+     leur Section. */
+  function mondeCombats13() {
+    [['b_lumen', 64, 31, 9, 4, 3, 11, 14, true], ['b_mira', 21, 18, 2, 3, 0, 4, 6, false],
+     ['b_kairo', 12, 15, 1, 2, 1, 3, 3, false], ['b_nova', 118, 40, 22, 9, 6, 17, 20, true]]
+      .forEach(([id, v, d, pv, pd, serie, max, faits, montre]) => {
+        if (!S.profils[id]) return;
+        const c = cb(id);
+        if (c.stats.serie_max) return;
+        Object.assign(c.stats, { victoires: v, defaites: d, pvp_v: pv, pvp_d: pd, serie, serie_max: max });
+        c.faits = combatsCampagne(c.section || 'toxique').slice(0, faits).map(x => x.id);
+        if (montre && c.section && !c.decks.some(x => x.public)) {
+          const st = Decks.STARTERS[c.section];
+          c.decks.push({ id: 'd' + (++S.seq), nom: id === 'b_nova' ? 'Mauve, sans pitié' : 'Rose qui pique',
+            cartes: Object.assign({}, st.cartes), reserve: Object.assign({}, st.reserve), couverture: st.couverture, public: true });
+        }
       });
   }
   /* Le Raid permanent (27_raid.sql) : à la première visite, les joueurs
@@ -1959,7 +1981,7 @@
      d'un combat contre l'IA, les défis entre amis.
      Les tables de récompenses viennent de la page (js/combat/campagne.js),
      comme la table SQL en est la copie. */
-  const SEC_PROMO = { toxique: 'p03', deter: 'p04' };
+  const SEC_PROMO = { toxique: 'p04', deter: 'p03' };
   const CB_MIN_MS = 20000;
   /* L'XP de combattant d'un joueur (xp_de, 01_schema.sql), pour le niveau
      posé sur son avatar. Les joueurs simulés en ont selon leur ancienneté. */
@@ -1972,8 +1994,25 @@
   const cb = p => {
     S.cb = S.cb || {};
     return (S.cb[p] = S.cb[p] || { section: null, decks: [], deck_actif: null, cosm: {}, faits: [], finie: false,
-      jour: null, recompensees: 0, stats: { victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0 }, ouverts: {}, defis_jour: null, defis_rec: 0 });
+      jour: null, recompensees: 0, stats: { victoires: 0, defaites: 0, pvp_v: 0, pvp_d: 0, serie: 0, serie_max: 0 }, ouverts: {}, defis_jour: null, defis_rec: 0 });
   };
+  /* combat_serie (23_combats.sql, 3.0.13) : une victoire allonge la série,
+     une défaite (ou un combat abandonné) la remet à zéro ; la meilleure reste. */
+  const serieDe = (c, gagne) => {
+    c.stats.serie = gagne ? (c.stats.serie || 0) + 1 : 0;
+    c.stats.serie_max = Math.max(c.stats.serie_max || 0, c.stats.serie);
+  };
+  /* combat_public (23_combats.sql) : ce que la fiche d'un joueur montre de
+     ses combats ; null s'il n'a jamais combattu. */
+  function combatPublic(u) {
+    const c = S.cb && S.cb[u];
+    if (!c) return null;
+    return {
+      section: c.section, stats: Object.assign({ serie: 0, serie_max: 0 }, c.stats), campagne: (c.faits || []).length,
+      decks: c.decks.filter(d => d.public).slice().reverse()
+        .map(d => ({ id: d.id, nom: d.nom, cartes: Object.assign({}, d.cartes), reserve: Object.assign({}, d.reserve), couverture: d.couverture || null }))
+    };
+  }
   function combatEtat(p) {
     const c = cb(p);
     const auj = jourParis(now());
@@ -2031,10 +2070,24 @@
     if (err.length) refuser(err[0]);
     if (!d.id && c.decks.length >= 20) refuser('20 decks au plus.');
     const id = d.id && c.decks.some(x => x.id === d.id) ? d.id : 'd' + (++S.seq);
-    const propre = { id, nom, cartes: Object.assign({}, d.cartes), reserve: Object.assign({}, d.reserve || {}), couverture: d.couverture || null };
+    const avant = c.decks.find(x => x.id === id);
+    /* Le drapeau public (3.0.13) : sans la clé, le deck garde son état ; un
+       deck qui n'est plus complet n'est plus public. */
+    const propre = { id, nom, cartes: Object.assign({}, d.cartes), reserve: Object.assign({}, d.reserve || {}), couverture: d.couverture || null,
+      public: 'public' in d ? !!d.public : !!(avant && avant.public) };
+    if (propre.public && Decks.verifier({ cartes: propre.cartes, reserve: propre.reserve }, colDe(p)).length) propre.public = false;
     c.decks = c.decks.filter(x => x.id !== id).concat([propre]);
     if (!c.deck_actif) c.deck_actif = id;
     if (Decks.total(propre.cartes) === Combat.REGLE.CLUB) bump(p, 'deck', 1);
+    return me(p);
+  };
+  /* deck_publier (3.0.13) : montrer un deck sur son profil et sa fiche, ou
+     le reprendre ; seul un deck complet se montre. */
+  RPC.deck_publier = (p, { p_id, p_public }) => {
+    const d = cb(p).decks.find(x => x.id === p_id);
+    if (!d) refuser('Deck introuvable.');
+    if (p_public && Decks.verifier({ cartes: d.cartes, reserve: d.reserve }, colDe(p)).length) refuser('Seul un deck complet se montre : 40 cartes et 10 Essences.');
+    d.public = !!p_public;
     return me(p);
   };
   RPC.deck_supprimer = (p, { p_id }) => {
@@ -2084,7 +2137,7 @@
     const id = 'cb' + (++S.seq);
     c.ouverts = c.ouverts || {};
     /* Un seul combat ouvert à la fois : le précédent compte comme perdu. */
-    Object.keys(c.ouverts).forEach(k => { delete c.ouverts[k]; c.stats.defaites++; });
+    Object.keys(c.ouverts).forEach(k => { delete c.ouverts[k]; c.stats.defaites++; c.stats.serie = 0; });
     if (p_mode === 'campagne') niveau = combatsCampagne(c.section).find(x => x.id === p_cle).niveau;
     c.ouverts[id] = { mode: p_mode, cle: p_cle, niveau, phase, jour: auj, debut: now(), graine };
     return { id, graine };
@@ -2131,6 +2184,7 @@
     bump(p, 'combats', 1);
     historiqueAjouter(p, o.mode, o.cle, o.niveau, !!p_gagne, res.histo);
     if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
+    serieDe(c, !!p_gagne);
     if (o.mode === 'raid') return finRaid(p, c, o, !!p_gagne, res, trop, r);
     if (o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
     if (!p_gagne) {
@@ -2209,10 +2263,8 @@
 
   /* ---------- les défis entre amis ---------- */
   const defisDe = () => (S.defis = S.defis || []);
-  /* La partie d'un défi, pour le moteur : `premier`, le perdant de leur
-     dernier défi (defi_lancer), sinon le tirage avec la graine. */
-  const initDefi = d => Object.assign({ decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine },
-    d.premier === 0 || d.premier === 1 ? { premier: d.premier } : {});
+  /* La partie d'un défi, pour le moteur (qui commence : pile ou face, avec la graine). */
+  const initDefi = d => ({ decks: [d.deck_de, d.deck_pour], noms: [profil(d.de).pseudo, profil(d.pour).pseudo], graine: d.graine });
   const vueDefi = (d, p, depuis) => {
     const moi = d.de === p ? 0 : 1;
     const o = profil(moi === 0 ? d.pour : d.de);
@@ -2234,13 +2286,8 @@
     if (!p_deck || !Array.isArray(p_deck.club) || p_deck.club.length !== Combat.REGLE.CLUB) refuser('Deck invalide.');
     if (defisDe().some(d => ['attente', 'en_cours'].includes(d.statut) && ((d.de === p && d.pour === o.id) || (d.de === o.id && d.pour === p))))
       refuser('Un défi est déjà en cours avec ce joueur.');
-    /* Le perdant de leur dernier défi commence (defi_lancer, 23_combats.sql) ;
-       la démo, qui rejoue chaque défi, connaît toujours le gagnant. */
-    const dernier = defisDe().filter(d => ['fini', 'abandon'].includes(d.statut) && (d.gagnant === 0 || d.gagnant === 1)
-      && ((d.de === p && d.pour === o.id) || (d.de === o.id && d.pour === p))).sort((a, b) => b.cree - a.cree)[0];
-    const premier = dernier ? ((dernier.gagnant === 0 ? dernier.de : dernier.pour) === p ? 1 : 0) : null;
     const d = { id: 'df' + (++S.seq), de: p, pour: o.id, statut: 'attente', deck_de: p_deck, deck_pour: null,
-      graine: Math.floor(Math.random() * 4294967295) + 1, premier, actions: [], cree: now(), maj: now() };
+      graine: Math.floor(Math.random() * 4294967295) + 1, actions: [], cree: now(), maj: now() };
     defisDe().push(d);
     notifier(o.id, 'defi', p, d.id);
     /* Un ami simulé accepte au bout de quelques secondes. */
@@ -2296,7 +2343,6 @@
     const E = Combat.rejouer(initDefi(d), d.actions);
     if (!E.fin) refuser('Le défi n\'est pas fini.');
     if (d.statut === 'en_cours') d.statut = 'fini';
-    d.gagnant = E.fin.gagnant;
     const moi = d.de === p ? 0 : 1;
     const c = cb(p);
     const r = { eclats: 0, message: '' };
@@ -2307,6 +2353,7 @@
       if (c.defis_jour !== auj) { c.defis_jour = auj; c.defis_rec = 0; }
       const gagne = E.fin.gagnant === moi;
       c.stats[gagne ? 'pvp_v' : 'pvp_d']++;
+      serieDe(c, gagne);
       const o = profil(moi === 0 ? d.pour : d.de);
       historiqueAjouter(p, 'defi', d.id, 0, gagne, p_histo, { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null });
       bump(p, 'defis', 1);
@@ -2635,7 +2682,24 @@
     chasseTerminee();
     monde20();
     monde30();
+    /* Version 3.0.13 : un Choc de trois semaines (une partie de démo
+       d'avant) passe à deux, sans changer son début ; son texte aussi. */
+    const ev = S.evenement;
+    if (ev && ev.code === 'choc' && ev.fin - ev.debut > (CHOC_DUREE + 1) * 86400000) { ev.fin = ev.debut + CHOC_DUREE * 86400000; ev.texte = CHOC_TEXTE; }
     mondeRaid();
+    mondeCombats13();
+    /* Version 3.0.13 : les vraies Promos des Sections sont P04 (Squeezie le
+       Toxique) pour Toxique et P03 (Brawks Déter) pour Déter, l'inverse des
+       provisoires. Une partie de démo d'avant a reçu la Promo de l'autre
+       Section en la rejoignant : tant que la campagne n'est pas finie (qui
+       donne les deux), elle est échangée contre la bonne. */
+    for (const id of Object.keys(S.cb || {})) {
+      const c = S.cb[id], col = colDe(id), bonne = SEC_PROMO[c.section], autre = SEC_PROMO[c.section === 'toxique' ? 'deter' : 'toxique'];
+      if (!bonne || c.finie || c.promos13 || col[bonne]) continue;
+      c.promos13 = true;
+      if (col[autre]) { col[autre]--; if (!col[autre]) delete col[autre]; }
+      col[bonne] = 1;
+    }
   }
 
   /* Une partie de démo qui ne se relit plus (une sauvegarde d'une version

@@ -96,6 +96,10 @@ function openViewer(c, qui) {
     const hx = (50 + st.ry * 1.6).toFixed(1) + '%';
     if (R.holo) R.holo.style.setProperty('--hx', hx);
     if (R.sec) R.sec.style.setProperty('--hx', hx);
+    /* La maîtrise (3.0.13) : la matière du reflet (II) et du prisme (III et
+       plus) glisse avec l'inclinaison — les couleurs changent quand la carte
+       tourne, comme une vraie feuille holographique. */
+    if (R.mz) R.mz.style.setProperty('--fx', (st.ry * .35).toFixed(1) + 'cqi');
     sh.style.transform = `translateX(${(-st.ry * .8).toFixed(1)}px) scaleX(${(1 - Math.abs(st.ry) / 200).toFixed(3)})`;
     requestAnimationFrame(frame);
   };
@@ -111,7 +115,7 @@ let vwOngletRetenu = 'infos';
 
 /* Les calques de la carte qui suivent l'inclinaison (à relire après chaque
    nouveau dessin de la carte). */
-const refletsVw = () => ({ glare: $('#vwc .vw-glare'), holo: $('#vwc .vw-holo'), sec: $('#vwc .card.r-S') });
+const refletsVw = () => ({ glare: $('#vwc .vw-glare'), holo: $('#vwc .vw-holo'), sec: $('#vwc .card.r-S'), mz: $('#vwc .mz-f') });
 
 /* La carte de la visionneuse, avec sa maîtrise (ou l'aperçu du niveau
    suivant, le temps de le regarder). */
@@ -353,7 +357,9 @@ $('#viewer').addEventListener('click', e => {
   if (e.target.closest('[data-v="fav"]')) return basculerFavoriVw();
   const o = e.target.closest('[data-v="ong"]');
   if (o) return allerOngletVw(o.dataset.o);
-  if (e.target.closest('[data-v="maitriser"]')) return maitriserVw();
+  if (e.target.closest('[data-v="maitriser"]')) return demanderMaitriseVw();
+  if (e.target.closest('[data-v="mz-ok"]')) return maitriserVw();
+  if (e.target.closest('[data-v="mz-non"]')) return annulerMaitriseVw();
   const mv = e.target.closest('[data-v="mz-voir"]');
   if (mv) return voirNiveauVw(+mv.dataset.n);
   if (e.target.closest('[data-v="fetiche"]')) return choisirFeticheVw();
@@ -361,7 +367,9 @@ $('#viewer').addEventListener('click', e => {
   if (g) changerGardeVw(g.dataset.v === 'g+' ? 1 : g.dataset.v === 'g-' ? -1 : 0);
 });
 
+/* Échap ferme la fiche — pas quand il a déjà fermé une feuille ouverte
+   par-dessus (js/ui.js, qui le marque d'un preventDefault). */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && VW) closeViewer();
+  if (e.key === 'Escape' && VW && !e.defaultPrevented) closeViewer();
 });
 

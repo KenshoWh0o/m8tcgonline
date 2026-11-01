@@ -3,8 +3,8 @@
 -- proprietaire, 1er novembre 2026). Le catalogue, les Starters, et la Promo
 -- donnee par chaque Section (combat_section) puis par la fin de la campagne.
 insert into auth.users (id, email, raw_user_meta_data) values
-  ('00000000-0000-0000-0000-0000000000e1', 'k1@t', '{"full_name": "Cartes Un"}'),
-  ('00000000-0000-0000-0000-0000000000e2', 'k2@t', '{"full_name": "Cartes Deux"}') on conflict do nothing;
+  ('00000000-0000-0000-0000-0000000013a1', 'k1@t', '{"full_name": "Cartes Un"}'),
+  ('00000000-0000-0000-0000-0000000013a2', 'k2@t', '{"full_name": "Cartes Deux"}') on conflict do nothing;
 insert into public.beta_invites (cle) values ('k1@t'), ('k2@t') on conflict do nothing;
 do $t$
 declare nb int; k record;
@@ -39,19 +39,19 @@ begin
 end $t$;
 
 -- Rejoindre une Section donne sa Promo : Toxique -> P04, Deter -> P03.
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e1', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000013a1', false);
 select public.combat_section('toxique') is not null;
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e2', false);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000013a2', false);
 select public.combat_section('deter') is not null;
 select set_config('request.jwt.claim.sub', '', false);
 do $t$
 begin
-  if not exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000000e1' and card_id = 'p04')
-     or exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000000e1' and card_id = 'p03') then
+  if not exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000013a1' and card_id = 'p04')
+     or exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000013a1' and card_id = 'p03') then
     raise exception 'ECHEC : Toxique doit recevoir P04, et seulement elle';
   end if;
-  if not exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000000e2' and card_id = 'p03')
-     or exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000000e2' and card_id = 'p04') then
+  if not exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000013a2' and card_id = 'p03')
+     or exists (select 1 from collection where user_id = '00000000-0000-0000-0000-0000000013a2' and card_id = 'p04') then
     raise exception 'ECHEC : Deter doit recevoir P03, et seulement elle';
   end if;
   raise warning 'OK 2 : la Promo de sa Section (combat_section)';

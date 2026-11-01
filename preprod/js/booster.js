@@ -68,14 +68,15 @@ const RATES = {
   /* Version 3.0 : la Légendaire passe à 4,25 %, la Secrète arrive à 0,75 %
      (la Rare cède le point qu'il fallait). */
   HIT: { R: 79, E: 16, L: 4.25, S: 0.75 },
-  /* Le godpack, case par case : ça monte jusqu'à la légendaire garantie. */
+  /* Le godpack (version 3.0.13) : trois Épiques, deux Légendaires, puis une
+     Secrète, la dernière, qui porte la révélation. */
   GODPACK: [
-    { R: 90, E: 10 },
-    { R: 70, E: 30 },
-    { R: 50, E: 50 },
-    { E: 90, L: 10 },
-    { E: 60, L: 40 },
-    { L: 100 }
+    { E: 100 },
+    { E: 100 },
+    { E: 100 },
+    { L: 100 },
+    { L: 100 },
+    { S: 100 }
   ]
 };
 const GOD = 1 / 2000;
@@ -122,7 +123,7 @@ function weighted(w) {
      6 · le hit : Rare 79 %, Épique 16 %, Légendaire 4,25 %, Secrète 0,75 %
    L'ordre compte : la pile se feuillette de la première à la dernière, et
    c'est la dernière qui porte la mise en scène de la révélation.
-   Godpack : six cartes qui montent, de la rare à la légendaire garantie. */
+   Godpack : trois Épiques, deux Légendaires, une Secrète (3.0.13). */
 function makeBooster(pool, god) {
   const out = [];
 
@@ -413,15 +414,27 @@ function bindPack() {
     }
   });
 
+  /* Le paquet ne bouge que s'il se voit (3.0.13) : la boucle tournait sous
+     l'arène, une fenêtre ou une ouverture, et onglet caché, à chaque image. */
+  let vu = true, raf = 0, io = null;
+  const relancer = () => { if (!raf && alive()) raf = requestAnimationFrame(frame); };
+  if ('IntersectionObserver' in window) {
+    io = new IntersectionObserver(l => { vu = l[l.length - 1].isIntersecting; if (vu) relancer(); });
+    io.observe(pk);
+  }
+  const cache = () => document.hidden || document.body.classList.contains('en-arene') || document.body.classList.contains('intheater');
   const frame = now => {
-    if (!alive()) return;
+    raf = 0;
+    if (!alive()) { if (io) io.disconnect(); return; }
+    if (!vu) return;
+    if (cache()) { setTimeout(relancer, 500); return; }
     const trx = T.manual ? T.mrx : (RM() ? 0 : Math.sin(now / 2400) * 3.5);
     const tryy = T.manual ? T.mry : (RM() ? 0 : Math.sin(now / 1900) * 6);
     T.rx += (trx - T.rx) * .12;
     T.ry += (tryy - T.ry) * .12;
     box.style.transform = `rotateX(${T.rx.toFixed(2)}deg) rotateY(${T.ry.toFixed(2)}deg)`;
     pk.style.setProperty('--fx', (50 + T.ry * 1.8).toFixed(1) + '%');
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
+  relancer();
 }

@@ -515,7 +515,7 @@ function illuPartager() {
    ===================================================================== */
 async function chargerIllu() {
   try { illuData = await Backend.illuEtat(); } catch (e) { /* l'écran le dira */ }
-  if (tab === 'illu' || tab === 'reflets') render();
+  if (tab === 'illu' || tab === 'reflets' || tab === 'quetes') render();
   /* Ailleurs, seule la pastille de l'onglet change. */
   else if (typeof majDiscrete === 'function') majDiscrete(false);
 }
