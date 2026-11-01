@@ -174,7 +174,7 @@ const GUIDES = (() => {
         <p>Choisis la difficulté, de 1 à 5 : l'IA reçoit un deck tiré au sort, différent à chaque partie. Plus c'est dur, plus ça rapporte.</p>
         ${note('Contre l\'IA, les cinq premières victoires de la journée rapportent des Éclats (Arcade, et combats de campagne rejoués). L\'XP, elle, n\'a pas de limite.')}
         <h3>Raid</h3>
-        <p>Un boss pour tout le serveur, <b>deux semaines chacun</b> : The French Sorcerer, puis Le Marionnettiste, à tour de rôle. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>. Trois tentatives par jour.</p>
+        <p>Un boss pour tout le serveur, <b>un nouveau toutes les deux semaines</b>. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>. Trois tentatives par jour.</p>
         <h3>Versus</h3>
         <p>Pas de recherche d'adversaire : tu défies un de tes amis, il accepte, et vous jouez en direct, 60 secondes par tour. Les trois premiers défis de la journée rapportent des Éclats.</p>`
     },
@@ -246,7 +246,7 @@ const GLOSSAIRE = (() => {
     m('Pioche', 'Une carte du Club à chaque entretien, même au tout premier tour. Un CEO qui doit piocher dans un Club vide a perdu.', 'tour'),
     m('Provocation', 'Mot-clé : l\'attaquant face à ce Joueur doit le cibler.', 'motscles'),
     m('PV', `Les Points de Victoire : ${R().PV} cartes de ton Club posées face cachée. Touché, ton CEO prend le premier en main, ou en joue la Résilience.`, 'pv'),
-    m('Raid', 'Un boss pour tout le serveur, deux semaines chacun (The French Sorcerer, puis Le Marionnettiste) : six phases, des coffres communs et personnels, puis l\'Infini.', 'modes'),
+    m('Raid', 'Un boss pour tout le serveur, un nouveau toutes les deux semaines : six phases, des coffres communs et personnels, puis l\'Infini.', 'modes'),
     m('Remplacer', 'Les trois cases prises, une fois par tour : bench un Joueur non engagé pour déployer le nouveau à sa place.', 'tour'),
     m('Réserve', `Tes ${R().RESERVE} Essences, mélangées, face cachée. La première entre en jeu à chaque entretien.`, 'tour'),
     m('Résilience', 'Sur un Coach, un Moment ou un Objet : quand c\'est le PV que tu prends, tu peux jouer son effet tout de suite, gratuitement, au lieu de le garder en main.', 'pv'),

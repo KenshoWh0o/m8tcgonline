@@ -32,7 +32,7 @@ let labEtatCharge = false;
 
 const labManque = e => /could not find the function|schema cache/i.test(String(e && e.message));
 const J_LAB = 86400000;
-const CHOC_JOURS = 21;
+const CHOC_JOURS = 14;
 
 async function labCharger() {
   labEtatCharge = true;
@@ -192,7 +192,7 @@ function vLabChoc() {
   const jours = Array.from({ length: CHOC_JOURS }, (x, i) => i + 1);
   return `<section class="panel">
     <h2>Le Choc des Sections <small class="labtag">pour tout le monde</small></h2>
-    <p class="muted small">Trois semaines. Les joueurs voient le nouvel état à leur prochain rafraîchissement ;
+    <p class="muted small">Deux semaines. Les joueurs voient le nouvel état à leur prochain rafraîchissement ;
       un autre événement en cours (Reflets) est clos.</p>
     <div class="labgrid">
       <button class="labbtn" data-lab="choc" data-etat="avant" data-n="2"><b>Avant</b><span>il commence dans 2 min</span></button>
@@ -299,7 +299,7 @@ const fait = (l, v) => `<div class="labfait"><span>${h(l)}</span><b>${h(String(v
 
 /* Ce que chaque état du Choc fait aux joueurs, dit avant de confirmer. */
 const LAB_EFFETS = {
-  avant: n => `Le Choc commence dans ${n >= 60 ? n / 60 + ' h' : n + ' min'}, pour trois semaines. D'ici là, il s'annonce.`,
+  avant: n => `Le Choc commence dans ${n >= 60 ? n / 60 + ' h' : n + ' min'}, pour deux semaines. D'ici là, il s'annonce.`,
   jour: n => `Le Choc en est à son jour ${n} sur ${CHOC_JOURS} : l'Épreuve du jour, ses quêtes, son Pass, et le Raid en ${MONNAIES_EV.choc.nom}.`,
   recap: () => 'Le Choc est fini depuis une heure : son récap court pendant près de trois jours.',
   fini: () => 'Le Choc et son récap sont finis : l\'onglet de l\'événement disparaît.'

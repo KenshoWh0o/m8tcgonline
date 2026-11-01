@@ -303,9 +303,12 @@ on conflict (id) do update set
 -- ------------------------------- l'evenement « Le Choc des Sections » (3.0)
 -- Ses quetes paient en Etincelles (25_choc.sql ; la colonne `monnaie` dit
 -- « prismes » pour toute monnaie d'evenement). Du jour : 75 Etincelles ; de
--- l'evenement, une fois : 670. Le calcul du Pass est dans docs/economie-3.0.md.
+-- l'evenement, une fois : 670. Version 3.0.13 : l'evenement dure deux
+-- semaines au lieu de trois, les objectifs qui dependent du temps sont
+-- ramenes aux deux tiers (100 degats → 70, 7 Epreuves gagnees → 5, 15 essais
+-- → 10, 30 victoires → 20, 60 boosters → 40), les recompenses ne bougent
+-- pas. Le calcul du Pass est dans docs/economie-3.0.md.
 --   raid, raid_degats, raid_victoires : le Raid, contre son boss du moment
---                                       (The French Sorcerer, puis Le Marionnettiste)
 --   epreuve, epreuve_victoires        : l'Epreuve du jour
 --   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
 insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
@@ -315,17 +318,17 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('c_epreuve', 'ev_jour', 'epreuve',            1, 10, null, 'L''Épreuve du jour',  'Tente l''Épreuve du jour.', 4, 'choc', 'prismes'),
   ('c_vaincus', 'ev_jour', 'vaincus',            6, 15, null, 'Six de chute',        'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'),
   ('c_packs',   'ev_jour', 'packs',              3, 10, null, 'Trois boosters',      'Ouvre 3 boosters aujourd''hui.', 6, 'choc', 'prismes'),
-  ('c_deg100',  'ev',      'raid_degats',      100, 80, null, 'Cent dégâts',         'Inflige 100 dégâts au boss du Raid.', 1, 'choc', 'prismes'),
-  ('c_raidv5',  'ev',      'raid_victoires',     5, 60, null, 'Cinq fois à terre',   'Fais tomber le boss du Raid 5 fois.', 2, 'choc', 'prismes'),
-  ('c_ep7',     'ev',      'epreuve_victoires',  7, 80, null, 'Sept Épreuves',       'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'),
-  ('c_ep15',    'ev',      'epreuve',           15, 60, null, 'Quinze essais',       'Tente 15 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
-  ('c_vic30',   'ev',      'victoires',         30, 60, null, 'Trente victoires',    'Gagne 30 combats pendant l''événement.', 5, 'choc', 'prismes'),
+  ('c_deg100',  'ev',      'raid_degats',       70, 80, null, 'Soixante-dix dégâts', 'Inflige 70 dégâts au boss du Raid.', 1, 'choc', 'prismes'),
+  ('c_raidv5',  'ev',      'raid_victoires',     4, 60, null, 'Quatre fois à terre', 'Fais tomber le boss du Raid 4 fois.', 2, 'choc', 'prismes'),
+  ('c_ep7',     'ev',      'epreuve_victoires',  5, 80, null, 'Cinq Épreuves',       'Gagne 5 Épreuves du jour.', 3, 'choc', 'prismes'),
+  ('c_ep15',    'ev',      'epreuve',           10, 60, null, 'Dix essais',          'Tente 10 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
+  ('c_vic30',   'ev',      'victoires',         20, 60, null, 'Vingt victoires',     'Gagne 20 combats pendant l''événement.', 5, 'choc', 'prismes'),
   ('c_dur5',    'ev',      'victoires_dures',    5, 60, null, 'Sans trembler',       'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'),
   ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Bats l''IA en Légende, en Arcade.', 7, 'choc', 'prismes'),
   ('c_defis',   'ev',      'defis',              5, 50, null, 'Entre amis',          'Joue 5 défis contre des amis.', 8, 'choc', 'prismes'),
   ('c_deck',    'ev',      'deck',               1, 20, null, 'Mon deck à moi',      'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'),
   ('c_cosm',    'ev',      'cosm',               1, 20, null, 'À mes couleurs',      'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'),
-  ('c_packs60', 'ev',      'packs',             60, 50, null, 'Soixante boosters',   'Ouvre 60 boosters pendant l''événement.', 11, 'choc', 'prismes'),
+  ('c_packs60', 'ev',      'packs',             40, 50, null, 'Quarante boosters',   'Ouvre 40 boosters pendant l''événement.', 11, 'choc', 'prismes'),
   ('c_trade',   'ev',      'trades',             3, 30, null, 'Bonnes affaires',     'Conclus 3 échanges.', 12, 'choc', 'prismes'),
   ('c_invite',  'ev',      'invite',             1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 13, 'choc', 'prismes')
 on conflict (id) do update set
@@ -405,9 +408,9 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('s_argent',     'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
   -- Boutique du Choc, sur deux colonnes : le tapis (4) et le cadre (6) du
   -- Sorcier tombent l'un sous l'autre, dans la meme colonne.
-  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10),
-  ('ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l''unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3),
-  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8),
+  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 7),
+  ('ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l''unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 2),
+  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 5),
   ('t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L''illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l''événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null),
   ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
   ('f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l''événement.', 400, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null)

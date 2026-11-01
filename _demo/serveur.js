@@ -62,6 +62,7 @@
   const deux = n => String(n).padStart(2, '0');
   const jourParis = t => { const p = paris(t); return `${p.year}-${deux(p.month)}-${deux(p.day)}`; };
   const hier = j => { const d = new Date(j + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
+  const plusJours = (j, n) => { const d = new Date(j + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
   /* Les jours de `a` à `b` ('2026-11-02'), et minuit (heure de Paris) d'une date. */
   const ecartJours = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86400000);
   const minuitDe = j => ['+02:00', '+01:00'].map(o => Date.parse(`${j}T00:00:00${o}`))
@@ -195,17 +196,17 @@
     ['c_epreuve', 'ev_jour', 'epreuve',           1, 10, null, 'L\'Épreuve du jour',   'Tente l\'Épreuve du jour.', 4, 'choc', 'prismes'],
     ['c_vaincus', 'ev_jour', 'vaincus',           6, 15, null, 'Six de chute',         'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'],
     ['c_packs',   'ev_jour', 'packs',             3, 10, null, 'Trois boosters',       'Ouvre 3 boosters aujourd\'hui.', 6, 'choc', 'prismes'],
-    ['c_deg100',  'ev',      'raid_degats',     100, 80, null, 'Cent dégâts',          'Inflige 100 dégâts au boss du Raid.', 1, 'choc', 'prismes'],
-    ['c_raidv5',  'ev',      'raid_victoires',    5, 60, null, 'Cinq fois à terre',    'Fais tomber le boss du Raid 5 fois.', 2, 'choc', 'prismes'],
-    ['c_ep7',     'ev',      'epreuve_victoires', 7, 80, null, 'Sept Épreuves',        'Gagne 7 Épreuves du jour.', 3, 'choc', 'prismes'],
-    ['c_ep15',    'ev',      'epreuve',          15, 60, null, 'Quinze essais',        'Tente 15 fois l\'Épreuve du jour.', 4, 'choc', 'prismes'],
-    ['c_vic30',   'ev',      'victoires',        30, 60, null, 'Trente victoires',     'Gagne 30 combats pendant l\'événement.', 5, 'choc', 'prismes'],
+    ['c_deg100',  'ev',      'raid_degats',      70, 80, null, 'Soixante-dix dégâts',  'Inflige 70 dégâts au boss du Raid.', 1, 'choc', 'prismes'],
+    ['c_raidv5',  'ev',      'raid_victoires',    4, 60, null, 'Quatre fois à terre',  'Fais tomber le boss du Raid 4 fois.', 2, 'choc', 'prismes'],
+    ['c_ep7',     'ev',      'epreuve_victoires', 5, 80, null, 'Cinq Épreuves',        'Gagne 5 Épreuves du jour.', 3, 'choc', 'prismes'],
+    ['c_ep15',    'ev',      'epreuve',          10, 60, null, 'Dix essais',           'Tente 10 fois l\'Épreuve du jour.', 4, 'choc', 'prismes'],
+    ['c_vic30',   'ev',      'victoires',        20, 60, null, 'Vingt victoires',      'Gagne 20 combats pendant l\'événement.', 5, 'choc', 'prismes'],
     ['c_dur5',    'ev',      'victoires_dures',   5, 60, null, 'Sans trembler',        'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'],
     ['c_legende', 'ev',      'legende',           1, 50, null, 'Tombeur de Légende',   'Bats l\'IA en Légende, en Arcade.', 7, 'choc', 'prismes'],
     ['c_defis',   'ev',      'defis',             5, 50, null, 'Entre amis',           'Joue 5 défis contre des amis.', 8, 'choc', 'prismes'],
     ['c_deck',    'ev',      'deck',              1, 20, null, 'Mon deck à moi',       'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'],
     ['c_cosm',    'ev',      'cosm',              1, 20, null, 'À mes couleurs',       'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'],
-    ['c_packs60', 'ev',      'packs',            60, 50, null, 'Soixante boosters',    'Ouvre 60 boosters pendant l\'événement.', 11, 'choc', 'prismes'],
+    ['c_packs60', 'ev',      'packs',            40, 50, null, 'Quarante boosters',    'Ouvre 40 boosters pendant l\'événement.', 11, 'choc', 'prismes'],
     ['c_trade',   'ev',      'trades',            3, 30, null, 'Bonnes affaires',      'Conclus 3 échanges.', 12, 'choc', 'prismes'],
     ['c_invite',  'ev',      'invite',            1, 50, null, 'Un ami de plus',       'Un ami entre dans le jeu avec ton invitation.', 13, 'choc', 'prismes']
   ].map(([id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie]) =>
@@ -243,9 +244,9 @@
     ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
     /* Le Choc des Sections (25_choc.sql), en Étincelles. */
     // Deux colonnes : le tapis (4) et le cadre (6) du Sorcier l'un sous l'autre.
-    ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 10],
-    ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 3],
-    ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 8],
+    ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 7],
+    ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 2],
+    ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 5],
     ['t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L\'illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l\'événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null],
     ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
     ['f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l\'événement.', 400, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
@@ -266,24 +267,24 @@
     [17, 910, 'boosters', 4, null, '4 boosters'], [18, 980, 'reverse_R', 2, null, 'Deux Reverses Rares'],
     [19, 1040, 'titre', 0, 't_ame', 'Titre « Âme des Reflets »'], [20, 1100, 'cadre', 0, 'f_nebuleuse', 'Cadre « Nébuleuse »']
   ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
-  /* Le Pass du Choc des Sections (25_choc.sql) : trente paliers. */
+  /* Le Pass du Choc des Sections (25_choc.sql) : vingt paliers (3.0.13 ;
+     trente pour les trois semaines d'avant). */
   const PISTE_CHOC = [
-    [1, 20, 'boosters', 2, null, '2 boosters'], [2, 50, 'eclats', 150, null, '150 Éclats'],
-    [3, 90, 'titre', 0, 't_recrue', 'Titre « Recrue du Choc »'], [4, 140, 'fragments', 250, null, '250 Fragments'],
-    [5, 200, 'boosters', 2, null, '2 boosters'], [6, 270, 'reverse_R', 1, null, 'Une Reverse Rare'],
-    [7, 350, 'eclats', 250, null, '250 Éclats'], [8, 440, 'sleeve', 0, 's_choc', 'Sleeve « Le Choc »'],
-    [9, 540, 'boosters', 3, null, '3 boosters'], [10, 650, 'fragments', 400, null, '400 Fragments'],
-    [11, 770, 'eclats', 300, null, '300 Éclats'], [12, 900, 'cadre', 0, 'f_choc', 'Cadre « Choc »'],
-    [13, 1040, 'boosters', 3, null, '3 boosters'], [14, 1180, 'reverse_R', 1, null, 'Une Reverse Rare'],
-    [15, 1320, 'brillante', 1, null, 'Une Essence Brillante'], [16, 1460, 'eclats', 400, null, '400 Éclats'],
-    [17, 1600, 'fragments', 600, null, '600 Fragments'], [18, 1740, 'boosters', 4, null, '4 boosters'],
-    [19, 1880, 'titre', 0, 't_veteran', 'Titre « Vétéran du Choc »'], [20, 2020, 'reverse_R', 1, null, 'Une Reverse Rare'],
-    [21, 2160, 'eclats', 500, null, '500 Éclats'], [22, 2300, 'reverse_R', 2, null, 'Deux Reverses Rares'],
-    [23, 2440, 'boosters', 4, null, '4 boosters'], [24, 2580, 'fragments', 800, null, '800 Fragments'],
-    [25, 2720, 'fragments', 700, null, '700 Fragments'], [26, 2860, 'eclats', 600, null, '600 Éclats'],
-    [27, 3000, 'boosters', 5, null, '5 boosters'], [28, 3150, 'fragments', 1000, null, '1 000 Fragments'],
-    [29, 3300, 'titre', 0, 't_maitre_choc', 'Titre « Maître du Choc »'], [30, 3500, 'tapis', 0, 't_arene', 'Tapis « Le Choc des Sections »']
+    [1, 20, 'boosters', 2, null, '2 boosters'], [2, 50, 'titre', 0, 't_recrue', 'Titre « Recrue du Choc »'],
+    [3, 90, 'eclats', 200, null, '200 Éclats'], [4, 140, 'fragments', 400, null, '400 Fragments'],
+    [5, 200, 'sleeve', 0, 's_choc', 'Sleeve « Le Choc »'], [6, 270, 'boosters', 3, null, '3 boosters'],
+    [7, 350, 'reverse_R', 1, null, 'Une Reverse Rare'], [8, 440, 'eclats', 400, null, '400 Éclats'],
+    [9, 540, 'cadre', 0, 'f_choc', 'Cadre « Choc »'], [10, 650, 'boosters', 3, null, '3 boosters'],
+    [11, 770, 'fragments', 700, null, '700 Fragments'], [12, 900, 'brillante', 1, null, 'Une Essence Brillante'],
+    [13, 1040, 'eclats', 500, null, '500 Éclats'], [14, 1200, 'boosters', 4, null, '4 boosters'],
+    [15, 1380, 'titre', 0, 't_veteran', 'Titre « Vétéran du Choc »'], [16, 1580, 'reverse_R', 2, null, 'Deux Reverses Rares'],
+    [17, 1800, 'fragments', 1000, null, '1 000 Fragments'], [18, 2040, 'boosters', 4, null, '4 boosters'],
+    [19, 2280, 'titre', 0, 't_maitre_choc', 'Titre « Maître du Choc »'], [20, 2500, 'tapis', 0, 't_arene', 'Tapis « Le Choc des Sections »']
   ].map(([palier, seuil, type, montant, objet, titre]) => ({ palier, seuil, type, montant, objet, titre }));
+  /* Le Choc dure deux semaines depuis la 3.0.13 (trois avant) ; son texte ne
+     nomme pas le boss du raid suivant (le propriétaire, 1er novembre 2026). */
+  const CHOC_DUREE = 14;
+  const CHOC_TEXTE = 'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l\'Épreuve du jour.';
   const PISTES = { reflets: PISTE, choc: PISTE_CHOC };
   const pisteDe = code => PISTES[code] || PISTE;
 
@@ -1385,25 +1386,28 @@
   };
   RPC.labo_evenement = (p, { p_etat, p_n }) => {
     estAdmin(p);
-    const t = now(), D21 = 21 * J_MS;
-    let d;
+    const t = now(), DUREE = CHOC_DUREE * J_MS;
+    let d, f = null;
     if (p_etat === 'avant') {
       const n = p_n == null ? 2 : p_n;
       if (!(n >= 1 && n <= 10080)) refuser('Entre 1 minute et 7 jours.');
       d = t + n * 60000;
     } else if (p_etat === 'jour') {
       const n = p_n == null ? 1 : p_n;
-      if (!(n >= 1 && n <= 21)) refuser('Un jour de 1 à 21.');
+      if (!(n >= 1 && n <= CHOC_DUREE)) refuser(`Un jour de 1 à ${CHOC_DUREE}.`);
       /* À minuit, heure de Paris (labo_evenement, 3.0.11) : l'Épreuve n. */
       let j = jourParis(t);
       for (let k = 1; k < n; k++) j = hier(j);
       d = minuitDe(j);
-    } else if (p_etat === 'recap') d = t - D21 - 3600000;
-    else if (p_etat === 'fini') d = t - D21 - 4 * J_MS;
+      /* La fin à minuit, quatorze dates plus tard (labo_evenement, 3.0.13) :
+         pas 14 × 24 h, qui finissait à 23 h après le passage à l'heure d'hiver. */
+      f = minuitDe(plusJours(j, CHOC_DUREE));
+    } else if (p_etat === 'recap') d = t - DUREE - 3600000;
+    else if (p_etat === 'fini') d = t - DUREE - 4 * J_MS;
     else refuser('État inconnu.');
     /* Un seul événement dans la démo : celui d'avant (Reflets) laisse la place. */
-    S.evenement = { titre: CHOC.nom, code: 'choc', debut: d, fin: d + D21, recap_jusqua: null,
-      texte: 'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l\'Épreuve du jour.' };
+    S.evenement = { titre: CHOC.nom, code: 'choc', debut: d, fin: f || d + DUREE, recap_jusqua: null,
+      texte: CHOC_TEXTE };
     return laboEtat(p);
   };
   RPC.labo_decaler = (p, { p_heures }) => {
@@ -1793,7 +1797,7 @@
   /* La version 3.0 : « Le Choc des Sections » prend la suite de Reflets,
      pour trois semaines. Dans la démo, il a commencé quatre jours avant la
      première visite en 3.0, à minuit (heure de Paris, comme le conseille
-     25_choc.sql : 21 Épreuves) — on arrive à l'Épreuve 5. Les joueurs
+     25_choc.sql : 14 Épreuves) — on arrive à l'Épreuve 5. Les joueurs
      simulés ont rejoint une Section. */
   function monde30() {
     if (S.choc) return;
@@ -1802,8 +1806,7 @@
     let j0 = jourParis(t);
     for (let k = 0; k < 4; k++) j0 = hier(j0);
     const debut = minuitDe(j0);
-    S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: debut + 21 * 86400000,
-      texte: 'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l\'Épreuve du jour.' };
+    S.evenement = { titre: CHOC.nom, code: 'choc', debut, fin: minuitDe(plusJours(j0, CHOC_DUREE)), texte: CHOC_TEXTE };
     [['b_lumen', 'toxique', 24], ['b_mira', 'toxique', 15], ['b_kairo', 'deter', 9], ['b_nova', 'deter', 30]]
       .forEach(([id, sec, d]) => {
         if (!S.profils[id]) return;
@@ -2678,6 +2681,10 @@
     chasseTerminee();
     monde20();
     monde30();
+    /* Version 3.0.13 : un Choc de trois semaines (une partie de démo
+       d'avant) passe à deux, sans changer son début ; son texte aussi. */
+    const ev = S.evenement;
+    if (ev && ev.code === 'choc' && ev.fin - ev.debut > (CHOC_DUREE + 1) * 86400000) { ev.fin = ev.debut + CHOC_DUREE * 86400000; ev.texte = CHOC_TEXTE; }
     mondeRaid();
     mondeCombats13();
   }

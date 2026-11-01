@@ -91,7 +91,9 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 - **C'est voulu, et c'est un choix** : sans plafond, celui qui joue le plus gagne le plus. La pente de la courbe (plafond à 1 100 XP par niveau) et le fait que les paliers s'espacent limitent l'écart, sans le supprimer.
 - **Ce qu'on ne sait pas** : la durée réelle d'une partie. [fait] Une partie IA contre IA dure en moyenne 12 tours au total, soit 6 par joueur (`node tools/combat-sim.js ia 60`, niveau 3). [hypothèse] Avec un humain, qui lit et choisit, cela donnerait 3 à 5 minutes ; ce n'est mesuré sur personne. On ne sait pas non plus quelle part des joueurs enchaînera les combats. Si les parties sont plus courtes, tout va plus vite d'autant. Les « 6 tours » de la règle des défaites sont des tours de la partie (les deux joueurs comptés), donc environ la moitié d'une partie moyenne.
 
-## 3. L'événement « Le Choc des Sections » (21 jours) et le Raid
+## 3. L'événement « Le Choc des Sections » (14 jours depuis la 3.0.13) et le Raid
+
+**[fait] Version 3.0.13 : deux semaines au lieu de trois.** Le propriétaire, le 1er novembre 2026 : « serait-il pas mieux de mettre le choc à une durée de 2 semaines, et d'équilibrer les récompenses en conséquence ? comme ça quand l'event finit, on enchaine direct sur le marionnetiste. » Les raids durent déjà quatorze jours et se comptent depuis le premier jour du Choc (`raid_ancre`) : le raid 1 couvre désormais tout l'événement, et le raid 2 commence le lendemain de sa fin — sans rien changer au Raid. Ce qui change : 14 Épreuves (le calendrier des règles perd sa troisième semaine), le Pass (20 paliers), les objectifs des quêtes de l'événement qui dépendent du temps (aux deux tiers) et les limites de sa boutique. Les montants par jour (quêtes du jour, Raid, Épreuve) ne bougent pas. Les chiffres d'avant sont gardés plus bas, barrés de « jusqu'à la 3.0.12 ».
 
 ### Le Raid, par saisons et phases [fait] `RAID`, `js/combat/choc-data.js` ; `supabase/27_raid.sql`
 
@@ -141,31 +143,36 @@ Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière 
 | Épreuve : 5 par essai, + 25 à la première victoire | 40 |
 | Quêtes de l'événement (une fois) | 670 au total |
 
-| Profil [hypothèse] | Étincelles sur 21 jours | Pass (30 paliers, 3 500 pour le dernier) |
+| Profil [hypothèse] | Étincelles sur 14 jours (3.0.13) | Pass (20 paliers, 2 500 pour le dernier) |
 |---|---|---|
-| Tout au maximum | ≈ 6 500 | fini vers le 11ᵉ jour |
-| Engagé (toutes les quêtes du jour, 3 Raids, 3 Épreuves) | ≈ 4 000 | fini vers le 18ᵉ jour |
-| Occasionnel (1 Raid, 1 Épreuve, la moitié des quêtes) | ≈ 2 000 | palier 19 ou 20 |
+| Tout au maximum | ≈ 4 550 | fini vers le 8ᵉ jour |
+| Engagé (toutes les quêtes du jour, 3 Raids, 3 Épreuves) | ≈ 2 900 | fini vers le 12ᵉ jour |
+| Occasionnel (1 Raid, 1 Épreuve, la moitié des quêtes) | ≈ 1 450 | palier 14 (sur 20) |
+
+[calcul] Ces chiffres reprennent le gain par jour des profils d'avant ((6 500 − 670) / 21 ≈ 278, (4 000 − 670) / 21 ≈ 159, (2 000 − 335) / 21 ≈ 79), sur 14 jours, plus les quêtes de l'événement (670, la moitié pour l'occasionnel), qui gardent leurs récompenses.
+
+Jusqu'à la 3.0.12 (21 jours, 30 paliers, 3 500 pour le dernier) : ≈ 6 500 Étincelles au maximum (Pass fini vers le 11ᵉ jour), ≈ 4 000 pour un engagé (vers le 18ᵉ), ≈ 2 000 pour un occasionnel (palier 19 ou 20).
 
 ### Le Pass [fait] `PISTE_CHOC`, `_demo/serveur.js` ; `evt_piste`, `supabase/25_choc.sql`
 
-- Il rapporte en tout : 23 boosters, 2 200 Éclats, 3 750 Fragments, 5 Reverses Rares, **une** Essence Brillante (palier 15), le sleeve « Le Choc » (palier 8), le cadre « Choc » (palier 12), trois titres, et au bout, au palier 30, le tapis « Le Choc des Sections ».
+- **3.0.13** : 20 paliers, de 20 à 2 500 Étincelles. Les sept récompenses à part restent toutes : trois titres (paliers 2, 15, 19), le sleeve « Le Choc » (5), le cadre « Choc » (9), **une** Essence Brillante (12) et, au bout, le tapis « Le Choc des Sections » (20). Le reste est ramené à environ deux tiers, comme la durée : **16 boosters, 1 100 Éclats, 2 100 Fragments, 3 Reverses Rares** (70 %, 50 %, 56 % et 60 % d'avant). [avis] Les Éclats baissent le plus : ce sont eux qui rachètent des boosters, et le Pass en donnait déjà beaucoup.
+- Jusqu'à la 3.0.12, il rapportait : 23 boosters, 2 200 Éclats, 3 750 Fragments, 5 Reverses Rares, **une** Essence Brillante (palier 15), le sleeve « Le Choc » (palier 8), le cadre « Choc » (palier 12), trois titres, et au bout, au palier 30, le tapis « Le Choc des Sections ».
 - Retirés à la demande : la Légendaire du palier 30 (« trop op ») et la seconde Essence Brillante (palier 25). Le palier 30 est désormais le tapis (il était au palier 20) ; le 20 donne une Reverse Rare, le 25, 700 Fragments.
 - C'est plus gros que le Pass Reflets (14 boosters, 1 350 Éclats, 1 250 Fragments), sans carte rare garantie au-delà d'une Essence Brillante.
 
 ### La boutique de l'événement [fait] `04_seed.sql`, `_demo/serveur.js`
 
-| Article | Prix | Limite | Total |
+| Article | Prix | Limite (3.0.13) | Total |
 |---|---|---|---|
-| 2 boosters | 80 | 10 | 800 |
-| 5 boosters | 180 | 3 | 540 |
-| 500 Fragments | 70 | 8 | 560 |
+| 2 boosters | 80 | 7 (10 avant) | 560 |
+| 5 boosters | 180 | 2 (3 avant) | 360 |
+| 500 Fragments | 70 | 5 (8 avant) | 350 |
 | Tapis « The French Sorcerer » | 600 | 1 | 600 |
 | Titre « Supporter du Choc » | 200 | 1 | 200 |
 | Cadre « The French Sorcerer » (`f_foudre`) | 400 | 1 | 400 |
 
-- Tout acheter coûte **3 100 Étincelles** [calcul] (2 700 avant l'arrivée du cadre `f_foudre`, 3 140 avant le premier rééquilibrage). Retirés à la demande : l'Essence Brillante et la Reverse Rare. Pour que les Étincelles gardent un usage, les boosters et les Fragments y sont un peu moins chers et plus nombreux, et un lot de 5 boosters s'ajoute.
-- [hypothèse] Un joueur engagé (≈ 4 000 Étincelles) peut tout acheter ; un occasionnel (≈ 2 000) prend le tapis, le titre et une partie des boosters.
+- Tout acheter coûte **2 470 Étincelles** [calcul] depuis la 3.0.13 (3 100 jusqu'à la 3.0.12, 2 700 avant l'arrivée du cadre `f_foudre`, 3 140 avant le premier rééquilibrage) : les limites des boosters et des Fragments sont ramenées aux deux tiers, les trois exclusifs ne bougent pas. Retirés à la demande : l'Essence Brillante et la Reverse Rare. Pour que les Étincelles gardent un usage, les boosters et les Fragments y sont un peu moins chers et plus nombreux, et un lot de 5 boosters s'ajoute.
+- [hypothèse] Un joueur engagé (≈ 2 900 Étincelles en deux semaines) peut tout acheter ; un occasionnel (≈ 1 450) prend le tapis, le titre et une partie des boosters — comme avant, sur trois semaines.
 - Le Pass compte les Étincelles **gagnées**, la boutique dépense le **solde** : acheter ne fait pas reculer dans le Pass.
 
 ### Ce que le serveur croit sur parole [fait]

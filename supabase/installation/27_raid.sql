@@ -6,8 +6,10 @@
 --  « saison » dans les tables). Depuis la version 3.0.11, les raids se
 --  comptent depuis le premier jour du Choc des Sections (raid_ancre) : le
 --  raid 1 commence avec lui (The French Sorcerer), le raid 2 quatorze jours
---  plus tard, une semaine avant la fin de l'evenement (Le Marionnettiste),
---  puis les deux boss alternent (raid_boss). Avant, ils se comptaient depuis
+--  plus tard — depuis la 3.0.13, le lendemain de la fin du Choc, qui dure
+--  deux semaines (Le Marionnettiste) —, puis les deux boss alternent
+--  (raid_boss). La page ne nomme un boss qu'a son arrivee (le proprietaire,
+--  1er novembre 2026 : « juste le fait que les raids sont periodiques »). Avant, ils se comptaient depuis
 --  le 12 octobre 2026, et le premier raid du Choc s'appelait « saison 2 ».
 --  Chaque raid, six phases : chaque PV qu'un joueur prend au boss en combat
 --  s'ajoute aux degats de tout le serveur, et chaque palier de degats

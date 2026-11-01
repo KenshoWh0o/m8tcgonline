@@ -100,9 +100,9 @@ function chAffiche() {
   </span>`;
 }
 
-/* L'illustration du boss du raid en cours (The French Sorcerer, puis Le
-   Marionnettiste : rdBoss, js/raid.js) : le Raid, et le bandeau de l'écran
-   Boosters. Cadrée sur son visage. */
+/* L'illustration du boss du raid en cours (rdBoss, js/raid.js ; jamais
+   celui du raid suivant) : le Raid, et le bandeau de l'écran Boosters.
+   Cadrée sur son visage. */
 function chArt() {
   const c = byId[rdBoss().id];
   return c && c.img ? `<span class="rf-fond ch-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : '';
@@ -204,7 +204,7 @@ function vChNouveautes() {
     ${vChRefonte()}
     <div class="ch-nv-grille">
       ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Tes Fragments font briller une carte, en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
-      ${tuile('data-cb="vue" data-v="raid"', illuCadre(rdBoss().id, rdBoss().visage[0], rdBoss().visage[1], 1.2), 'Le Raid', `Un boss pour tout le serveur, deux semaines chacun : ${RAID.bosses.map(x => h(x.nom)).join(', puis ')}.`, 'raid')}
+      ${tuile('data-cb="vue" data-v="raid"', illuCadre(rdBoss().id, rdBoss().visage[0], rdBoss().visage[1], 1.2), 'Le Raid', 'Un boss pour tout le serveur, et un nouveau toutes les deux semaines.', 'raid')}
       ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
@@ -547,7 +547,7 @@ function apercuRecapChoc() {
   const t = Date.now();
   const bots = [['Nova.92', 'deter', 3870], ['Lumen', 'toxique', 3410], ['Mira', 'toxique', 2990]];
   chRecapApercu = {
-    code: 'choc', titre: CHOC.nom, debut: new Date(t - 21 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
+    code: 'choc', titre: CHOC.nom, debut: new Date(t - 14 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
     jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), apercu: true,
     total: 2840, paliers: 24, paliers_max: 30, pris: 24, quetes: 58, rang: 6, joueurs: 41,
     degats: 214, raid_phases: 5, epreuves: 13,
@@ -621,7 +621,7 @@ async function montrerRecapChoc() {
   openSheet({
     title: 'Le Choc des Sections, c\'est fini',
     body: `<div class="rr-pop">
-        <div class="rr-poptete">${chArt()}<b>Merci d'avoir joué</b><small>Trois semaines de combats — voici les tiens.</small></div>
+        <div class="rr-poptete">${chArt()}<b>Merci d'avoir joué</b><small>Deux semaines de combats — voici les tiens.</small></div>
         <div class="rr-popstats">
           <div><b class="tnum">${fmtN(r.total)}</b><small>${CHOC.monnaie.nom}</small></div>
           <div><b class="tnum">${r.paliers}/${r.paliers_max}</b><small>Pass</small></div>

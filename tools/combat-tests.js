@@ -393,10 +393,10 @@ test('le deck de chaque boss est valide et le contient, chaque jour, à chaque p
   }
   egal(JSON.stringify(Choc.deckSorcier('2026-11-03', 'p2')), JSON.stringify(Choc.deckBoss('2026-11-03', 'p2', 'c116')), 'deckSorcier = deckBoss du Sorcier');
 });
-test('l\'Épreuve du jour est la même pour tous, et ses decks sont valides les 21 jours', () => {
+test('l\'Épreuve du jour est la même pour tous, et ses decks sont valides les 14 jours', () => {
   const a = Choc.epreuveDuJour('2026-10-11', 123456789, 3), b = Choc.epreuveDuJour('2026-10-11', 123456789, 3);
   egal(JSON.stringify(a), JSON.stringify(b));
-  for (let n = 1; n <= 21; n++) {
+  for (let n = 1; n <= 14; n++) {
     const jour = new Date(Date.UTC(2026, 10, 1 + n)).toISOString().slice(0, 10);
     for (const g of [1, 77, 123456789, 4294967295]) {
       const x = Choc.epreuveDuJour(jour, g, n);
@@ -406,22 +406,23 @@ test('l\'Épreuve du jour est la même pour tous, et ses decks sont valides les 
     }
   }
 });
-test('le calendrier des 21 Épreuves : chaque semaine ses sept règles, jamais deux jours de suite', () => {
+/* Deux semaines depuis la 3.0.13 (trois de la 3.0.11 à la 3.0.12). */
+test('le calendrier des 14 Épreuves : chaque semaine ses sept règles, jamais deux jours de suite', () => {
   const cal = Choc.CHOC.epreuve.calendrier, ids = Choc.CHOC.epreuve.regles.map(r => r.id);
-  egal(cal.length, 21);
+  egal(cal.length, 14);
   for (const id of cal) vrai(ids.includes(id), 'règle inconnue ' + id);
-  for (let s = 0; s < 3; s++) egal(new Set(cal.slice(7 * s, 7 * s + 7)).size, 7, 'semaine ' + (s + 1));
-  for (let k = 1; k < 21; k++) vrai(cal[k] !== cal[k - 1], 'deux jours de suite : ' + (k + 1));
+  for (let s = 0; s < 2; s++) egal(new Set(cal.slice(7 * s, 7 * s + 7)).size, 7, 'semaine ' + (s + 1));
+  for (let k = 1; k < 14; k++) vrai(cal[k] !== cal[k - 1], 'deux jours de suite : ' + (k + 1));
   for (const id of ids) {
-    const places = [0, 1, 2].map(s => cal.slice(7 * s, 7 * s + 7).indexOf(id));
-    egal(new Set(places).size, 3, id + ' : jamais le même jour de la semaine');
+    const places = [0, 1].map(s => cal.slice(7 * s, 7 * s + 7).indexOf(id));
+    egal(new Set(places).size, 2, id + ' : jamais le même jour de la semaine');
   }
-  /* Hors calendrier (sans numéro, ou au-delà du 21e jour) : une règle par
+  /* Hors calendrier (sans numéro, ou au-delà du 14e jour) : une règle par
      jour, à tour de rôle, comme avant la 3.0.11. */
   const vus = new Set();
   for (let j = 0; j < 7; j++) vus.add(Choc.regleEpreuve(new Date(Date.UTC(2026, 9, 1 + j)).toISOString().slice(0, 10)).id);
   egal(vus.size, 7, 'une règle différente chaque jour de la semaine');
-  egal(Choc.regleEpreuve('2026-11-23', 22).id, Choc.regleEpreuve('2026-11-23').id, 'le 22e jour tourne');
+  egal(Choc.regleEpreuve('2026-11-16', 15).id, Choc.regleEpreuve('2026-11-16').id, 'le 15e jour tourne');
 });
 test('le score de l\'Épreuve : victoire, puis moins de tours, puis plus de PV', () => {
   const s = Choc.scoreEpreuve;

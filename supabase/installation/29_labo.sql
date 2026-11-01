@@ -140,14 +140,18 @@ begin
 end $$;
 
 -- ------------------------------------------------- le Choc des Sections
--- Trois semaines, comme a son ouverture (fin de 25_choc.sql). La ligne est
--- creee si la base n'en a pas encore. Version 3.0.11 : un jour n commence a
--- minuit, heure de Paris (n-1 jours avant aujourd'hui), comme le conseille
--- 25_choc.sql — l'Epreuve est la n-ieme (choc_etat › n), et le raid du jour
--- suit (raid_ancre, 27_raid.sql : au jour 15, le raid 2).
+-- Deux semaines, comme a son ouverture (fin de 25_choc.sql ; trois jusqu'a
+-- la 3.0.12). La ligne est creee si la base n'en a pas encore. Version
+-- 3.0.11 : un jour n commence a minuit, heure de Paris (n-1 jours avant
+-- aujourd'hui), comme le conseille 25_choc.sql — l'Epreuve est la n-ieme
+-- (choc_etat › n), et le raid du jour suit (raid_ancre, 27_raid.sql : le
+-- lendemain de la fin, le raid 2). Version 3.0.13 : la fin tombe a minuit,
+-- heure de Paris, quatorze dates plus tard ; avant, on ajoutait 14 × 24 h,
+-- et un Choc qui traversait le passage a l'heure d'hiver finissait a 23 h,
+-- une heure avant le raid suivant.
 create or replace function public.labo_evenement(p_etat text, p_n integer default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare d timestamptz; n int; duree interval := interval '21 days'; id_choc bigint;
+declare d timestamptz; f timestamptz; n int; duree interval := interval '14 days'; id_choc bigint;
 begin
   perform labo_garde();
   if p_etat = 'avant' then
@@ -156,8 +160,9 @@ begin
     d := now() + make_interval(mins => n);
   elsif p_etat = 'jour' then
     n := coalesce(p_n, 1);
-    if n < 1 or n > 21 then raise exception 'Un jour de 1 à 21.'; end if;
+    if n < 1 or n > 14 then raise exception 'Un jour de 1 à 14.'; end if;
     d := ((jour_paris() - (n - 1))::timestamp) at time zone 'Europe/Paris';
+    f := ((jour_paris() - (n - 1) + 14)::timestamp) at time zone 'Europe/Paris';
   elsif p_etat = 'recap' then
     -- Fini depuis une heure : le recap court encore pres de trois jours.
     d := now() - duree - interval '1 hour';
@@ -166,6 +171,7 @@ begin
   else
     raise exception 'État inconnu.';
   end if;
+  f := coalesce(f, d + duree);
   -- Les autres evenements (Reflets) : clos, et leur recap aussi.
   update evenements set fin = least(fin, now()), recap_jusqua = now()
    where code is not null and code <> 'choc' and debut <= now()
@@ -173,9 +179,10 @@ begin
   select e.id into id_choc from evenements e where e.code = 'choc' order by e.fin desc limit 1;
   if id_choc is null then
     insert into evenements (titre, texte, debut, fin, code) values ('Le Choc des Sections',
-      'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l''Épreuve du jour.', d, d + duree, 'choc');
+      'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.', d, f, 'choc');
   else
-    update evenements set debut = d, fin = d + duree, recap_jusqua = null where id = id_choc;
+    update evenements set debut = d, fin = f, recap_jusqua = null,
+      texte = 'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.' where id = id_choc;
   end if;
   return labo_etat();
 end $$;

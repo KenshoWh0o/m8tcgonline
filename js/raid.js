@@ -3,8 +3,11 @@
    Un boss commun à tout le serveur, pour deux semaines : un « raid » (une
    « saison » côté serveur). Depuis la version 3.0.11, le raid 1 commence
    avec le Choc des Sections (The French Sorcerer), le raid 2 quatorze jours
-   plus tard (Le Marionnettiste), puis les deux alternent : le serveur dit
-   lequel (raid_etat › boss), RAID.bosses dit tout le reste. Chaque raid a
+   plus tard (Le Marionnettiste ; depuis la 3.0.13, le lendemain de la fin
+   du Choc), puis les deux alternent : le serveur dit lequel (raid_etat ›
+   boss), RAID.bosses dit tout le reste. La page ne nomme jamais le boss
+   suivant avant son arrivée (le propriétaire, 1er novembre 2026 : « juste
+   le fait que les raids sont périodiques »). Chaque raid a
    six phases : les dégâts de tous les joueurs s'additionnent, et chaque
    palier atteint abat une phase — tous ceux qui ont combattu dans le raid
    ouvrent son coffre commun. Les dégâts de chacun ouvrent aussi trois
@@ -159,7 +162,7 @@ function vRaid() {
     <details class="rd-aide" data-garde="rd-aide"${r.moi.participe ? '' : ' open'}>
       <summary>Comment ça marche</summary>
       <ol>
-        <li><b>Un raid dure deux semaines</b>, trois tentatives par jour. Puis un autre boss arrive — ${RAID.bosses.map(x => h(x.nom)).join(', puis ')}, à tour de rôle — et tout recommence.</li>
+        <li><b>Un raid dure deux semaines</b>, trois tentatives par jour. Puis un nouveau boss arrive, et tout recommence.</li>
         <li><b>Tout le serveur frappe le même boss.</b> Chaque PV que tu lui prends s'ajoute aux dégâts de tous. À chaque palier, une phase tombe, et son coffre commun s'ouvre pour tous ceux qui ont combattu dans le raid — même une seule fois.</li>
         <li><b>Tes dégâts comptent aussi pour toi :</b> trois paliers personnels, à ${RAID.perso.map(p => fmtN(p.seuil)).join(', ')} dégâts.</li>
         <li><b>Les six phases abattues</b> (si vous y arrivez), le mode Infini : chaque victoire fait monter ton palier, et le boss se durcit. C'est le classement Infini.</li>

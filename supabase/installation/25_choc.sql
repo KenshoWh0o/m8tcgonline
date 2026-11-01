@@ -2,11 +2,12 @@
 --  Mate TCG Online — version 3.0 : l'evenement « Le Choc des Sections »
 --  A executer apres 24_secretes.sql. Rejouable sans danger.
 --
---  Trois semaines autour des Combats (23_combats.sql), avec ce qu'un
---  evenement apporte deja depuis la 2.0 (21_reflets.sql) : une monnaie — les
---  Etincelles, rangees dans evt_comptes comme les Prismes —, des quetes
---  (04_seed.sql), un Pass de trente paliers, une boutique (04_seed.sql) et un
---  classement. En plus, l'Epreuve du jour : le meme combat pour tout le
+--  Deux semaines autour des Combats (23_combats.sql ; trois jusqu'a la
+--  3.0.12, ramenees a deux en 3.0.13 a la demande du proprietaire : a la fin
+--  du Choc commence le raid suivant), avec ce qu'un evenement apporte deja
+--  depuis la 2.0 (21_reflets.sql) : une monnaie — les Etincelles, rangees
+--  dans evt_comptes comme les Prismes —, des quetes (04_seed.sql), un Pass
+--  de vingt paliers, une boutique (04_seed.sql) et un classement. En plus, l'Epreuve du jour : le meme combat pour tout le
 --  monde (les decks et la regle se deduisent de la graine du jour,
 --  js/combat/choc-data.js). Trois essais, le meilleur compte, un classement
 --  du jour.
@@ -54,42 +55,35 @@ alter table public.choc_epreuves   enable row level security;
 revoke all on public.choc_joueurs, public.choc_epreuves from anon, authenticated;
 
 -- ============================================================ 3. le Pass
--- Trente paliers. Le calcul (docs/economie-3.0.md) : un joueur engage
--- (toutes les quetes du jour, trois Raids, trois essais d'Epreuve) gagne
--- ~4 000 Etincelles en trois semaines et finit le Pass vers le 18e jour ; un
--- joueur occasionnel ~2 000, palier 19 ou 20.
-delete from public.evt_piste where evenement = 'choc' and palier > 30;
+-- Vingt paliers (trente jusqu'a la 3.0.12, pour trois semaines). Le calcul
+-- (docs/economie-3.0.md) : un joueur engage (toutes les quetes du jour, trois
+-- Raids, trois essais d'Epreuve) gagne ~2 900 Etincelles en deux semaines et
+-- finit le Pass vers le 12e jour ; un joueur occasionnel ~1 450, palier 14.
+-- Les six exclusifs (trois titres, le sleeve, le cadre, le tapis) et
+-- l'Essence Brillante restent ; boosters, Eclats, Fragments et Reverses sont
+-- ramenes a environ deux tiers, comme la duree.
+delete from public.evt_piste where evenement = 'choc' and palier > 20;
 insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values
   ('choc',  1,   20, 'boosters',    2, null,            '2 boosters'),
-  ('choc',  2,   50, 'eclats',    150, null,            '150 Éclats'),
-  ('choc',  3,   90, 'titre',       0, 't_recrue',      'Titre « Recrue du Choc »'),
-  ('choc',  4,  140, 'fragments',  250, null,           '250 Fragments'),
-  ('choc',  5,  200, 'boosters',    2, null,            '2 boosters'),
-  ('choc',  6,  270, 'reverse_R',   1, null,            'Une Reverse Rare'),
-  ('choc',  7,  350, 'eclats',    250, null,            '250 Éclats'),
-  ('choc',  8,  440, 'sleeve',      0, 's_choc',        'Sleeve « Le Choc »'),
-  ('choc',  9,  540, 'boosters',    3, null,            '3 boosters'),
-  ('choc', 10,  650, 'fragments',  400, null,           '400 Fragments'),
-  ('choc', 11,  770, 'eclats',    300, null,            '300 Éclats'),
-  ('choc', 12,  900, 'cadre',       0, 'f_choc',        'Cadre « Choc »'),
-  ('choc', 13, 1040, 'boosters',    3, null,            '3 boosters'),
-  ('choc', 14, 1180, 'reverse_R',   1, null,            'Une Reverse Rare'),
-  ('choc', 15, 1320, 'brillante',   1, null,            'Une Essence Brillante'),
-  ('choc', 16, 1460, 'eclats',    400, null,            '400 Éclats'),
-  ('choc', 17, 1600, 'fragments',  600, null,           '600 Fragments'),
-  ('choc', 18, 1740, 'boosters',    4, null,            '4 boosters'),
-  ('choc', 19, 1880, 'titre',       0, 't_veteran',     'Titre « Vétéran du Choc »'),
-  ('choc', 20, 2020, 'reverse_R',   1, null,            'Une Reverse Rare'),
-  ('choc', 21, 2160, 'eclats',    500, null,            '500 Éclats'),
-  ('choc', 22, 2300, 'reverse_R',   2, null,            'Deux Reverses Rares'),
-  ('choc', 23, 2440, 'boosters',    4, null,            '4 boosters'),
-  ('choc', 24, 2580, 'fragments',  800, null,           '800 Fragments'),
-  ('choc', 25, 2720, 'fragments',  700, null,           '700 Fragments'),
-  ('choc', 26, 2860, 'eclats',    600, null,            '600 Éclats'),
-  ('choc', 27, 3000, 'boosters',    5, null,            '5 boosters'),
-  ('choc', 28, 3150, 'fragments', 1000, null,           '1 000 Fragments'),
-  ('choc', 29, 3300, 'titre',       0, 't_maitre_choc', 'Titre « Maître du Choc »'),
-  ('choc', 30, 3500, 'tapis',       0, 't_arene',       'Tapis « Le Choc des Sections »')
+  ('choc',  2,   50, 'titre',       0, 't_recrue',      'Titre « Recrue du Choc »'),
+  ('choc',  3,   90, 'eclats',    200, null,            '200 Éclats'),
+  ('choc',  4,  140, 'fragments',  400, null,           '400 Fragments'),
+  ('choc',  5,  200, 'sleeve',      0, 's_choc',        'Sleeve « Le Choc »'),
+  ('choc',  6,  270, 'boosters',    3, null,            '3 boosters'),
+  ('choc',  7,  350, 'reverse_R',   1, null,            'Une Reverse Rare'),
+  ('choc',  8,  440, 'eclats',    400, null,            '400 Éclats'),
+  ('choc',  9,  540, 'cadre',       0, 'f_choc',        'Cadre « Choc »'),
+  ('choc', 10,  650, 'boosters',    3, null,            '3 boosters'),
+  ('choc', 11,  770, 'fragments',  700, null,           '700 Fragments'),
+  ('choc', 12,  900, 'brillante',   1, null,            'Une Essence Brillante'),
+  ('choc', 13, 1040, 'eclats',    500, null,            '500 Éclats'),
+  ('choc', 14, 1200, 'boosters',    4, null,            '4 boosters'),
+  ('choc', 15, 1380, 'titre',       0, 't_veteran',     'Titre « Vétéran du Choc »'),
+  ('choc', 16, 1580, 'reverse_R',   2, null,            'Deux Reverses Rares'),
+  ('choc', 17, 1800, 'fragments', 1000, null,           '1 000 Fragments'),
+  ('choc', 18, 2040, 'boosters',    4, null,            '4 boosters'),
+  ('choc', 19, 2280, 'titre',       0, 't_maitre_choc', 'Titre « Maître du Choc »'),
+  ('choc', 20, 2500, 'tapis',       0, 't_arene',       'Tapis « Le Choc des Sections »')
 on conflict (evenement, palier) do update set
   seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
   objet = excluded.objet, titre = excluded.titre;
@@ -194,7 +188,7 @@ begin
   return jsonb_build_object(
     'jour', j,
     -- Version 3.0.11 : le numero de l'Epreuve, le n-ieme jour de l'evenement
-    -- (heure de Paris), sur `jours` (21 pour un Choc ouvert a minuit : les
+    -- (heure de Paris), sur `jours` (14 pour un Choc ouvert a minuit : les
     -- dates qu'il touche). Il choisit la regle du calendrier
     -- (CHOC.epreuve.calendrier, js/combat/choc-data.js).
     'n', j - (ev.debut at time zone 'Europe/Paris')::date + 1,
@@ -242,16 +236,17 @@ grant execute on function public.choc_etat to authenticated;
 --
 --    insert into public.evenements (titre, texte, debut, fin, code) values (
 --      'Le Choc des Sections',
---      'La version 3.0 : deux Raids (The French Sorcerer, puis Le Marionnettiste) et l''Épreuve du jour.',
---      '2026-11-02 00:00+01', '2026-11-23 00:00+01', 'choc');
+--      'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.',
+--      '2026-11-02 00:00+01', '2026-11-16 00:00+01', 'choc');
 --
---  (Les dates sont un exemple.) A minuit, heure de Paris : vingt et un jours
---  pleins, donc vingt et une Epreuves (choc_etat › n, de 1 a 21) ; le raid 1
---  commence le premier jour, le raid 2 le quinzieme (raid_ancre,
---  27_raid.sql). Ouvert a une autre heure, l'evenement touche vingt-deux
---  dates : la premiere et la derniere Epreuve sont plus courtes, et la
---  vingt-deuxieme reprend une regle a tour de role (regleEpreuve). Un
---  evenement sans `ticket_minutes` ne change pas le rythme des boosters.
+--  (Les dates sont un exemple.) A minuit, heure de Paris : quatorze jours
+--  pleins, donc quatorze Epreuves (choc_etat › n, de 1 a 14) ; le raid 1
+--  commence le premier jour, et le raid 2 le lendemain de la fin du Choc
+--  (raid_ancre, 27_raid.sql : un raid tous les quatorze jours). Ouvert a une
+--  autre heure, l'evenement touche quinze dates : la premiere et la derniere
+--  Epreuve sont plus courtes, et la quinzieme reprend une regle a tour de
+--  role (regleEpreuve). Un evenement sans `ticket_minutes` ne change pas le
+--  rythme des boosters.
 --  Pour le fermer plus tot :
 --    update public.evenements set fin = now() where code = 'choc' and fin > now();
 -- =====================================================================
