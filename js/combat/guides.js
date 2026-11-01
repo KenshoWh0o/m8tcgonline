@@ -73,7 +73,7 @@ const GUIDES = (() => {
           <li>Chacun mélange son Club et sa Réserve.</li>
           <li>Chacun pioche ${R().MAIN} cartes. Une fois, il peut les remélanger dans son Club et en piocher ${R().MAIN} autres.</li>
           <li>Chacun pose les ${R().PV} cartes suivantes face cachée : ses PV. On ne les regarde pas.</li>
-          <li>Le sort désigne qui commence. Contre le même adversaire, <b>le perdant commence la partie suivante</b>.</li>
+          <li>Un pile ou face désigne qui commence, à chaque partie.</li>
           <li>Au tout premier tour de la partie, celui qui commence <b>n'a pas de phase de Combat</b>. Il pioche quand même.</li>
         </ul>`
     },
@@ -190,10 +190,12 @@ const GUIDES = (() => {
           <li><b>La Riposte</b> ne se défend pas, et seule sa valeur compte.</li>
           <li><b>Un Coach joué par sa Résilience</b> ne compte pas dans la limite d'un Coach par tour.</li>
           <li><b>Le mélange des piles</b> : un texte qui dit où placer les cartes (« dessus », « dessous », « dans l'ordre de votre choix ») l'emporte.</li>
-          <li><b>« Le perdant commence la partie suivante »</b> : contre le même adversaire (le même ami, le même rival).</li>
+          <li><b>Qui commence</b> : un pile ou face, à chaque partie.</li>
           <li><b>Remplacer un Joueur</b> : le nouveau prend la case de celui qui est bench.</li>
+          <li><b>GP Explorer II</b> : celui qui la joue choisit ses deux Joueurs, puis l'adversaire. Ce tour-là, il ne joue plus de Joueur, même par un effet qui dit « jouez ».</li>
+          <li><b>Paris Gentle Mates</b> : les deux Essences Mauves rendues à la Réserve sont d'abord celles qui ont déjà payé ; seule la valeur de l'attaque double, pas un soutien.</li>
         </ul>
-        ${note('Les Starter Decks, les Promos P03 et P04 et trois Secrètes n\'ont pas encore leur texte officiel : ce qu\'on en voit est provisoire.')}`
+        ${note('La composition des deux Starter Decks est provisoire : leur liste officielle n\'est pas encore connue.')}`
     }
   ];
 })();

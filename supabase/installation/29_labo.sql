@@ -417,7 +417,7 @@ begin
     update combat_joueurs set section = p_valeur where user_id = p;
     if p_valeur is not null then
       insert into collection (user_id, card_id, qty)
-      values (p, case p_valeur when 'toxique' then 'p03' else 'p04' end, 1)
+      values (p, case p_valeur when 'toxique' then 'p04' else 'p03' end, 1)
         on conflict (user_id, card_id) do nothing;
     end if;
   elsif p_action = 'campagne' then

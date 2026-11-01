@@ -122,12 +122,16 @@ function reserveAuto(cartes, defaut) {
    Fée Rosalie au lieu d'une, des Épiques, Cooked, Doig'Dance, un Toxique
    sans un Squeezie ni un Vandale…), quatre le 31 (un Déter à la courbe plus
    basse : 69 % ; un Toxique sans Tout Commence Ici : 70 % ; les deux :
-   72 %). */
+   72 %). Version 3.0.13 : chacun a la vraie Promo de sa Section — P04
+   (Squeezie le Toxique) prend une place de Squeezie, la place libérée va à
+   un troisième Vandale ; P03 (Brawks Déter) remplace la Promo provisoire du
+   Déter. Mêmes mesures, mêmes graines : le Toxique 68,8 % puis 69,2 % sur
+   240 parties, 68,5 % avant comme après sur 400 (274). */
 const STARTERS = {
   toxique: {
     id: 'starter-toxique', nom: 'Starter · Section Toxique', starter: true, couverture: 'c012',
     cartes: {
-      p03: 1, c010: 3, c011: 2, c012: 3, c013: 2, c017: 1, c073: 2, c078: 2, c079: 1, c074: 1,
+      p04: 1, c010: 3, c011: 3, c012: 2, c013: 2, c017: 1, c073: 2, c078: 2, c079: 1, c074: 1,
       c015: 3, c085: 2, c087: 2, c088: 1,
       c014: 2, c016: 2, c083: 2, c104: 1, c096: 2, c097: 2, c020: 1, c091: 1, c092: 1
     },
@@ -136,7 +140,7 @@ const STARTERS = {
   deter: {
     id: 'starter-deter', nom: 'Starter · Section Déter', starter: true, couverture: 'c077',
     cartes: {
-      p04: 1, c051: 3, c052: 3, c050: 3, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c059: 1,
+      p03: 1, c051: 3, c052: 3, c050: 3, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c059: 1,
       c053: 3, c087: 2, c088: 2, c056: 1,
       c054: 2, c055: 2, c083: 2, c082: 2, c092: 2, c093: 1, c072: 1, c094: 1, c095: 1
     },

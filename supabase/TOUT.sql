@@ -1633,9 +1633,10 @@ insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo) values
   ('p01',  1, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
   ('p02',  2, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
   -- Version 3.0 : les Promos des deux Starter Decks, donnees en Combats
-  -- (23_combats.sql). Provisoires : leur visuel n'est pas encore connu.
-  ('p03',  3, 'Section Toxique',   'joueur', 'rose',   'PR', false, true),
-  ('p04',  4, 'Section Déter',     'joueur', 'mauve',  'PR', false, true),
+  -- (23_combats.sql). Version 3.0.13 : les vraies (photos du proprietaire,
+  -- 1er novembre 2026) — P03 pour la Section Deter, P04 pour Toxique.
+  ('p03',  3, 'Brawks Déter',      'joueur', 'neutre', 'PR', false, true),
+  ('p04',  4, 'Squeezie le Toxique', 'joueur', 'rose', 'PR', false, true),
   ('p05',  5, 'Tout Commence Ici', 'joueur', 'rose',   'PR', false, true),
   ('p06',  6, 'Le Marionnettiste', 'joueur', 'neutre', 'PR', false, true)
 on conflict (id) do update set
@@ -4740,12 +4741,12 @@ create table if not exists public.starters (
 );
 delete from public.starters;
 insert into public.starters (section, card_id, n) values
-  ('toxique', 'p03', 1), ('toxique', 'c010', 3), ('toxique', 'c011', 2), ('toxique', 'c012', 3),
+  ('toxique', 'p04', 1), ('toxique', 'c010', 3), ('toxique', 'c011', 3), ('toxique', 'c012', 2),
   ('toxique', 'c013', 2), ('toxique', 'c017', 1), ('toxique', 'c073', 2), ('toxique', 'c078', 2),
   ('toxique', 'c079', 1), ('toxique', 'c074', 1), ('toxique', 'c015', 3), ('toxique', 'c085', 2),
   ('toxique', 'c087', 2), ('toxique', 'c088', 1), ('toxique', 'c014', 2), ('toxique', 'c016', 2),
   ('toxique', 'c083', 2), ('toxique', 'c104', 1), ('toxique', 'c096', 2), ('toxique', 'c097', 2),
-  ('toxique', 'c020', 1), ('toxique', 'c091', 1), ('toxique', 'c092', 1), ('deter', 'p04', 1),
+  ('toxique', 'c020', 1), ('toxique', 'c091', 1), ('toxique', 'c092', 1), ('deter', 'p03', 1),
   ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c050', 3), ('deter', 'c077', 2),
   ('deter', 'c074', 1), ('deter', 'c076', 1), ('deter', 'c080', 2), ('deter', 'c081', 1),
   ('deter', 'c059', 1), ('deter', 'c053', 3), ('deter', 'c087', 2),
@@ -4973,7 +4974,7 @@ begin
   update combat_joueurs set section = p_section where user_id = p;
   -- La Promo de sa Section (03b_promos.sql), et son Starter Deck, prete.
   insert into collection (user_id, card_id, qty)
-  values (p, case p_section when 'toxique' then 'p03' else 'p04' end, 1)
+  values (p, case p_section when 'toxique' then 'p04' else 'p03' end, 1)
     on conflict (user_id, card_id) do nothing;
   return me();
 end $$;
@@ -5199,7 +5200,7 @@ begin
         g_eclats := pc.eclats; g_boosters := pc.boosters; g_fragments := pc.fragments;
         if cardinality(c.faits) + 1 >= 20 and not c.finie then
           update combat_joueurs set finie = true where user_id = p;
-          autre := case c.section when 'toxique' then 'p04' else 'p03' end;
+          autre := case c.section when 'toxique' then 'p03' else 'p04' end;
           insert into collection (user_id, card_id, qty) values (p, autre, 1)
             on conflict (user_id, card_id) do nothing;
           carte := autre;
@@ -5524,20 +5525,19 @@ grant execute on function public.combat_section, public.combat_reglages, public.
 --    · les doublons des amis : 21_reflets.sql ; les exemplaires a garder :
 --      22_garder.sql.
 --
---  Les Secretes : cinq cartes numerotees apres l'extension (#123 a #127).
---  Deux sont revelees, trois encore floutees : elles existent, se tirent et
---  s'echangent, mais leur visuel et leur texte arriveront plus tard (le
---  navigateur montre leur image floutee, js/promos-data.js). Elles sont
---  hors des 122 (`promo`), ni recyclables ni fabricables, et echangeables
---  contre une autre Secrete (`secrete`).
+--  Les Secretes : cinq cartes numerotees apres l'extension (#123 a #127),
+--  toutes revelees depuis la version 3.0.13 (124, 126 et 127 d'apres les
+--  photos du proprietaire, 1er novembre 2026). Elles sont hors des 122
+--  (`promo`), ni recyclables ni fabricables, et echangeables contre une
+--  autre Secrete (`secrete`).
 -- =====================================================================
 
 insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo, reverse, secrete) values
   ('c123', 123, 'Le Quatrième du Nom', 'joueur', 'orange', 'S', false, true, false, true),
-  ('c124', 124, 'Secrète n°124',       'joueur', 'neutre', 'S', false, true, false, true),
+  ('c124', 124, 'Brawks Trop Déter',   'joueur', 'violette', 'S', false, true, false, true),
   ('c125', 125, '6W26L',               'joueur', 'mauve',  'S', false, true, false, true),
-  ('c126', 126, 'Secrète n°126',       'joueur', 'neutre', 'S', false, true, false, true),
-  ('c127', 127, 'Secrète n°127',       'joueur', 'neutre', 'S', false, true, false, true)
+  ('c126', 126, 'GP Explorer II',      'moment', 'neutre', 'S', false, true, false, true),
+  ('c127', 127, 'Paris Gentle Mates',  'moment', 'mauve',  'S', false, true, false, true)
 on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
   rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo,
@@ -6940,7 +6940,7 @@ begin
     update combat_joueurs set section = p_valeur where user_id = p;
     if p_valeur is not null then
       insert into collection (user_id, card_id, qty)
-      values (p, case p_valeur when 'toxique' then 'p03' else 'p04' end, 1)
+      values (p, case p_valeur when 'toxique' then 'p04' else 'p03' end, 1)
         on conflict (user_id, card_id) do nothing;
     end if;
   elsif p_action = 'campagne' then

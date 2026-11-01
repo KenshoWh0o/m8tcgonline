@@ -452,7 +452,7 @@ const PROMO_COMMENT = {
 /* Les emplacements Promo tenus en réserve : les cartes existent dans la série
    mais ne nous sont pas encore parvenues. Comme les Secrets de la collection,
    ils occupent leur case pour que la suite de la numérotation se voie.
-   Version 3.0 : P03 et P04, les Promos des Starter Decks, sont arrivées —
-   provisoires, en attendant leur visuel (js/promos-data.js). */
+   Version 3.0 : P03 et P04, les Promos des Starter Decks, sont arrivées
+   (js/promos-data.js), avec leur vrai texte depuis la 3.0.13. */
 const PROMOS_A_VENIR = [];
 

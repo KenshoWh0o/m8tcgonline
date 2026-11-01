@@ -126,10 +126,10 @@ tools/tester-sql.sh [test1.sql …]
 
 Elle démarre un PostgreSQL local (`/var/tmp/pg-m8`, port 5499, laissé allumé), recrée une base `m8`, y joue `tools/sql-stub.sql` (l'imitation de Supabase : rôles `anon` / `authenticated` / `service_role`, schéma `auth`, `auth.users`, `auth.uid()` lu dans `request.jwt.claim.sub`, publication `supabase_realtime`), puis **la base de production** (`supabase/TOUT.sql` d'`origin/main`, la 2.5), puis le `TOUT.sql` de la branche **deux fois** (il doit être rejouable), puis les fichiers de test donnés. Pour l'arrêter : `su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pg-m8/data stop"`.
 
-**Les tests SQL versionnés** (3.0.12), dans `tools/tests-sql/` : `regles.sql` (le Club de 40, trois exemplaires par nom et couleur, les Starters), `historique.sql` (l'historique des combats : droits, entrées mal formées, plafond de 30, défis, Labo), `godpack.sql` (3.0.13 : trois Épiques, deux Légendaires, une Secrète, avec `god_odds` ramené à 1 le temps du test), `maitrise.sql` (3.0.13 : le barème, les refus sans exemplaire en trop — deck, réglage « garder », échange en attente —, la consommation, les Fragments, la Légende, la Reverse, le Labo), `profil-combat.sql` (3.0.13 : la série de victoires, les decks montrés, ce que la fiche d'un joueur montre de ses combats, les droits) ; chacun dit « OK » étape par étape et s'arrête au premier échec :
+**Les tests SQL versionnés** (3.0.12), dans `tools/tests-sql/` : `regles.sql` (le Club de 40, trois exemplaires par nom et couleur, les Starters), `historique.sql` (l'historique des combats : droits, entrées mal formées, plafond de 30, défis, Labo), `godpack.sql` (3.0.13 : trois Épiques, deux Légendaires, une Secrète, avec `god_odds` ramené à 1 le temps du test), `maitrise.sql` (3.0.13 : le barème, les refus sans exemplaire en trop — deck, réglage « garder », échange en attente —, la consommation, les Fragments, la Légende, la Reverse, le Labo), `profil-combat.sql` (3.0.13 : la série de victoires, les decks montrés, ce que la fiche d'un joueur montre de ses combats, les droits), `choc.sql` (3.0.13 : le Choc de deux semaines — Pass de vingt paliers, quêtes, Labo, Épreuve 14/14, le raid suivant le lendemain de la fin), `cartes-13.sql` (3.0.13 : P03, P04 et les Secrètes révélées — le catalogue, les copies, les Starters, la Promo de chaque Section) ; chacun dit « OK » étape par étape et s'arrête au premier échec :
 
 ```bash
-tools/tester-sql.sh tools/tests-sql/regles.sql tools/tests-sql/historique.sql tools/tests-sql/godpack.sql tools/tests-sql/maitrise.sql tools/tests-sql/profil-combat.sql
+tools/tester-sql.sh tools/tests-sql/regles.sql tools/tests-sql/historique.sql tools/tests-sql/godpack.sql tools/tests-sql/maitrise.sql tools/tests-sql/profil-combat.sql tools/tests-sql/choc.sql tools/tests-sql/cartes-13.sql
 bash tools/tests-sql/maintenance.sh   # une base 2.5 avec deux joueurs reçoit la 3.0, trois fois (base m8mig)
 ```
 
@@ -655,14 +655,18 @@ L'arène (`#arene`, `css/arene.css`) a ses variables locales : `--ar-act` `#9d8c
 |---|---|---|
 | P01 | Major de Paris | Boutique, 5 000 Éclats |
 | P02 | Major de Paris (illustration alternative) | Boutique, 5 000 Éclats |
-| P03 | Section Toxique (provisoire, sans image : dessinée en texte par `carteTextuelle`) | Rejoindre la Section Toxique, puis finir la campagne de l'autre |
-| P04 | Section Déter (provisoire, idem) | Rejoindre la Section Déter, idem |
+| P03 | Brawks Déter (la #077 en Promo, même texte) | Rejoindre la Section Déter ; un joueur Toxique la reçoit en finissant sa campagne |
+| P04 | Squeezie le Toxique (la #012 en Promo, même texte) | Rejoindre la Section Toxique ; un joueur Déter la reçoit en finissant sa campagne |
 | P05 | Tout Commence Ici | 100 % de l'extension (Master Set) |
 | P06 | Le Marionnettiste | 75 % de l'extension (`cfg('promo_palier_pct')` = `PROMO_PALIER`) |
 
+P03 et P04 sont les vraies Promos des Starter Decks depuis la 3.0.13 (photos du propriétaire, 1er novembre 2026) ; avant, deux cartes provisoires sans image, et **dans l'autre sens** (P03 pour Toxique) : `combat_section`, la fin de campagne (`combat_fin`), le Labo et la démo (`SEC_PROMO`, avec une migration des parties d'avant) suivent le nouveau sens. Une Promo `provisoire` (sans image, dessinée en texte par `carteTextuelle`) reste possible, sans carte qui s'en serve.
+
 Les paliers ne donnent **que** la carte. `check_promos()` (`supabase/installation/03b_promos.sql`) les accorde, de façon idempotente, depuis `me()` et `open_pack()`. Le champ `obtention` ne sert qu'à l'affichage ; `PROMOS_A_VENIR` (`config.js`) peut réserver des cases « à venir » (vide aujourd'hui).
 
-**Secrètes** : #123 *Le Quatrième du Nom* et #125 *6W26L* sont révélées ; #124, #126, #127 sont `cachee` (nom « Secrète n°NNN », image floutée `NNN_S_Secrete.avif`, pas de texte, injouables). Leur code s'affiche `#123/122`.
+**Secrètes** : les cinq sont révélées depuis la 3.0.13 — #123 *Le Quatrième du Nom*, #124 *Brawks Trop Déter* (Joueur Violette), #125 *6W26L*, #126 *GP Explorer II* (Moment Instant Neutre) et #127 *Paris Gentle Mates* (Moment Instant Mauve). Leur code s'affiche `#123/122`. Une Secrète `cachee` (nom « Secrète n°NNN », image floutée, pas de texte, injouable) reste possible, sans carte qui s'en serve.
+
+**Les photos redressées (3.0.13)** : les visuels de P03, P04, 124, 126 et 127 viennent de photos du propriétaire (cartes sous pochette ou sous cadre, prises de biais), redressées par `node tools/redresser-photo.js` (une homographie dessinée par Chromium, encodée en WebP par son canvas ; les coins de chaque photo sont dans l'en-tête du script, qui refait les fichiers à l'octet près). Reflets, flou et teinte de l'éclairage restent ; 126 est la plus terne. Un scan propre les remplacera sous un autre nom de fichier (« Images », juste dessous).
 
 **Images** (`cards/`, voir [§ 12.4](#124-les-images-des-cartes)) : `NNN_RAR_Catégorie[-SousType]_Couleur_Nom.avif` en 1000 × 1397 ; Promos dans `cards/promos/` (WebP 640 × 880) ; l'Unique dans `cards/uniques/`. Seul le champ `fichier` fait le lien : le nom n'est qu'indicatif. **Une image refaite change de nom** (suffixe `_v2`), sinon le service worker resert l'ancienne ([§ 13](#13-pièges)).
 
@@ -887,7 +891,7 @@ Un objet `S` indexé par l'identifiant de la **carte d'origine** (`c010`…`c125
 | `guets.{nom}` | gestionnaires d'un guetteur (`E.temp` de type `guet`) |
 | `donne`, `motsCles(E,c)` | mots-clés donnés ou conditionnels |
 
-Contexte `x = {E, j, c, P, A}` (+ `porteur`, `X` l'attaque en cours, `guet`). Drapeaux lus par le moteur : `provocSiLibre`, `jusDeBagarre`, `invitation`, `chevaliere`, `nucleaire`, `legionGratuite`, `ombre:false`. Couverture vérifiée : aucune des 122 cartes jouables n'a de texte sans script ; les trois Secrètes floutées ne se jouent pas.
+Contexte `x = {E, j, c, P, A}` (+ `porteur`, `X` l'attaque en cours, `guet`). Drapeaux lus par le moteur : `provocSiLibre`, `jusDeBagarre`, `invitation`, `chevaliere`, `nucleaire`, `legionGratuite`, `ombre:false`. Couverture vérifiée : aucune des 122 cartes jouables n'a de texte sans script, les Promos et les Secrètes non plus (3.0.13 : `S.p03`, `S.p04` reprennent `S.c077` et `S.c012` ; `S.c124`, `S.c126`, `S.c127` et leurs tests). Effets de tour posés par ces Secrètes : `pasJoueur` (GP Explorer II, lu par `joueurPermis`, qui bloque aussi les effets « jouez un Joueur » — Worlds Japon, Versus Fighting, Meet & Greeter, M16) et `doublePremiere` (Paris Gentle Mates, lu par `valeurAttaque` avec `E.cpt.premierAttaquant`).
 
 ### 7.4 L'IA (`js/combat/ia.js`)
 
@@ -905,8 +909,8 @@ Contexte `x = {E, j, c, P, A}` (+ `porteur`, `X` l'attaque en cours, `guet`). Dr
 
 ### 7.5 Decks et atelier
 
-- **`js/combat/decks.js`** (`Decks`) : un deck enregistré vaut `{id, nom, cartes:{id:n}, reserve:{couleur:n}, couverture, public}` (`public` : montré sur le profil, 3.0.13, [§ 6.9](#69-profil-succès-titres)) ; `versMoteur()` le met à plat. Limite (règles officielles) : **3 exemplaires** d'une « même carte », c'est-à-dire **même nom et même couleur** (`cleCopie(id)` = nom sans accents ni majuscules + couleur) : une Reverse et sa classique, P01 et P02, Le Marionnettiste #121 et P06, les deux Leakof (#072, #110) comptent ensemble ; pas de limite propre aux raretés. `jouable()` exclut les Essences et les Secrètes cachées. `verifier(deck, possede)` renvoie la liste des erreurs.
-- **Starter Decks** (`STARTERS`) : `toxique` (avec `p03`, Réserve rose ×10) et `deter` (avec `p04`, mauve ×10), 40 cartes et 18 Joueurs chacun, **prêtés** (on n'a pas besoin d'en posséder les cartes). Les listes sont reconstituées : les règles officielles ne les donnent pas.
+- **`js/combat/decks.js`** (`Decks`) : un deck enregistré vaut `{id, nom, cartes:{id:n}, reserve:{couleur:n}, couverture, public}` (`public` : montré sur le profil, 3.0.13, [§ 6.9](#69-profil-succès-titres)) ; `versMoteur()` le met à plat. Limite (règles officielles) : **3 exemplaires** d'une « même carte », c'est-à-dire **même nom et même couleur** (`cleCopie(id)` = nom sans accents ni majuscules + couleur) : une Reverse et sa classique, P01 et P02, Le Marionnettiste #121 et P06, Brawks Déter #077 et P03, Squeezie le Toxique #012 et P04, les deux Leakof (#072, #110) comptent ensemble ; pas de limite propre aux raretés. `jouable()` exclut les Essences et les Secrètes cachées. `verifier(deck, possede)` renvoie la liste des erreurs.
+- **Starter Decks** (`STARTERS`) : `toxique` (avec `p04`, Réserve rose ×10) et `deter` (avec `p03`, mauve ×10), 40 cartes et 18 Joueurs chacun, **prêtés** (on n'a pas besoin d'en posséder les cartes). Les listes sont reconstituées : les règles officielles ne les donnent pas, et le propriétaire les fournira. Depuis la 3.0.13, chacun a la vraie Promo de sa Section : P04 (Squeezie le Toxique) prend une des trois places de Squeezie dans le Toxique, et la place libérée va à un troisième Vandale ; P03 (Brawks Déter) remplace l'ancienne Promo provisoire du Déter, avec ses deux Brawks Déter. Mesuré sur les mêmes parties (IA niveau 3, places alternées, graines 2000 + i) : le Toxique gagne 68,8 % avant et 69,2 % après sur 240, 68,5 % avant comme après sur 400 — le déséquilibre connu ne bouge pas.
 - `aleatoire(rand, {niveau, couleurs})` tire un deck crédible (`CIBLES` : 18 Joueurs, 8 Objets, 14 Coachs et Moments, sur 40) : decks adverses de la campagne (`deckRival`), de l'Arcade, du Raid (`deckSorcier`) et de l'Épreuve. Sans `couleurs`, il les tire par `tirerCouleurs` (une ou deux, ni jade ni jaune : Arcade, Épreuve) ; la campagne impose celles du rival (jaune compris), le Raid Mauve plus un allié du jour (`CHOC_ALLIES`, jaune et jade compris). `bilan()` note un deck « Solide / Jouable / À revoir » sur les trois conseils des règles officielles (15 Joueurs au moins, une Réserve accordée aux attaques, une majorité d'attaques à 1 ou 2 Essences ; `BON`). Code de partage `M8D1.c012x2.c013|rose10` (`encoder` / `decoder`).
 - **L'atelier** (`js/combat/atelier.js`, styles « L'atelier de decks » de `css/combat.css`), **refait en 3.0.13** (le propriétaire : « très fonctionnel, mais très peu accessible, y a beaucoup de texte entassé et mal organisé ») :
   - **la tête**, collée en haut de l'écran (`.at-haut`) : le retour, le nom (modifiable sur place, un crayon le dit), le menu (code à partager, vider, supprimer), **Enregistrer** (discret tant que rien n'a changé, l'action principale ensuite), puis **trois onglets** — Cartes, **Club** et **Réserve**, ces deux derniers avec leur jauge (40 cartes, 10 pastilles aux couleurs des Essences ; une jauge pleine passe au vert). Rien ne s'enregistre sans « Enregistrer » ; quitter avec des changements le demande.
@@ -1316,7 +1320,8 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 | `node tools/combat-sim.js <mode> N …` | Node | parties simulées (`aleatoire`, `clone`, `ia`, `starters`) |
 | `python3 tools/cadres.py` | aucune | les 9 cadres SVG de la 2.x (`assets/cadres/`) : 7 de la 2.0, 2 de la 2.5 (Braise, Ardeur) |
 | `python3 tools/cadres-30.py` | aucune | les 9 cadres SVG de la 3.0 |
-| `python3 tools/cosmetiques.py` | Pillow (AVIF) | 6 tapis (+ `-mini`), 2 sleeves, 2 boîtes de Starter, **les 5 Secrètes dans `cards/`** |
+| `python3 tools/cosmetiques.py` | Pillow (AVIF) | 6 tapis (+ `-mini`), 2 sleeves, 2 boîtes de Starter, **les Secrètes 123 et 125 dans `cards/`** |
+| `node tools/redresser-photo.js <photo> "<coins>" <largeur> <sortie> [qualité]` | Playwright (Chromium) | une photo de carte redressée en WebP (3.0.13 : P03, P04, Secrètes 124, 126, 127 ; la table des coins est dans le script) |
 | `python3 tools/choc-visuels.py` | Pillow (AVIF) | 2 affiches du Choc, tapis `t_arene` et `t_orage`, le tapis du boss `t_ficelles` (3.0.11), sleeve `s_choc` |
 | `python3.13 tools/gen-icons.py` | Pillow (WebP, AVIF) | icônes d'app, favicons (`favicon.svg` compris), `og-image.png` — **en graphite et lavande depuis la 3.0.11** (avant : la palette 2.1, et `sips` de macOS) |
 | `python3 tools/kit-presse.py` | Pillow | `presse/visuels/*` |
@@ -1329,7 +1334,7 @@ L'environnement cloud a Node 22, Playwright et Chromium, `http-server`, PostgreS
 |---|---|---|
 | `combat/brawks-deter.jpg` (1490 × 1055) | `choc-visuels.py` | `choc-deter.webp`, haut de `t_arene` |
 | `combat/secrete-123.jpg`, `secrete-125.jpg` | `cosmetiques.py` | les deux Secrètes révélées |
-| `combat/secrete-floue-a/b/c.jpg` | `cosmetiques.py` | les trois Secrètes floutées |
+| `combat/secrete-floue-a/b/c.jpg` | — | les trois Secrètes floutées, plus utilisées depuis la 3.0.13 (gardées pour revenir aux visuels floutés) |
 | `combat/sleeve-argent.jpg`, `sleeve-sorcier.jpg` | `cosmetiques.py` | `s_argent`, `s_sorcier` |
 | `combat/starter-deter.jpg`, `starter-toxique.jpg` | `cosmetiques.py` | `assets/combat/sections/*.webp` (détourées) |
 | `combat/tapis-*.jpg / .webp` (6) | `cosmetiques.py` | `assets/combat/tapis/t_*.webp` |
@@ -1344,8 +1349,8 @@ Les autres visuels partent des cartes elles-mêmes (`cards/`). `assets/combat/ba
 
 ### 12.4 Les images des cartes
 
-- `cards/NNN_RAR_Catégorie[-SousType]_Couleur_Nom.avif` (1000 × 1397), `NNN` de 001 à 127 ; Secrètes cachées `NNN_S_Secrete.avif`. Le nom ne se découpe pas sur `_` (certains noms en contiennent).
-- `cards/promos/PNN-Nom.webp` (640 × 880 ; P03 et P04 n'ont pas d'image) ; `cards/uniques/U01-L_Unique_Chevaliere_v2.webp`.
+- `cards/NNN_RAR_Catégorie[-SousType]_Couleur_Nom.avif` (1000 × 1397), `NNN` de 001 à 127 ; les Secrètes 124, 126 et 127 en `.webp` (900 × 1257, photos redressées). Le nom ne se découpe pas sur `_` (certains noms en contiennent).
+- `cards/promos/PNN-Nom.webp` (640 × 880 ; P03 et P04, photos redressées, 640 × 894) ; `cards/uniques/U01-L_Unique_Chevaliere_v2.webp`.
 - Le gabarit d'une carte (1000 × 1397) a son illustration de (85, 205) à (895, 684) : c'est ce qu'utilisent `illuCadre()` (`js/ui.js`) et `tools/choc-visuels.py` (`ILLU`) pour recadrer une illustration.
 
 ### 12.5 Le kit presse (`presse/`)

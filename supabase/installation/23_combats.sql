@@ -119,12 +119,12 @@ create table if not exists public.starters (
 );
 delete from public.starters;
 insert into public.starters (section, card_id, n) values
-  ('toxique', 'p03', 1), ('toxique', 'c010', 3), ('toxique', 'c011', 2), ('toxique', 'c012', 3),
+  ('toxique', 'p04', 1), ('toxique', 'c010', 3), ('toxique', 'c011', 3), ('toxique', 'c012', 2),
   ('toxique', 'c013', 2), ('toxique', 'c017', 1), ('toxique', 'c073', 2), ('toxique', 'c078', 2),
   ('toxique', 'c079', 1), ('toxique', 'c074', 1), ('toxique', 'c015', 3), ('toxique', 'c085', 2),
   ('toxique', 'c087', 2), ('toxique', 'c088', 1), ('toxique', 'c014', 2), ('toxique', 'c016', 2),
   ('toxique', 'c083', 2), ('toxique', 'c104', 1), ('toxique', 'c096', 2), ('toxique', 'c097', 2),
-  ('toxique', 'c020', 1), ('toxique', 'c091', 1), ('toxique', 'c092', 1), ('deter', 'p04', 1),
+  ('toxique', 'c020', 1), ('toxique', 'c091', 1), ('toxique', 'c092', 1), ('deter', 'p03', 1),
   ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c050', 3), ('deter', 'c077', 2),
   ('deter', 'c074', 1), ('deter', 'c076', 1), ('deter', 'c080', 2), ('deter', 'c081', 1),
   ('deter', 'c059', 1), ('deter', 'c053', 3), ('deter', 'c087', 2),
@@ -352,7 +352,7 @@ begin
   update combat_joueurs set section = p_section where user_id = p;
   -- La Promo de sa Section (03b_promos.sql), et son Starter Deck, prete.
   insert into collection (user_id, card_id, qty)
-  values (p, case p_section when 'toxique' then 'p03' else 'p04' end, 1)
+  values (p, case p_section when 'toxique' then 'p04' else 'p03' end, 1)
     on conflict (user_id, card_id) do nothing;
   return me();
 end $$;
@@ -578,7 +578,7 @@ begin
         g_eclats := pc.eclats; g_boosters := pc.boosters; g_fragments := pc.fragments;
         if cardinality(c.faits) + 1 >= 20 and not c.finie then
           update combat_joueurs set finie = true where user_id = p;
-          autre := case c.section when 'toxique' then 'p04' else 'p03' end;
+          autre := case c.section when 'toxique' then 'p03' else 'p04' end;
           insert into collection (user_id, card_id, qty) values (p, autre, 1)
             on conflict (user_id, card_id) do nothing;
           carte := autre;

@@ -119,9 +119,12 @@ Défausse, « où sont placées toutes les cartes défaussées ou bench » ; le 
 - **[Direction]** Les deux **Starter Decks** (Toxique, Déter) sont prêtés : on
   les joue sans en posséder les cartes. **Leurs listes ne sont pas connues** :
   celles du jeu sont reconstituées (40 cartes, au moins 15 Joueurs, une
-  couleur chacun, `Decks.STARTERS` et la table `starters`). Les Promos P03 et
-  P04 (une par Starter) sont provisoires, comme leur visuel.
-- Une Secrète encore floutée ne se joue pas (son texte n'est pas connu).
+  couleur chacun, `Decks.STARTERS` et la table `starters`). Chacun contient
+  la Promo de sa Section, connue depuis la 3.0.13 : P04 *Squeezie le Toxique*
+  (le texte de la #012) pour Toxique, P03 *Brawks Déter* (celui de la #077)
+  pour Déter.
+- Les cinq Secrètes sont révélées depuis la 3.0.13 : elles se jouent toutes.
+  Une Secrète encore floutée (aucune aujourd'hui) ne se jouerait pas.
 
 ## 5. La partie
 
@@ -352,6 +355,24 @@ précédentes, que les règles officielles ne changent pas) :
   parle d'eux-mêmes, alors qu'ils sont à la défausse).
 - Les effets réactifs simultanés se résolvent en commençant par les cartes du
   CEO dont c'est le tour, chaque Joueur puis ses Objets.
+- *GP Explorer II* (Secrète 126) : « Les CEO choisissent chacun 2 de leurs
+  Joueurs et récupèrent les autres en main. Vous ne pouvez plus jouer de
+  Joueur pour le reste de ce tour. » — celui qui joue la carte choisit
+  d'abord, puis l'adversaire ; un CEO qui a deux Joueurs ou moins n'en
+  reprend aucun ; les Objets des Joueurs repris sont bench (« Les Objet sont
+  bench lorsque la carte Joueur associée quitte le Terrain ») ; « jouer un
+  Joueur », c'est le mettre en jeu sur une case (« Jouer une carte ») : ce
+  tour-là, ce CEO n'en joue plus, ni par l'action ni par un effet qui dit
+  « jouez » (Worlds Japon, Versus Fighting, Meet & Greeter, la Résilience de
+  M16) ; `joueurPermis()`.
+- *Paris Gentle Mates* (Secrète 127) : « Mélangez 2 de vos Essences Mauves
+  dans votre Réserve pour doubler la valeur de la première attaque que vous
+  déclenchez ce tour. » — les deux Essences sont prises parmi celles en jeu,
+  engagées d'abord (celles qui ont déjà payé, comme les autres cartes qui
+  rendent une Essence Mauve) ; seule la valeur de l'attaque double, pas un
+  soutien qui s'y ajoute ; un Moment ne se joue plus en phase de Combat, donc
+  « la première attaque » est toujours à venir ; une Riposte pendant le tour
+  adverse n'est pas une attaque « que vous déclenchez ce tour ».
 
 ## 11. Ce que les règles officielles ne tranchent pas — la liste
 
@@ -384,8 +405,18 @@ l'usage). Pour chaque point : la lecture retenue, puis l'autre.
 10. **Une Essence jouée de la Réserve entre désengagée.**
 11. **Le mulligan** : les deux CEO décident l'un après l'autre.
 12. **Piocher plus que le Club n'en a** fait perdre aussitôt.
-13. **Le texte des Starter Decks, de P03 et P04, et des trois Secrètes
-    floutées (124, 126, 127)** : inconnu.
+13. **La liste des Starter Decks** : inconnue (le propriétaire la fournira).
+    Le texte de P03, P04 et des Secrètes 124, 126 et 127 est connu depuis la
+    3.0.13 (photos du propriétaire, 1er novembre 2026).
+14. **GP Explorer II** (§ 10) : celui qui la joue choisit d'abord ; « jouer un
+    Joueur » couvre aussi un effet qui dit « jouez ». — Autre : les deux CEO
+    choisiraient en même temps, sans voir le choix de l'autre ; ou seule
+    l'action de la phase d'action serait interdite.
+15. **Paris Gentle Mates** (§ 10) : les Essences engagées partent d'abord, et
+    seule la valeur de l'attaque double. — Autre : le joueur choisirait ses
+    deux Essences ; le soutien doublerait aussi.
+16. **« Sermont »**, l'attaque de Brawks Trop Déter (Secrète 124) : écrit tel
+    qu'imprimé sur la photo ; peut-être une coquille de « Serment ».
 
 ## 12. Ce qui a changé depuis les règles reconstituées (3.0 à 3.0.11)
 

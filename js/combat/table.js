@@ -1070,6 +1070,7 @@ const Table = (() => {
      peut pas être bench pour faire place). */
   function raisonPasDeploiement() {
     if (T.E.phase === 'combat') return 'Phase de Combat : on n\'y déploie plus.';
+    if (!Combat.joueurPermis(T.E, T.moi)) return 'GP Explorer II : plus de Joueur à jouer ce tour.';
     if (T.E.cpt.remplace >= Combat.REGLE.REMPLACEMENTS) return 'Tes trois cases sont prises, et tu as déjà remplacé un Joueur ce tour.';
     return 'Tes trois cases sont prises, et tes Joueurs sont engagés : seul un Joueur non engagé peut être remplacé.';
   }
@@ -1098,13 +1099,14 @@ const Table = (() => {
       if (b) l.push({ s: b > 0 ? 'plus' : 'moins', t: `Attaques ${signe(b)} de dégâts` });
     }
     for (const t of E.temp) {
-      const vise = t.cible != null ? t.cible === c.u : t.camp === c.j && (t.type === 'def' || t.type === 'atk');
+      const vise = t.cible != null ? t.cible === c.u : t.camp === c.j && (t.type === 'def' || t.type === 'atk' || t.type === 'doublePremiere');
       if (!vise) continue;
       if (t.type === 'def') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} Défense ${duree(t)}` });
       else if (t.type === 'atk') l.push({ s: t.val > 0 ? 'plus' : 'moins', t: `${signe(t.val)} aux attaques ${duree(t)}` });
       else if (t.type === 'pasAttaque') l.push({ s: 'moins', t: `Ne peut pas attaquer ${duree(t)}` });
       else if (t.type === 'pasDefenseFace') l.push({ s: 'plus', t: `Le Joueur d'en face ne peut pas défendre contre lui ${duree(t)}` });
       else if (t.type === 'kw') l.push({ s: 'plus', t: `Gagne ${t.kw} ${duree(t)}` });
+      else if (t.type === 'doublePremiere' && E.cpt.attaques === 0) l.push({ s: 'plus', t: 'La première attaque du tour vaut double (Paris Gentle Mates)' });
     }
     for (const m of ['Provocation', 'Garde', 'Riposte', 'Légion']) if (Combat.aMotCle(E, c, m)) l.push({ s: 'kw', t: `<b>${m}</b> : ${MOTS_CLES[m]}` });
     if (Combat.shieldActif(E, c)) l.push({ s: 'kw', t: `<b>Shield</b> : ${MOTS_CLES.Shield}` });
@@ -2248,6 +2250,14 @@ const Table = (() => {
     async attaquePerdue(e) { effacerVisee(); flottant(elU(e.u), 'Attaque perdue', 'info'); await attendre(380); },
     /* Version 3.0.7 : les effets qui passaient sans un geste. */
     async mod(e) {
+      /* Ce qui vise un CEO plutôt qu'un Joueur (3.0.13) : GP Explorer II,
+         Paris Gentle Mates. Les attaques doublées se voient au redessin. */
+      if (e.type === 'pasJoueur' || e.type === 'doublePremiere') {
+        flottant(elCEO(e.camp), e.type === 'pasJoueur' ? 'Plus de Joueur ce tour' : 'Première attaque doublée', 'info');
+        rendre(true);
+        await attendre(560);
+        return;
+      }
       const cibles = e.cible != null ? [elU(e.cible)] : qsa(`.ar-camp.${cote(e.camp)} .ar-j`);
       cibles.filter(Boolean).forEach(x => { x.classList.remove('effet'); void x.offsetWidth; x.classList.add('effet'); setTimeout(() => x && x.classList.remove('effet'), 900); });
       /* La Défense et les attaques : les chiffres montent d'eux-mêmes au

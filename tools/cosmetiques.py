@@ -158,12 +158,11 @@ def detourer(fichier, cle):
 
 
 # ---------------------------------------------------------------- Secretes
+# 124, 126 et 127 n'ont plus de visuel floute depuis la 3.0.13 : leurs
+# images viennent de photos redressees (tools/redresser-photo.js).
 SECRETES = [
     ('secrete-123.jpg', '123_S_Joueur_Orange_Le-Quatrieme-du-Nom.avif'),
-    ('secrete-floue-a.jpg', '124_S_Secrete.avif'),
     ('secrete-125.jpg', '125_S_Joueur_Mauve_6W26L.avif'),
-    ('secrete-floue-b.jpg', '126_S_Secrete.avif'),
-    ('secrete-floue-c.jpg', '127_S_Secrete.avif'),
 ]
 
 

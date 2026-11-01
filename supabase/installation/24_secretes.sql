@@ -11,20 +11,19 @@
 --    · les doublons des amis : 21_reflets.sql ; les exemplaires a garder :
 --      22_garder.sql.
 --
---  Les Secretes : cinq cartes numerotees apres l'extension (#123 a #127).
---  Deux sont revelees, trois encore floutees : elles existent, se tirent et
---  s'echangent, mais leur visuel et leur texte arriveront plus tard (le
---  navigateur montre leur image floutee, js/promos-data.js). Elles sont
---  hors des 122 (`promo`), ni recyclables ni fabricables, et echangeables
---  contre une autre Secrete (`secrete`).
+--  Les Secretes : cinq cartes numerotees apres l'extension (#123 a #127),
+--  toutes revelees depuis la version 3.0.13 (124, 126 et 127 d'apres les
+--  photos du proprietaire, 1er novembre 2026). Elles sont hors des 122
+--  (`promo`), ni recyclables ni fabricables, et echangeables contre une
+--  autre Secrete (`secrete`).
 -- =====================================================================
 
 insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo, reverse, secrete) values
   ('c123', 123, 'Le Quatrième du Nom', 'joueur', 'orange', 'S', false, true, false, true),
-  ('c124', 124, 'Secrète n°124',       'joueur', 'neutre', 'S', false, true, false, true),
+  ('c124', 124, 'Brawks Trop Déter',   'joueur', 'violette', 'S', false, true, false, true),
   ('c125', 125, '6W26L',               'joueur', 'mauve',  'S', false, true, false, true),
-  ('c126', 126, 'Secrète n°126',       'joueur', 'neutre', 'S', false, true, false, true),
-  ('c127', 127, 'Secrète n°127',       'joueur', 'neutre', 'S', false, true, false, true)
+  ('c126', 126, 'GP Explorer II',      'moment', 'neutre', 'S', false, true, false, true),
+  ('c127', 127, 'Paris Gentle Mates',  'moment', 'mauve',  'S', false, true, false, true)
 on conflict (id) do update set
   num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
   rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo,

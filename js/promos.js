@@ -122,7 +122,7 @@ function promoSousTitre(c) {
   if (c.obtention === 'master') return 'Récompense du Master Set — les ' + cards.length + ' cartes réunies.';
   if (c.obtention === 'palier') return 'Récompense de collection — ' + PROMO_PALIER + ' % de l\'extension.';
   /* Version 3.0 : la Promo d'un Starter Deck, gagnée en Combats. */
-  if (c.obtention === 'section') return `Promo du Starter Deck ${c.section === 'deter' ? 'Section Déter' : 'Section Toxique'} — gagnée en Combats. Visuel à venir.`;
+  if (c.obtention === 'section') return `Promo du Starter Deck ${c.section === 'deter' ? 'Section Déter' : 'Section Toxique'} — gagnée en Combats.`;
   return 'Achetée en boutique.';
 }
 

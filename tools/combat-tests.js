@@ -336,6 +336,79 @@ test('en phase de Combat, plus que des attaques', () => {
   egal(options(E).filter(a => ['deployer', 'lier', 'jouer'].includes(a.t)).length, 0);
 });
 
+console.log('Les cartes révélées en 3.0.13 (P03, P04, Secrètes 124, 126, 127)');
+test('P03 et P04 : le texte de Brawks Déter (#077) et de Squeezie le Toxique (#012)', () => {
+  egal(Decks.cleCopie('p03'), Decks.cleCopie('c077'), 'P03 compte avec Brawks Déter');
+  egal(Decks.cleCopie('p04'), Decks.cleCopie('c012'), 'P04 compte avec Squeezie le Toxique');
+  vrai(Decks.STARTERS.deter.cartes.p03 === 1 && Decks.STARTERS.toxique.cartes.p04 === 1, 'chaque Starter a la Promo de sa Section');
+  /* P03 touche le CEO : on pioche une carte. */
+  const E = situation({ lignes: [['p03'], []], ess: [['rose']] });
+  const main = E.j[0].main.length;
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
+  egal(E.j[1].pv.length, 3);
+  egal(E.j[0].main.length, main + 1, 'pioche');
+  /* P04 entre : un Joueur adverse est engagé. */
+  const F = situation({ lignes: [[], ['c078']], main: [['p04'], []] });
+  Combat.agir(F, { t: 'deployer', u: F.j[0].main[0].u, ligne: 0 });
+  const d = Combat.demande(F);
+  if (d && d.type === 'choix') repondre(F, L(F, 1, 0).u);
+  vrai(L(F, 1, 0).eng, 'le Joueur adverse est engagé');
+});
+test('Brawks Trop Déter (124) : il touche le CEO, tous ses Joueurs se désengagent', () => {
+  const E = situation({ lignes: [['c124', ['c078', { eng: true }]], []], ess: [['violette', 'violette']] });
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
+  egal(E.j[1].pv.length, 3);
+  vrai(!L(E, 0, 0).eng && !L(E, 0, 1).eng, 'les deux sont désengagés');
+  vrai(attaques(E, L(E, 0, 0).u).length === 0, 'plus d\'Essence pour attaquer encore');
+});
+test('GP Explorer II (126) : chaque CEO garde deux Joueurs, et plus de Joueur à jouer ce tour', () => {
+  const E = situation({ lignes: [['c078', 'c051', 'c071'], ['c010', 'c057', 'c078']], main: [['c126', 'c052'], []] });
+  L(E, 1, 2).obj.push({ u: ++E.seq, id: 'c087', j: 1 });
+  Combat.agir(E, { t: 'jouer', u: E.j[0].main[0].u });
+  let d = Combat.demande(E);
+  egal([d.qui, d.but], [0, 'garderJoueur']);
+  repondre(E, L(E, 0, 0).u); repondre(E, L(E, 0, 2).u);
+  d = Combat.demande(E);
+  egal([d.qui, d.but], [1, 'garderJoueur'], 'puis l\'adversaire');
+  repondre(E, L(E, 1, 0).u); repondre(E, L(E, 1, 1).u);
+  egal(E.j[0].lignes.map(c => c && c.id), ['c078', null, 'c071']);
+  egal(E.j[1].lignes.map(c => c && c.id), ['c010', 'c057', null]);
+  vrai(E.j[0].main.some(c => c.id === 'c051') && E.j[1].main.some(c => c.id === 'c078'), 'les autres en main');
+  egal(E.j[1].defausse.slice(-1)[0].id, 'c087', 'leurs Objets à la défausse');
+  egal(options(E).filter(a => a.t === 'deployer').length, 0, 'plus de Joueur ce tour');
+  /* Même par un effet qui dit « jouez » : Versus Fighting revient en main,
+     et personne ne prend sa place. */
+  E.j[0].ess = [{ u: ++E.seq, coul: 'azur', eng: false, j: 0 }, { u: ++E.seq, coul: 'azur', eng: false, j: 0 }];
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 2).u, k: 0, cible: 'ceo' });
+  d = Combat.demande(E);
+  vrai(!d || d.but !== 'deployer', 'pas de choix de remplaçant');
+  egal(L(E, 0, 2), null);
+  /* Au tour suivant de ce CEO, il rejoue des Joueurs. */
+  finirTour(E); finirTour(E);
+  vrai(options(E).some(a => a.t === 'deployer'), 'de nouveau permis');
+});
+test('Paris Gentle Mates (127) : deux Essences Mauves rendues, la première attaque du tour double', () => {
+  const E = situation({ lignes: [['c078', 'c078'], ['c010']], ess: [[['mauve', true], 'mauve', 'mauve', 'rose', 'rose']], main: [['c127'], []] });
+  const engagee = E.j[0].ess[0].u;
+  egal(Combat.valeurAttaque(E, L(E, 0, 0), 0), 90);
+  Combat.agir(E, { t: 'jouer', u: E.j[0].main[0].u });
+  egal(E.j[0].ess.filter(e => e.coul === 'mauve').length, 1, 'deux Mauves en moins');
+  vrai(E.j[0].reserve.some(e => e.u === engagee), 'l\'engagée d\'abord');
+  egal(Combat.valeurAttaque(E, L(E, 0, 0), 0), 180, 'doublée avant la première attaque');
+  egal(Combat.valeurAttaque(E, L(E, 0, 1), 0), 180);
+  /* Estafilade 180 contre Broken Brawks 130, sans soutien : vaincu. */
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
+  repondre(E, L(E, 1, 0).u);
+  let d = Combat.demande(E);
+  if (d && d.but === 'soutien') { repondre(E, 'non'); d = Combat.demande(E); }
+  if (d && d.but === 'legion') repondre(E, 'non');
+  egal(L(E, 1, 0), null, 'le défenseur est vaincu');
+  egal(Combat.valeurAttaque(E, L(E, 0, 1), 0), 90, 'la deuxième ne double pas');
+  /* Sans deux Mauves en jeu, elle ne se joue pas. */
+  const F = situation({ lignes: [['c078'], []], ess: [['mauve', 'rose']], main: [['c127'], []] });
+  egal(options(F).filter(a => a.t === 'jouer').length, 0);
+});
+
 console.log('Decks');
 test('les deux Starter Decks sont valides : 40 cartes, 10 Essences, au moins 15 Joueurs', () => {
   for (const k of ['toxique', 'deter']) {

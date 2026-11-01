@@ -1980,7 +1980,7 @@
      d'un combat contre l'IA, les défis entre amis.
      Les tables de récompenses viennent de la page (js/combat/campagne.js),
      comme la table SQL en est la copie. */
-  const SEC_PROMO = { toxique: 'p03', deter: 'p04' };
+  const SEC_PROMO = { toxique: 'p04', deter: 'p03' };
   const CB_MIN_MS = 20000;
   /* L'XP de combattant d'un joueur (xp_de, 01_schema.sql), pour le niveau
      posé sur son avatar. Les joueurs simulés en ont selon leur ancienneté. */
@@ -2687,6 +2687,18 @@
     if (ev && ev.code === 'choc' && ev.fin - ev.debut > (CHOC_DUREE + 1) * 86400000) { ev.fin = ev.debut + CHOC_DUREE * 86400000; ev.texte = CHOC_TEXTE; }
     mondeRaid();
     mondeCombats13();
+    /* Version 3.0.13 : les vraies Promos des Sections sont P04 (Squeezie le
+       Toxique) pour Toxique et P03 (Brawks Déter) pour Déter, l'inverse des
+       provisoires. Une partie de démo d'avant a reçu la Promo de l'autre
+       Section en la rejoignant : tant que la campagne n'est pas finie (qui
+       donne les deux), elle est échangée contre la bonne. */
+    for (const id of Object.keys(S.cb || {})) {
+      const c = S.cb[id], col = colDe(id), bonne = SEC_PROMO[c.section], autre = SEC_PROMO[c.section === 'toxique' ? 'deter' : 'toxique'];
+      if (!bonne || c.finie || c.promos13 || col[bonne]) continue;
+      c.promos13 = true;
+      if (col[autre]) { col[autre]--; if (!col[autre]) delete col[autre]; }
+      col[bonne] = 1;
+    }
   }
 
   /* Une partie de démo qui ne se relit plus (une sauvegarde d'une version
