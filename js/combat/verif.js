@@ -151,10 +151,12 @@ const Verif = (() => {
   /* Un défi entre amis. `x` : { decks: [deck_de, deck_pour], graine,
      actions, auteurs } — `auteurs[k]` : qui a envoyé le coup k (0 : celui qui
      a défié, 1 : l'autre ; absent pour un défi d'avant la 3.0.14). Rend
-     { fini, gagnant, fautif, raison, tours, verdicts: [v0, v1] } : un coup
-     envoyé hors de son tour, ou refusé par les règles, fait perdre son
-     auteur (`fautif`), et la partie s'arrête là. */
-  function defi(x) {
+     { fini, gagnant, fautif, raison, tours, verdicts: [v0, v1], histo } : un
+     coup envoyé hors de son tour, ou refusé par les règles, fait perdre son
+     auteur (`fautif`), et la partie s'arrête là. `opt` : { moi, meta } —
+     l'historique est écrit pour ce joueur-là. */
+  function defi(x, opt) {
+    opt = opt || {};
     const E = Combat.creer({ decks: x.decks, noms: ['A', 'B'], graine: Number(x.graine) >>> 0 });
     const acts = Array.isArray(x.actions) ? x.actions : [];
     const par = Array.isArray(x.auteurs) ? x.auteurs : [];
@@ -176,8 +178,12 @@ const Verif = (() => {
     }
     const fini = fautif != null || !!E.fin;
     const gagnant = fautif != null ? 1 - fautif : E.fin ? E.fin.gagnant : null;
+    let histo = null;
+    if (fini && (opt.moi === 0 || opt.moi === 1) && typeof Historique !== 'undefined') {
+      try { histo = Historique.entree(E, opt.moi, opt.meta || {}); } catch (e) { histo = null; }
+    }
     return { fini, gagnant, fautif, raison: fautif != null ? raison : E.fin ? E.fin.raison : null, tours: E.tour,
-      verdicts: [verdict(E, 0), verdict(E, 1)], E };
+      verdicts: [verdict(E, 0), verdict(E, 1)], histo };
   }
 
   return { partie, rejouer, verdict, defi, canon };
