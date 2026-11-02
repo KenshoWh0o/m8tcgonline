@@ -18,6 +18,13 @@
 const GAME_NAME = 'Mate TCG Online';
 const SET_NAME = 'Tout commence ici';
 
+/* La démo présentée à Gentle Mates (matetcg.com/demo, tools/demo.py --demo,
+   3.0.14) : le jeu tel qu'il serait au premier jour. Ni numéro de version, ni
+   nouveautés, ni traces des événements passés ; une présentation à la
+   première visite, un Labo pour tout tester, pas de lien vers le Discord.
+   Posé par la page de la démo avant tout script ; faux partout ailleurs. */
+const DEMO = globalThis.DEMO_M8 === true;
+
 /* Mention légale, affichée à l'identique sur l'écran d'attente et dans Réglages.
    Un seul endroit pour la modifier : elle doit dire la même chose aux deux. */
 const MENTIONS = 'Projet non affilié à Gentle Mates. Toutes les images présentes '
@@ -235,6 +242,16 @@ const TITRES = {
   t_legende_arene:{ nom: 'Légende de l\'arène',    ton: 'L',  comment: 'Atteindre le niveau 50 de combattant' },
   t_admin:     { nom: 'Administrateur',            ton: 'ADM', comment: 'Réservé à l\'équipe du jeu' }
 };
+
+/* La démo de Gentle Mates (DEMO) montre le jeu à son premier jour : les
+   titres, les cadres et le succès qui disent un passé — les premières
+   versions, les invitations de la bêta, les événements Reflets et
+   L'Échauffement — n'y existent pas. Les cadres des succès (Maître, Reflet,
+   Aurore) restent : ils se gagnent toujours. Le titre d'administrateur non
+   plus : le visiteur de la démo l'est, pour le Labo. */
+const PASSES = new Set(['t_admin', 'pionnier', 't_pionnier', 't_hote', 't_eclaireur', 't_collect', 't_ame', 'f_miroir', 'f_nebuleuse',
+  't_echauffe', 't_ech_round', 't_ech_feu', 't_ech_entraineur', 't_ech_infatigable', 'f_braise', 'f_ardeur']);
+const horsDemo = k => DEMO && PASSES.has(k);
 
 /* La monnaie d'un événement (supabase/installation/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait

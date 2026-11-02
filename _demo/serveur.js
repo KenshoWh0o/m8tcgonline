@@ -31,6 +31,11 @@
   const CLE = 'demo-serveur';
   const CLE_SESSION = 'mtcg.demo.connecte';
   const MOI = 'moi';
+  /* La démo présentée à Gentle Mates (tools/demo.py --demo, 3.0.14) : le jeu
+     à son premier jour. Pas d'invitations (la bêta), la chasse à la carte
+     unique encore ouverte, douze joueurs simulés pour que les classements,
+     le Raid et l'événement vivent (BOTS_M8), et ils se manifestent plus tôt. */
+  const M8 = window.DEMO_M8 === true;
 
   /* ------------------------------------------------------------ outils */
   const now = () => Date.now();
@@ -254,6 +259,8 @@
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
        devise: devise || 'eclats', evenement: evenement || null, limite: limite == null ? null : limite }));
 
+  if (M8) BOUTIQUE.splice(0, BOUTIQUE.length, ...BOUTIQUE.filter(a => a.effet !== 'invitation'));
+
   /* Le Pass de l'événement (21_reflets.sql). */
   const PISTE = [
     [1, 15, 'boosters', 2, null, '2 boosters'], [2, 40, 'eclats', 150, null, '150 Éclats'],
@@ -284,7 +291,8 @@
   /* Le Choc dure deux semaines depuis la 3.0.13 (trois avant) ; son texte ne
      nomme pas le boss du raid suivant (le propriétaire, 1er novembre 2026). */
   const CHOC_DUREE = 14;
-  const CHOC_TEXTE = 'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l\'Épreuve du jour.';
+  const CHOC_TEXTE = M8 ? 'Deux Sections s\'affrontent pendant deux semaines : l\'Épreuve du jour, le Raid et un Pass de vingt paliers.'
+    : 'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l\'Épreuve du jour.';
   const PISTES = { reflets: PISTE, choc: PISTE_CHOC };
   const pisteDe = code => PISTES[code] || PISTE;
 
@@ -514,7 +522,7 @@
       combat: combatEtat(p),
       maitrise: maitriseEtat(p),
       inv: garde(invDe(p)),
-      quetes: QUETES.filter(q => (!q.evenement || q.evenement === evenementEnCours()) && !(q.metric === 'invite' && estFilleul(p)))
+      quetes: QUETES.filter(q => (!q.evenement || q.evenement === evenementEnCours()) && !(q.metric === 'invite' && (M8 || estFilleul(p))))
         .sort((a, b) => ordre[a.scope] - ordre[b.scope] || a.ordre - b.ordre)
         .map(q => {
           const qp = S.qp[cleQp(p, q)];
@@ -1753,17 +1761,68 @@
      y tiennent), et leurs amis te proposent des échanges de temps en temps.
      Tout se décide dans vivre(), appelé à chaque action et toutes les
      quelques secondes. */
-  const BOTS = [
+  const BOTS_DEMO = [
     { id: 'b_lumen', pseudo: 'Lumen',   frame: 'f_or',     paquets: 70,  jours: 34, serie: 12, ami: true },
     { id: 'b_mira',  pseudo: 'Mira',    frame: 'f_rose',   paquets: 32,  jours: 18, serie: 5,  ami: true },
     { id: 'b_kairo', pseudo: 'Kairo',   frame: 'f_azur',   paquets: 24,  jours: 9,  serie: 3,  ami: false },
     { id: 'b_nova',  pseudo: 'Nova.92', frame: 'f_prisme', paquets: 150, jours: 40, serie: 40, ami: false }
   ];
+  /* La démo de Gentle Mates (M8) : les mêmes quatre, et huit autres joueurs
+     que l'on croise dans les classements, l'événement et le Raid — de quoi
+     montrer un serveur d'une dizaine de joueurs actifs, celui pour lequel le
+     Raid est réglé. Chacun a un profil complet (avatar, cadre, titre,
+     devise, fond, vitrine), une Section, des Étincelles, des combats, et
+     certains montrent un deck, construit par l'assistant de l'atelier
+     (Decks.assistant). Les pseudos sont inventés. `niv` : le niveau de
+     combattant ; `stats` : victoires, défaites en solo, victoires et
+     défaites entre amis, série, record ; `faits` : combats de campagne
+     gagnés ; `raid` : dégâts au boss (le raid en est à sa phase 3 à la
+     première visite) ; `deck` : [nom, couleur, style]. Les cadres et titres
+     sont ceux qu'ils auraient pu gagner : boutique, Pass du Choc, niveaux. */
+  const BOTS_M8 = [
+    { id: 'b_lumen', pseudo: 'Lumen', frame: 'f_choc', paquets: 120, jours: 34, serie: 12, ami: true,
+      section: 'toxique', etincelles: 580, niv: 15, titre: 't_recrue', devise: 'Toujours un échange d\'avance.',
+      stats: [64, 31, 9, 4, 3, 11], faits: 14, raid: 14, deck: ['Rose qui pique', 'rose', 'rapide'] },
+    { id: 'b_mira', pseudo: 'Mira', frame: 'f_rose', paquets: 64, jours: 18, serie: 5, ami: true,
+      section: 'toxique', etincelles: 310, niv: 8, titre: 't_artisan', devise: 'Plus que trois Légendaires.',
+      stats: [21, 18, 2, 3, 0, 4], faits: 6, raid: 9 },
+    { id: 'b_kairo', pseudo: 'Kairo', frame: 'f_azur', paquets: 26, jours: 6, serie: 3, ami: false,
+      section: 'deter', etincelles: 95, niv: 3, titre: null, devise: 'Nouveau, mais déjà Déter.',
+      stats: [8, 9, 0, 1, 1, 3], faits: 3, raid: 4 },
+    { id: 'b_nova', pseudo: 'Nova.92', frame: 'f_niv20', paquets: 260, jours: 40, serie: 40, ami: false,
+      section: 'deter', etincelles: 640, niv: 24, titre: 't_stratege', devise: 'La campagne en entier, et cent victoires.',
+      stats: [118, 40, 22, 9, 6, 17], faits: 20, raid: 18, deck: ['Mauve, sans pitié', 'mauve', 'equilibre'] },
+    { id: 'b_sora', pseudo: 'Sora', frame: 'f_prisme', paquets: 190, jours: 38, serie: 21, ami: false,
+      section: 'toxique', etincelles: 470, niv: 12, titre: 't_centurion', devise: 'Collectionneuse avant tout.',
+      stats: [40, 22, 3, 2, 2, 8], faits: 9, raid: 12, deck: ['Orange en force', 'orange', 'solide'] },
+    { id: 'b_pixelle', pseudo: 'Pixelle', frame: 'f_toxique', paquets: 88, jours: 21, serie: 9, ami: false,
+      section: 'toxique', etincelles: 360, niv: 10, titre: 't_supporter', devise: 'Toxique jusqu\'au bout.',
+      stats: [33, 25, 4, 4, 2, 6], faits: 8, raid: 10 },
+    { id: 'b_tiago', pseudo: 'Tiago', frame: 'f_niv10', paquets: 110, jours: 27, serie: 4, ami: false,
+      section: 'deter', etincelles: 280, niv: 13, titre: 't_bagarreur', devise: 'Un deck Bleu, et beaucoup de patience.',
+      stats: [37, 30, 1, 5, 0, 5], faits: 11, raid: 8, deck: ['Bleu patient', 'bleue', 'solide'] },
+    { id: 'b_brume', pseudo: 'Brume', frame: 'f_deter', paquets: 70, jours: 15, serie: 15, ami: false,
+      section: 'deter', etincelles: 405, niv: 9, titre: 't_recrue', devise: 'Une Épreuve par jour, sans exception.',
+      stats: [26, 14, 0, 0, 4, 7], faits: 7, raid: 9 },
+    { id: 'b_orka', pseudo: 'Orka', frame: 'f_or', paquets: 150, jours: 33, serie: 2, ami: false,
+      section: 'deter', etincelles: 190, niv: 11, titre: 't_negociant', devise: 'J\'échange mes doublons, demandez.',
+      stats: [19, 20, 6, 6, 1, 4], faits: 5, raid: 5 },
+    { id: 'b_elio', pseudo: 'Elio', frame: 'default', paquets: 18, jours: 3, serie: 3, ami: false,
+      section: 'toxique', etincelles: 60, niv: 2, titre: null, devise: null,
+      stats: [3, 4, 0, 0, 0, 2], faits: 2, raid: 2 },
+    { id: 'b_saphyr', pseudo: 'Saphyr', frame: 'f_azur', paquets: 130, jours: 30, serie: 30, ami: false,
+      section: 'deter', etincelles: 330, niv: 14, titre: 't_fidele', devise: 'Trente jours d\'affilée.',
+      stats: [45, 28, 2, 3, 3, 9], faits: 12, raid: 7, deck: ['Azur et Violette', 'violette', 'equilibre'] },
+    { id: 'b_vesper', pseudo: 'Vesper', frame: 'f_niv10', paquets: 95, jours: 24, serie: 6, ami: false,
+      section: 'toxique', etincelles: 240, niv: 10, titre: 't_bagarreur', devise: 'Classement Arcade : en route.',
+      stats: [30, 27, 1, 2, 1, 5], faits: 10, raid: 4 }
+  ];
+  const BOTS = M8 ? BOTS_M8 : BOTS_DEMO;
 
   /* La chasse est finie, comme sur le vrai site : la carte unique a été
      tirée — ici par Nova.92, qui porte son cadre. */
   function chasseTerminee() {
-    if (S.chasse.gagnant) return;
+    if (M8 || S.chasse.gagnant) return;
     const g = 'b_nova';
     if (!S.profils[g]) return;
     S.chasse.active = false;
@@ -1844,7 +1903,7 @@
     if (S.raid && S.raid.niveau == null && S.raid.v === 2) return;
     S.raid = null;
     const sa = saisonDemo();
-    [['b_lumen', 30], ['b_mira', 22], ['b_kairo', 14], ['b_nova', 36]].forEach(([id, d]) => {
+    (M8 ? BOTS.map(b => [b.id, b.raid || 0]) : [['b_lumen', 30], ['b_mira', 22], ['b_kairo', 14], ['b_nova', 36]]).forEach(([id, d]) => {
       if (!S.profils[id]) return;
       const x = partDe(sa, id);
       x.combats += Math.ceil(d / 6);
@@ -1854,10 +1913,50 @@
     });
   }
 
+  /* La démo de Gentle Mates : chaque joueur simulé reçoit son profil
+     (BOTS_M8), une fois. */
+  function mondeM8() {
+    if (S.m8) return;
+    S.m8 = 1;
+    const tout = {};
+    for (const k of Combat.toutes()) if (Decks.jouable(k)) tout[k.id] = 3;
+    BOTS.forEach(b => {
+      const pr = S.profils[b.id];
+      if (!pr) return;
+      const inv = invDe(b.id);
+      if (b.frame && b.frame !== 'default') { inv[b.frame] = 1; pr.frame = b.frame; }
+      if (b.titre) { inv[b.titre] = 1; pr.titre = b.titre; }
+      /* Ce qu'il faut pour le titre porté : ses chiffres le disent aussi. */
+      if (b.titre === 't_negociant') pr.trades_done = Math.max(pr.trades_done || 0, 25);
+      if (b.titre === 't_artisan') pr.fabrications = Math.max(pr.fabrications || 0, 1);
+      pr.devise = b.devise || null;
+      /* Le fond : sa plus belle carte. */
+      const siennes = Object.keys(colDe(b.id)).map(carte).filter(k => k && !k.promo && k.cat !== 'essence' && !k.rev)
+        .sort((x, y) => RAR[y.rar].rank - RAR[x.rar].rank);
+      pr.banniere = siennes.length && b.niv >= 8 ? siennes[0].id : null;
+      const c = cb(b.id);
+      if (!c.section) { c.section = b.section; ajouter(b.id, SEC_PROMO[b.section], 1); }
+      let xp = 0;
+      for (let n = 1; n < (b.niv || 1); n++) xp += xpRequis(n);
+      c.xp = xp;
+      const [v, d, pv, pd, serie, max] = b.stats;
+      Object.assign(c.stats, { victoires: v, defaites: d, pvp_v: pv, pvp_d: pd, serie, serie_max: max });
+      c.faits = combatsCampagne(b.section).slice(0, b.faits).map(x => x.id);
+      c.finie = b.faits >= combatsCampagne(b.section).length;
+      S.evt.comptes[b.id + '|choc'] = { solde: Math.round(b.etincelles / 3), total: b.etincelles };
+      c.decks = c.decks.filter(x => !x.public);
+      if (b.deck) {
+        const [nom, coul, style] = b.deck;
+        const x = Decks.assistant({ couleurs: [coul], style }, tout).deck;
+        c.decks.push({ id: 'd' + (++S.seq), nom, cartes: x.cartes, reserve: x.reserve, couverture: x.couverture, public: true });
+      }
+    });
+  }
+
   function creerMonde() {
     const t0 = now();
     S = { v: 1, seq: 0, debut: t0, profils: {}, col: {}, inv: {}, qp: {}, amities: [], trades: [],
-      notifs: [], annonces: [], recyclages: [], prochaineOffre: t0 + 75000, kairo: t0 + 25000,
+      notifs: [], annonces: [], recyclages: [], prochaineOffre: t0 + (M8 ? 50000 : 75000), kairo: t0 + (M8 ? 20000 : 25000),
       tirages: [], chasse: { carte: 'u01', active: true, gagnant: null, trouvee_le: null },
       cadeaux: [] };
 
@@ -1887,8 +1986,11 @@
     });
 
     S.annonces.push({ id: ++S.seq, actif: true, created_at: t0,
-      titre: 'Bienvenue dans la démo',
-      texte: 'Tout se passe sur cet appareil : ta collection, tes Éclats et tes quêtes y sont '
+      titre: M8 ? 'Bienvenue sur Mate TCG Online' : 'Bienvenue dans la démo',
+      texte: M8
+        ? 'Le Choc des Sections est en cours : choisis ta Section dans Combats, et l\'arène t\'attend. '
+          + 'Lumen et Mira sont déjà tes amis : leur collection est dans Social, avec leurs doublons à échanger.'
+        : 'Tout se passe sur cet appareil : ta collection, tes Éclats et tes quêtes y sont '
         + 'enregistrés. Les autres joueurs sont simulés — Lumen et Mira sont déjà tes amis, '
         + 'Kairo ne va pas tarder à se manifester, et Nova.92 attend que tu l\'ajoutes. Ils '
         + 'répondent tout seuls à tes demandes d\'ami et d\'échange.' });
@@ -2689,7 +2791,7 @@
     }
     /* Un ami simulé te défie, une fois, après quelques minutes. */
     const c = cb(MOI);
-    if (c.section && !S.defiOffert && t - (S.debut || t) > 4 * 60000) {
+    if (c.section && !S.defiOffert && t - (S.debut || t) > (M8 ? 2 : 4) * 60000) {
       const ami = BOTS.find(b => (paire(MOI, b.id) || {}).accepte);
       if (ami && !defisDe().some(d => d.statut === 'attente' || d.statut === 'en_cours')) {
         S.defiOffert = true;
@@ -2742,6 +2844,7 @@
     if (ev && ev.code === 'choc' && ev.fin - ev.debut > (CHOC_DUREE + 1) * 86400000) { ev.fin = ev.debut + CHOC_DUREE * 86400000; ev.texte = CHOC_TEXTE; }
     mondeRaid();
     mondeCombats13();
+    if (M8) mondeM8();
     /* Version 3.0.13 : les vraies Promos des Sections sont P04 (Squeezie le
        Toxique) pour Toxique et P03 (Brawks Déter) pour Déter, l'inverse des
        provisoires. Une partie de démo d'avant a reçu la Promo de l'autre

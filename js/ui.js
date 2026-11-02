@@ -11,11 +11,11 @@ let sheetLocked = false;
 let sheetRetour = null;
 const FOCUSABLES = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 
-function openSheet({ title, body, actions, locked }) {
+function openSheet({ title, body, actions, locked, cls }) {
   sheetLocked = !!locked;
   const w = $('#sheet');
   if (w.hidden) sheetRetour = document.activeElement;
-  w.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" tabindex="-1"${title ? ' aria-labelledby="sheet-titre"' : ''}>${title ? `<h3 id="sheet-titre">${h(title)}</h3>` : ''}${body || ''}<div class="acts">${(actions || []).map((a, i) => `<button class="btn ${a.primary ? '' : 'ghost'}" data-si="${i}" ${a.disabled ? 'disabled' : ''}>${h(a.label)}</button>`).join('')}</div></div>`;
+  w.innerHTML = `<div class="sheet${cls ? ' ' + cls : ''}" role="dialog" aria-modal="true" tabindex="-1"${title ? ' aria-labelledby="sheet-titre"' : ''}>${title ? `<h3 id="sheet-titre">${h(title)}</h3>` : ''}${body || ''}<div class="acts">${(actions || []).map((a, i) => `<button class="btn ${a.primary ? '' : 'ghost'}" data-si="${i}" ${a.disabled ? 'disabled' : ''}>${h(a.label)}</button>`).join('')}</div></div>`;
   w.hidden = false;
   w.querySelectorAll('[data-si]').forEach(b => {
     b.onclick = e => {

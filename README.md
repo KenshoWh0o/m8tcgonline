@@ -43,19 +43,18 @@ Autres documents : [`SETUP.md`](SETUP.md) (mettre un serveur Supabase en ligne, 
 | Lieu | Contenu | Version |
 |---|---|---|
 | **`main`, à la racine** | **Le vrai site**, servi à `matetcg.com` par GitHub Pages (`CNAME`). La 2.5, publiée le 25 octobre 2026 (`e9f0c36`) et sortie d'elle-même le lundi 26 octobre à 0 h, heure de Paris (README de la 2.x, « La sortie datée » ; aucune session n'a encore vérifié le site après cette minute : feuille de route, § 6). | **2.5** |
-| **`main`, dossier `prebuild/`** | La démo de la prochaine 2.x, construite depuis `version-2.5` et servie à `matetcg.com/prebuild/` (faux serveur, comme la pré-prod). | 2.5 (Labo refait) |
-| **`main`, dossier `preprod/`** | La pré-prod : une copie *construite* de la 3.0, servie à `matetcg.com/preprod/`, qui tourne avec un **faux serveur** dans le navigateur (aucun compte, aucune base). | 3.0.x |
-| **Branche de travail `version-3.0`** | Le **code source** de la 3.0, à la racine. `preprod/` y est aussi versionné : identique à `main` juste après une publication, en avance entre deux (`git diff --stat origin/main HEAD -- preprod`). | 3.0.12 |
+| **`main`, dossier `demo/`** | **La démo présentée à Gentle Mates** (3.0.14, à la demande du propriétaire), servie à `matetcg.com/demo/` : la 3.0 avec le **faux serveur** dans le navigateur (aucun compte, aucune base), derrière un **code d'accès**, montrée « à son premier jour » (ni version, ni nouveautés, ni événements passés : `DEMO`, [§ 2.6](#26-les-démos)). Elle remplace `preprod/` et `prebuild/`, retirés de `main` le même jour (« enlève le de partout »). **Elle ne se republie qu'à la demande du propriétaire** (« arrête de mettre à jour le fichier demo dans le repo »). | 3.0.14 |
+| **Branche de travail `version-3.0`** | Le **code source** de la 3.0, à la racine. Depuis la 3.0.14, **ni `preprod/` ni `demo/` n'y sont versionnés** (`.gitignore`) : on les construit avec `tools/demo.py`. | 3.0.14 (en cours) |
 | **Branche `version-2.5`** | La **ligne 2.x** (le vrai site), avec son propre `README.md` et son `CLAUDE.md`. Elle ne se publie à la racine de `main` qu'avec l'accord du propriétaire. Elle remplace `claude/interface-ux-fixes-o92u4a` et `teaser-2.x`, toutes deux contenues dans `main` et à supprimer par le propriétaire. | 2.5 |
 | **Base Supabase de production** | `supabase/MAJ-2.5.sql` de la 2.x, collé par le propriétaire le 25 octobre 2026, puis ses fins de ligne Windows corrigées : identique à une installation neuve de `version-2.5` (README de la 2.x, « La mise en ligne »). **Aucun SQL 3.0 n'y a été joué.** | 2.5 |
 
 **État du projet.** Le 24 septembre 2026, le lancement public a été **annulé** après échange avec Gentle Mates (`vAnnonceArret()`, `js/gate.js`) : l'écran d'entrée du vrai site affiche « Projet annulé · Merci ». Les comptes déjà invités jouent toujours à la 2.x : la 2.5, sortie le 26 octobre 2026, avec L'Échauffement (jusqu'au 4 novembre à 0 h, puis son récap jusqu'au 7 et un défi par jour, « le mode sans fin », jusqu'à la 3.0). Le développement de la 3.0 continue **uniquement en pré-prod** ; sa date de sortie n'est pas fixée. **La feuille de route** ([`docs/feuille-de-route.md`](docs/feuille-de-route.md), copie identique sur `version-2.5`) dit ce que le propriétaire a prévu pour la 2.5 et la 3.0, et ce qui doit passer de la 2.x à la 3.0.
 
-**Conséquence pratique.** On développe sur la branche, on construit `preprod/` avec `python3 tools/demo.py --preprod`, et on ne reporte **que `preprod/`** sur `main` ([§ 2.5](#25-construire-et-publier-la-pré-prod)). **La branche ne se fusionne jamais dans `main`** : sa racine est la 3.0, qui appelle des RPC absentes de la base de production.
+**Conséquence pratique.** On développe sur la branche, on teste dans `preprod/`, construit en local avec `python3 tools/demo.py --preprod` (non versionné), et on ne reporte sur `main` **que `demo/`**, quand le propriétaire le demande ([§ 2.5](#25-construire-la-pré-prod-publier-la-démo)). **La branche ne se fusionne jamais dans `main`** : sa racine est la 3.0, qui appelle des RPC absentes de la base de production.
 
 ### 1.3 Les règles du propriétaire (non négociables)
 
-1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `preprod/` sur `main`, et aucun SQL 3.0 n'est joué sur la base de production. Le vrai site (la 2.x) peut, lui, évoluer à la demande du propriétaire : on travaille alors sur la branche de la ligne 2.x (`version-2.5`), et on ne publie qu'après son accord. Ce qui change dans la 2.x et n'est pas propre à elle se **reporte dans la 3.0** ([`docs/feuille-de-route.md`](docs/feuille-de-route.md), § 5).
+1. **Rien de la 3.0 sur le vrai site.** Le travail sur la 3.0 ne touche que `demo/` sur `main` (avant le 2 novembre 2026 : `preprod/`), et aucun SQL 3.0 n'est joué sur la base de production. Le vrai site (la 2.x) peut, lui, évoluer à la demande du propriétaire : on travaille alors sur la branche de la ligne 2.x (`version-2.5`), et on ne publie qu'après son accord. Ce qui change dans la 2.x et n'est pas propre à elle se **reporte dans la 3.0** ([`docs/feuille-de-route.md`](docs/feuille-de-route.md), § 5).
 2. **Pas de pull request** sans demande explicite.
 3. **Français**, partout : interface, commentaires, documentation, messages de commit.
 4. **Mode sombre uniquement.** Il n'y a qu'un thème.
@@ -82,9 +81,9 @@ Un README faux est pire que pas de README : en cas de doute, vérifier dans le c
 1. Lire ce README en entier, puis [`docs/design-3.0.md`](docs/design-3.0.md) avant de toucher à un écran, et [`docs/regles-3.0.md`](docs/regles-3.0.md) avant de toucher aux combats. Dans Claude Code, `CLAUDE.md` les importe tous (`@README.md`, `@docs/…`) : ils sont déjà dans le contexte, mais il faut les lire.
 2. `git fetch origin` : la branche `main` locale peut être en retard sur `origin/main`. Toujours comparer avec `origin/main`.
 3. `node tools/combat-tests.js` : les tests de règles doivent tous passer.
-4. `python3 tools/demo.py --preprod`, puis servir le dépôt ([§ 2.1](#21-servir-le-site-en-local)) et ouvrir `/preprod/` : c'est là que la 3.0 se teste.
+4. `python3 tools/demo.py --preprod`, puis servir le dépôt ([§ 2.1](#21-servir-le-site-en-local)) et ouvrir `/preprod/` : c'est là que la 3.0 se teste (en local seulement depuis la 3.0.14 ; la démo de Gentle Mates, `--demo`, s'ouvre à `/demo/`).
 5. Regarder [§ 14](#14-dette-connue) : ce qui est connu pour être faux ou mort.
-6. Si le travail touche à `main` (la racine ou `prebuild/`), lire aussi le `README.md` et le `CLAUDE.md` de la ligne 2.x : `git show origin/version-2.5:README.md`.
+6. Si le travail touche à la racine de `main`, lire aussi le `README.md` et le `CLAUDE.md` de la ligne 2.x : `git show origin/version-2.5:README.md`.
 7. Lire [`docs/feuille-de-route.md`](docs/feuille-de-route.md) : ce que le propriétaire a prévu, et le registre de ce qui passe de la 2.x à la 3.0.
 
 ---
@@ -98,6 +97,7 @@ npx http-server -p 8781 -c-1 -s .        # ou : python3 -m http.server 8781
 ```
 
 - **`http://localhost:8781/preprod/`** : la 3.0 avec le faux serveur. C'est **l'adresse de travail**. Il faut d'abord `python3 tools/demo.py --preprod` après chaque modification : `preprod/` est une copie construite, pas un lien vers les sources.
+- **`http://localhost:8781/demo/`** : la démo de Gentle Mates (`python3 tools/demo.py --demo`) : le code d'accès, puis la présentation à la première visite ([§ 2.6](#26-les-démos)). `?labo=complet` y rend le Labo entier.
 - **`http://localhost:8781/`** : la racine de la branche. Elle parle au **vrai** Supabase (clés réelles dans `js/supabase-config.js`), qui est en 2.1 : on n'y voit que l'écran « Projet annulé ». Ne pas s'en servir pour tester la 3.0.
 - `.claude/launch.json` lance `python3 -m http.server 8781` (configuration « mate-tcg ») : même adresse, mais ce serveur-là laisse le navigateur garder ses fichiers en cache.
 - `-c-1` coupe le cache du serveur ; un service worker de production ne s'installe pas en local sous `/preprod/`, mais il peut traîner dans un navigateur qui a déjà visité la racine : en cas de doute, navigation privée.
@@ -155,27 +155,37 @@ Le script écrit `APP_VERSION` (`js/pwa.js`), accroche à chaque CSS et JS local
 
 **Pourquoi.** GitHub Pages met en cache dix minutes, et le service worker garde les fichiers : sans `?v=`, une correction peut ne jamais arriver chez un joueur.
 
-### 2.5 Construire et publier la pré-prod
+### 2.5 Construire la pré-prod, publier la démo
+
+**La pré-prod ne se publie plus** (3.0.14) : `preprod/` se construit en local (`python3 tools/demo.py --preprod`) et sert aux essais ; il n'est ni versionné ni sur `main`. **La démo de Gentle Mates** (`demo/`) se publie sur `main`, **seulement à la demande du propriétaire** :
 
 ```bash
 python3 tools/version.py 3.0.x            # si la version change (avant demo.py : il relit la version)
-python3 tools/demo.py --preprod           # construit preprod/
-git add -A && git commit && git push -u origin <branche>
+python3 tools/demo.py --demo              # construit demo/ (ignoré par git sur la branche)
 
-# Reporter preprod/ seul sur main :
+# Reporter demo/ seul sur main :
 W=<dossier temporaire>; git fetch origin main
 git worktree add --detach $W origin/main
-rm -rf $W/preprod && cp -a preprod $W/preprod
-cd $W && git add -A preprod && git status --short   # ne doit lister que preprod/
-git commit -m "Pré-prod 3.0.x : …" && git push origin HEAD:main
+rm -rf $W/demo && cp -a demo $W/demo
+cd $W && git add -A demo && git status --short   # ne doit lister que demo/
+git commit -m "Démo : …" && git push origin HEAD:main
 cd - && git worktree remove --force $W
 ```
 
-Contrôle après coup : `git diff --stat origin/main~1 origin/main` ne liste que `preprod/`. GitHub Pages publie en une à deux minutes.
+Contrôle après coup : `git diff --stat origin/main~1 origin/main` ne liste que `demo/`. GitHub Pages publie en une à deux minutes.
 
-### 2.6 La démo autonome
+### 2.6 Les démos
 
-`python3 tools/demo.py` (sans option) construit la même chose dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git) : un jeu complet à envoyer en fichier, qui s'ouvre sans serveur. `_demo/LISEZMOI.txt` l'accompagne. Les réglages de départ (pseudo, Éclats offerts, rythme des boosters, échelle du Raid) sont dans `_demo/reglages.js`.
+**La démo de Gentle Mates** (`python3 tools/demo.py --demo`, sortie `demo/`, publiée à `matetcg.com/demo/`). Demandée par le propriétaire le 1er novembre 2026 : il l'envoie à Gentle Mates pour leur montrer le projet et demander leur accord pour le publier (« ou alors publier seulement un site pour faire les combats si l'ouverture de boosters pose problème »). D'où trois partis pris : le jeu y est **à son premier jour** (« pas de 3.0, pas de patch note, l'évènement du choc est juste un event ponctuel ») ; une **présentation** l'explique à la première visite ; le **Labo** sert à tout tester vite. Concrètement :
+
+- **Le code d'accès** (`_demo/acces.js`, copié en `js/demo-acces.js`) : le démarrage du jeu (`js/app.js`) attend `window.demoAcces()`. Le code n'est écrit nulle part dans le dépôt ni dans la page : seule son **empreinte SHA-256** y est (le code en capitales, sans espace ni tiret). Une fois entré, il est retenu sur l'appareil (`demo:mtcg.demo.acces`). **Ce que la porte ne fait pas** : protéger les fichiers. Le site est statique ; scripts et images restent téléchargeables à leur adresse, et le dépôt lui-même se lit s'il est public. Elle tient à l'écart un visiteur de passage, pas quelqu'un de déterminé.
+- **`DEMO`** (`js/config.js`, vrai si la page a posé `window.DEMO_M8`) : ni numéro de version (tiroir, Réglages), ni nouveautés (`nouveautesAVoir`), ni lien vers le Discord (rail, tiroir, Réglages, rappel), ni « Se déconnecter » (« Recommencer la démo » à la place, `?reinitialiser`), ni « Installer le jeu » ; l'onglet du Choc dit « À découvrir » au lieu de « Nouveau dans la 3.0 », sans la tuile de la refonte ; les cosmétiques et le succès qui disent un passé (Pionnier, L'Hôte, Reflets, L'Échauffement, le titre d'administrateur) n'apparaissent pas (`PASSES`, `horsDemo()`).
+- **La présentation** (`montrerPresentation()`, `js/bienvenue.js` ; styles `.pres-*` en fin de `css/hub.css`) : sept écrans à la première visite, à la place de la bienvenue — Bienvenue, les boosters, la collection, les échanges, les combats, le Choc, la démo. Chacun : un visuel fait des vraies cartes du jeu, un titre, deux phrases, trois chiffres tirés du jeu lui-même (rien n'est écrit deux fois). Au doigt, à la souris (la bande se tire), au clavier (flèches), ou « Suivant » ; rien ne défile en hauteur, aux quatre tailles. Elle se rouvre depuis Réglages › À propos, et depuis le Labo.
+- **Le Labo** devient une console de test (`vLabDemo()`, `js/lab.js`) : « Tout débloquer » (cartes, cosmétiques, ressources), les ouvertures rares, les combats (tutoriel, rejouer aujourd'hui, tout maîtriser, campagne gagnée), l'événement (cinquième jour, dernier jour, dernière phase du Raid, récap), les ressources, la maîtrise, les Promos, la présentation. **`?labo=complet`** dans l'adresse rend le Labo entier (pour le propriétaire).
+- **Le faux serveur** (`M8` dans `_demo/serveur.js`) : **douze joueurs simulés** au lieu de quatre (`BOTS_M8` : profils complets, Section, Étincelles, combats, decks montrés construits par l'assistant), pour que les classements, l'événement et le Raid vivent comme sur un serveur d'une dizaine de joueurs ; pas d'invitations (article et quêtes) ; **la chasse à la carte unique encore ouverte** ; un texte d'événement et une annonce sans version ; Kairo, le premier échange et le premier défi arrivent plus tôt.
+- Comme la pré-prod : stockage préfixé `demo:`, base IndexedDB `premier-lobby-demo`, pas de service worker, `noindex`, le visiteur administrateur. Pas de bandeau ; le titre est « Mate TCG Online · Démo » ; les marques de cache ne gardent que l'empreinte (`?v=<empreinte>`, sans le numéro de version).
+
+**La démo autonome** : `python3 tools/demo.py` (sans option) construit la même chose que la pré-prod dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git) : un jeu complet à envoyer en fichier, qui s'ouvre sans serveur. `_demo/LISEZMOI.txt` l'accompagne. Les réglages de départ (pseudo, Éclats offerts, rythme des boosters, échelle du Raid) sont dans `_demo/reglages.js`.
 
 ### 2.7 Le jour d'une sortie en production
 
@@ -297,13 +307,13 @@ On peut aussi mettre en maintenance avant le jour J, pour l'annoncer avec un mes
 ├── assets/                Habillage : logos, paquets, essences, cadres, cosmétiques de combat, icônes
 ├── docs/                  design-3.0.md, regles-3.0.md, economie-3.0.md, feuille-de-route.md (copie identique sur version-2.5)
 ├── tools/                 Scripts de maintenance (§ 12)
-├── _demo/                 Le faux serveur, ses réglages, LISEZMOI.txt de la démo autonome (non publié)
+├── _demo/                 Le faux serveur, ses réglages, la porte à code de la démo (acces.js), LISEZMOI.txt de la démo autonome (non publié)
 ├── _sources/              Images d'origine des visuels générés (non publié)
 ├── presse/                Kit presse : visuels, polices, mode d'emploi
-└── preprod/               La pré-prod CONSTRUITE (ne jamais l'éditer à la main)
+└── preprod/, demo/        CONSTRUITS par tools/demo.py, non versionnés ici (.gitignore) ; demo/ se reporte sur main
 ```
 
-GitHub Pages passe par Jekyll : les dossiers qui commencent par `_` (`_demo/`, `_sources/`, `_build/`) ne sont pas publiés. Sur `main`, `preprod/`, `presse/`, `tools/` et `supabase/` le sont. `docs/`, `CLAUDE.md` et `_sources/` n'existent que sur la branche (et `docs/feuille-de-route.md`, aussi sur `version-2.5`, donc sur `main`).
+GitHub Pages passe par Jekyll : les dossiers qui commencent par `_` (`_demo/`, `_sources/`, `_build/`) ne sont pas publiés. Sur `main`, `demo/`, `presse/`, `tools/` et `supabase/` le sont. `docs/`, `CLAUDE.md` et `_sources/` n'existent que sur la branche (et `docs/feuille-de-route.md`, aussi sur `version-2.5`, donc sur `main`).
 
 ---
 
@@ -1336,6 +1346,8 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 - **Pas de service worker** (`brancherSW` commence par `return;`, `sw.js` supprimé). **Mais celui du vrai site (portée racine) contrôle aussi `/preprod/`** et sert les médias depuis son cache : c'est pourquoi `demo.py` ajoute `?v=<version>` à chaque `assets/…` cité dans les CSS, JS et HTML (pas à `cards/`).
 - Le visiteur est administrateur (Labo ouvert).
 
+**Avec `--demo`** (sortie : `demo/`, la démo de Gentle Mates, [§ 2.6](#26-les-démos)) : la même chose que `--preprod`, avec le préfixe `demo:` et la base `premier-lobby-demo`, plus : `window.DEMO_M8 = true` posé en tête de page ; `js/demo-acces.js` chargé juste avant `js/app.js`, dont le démarrage attend `window.demoAcces()` ; ni bandeau ni adresse canonique ; le titre « Mate TCG Online · Démo » ; les marques `?v=` réduites à l'empreinte.
+
 **Sans option** : la démo autonome, dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git), avec `_demo/LISEZMOI.txt`.
 
 `remplacer()` **arrête la construction** si un motif attendu est introuvable. S'il apparaît plusieurs fois, seule la première occurrence est remplacée, sans avertissement (`count=1`). Les chaînes qu'il cherche (la balise supabase-js, `function vPorteAttente() {`, `'js/app.js',` dans `sw.js`, `<head>`, `<title>`, `<body`, `indexedDB.open('premier-lobby'`, `function brancherSW() {`, le nom du manifeste, la création du profil dans `serveur.js`) sont des **contrats** et doivent rester uniques.
@@ -1426,10 +1438,10 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 
 **Production et branches**
 
-1. **Rien de la 3.0 sur le vrai site** : le travail 3.0 ne touche que `preprod/` sur `main`, aucun SQL 3.0 en production. **Ne jamais fusionner `version-3.0` dans `main`.** Une évolution de la 2.x se fait sur une branche partie de `main`, publiée seulement avec l'accord du propriétaire.
+1. **Rien de la 3.0 sur le vrai site** : le travail 3.0 ne touche que `demo/` sur `main` (avant le 2 novembre 2026 : `preprod/`), aucun SQL 3.0 en production. **Ne jamais fusionner `version-3.0` dans `main`.** Une évolution de la 2.x se fait sur une branche partie de `main`, publiée seulement avec l'accord du propriétaire.
 2. La racine de la branche parle au **vrai** Supabase (clés réelles dans `js/supabase-config.js`) : on n'y voit que « Projet annulé ». La 3.0 se teste dans `/preprod/` ([§ 2.1](#21-servir-le-site-en-local)).
 3. La branche `main` locale peut être en retard : toujours comparer avec `origin/main` après un `fetch`.
-4. `preprod/` est **construit** : on modifie `js/`, `css/`, `_demo/`, puis `python3 tools/demo.py --preprod`. Une retouche faite dans `preprod/` est écrasée à la prochaine construction.
+4. `preprod/` et `demo/` sont **construits** (et non versionnés) : on modifie `js/`, `css/`, `_demo/`, puis `python3 tools/demo.py --preprod` ou `--demo`. Une retouche faite dans l'un d'eux est écrasée à la prochaine construction.
 5. Ajouter un `.nojekyll` sur `main` publierait `_demo/` et `_sources/`.
 
 **JavaScript**
@@ -1473,7 +1485,7 @@ Ce qui a déjà coûté du temps, ou en coûtera. Chaque point renvoie à sa sec
 33. **La vraie base, le jour de la sortie** (leçons de la mise à jour 2.5 de la 2.x, les 24 et 25 octobre 2026) : comparer d'abord ses empreintes (fonctions avec leurs droits, colonnes, tables) à une installation locale de ce qu'on croit en place ; **la voie sûre est que le propriétaire colle le fichier** dans le SQL Editor, puis qu'on vérifie en lecture seule — l'outil Supabase demande au propriétaire une confirmation pour tout envoi qui contient `delete from` ou `drop`, qui n'attend qu'une minute, et elle ne lui est jamais parvenue (trois fois sur trois). Un fichier copié depuis un navigateur sous Windows arrive en fins de ligne `\r\n` dans les corps de fonction : rien ne change pour le jeu (sauf un texte écrit sur plusieurs lignes), mais toutes les empreintes changent (79 fonctions sur 118 le 25 octobre) — `supabase/administration/fix-crlf.sql` les rétablit. Comparer un contenu en `jsonb` (`to_jsonb`), jamais en `row_to_json` : sur la vraie base, des colonnes ajoutées après coup (`quests.item_id`, `shop_items.carte_id`) ne sont pas à la même place que dans une installation neuve. Les outils de la 2.5 (`tools/maj-2.5/` de `version-2.5` : banc, envois contrôlés, `agregat.sql`, `donnees.sql`) servent de modèle.
 34. Le Choc de la démo expire (14 jours après le début, posé 4 jours avant la première visite) ; les bots ne vivent que page ouverte.
 35. Le préfixe `preprod:` ne réécrit que `getItem`, `setItem`, `removeItem`, `clear` : `key()` et `length` voient aussi les clés du vrai site.
-36. **Un changement des sources n'existe pour le propriétaire qu'une fois `preprod/` reconstruit et publié sur `main`** : c'est là qu'il teste. Le 24 octobre 2026, les cadres de la 2.5 (`f_braise`, `f_ardeur`) ont été ajoutés aux sources sans refaire la pré-prod, au motif que « rien n'y change à l'écran » — à tort : le Profil montre tous les cadres, possédés ou non. Le 30, le propriétaire ne les voyait pas. Toute modification visible se publie.
+36. **Un changement des sources n'existe pour le propriétaire qu'une fois publié sur `main`.** Le 24 octobre 2026, les cadres de la 2.5 (`f_braise`, `f_ardeur`) ont été ajoutés aux sources sans refaire la pré-prod, au motif que « rien n'y change à l'écran » — à tort : le Profil montre tous les cadres, possédés ou non. Le 30, le propriétaire ne les voyait pas. Depuis le 2 novembre 2026, il n'y a plus de pré-prod publiée, et la démo (`demo/`) ne se republie qu'à sa demande : une modification visible reste donc invisible pour lui jusque-là, **et le compte rendu le dit**.
 
 **Combats et événements**
 

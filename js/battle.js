@@ -248,7 +248,7 @@ function vCbAccueil(e) {
       : vRaidAffiche()}
     ${tuto ? `<button class="cb-tuto" data-cb="tuto">
       <span class="cb-tuto-art"${cbArt('c012')} aria-hidden="true"></span>
-      <span class="cb-tuto-t"><small>Nouveau · le tutoriel</small><b>Apprends à combattre</b><em>Une partie guidée · 200 Éclats la première fois</em></span>
+      <span class="cb-tuto-t"><small>${DEMO ? 'Pour commencer' : 'Nouveau'} · le tutoriel</small><b>Apprends à combattre</b><em>Une partie guidée · 200 Éclats la première fois</em></span>
       <span class="cb-une-go">Jouer</span>
     </button>` : ''}
     <div class="cb-portes">
@@ -753,7 +753,7 @@ function vCbGuides() {
   return `${cbSousTete('Guide', 'Le tutoriel, les règles, chaque mot du jeu')}
     <button class="gd-tuto${fait ? ' fait' : ''}" data-cb="tuto">
       <span class="gd-tuto-art"${cbArt('c012')}></span>
-      <span class="gd-tuto-t"><small>${fait ? 'Fait · à rejouer quand tu veux' : 'Nouveau · 200 Éclats la première fois'}</small>
+      <span class="gd-tuto-t"><small>${fait ? 'Fait · à rejouer quand tu veux' : `${DEMO ? 'Pour commencer' : 'Nouveau'} · 200 Éclats la première fois`}</small>
         <b>Le tutoriel</b><em>Une partie guidée, bulle après bulle : déployer, attaquer, défendre, les PV, la Résilience, les mots-clés…</em></span>
       <span class="cb-une-go">${fait ? 'Rejouer' : 'Jouer'}</span>
     </button>

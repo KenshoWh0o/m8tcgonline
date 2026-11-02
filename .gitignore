@@ -1,3 +1,9 @@
 _build/
 __pycache__/
 .claude/worktrees/
+
+# Les démos construites (tools/demo.py) : la pré-prod (--preprod) et la démo
+# de Gentle Mates (--demo). Elles ne sont pas suivies ici : seule demo/ se
+# reporte sur main, à la demande du propriétaire (3.0.14).
+preprod/
+demo/

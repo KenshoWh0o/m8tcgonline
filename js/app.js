@@ -109,7 +109,7 @@ function navHTML() {
   return ongletsBas().map(t => bouton(t, '')).join('')
     + '<i class="navsep" aria-hidden="true"></i>'
     + ongletsTiroir().map(t => bouton(t, 'second')).join('')
-    + `<div class="navpied">${lienDiscord('discordlien', 'Rejoindre le Discord')}
+    + `<div class="navpied">${DEMO ? '' : lienDiscord('discordlien', 'Rejoindre le Discord')}
          <p class="mentions courtes">${MENTIONS_COURT}</p></div>`;
 }
 
@@ -203,7 +203,7 @@ function vTiroir() {
 
     <footer class="tiroir-pied">
       ${enLigne
-        ? '<button class="btn ghost" data-act="deconnexion">Se déconnecter</button>'
+        ? (DEMO ? '' : '<button class="btn ghost" data-act="deconnexion">Se déconnecter</button>')
         : Backend.dispo
           ? `<p class="muted small">Un compte garde ta collection et ouvre les échanges,
                les quêtes et la boutique.</p>
@@ -211,8 +211,8 @@ function vTiroir() {
                ? 'Créer un compte' : 'Se connecter avec Discord'}</button>`
           : `<p class="muted small">Le serveur n'est pas encore branché sur ce site :
                ta progression reste dans ce navigateur.</p>`}
-      ${lienDiscord('discordlien', 'Rejoindre le Discord')}
-      <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${APP_VERSION}</p>
+      ${DEMO ? '' : `${lienDiscord('discordlien', 'Rejoindre le Discord')}
+      <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${APP_VERSION}</p>`}
       <p class="mentions courtes">${MENTIONS_COURT}</p>
     </footer>
   </nav>`;
@@ -557,6 +557,7 @@ async function clicPage(e) {
     /* Version 3.0.11 : dix au plus d'un coup, un seul récap (js/opening.js). */
     case 'quetes-tout': return recupererQuetes((el.dataset.ids || '').split(',').filter(Boolean));
     case 'nouveautes': return montrerNouveautes();
+    case 'presentation': return montrerPresentation();
     /* Version 3.0.11 : l'échange des Essences Brillantes, depuis l'onglet du
        Choc ; la composition s'ouvre du côté des Spéciales. */
     case 'echange-brillantes':

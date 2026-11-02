@@ -139,25 +139,31 @@ function vReglages() {
     corps = enLigne
       ? `<section class="rg-g"><div class="rg-c rg-moi">
             ${avatarHTML(save.avatar, save.frame, 'md', maPhoto(), monXp())}
-            <span class="rg-tx"><b>${h(save.pseudo)}</b><small><i class="rg-ok"></i>En ligne · ta progression vit sur le serveur</small></span>
+            <span class="rg-tx"><b>${h(save.pseudo)}</b><small><i class="rg-ok"></i>${DEMO ? 'Démo · ta partie reste sur cet appareil' : 'En ligne · ta progression vit sur le serveur'}</small></span>
           </div></section>`
         + groupe('', bouton('data-act="pf-perso"', 'user', 'Personnaliser mon profil', 'Avatar, cadre, titre, bannière, devise')
           + bouton('data-tab="profil"', 'user', 'Voir mon profil', 'Ce que les autres voient de toi'))
-        + groupe('', bouton('data-act="deconnexion"', 'sortir', 'Se déconnecter', 'Ta collection reste sur ton compte', ''))
-        + groupe('Données', `<a class="rg-l rg-b" href="mailto:${h(CONTACT)}"><span class="rg-ico" aria-hidden="true">${RG_ICO.courrier}</span>
-            <span class="rg-tx"><b>Repartir de zéro ou supprimer mon compte</b><small>Écris-nous : ${h(CONTACT)}</small></span></a>`)
+        /* La démo de Gentle Mates (DEMO) : pas de déconnexion, et « repartir
+           de zéro » relance une partie neuve (?reinitialiser, _demo/serveur.js). */
+        + (DEMO
+          ? groupe('Données', `<a class="rg-l rg-b" href="?reinitialiser"><span class="rg-ico" aria-hidden="true">${RG_ICO.sortir}</span>
+              <span class="rg-tx"><b>Recommencer la démo</b><small>Une partie neuve : collection vide, joueurs simulés remis à zéro</small></span></a>`)
+          : groupe('', bouton('data-act="deconnexion"', 'sortir', 'Se déconnecter', 'Ta collection reste sur ton compte', ''))
+            + groupe('Données', `<a class="rg-l rg-b" href="mailto:${h(CONTACT)}"><span class="rg-ico" aria-hidden="true">${RG_ICO.courrier}</span>
+              <span class="rg-tx"><b>Repartir de zéro ou supprimer mon compte</b><small>Écris-nous : ${h(CONTACT)}</small></span></a>`))
       : groupe('Compte', Backend.dispo
           ? bouton('data-act="connexion"', 'user', CONNEXION.email ? 'Créer un compte ou se connecter' : 'Se connecter avec Discord', 'Échanges, quêtes et boutique demandent un compte')
           : `<div class="rg-l"><span class="rg-tx"><b>Hors ligne</b><small>Le serveur n'est pas encore branché sur ce site : la progression reste dans ce navigateur.</small></span></div>`)
         + groupe('Données', bouton('data-act="reset"', 'sortir', 'Réinitialiser ma progression', 'Les boosters et la collection reviennent au départ', ''));
   } else {
-    corps = groupe('Le jeu',
-      bouton('data-act="installer"', 'install', 'Installer le jeu', 'Sur l\'écran d\'accueil, en plein écran, comme une application')
+    corps = groupe('Le jeu', DEMO
+      ? bouton('data-act="presentation"', 'neuf', 'La présentation', 'Le jeu en sept écrans')
+      : bouton('data-act="installer"', 'install', 'Installer le jeu', 'Sur l\'écran d\'accueil, en plein écran, comme une application')
       + bouton('data-act="nouveautes"', 'neuf', 'Les nouveautés', 'Ce qui a changé avec cette version')
       + `<a class="rg-l rg-b" href="${h(DISCORD_URL)}" target="_blank" rel="noopener"><span class="rg-ico" aria-hidden="true">${ICON.discord}</span>
           <span class="rg-tx"><b>Le Discord</b><small>L'actualité, l'entraide, les échanges</small></span><i class="rg-chev" aria-hidden="true">${NAVICO.caret}</i></a>`)
     + `<section class="rg-g rg-apropos"><h3>À propos</h3><div class="rg-c">
-        <div class="rg-l"><span class="rg-tx"><b>${h(GAME_NAME)}</b><small>Jeu de collection sans argent réel : les ${MONNAIE.nom} se gagnent en jouant.</small></span><span class="rg-val tnum" title="Version">v${APP_VERSION}</span></div>
+        <div class="rg-l"><span class="rg-tx"><b>${h(GAME_NAME)}</b><small>Jeu de collection sans argent réel : les ${MONNAIE.nom} se gagnent en jouant.</small></span>${DEMO ? '' : `<span class="rg-val tnum" title="Version">v${APP_VERSION}</span>`}</div>
       </div><p class="mentions">${MENTIONS}</p></section>`;
   }
 

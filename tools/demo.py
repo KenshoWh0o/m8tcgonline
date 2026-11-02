@@ -26,14 +26,31 @@ sans compte et sans toucher au vrai serveur. Par rapport a la demo :
     les fenetres deja vues ou la session du vrai site, qui partage l'adresse ;
   - pas de service worker : celui du vrai site couvre deja l'adresse, et deux
     service workers sur la meme origine se videraient leurs caches ;
-  - un bandeau « PRE-PROD », pas d'indexation, et le Labo ouvert."""
+  - un bandeau « PRE-PROD », pas d'indexation, et le Labo ouvert.
+
+    python3 tools/demo.py --demo
+
+Produit la demo presentee a Gentle Mates dans demo/, publiee sur main a
+matetcg.com/demo/ (version 3.0.14, a la demande du proprietaire). Comme la
+pre-prod (stockage a part, prefixe « demo: », pas de service worker, pas
+d'indexation, le Labo ouvert), avec en plus :
+  - une porte a code (_demo/acces.js) : le jeu ne demarre qu'une fois le bon
+    code entre ; la page n'en connait que l'empreinte ;
+  - window.DEMO_M8 = true, que lit js/config.js (DEMO) : ni numero de
+    version, ni nouveautes, ni traces des evenements passes, une
+    presentation a la premiere visite, le Labo en console de test ;
+  - pas de bandeau.
+Ni preprod/ ni demo/ ne sont suivis par git sur la branche version-3.0 : on
+les construit, et seul demo/ est reporte sur main, a la demande."""
 import json, os, re, shutil, sys, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, '_demo')
 BUILD = os.path.join(ROOT, '_build')
 PREPROD = '--preprod' in sys.argv
-OUT = os.path.join(ROOT, 'preprod') if PREPROD else os.path.join(BUILD, 'm8tcg-demo')
+DEMO_M8 = '--demo' in sys.argv
+OUT = (os.path.join(ROOT, 'preprod') if PREPROD else os.path.join(ROOT, 'demo') if DEMO_M8
+       else os.path.join(BUILD, 'm8tcg-demo'))
 
 # Ce qui part dans la demo. Tout le reste (serveur SQL, outils, kit presse,
 # page de diagnostic, adresse du site) n'a rien a y faire.
@@ -128,7 +145,7 @@ TETE_PREPROD = """<head>
    vrai site partage cette adresse (matetcg.com) : sans ce prefixe, les deux
    se liraient et s'ecraseraient leurs reglages. */
 (function () {
-  var P = 'preprod:', S = Storage.prototype, g = S.getItem, s = S.setItem, r = S.removeItem, k = S.key;
+  var P = '__PREFIXE__:', S = Storage.prototype, g = S.getItem, s = S.setItem, r = S.removeItem, k = S.key;
   S.getItem = function (x) { return g.call(this, P + x); };
   S.setItem = function (x, v) { return s.call(this, P + x, v); };
   S.removeItem = function (x) { return r.call(this, P + x); };
@@ -144,26 +161,53 @@ TETE_PREPROD = """<head>
 </style>
 """
 
-if PREPROD:
+if PREPROD or DEMO_M8:
+    prefixe = 'demo' if DEMO_M8 else 'preprod'
     page = lire('index.html')
     # En tout premier : le stockage du navigateur passe sous un prefixe.
-    page = remplacer(page, r'<head>\n', lambda m: TETE_PREPROD, "la balise <head> d'index.html")
-    page = remplacer(page, r'<title>[^<]*</title>', lambda m: f'<title>PRÉ-PROD {v} · Mate TCG Online</title>',
+    tete = TETE_PREPROD.replace('__PREFIXE__', prefixe)
+    if DEMO_M8:
+        # La demo de Gentle Mates : le drapeau que lit js/config.js (DEMO),
+        # pose avant tout script ; pas de bandeau.
+        tete = tete.replace('<script>\n', '<script>\nwindow.DEMO_M8 = true;\n', 1)
+    page = remplacer(page, r'<head>\n', lambda m: tete, "la balise <head> d'index.html")
+    page = remplacer(page, r'<title>[^<]*</title>',
+                     lambda m: '<title>Mate TCG Online · Démo</title>' if DEMO_M8 else f'<title>PRÉ-PROD {v} · Mate TCG Online</title>',
                      'le titre de la page')
-    page = remplacer(page, r'<body([^>]*)>',
-                     lambda m: m.group(0) + "\n<div class=\"preprod-bandeau\">Pré-prod · démo, rien n'est réel</div>",
-                     "la balise <body> d'index.html")
+    page = remplacer(page, r'<link rel="canonical"[^>]*>\n', lambda m: '', "l'adresse canonique d'index.html")
+    if DEMO_M8:
+        # La porte a code, chargee juste avant js/app.js, qui l'attend.
+        page = remplacer(page, r'<script src="js/app\.js',
+                         lambda m: f'<script src="js/demo-acces.js?v={marque}"></script>\n' + m.group(0),
+                         "la balise de js/app.js dans index.html")
+    else:
+        page = remplacer(page, r'<body([^>]*)>',
+                         lambda m: m.group(0) + "\n<div class=\"preprod-bandeau\">Pré-prod · démo, rien n'est réel</div>",
+                         "la balise <body> d'index.html")
+    if DEMO_M8:
+        # Pas de numero de version dans les adresses des fichiers : la marque
+        # garde seulement son empreinte (tools/version.py).
+        neutre = marque.split('-')[-1]
+        page = page.replace('?v=' + marque, '?v=' + neutre)
+        v = neutre
     ecrire('index.html', page)
+    if DEMO_M8:
+        shutil.copy2(os.path.join(SRC, 'acces.js'), os.path.join(OUT, 'js', 'demo-acces.js'))
+        ecrire('js/app.js', remplacer(lire('js/app.js'), r'\(async \(\) => \{\n  cards = buildCards\(\);',
+            lambda m: '(async () => {\n  if (window.demoAcces) await window.demoAcces(); /* demo : la porte a code (tools/demo.py) */\n  cards = buildCards();',
+            'le demarrage du jeu dans js/app.js'))
     # Une base IndexedDB a part.
     ecrire('js/storage.js', remplacer(lire('js/storage.js'), r"indexedDB\.open\('premier-lobby'",
-                                      lambda m: "indexedDB.open('premier-lobby-preprod'", 'la base IndexedDB de js/storage.js'))
+                                      lambda m: f"indexedDB.open('premier-lobby-{prefixe}'", 'la base IndexedDB de js/storage.js'))
     # Pas de service worker.
     ecrire('js/pwa.js', remplacer(lire('js/pwa.js'), r'function brancherSW\(\) \{',
-                                  lambda m: m.group(0) + '\n  return; /* pre-prod : pas de service worker (tools/demo.py) */',
+                                  lambda m: m.group(0) + '\n  return; /* pre-prod et demo : pas de service worker (tools/demo.py) */',
                                   'brancherSW dans js/pwa.js'))
     # Installee sur l'ecran d'accueil, elle ne se confond pas avec le vrai jeu.
+    noms = ('"name": "Mate TCG Démo",\n  "short_name": "TCG Démo"' if DEMO_M8
+            else '"name": "Mate TCG Pré-prod",\n  "short_name": "TCG Pré-prod"')
     ecrire('manifest.webmanifest', remplacer(lire('manifest.webmanifest'), r'"name": "[^"]*",\s*"short_name": "[^"]*"',
-        lambda m: '"name": "Mate TCG Pré-prod",\n  "short_name": "TCG Pré-prod"', 'les noms du manifeste'))
+        lambda m: noms, 'les noms du manifeste'))
     # Les images de assets/ portent la version. Le service worker du vrai
     # site couvre aussi /preprod/ et sert les images depuis son cache sans
     # jamais les redemander (sw.js, « estMedia ») : une image retouchee sous
@@ -184,9 +228,12 @@ if PREPROD:
     # Le joueur de la pre-prod est administrateur : le Labo sert a tout tester.
     ecrire('js/demo-serveur.js', remplacer(lire('js/demo-serveur.js'),
         r"S\.profils\[MOI\] = nouveauProfil\(MOI, D\.pseudo, \{ shards: D\.eclats \}\);",
-        lambda m: m.group(0) + '\n    S.profils[MOI].is_admin = true; /* pre-prod : le Labo est ouvert */',
+        lambda m: m.group(0) + '\n    S.profils[MOI].is_admin = true; /* pre-prod et demo : le Labo est ouvert */',
         'la creation du joueur dans demo-serveur.js'))
-    print(f'Pre-prod prete : preprod/ (version {v}), publiee a matetcg.com/preprod/ une fois poussee sur main')
+    if DEMO_M8:
+        print(f'Demo prete : demo/ (marque {v}), a reporter sur main pour matetcg.com/demo/')
+    else:
+        print(f'Pre-prod prete : preprod/ (version {v}), publiee a matetcg.com/preprod/ une fois poussee sur main')
     sys.exit(0)
 
 # --- l'archive a envoyer

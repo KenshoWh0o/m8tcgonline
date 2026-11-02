@@ -116,9 +116,9 @@ function vCombatsJoueur(f, niv, o) {
 /* Ses succès : sur son profil, tous (les siens d'abord) ; sur sa fiche,
    les siens. */
 function vSuccesJoueur(f, o) {
-  const n = (f.succes || []).length;
+  const n = (f.succes || []).filter(id => !horsDemo(id)).length;
   if (!o.moi && !n) return '';
-  return `<section class="pj-bloc"><h2>Succès <span class="pj-compte">${n} / ${SUCCES.length}</span></h2>
+  return `<section class="pj-bloc"><h2>Succès <span class="pj-compte">${n} / ${SUCCES.filter(x => !horsDemo(x.id)).length}</span></h2>
     ${vSucces(f.succes, !!o.moi)}</section>`;
 }
 
@@ -194,7 +194,7 @@ function vPersoOnglet(ong) {
   }
   if (ong === 'cadre') {
     const cadres = Object.keys(FRAMES).filter(k => k === 'default' || (save.inv || {})[k] > 0);
-    const verrou = Object.keys(FRAMES).filter(k => !cadres.includes(k) && CADRE_SOURCE[k]);
+    const verrou = Object.keys(FRAMES).filter(k => !cadres.includes(k) && CADRE_SOURCE[k] && !horsDemo(k));
     return `<div class="avagrid">
       ${cadres.map(k => `<button class="avapick${save.frame === k ? ' on' : ''}" data-frame="${k}" aria-pressed="${save.frame === k}"
         title="${h(FRAMES[k].nom)}">${avatarHTML(save.avatar, k, 'md', maPhoto())}<span>${h(FRAMES[k].nom)}</span></button>`).join('')}
@@ -205,10 +205,10 @@ function vPersoOnglet(ong) {
   }
   if (ong === 'titre') {
     const miens = save.titres || [];
-    const autres = Object.keys(TITRES).filter(k => !miens.includes(k) && k !== 't_admin');
+    const autres = Object.keys(TITRES).filter(k => !miens.includes(k) && k !== 't_admin' && !horsDemo(k));
     return `<div class="titregrille">
       <button class="titrechoix${!save.titre ? ' on' : ''}" data-titre="" aria-pressed="${!save.titre}">Aucun</button>
-      ${Object.keys(TITRES).filter(k => miens.includes(k)).map(k =>
+      ${Object.keys(TITRES).filter(k => miens.includes(k) && !horsDemo(k)).map(k =>
         `<button class="titrechoix${save.titre === k ? ' on' : ''}" data-titre="${k}" aria-pressed="${save.titre === k}"><span class="titreligne t${TITRES[k].ton}">${h(TITRES[k].nom)}</span></button>`).join('')}
     </div>
     ${autres.length ? `<details class="titresverrou" data-garde="titresverrou">
@@ -322,8 +322,8 @@ function vElu(succes, moi) {
 }
 
 function vSucces(obtenus, tous) {
-  const ok = new Set(obtenus || []);
-  const liste = tous ? SUCCES : SUCCES.filter(s => ok.has(s.id));
+  const ok = new Set((obtenus || []).filter(id => !horsDemo(id)));
+  const liste = (tous ? SUCCES : SUCCES.filter(s => ok.has(s.id))).filter(s => !horsDemo(s.id));
   if (!liste.length) return '<p class="muted small">Aucun succès pour l\'instant.</p>';
   /* Version 3.0 : sur son profil, tous les succès en pavés (l'icône et le
      nom) ; ce qu'il faut faire s'affiche quand on en touche un. La liste

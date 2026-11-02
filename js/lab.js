@@ -24,6 +24,10 @@ const LAB_VUES = [['serveur', 'Serveur'], ['compte', 'Mon compte'], ['combats', 
 
 /* La démo (pré-prod) parle à un faux serveur : rien n'y est réel. */
 const labDemo = () => typeof SUPABASE_URL === 'string' && SUPABASE_URL.includes('demo.invalid');
+/* Dans la démo de Gentle Mates (DEMO), le Labo est une console de test
+   (vLabDemo) ; ?labo=complet dans l'adresse rend le Labo entier, pour le
+   propriétaire. Lu au chargement : la page ne change pas d'adresse ensuite. */
+const LABO_COMPLET = typeof location === 'object' && /[?&]labo=complet\b/.test(location.search);
 
 /* L'état du serveur (labo_etat) : chargé en arrivant, rechargé après chaque
    geste. `manque` : les fonctions du Labo ne sont pas sur la base. */
@@ -53,6 +57,9 @@ function vTest() {
     return `<div class="pagehead"><div><h1>Labo</h1></div></div>
       ${vide('Hors ligne', 'Le Labo parle au serveur : connecte-toi.')}`;
   }
+  /* La démo de Gentle Mates : une seule page, pour tout essayer. Le Labo
+     complet reste au propriétaire, avec ?labo=complet dans l'adresse. */
+  if (DEMO && !LABO_COMPLET) return vLabDemo();
   const corps = labVue === 'compte' ? vLabCompte() : labVue === 'combats' ? vLabCombats()
     : labVue === 'joueurs' ? vLabJoueurs() : labVue === 'apercus' ? vLabApercus() : vLabServeur();
   return `<div class="pagehead"><div><h1>Labo</h1>
@@ -384,6 +391,120 @@ function labEffacer(titre, texte, fn, args, msg) {
   });
 }
 
+/* ======================================================= La démo (3.0.14) */
+/* La démo présentée à Gentle Mates (DEMO, js/config.js) : le Labo sert à
+   tout essayer sans attendre, pas à régler le serveur. Une page, dans
+   l'ordre où l'on découvre le jeu — sa collection, les ouvertures rares, les
+   combats, l'événement —, et seulement des gestes sans risque : la partie
+   reste sur l'appareil, et « Recommencer la démo » (Réglages) repart de
+   zéro. Les gestes sont ceux du Labo (labAction) : rien n'est écrit deux
+   fois. */
+function vLabDemo() {
+  if (!labEtatCharge) labCharger();
+  const ch = labChoc();
+  const R = (labEtat && labEtat.raid) || {};
+  const has = r => cards.some(c => c.rar === r && c.cat !== 'essence');
+  const cb = save.combat || {};
+  const niv = niveauDe(cb.xp || 0).niveau;
+  const etatCh = { aucun: '…', avant: 'pas encore commencé', jour: `jour ${ch.n} sur ${CHOC_JOURS}`, recap: 'son récap', fini: 'terminé' }[ch.etat];
+  return `<div class="pagehead"><div><h1>Labo</h1>
+      <p>Pour tout essayer sans attendre. Rien n'est réel ici : la partie reste sur cet appareil, et « Recommencer la démo »,
+        dans les Réglages, repart de zéro.</p></div></div>
+
+    <section class="panel labdemo-une">
+      <h2>Tout débloquer</h2>
+      <p class="muted small">Toutes les cartes, en trois exemplaires (de quoi construire n'importe quel deck), tous les cadres,
+        titres, tapis et sleeves, et de quoi dépenser en boutique.</p>
+      <button class="btn" data-lab="demo-tout">Tout débloquer</button>
+    </section>
+
+    <section class="panel">
+      <h2>Les ouvertures rares</h2>
+      <p class="muted small">La mise en scène, sans attendre la chance. Ces boosters ne vont pas dans la collection.</p>
+      <div class="labgrid">
+        <button class="labbtn tG" data-act="t-god"><b>Godpack</b><span>1 booster sur 2 000</span></button>
+        <button class="labbtn tL" data-act="t-L" ${has('L') ? '' : 'disabled'}><b>Légendaire</b><span>en dernière carte</span></button>
+        <button class="labbtn tL" data-act="t-S" ${secretes.length ? '' : 'disabled'}><b>Secrète</b><span>la finition la plus rare</span></button>
+        <button class="labbtn tUN" data-act="t-UN" ${uniques.length ? '' : 'disabled'}><b>Carte unique</b><span>un seul exemplaire dans le jeu</span></button>
+        <button class="labbtn tBR" data-act="t-BR" ${brillantes.length ? '' : 'disabled'}><b>Essence Brillante</b><span>1 Essence sur ${FOIL_ODDS}</span></button>
+        <button class="labbtn tREV" data-act="t-REV" ${reverses.length ? '' : 'disabled'}><b>Reverse Rare</b><span>en 5ᵉ carte</span></button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Les combats</h2>
+      <p class="muted small">Niveau ${niv} de combattant${cb.section ? ` · Section ${h((SECTIONS[cb.section] || {}).court || cb.section)}` : ''}.</p>
+      <div class="labgrid">
+        <button class="labbtn" data-cb="tuto"><b>Le tutoriel</b><span>une partie guidée de cinq tours</span></button>
+        <button class="labbtn" data-lab="combats" data-a="jour"><b>Rejouer aujourd'hui</b><span>victoires payées, Raid et Épreuve du jour</span></button>
+        <button class="labbtn" data-lab="combats" data-a="maitrises" data-v="max"><b>Tout maîtriser</b><span>ses cartes au niveau V</span></button>
+        <button class="labbtn" data-lab="combats" data-a="campagne" data-v="finie"><b>Campagne gagnée</b><span>les vingt combats</span></button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>L'événement</h2>
+      <p class="muted small">Le Choc des Sections : ${h(etatCh)}. Le Raid : ${R.phase > RAID.phases.length ? 'les six phases abattues' : `phase ${R.phase || 1} sur ${RAID.phases.length}`}.</p>
+      <div class="labgrid">
+        <button class="labbtn" data-lab="choc" data-etat="jour" data-n="5"><b>Au cinquième jour</b><span>là où la démo commence</span></button>
+        <button class="labbtn" data-lab="choc" data-etat="jour" data-n="${CHOC_JOURS}"><b>Le dernier jour</b><span>le Pass et les quêtes à finir</span></button>
+        <button class="labbtn" data-lab="raid" data-n="${RAID.phases.length}"><b>La dernière phase du Raid</b><span>cinq phases déjà abattues</span></button>
+        <button class="labbtn" data-lab="choc" data-etat="recap"><b>Le récap</b><span>l'événement fini</span></button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Les ressources</h2>
+      <div class="labres">
+        ${labChamp('eclats', MONNAIE.nom, save.shards)}
+        ${labChamp('fragments', FRAGMENTS.nom, save.fragments)}
+        ${labChamp('boosters', 'Boosters en plus', save.bonus)}
+        ${labChamp('reserve', 'Réserve', save.tickets)}
+        ${evenementEnCours() ? labChamp('prismes', PRISMES.nom, save.prismes) : ''}
+        ${labChamp('niveau', 'Niveau', niv, 1)}
+      </div>
+      <button class="btn ghost" data-lab="monnaies">Appliquer</button>
+    </section>
+
+    ${vLabMaitrise()}
+
+    <section class="panel">
+      <h2>Les cartes Promo</h2>
+      <p class="muted small">Leur scène d'obtention, sans les ajouter à la collection.</p>
+      <div class="labgrid">
+        ${promos.map(p => `<button class="labbtn tPR" data-promo="${h(p.id)}"><b>${h(p.code)}</b><span>${h(p.nom)}</span></button>`).join('')}
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>La présentation</h2>
+      <p class="muted small">Le jeu en sept écrans, comme à la première visite.</p>
+      <button class="btn ghost" data-act="presentation">Revoir la présentation</button>
+    </section>`;
+}
+
+/* Tout débloquer, d'un geste : le master set, tous les cosmétiques, et des
+   ressources. Trois appels au faux serveur, l'état du dernier. */
+async function labDemoTout() {
+  occupe(true);
+  try {
+    await Backend.labo('labo_cartes', { p_quoi: 'master' });
+    await Backend.labo('labo_cosmetiques', { p_ids: Object.keys(FRAMES).filter(k => k.startsWith('f_') && !horsDemo(k))
+      .concat(Object.keys(TITRES).filter(k => !horsDemo(k) && k !== 't_admin'),
+        Object.keys(TAPIS).filter(k => k !== 't_base'), Object.keys(SLEEVES).filter(k => k !== 's_base')) });
+    Backend.apply(await Backend.labo('labo_monnaies', { p_valeurs: { eclats: 50000, fragments: 60000, boosters: 20 } }));
+    labEtatCharge = false;
+    toast('Tout est débloqué : les cartes, les cosmétiques, et de quoi dépenser.');
+    SFX.jouer('gagne');
+  } catch (e) {
+    toast(e.message || 'Le serveur a refusé.');
+    SFX.jouer('erreur');
+  } finally {
+    occupe(false);
+    render();
+  }
+}
+
 /* ======================================================= Mon compte */
 function vLabCompte() {
   if (!labEtatCharge) labCharger();
@@ -391,7 +512,7 @@ function vLabCompte() {
   const sv = labEtat && labEtat.sauvegarde;
   const cb = save.combat || {};
   const niv = niveauDe(cb.xp || 0).niveau;
-  const nCosm = Object.keys(FRAMES).filter(k => k.startsWith('f_')).length + Object.keys(TITRES).length
+  const nCosm = Object.keys(FRAMES).filter(k => k.startsWith('f_') && !horsDemo(k)).length + Object.keys(TITRES).filter(k => !horsDemo(k)).length
     + Object.keys(TAPIS).filter(k => k !== 't_base').length + Object.keys(SLEEVES).filter(k => k !== 's_base').length;
   return `<p class="labalerte doux">Ton compte, pour de vrai : ta collection, tes ressources, ton classement. Mets-le de côté
       avant d'y toucher, et restaure-le après.</p>
@@ -707,6 +828,7 @@ function labAction(a, el) {
   const d = el.dataset, n = d.n == null ? null : +d.n;
   switch (a) {
     case 'recharger': labEtat = null; labEtatCharge = false; return render();
+    case 'demo-tout': return labDemoTout();
     case 'mz-type': {
       const t = LAB_MZ_TYPES.find(x => x[0] === d.v) || LAB_MZ_TYPES[0];
       labMz.type = t[0]; labMz.id = t[2];
@@ -804,7 +926,7 @@ function labAction(a, el) {
       return labMoiFaire('labo_monnaies', { p_valeurs: v }, 'Ressources posées.');
     }
     case 'cosmetiques':
-      return labMoiFaire('labo_cosmetiques', { p_ids: Object.keys(FRAMES).filter(k => k.startsWith('f_')).concat(Object.keys(TITRES),
+      return labMoiFaire('labo_cosmetiques', { p_ids: Object.keys(FRAMES).filter(k => k.startsWith('f_') && !horsDemo(k)).concat(Object.keys(TITRES).filter(k => !horsDemo(k)),
         Object.keys(TAPIS).filter(k => k !== 't_base'), Object.keys(SLEEVES).filter(k => k !== 's_base')) },
         'Tous les cosmétiques sont à toi.');
     case 'section':

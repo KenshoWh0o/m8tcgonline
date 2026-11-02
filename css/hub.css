@@ -1615,3 +1615,142 @@ html.rm .rg-sw,html.rm .rg-sw::after{transition:none}
   .rg-moi{padding:10px 12px}
   .rg-apropos .mentions{margin-top:6px;font-size:11px}
 }
+
+/* ============ La présentation (la démo de Gentle Mates, 3.0.14) ============ */
+/* presDiapos et montrerPresentation, js/bienvenue.js. Une feuille presque
+   plein écran sur téléphone, une affiche de deux colonnes sur ordinateur.
+   Chaque écran : un visuel fait des vraies cartes du jeu, puis le texte. Rien
+   ne défile en hauteur : la piste glisse de côté, écran par écran. */
+.sheet.pres{padding:0;max-width:520px;height:min(700px,calc(100dvh - 12px));max-height:none;overflow:hidden;
+  display:flex;flex-direction:column}
+.sheet.pres>h3{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0}
+.sheet.pres>.acts{display:none}
+.pres-passer{position:absolute;top:14px;right:16px;z-index:3;font-size:13.5px;font-weight:700;color:var(--subtle);
+  padding:6px 10px;border-radius:99px;background:rgba(15,14,20,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.pres-passer[hidden]{display:none}
+.pres-piste{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+  overscroll-behavior-x:contain;scrollbar-width:none}
+.pres-piste::-webkit-scrollbar{display:none}
+.pres-d{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:grid;
+  grid-template-rows:minmax(0,1fr) auto}
+.pres-visu{position:relative;overflow:hidden;isolation:isolate;
+  background:radial-gradient(70% 62% at 50% 46%,rgba(138,120,245,.34),transparent 72%),
+    linear-gradient(180deg,rgba(255,255,255,.02),transparent 70%);
+  -webkit-mask:linear-gradient(180deg,#000 86%,transparent);mask:linear-gradient(180deg,#000 86%,transparent)}
+.pres-txt{padding:2px 22px 0;text-align:center}
+.pres-kick{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--deco-ink);
+  padding:5px 10px;border-radius:99px;background:var(--deco-wash)}
+.pres-txt h4{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;letter-spacing:-.02em;
+  font-size:clamp(23px,6.6vw,28px);line-height:1.06;margin:9px 0 7px}
+.pres-txt p{margin:0 auto;max-width:36ch;font-size:14.5px;line-height:1.45;color:var(--subtle)}
+.pres-chiffres{list-style:none;display:flex;justify-content:center;gap:8px;margin:13px 0 0;padding:0}
+.pres-chiffres li{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 11px 7px;
+  border-radius:var(--radius-sm);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.pres-chiffres b{font-family:var(--display);font-weight:900;font-style:italic;font-size:17px;line-height:1.1;color:var(--text);white-space:nowrap}
+.pres-chiffres span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.pres-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 18px 0}
+.pres-points{display:flex;gap:6px}
+.pres-points button{width:8px;height:8px;padding:0;border:0;border-radius:99px;background:var(--line-3);cursor:pointer;
+  transition:width .3s var(--ease),background .3s}
+.pres-points button[aria-current]{width:22px;background:var(--accent-soft)}
+.pres-fl{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;cursor:pointer;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--text)}
+.pres-fl svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;rotate:90deg}
+.pres-fl.suiv svg{rotate:-90deg}
+.pres-fl:disabled{opacity:.35;cursor:default}
+.pres-go{width:auto;margin:12px 18px calc(16px + env(safe-area-inset-bottom,0px))}
+.pres-annonce{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0}
+
+/* Les visuels : des cartes posées en absolu, en hauteur de la zone. */
+.pres-c{position:absolute;left:50%;top:50%;height:62%;aspect-ratio:63/88;translate:-50% -50%;
+  transition:transform .6s var(--spring),opacity .4s}
+.pres-c .cwrap{box-shadow:0 14px 30px -8px rgba(0,0,0,.6)}
+.pres-d:not(.on) .pres-c{opacity:.4}
+.v-accueil .pres-c{height:58%;top:44%}
+.v-accueil .pres-c.g{transform:translateX(-58%) rotate(-13deg)}
+.v-accueil .pres-c.d{transform:translateX(58%) rotate(13deg)}
+.v-accueil .pres-c.m{z-index:2;transform:translateY(-4%)}
+.pres-d.v-accueil:not(.on) .pres-c,.pres-d.v-boosters:not(.on) .pres-c,.pres-d.v-echanges:not(.on) .pres-c{transform:none}
+.pres-logo{position:absolute;z-index:3;left:50%;bottom:8%;translate:-50% 0;height:24%;width:auto;max-width:76%;object-fit:contain;
+  filter:drop-shadow(0 6px 22px rgba(0,0,0,.75)) drop-shadow(0 0 30px rgba(138,120,245,.45))}
+.pres-pack{position:absolute;z-index:3;left:50%;bottom:-6%;height:58%;width:auto;translate:-50% 0;rotate:-4deg;
+  filter:drop-shadow(0 16px 28px rgba(0,0,0,.6))}
+.v-boosters .pres-c{height:50%;top:38%}
+.v-boosters .pres-c.p1{transform:translateX(-56%) rotate(-15deg)}
+.v-boosters .pres-c.p2{transform:translateX(56%) rotate(15deg)}
+.v-boosters .pres-c.p3{z-index:2;transform:translateY(-14%)}
+.pres-grille{position:absolute;left:50%;top:43%;translate:-50% -50%;height:68%;aspect-ratio:3/2;max-width:90%;
+  display:grid;grid-template-columns:repeat(4,1fr);align-content:center;gap:7px}
+.pres-g{display:block;min-width:0}
+.pres-g .cwrap{box-shadow:0 8px 16px -6px rgba(0,0,0,.6)}
+.pres-g.vide{aspect-ratio:63/88;border-radius:9%/6.4%;display:grid;place-items:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));box-shadow:inset 0 0 0 1px var(--line-2)}
+.pres-g.vide i{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px;color:var(--muted)}
+.pres-jauge{position:absolute;left:50%;bottom:7%;translate:-50% 0;width:min(70%,300px);display:flex;align-items:center;gap:10px}
+.pres-jauge i{flex:1;height:7px;border-radius:99px;background:var(--line-2);position:relative;overflow:hidden}
+.pres-jauge i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--p);border-radius:inherit;background:var(--progress,var(--accent-soft))}
+.pres-jauge b{font-size:13px;font-weight:800;color:var(--text)}
+.v-echanges .pres-c{height:56%}
+.v-echanges .pres-c.e1{transform:translateX(-56%) rotate(-6deg)}
+.v-echanges .pres-c.e2{transform:translateX(56%) rotate(6deg)}
+.pres-swap{position:absolute;z-index:3;left:50%;top:50%;translate:-50% -50%;width:58px;height:58px;border-radius:50%;
+  display:grid;place-items:center;background:var(--glass-strong);box-shadow:inset 0 0 0 1px var(--glass-line),0 10px 26px rgba(0,0,0,.5);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:var(--deco-ink)}
+.pres-swap svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pres-boite{position:absolute;top:47%;height:min(56%,46vw);width:auto;translate:0 -50%;filter:drop-shadow(0 16px 28px rgba(0,0,0,.6));
+  transition:transform .6s var(--spring)}
+.pres-boite.t{right:49%;rotate:-7deg}
+.pres-boite.d{left:49%;rotate:7deg}
+.pres-vs{position:absolute;z-index:4;left:50%;top:50%;translate:-50% -50%;font-family:var(--display);font-weight:900;font-style:italic;
+  font-size:30px;letter-spacing:-.02em;color:#fff;text-shadow:0 0 18px rgba(138,120,245,.9),0 3px 10px rgba(0,0,0,.8)}
+.pres-choc{position:absolute;inset:6% 0 10%;background-size:cover;background-position:center 30%}
+.pres-choc.t{clip-path:polygon(0 0,58% 0,42% 100%,0 100%)}
+.pres-choc.d{clip-path:polygon(58% 0,100% 0,100% 100%,42% 100%);background-position:center 30%}
+.v-choc .pres-visu{background:#111}
+.v-choc .pres-vs{font-size:36px}
+.pres-labo{position:absolute;left:50%;top:40%;translate:-50% -50%;width:104px;height:104px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 35%,rgba(179,166,255,.4),rgba(93,75,217,.25) 60%,transparent 72%);
+  box-shadow:inset 0 0 0 1px var(--glass-line),0 0 60px rgba(138,120,245,.35);color:var(--deco-ink)}
+.pres-labo svg{width:50px;height:50px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pres-pills{list-style:none;position:absolute;left:0;right:0;bottom:12%;margin:0;padding:0 16px;display:flex;flex-wrap:wrap;justify-content:center;gap:7px}
+.pres-pills li{font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:99px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+
+/* L'arrivée d'un écran : ses cartes se déploient. */
+@media (prefers-reduced-motion:no-preference){
+  .pres-d.on .pres-visu>*{animation:pres-entre .55s var(--spring) both}
+  .pres-d.on .pres-visu>*:nth-child(2){animation-delay:.05s}
+  .pres-d.on .pres-visu>*:nth-child(3){animation-delay:.1s}
+  .pres-d.on .pres-visu>*:nth-child(4){animation-delay:.15s}
+}
+@keyframes pres-entre{from{opacity:0;translate:-50% calc(-50% + 22px)}}
+.pres-d.on .pres-logo,.pres-d.on .pres-pack,.pres-d.on .pres-jauge,.pres-d.on .pres-pills,.pres-d.on .pres-boite,
+.pres-d.on .pres-choc,.pres-d.on .pres-grille{animation-name:pres-fond}
+@keyframes pres-fond{from{opacity:0}}
+
+/* Écrans bas (375 × 667, 360 × 740) : le texte se resserre. */
+@media (max-height:760px){
+  .pres-txt h4{font-size:22px;margin:7px 0 5px}
+  .pres-txt p{font-size:13.5px}
+  .pres-chiffres{margin-top:10px}
+  .pres-chiffres li{padding:6px 9px 5px}
+  .pres-chiffres b{font-size:15.5px}
+  .pres-nav{padding-top:9px}
+  .pres-go{margin-top:9px}
+}
+@media (max-width:359px){.pres-chiffres span{font-size:10.5px}.pres-chiffres li{padding-inline:7px}}
+
+/* Ordinateur : une affiche en deux colonnes, la navigation en bas. */
+@media (min-width:900px){
+  .sheet.pres{max-width:none;width:min(900px,92vw);height:min(560px,88vh);display:grid;
+    grid-template:"piste piste" minmax(0,1fr) "nav go" auto / 1fr auto}
+  .pres-piste{grid-area:piste}
+  .pres-d{grid-template-rows:none;grid-template-columns:1.1fr 1fr;align-items:center}
+  .pres-visu{height:100%;-webkit-mask:linear-gradient(90deg,#000 82%,transparent);mask:linear-gradient(90deg,#000 82%,transparent)}
+  .pres-txt{text-align:left;padding:0 44px 0 12px}
+  .pres-txt h4{font-size:34px;margin:12px 0 10px}
+  .pres-txt p{margin:0;font-size:15.5px;max-width:38ch}
+  .pres-chiffres{justify-content:flex-start;margin-top:18px}
+  .pres-nav{grid-area:nav;justify-content:flex-start;padding:0 0 22px 28px}
+  .pres-go{grid-area:go;margin:0 28px 22px 0;min-width:170px}
+  .pres-passer{top:16px;right:18px}
+}

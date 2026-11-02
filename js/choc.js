@@ -121,7 +121,7 @@ function vChTete(fin) {
     ${chAffiche()}
     <div class="rf-tetehaut">
       <div class="rf-tetenom">
-        <small>Événement · Version 3.0</small>
+        <small>${DEMO ? 'Événement · deux semaines' : 'Événement · Version 3.0'}</small>
         <h1>Le Choc<span>des Sections</span></h1>
       </div>
       <div class="rf-tetechiffres">
@@ -191,22 +191,22 @@ function vChNouveautes() {
   const tapis = ['t_veste', 't_arene', 't_chevalier'].map((k, i) => TAPIS[k] && TAPIS[k].img
     ? `<i style="--i:${i - 1};background-image:url('${h(TAPIS[k].img.replace('.webp', '-mini.webp'))}')"></i>` : '').join('');
   return `<section class="ch-nouveau">
-    <h3 class="rf-sous">Nouveau dans la 3.0</h3>
+    <h3 class="rf-sous">${DEMO ? 'À découvrir' : 'Nouveau dans la 3.0'}</h3>
     <button class="ch-nv-une ch-nv-combats" data-tab="combats">
-      <span class="ch-nv-une-t"><small>Le grand ajout</small><b>Les Combats</b>
+      <span class="ch-nv-une-t"><small>${DEMO ? 'Le cœur de l\'événement' : 'Le grand ajout'}</small><b>Les Combats</b>
         <span>Choisis ta Section, construis ton deck, et entre dans l'arène.</span>
         <span class="ch-nv-modes"><i>Campagne</i><i>Arcade</i><i>Raid</i><i>Versus</i></span></span>
       <span class="cb-une-go">Jouer</span>
     </button>
     ${vChSecretes()}
-    ${vChRefonte()}
+    ${DEMO ? '' : vChRefonte()}
     <div class="ch-nv-grille">
       ${tuile('data-tab="collection"', `<span class="ch-nv-mz" aria-hidden="true">${renderCard(byId.c012, { m: 5, calme: true })}</span>`, 'La maîtrise', 'Exemplaires en trop et Fragments font monter une carte en cinq niveaux. Touche une carte, puis « Maîtrise ».', 'mz')}
       ${tuile('data-cb="vue" data-v="raid"', illuCadre(rdBoss().id, rdBoss().visage[0], rdBoss().visage[1], 1.2), 'Le Raid', 'Un boss pour tout le serveur, et un nouveau toutes les deux semaines.', 'raid')}
-      ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
+      ${tuile('data-act="echange-brillantes"', vChBrillantes(), 'L\'échange des Brillantes', DEMO ? 'Une Brillante contre une Brillante. Complète les neuf avec tes amis.' : 'Nouveau : une Brillante contre une Brillante. Complète les neuf avec tes amis.', 'brillantes')}
       ${tuile('data-cb="niveau"', `<span class="ch-nv-niv" style="--p:${Math.round(100 * n.dans / n.requis)}%"><span><b class="tnum">${n.niveau}</b><small>niveau</small></span></span>`, 'Ton niveau', 'Chaque combat rapporte de l\'XP ; les paliers paient.', 'niv')}
       ${tuile('data-cb="vue" data-v="decks"', `<span class="ch-nv-tapis" aria-hidden="true">${tapis}</span>`, 'Tapis et sleeves', 'Habille ton plateau et le dos de tes cartes.', 'tapis')}
-      ${tuile('data-tab="profil"', vChProfilArt(), 'Le profil, refait', 'Une carte de visite : ton titre, tes combats, les decks que tu montres.', 'pf')}
+      ${tuile('data-tab="profil"', vChProfilArt(), DEMO ? 'Le profil' : 'Le profil, refait', 'Une carte de visite : ton titre, tes combats, les decks que tu montres.', 'pf')}
     </div>
   </section>`;
 }
@@ -262,7 +262,7 @@ function vChSecretes() {
   };
   return `<button class="ch-nv-une ch-nv-sec" data-colvue="classiques" data-tab="collection">
       <span class="ch-sec-fan" aria-hidden="true">${liste.map(carte).join('')}</span>
-      <span class="ch-nv-une-t"><small>L'autre grand ajout</small><b>Les Secrètes</b>
+      <span class="ch-nv-une-t"><small>${DEMO ? 'Les plus rares' : 'L\'autre grand ajout'}</small><b>Les Secrètes</b>
         <span>${liste.length} cartes au-delà des 122, avec la finition la plus rare du jeu.</span>
         <span class="ch-nv-modes"><i class="tnum">${eues} / ${liste.length} trouvée${eues > 1 ? 's' : ''}</i><i>Reflet irisé</i><i>Cadre Secrète</i></span></span>
       <span class="cb-une-go">Voir</span>
@@ -524,7 +524,7 @@ function vBandeauChoc(lieu) {
   return `<button class="rfban chban${boutique ? ' boutique' : ''}" data-ch="vue" data-v="${boutique ? 'boutique' : 'accueil'}" aria-label="Ouvrir l'événement Le Choc des Sections">
     ${chAffiche()}
     <span class="rfban-txt">
-      <small>${boutique ? 'Boutique de l\'événement' : `Événement 3.0 · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span>`}</small>
+      <small>${boutique ? 'Boutique de l\'événement' : `${DEMO ? 'Événement' : 'Événement 3.0'} · encore <span data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</span>`}</small>
       <b>Le Choc des Sections</b>
       ${boutique ? `<em class="chban-sous">${etincelleIco}<strong class="tnum">${fmtN(save.prismes || 0)}</strong> ${h(CHOC.monnaie.nom)} à dépenser</em>` : ''}
     </span>
