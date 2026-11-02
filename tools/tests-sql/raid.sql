@@ -92,6 +92,37 @@ begin
   select qty into a from inventory where user_id = u2 and item_id = 't_heros_raid';
   if a <> 1 then raise exception 'ECHEC : le titre en % exemplaires', a; end if;
 
+  -- 5 bis (3.0.15). L'Infini commun : des paliers pour tout le serveur, de
+  -- `pas` degats chacun ; le palier 1 tombe, son coffre s'ouvre pour qui a
+  -- combattu (une fois) ; le combat attendu est le meme pour tous.
+  update parametres set raid_echelle = 1 where id = 1;
+  if raid_seuil(7, s) <> round((((raid_phases()->5)->>'seuil')::int + (raid_infini()->>'pas')::int) * raid_vie(raid_boss(s))) then
+    raise exception 'ECHEC : seuil du palier Infini 1 = %', raid_seuil(7, s);
+  end if;
+  update raid_saisons set degats = raid_seuil(7, s) where n = s;
+  if raid_phase(s) <> 8 then raise exception 'ECHEC : Infini, palier 1 abattu, phase % au lieu de 8', raid_phase(s); end if;
+  v := raid_etat();
+  if jsonb_array_length(v->'infini'->'paliers') <> 1 or (v->'infini'->'paliers'->0->>'n')::int <> 1
+     or (v->>'cible')::int <> raid_seuil(8, s) or (v->>'depuis')::int <> raid_seuil(7, s) then
+    raise exception 'ECHEC : raid_etat de l''Infini : %', v->'infini';
+  end if;
+  select boosters_bonus into f0 from profiles where id = u2;
+  x := raid_reclamer(s, 'commun', 7);
+  select boosters_bonus into f1 from profiles where id = u2;
+  if f1 <> f0 + 1 then raise exception 'ECHEC : coffre du palier Infini 1 — boosters % puis %', f0, f1; end if;
+  ok := false;
+  begin perform raid_reclamer(s, 'commun', 7); exception when others then ok := sqlerrm like '%déjà ouvert%'; end;
+  if not ok then raise exception 'ECHEC : le coffre d''un palier Infini s''ouvre deux fois'; end if;
+  ok := false;
+  begin perform raid_reclamer(s, 'commun', 8); exception when others then ok := sqlerrm like '%pas encore abattue%'; end;
+  if not ok then raise exception 'ECHEC : le coffre du palier Infini en cours s''ouvre'; end if;
+  -- Le combat attendu : le palier 2, pour tout le monde (plus de palier par joueur).
+  ok := false;
+  begin perform raid_debut(u2, 'i1'); exception when others then ok := sqlerrm like '%a changé%'; end;
+  if not ok then raise exception 'ECHEC : un ancien palier Infini accepte au combat'; end if;
+  x := raid_debut(u1, 'i2');
+  if x->>'phase' is not null then raise exception 'ECHEC : raid_debut dans l''Infini rend une phase (%)', x; end if;
+
   -- 6. Sans avoir combattu dans le raid : rien.
   perform set_config('request.jwt.claim.sub', u3::text, false);
   ok := false;
@@ -102,8 +133,9 @@ begin
   delete from raid_pris where saison = s and user_id in (u1, u2, u3);
   delete from raid_participants where saison = s and user_id in (u1, u2, u3);
   delete from raid_tombees where saison = s;
+  delete from raid_tentatives where user_id in (u1, u2, u3);
   update raid_saisons set degats = 0 where n = s;
 
-  raise warning 'OK : Raid — seuils a la vie de chaque boss (raid 1 : %, raid 2 : % pour la derniere phase) et a l''echelle, raid_etat d''accord, dernier coffre (Legendaire et titre, une fois ; Fragments a qui les a toutes), refus',
+  raise warning 'OK : Raid — seuils a la vie de chaque boss (raid 1 : %, raid 2 : % pour la derniere phase) et a l''echelle, raid_etat d''accord, dernier coffre (Legendaire et titre, une fois ; Fragments a qui les a toutes), Infini commun (paliers, coffre une fois, meme combat pour tous), refus',
     raid_seuil(6, 1), raid_seuil(6, 2);
 end $t$;

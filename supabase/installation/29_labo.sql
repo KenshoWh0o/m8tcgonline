@@ -256,7 +256,8 @@ language plpgsql security definer set search_path = public as $$
 declare sa int := raid_saison(jour_paris()); d int;
 begin
   perform labo_garde();
-  if p_phase is null or p_phase < 1 or p_phase > 7 then raise exception 'Une phase de 1 à 7.'; end if;
+  -- 7 et plus (3.0.15) : l'Infini, palier p_phase - 6, commun a tout le serveur.
+  if p_phase is null or p_phase < 1 or p_phase > 20 then raise exception 'Une phase de 1 à 20 (7 et plus : l''Infini).'; end if;
   d := case when p_phase = 1 then 0 else raid_seuil(p_phase - 1, sa) end;
   insert into raid_saisons (n, degats) values (sa, d) on conflict (n) do update set degats = excluded.degats;
   delete from raid_tombees where saison = sa and phase >= p_phase;

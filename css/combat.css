@@ -388,145 +388,188 @@ button.cb-une:active{transform:scale(.98)}
 .rd-pv{display:block;height:10px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .rd-pv i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,var(--danger));box-shadow:0 0 12px rgba(255,107,107,.5)}
 .rd-pv.mini{max-width:170px;height:6px;margin:5px 0 3px}
-/* La page du Raid (refaite en 3.0.14 : « assez peu clair », selon le
-   propriétaire). Le boss et sa vie, ton combat, les coffres, tes dégâts, le
-   classement. Le corail est la couleur du boss (comme dans l'arène), l'or
-   celle des récompenses, la lavande la tienne. */
+/* La page du Raid (refaite en 3.0.15 : « fait un peu cheapos […] ça doit
+   être à la hauteur », selon le propriétaire, et « simple et intuitif »).
+   Le boss en grand et la vie que tout le serveur lui prend ; ton combat ;
+   le chemin du serveur (les six phases, puis l'Infini) ; toi ; le
+   classement ; l'aide. */
+.rd-pv.infini i{background:linear-gradient(90deg,#7a68ec,var(--accent-soft));box-shadow:0 0 12px var(--accent-glow)}
 .rd{display:flex;flex-direction:column;gap:14px}
-.rd-sec-t{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
-.rd-sec-t h3{margin:0;font-size:15px;font-weight:800}
-.rd-sec-t small{font-size:12px;line-height:1.35;color:var(--muted)}
-/* Le boss : son illustration, son nom, ce qu'il fait, et sa vie. */
-.rd-boss{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:310px;padding:16px;
-  border-radius:var(--radius-xl);background:#17151f;box-shadow:inset 0 0 0 1px rgba(255,107,107,.2),var(--tuile)}
-.rd-boss-art{position:absolute;inset:0;z-index:-2}
-.rd-boss::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,rgba(18,17,25,.55) 0,rgba(18,17,25,0) 20%,rgba(18,17,25,0) 34%,rgba(22,20,29,.92) 68%,#17151f 100%)}
-.rd-boss-haut{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px}
-.rd-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;font-size:11.5px;font-weight:800;color:var(--text);
-  background:rgba(12,11,17,.78);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.rd-sec-t{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
+.rd-sec-t h3{margin:0;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:18px;letter-spacing:-.01em}
+.rd-sec-t small{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.rd-tag{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--text);
+  background:var(--glass);box-shadow:inset 0 0 0 1px var(--glass-line),var(--glass-hi);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .rd-tag svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.rd-boss-t h2{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:30px;line-height:1.02;text-shadow:0 2px 16px rgba(0,0,0,.75)}
-/* Ce que fait le boss du raid (RAID.bosses › dit, version 3.0.11). */
-.rd-dit{margin:6px 0 0;max-width:34em;font-size:12.5px;line-height:1.35;color:var(--subtle);text-shadow:0 1px 8px rgba(0,0,0,.8)}
-/* Sa vie : une barre, six tronçons, chacun large des dégâts qu'il demande.
-   Elle se vide de gauche à droite : la phase 1 tombe la première. */
-.rd-vie{margin-top:14px}
-.rd-vie-barre{display:flex;gap:3px;height:18px;padding:3px;border-radius:99px;background:rgba(6,5,10,.8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 6px 18px rgba(0,0,0,.45)}
-.rd-seg{position:relative;display:flex;justify-content:flex-end;min-width:0;border-radius:3px;background:rgba(255,255,255,.045)}
-.rd-seg:first-child{border-top-left-radius:99px;border-bottom-left-radius:99px}
-.rd-seg:last-child{border-top-right-radius:99px;border-bottom-right-radius:99px}
-.rd-seg>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(180deg,#ff9c9c,var(--danger) 50%,#cf4558)}
-.rd-seg.plein>i{background:linear-gradient(180deg,#d9727c,#a83a4a)}
-.rd-seg.encours{box-shadow:0 0 0 1px rgba(255,156,156,.6),0 0 14px rgba(255,107,107,.42)}
-.rd-seg em{position:absolute;top:calc(100% + 7px);left:50%;translate:-50% 0;font-style:normal;font-size:10.5px;font-weight:900;line-height:1;color:var(--muted)}
-.rd-seg.encours em{color:#ffb3b3}
-.rd-seg.tombe em{color:var(--ok)}
-.rd-vie-l{display:flex;align-items:baseline;justify-content:space-between;gap:2px 12px;flex-wrap:wrap;margin-top:24px}
-.rd-vie-l>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px}
-.rd-vie-l>b small{font-family:var(--body);font-style:normal;font-weight:700;font-size:12px;color:var(--muted)}
-.rd-vie-l>span{font-size:12.5px;color:var(--subtle)}
-.rd-vie-l>span b{color:var(--text)}
-/* Les six phases abattues : l'exploit, en or. */
-.rd-vie.abattu .rd-vie-l>b{color:var(--gold)}
-/* Ton combat : le boss face à toi, en clair. */
-.rd-go,.rd-cof,.rd-moi{padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
-.rd-go{display:flex;flex-direction:column;gap:12px}
-.rd-go-t{display:flex;align-items:center;justify-content:space-between;gap:6px 10px;flex-wrap:wrap}
-.rd-go-t>b{font-size:15px;font-weight:800}
-.rd-tent{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted)}
-.rd-pips{display:flex;gap:5px}
-.rd-pips i{width:12px;height:12px;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+
+/* Le boss : son illustration en grand, son nom, ce qu'il fait, sa vie. */
+.rd-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:clamp(400px,112vw,470px);
+  padding:16px;border-radius:var(--radius-lg);background:var(--plate);box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-3)}
+.rd-hero-art{position:absolute;inset:0 0 28% 0;z-index:-2}
+.rd-hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(18,17,25,.25) 0%,rgba(18,17,25,0) 22%,rgba(18,17,25,.6) 48%,rgba(18,17,25,.95) 66%,var(--plate) 82%),
+    radial-gradient(90% 55% at 50% 100%,rgba(255,107,107,.14),transparent 70%)}
+.rd-hero-haut{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px}
+.rd-hero h2{margin:0;font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:clamp(30px,8.6vw,38px);line-height:.98;letter-spacing:-.025em;
+  text-shadow:0 2px 20px rgba(0,0,0,.65)}
+.rd-dit{margin:7px 0 0;max-width:38em;font-size:13px;line-height:1.42;color:var(--subtle)}
+/* Sa vie : une barre, six tronçons, chacun large des dégâts qu'il demande ;
+   ce qui lui reste en corail, ce que le serveur lui a pris est vide. */
+.rd-vie{margin-top:16px}
+.rd-vie-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
+.rd-vie-t>b{display:inline-flex;align-items:center;gap:7px;font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;white-space:nowrap}
+.rd-vie-t>b small{font-family:var(--body);font-style:normal;font-weight:700;font-size:12px;color:var(--muted)}
+.rd-vie-t>span{font-size:12.5px;line-height:1.3;color:var(--subtle);text-align:right}
+.rd-vie-t>span b{color:var(--text)}
+.rd-vie-barre{display:flex;gap:3px;height:20px;padding:3px;border-radius:999px;background:rgba(6,5,10,.85);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 0 2px 6px rgba(0,0,0,.6),0 8px 22px rgba(0,0,0,.4)}
+.rd-seg{position:relative;display:flex;min-width:0;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.045)}
+.rd-seg:first-child{border-radius:999px 4px 4px 999px}
+.rd-seg:last-child{border-radius:4px 999px 999px 4px}
+.rd-seg:only-child{border-radius:999px}
+.rd-seg i{display:block;height:100%;margin-left:auto;background:linear-gradient(180deg,#ff9a85 0%,#f05a63 55%,#c93a50 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.rd-seg.plein i{width:100%!important;background:linear-gradient(180deg,#c95463,#8f2f42);opacity:.85}
+.rd-seg.encours{box-shadow:0 0 0 1px rgba(255,154,133,.75),0 0 16px rgba(255,107,107,.55)}
+.rd-seg.encours i{animation:rd-pouls 2.4s ease-in-out infinite}
+@keyframes rd-pouls{50%{filter:brightness(1.18)}}
+.rd-vie-n{display:flex;gap:3px;padding:0 3px;margin-top:7px}
+.rd-vie-n em{min-width:0;text-align:center;font-style:normal;font-size:11px;font-weight:800;color:var(--muted)}
+.rd-vie-n em.encours{color:#ffb4a6}
+.rd-vie-n em.tombe{color:var(--accent-soft)}
+.rd-vie.infini .rd-seg i{background:linear-gradient(180deg,#d6ceff 0%,#9a88ff 55%,#6f5ce6 100%)}
+.rd-vie.infini .rd-seg.encours{box-shadow:0 0 0 1px rgba(179,166,255,.75),0 0 18px var(--accent-glow)}
+.rd-inf{display:inline-grid;place-items:center;width:22px;height:22px;color:var(--deco-ink)}
+.rd-inf svg,.rd-et-n i>svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.rd-vie-msg{margin:8px 0 0;font-size:12.5px;line-height:1.4;color:var(--subtle)}
+/* Le serveur qui frappe avec toi. */
+.rd-ens{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;line-height:1.35;color:var(--subtle)}
+.rd-ens b{color:var(--text)}
+.rd-ens-av{display:flex;flex:none;padding-left:6px}
+.rd-ens-av .ava{margin-left:-7px;box-shadow:0 0 0 2px var(--plate)}
+
+/* Ton combat : le boss face à toi, un seul bouton. */
+.rd-combat{padding:16px;border-radius:var(--radius-lg);
+  background:radial-gradient(120% 90% at 0% 0%,rgba(255,107,107,.09),transparent 55%),radial-gradient(120% 90% at 100% 0%,rgba(157,140,255,.12),transparent 55%),var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line-2),inset 0 1px 0 rgba(255,255,255,.07),var(--sh-2)}
+.rd-combat-t{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.rd-combat-t h3{display:flex;flex-direction:column;margin:0;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:19px;line-height:1.05}
+.rd-combat-t h3 small{order:-1;margin-bottom:2px;font-family:var(--body);font-style:normal;font-weight:800;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.rd-tent{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;color:var(--subtle);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-pips{display:inline-flex;gap:4px}
+.rd-pips i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.14)}
 .rd-pips i.on{background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
-.rd-duel{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch;gap:6px}
-.rd-duel-c{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:12px 8px;border-radius:var(--radius);text-align:center}
-.rd-duel-c.boss{background:linear-gradient(180deg,var(--danger-wash),transparent 85%),var(--bg-2);box-shadow:inset 0 0 0 1px var(--danger-line)}
-.rd-duel-c.moi{background:linear-gradient(180deg,var(--accent-wash-2),transparent 85%),var(--bg-2);box-shadow:inset 0 0 0 1px rgba(179,166,255,.34)}
-.rd-duel-c small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:100%;overflow:hidden;font-size:10.5px;font-weight:800;line-height:1.25;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.rd-duel-c>b{font-family:var(--display);font-weight:900;font-size:30px;line-height:1.05}
-.rd-duel-c.boss>b{color:#ffb3b3}
-.rd-duel-c.moi>b{color:var(--accent-soft)}
-.rd-duel-c>b span{font-size:13px;font-weight:800;color:var(--muted)}
-.rd-duel-c>span{font-size:11.5px;line-height:1.3;color:var(--subtle)}
-.rd-niv{margin-top:3px}
-.rd-duel-vs{align-self:center;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-family:var(--display);font-style:italic;font-weight:900;font-size:12px;
-  color:var(--text);background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1px var(--line-2)}
-.rd-go .cb-choixdeck{background:var(--bg-2)}
-.rd-gain{margin:0;font-size:12.5px;line-height:1.45;color:var(--subtle);text-align:center}
-.rd-gain b{color:var(--text)}
-/* Les coffres des six phases, et tes trois paliers : une tuile chacun — la
-   récompense, et où elle en est. Ouvert : en retrait, une coche ; à ouvrir :
-   l'or, et le bouton ; en cours : le corail du boss ; à venir : un cadenas.
-   La dernière phase garde son or même fermée : c'est l'exploit. */
-.rd-cof-l,.rd-moi-l{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.rd-c,.rd-p{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;padding:10px 6px 9px;border-radius:var(--radius);text-align:center;
-  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
-.rd-c-n{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.rd-c-ico{position:relative;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;color:var(--subtle);background:var(--surface-2)}
-.rd-c-ico img{width:30px}
-.rd-c-ico svg:not(.shard){width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.rd-c-ico .shard{width:22px;height:22px;color:var(--accent-soft)}
-.rd-c-plus{position:absolute;right:-8px;bottom:-6px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;font-style:normal;color:var(--gold);
-  background:var(--surface-3);box-shadow:0 0 0 2px var(--surface)}
-.rd-c-ico .rd-c-plus svg{width:13px;height:13px}
-.rd-c-plus img{width:16px}
-.rd-c>b,.rd-p>b{font-size:12.5px;font-weight:800;line-height:1.2}
-.rd-c-bonus{margin-top:-3px;font-size:11px;font-weight:800;color:var(--gold)}
-.rd-c-et{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1.25;color:var(--muted)}
-.rd-c-et svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.rd-c .btn.tiny,.rd-p .btn.tiny{padding:7px 14px;font-size:12px}
-.rd-c.ouvert,.rd-p.ouvert{opacity:.6}
-.rd-c.ouvert .rd-c-et,.rd-p.ouvert .rd-c-et{color:var(--ok)}
-.rd-c.final{background:linear-gradient(180deg,rgba(245,196,81,.08),transparent 75%),var(--bg-2);box-shadow:inset 0 0 0 1px rgba(245,196,81,.3)}
-.rd-c.final .rd-c-n,.rd-c.final .rd-c-ico{color:var(--gold)}
-.rd-c.encours{box-shadow:inset 0 0 0 1.5px rgba(255,156,156,.55)}
-.rd-c.encours .rd-c-et{color:#ffb3b3}
-.rd-c.verrou .rd-c-ico{opacity:.55}
-.rd-c.attend{background:linear-gradient(180deg,rgba(245,196,81,.06),transparent 80%),var(--bg-2)}
-.rd-c.attend .rd-c-ico{color:var(--gold)}
-.rd-c.attend .rd-c-et{color:var(--gold-light)}
-.rd-c.pret,.rd-p.pret{background:linear-gradient(180deg,var(--gold-wash),transparent 80%),var(--bg-2);box-shadow:inset 0 0 0 1px var(--gold-line),0 0 18px -6px rgba(245,196,81,.45)}
-.rd-c.pret .rd-c-ico,.rd-p.pret .rd-c-ico{color:var(--gold);background:rgba(245,196,81,.12)}
-/* Tes dégâts : une barre jusqu'au dernier palier. */
-.rd-moi-barre{display:block;height:8px;margin:0 2px 12px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
-.rd-moi-barre i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
-.rd-aide{padding:12px 14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.rd-aide summary{cursor:pointer;font-weight:800;font-size:14px}
-.rd-aide ol{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:column;gap:7px}
-.rd-aide li{font-size:13px;line-height:1.45;color:var(--subtle)}
-.rd-aide li b{color:var(--text)}
-.rd-top-tete{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
-.rd-top-tete .rd-sec-t{margin:0}
-/* Dans la page du Raid, le classement est un bloc comme les autres. */
-.rd>.rd-top{padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
-.rd>.rd-top .rf-top li{background:var(--bg-2)}
-.rd-top-seg{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
-.rd-top-seg button{padding:5px 11px;border:0;border-radius:999px;font:inherit;font-size:12px;font-weight:800;color:var(--muted);background:none;cursor:pointer}
-.rd-top-seg button.on{color:var(--text);background:var(--surface-3)}
+.rd-face{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch;gap:8px;margin-bottom:12px}
+.rd-face-c{display:flex;align-items:center;gap:10px;min-width:0;padding:10px;border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-face-c.boss{box-shadow:inset 0 0 0 1px rgba(255,107,107,.28)}
+.rd-face-c.moi{flex-direction:row-reverse;text-align:right;box-shadow:inset 0 0 0 1px rgba(157,140,255,.3)}
+.rd-face-av{position:relative;flex:none;width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px rgba(255,107,107,.6),0 0 14px rgba(255,107,107,.3)}
+.rd-face-c .ava{flex:none;width:44px;height:44px}
+.rd-face-c>span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd-face-c.moi>span:last-child{align-items:flex-end}
+.rd-face-c small{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rd-face-c b{font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;line-height:1.05}
+.rd-face-d{font-size:11.5px;line-height:1.25;color:var(--subtle)}
+.rd-face-vs{align-self:center;font-family:var(--display);font-style:italic;font-weight:900;font-size:13px;color:var(--muted)}
+.rd-gain{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);text-align:center}
+.rd-gain b{color:var(--subtle)}
+
+/* Le chemin du serveur : une étape par ligne, reliées par un trait. */
+.rd-chemin,.rd-toi,.rd-top,.rd-coffres{padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
+.rd-ets{list-style:none;margin:0;padding:0}
+.rd-et{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;padding:7px 0}
+.rd-et+.rd-et::before{content:"";position:absolute;left:20px;top:-7px;height:14px;width:2px;border-radius:2px;background:rgba(255,255,255,.1)}
+.rd-et.fait+.rd-et::before,.rd-et.pret+.rd-et::before,.rd-et.attend+.rd-et::before{background:var(--accent-soft)}
+.rd-et-n{position:relative;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+.rd-et-n>i{position:relative;z-index:1;display:grid;place-items:center;width:22px;height:22px;font-style:normal}
+.rd-et-n>i>img,.rd-et-n>i>svg{width:22px;height:22px}
+.rd-et-n em{position:absolute;z-index:2;right:-4px;bottom:-4px;display:grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;
+  font-style:normal;font-size:10.5px;font-weight:900;color:var(--text);background:var(--surface-2);box-shadow:0 0 0 2px var(--surface),inset 0 0 0 1px var(--line-2)}
+.rd-et-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd-et-t b{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.rd-et-t small{font-size:14px;font-weight:800;line-height:1.3;color:var(--text)}
+.rd-et-plus{font-style:normal;font-size:12px;font-weight:800;color:var(--gold)}
+.rd-et-a{justify-self:end;text-align:right}
+.rd-et-a small{font-size:12px;line-height:1.3;color:var(--muted)}
+.rd-et-ok{display:inline-flex;align-items:center;gap:5px;color:var(--ok)!important;font-weight:800}
+.rd-et-ok svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6}
+.rd-et.fait .rd-et-n{background:var(--accent-wash-2);box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.rd-et.pret .rd-et-n{background:var(--gold-wash);box-shadow:inset 0 0 0 1.5px var(--gold),0 0 18px rgba(245,196,81,.35)}
+.rd-et.pret .rd-et-t small{color:var(--gold-light)}
+.rd-et-att{white-space:nowrap}
+.rd-et-att sup{font-size:.7em}
+/* L'étape en cours : un anneau qui se remplit (la part déjà prise). */
+.rd-et.encours .rd-et-n{background:conic-gradient(var(--danger) calc(var(--p,0) * 1%),rgba(255,255,255,.09) 0);box-shadow:0 0 16px rgba(255,107,107,.25)}
+.rd-et.encours .rd-et-n::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--surface-2)}
+.rd-et.encours .rd-et-a small{font-weight:800;color:#ffb4a6}
+.rd-et.avenir .rd-et-n,.rd-et.avenir .rd-et-t{opacity:.5}
+.rd-et.final .rd-et-n{box-shadow:inset 0 0 0 1.5px var(--gold-line),0 0 14px rgba(245,196,81,.18)}
+.rd-et.final.avenir .rd-et-n{opacity:.8}
+.rd-et.final .rd-et-t small{color:var(--gold-light)}
+.rd-et.infini .rd-et-n>i{color:var(--deco-ink)}
+.rd-et.infini.encours .rd-et-n{background:conic-gradient(var(--accent-soft) calc(var(--p,0) * 1%),rgba(255,255,255,.09) 0);box-shadow:0 0 16px var(--accent-glow)}
+.rd-et.infini.encours .rd-et-a small{color:var(--deco-ink)}
+.rd-et.infini.avenir .rd-et-t small{font-size:12.5px;font-weight:600;color:var(--subtle)}
+
+/* Toi : tes dégâts, ton rang, tes trois coffres. */
+.rd-toi-ch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.rd-toi-ch>span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-toi-ch b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
+.rd-toi-ch b sup{font-size:.55em}
+.rd-toi-ch small{font-size:11px;color:var(--muted)}
+.rd-piste{position:relative;height:8px;margin:24px 14px 22px;border-radius:999px;background:rgba(255,255,255,.08);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+.rd-piste-f{position:absolute;left:0;top:0;bottom:0;border-radius:inherit;background:var(--progress);box-shadow:0 0 12px var(--accent-glow)}
+.rd-pm{position:absolute;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;display:grid;place-items:center;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2),0 2px 8px rgba(0,0,0,.4)}
+.rd-pm>img,.rd-pm>svg{width:15px;height:15px}
+.rd-pm.fait{background:var(--accent-wash-2);box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.rd-pm.pret{background:var(--gold-wash);box-shadow:inset 0 0 0 1.5px var(--gold),0 0 12px rgba(245,196,81,.4)}
+.rd-pm:last-child{margin-left:-28px}
+.rd-perso{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rd-perso li{display:grid;grid-template-columns:86px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
+.rd-perso li>small:first-child{font-size:12px;color:var(--muted)}
+.rd-perso li>b{font-size:13.5px}
+.rd-perso li>small:last-child{font-size:12px;color:var(--muted);text-align:right}
+.rd-perso li.pret{box-shadow:inset 0 0 0 1px var(--gold-line)}
+
+/* Le classement, dans un bloc comme les autres. */
+.rd-top .rf-top{margin:0}
+
 /* Les coffres du raid précédent, encore à ouvrir. */
-.rd-coffres{display:flex;flex-direction:column;gap:8px}
-.rd-coffres .rd-sec-t{margin-bottom:2px}
-.rd-coffre{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius);background:linear-gradient(110deg,var(--gold-wash),transparent 70%),var(--surface);
-  box-shadow:inset 0 0 0 1px var(--gold-line)}
-.rd-coffre>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}
-.rd-coffre small{font-size:11px;color:var(--muted)}
-.rd-coffre .btn{width:auto;padding-inline:16px}
-.rd-coffre-ico{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:12px;background:var(--bg-2);color:var(--gold)}
-.rd-coffre-ico img{width:28px}
-.rd-coffre-ico svg:not(.shard){width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2}
-.rd-gainico{background:var(--cta)}
-/* Sur ordinateur : le boss et ton combat côte à côte, les six coffres sur
-   une ligne, tes dégâts et le classement côte à côte. */
+.rd-coffre{display:flex;align-items:center;gap:12px;padding:10px 0}
+.rd-coffre+.rd-coffre{border-top:1px solid var(--line)}
+.rd-coffre>span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd-coffre small{font-size:11.5px;color:var(--muted)}
+.rd-coffre-ico{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:50%;background:var(--gold-wash);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.rd-coffre-ico>img,.rd-coffre-ico>svg{width:20px;height:20px}
+.rd-gainico svg,.rd-gainico img{width:46px;height:46px}
+
+/* L'aide : trois lignes. */
+.rd-aide{padding:14px 16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-aide summary{cursor:pointer;font-weight:800}
+.rd-aide ol{margin:10px 0 0;padding-left:20px;display:grid;gap:8px;font-size:13px;line-height:1.45;color:var(--subtle)}
+.rd-aide b{color:var(--text)}
+@media (prefers-reduced-motion:reduce){.rd-seg i{transition:none}.rd-seg.encours i{animation:none}}
+
+/* Sur un petit téléphone, le face-à-face se resserre. */
+@media (max-width:380px){
+  .rd-face-c{gap:8px;padding:8px}
+  .rd-face-av,.rd-face-c .ava{width:36px;height:36px}
+  .rd-face-c b{font-size:18px}
+  .rd-perso li{grid-template-columns:74px minmax(0,1fr) auto}
+}
+
+/* Sur ordinateur : le boss à gauche, ton combat et le chemin à droite ;
+   toi et le classement dessous. */
 @media (min-width:900px){
-  .rd{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+  .rd{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
   .rd>*{grid-column:1/-1}
-  .rd>.rd-boss{grid-column:1;align-self:stretch;min-height:380px;padding:20px}
-  .rd>.rd-go{grid-column:2}
-  .rd>.rd-moi{grid-column:1}
-  .rd>.rd-moi:not(:has(+.rd-top)){grid-column:1/-1}
+  .rd>.rd-hero{grid-column:1;grid-row:span 2;align-self:stretch;min-height:560px;padding:24px}
+  .rd>.rd-combat,.rd>.rd-chemin{grid-column:2}
+  .rd>.rd-toi{grid-column:1}
   .rd>.rd-top{grid-column:2}
-  .rd-boss-t h2{font-size:38px}
-  .rd-cof-l{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .rd>.rd-coffres~.rd-hero{grid-row:span 2}
+  .rd-hero h2{font-size:48px}
+  .rd-hero-art{bottom:22%}
 }
 
 /* Les défis */

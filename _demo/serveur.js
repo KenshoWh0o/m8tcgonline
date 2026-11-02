@@ -248,12 +248,12 @@
     ['ev_reverse',   'evenement', 'Une Reverse Rare', 'Une Reverse Rare que tu n\'as pas encore.', 150, 'reverse_R', 1,   null, false, 3, 'prismes', 'reflets', 3],
     ['t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null],
     /* Le Choc des Sections (25_choc.sql), en Étincelles. */
-    // Deux colonnes : le tapis (4) et le cadre (6) du Sorcier l'un sous l'autre.
+    // Deux colonnes : le tapis (5) et le cadre (6) du Sorcier sur la dernière rangée (le propriétaire, 2 novembre 2026).
     ['ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 7],
     ['ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l\'unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 2],
     ['ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 5],
-    ['t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L\'illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l\'événement.', 600, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null],
-    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
+    ['t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L\'illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l\'événement.', 600, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null],
+    ['t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l\'événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null],
     ['f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l\'événement.', 400, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null]
   ].map(([id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite]) =>
     ({ id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, actif: true,
@@ -1448,10 +1448,11 @@
   };
   RPC.labo_raid = (p, { p_phase }) => {
     estAdmin(p);
-    if (!(p_phase >= 1 && p_phase <= 7)) refuser('Une phase de 1 à 7.');
+    /* 7 et plus (3.0.15) : l'Infini, palier p_phase − 6, commun. */
+    if (!(p_phase >= 1 && p_phase <= 20)) refuser('Une phase de 1 à 20 (7 et plus : l\'Infini).');
     const r = raidDe(), sa = saisonDemo();
     r.saisons[sa] = p_phase === 1 ? 0 : seuilDemo(p_phase - 1, sa);
-    for (let k = 1; k <= RAID.phases.length; k++) {
+    for (let k = 1; k <= 20; k++) {
       if (k < p_phase) r.tombees[sa + '|' + k] = r.tombees[sa + '|' + k] || now();
       else delete r.tombees[sa + '|' + k];
     }
@@ -2221,7 +2222,7 @@
       const r = raidDe();
       const sa = saisonDemo();
       const ph = phaseDemo(sa);
-      const attendu = ph <= RAID.phases.length ? 'p' + ph : 'i' + ((partDe(sa, p).infini || 0) + 1);
+      const attendu = cleRaid(ph);
       if (String(p_cle) !== attendu) refuser('Le Raid a changé : recharge la page.');
       const k = p + '|' + auj;
       if ((r.tentatives[k] || 0) >= RAID.tentatives) refuser('Plus de tentative aujourd\'hui : reviens demain.');
@@ -2555,15 +2556,22 @@
   const echelleRaid = () => (S.parametres && S.parametres.raid_echelle) || D.raid_echelle || 1;
   /* raid_seuil(k, s) : le seuil de la phase k du raid sa, à l'échelle et à la
      vie de son boss (RAID.bosses › vie, version 3.0.14). */
-  const seuilDemo = (k, sa) => Math.max(10, Math.round(RAID.phases[k - 1].seuil * (raidBoss(sa).vie || 1) * echelleRaid()));
+  /* Au-delà de 6 (3.0.15) : le palier Infini k − 6, commun à tout le
+     serveur, RAID.infiniPas dégâts plus loin que le précédent. */
+  /* Lu à l'appel : RAID (js/combat/choc-data.js) arrive après ce fichier. */
+  const nph = () => RAID.phases.length;
+  const seuilBrut = k => (k <= nph() ? RAID.phases[k - 1].seuil : RAID.phases[nph() - 1].seuil + (k - nph()) * RAID.infiniPas);
+  const seuilDemo = (k, sa) => Math.max(10, Math.round(seuilBrut(k) * (raidBoss(sa).vie || 1) * echelleRaid()));
   const degatsSaison = sa => (raidDe().saisons[sa] || 0);
   function phaseDemo(sa) {
     let k = 1;
-    while (k <= RAID.phases.length && degatsSaison(sa) >= seuilDemo(k, sa)) k++;
+    while (k <= 1000 && degatsSaison(sa) >= seuilDemo(k, sa)) k++;
     return k;
   }
+  /* La clé du combat en cours : la phase, ou le palier Infini (commun). */
+  const cleRaid = ph => (ph <= nph() ? 'p' + ph : 'i' + (ph - nph()));
   const partDe = (sa, p) => (raidDe().part[sa + '|' + p] = raidDe().part[sa + '|' + p]
-    || { combats: 0, degats: 0, victoires: 0, infini: 0, infini_le: 0 });
+    || { combats: 0, degats: 0, victoires: 0 });
 
   /* Des dégâts sur la saison : renvoie la phase avant et après. */
   function frapperRaid(sa, d) {
@@ -2571,7 +2579,7 @@
     const avant = phaseDemo(sa);
     r.saisons[sa] = degatsSaison(sa) + d;
     const apres = phaseDemo(sa);
-    for (let k = avant; k < apres && k <= RAID.phases.length; k++) r.tombees[sa + '|' + k] = now();
+    for (let k = avant; k < apres; k++) r.tombees[sa + '|' + k] = now();
     return { avant, apres };
   }
 
@@ -2591,18 +2599,12 @@
     moi.degats += d;
     if (gagne) moi.victoires++;
     r.message = '';
-    if (x.infini) {
-      if (gagne) {
-        moi.infini = Math.max(moi.infini, x.n);
-        moi.infini_le = now();
-        r.message = `Palier Infini ${x.n} battu : le suivant t'attend.`;
-      }
-    } else {
-      const { avant, apres } = frapperRaid(sa, d);
-      if (apres > avant) {
-        r.message = apres > RAID.phases.length ? 'Les six phases sont abattues : le mode Infini est ouvert !'
-          : `Phase ${apres - 1} abattue : un coffre commun pour tous ceux qui ont combattu.`;
-      }
+    /* Phases et paliers Infini : les dégâts de tous (3.0.15). */
+    const { avant, apres } = frapperRaid(sa, d);
+    if (apres > avant) {
+      r.message = apres - 1 === nph() ? 'Les six phases sont abattues : l\'Infini commence, tous ensemble.'
+        : apres - 1 > nph() ? `Palier Infini ${apres - 1 - nph()} abattu : un coffre pour tous ceux qui ont combattu.`
+        : `Phase ${apres - 1} abattue : un coffre commun pour tous ceux qui ont combattu.`;
     }
     if (!d && !r.message) r.message = 'Pas un PV de pris : il rira moins la prochaine fois.';
     if (!res.abandon) { bump(p, 'raid_degats', d); if (gagne) bump(p, 'raid_victoires', 1); }
@@ -2625,12 +2627,17 @@
     const x = r.part[sa + '|' + p];
     const a = Date.parse(raidAncre() + 'T12:00:00Z');
     const jourDe = k => new Date(a + k * RAID.saison.jours * 86400000).toISOString().slice(0, 10);
-    const moi = x || { combats: 0, degats: 0, victoires: 0, infini: 0 };
+    const moi = x || { combats: 0, degats: 0, victoires: 0 };
+    const ph = phaseDemo(sa);
+    const infini = [];
+    for (let k = nph() + 1; k < ph; k++) infini.push({ n: k - nph(), seuil: seuilDemo(k, sa), pris: !!r.pris[sa + '|' + p + '|commun|' + k] });
     return {
-      n: sa, boss: raidBoss(sa).id, debut: jourDe(sa - 1), fin: jourDe(sa), degats: degatsSaison(sa), phase: phaseDemo(sa),
+      n: sa, boss: raidBoss(sa).id, debut: jourDe(sa - 1), fin: jourDe(sa), degats: degatsSaison(sa), phase: ph,
+      depuis: ph > 1 ? seuilDemo(ph - 1, sa) : 0, cible: seuilDemo(ph, sa),
+      infini: { coffre: RAID.infiniCoffre, paliers: infini },
       phases: RAID.phases.map((ph, i) => Object.assign({}, ph, {
         n: i + 1, seuil: seuilDemo(i + 1, sa), tombee: degatsSaison(sa) >= seuilDemo(i + 1, sa), pris: !!r.pris[sa + '|' + p + '|commun|' + (i + 1)] })),
-      moi: { participe: !!x, combats: moi.combats, degats: moi.degats, victoires: moi.victoires, infini: moi.infini,
+      moi: { participe: !!x, combats: moi.combats, degats: moi.degats, victoires: moi.victoires,
         perso: RAID.perso.map((pa, i) => Object.assign({}, pa, { n: i + 1, pris: !!r.pris[sa + '|' + p + '|perso|' + (i + 1)] })) }
     };
   }
@@ -2648,9 +2655,9 @@
       tentatives: r.tentatives[p + '|' + auj] || 0, max: RAID.tentatives,
       precedente: prec.moi.participe ? prec : null,
       top: parts.filter(([, x]) => x.degats > 0).sort((a, b) => b[1].degats - a[1].degats).slice(0, 10)
-        .map(([id, x]) => joueurVue(id, { degats: x.degats, infini: x.infini, moi: id === p })),
-      top_infini: parts.filter(([, x]) => x.infini > 0).sort((a, b) => b[1].infini - a[1].infini || a[1].infini_le - b[1].infini_le).slice(0, 10)
-        .map(([id, x]) => joueurVue(id, { infini: x.infini, moi: id === p }))
+        .map(([id, x]) => joueurVue(id, { degats: x.degats, moi: id === p })),
+      /* Son rang aux dégâts (3.0.15). */
+      rang: 1 + parts.filter(([, x]) => x.degats > ((r.part[sa + '|' + p] || {}).degats || 0)).length
     });
   };
 
@@ -2663,9 +2670,10 @@
     if (!x || x.combats < 1) refuser('Tu n\'as pas combattu dans ce raid.');
     let c;
     if (p_quoi === 'commun') {
-      if (!(n >= 1 && n <= RAID.phases.length)) refuser('Phase inconnue.');
+      /* 1 à 6 : une phase ; au-delà, un palier Infini (n − 6), commun aussi. */
+      if (!(n >= 1 && n <= 1000)) refuser('Phase inconnue.');
       if (phaseDemo(s) <= n) refuser('Cette phase n\'est pas encore abattue.');
-      c = RAID.phases[n - 1].commun;
+      c = n <= nph() ? RAID.phases[n - 1].commun : RAID.infiniCoffre;
     } else if (p_quoi === 'perso') {
       if (!(n >= 1 && n <= RAID.perso.length)) refuser('Palier inconnu.');
       c = RAID.perso[n - 1];
@@ -2766,13 +2774,13 @@
         const sa = saisonDemo();
         const ph = phaseDemo(sa);
         const part = partDe(sa, bot.id);
-        const x = raidCombat(ph <= RAID.phases.length ? 'p' + ph : 'i' + (part.infini + 1));
+        const x = raidCombat(cleRaid(ph));
         const gagne = Math.random() < (x.infini ? 0.25 : 0.35);
         const d = gagne ? x.pvBoss + 1 + RAID.bonusDegats : entre(2, x.pvBoss);
         part.combats++;
         part.degats += d;
         if (gagne) part.victoires++;
-        if (x.infini) { if (gagne) { part.infini = x.n; part.infini_le = t; } } else frapperRaid(sa, d);
+        frapperRaid(sa, d);
         if (evenementEnCours() === 'choc') {
           const ch = chocDe();
           const k = bot.id + '|choc';
