@@ -189,7 +189,7 @@ Contrôle après coup : `git diff --stat origin/main~1 origin/main` ne liste que
 - **Le faux serveur** (`M8` dans `_demo/serveur.js`) : **douze joueurs simulés** au lieu de quatre (`BOTS_M8` : profils complets, Section, Étincelles, combats, decks montrés construits par l'assistant), pour que les classements, l'événement et le Raid vivent comme sur un serveur d'une dizaine de joueurs ; pas d'invitations (article et quêtes) ; **la chasse à la carte unique encore ouverte** ; un texte d'événement et une annonce sans version ; Kairo, le premier échange et le premier défi arrivent plus tôt.
 - Comme la pré-prod : stockage préfixé `demo:`, base IndexedDB `premier-lobby-demo`, pas de service worker, `noindex`, le visiteur administrateur. Pas de bandeau ; le titre est « Mate TCG Online · Démo » ; les marques de cache ne gardent que l'empreinte (`?v=<empreinte>`, sans le numéro de version).
 
-**La démo autonome** : `python3 tools/demo.py` (sans option) construit la même chose que la pré-prod dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git) : un jeu complet à envoyer en fichier, qui s'ouvre sans serveur. `_demo/LISEZMOI.txt` l'accompagne. Les réglages de départ (pseudo, Éclats offerts, rythme des boosters, échelle du Raid) sont dans `_demo/reglages.js`.
+**La démo autonome en zip** (`python3 tools/demo.py` sans option, avec son `_demo/LISEZMOI.txt`) a été **retirée le 2 novembre 2026** à la demande du propriétaire : la démo en ligne la remplace. Sans option, le script s'arrête et rappelle les deux qui restent. Les réglages de départ du faux serveur (pseudo, Éclats offerts, rythme des boosters, échelle du Raid), communs à la pré-prod et à la démo, sont dans `_demo/reglages.js`.
 
 ### 2.7 Le jour d'une sortie en production
 
@@ -311,7 +311,7 @@ On peut aussi mettre en maintenance avant le jour J, pour l'annoncer avec un mes
 ├── assets/                Habillage : logos, paquets, essences, cadres, cosmétiques de combat, icônes
 ├── docs/                  design-3.0.md, regles-3.0.md, economie-3.0.md, feuille-de-route.md (copie identique sur version-2.5)
 ├── tools/                 Scripts de maintenance (§ 12)
-├── _demo/                 Le faux serveur, ses réglages, la porte à code de la démo (acces.js), LISEZMOI.txt de la démo autonome (non publié)
+├── _demo/                 Le faux serveur, ses réglages, la porte à code de la démo (acces.js) (non publié)
 ├── _sources/              Images d'origine des visuels générés (non publié)
 ├── presse/                Kit presse : visuels, polices, mode d'emploi
 ├── preprod/               La pré-prod CONSTRUITE (ne jamais l'éditer à la main)
@@ -1353,7 +1353,7 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 
 **Avec `--demo`** (sortie : `demo/`, la démo de Gentle Mates, [§ 2.6](#26-les-démos)) : la même chose que `--preprod`, avec le préfixe `demo:` et la base `premier-lobby-demo`, plus : `window.DEMO_M8 = true` posé en tête de page ; `js/demo-acces.js` chargé juste avant `js/app.js`, dont le démarrage attend `window.demoAcces()` ; ni bandeau ni adresse canonique ; le titre « Mate TCG Online · Démo » ; les marques `?v=` réduites à l'empreinte.
 
-**Sans option** : la démo autonome, dans `_build/m8tcg-demo/` et `_build/m8tcg-demo.zip` (ignorés par git), avec `_demo/LISEZMOI.txt`.
+**Sans option**, le script s'arrête : la démo autonome en zip qu'il construisait (`_build/m8tcg-demo.zip`) a été retirée le 2 novembre 2026.
 
 `remplacer()` **arrête la construction** si un motif attendu est introuvable. S'il apparaît plusieurs fois, seule la première occurrence est remplacée, sans avertissement (`count=1`). Les chaînes qu'il cherche (la balise supabase-js, `function vPorteAttente() {`, `'js/app.js',` dans `sw.js`, `<head>`, `<title>`, `<body`, `indexedDB.open('premier-lobby'`, `function brancherSW() {`, le nom du manifeste, la création du profil dans `serveur.js`) sont des **contrats** et doivent rester uniques.
 
@@ -1381,7 +1381,7 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 | Commande | Dépendances | Produit |
 |---|---|---|
 | `python3 tools/version.py X.Y[.Z]` | aucune | `APP_VERSION`, la marque `?v=<version>-<empreinte>` d'`index.html` / `verif.html` et `VERSION` du service worker, liste `ESSENTIEL` |
-| `python3 tools/demo.py [--preprod]` | aucune | `preprod/` ou `_build/m8tcg-demo(.zip)` |
+| `python3 tools/demo.py --preprod` ou `--demo` | aucune | `preprod/` ou `demo/` |
 | `python3 tools/build-sql.py` | aucune | `supabase/TOUT.sql` |
 | `python3 tools/build-verif.py` | aucune | `supabase/functions/combat-verifier/jeu.js` : le code du jeu pour la fonction qui rejoue les combats (3.0.14, [§ 7.11](#711-ce-que-le-serveur-vérifie)) ; à refaire après toute modification de `js/combat/` ou des cartes, puis redéployer la fonction |
 | `deno run --allow-read tools/verif/essai.ts` | Deno | l'essai de cette fonction ([§ 2.2](#22-les-tests)) |
