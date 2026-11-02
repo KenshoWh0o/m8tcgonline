@@ -13,8 +13,9 @@
    palier de dégâts atteint abat une phase — tous ceux qui ont combattu dans
    le raid ouvrent alors son coffre commun. En plus, des paliers personnels
    (les dégâts de chacun). Une fois les six phases abattues (si le serveur y
-   arrive), le mode Infini : un palier par joueur, qui monte à chaque
-   victoire, pour le classement. Trois tentatives par jour. Au raid suivant,
+   arrive), l'Infini : le boss revient plus fort, palier après palier, et
+   ces paliers sont communs eux aussi, chacun avec son coffre pour tous
+   (version 3.0.15 ; avant, un palier par joueur). Trois tentatives par jour. Au raid suivant,
    tout recommence. Pendant le Choc, il paie en Étincelles ; sinon, en Éclats.
 
    L'événement (CHOC) ajoute l'Épreuve du jour : le même combat pour tout le
@@ -106,8 +107,17 @@ const RAID = {
     { seuil: 80, type: 'fragments', montant: 300, titre: '300 Fragments' },
     { seuil: 150, type: 'boosters', montant: 2, titre: '2 boosters' }
   ],
-  /* Le mode Infini, palier n : le boss a plus de PV et d'Essences, puis c'est
-     toi qui as moins de PV. Chaque victoire fait monter d'un palier. */
+  /* L'Infini, palier n (version 3.0.15) : commun à tout le serveur, comme les
+     phases (le propriétaire, 2 novembre 2026 : « les paliers d'avancement
+     doivent être commun. le but est d'aller le plus loin tous ensemble, de
+     se souder ») ; la performance de chacun se lit au classement des
+     dégâts. Chaque palier demande `infiniPas` dégâts de plus à tout le
+     serveur (à la vie du boss et à l'échelle, comme les phases :
+     raid_seuil, 27_raid.sql) et ouvre `infiniCoffre` pour tous ceux qui ont
+     combattu. Au combat, le boss a plus de PV et d'Essences, puis c'est toi
+     qui as moins de PV. */
+  infiniPas: 400,
+  infiniCoffre: { type: 'boosters', montant: 1, titre: '1 booster' },
   infini: n => {
     const k = Math.max(1, n);
     return { ia: 5, pvBoss: Math.min(12, 9 + k), ess: Math.min(3, 2 + Math.floor(k / 3)), pvMoi: Math.max(2, Combat.REGLE.PV - Math.floor(Math.max(0, k - 3) / 2)) };

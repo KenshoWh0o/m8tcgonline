@@ -236,7 +236,7 @@ function presDiapos() {
     { cls: 'choc', kick: 'L\'événement', titre: CHOC.nom,
       texte: `Deux semaines, deux camps\u00a0: ${SECTIONS.toxique.court} ou ${SECTIONS.deter.court}. L'Épreuve du jour, un Raid contre un boss commun à tous les joueurs, un Pass de ${piste} paliers.`,
       chiffres: [[CHOC.epreuve.calendrier.length, 'jours'], [RAID.phases.length, 'phases de Raid'], [piste, 'paliers']],
-      visu: `<span class="pres-choc t" style="background-image:url('${SECTIONS.toxique.choc || 'assets/combat/choc-toxique.webp?v=0d5375'}')"></span><span class="pres-choc d" style="background-image:url('${SECTIONS.deter.choc || 'assets/combat/choc-deter.webp?v=0d5375'}')"></span><span class="pres-vs">VS</span>` },
+      visu: `<span class="pres-choc t" style="background-image:url('${SECTIONS.toxique.choc || 'assets/combat/choc-toxique.webp?v=c37785'}')"></span><span class="pres-choc d" style="background-image:url('${SECTIONS.deter.choc || 'assets/combat/choc-deter.webp?v=c37785'}')"></span><span class="pres-vs">VS</span>` },
     { cls: 'demo', kick: 'Cette démo', titre: 'Tout est à essayer',
       texte: 'La partie reste sur cet appareil, et les autres joueurs sont simulés. Le Labo, dans le menu, permet de tout essayer sans attendre.',
       chiffres: [],

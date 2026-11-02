@@ -187,7 +187,7 @@ const GUIDES = (() => {
           <li><b>Une attaque sans valeur</b> (seulement un effet) est une attaque comme les autres : elle se défend, et touche le CEO si personne ne la défend.</li>
           <li><b>Le soutien</b> : un seul voisin, désengagé ; seule sa valeur s'ajoute (pas son effet), et ce n'est pas une attaque de plus.</li>
           <li><b>La Riposte</b> ne se défend pas, et seule sa valeur compte.</li>
-          <li><b>Un Coach joué par sa Résilience</b> ne compte pas dans la limite d'un Coach par tour.</li>
+          <li><b>Un Coach joué par sa Résilience</b> (« Jouez cette carte ») compte dans la limite d'un Coach par tour : touché deux fois dans le même tour, tu n'en joues qu'un.</li>
           <li><b>Le mélange des piles</b> : un texte qui dit où placer les cartes (« dessus », « dessous », « dans l'ordre de votre choix ») l'emporte.</li>
           <li><b>Qui commence</b> : un pile ou face, à chaque partie.</li>
           <li><b>Remplacer un Joueur</b> : le nouveau prend la case de celui qui est bench.</li>
