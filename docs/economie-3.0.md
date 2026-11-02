@@ -248,7 +248,9 @@ Les mesures ci-dessus datent des règles reconstituées (Club de 30, 5 PV, un Jo
 
 Le bilan d'un deck (`Decks.bilan`) suit désormais les conseils officiels : **15 Joueurs au moins** (16 avant, d'après la mesure de la 3.0.6), une Réserve accordée, la moitié des Joueurs qui attaquent pour 1 ou 2 Essences.
 
-### L'assistant de deck (3.0.14) [mesuré] `Decks.assistant`, `Decks.COTES` ; `node tools/assistant-decks.js`
+### L'assistant de deck (3.0.14) [retiré en 3.0.15] `Decks.COTES` ; `node tools/cotes-cartes.js`
+
+**Retiré le 2 novembre 2026** (le propriétaire : il « ruine tout l'aspect création et plaisir de créer » ; pas de complétion automatique, sauf pour les Essences). La cote des cartes reste (les cinq barres et le tri « Cote » de l'atelier, `tools/cotes-cartes.js`) ; à la place de l'assistant, les clés de l'analyse (`Decks.cles`, README de la 3.0, l'atelier). Ce qui suit est la trace de la mesure de la 3.0.14.
 
 Le propriétaire, le 1er novembre 2026 : « la fonction "Compléter pour moi" doit être optimisée voire repensée […] un assistant qui fait le deck selon tes préférences, mais qui fait un vrai deck optimisé et fort tout en respectant les préférences. »
 
