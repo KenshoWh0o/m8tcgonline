@@ -1,0 +1,16 @@
+# Ce que GitHub Pages ne publie pas sur matetcg.com : la documentation, le code
+# serveur (SQL, fonctions), les outils et le kit presse. Ils restent dans le dépôt,
+# qui est privé. Demande du propriétaire, 2 novembre 2026 : « il est hors de
+# question que le code et la doc soit public ».
+#
+# Ne retirer aucune entrée ; y ajouter tout nouveau fichier de ce genre à la racine.
+# Les dossiers qui commencent par « _ » ou « . » (_demo, .claude…) ne sont jamais
+# publiés, sans qu'il faille les nommer ici.
+exclude:
+  - CLAUDE.md
+  - README.md
+  - SETUP.md
+  - docs
+  - tools
+  - supabase
+  - presse

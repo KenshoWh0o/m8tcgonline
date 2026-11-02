@@ -17,13 +17,14 @@ Le jeu bascule tout seul : tant que `js/supabase-config.js` est vide, il tourne 
 
 Pour reprendre le travail sans rien demander au propriétaire. Ce README est la référence de la ligne 2.x ; `CLAUDE.md` en donne les règles, `docs/feuille-de-route.md` ce qui est prévu et le calendrier.
 
-**L'état du projet (25 octobre 2026, dans la nuit).**
+**L'état du projet (2 novembre 2026).**
 - **Le lancement public a été annulé** le 24 septembre 2026, après échange avec Gentle Mates : l'écran d'entrée affiche « Projet annulé · Merci » (`vAnnonceArret()`, `js/gate.js` ; dans la DA de la 3.0 depuis le 1er novembre) et seuls les comptes invités jouent (`beta_lancement()` vaut `infinity`, voir « Écran d'entrée et bêta fermée »). Le jeu vit pour eux.
 - **Le vrai site** (racine de `main`) est la **2.5 du 25 octobre, en ligne avant sa sortie** (publiée le 25 à 02 h 22 UTC avec l'accord du propriétaire, `e9f0c36`) : L'Échauffement devenu un événement complet (Braises, Pass, quêtes, boutique, classement, récap) sur la charpente de l'écran Reflets, son mode sans fin à partir du 4 novembre, la fin de combat en scène, l'entrée en face-à-face, la révélation des 21 étoiles, le Labo refait, les Reverses recyclables et fabricables. Il se montre en 2.1.3, avec le récap de Reflets et le teasing de la 2.5, jusqu'au **lundi 26 octobre 2026, 0 h (heure de Paris)**, puis bascule tout seul en 2.5.
 - **La vraie base a la mise à jour 2.5 complète** (`MAJ-2.5.sql`, collé par le propriétaire le 25 octobre vers 02 h 35 UTC, après le site) : elle est identique à une installation neuve de la branche — 118 fonctions (définitions et droits), 236 colonnes, 37 tables, 11 règles d'accès, le déclencheur de L'Échauffement, et le même contenu (Pass, quêtes, boutique, défis, indices, adversaires du mode sans fin, calendrier). Le détail, et ce qu'il a fallu corriger (des fins de ligne Windows) : « La mise en ligne » plus bas.
 - **La 3.0** se développe sur `version-3.0` et se teste en pré-prod (`matetcg.com/preprod/`). Sa date n'est pas fixée. Depuis le 2 novembre 2026, une **démo** en est aussi servie à `matetcg.com/demo/` : celle que le propriétaire envoie à Gentle Mates, derrière un code d'accès, qui montre le jeu à son premier jour (ni version, ni nouveautés ; README de la 3.0, « Les démos »).
+- **Le 2 novembre 2026**, le propriétaire a supprimé la branche `version-2.5` (tout son contenu est à la racine de `main`) ; `prebuild/` est retiré ; la doc, le SQL et les outils ne sont plus servis par matetcg.com (`_config.yml`, règle 10 de `CLAUDE.md`). On ne touche plus à la 2.x : la 3.0 est imminente.
 
-**Où vit quoi.** La racine de `main` (le vrai site), `main/prebuild/` (la démo de la 2.x en préparation), `main/preprod/` (la démo de la 3.0, où le propriétaire la teste), `main/demo/` (la démo de la 3.0 envoyée à Gentle Mates), la branche `version-2.5` (ce README : la ligne 2.x), la branche `version-3.0` (la 3.0, son propre README). Le tableau complet est dans « La pré-prod ».
+**Où vit quoi.** La racine de `main` (le vrai site, la 2.x, et ce README), `main/preprod/` (la démo de la 3.0, où le propriétaire la teste), `main/demo/` (la démo de la 3.0 envoyée à Gentle Mates), la branche `version-3.0` (la 3.0, son propre README). `version-2.5` et `prebuild/` n'existent plus depuis le 2 novembre 2026. Le tableau complet est dans « La pré-prod ».
 
 **La direction artistique de la 2.x, en bref** (le détail : « Habillage », « Les onglets », « Le thème ») :
 - **sombre uniquement** : des fonds noirs teintés prune, des jetons dans `css/tokens.css` (une feuille prend un jeton, pas une couleur en dur) ;
@@ -36,8 +37,8 @@ Ce qui est hors de cette DA (la palette « Graphite et lavande » partout, les n
 
 **Liste de reprise.**
 1. Lire `CLAUDE.md`, ce README et `docs/feuille-de-route.md` (importés d'office dans Claude Code : il faut quand même les lire en entier).
-2. `git fetch origin` : comparer avec `origin/main`, `origin/version-2.5`, `origin/version-3.0`, jamais avec une branche locale en retard.
-3. Servir le dépôt (`python3 -m http.server`), ouvrir `/prebuild/` après `python3 tools/demo.py --prebuild` : c'est là que la 2.x en préparation se teste, Labo ouvert.
+2. `git fetch origin` : comparer avec `origin/main` et `origin/version-3.0`, jamais avec une branche locale en retard.
+3. Le prébuild (`prebuild/`), où la 2.x en préparation se testait, est retiré depuis le 2 novembre 2026 : ne plus le reconstruire ni le publier.
 4. Tester le SQL sur un PostgreSQL 16 local (la base de `main`, puis la mise à jour deux fois), l'interface dans Chromium aux quatre tailles (390 × 844, 375 × 667, 360 × 740, 1 280 × 800).
 5. Avant tout SQL sur la vraie base : l'accord du propriétaire, et la comparaison des fonctions (`CLAUDE.md`).
 6. Ce qui n'est pas propre à la 2.x se reporte dans la 3.0 (`docs/feuille-de-route.md`, § 5).
@@ -55,7 +56,7 @@ Autre option, si Node.js est installé : `npx serve .` dans le dossier, puis ouv
 
 ## Mettre en ligne
 
-- **GitHub Pages** : pousse le dossier dans un dépôt GitHub, puis *Settings › Pages › Deploy from branch*.
+- **GitHub Pages** : pousse le dossier dans un dépôt GitHub, puis *Settings › Pages › Deploy from branch*. Le dépôt de matetcg.com est privé ; GitHub Pages publie la racine de `main`, sauf ce que `_config.yml` exclut (la doc, le SQL, les outils, le kit presse) et les dossiers qui commencent par `_` ou `.`.
 - **Netlify Drop** (app.netlify.com/drop) : fais glisser le dossier entier, tu obtiens une adresse.
 
 Le service worker et l'installation sur l'écran d'accueil exigent **HTTPS** (ou `localhost`). Un fichier ouvert par double-clic marche, mais sans mode hors ligne ni installation.
@@ -74,7 +75,7 @@ mate-tcg-online/
 ├── CLAUDE.md           Consignes pour les agents (règles du propriétaire, quoi lire, quoi tenir à jour)
 ├── docs/
 │   └── feuille-de-route.md  Où on en est, ce qui vient, le calendrier (copie identique sur version-3.0)
-├── prebuild/           La démo de la prochaine 2.x, construite (tools/demo.py --prebuild), publiée sur main
+├── _config.yml         Ce que GitHub Pages ne publie pas : la doc, le SQL, les outils, le kit presse
 ├── cards/              Les images des cartes (une par carte, .avif)
 ├── assets/             Habillage : logos, visuels de booster, dos de carte, essences
 │   ├── boosters/       Les quatre visuels de paquet
@@ -82,10 +83,10 @@ mate-tcg-online/
 │   ├── icon-*.png      Icônes de l'application installée (générées)
 │   └── og-image.png    Image affichée quand le lien du site est partagé (générée)
 ├── presse/             Kit presse : visuels prêts à publier et leur mode d'emploi
-├── _demo/              Le faux serveur et ses réglages, pour le prébuild (non publié)
+├── _demo/              Le faux serveur et ses réglages, pour l'ancien prébuild (non publié)
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
-│   ├── demo.py         Fabrique le prébuild (prebuild/, avec --prebuild)
+│   ├── demo.py         Fabriquait le prébuild (prebuild/, retiré le 2 novembre 2026)
 │   ├── version.py      Pose le numéro de version et marque les fichiers
 │   ├── gen-icons.py    Régénère icônes, favicons et image de partage
 │   ├── kit-presse.py   Régénère les visuels de presse/visuels/
@@ -220,7 +221,7 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Lancer un événement, ouvrir la chasse | requêtes en bas de `supabase/15_evenements.sql` |
 | Ajouter ou modifier un succès | `succes_de()` dans `supabase/15_evenements.sql` **et** `SUCCES` dans `js/config.js` |
 | Changer les critères du classement | `classement()` dans `supabase/14_classement.sql` + `CRITERES` dans `js/classement.js` |
-| Fabriquer le prébuild (la démo de la 2.x en préparation) | `python3 tools/demo.py --prebuild` — voir « Le faux serveur » et « Le prébuild » |
+| Publier ou retirer un fichier de la racine sur matetcg.com | `_config.yml` (`exclude`) : la doc, le SQL, les outils et le kit presse n'y sont pas, à la demande du propriétaire (règle 10 de `CLAUDE.md`) |
 | Régler la démo (pseudo, Éclats de départ, recharge) | `_demo/reglages.js` |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
 | Déplacer la saison de L'Échauffement | Labo › Serveur (« Aller à un état », « Avancer d'un jour » : `labo_calendrier`, `labo_decaler`), ou `ech_saison` à la main ; en démo, les mêmes boutons |
@@ -603,6 +604,8 @@ En trois temps, tous faits : le jeudi 22 octobre 2026, sous le nom 2.1.4 (avec l
   - **Dans la démo** : la date est le début de L'Échauffement de la démo (`revDes()`, `_demo/serveur.js`), lui-même à la fin du récap de Reflets ; le prébuild, où L'Échauffement est ouvert, les a donc ouvertes.
 ### Le prébuild
 
+**Retiré le 2 novembre 2026** (le propriétaire : on ne touche plus à la 2.x). Ce qui suit dit ce qu'il était.
+
 - `python3 tools/demo.py --prebuild` construit la démo de cette version dans `prebuild/` (stockage à part, pas de service worker, Labo ouvert, L'Échauffement ouvert d'office avec ses sept défis, Reflets fini, des Joueurs offerts) ; publié sur `main`, il se teste à **matetcg.com/prebuild/**. Ne jamais lancer `--preprod` depuis une branche 2.x : `preprod/` est la 3.0. Le prébuild contient le faux serveur, donc **le texte des indices** : il n'est pas plus secret que la pré-prod 3.0, publiée au même endroit.
 
 ## Succès, historique et partage
@@ -850,7 +853,7 @@ Pour obtenir une Promo **pour de vrai** sur son compte sans le master set — et
 
 ## La pré-prod
 
-La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site, sans le toucher (et une version 2.x en préparation à **matetcg.com/prebuild/**, construite par `python3 tools/demo.py --prebuild` depuis sa branche) :
+La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site, sans le toucher (`prebuild/`, la 2.x en préparation, a été retiré le 2 novembre 2026) :
 
     python3 tools/demo.py --preprod
 
@@ -861,13 +864,13 @@ Le développement se fait sur une branche à part ; `main` reste le site public.
 | Lieu | Contenu |
 |---|---|
 | `main`, à la racine | le vrai site : depuis le 25 octobre 2026, la 2.5 complète en attente de sa sortie (elle se montre en « 2.1.3 » jusqu'au lundi 26 octobre, 0 h, puis bascule toute seule : « Version 2.5 · La sortie datée ») |
-| `main`, `prebuild/` | la démo de la 2.x en préparation (la 2.5), construite depuis `version-2.5` |
+| `main`, `prebuild/` | **retiré le 2 novembre 2026** (c'était la démo de la 2.5) |
 | `main`, `preprod/` | la démo de la 3.0, construite depuis la branche `version-3.0` (qui a son propre README et son `CLAUDE.md`) : c'est là que le propriétaire teste la 3.0 |
 | `main`, `demo/` | la démo de la 3.0 envoyée à Gentle Mates (depuis le 2 novembre 2026), derrière un code d'accès, construite depuis `version-3.0` (`tools/demo.py --demo`) : le jeu à son premier jour, sans version ni nouveautés |
-| branche `version-2.5` | la ligne 2.x (ce README), partie de `main` ; publiée sur `main` seulement avec l'accord du propriétaire. Elle remplace `claude/interface-ux-fixes-o92u4a` et `teaser-2.x`, tout leur contenu étant dans `version-2.5` et dans `main` ; ces deux-là sont **à supprimer par le propriétaire** (une session de Claude Code n'a pas le droit de supprimer une branche) |
+| branche `version-2.5` | **supprimée par le propriétaire le 2 novembre 2026**, avec `claude/interface-ux-fixes-o92u4a` et `teaser-2.x` ; tout son contenu est à la racine de `main` |
 | branche `version-3.0` | la 3.0 ; **ne se fusionne jamais dans `main`** |
 
-Pour publier une pré-prod ou un prébuild : le construire sur sa branche, puis reporter **ce seul dossier** sur `main` (un `git worktree` d'`origin/main`, copier le dossier, `git status` ne doit lister que lui). Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
+Pour publier une pré-prod ou une démo : la construire sur `version-3.0`, puis reporter **ce seul dossier** sur `main` (un `git worktree` d'`origin/main`, copier le dossier, `git status` ne doit lister que lui). Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
 
 ## Mettre à jour le site
 
