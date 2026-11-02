@@ -1,0 +1,148 @@
+/* Onglet Labo. */
+/* ============ Labo ============ */
+.labgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.labbtn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:13px 14px;text-align:left;color:var(--text);background:var(--surface-2);transition:border-color .15s,transform .12s}
+.labbtn:hover:not(:disabled){border-color:var(--line-2);transform:translateY(-1px)}
+.labbtn b{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;font-size:16px}
+.labbtn span{font-size:11.5px;color:var(--muted);font-weight:600}
+.labbtn.tR{border-left:3px solid var(--r-r)}
+.labbtn.tE{border-left:3px solid var(--r-e)}
+.labbtn.tL{border-left:3px solid var(--r-l)}
+.labbtn.tG{grid-column:1/-1;border-left:3px solid var(--r-l)}
+.labbtn:disabled{opacity:.3;cursor:not-allowed}
+.labbtn.tPR{border-left:3px solid var(--r-pr)}
+
+/* Les valeurs d'équilibrage en cours, telles que le serveur les impose. Elles
+   ne se modifient pas d'ici : c'est un tableau de bord, pas un panneau de
+   commande — d'où la mise en page en fiche, sans rien de cliquable. */
+.labfacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.labfait{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  background:var(--bg-2);border-radius:var(--radius-sm);padding:10px 13px;
+  box-shadow:inset 0 0 0 1px var(--line)}
+.labfait span{font-size:12px;font-weight:600;color:var(--muted)}
+.labfait b{font-family:var(--display);font-weight:900;font-size:15px;text-align:right}
+.labfait{flex-wrap:wrap}
+.labbtn.tBR{border-left:3px solid #ff5bb0}
+.labbtn.tUN{border-left:3px solid #ec8fff}
+.labbtn.tREV{border-left:3px solid #7fd8ff}
+
+.labsous{margin:16px 0 8px;font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.labtable{display:grid;grid-template-columns:1fr auto auto;gap:6px 18px;align-items:center;font-size:13px;
+  background:var(--bg-2);border-radius:var(--radius-sm);padding:10px 13px;box-shadow:inset 0 0 0 1px var(--line)}
+.labtable b{font-size:11.5px;color:var(--muted);text-align:right}
+.labtable span{display:inline-flex;align-items:center;gap:7px;font-weight:700}
+.labtable span.tnum{justify-content:flex-end;font-family:var(--display);font-weight:900}
+
+/* L'état du serveur : événement, rythme, chasse. */
+.labetat{display:flex;flex-direction:column;gap:6px}
+.labetat div{display:flex;flex-direction:column;gap:1px;padding:9px 12px;border-radius:var(--radius-sm);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labetat span{font-size:11.5px;font-weight:700;color:var(--muted)}
+.labetat b{font-size:13.5px;font-weight:700;line-height:1.35}
+.labalerte{margin:0 0 10px;padding:9px 12px;border-radius:var(--radius-sm);font-size:12.5px;font-weight:600;
+  background:color-mix(in srgb,#ffc73b 22%,transparent);color:var(--text)}
+.labsql{margin:6px 0 0;padding:11px 13px;border-radius:var(--radius-sm);overflow-x:auto;font-size:11.5px;line-height:1.5;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);white-space:pre}
+
+/* Offrir un cadeau : la liste des joueurs, puis le contenu. */
+.labmed{margin:0 0 8px;color:var(--muted)}
+.labmed b{color:var(--text)}
+.labjoueurs{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;margin-bottom:14px}
+.labjoueur{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labjoueur:has(input:checked){box-shadow:inset 0 0 0 1.5px var(--accent-soft);background:var(--accent-wash)}
+.labjoueur input{flex:0 0 auto;width:18px;height:18px;accent-color:var(--accent)}
+.labjoueur span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.labjoueur b{font-size:14px}
+.labjoueur small{font-size:11.5px;color:var(--muted);line-height:1.35}
+.labjoueur em{font-style:normal;font-weight:800;color:var(--accent-soft)}
+.labcadeau{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.labcadeau .field input{padding:11px 10px}
+.field select{width:100%;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius-sm);
+  color:var(--text);font:inherit;font-size:15px;padding:12px 12px}
+
+/* Les sous-onglets, et L'Échauffement : un défi par ligne, puis les indices. */
+/* Jamais un sous-onglet caché hors de l'écran : la barre passe à la ligne plutôt que de défiler. */
+.labvues{flex-wrap:wrap;margin:0 0 var(--gap-3);border-radius:22px}
+.labvues button{flex:1 1 auto}
+.labech{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.3fr) repeat(4,auto);gap:7px 12px;align-items:center;font-size:12.5px;
+  background:var(--bg-2);border-radius:var(--radius-sm);padding:10px 13px;box-shadow:inset 0 0 0 1px var(--line);overflow-x:auto}
+.labech b{font-size:11px;color:var(--muted);text-align:right}
+.labech b:first-of-type{text-align:left}
+.labech span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.labech span i{display:inline-block;width:16px;font-style:normal;color:var(--muted)}
+.labech span.tnum{text-align:right;font-family:var(--display);font-weight:900}
+.labinds{display:flex;flex-direction:column;gap:8px}
+.labind{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 8px;border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labind .ech-ind{flex:0 0 56px;cursor:default}
+.labind>span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.labind small{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.labind b{font-size:14px}
+.labind em{font-style:normal;font-size:12.5px;color:var(--muted);line-height:1.35}
+@media (max-width:420px){.labech{grid-template-columns:minmax(0,1fr) repeat(4,auto)}.labech>:nth-child(6n+2){display:none}}
+
+/* ============ Labo 2.5 : le serveur, son compte ============ */
+/* « pour tout le monde » : à côté d'un titre, ce qui touche chaque joueur. */
+.labtag{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;vertical-align:middle;
+  font:800 10px/1.4 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);
+  background:color-mix(in srgb,var(--warn) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--warn) 40%,transparent)}
+.labalerte.doux{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+
+/* L'état en trois puces, puis le calendrier en frise. */
+.labpuces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.labpuces span{display:flex;flex-direction:column;gap:2px;min-width:0;padding:9px 10px;border-radius:var(--radius-sm);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labpuces span.on{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+.labpuces small{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.labpuces b{font-size:13px;line-height:1.25}
+.labfrise{position:relative;list-style:none;margin:0;padding:0 0 0 22px}
+.labfrise::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;border-radius:2px;background:var(--line-2)}
+.labjalon{position:relative;padding:6px 0}
+.labjalon>i{position:absolute;left:-20px;top:11px;width:12px;height:12px;border-radius:50%;
+  background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),inset 0 0 0 2px var(--line-3)}
+.labjalon.passe>i{background:var(--line-3);box-shadow:0 0 0 3px var(--surface)}
+.labjalon.ici>i{background:var(--accent);box-shadow:0 0 0 3px var(--surface),0 0 12px var(--accent-glow)}
+.labjalon>span{display:flex;flex-direction:column;gap:1px}
+.labjalon b{font-size:14px}
+.labjalon.passe b{color:var(--subtle)}
+.labjalon.ici b{color:var(--accent-soft)}
+.labjalon small{font-size:12px;color:var(--muted)}
+.labjalon em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--warn)}
+
+/* Les sept jours de L'Échauffement, comme ses médaillons. */
+.labjours{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.labjours button{aspect-ratio:1;max-height:52px;border:0;border-radius:50%;cursor:pointer;font:900 16px/1 var(--display);
+  color:var(--text);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-2),0 2px 0 var(--sh-press)}
+.labjours button:hover{background:var(--surface-3)}
+.labjours button.on{color:#fff;background:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-soft),0 2px 0 var(--accent-deep)}
+.labofficiel{width:100%;margin-top:12px}
+
+/* Ce qui ne se rattrape pas : en rouge. */
+.labbtn.labdanger{border-left:3px solid var(--danger)}
+.btn.labdanger{color:var(--danger)}
+
+/* Ses ressources : cinq champs. */
+.labres{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.labres .field{margin:0}
+.labres .field input{padding:11px 10px}
+
+/* Ses étoiles, défi par défi. */
+.labmesdefis{display:flex;flex-direction:column;gap:6px}
+.labmondefi{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 8px 7px 12px;
+  border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.labmondefi>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700}
+.labmondefi>span i{display:inline-block;width:18px;font-style:normal;color:var(--muted)}
+.labetoiles{flex:0 0 auto;display:flex;gap:3px;padding:3px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.labetoiles button{min-width:34px;padding:5px 7px;border:0;border-radius:999px;cursor:pointer;background:none;
+  font:800 12px/1 var(--body);color:var(--muted);letter-spacing:-.04em}
+.labetoiles button.on{color:#2b1d00;background:linear-gradient(180deg,#ffe08a,var(--warn))}
+.labetoiles button:first-child.on{color:var(--text);background:var(--surface-3)}
+
+.labplus{margin-top:12px}
+.labplus summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted)}
+@media (max-width:380px){
+  .labpuces small{font-size:9.5px;letter-spacing:.04em}
+  .labpuces b{font-size:12px}
+  .labetoiles button{min-width:30px;padding:5px 5px}
+}
