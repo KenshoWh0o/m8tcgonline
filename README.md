@@ -1203,7 +1203,7 @@ Les fichiers d'installation vivent dans `supabase/installation/` ; leur préfixe
 
 Préfixes d'inventaire : `f_` cadres, `t_` titres **et** tapis, `s_` sleeves (et articles), `trade_token`.
 
-### 9.4 Les RPC publiques (76, `porte` comprise)
+### 9.4 Les RPC publiques (75, `porte` comprise ; 76 jusqu'à la 3.0.13)
 
 | Domaine | RPC (→ retour) | Appelées par |
 |---|---|---|
@@ -1217,7 +1217,7 @@ Préfixes d'inventaire : `f_` cadres, `t_` titres **et** tapis, `s_` sleeves (et
 | Événements | `evenement_etat()`, `piste_reclamer(p_palier)`, `evenement_recap()`, `illu_etat()`, `illu_essai(p_carte)`, `choc_etat()`, `raid_etat()`, `raid_reclamer(p_saison, p_quoi, p_n)` | `reflets`, `choc`, `raid` |
 | Combats | `tutoriel_fini()`, `combat_section`, `combat_reglages`, `deck_sauver`, `deck_publier(p_id, p_public)` (3.0.13), `deck_supprimer`, `combat_debut(p_mode, p_cle, p_niveau, p_deck)` → `{id, graine, jour, niveau, section, boss, n}` (3.0.14), la fin par la fonction `combat-verifier` (§ 7.11 ; `combat_fin` retirée), `defi_lancer` (3.0.12 : pose `premier`, que `defi_etat` rend dans `init`), `defi_repondre`, `defi_etat(p_id, p_depuis)`, `defi_jouer(p_id, p_n, p_action)`, la fin d'un défi par la fonction `combat-verifier` (3.0.14 ; `defi_fin` retirée), `combats_historique()` → la liste sans les déroulés, `combat_historique(p_id)` → un combat avec le sien | `battle`, `combat/*` |
 
-La plupart des RPC qui écrivent renvoient `me()`, que `Backend.apply` transforme en `save`. **Le faux serveur `_demo/serveur.js` implémente exactement les mêmes 76** (vérifié en 3.0.10, puis en 3.0.12 : les fonctions exécutables par `authenticated` d'une installation passée par la base de `main`, moins les outils internes, celles de pgcrypto et celles de L'Échauffement laissées par la 2.5, sont les `RPC.*` du faux serveur). Les rouages internes (`regen_tickets`, `bump_quests`, `pick_card`, `check_promos`, `garde_beta`, `notifier`, `accorder`, `crediter_prismes`, `evenement_en_cours`, `titres_de`, `garde_de`, toutes les fonctions de combat, Choc, Raid, niveaux, maîtrise…) ne sont pas appelables depuis le navigateur.
+La plupart des RPC qui écrivent renvoient `me()`, que `Backend.apply` transforme en `save`. **Le faux serveur `_demo/serveur.js` implémente exactement les mêmes 75, plus `combat_verifier`, qui tient lieu de la fonction `combat-verifier`** (3.0.14 : `combat_fin` et `defi_fin` retirées des deux côtés ; vérifié en 3.0.10, en 3.0.12 et en 3.0.14 : les fonctions exécutables par `authenticated` d'une installation passée par la base de `main`, moins les outils internes — `beta_lancement`, `beta_ouverte`, `cfg`, `debut_semaine`, `handle_new_user`, `illu_gain`, `illu_jour`, `period_key`, `slugify_pseudo` —, celles de pgcrypto et celles de L'Échauffement laissées par la 2.5, sont les `RPC.*` du faux serveur). Les rouages internes (`regen_tickets`, `bump_quests`, `pick_card`, `check_promos`, `garde_beta`, `notifier`, `accorder`, `crediter_prismes`, `evenement_en_cours`, `titres_de`, `garde_de`, toutes les fonctions de combat, Choc, Raid, niveaux, maîtrise…) ne sont pas appelables depuis le navigateur.
 
 ### 9.5 `cfg()` : les réglages d'économie
 
@@ -1337,7 +1337,7 @@ Il copie `index.html`, `manifest.webmanifest`, `sw.js`, `assets/`, `cards/`, `cs
 
 ### 11.2 Le faux serveur (`_demo/serveur.js`)
 
-- Il définit `window.supabase = {createClient: () => client}` : **le code du jeu croit parler à Supabase**. Il implémente les **76 mêmes RPC**, avec les mêmes noms, paramètres et messages d'erreur, et `from('shop_items')`.
+- Il définit `window.supabase = {createClient: () => client}` : **le code du jeu croit parler à Supabase**. Il implémente les **75 mêmes RPC** (plus `combat_verifier`, la fonction qui rejoue les combats, 3.0.14 : `client.functions.invoke`), avec les mêmes noms, paramètres et messages d'erreur, et `from('shop_items')`.
 - **Un appel** (`appeler`) : charge l'état, refuse `'non connecte'` sans session, copie l'état, fait vivre les bots, exécute `RPC[nom](MOI, args)`, sauvegarde, attend 60 à 150 ms. **Une exception annule tout l'appel** (bots compris). Un refus s'écrit `refuser('…')` (jamais un `throw` brut : sur `me`, il déclencherait la recréation du monde).
 - **Stockage** : l'état entier `S` dans IndexedDB (`kvSet('demo-serveur', S)`). Le seul numéro de schéma est `S.v === 1` : **ne jamais le changer** (cela effacerait toutes les parties). Les ajouts se font dans `completer()` (`S.x = S.x || …`) ou dans une fonction `mondeXX()` idempotente.
 - **Il ne lit rien du jeu au chargement** (il est chargé avant `config.js`) : seulement à l'intérieur de fonctions (`cards`, `byId`, `Decks`, `Combat`, `IA`, `RAID`, `CHOC`, `niveauDe`, `recompenseNiveau`…).
