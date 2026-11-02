@@ -1367,7 +1367,9 @@
       recharges: [],
       joueurs: Object.keys(S.profils).length,
       maintenance: Object.assign({}, maintDemo()),
-      sauvegarde: sv ? { le: iso(sv.le), version: '3.0', cartes: Object.keys(sv.contenu.col || {}).length } : null
+      sauvegarde: sv ? { le: iso(sv.le), version: '3.0', cartes: Object.keys(sv.contenu.col || {}).length } : null,
+      /* Les combats que le serveur n'a pas pu vérifier (3.0.14). */
+      refuses: { n30: (S.combats_refuses || []).filter(x => now() - Date.parse(x.le) < 30 * 864e5).length, liste: (S.combats_refuses || []).slice(0, 20) }
     };
   }
   RPC.labo_etat = p => { estAdmin(p); return laboEtat(p); };
@@ -2096,13 +2098,20 @@
     return me(p);
   };
 
-  /* combat_debut : le serveur ouvre un combat et tire la graine. */
-  RPC.combat_debut = (p, { p_mode, p_cle, p_niveau }) => {
+  /* combat_debut : le serveur ouvre un combat, tire la graine et note le
+     deck (3.0.14 : il rend aussi ce qui fait la partie — la page la bâtit
+     avec, Verif.partie —, et la rejouera, RPC.combat_verifier). */
+  RPC.combat_debut = (p, { p_mode, p_cle, p_niveau, p_deck }) => {
     const c = cb(p);
     if (!c.section) refuser('Rejoins d\'abord une Section.');
     if (!['campagne', 'infini', 'raid', 'epreuve'].includes(p_mode)) refuser('Mode inconnu.');
+    const deck = p_mode === 'epreuve' ? null : p_deck;
+    if (p_mode !== 'epreuve') {
+      if (!deck) refuser('Choisis un deck.');
+      if (!Array.isArray(deck.club) || deck.club.length !== Combat.REGLE.CLUB || !Array.isArray(deck.reserve)) refuser('Deck invalide.');
+    }
     /* Version 3.0 : le Raid et l'Épreuve du jour (25_choc.sql). */
-    let niveau = p_niveau, phase = null, graine = Math.floor(Math.random() * 4294967295) + 1;
+    let niveau = p_niveau, phase = null, graine = Math.floor(Math.random() * 4294967295) + 1, boss = null, nJour = null;
     const auj = jourParis(now());
     if (p_mode === 'raid') {
       /* Le Raid (27_raid.sql) : la phase en cours, ou son palier Infini ;
@@ -2118,6 +2127,7 @@
       partDe(sa, p).combats++;
       phase = ph <= RAID.phases.length ? ph : null;
       niveau = raidCombat(attendu).ia;
+      boss = raidSaison(auj, raidAncre()).boss;
     } else if (p_mode === 'epreuve') {
       if (evenementEnCours() !== 'choc') refuser('L\'événement est terminé.');
       const ch = chocDe();
@@ -2127,6 +2137,7 @@
       l.push({ gagne: false, tours: 0, pv: 0, touches: 0, abandon: true });
       niveau = CHOC.epreuve.ia;
       graine = graineEpreuve(auj);
+      nJour = ecartJours(jourParis(S.evenement.debut), auj) + 1;
     } else if (p_mode === 'campagne') {
       const l = combatsCampagne(c.section);
       const f = l.find(x => x.id === p_cle);
@@ -2140,8 +2151,8 @@
        compte comme perdu. */
     Object.keys(c.ouverts).forEach(k => { if (c.ouverts[k].mode === 'raid') { c.stats.defaites++; c.stats.serie = 0; } delete c.ouverts[k]; });
     if (p_mode === 'campagne') niveau = combatsCampagne(c.section).find(x => x.id === p_cle).niveau;
-    c.ouverts[id] = { mode: p_mode, cle: p_cle, niveau, phase, jour: auj, debut: now(), graine };
-    return { id, graine };
+    c.ouverts[id] = { mode: p_mode, cle: p_cle, niveau, phase, jour: auj, debut: now(), graine, deck, section: c.section, boss, n: nJour };
+    return { id, graine, mode: p_mode, cle: p_cle, niveau, jour: auj, section: c.section, boss, n: nJour };
   };
 
   /* combat_fin : le résultat, et ce qu'il rapporte. */
@@ -2172,11 +2183,12 @@
     return { gagne: d, total: c.xp, avant, niveau: apres, paliers };
   }
 
-  RPC.combat_fin = (p, { p_id, p_gagne, p_resume }) => {
+  /* combat_payer (23_combats.sql) : ce que rapporte un combat, une fois
+     vérifié. `v` : le verdict du serveur (Verif.rejouer) ; `histo` : le
+     déroulé qu'il a écrit. */
+  function payerCombat(p, o, v, histo) {
     const c = cb(p);
-    const o = (c.ouverts || {})[p_id];
-    if (!o) refuser('Ce combat n\'est plus ouvert.');
-    delete c.ouverts[p_id];
+    const p_gagne = !!v.gagne, p_resume = Object.assign({}, v, { histo });
     const auj = jourParis(now());
     if (c.jour !== auj) { c.jour = auj; c.recompensees = 0; }
     const r = { eclats: 0, boosters: 0, fragments: 0, carte: null, titre: null, message: '' };
@@ -2236,6 +2248,29 @@
     syncCollection(p);
     checkPromos(p);
     return { etat: me(p), recompense: r };
+  }
+
+  /* La fonction du serveur qui vérifie les combats
+     (supabase/functions/combat-verifier, 3.0.14), et ce qu'elle appelle :
+     combat_a_verifier, combat_fin_verifie, combat_refuse, defi_a_verifier,
+     defi_fin_verifie. La démo a le moteur : elle rejoue la partie d'un coup
+     (le vrai serveur, limité à 2 s de calcul par appel, le fait en passes). */
+  RPC.combat_verifier = (p, corps) => {
+    if (corps && corps.defi) return verifierDefi(p, String(corps.defi));
+    const c = cb(p);
+    const id = corps && corps.id;
+    const o = (c.ouverts || {})[id];
+    if (!o) refuser('Ce combat n\'est plus ouvert.');
+    const r = Verif.rejouer(o, corps.journal, { meta: corps.meta || {} });
+    delete c.ouverts[id];
+    if (r.etat !== 'fini') {
+      const l = (S.combats_refuses = S.combats_refuses || []);
+      l.unshift({ le: iso(now()), joueur: profil(p).pseudo, mode: o.mode, cle: o.cle, raison: r.raison, coup: r.k });
+      l.splice(50);
+      return { recompense: { message: 'Ce combat n\'a pas pu être vérifié par le serveur : il ne rapporte rien.' }, refuse: true };
+    }
+    const x = payerCombat(p, o, r.verdict, r.histo);
+    return { recompense: x.recompense, verdict: r.verdict };
   };
 
   /* ---------- l'historique des combats (version 3.0.12) ---------- */
@@ -2318,10 +2353,12 @@
     if (bot < 0 || d.statut !== 'en_cours') return;
     const E = Combat.rejouer(initDefi(d), d.actions);
     let n = 0;
+    d.auteurs = d.auteurs || [];
     while (Combat.demande(E) && Combat.demande(E).qui === bot && n++ < 80) {
       const a = IA.choisir(E, { niveau: 3 });
       Combat.agir(E, a);
       d.actions.push(a);
+      d.auteurs.push(bot);
     }
     if (E.fin) d.fini = true;
   }
@@ -2337,18 +2374,25 @@
     if (!d || d.statut !== 'en_cours') refuser('Ce défi n\'est plus en cours.');
     if (p_n !== d.actions.length) refuser('Actions désynchronisées.');
     d.actions.push(p_action);
+    /* Qui a envoyé le coup (3.0.14, defi_jouer) : le serveur rejoue le défi
+       et sait qui a joué hors de son tour. */
+    (d.auteurs = d.auteurs || []).push(d.de === p ? 0 : 1);
     d.maj = now();
     return { n: d.actions.length };
   };
-  /* Le vrai serveur croit chaque joueur sur parole (p_gagnant) ; la démo,
-     qui a le moteur, rejoue la partie. */
-  RPC.defi_fin = (p, { p_id, p_histo }) => {
+  /* La fin d'un défi (3.0.14, defi_a_verifier et defi_fin_verifie) : le
+     serveur rejoue les coups et leurs auteurs (Verif.defi) ; un coup envoyé
+     hors de son tour, ou refusé par les règles, fait perdre son auteur. */
+  function verifierDefi(p, p_id) {
     const d = defisDe().find(x => x.id === p_id && (x.pour === p || x.de === p));
     if (!d) refuser('Défi introuvable.');
-    const E = Combat.rejouer(initDefi(d), d.actions);
-    if (!E.fin) refuser('Le défi n\'est pas fini.');
-    if (d.statut === 'en_cours') d.statut = 'fini';
     const moi = d.de === p ? 0 : 1;
+    const v = Verif.defi({ decks: [d.deck_de, d.deck_pour], graine: d.graine, actions: d.actions, auteurs: d.auteurs || [] },
+      { moi, meta: { titre: 'Défi entre amis' } });
+    if (!v.fini) refuser('Le défi n\'est pas fini.');
+    if (d.statut === 'en_cours') d.statut = 'fini';
+    const p_histo = v.histo;
+    const E = { tour: v.tours, fin: { gagnant: v.gagnant } };
     const c = cb(p);
     const r = { eclats: 0, message: '' };
     d.payes = d.payes || {};
@@ -2361,15 +2405,17 @@
       serieDe(c, gagne);
       const o = profil(moi === 0 ? d.pour : d.de);
       historiqueAjouter(p, 'defi', d.id, 0, gagne, p_histo, { nom: o.pseudo, avatar: o.avatar, frame: o.frame, photo: null });
-      /* Un défi abandonné (3.0.14, defi_fin) : aucune quête. */
-      const abandon = d.actions.some(a => a && a.t === 'abandon');
+      /* Un défi abandonné (3.0.14, defi_fin) : aucune quête. Un coup refusé
+         vaut un abandon de son auteur. */
+      const abandon = d.actions.some(a => a && a.t === 'abandon') || v.fautif != null;
       if (!abandon) { bump(p, 'defis', 1); bump(p, 'combats', 1); if (gagne) bump(p, 'victoires', 1); }
       r.xp = gagnerXp(p, xpCombat('defi', 0, gagne, 0, E.tour));
       if (c.defis_rec < DEFI_GAIN.plafond) { c.defis_rec++; r.eclats = gagne ? DEFI_GAIN.victoire : DEFI_GAIN.defaite; profil(p).shards += r.eclats; }
       else r.message = 'Défis récompensés du jour atteints.';
     }
-    return { etat: me(p), recompense: r };
-  };
+    /* Comme defi_fin_verifie : la récompense, et le verdict du serveur. */
+    return { recompense: r, verdict: { gagnant: v.gagnant, tours: v.tours, fautif: v.fautif, raison: v.raison } };
+  }
 
   /* ================================== version 3.0, 25_choc.sql */
   /* Le Choc des Sections : l'Épreuve du jour (la même graine pour tous), et
@@ -2802,6 +2848,20 @@
   const client = {
     rpc: appeler,
     from: requete,
+    /* Les fonctions du serveur (supabase/functions) : celle qui vérifie les
+       combats (3.0.14). Même forme de réponse que supabase-js : une erreur
+       porte son corps ({ erreur }) dans `context`. */
+    functions: {
+      async invoke(nom, o) {
+        if (nom !== 'combat-verifier') return { data: null, error: { message: 'Fonction inconnue : ' + nom } };
+        const r = await appeler('combat_verifier', (o && o.body) || {});
+        if (r.error) {
+          const m = r.error.message;
+          return { data: null, error: { message: m, context: { json: async () => ({ erreur: m }) } } };
+        }
+        return r;
+      }
+    },
     channel() {
       const c = {
         on(evt, filtre, f) { if (typeof f === 'function' && !ecouteurs.includes(f)) ecouteurs.push(f); return c; },

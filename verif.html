@@ -271,7 +271,7 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
   /* PGRST202 : la fonction n'existe pas. Toute autre erreur (non connecté,
      Section manquante, événement fini) prouve qu'elle est là. */
   const manque30 = [];
-  for (const [fn, args, quoi] of [['combat_debut', { p_mode: '', p_cle: '', p_niveau: 0 }, 'les Combats'],
+  for (const [fn, args, quoi] of [['combat_debut', { p_mode: '', p_cle: '', p_niveau: 0, p_deck: null }, 'les Combats'],
                                    ['defi_etat', { p_id: '', p_depuis: 0 }, 'les défis entre amis'],
                                    ['choc_etat', {}, 'l\'événement du Choc des Sections'],
                                    ['raid_etat', {}, 'le Raid (27_raid.sql)'],
@@ -286,6 +286,31 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
         detail: `Il manque : ${manque30.join(', ')}. Le jeu en 3.0 ne pourra ni ouvrir un combat, ni en payer un.`,
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
     : { etat: 'ok', titre: 'Combats, défis, Choc des Sections, Raid, maîtrise et historique de la 3.0 sont installés' });
+
+  /* ---- 6 ter bis. La fonction qui vérifie les combats (3.0.14) ---- */
+  /* supabase/functions/combat-verifier : sans elle, aucun combat ne se paie
+     (le serveur ne croit plus la page). Appelée sans combat, elle répond
+     « non connecte » ou « Combat inconnu. » : elle est là. 404 : elle n'est
+     pas déployée. */
+  {
+    let etat = null;
+    try {
+      const { data, error } = await sb.functions.invoke('combat-verifier', { body: {} });
+      if (!error) etat = 'ok';
+      else {
+        const st = error.context && error.context.status;
+        let corps = null;
+        try { corps = await error.context.json(); } catch (e) { /* pas de JSON */ }
+        etat = corps && corps.erreur ? 'ok' : st === 404 ? 'absente' : 'erreur:' + (st || error.message);
+      }
+    } catch (e) { etat = 'erreur:' + (e.message || e); }
+    poser(etat === 'ok'
+      ? { etat: 'ok', titre: 'La fonction qui vérifie les combats répond',
+          detail: 'Chaque combat est rejoué par le serveur avant d\'être payé (<code>combat-verifier</code>).' }
+      : { etat: 'ko', titre: etat === 'absente' ? 'La fonction qui vérifie les combats n\'est pas déployée' : 'La fonction qui vérifie les combats ne répond pas',
+          detail: `Sans elle, aucun combat ne rapporte rien${etat !== 'absente' ? ` (${E(String(etat).replace(/^erreur:/, ''))})` : ''}.`,
+          faire: 'Déploie <code>supabase/functions/combat-verifier</code> : <code>supabase functions deploy combat-verifier</code> (README, « La vérification des combats »).' });
+  }
 
   /* ---- 6 quater. La version de la base et la maintenance (3.0.12) ---- */
   /* porte() le dit à tout le monde, sans compte (supabase/installation/01_schema.sql). */

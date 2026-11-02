@@ -14,7 +14,7 @@
 --   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
 --   annule tout.
 --
---   Assemble le 2026-11-01
+--   Assemble le 2026-11-02
 --
 -- =====================================================================
 
@@ -6856,7 +6856,15 @@ begin
                       from maintenance m where m.id = 1),
     'sauvegarde', (select jsonb_build_object('le', s.le, 'version', coalesce(s.contenu ->> 'version', '2.5'),
                             'cartes', jsonb_array_length(coalesce(s.contenu -> 'collection', '[]'::jsonb)))
-                     from labo_sauvegardes s where s.user_id = p));
+                     from labo_sauvegardes s where s.user_id = p),
+    -- Les combats que le serveur n'a pas pu verifier (3.0.14, 23_combats.sql :
+    -- combat_refuse) : les vingt derniers, et combien en trente jours.
+    'refuses', jsonb_build_object(
+      'n30', (select count(*) from combats_refuses r where r.le > now() - interval '30 days'),
+      'liste', coalesce((select jsonb_agg(x order by x.le desc) from (
+        select r.le, pr.pseudo joueur, r.mode, r.cle, r.raison, r.coup
+          from combats_refuses r left join profiles pr on pr.id = r.user_id
+         order by r.le desc limit 20) x), '[]'::jsonb)));
 end $$;
 
 -- ------------------------------------------------- le Choc des Sections

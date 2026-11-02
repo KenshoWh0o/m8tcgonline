@@ -330,10 +330,9 @@ async function lancerEpreuve() {
   if (!ep || ep.essais.length >= ep.max) return toast('Épreuve terminée : une nouvelle demain.');
   const x = epreuveCourante();
   await demarrer({
-    mode: 'epreuve', cle: chEtat.jour, niveau: CHOC.epreuve.ia,
-    deck: x.moi, deckIA: x.adv,
+    mode: 'epreuve', cle: chEtat.jour, niveau: CHOC.epreuve.ia, jour: chEtat.jour, n: chEtat.n,
+    deck: x.moi,
     adversaire: { nom: 'L\'adversaire du jour', avatar: 'card:' + x.adv.couverture, frame: 'f_choc' },
-    pvMoi: x.regle.pv[0], essMoi: x.regle.ess[0], pv: x.regle.pv[1], ess: x.regle.ess[1],
     titre: `Épreuve${chEtat.n ? ' ' + chEtat.n : ''} · ${x.regle.nom}`, sousTitre: `Essai ${ep.essais.length + 1}/${ep.max}`
   });
 }

@@ -243,6 +243,26 @@ Backend.pull = async function () {
   Backend.apply(await Backend.rpc('me'));
 };
 
+/* La fonction du serveur qui vérifie les combats (3.0.14,
+   supabase/functions/combat-verifier) : elle rejoue la partie et paie ce que
+   le moteur confirme. Mêmes messages qu'un refus du serveur. */
+Backend.verifier = async function (corps) {
+  const { data, error } = await Backend.sb.functions.invoke('combat-verifier', { body: corps });
+  let brut = data && data.erreur;
+  if (error) {
+    brut = error.message;
+    try { const x = await error.context.json(); if (x && x.erreur) brut = x.erreur; } catch (e) { /* pas de corps lisible */ }
+  }
+  if (brut) {
+    brut = String(brut).replace(/^(?:ERROR|ERREUR|[A-Z0-9]{5})\s*:\s*/, '').trim();
+    const e = new Error(MSG_SERVEUR[brut] || brut || 'Le serveur a refusé.');
+    e.code = brut;
+    if (brut === 'MAINTENANCE' && typeof Porte !== 'undefined') Porte.lire().then(() => render());
+    throw e;
+  }
+  return data;
+};
+
 Backend.checkin = async function () {
   Backend.apply(await Backend.rpc('checkin'));
 };
@@ -604,28 +624,37 @@ Backend.deckSupprimer = async function (id) {
   Backend.apply(await Backend.rpc('deck_supprimer', { p_id: id }));
 };
 
-/* Un combat contre l'IA : le serveur l'ouvre et donne la graine. */
-Backend.combatDebut = async function (mode, cle, niveau) {
-  if (Backend.mode !== 'cloud') return { id: 'local-' + Date.now(), graine: (Math.random() * 4294967296) >>> 0 };
-  return Backend.rpc('combat_debut', { p_mode: mode, p_cle: String(cle), p_niveau: niveau });
+/* Un combat contre l'IA : le serveur l'ouvre, tire la graine et note le
+   deck (format du moteur ; l'Épreuve impose le sien). Version 3.0.14 : il
+   rend aussi ce qui fait la partie (jour, Section, boss, jour de
+   l'événement) — la page la bâtit avec (Verif.partie), le serveur rejouera
+   la même. */
+Backend.combatDebut = async function (mode, cle, niveau, deck) {
+  if (Backend.mode !== 'cloud') return { id: 'local-' + Date.now(), graine: (Math.random() * 4294967296) >>> 0, mode, cle: String(cle), niveau };
+  return Backend.rpc('combat_debut', { p_mode: mode, p_cle: String(cle), p_niveau: niveau, p_deck: deck || null });
 };
 
-/* … et le referme, avec le résultat. Il rend ce qu'il a donné. */
-Backend.combatFin = async function (id, gagne, resume) {
+/* … et le referme : la page envoie la partie (`journal`) et ce que
+   l'historique affiche (`meta` : titre, adversaire, deck) ; la fonction du
+   serveur la rejoue et paie ce qu'elle confirme (3.0.14 : avant, la page
+   disait qui avait gagné). `local` : { gagne, histo }, pour le mode hors
+   ligne, qui ne paie rien. */
+Backend.combatFin = async function (id, journal, meta, local) {
   if (Backend.mode !== 'cloud') {
+    const gagne = !!(local && local.gagne);
     const c = combatLocal();
     c.stats = c.stats || {};
     c.stats[gagne ? 'victoires' : 'defaites'] = (c.stats[gagne ? 'victoires' : 'defaites'] || 0) + 1;
     /* L'historique (js/combat/historique.js), comme historique_ajouter. */
-    if (resume && resume.histo) {
-      const x = Object.assign({ id: Date.now(), le: new Date().toISOString(), mode: null, gagne: !!gagne }, resume.histo);
+    if (local && local.histo) {
+      const x = Object.assign({ id: Date.now(), le: new Date().toISOString(), mode: null, gagne }, local.histo);
       c.historique = [x].concat(c.historique || []).slice(0, Historique.MAX);
     }
     await persist();
     return { recompense: { message: 'Hors ligne : les combats ne rapportent rien.' } };
   }
-  const r = await Backend.rpc('combat_fin', { p_id: id, p_gagne: !!gagne, p_resume: resume || {} });
-  Backend.apply(r.etat);
+  const r = await Backend.verifier({ id, journal, meta: meta || {} });
+  await Backend.pull();
   return r;
 };
 
@@ -673,8 +702,10 @@ Backend.defiRepondre = async function (id, ok, deck) {
 };
 Backend.defiEtat = (id, depuis) => Backend.rpc('defi_etat', { p_id: id, p_depuis: depuis || 0 });
 Backend.defiJouer = (id, n, a) => Backend.rpc('defi_jouer', { p_id: id, p_n: n, p_action: a });
-Backend.defiFin = async function (id, gagnant, tours, histo) {
-  const r = await Backend.rpc('defi_fin', { p_id: id, p_gagnant: gagnant == null ? null : gagnant, p_tours: tours || 0, p_histo: histo || null });
-  Backend.apply(r.etat);
+/* La fin d'un défi (3.0.14) : le serveur rejoue les coups qu'il a rangés,
+   et leurs auteurs ; personne ne dit plus qui a gagné. */
+Backend.defiFin = async function (id) {
+  const r = await Backend.verifier({ defi: id });
+  await Backend.pull();
   return r;
 };

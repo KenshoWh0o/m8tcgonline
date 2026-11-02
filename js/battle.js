@@ -824,10 +824,9 @@ async function lancerCampagne(f) {
   const deck = cbDeckActif();
   if (!deck) return toast('Il te faut un deck valide (onglet Decks).');
   const rival = byId[f.rival] || {};
-  const deckIA = deckRival(f, e.section);
   const adverse = SECTIONS[autreSection(e.section)];
   await demarrer({
-    mode: 'campagne', cle: f.id, niveau: f.niveau, deck, deckIA,
+    mode: 'campagne', cle: f.id, niveau: f.niveau, deck,
     adversaire: { nom: rival.nom, avatar: 'card:' + f.rival, frame: f.rang ? 'f_or' : 'default' },
     pv: f.regle && f.regle.pv, ess: f.regle && f.regle.ess,
     cosmAdv: { tapis: 't_base', sleeve: 's_base' },
@@ -842,32 +841,39 @@ async function lancerInfini() {
   const diff = DIFFICULTES[n - 1];
   await demarrer({
     mode: 'infini', cle: String(n), niveau: n, deck,
-    deckIA: null, /* tiré avec la graine du serveur */
     adversaire: { nom: `Adversaire · ${diff.nom}`, avatar: 'star', frame: n >= 5 ? 'f_or' : n >= 4 ? 'f_rose' : 'default' },
     titre: `Arcade · ${diff.nom}`, sousTitre: 'Un adversaire tiré au sort'
   });
 }
 
-/* Le serveur ouvre le combat et donne la graine ; la page le joue ; le
-   serveur reçoit le résultat et paie. */
+/* Le serveur ouvre le combat, note le deck et donne la graine ; la page le
+   joue ; le serveur le rejoue et paie (3.0.14). La partie se bâtit avec ce
+   que le serveur a noté (Verif.partie, js/combat/verif.js) : le deck
+   adverse, les PV, les Essences de départ, le boss et le niveau de
+   l'adversaire en découlent — c'est la partie qu'il rejouera. `o` : le
+   mode, la clé, le deck du joueur (l'Épreuve impose le sien : `deck` n'y
+   sert qu'au nom), et pour le mode hors ligne, ce que le serveur dirait
+   (jour, boss, n). */
 async function demarrer(o) {
+  const deckMoteur = o.mode === 'epreuve' ? null : Decks.versMoteur(o.deck);
   let ouv;
   try {
     occupe(true);
-    ouv = await Backend.combatDebut(o.mode, o.cle, o.niveau);
+    ouv = await Backend.combatDebut(o.mode, o.cle, o.niveau, deckMoteur);
   } catch (err) {
     toast(err.message || 'Le combat n\'a pas pu commencer.');
     return;
   } finally { occupe(false); }
-  const deckIA = o.deckIA || Decks.aleatoire(aleaGraine(ouv.graine ^ 0x5bd1e995), { niveau: o.niveau, nom: o.adversaire.nom });
-  const init = {
-    decks: [Decks.versMoteur(o.deck), Decks.versMoteur(deckIA)],
-    noms: [save.pseudo, o.adversaire.nom], graine: ouv.graine,
-    pv: [o.pvMoi || Combat.REGLE.PV, o.pv || Combat.REGLE.PV], essDepart: [o.essMoi || 0, o.ess || 0]
-  };
-  /* Des cartes déjà en jeu au départ (le boss du Raid). */
-  if (o.poses) init.poses = o.poses;
-  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: o.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss, deck: o.deck.nom };
+  const srv = Object.assign({ mode: o.mode, cle: o.cle, niveau: o.niveau, jour: o.jour, section: cbEtat().section, boss: o.bossId, n: o.n }, ouv, { deck: deckMoteur });
+  let p;
+  try {
+    p = Verif.partie(srv);
+  } catch (err) {
+    toast(err.message || 'Le combat n\'a pas pu commencer.');
+    return;
+  }
+  const init = Object.assign(p.init, { noms: [save.pseudo, o.adversaire.nom] });
+  const meta = { id: ouv.id, mode: o.mode, cle: o.cle, niveau: p.niveau, adversaire: o.adversaire, titre: o.titre, sousTitre: o.sousTitre, cosmAdv: o.cosmAdv || null, boss: !!o.boss, deck: o.deck.nom };
   ouvrirArene({ init }, meta);
 }
 
@@ -889,11 +895,14 @@ function ouvrirArene(partie, meta) {
   }));
 }
 
+/* Ce que l'historique affiche d'un combat (le serveur écrit le reste, en
+   rejouant la partie). */
+const metaHisto = m => ({ titre: m.titre, adversaire: m.adversaire, deck: m.deck });
+
 async function finirCombat(meta, E, gagne) {
-  const resume = resumeCombat(E, 0);
-  /* Le déroulé, tour par tour, pour Combats › Historique (js/combat/historique.js). */
-  resume.histo = Historique.entree(E, 0, meta);
-  const r = await Backend.combatFin(meta.id, gagne, resume);
+  /* La partie, coup par coup : le serveur la rejoue (3.0.14). Le déroulé
+     local ne sert qu'au mode hors ligne. */
+  const r = await Backend.combatFin(meta.id, E.journal, metaHisto(meta), { gagne, histo: Historique.entree(E, 0, meta) });
   cbHisto = null;
   try { localStorage.removeItem(CLE_COMBAT); } catch (err) { /* */ }
   /* Le Raid a bougé (js/raid.js) ; l'Épreuve, l'état de l'événement
@@ -901,19 +910,6 @@ async function finirCombat(meta, E, gagne) {
   if (meta.mode === 'raid') chargerRaid();
   if (meta.mode === 'epreuve' || (meta.mode === 'raid' && evenementEnCours() === 'choc')) chargerChoc();
   return htmlRecompense(r);
-}
-
-/* Ce qu'on dit au serveur d'un combat : il s'en sert pour les quêtes. */
-function resumeCombat(E, j) {
-  let vaincus = 0, touches = 0;
-  for (const ev of E.ev) {
-    if (ev.t === 'vaincu' && ev.j !== j) vaincus++;
-    if (ev.t === 'touche' && ev.j !== j) touches++;
-  }
-  /* `abandon` (3.0.14) : le serveur ne fait avancer aucune quête, et en
-     solo ne compte rien (combat_fin). */
-  return { tours: E.tour, vaincus, touches, pv: E.j[j].pv.length, actions: E.journal.length,
-    abandon: !!(E.fin && E.fin.raison === 'abandon' && E.fin.gagnant !== j) };
 }
 
 function htmlRecompense(r) {
@@ -1005,14 +1001,16 @@ function oublierCombat() {
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();
         try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ }
-        /* Le déroulé jusqu'à l'abandon, rejoué depuis la sauvegarde. */
-        const resume = { abandon: true };
+        /* La partie jusqu'à l'abandon, rejouée depuis la sauvegarde : le
+           serveur la vérifie comme une autre (3.0.14). */
+        let journal = (s && s.journal) || [], histo = null;
         try {
-          const E = Combat.rejouer(s.init, s.journal);
+          const E = Combat.rejouer(s.init, journal);
           if (!E.fin) Combat.agir(E, { t: 'abandon', qui: 0 });
-          resume.histo = Historique.entree(E, 0, s.meta);
-        } catch (e) { /* sans déroulé */ }
-        if (s && s.meta && s.meta.id) await agir(() => Backend.combatFin(s.meta.id, false, resume));
+          journal = E.journal;
+          histo = Historique.entree(E, 0, s.meta);
+        } catch (e) { journal = journal.concat([{ t: 'abandon', qui: 0 }]); }
+        if (s && s.meta && s.meta.id) await agir(() => Backend.combatFin(s.meta.id, journal, metaHisto(s.meta), { gagne: false, histo }));
         cbHisto = null;
         render();
       } },

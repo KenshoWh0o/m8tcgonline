@@ -112,11 +112,10 @@ function ouvrirDefi(d) {
          voyait jamais la fin. La file ne rejette jamais (elle se rattrape). */
       if (defiActif) await defiActif.file;
       arreterDefi();
-      /* Le vrai serveur ne fait pas tourner le moteur : chacun lui dit qui a
-         gagné (supabase/installation/23_combats.sql), et il note un désaccord. */
-      /* Le déroulé, tour par tour, pour Combats › Historique (js/combat/historique.js). */
-      const histo = Historique.entree(E2, d.moi, { titre: 'Défi entre amis', adversaire: adv });
-      const r = await Backend.defiFin(d.id, E2.fin ? E2.fin.gagnant : null, E2.tour, histo).catch(() => null);
+      /* Version 3.0.14 : personne ne dit plus qui a gagné. Le serveur rejoue
+         les coups qu'il a rangés, et leurs auteurs (Verif.defi,
+         js/combat/verif.js) ; il écrit aussi l'historique de chacun. */
+      const r = await Backend.defiFin(d.id).catch(() => null);
       cbHisto = null;
       return htmlRecompense(r);
     },

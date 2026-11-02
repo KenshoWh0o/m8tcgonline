@@ -94,7 +94,34 @@ function vLabServeur() {
   if (labEtat.manque) return vLabManque();
   if (labEtat.erreur) return `<section class="panel"><h2>Le serveur</h2><p class="muted">${h(labEtat.erreur)}</p>
     <button class="btn ghost" data-lab="recharger">Réessayer</button></section>`;
-  return vLabMaintenance() + vLabFrise() + vLabChoc() + vLabRaid() + vLabReverses() + vLabVigueur();
+  return vLabMaintenance() + vLabFrise() + vLabChoc() + vLabRaid() + vLabReverses() + vLabRefuses() + vLabVigueur();
+}
+
+/* Les combats que le serveur n'a pas pu vérifier (version 3.0.14) : il
+   rejoue chaque partie (supabase/functions/combat-verifier) ; un coup que
+   les règles refusent, ou un coup de l'adversaire qui n'est pas le sien, et
+   le combat ne rapporte rien. Rien ici n'est une sanction : la liste dit qui,
+   quand, et à quel coup, pour regarder de plus près. */
+const MODE_NOM = { campagne: 'Campagne', infini: 'Arcade', raid: 'Raid', epreuve: 'Épreuve' };
+const cleCombat = (mode, cle) => {
+  const n = parseInt(String(cle || '').replace(/^\D+/, ''), 10);
+  if (mode === 'infini') return `niveau ${cle}`;
+  if (mode === 'campagne') return `combat ${n}`;
+  if (mode === 'raid') return String(cle)[0] === 'i' ? `Infini, palier ${n}` : `phase ${n}`;
+  return '';
+};
+function vLabRefuses() {
+  const r = labEtat.refuses;
+  if (!r) return '';
+  return `<section class="panel">
+    <h2>Combats refusés <small class="labtag">vérification</small></h2>
+    <p class="muted small">Le serveur rejoue chaque combat avant de le payer. ${r.n30
+      ? `${fmtN(r.n30)} combat${r.n30 > 1 ? 's n\'ont' : ' n\'a'} pas tenu ces trente derniers jours : ${r.n30 > 1 ? 'ils n\'ont' : 'il n\'a'} rien rapporté.`
+      : 'Aucun combat refusé ces trente derniers jours.'}</p>
+    ${r.liste && r.liste.length ? `<ul class="labliste">${r.liste.map(x => `<li><b>${h(x.joueur || '?')}</b>
+      <span>${h(MODE_NOM[x.mode] || x.mode)}${cleCombat(x.mode, x.cle) ? ` · ${h(cleCombat(x.mode, x.cle))}` : ''} · ${h(labQuand(x.le))}${x.coup != null ? ` · coup ${x.coup + 1}` : ''}</span>
+      <small class="muted">${h(x.raison || '')}</small></li>`).join('')}</ul>` : ''}
+  </section>`;
 }
 
 /* La maintenance (version 3.0.12, labo_maintenance dans

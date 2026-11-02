@@ -175,10 +175,12 @@ Jusqu'à la 3.0.12 (21 jours, 30 paliers, 3 500 pour le dernier) : ≈ 6 500 Ét
 - [hypothèse] Un joueur engagé (≈ 2 900 Étincelles en deux semaines) peut tout acheter ; un occasionnel (≈ 1 450) prend le tapis, le titre et une partie des boosters — comme avant, sur trois semaines.
 - Le Pass compte les Étincelles **gagnées**, la boutique dépense le **solde** : acheter ne fait pas reculer dans le Pass.
 
-### Ce que le serveur croit sur parole [fait]
+### Ce que le serveur vérifie [fait]
 
-- Le serveur ne rejoue pas les combats contre l'IA : il croit le client sur le résultat, pour le PvE comme pour le Raid. Trois garde-fous : les dégâts d'un combat sont plafonnés (PV du boss + 1, + 3 s'il tombe), un combat doit durer au moins 20 s, et on a 3 tentatives par jour. Un tricheur peut donc gagner au plus 54 Étincelles (ou 41 Éclats) et 13 dégâts par tentative.
-- Pour les défis entre amis, le serveur de démo rejoue la partie, puisqu'il dispose du moteur en JavaScript. Le vrai serveur ne le peut pas : Postgres n'exécute pas ce moteur. Chaque joueur y déclare donc son résultat, et un désaccord entre les deux déclarations est enregistré (`defis.desaccord`) pour que l'administration puisse le voir.
+- **Depuis la 3.0.14, le serveur rejoue chaque combat avant de le payer** (README, § 7.11) : une fonction Supabase (`supabase/functions/combat-verifier`, en Deno, qui exécute le moteur JavaScript du jeu) rebâtit la partie à partir de ce que le serveur a noté à l'ouverture (graine, deck, mode, jour), la rejoue coup par coup — chaque coup du joueur doit être permis, chaque coup de l'adversaire doit être celui qu'il aurait joué — et paie ce que la partie rejouée dit : la victoire, les PV pris au boss, les tours. Postgres n'exécute toujours pas le moteur ; c'est la fonction qui le fait, avec la clé de service.
+- Pour les défis entre amis, elle rejoue les coups que le serveur a rangés, avec leurs auteurs : un coup envoyé hors de son tour, ou refusé par les règles, fait perdre son auteur. Plus personne ne déclare son résultat.
+- **Avant (jusqu'à la 3.0.13)**, le serveur croyait le client sur le résultat, pour le PvE comme pour le Raid, et chaque joueur d'un défi déclarait son résultat. Les garde-fous restent : les dégâts d'un combat sont plafonnés (PV du boss + 1, + 3 s'il tombe), un combat doit durer au moins 20 s, et on a 3 tentatives de Raid par jour.
+- Ce qui n'est pas vérifié : la façon dont le joueur choisit ses coups. Une partie jouée avec l'aide d'un programme reste une partie permise, contre l'adversaire du jeu.
 
 ## 3 bis. Un bon deck, et la force de l'IA (version 3.0.6) [mesuré]
 

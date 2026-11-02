@@ -230,10 +230,8 @@ async function lancerRaid() {
   const cle = rdCle(r);
   const c = raidCombat(cle, b.id);
   await demarrer({
-    mode: 'raid', cle, niveau: c.ia, deck,
-    deckIA: deckBoss(r.jour, cle, b.id), poses: posesBoss(b.id), boss: true,
+    mode: 'raid', cle, niveau: c.ia, deck, jour: r.jour, bossId: b.id, boss: true,
     adversaire: { nom: b.nom, avatar: 'card:' + b.id, frame: b.cadre },
-    pv: c.pvBoss, ess: c.ess, pvMoi: c.pvMoi,
     cosmAdv: { tapis: b.tapis, sleeve: 's_base' },
     titre: c.infini ? `Raid ${r.n} · Infini, palier ${c.n}` : `Raid ${r.n} · Phase ${c.n}`, sousTitre: b.nom
   });
