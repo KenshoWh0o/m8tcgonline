@@ -24,9 +24,16 @@
      · partout, la cote de chaque carte (cinq crans : ce qu'elle ajoute aux
        victoires de sa couleur, mesuré, Decks.COTES), un tri (numéro, coût,
        cote) et un filtre par coût d'attaque ;
-     · l'assistant (Decks.assistant) remplace « Compléter pour moi » : il
-       construit un deck avec tes cartes, selon tes couleurs et ton style, et
-       s'annule d'un geste.
+     · (l'assistant de deck de la 3.0.14 a été retiré en 3.0.15.)
+
+   Version 3.0.15 (le propriétaire : l'assistant « ruine tout l'aspect
+   création et plaisir de créer » ; « ne remet pas la complétion automatique
+   (seulement pour les essences) » ; « un meilleur feedback […] sans trop
+   prendre par la main ») : plus rien ne remplit le Club à la place du
+   joueur ; la Réserve se règle toujours d'un geste (« Régler d'après mes
+   attaques ») ; l'analyse garde ses trois étoiles et gagne cinq clés
+   chiffrées (Decks.cles) : le départ, les Essences, la régularité, la tenue,
+   les PV.
 
    Rien n'est enregistré tant qu'on n'a pas appuyé sur « Enregistrer » : le
    serveur revérifie le deck (deck_sauver, supabase/installation/23_combats.sql). */
@@ -144,7 +151,7 @@ function vAtJauges(n, nr) {
     </div>`;
 }
 
-/* La prochaine étape, en une ligne ; l'assistant toujours à portée. */
+/* La prochaine étape, en une ligne. */
 function vAtEtape(n, nr) {
   const R = Combat.REGLE;
   const err = Decks.verifier(atelier.deck, save.col);
@@ -153,15 +160,11 @@ function vAtEtape(n, nr) {
   else if (nr < R.RESERVE) etape = `<span>Encore <b class="tnum">${R.RESERVE - nr}</b> Essence${R.RESERVE - nr > 1 ? 's' : ''} à choisir.</span><button class="at-lien" data-cb="at-res-auto">Régler d'après mes attaques</button>`;
   else if (err.length) etape = `<span class="ko">${h(err[0])}</span>`;
   else etape = `<span class="ok">${NAVICO.check}Prêt à jouer.</span>`;
-  const annuler = atelier.avantAssistant ? '<button class="at-lien" data-cb="at-annuler-assist">Annuler l\'assistant</button>' : '';
-  return `<div class="at-etape"><p>${etape}${annuler}</p>
-    <button class="at-assist" data-cb="at-assist">${ICO_ASSIST}<span>Assistant</span></button></div>`;
+  return `<div class="at-etape"><p>${etape}</p></div>`;
 }
-/* L'assistant : une baguette et ses éclats. */
-const ICO_ASSIST = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 15.5 8.5M13 6l1.2-2.6L15.4 6 18 7.2l-2.6 1.2L14.2 11 13 8.4 10.4 7.2Z"/><path d="M19 13.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6ZM7.5 3.5l.5 1.1 1.1.5-1.1.5-.5 1.1-.5-1.1L5.9 5.1 7 4.6Z"/></svg>';
 
 /* La cote d'une carte en cinq crans (Decks.COTES, mesurée par
-   tools/assistant-decks.js) : son rang parmi les cartes cotées. */
+   tools/cotes-cartes.js) : son rang parmi les cartes cotées. */
 let rangsCotes = null;
 function forceCarte(id) {
   if (!rangsCotes) {
@@ -282,13 +285,42 @@ function vAtDeck() {
 }
 
 /* Sur ordinateur, l'analyse reste à l'écran, au-dessus du Club : les trois
-   conseils, puis la répartition, la courbe, la Défense. */
+   conseils (les étoiles), les clés, puis la répartition, la courbe. */
 function vAtAnalyse(d, b) {
   return `<section class="at-analyse" aria-label="Analyse du deck">
     <div class="at-an-tete">${ETOILES_DECK(b.note, b.sur)}<b>${b.nom}</b><small>${b.note} conseil${b.note > 1 ? 's' : ''} sur ${b.sur}</small></div>
     <ul class="at-an-l">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}" title="${h(x.pourquoi)}"><i aria-hidden="true">${x.ok ? NAVICO.check : '!'}</i><span><b>${x.titre}</b><small>${h(x.dit)}</small></span></li>`).join('')}</ul>
+    ${vClesDeck(d)}
     ${vStatsDeck(d)}
   </section>`;
+}
+
+/* Les clés (Decks.cles, 3.0.15) : ce que fait le deck, chiffres à l'appui,
+   sans dire quelle carte y mettre. Une clé ne s'allume en rouge que pour un
+   vrai trou : un départ sans attaque une fois sur sept ou plus, une couleur
+   que la Réserve ne fournit pas. */
+const pcCle = x => `${Math.round(100 * x)} %`;
+function vClesDeck(d) {
+  if (!Decks.total(d.cartes)) return '';
+  const k = Decks.cles(d), R = Combat.REGLE;
+  const pl = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+  const l = [];
+  const dep = k.depart;
+  l.push(['Le départ', `Un Joueur qui attaque pour 1 ou 2 Essences dans ta main de départ : ${pcCle(dep.main)} ; ${pcCle(dep.avecChangement)} en changeant de main.${dep.ok ? '' : ' Sinon, tes premiers tours passent sans attaque.'}`, dep.ok ? '' : 'ko']);
+  const ess = k.essences.couleurs.slice(0, 3).map(x => {
+    const nom = (COLORS[x.coul] || {}).nom || x.coul;
+    if (x.e) return `<i class="at-cle-c" style="--ec:${(COLORS[x.coul] || {}).c || '#888'}"></i>${nom}, ${x.e} sur ${x.sur} : en jeu dès ton 2<sup>e</sup> tour ${pcCle(x.tour2)} du temps, dès le 3<sup>e</sup> ${pcCle(x.tour3)}.`;
+    const quoi = [x.cartes ? `${pl(x.cartes, 'carte')} ${nom} ne se joueront pas` : '', x.attaques ? 'des attaques ne se paieront pas' : ''].filter(Boolean).join(', et ');
+    return `<i class="at-cle-c" style="--ec:${(COLORS[x.coul] || {}).c || '#888'}"></i>Aucune Essence ${nom} dans ta Réserve : ${quoi}.`;
+  });
+  if (ess.length) l.push(['Tes Essences', ess.join('<br>'), k.essences.ok ? '' : 'ko']);
+  const r = k.regularite;
+  l.push(['La régularité', `${pl(r.en3, 'carte')} en 3 exemplaires, ${r.en2} en 2, ${r.en1} en 1. À ton 3<sup>e</sup> tour, tu as vu une carte en 3 exemplaires ${pcCle(r.vue3)} du temps ; en 1, ${pcCle(r.vue1)}.`, '']);
+  const t = k.tenue;
+  if (t.joueurs) l.push(['La tenue', `${t.tiennent} Joueur${t.tiennent > 1 ? 's' : ''} sur ${t.joueurs} survi${t.tiennent > 1 ? 'vent' : 't'} à une attaque typique à 2 Essences (${t.atk2}) ; ${t.gardiens} avec Garde, Provocation ou Shield.`, '']);
+  const pv = k.pv;
+  l.push(['Tes PV', pv.resil ? `${pl(pv.resil, 'carte')} à Résilience : au moins une parmi tes ${R.PV} PV ${pcCle(pv.auMoinsUne)} du temps.` : `Aucune carte à Résilience : un PV perdu ne déclenche rien.`, '']);
+  return `<div class="at-cles"><h5>Les clés</h5><ul>${l.map(([titre, txt, etat]) => `<li class="${etat}"><b>${titre}</b><span>${txt}</span></li>`).join('')}</ul></div>`;
 }
 
 function statsDeck(d) {
@@ -313,8 +345,6 @@ function statsDeck(d) {
 function vStatsDeck(d) {
   const s = statsDeck(d);
   const maxC = Math.max(1, ...s.couts);
-  const r = d.reserve || {};
-  const manque = Object.keys(s.besoins).filter(k => !(r[k] > 0));
   return `<div class="at-stats">
     <div class="at-types" aria-hidden="true">
       ${['joueur', 'objet', 'coach', 'moment'].map(t => s[t] ? `<i class="t-${t}" style="flex:${s[t]}"></i>` : '').join('')}
@@ -323,7 +353,6 @@ function vStatsDeck(d) {
     <div class="at-courbe"><small>Joueurs, selon le coût de leur attaque la moins chère</small>
       <div>${s.couts.map((n, i) => `<span><i style="height:${Math.round(100 * n / maxC)}%"></i><b>${n}</b><small>${i + 1}${i === 3 ? '+' : ''}</small></span>`).join('')}</div></div>
     <p class="muted small">Défense moyenne ${s.defMoy || '—'} · ${s.res} carte${s.res > 1 ? 's' : ''} à Résilience</p>
-    ${manque.length ? `<p class="at-alerte">Tes attaques demandent ${manque.map(k => COLORS[k].nom).join(', ')}, absent${manque.length > 1 ? 'es' : 'e'} de ta Réserve.</p>` : ''}
   </div>`;
 }
 
@@ -357,8 +386,6 @@ function atelierAction(k, el) {
   if (!atelier) return;
   const d = atelier.deck, v = el.dataset.v;
   const R = Combat.REGLE;
-  /* Une autre modification du deck : l'assistant ne s'annule plus. */
-  if (['at-plus', 'at-moins', 'at-couv', 'at-ess+', 'at-ess-', 'at-res-auto'].includes(k)) atelier.avantAssistant = null;
   switch (k) {
     case 'at-retour': return quitterAtelier();
     case 'at-onglet': {
@@ -399,16 +426,6 @@ function atelierAction(k, el) {
     case 'at-res-auto': d.reserve = Decks.reserveAuto(d.cartes, 'rose'); return render();
     case 'at-cout': atelier.filtres.cout = +v; return majGrille(true);
     case 'at-tri': atelier.filtres.tri = v; return majGrille(true);
-    case 'at-assist': return ouvrirAssistant();
-    case 'as-coul': return choisirCouleurAssistant(v);
-    case 'as-style': return choisirStyleAssistant(v);
-    case 'at-annuler-assist': {
-      if (!atelier.avantAssistant) return;
-      atelier.deck = atelier.avantAssistant;
-      atelier.avantAssistant = null;
-      render();
-      return toast('Le deck est revenu tel qu\'il était.');
-    }
     case 'at-sauver': return sauverDeck();
     case 'at-menu': return menuAtelier();
   }
@@ -443,88 +460,6 @@ function bindAtelier() {
     n.dataset.lie = '1';
     n.addEventListener('input', () => { atelier.deck.nom = n.value.slice(0, 32); });
   }
-}
-
-/* ---------- L'assistant ---------- */
-/* La feuille : les couleurs (à son choix, ou une ou deux), le style, et
-   garder ou non les cartes déjà choisies. Il construit avec les cartes du
-   joueur (Decks.assistant, js/combat/decks.js), et le geste s'annule
-   (« Annuler l'assistant ») tant qu'on n'a rien touché d'autre. */
-function ouvrirAssistant() {
-  const d = atelier.deck;
-  const n = Decks.total(d.cartes);
-  const a = atelier.assist = atelier.assist || { couleurs: [], style: 'equilibre', garder: n > 0 };
-  /* Combien de cartes de chaque couleur on possède (de quoi juger). */
-  const parCoul = {};
-  for (const c of cartesJouables()) if (save.col[c.id] > 0) parCoul[c.col] = (parCoul[c.col] || 0) + Math.min(3, save.col[c.id]);
-  const couls = ['rose', 'orange', 'jade', 'violette', 'jaune', 'mauve', 'verte', 'bleue', 'azur'];
-  openSheet({
-    title: 'L\'assistant',
-    body: `<div class="as">
-      <p class="as-dit">Il construit un deck de ${Combat.REGLE.CLUB} cartes avec les tiennes : les mieux cotées, dans tes couleurs, en tenant les règles et les conseils des règles officielles.</p>
-      <h4 class="as-t">Couleurs <small>une ou deux</small></h4>
-      <div class="as-couls" role="group" aria-label="Couleurs">
-        <button class="as-c auto${a.couleurs.length ? '' : ' on'}" data-cb="as-coul" data-v="auto" aria-pressed="${!a.couleurs.length}"><b>À son choix</b><small>les plus fortes</small></button>
-        ${couls.map(k => `<button class="as-c${a.couleurs.includes(k) ? ' on' : ''}" data-cb="as-coul" data-v="${k}" aria-pressed="${a.couleurs.includes(k)}" style="--ec:${COLORS[k].c}">${essIcon(k)}<b>${COLORS[k].nom}</b><small class="tnum">${parCoul[k] || 0} carte${(parCoul[k] || 0) > 1 ? 's' : ''}</small></button>`).join('')}
-      </div>
-      <h4 class="as-t">Style</h4>
-      <div class="as-styles" role="radiogroup" aria-label="Style">
-        ${Object.keys(Decks.STYLES).map(k => `<button class="as-s${a.style === k ? ' on' : ''}" data-cb="as-style" data-v="${k}" role="radio" aria-checked="${a.style === k}"><b>${Decks.STYLES[k].nom}</b><small>${Decks.STYLES[k].dit}</small></button>`).join('')}
-      </div>
-      ${n ? `<label class="as-garder"><input type="checkbox" id="as-garder"${a.garder ? ' checked' : ''}><span>Garder les ${n} carte${n > 1 ? 's' : ''} déjà choisie${n > 1 ? 's' : ''}<small>sinon, il repart de zéro</small></span></label>` : ''}
-    </div>`,
-    actions: [
-      { label: 'Construire le deck', primary: true, fn: construireAssistant },
-      { label: 'Annuler', fn: closeSheet }
-    ]
-  });
-}
-/* Les choix de la feuille changent sur place (la feuille ne se redessine
-   pas : elle rejouerait son entrée). */
-function majFeuilleAssistant() {
-  const a = atelier.assist;
-  document.querySelectorAll('#sheet .as-c').forEach(b => {
-    const on = b.dataset.v === 'auto' ? !a.couleurs.length : a.couleurs.includes(b.dataset.v);
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on);
-  });
-  document.querySelectorAll('#sheet .as-s').forEach(b => {
-    const on = b.dataset.v === a.style;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-checked', on);
-  });
-}
-function choisirCouleurAssistant(k) {
-  const a = atelier.assist;
-  if (!a) return;
-  if (k === 'auto') a.couleurs = [];
-  else if (a.couleurs.includes(k)) a.couleurs = a.couleurs.filter(x => x !== k);
-  else a.couleurs = a.couleurs.concat(k).slice(-2);
-  majFeuilleAssistant();
-}
-function choisirStyleAssistant(k) {
-  if (!atelier.assist || !Decks.STYLES[k]) return;
-  atelier.assist.style = k;
-  majFeuilleAssistant();
-}
-function construireAssistant() {
-  const d = atelier.deck;
-  const a = atelier.assist;
-  const g = $('#as-garder');
-  a.garder = g ? g.checked : false;
-  const r = Decks.assistant(a, save.col, d);
-  closeSheet();
-  if (!Decks.total(r.deck.cartes)) return toast('Tu n\'as pas encore de cartes à jouer : un Starter Deck se joue sans les posséder.');
-  atelier.avantAssistant = JSON.parse(JSON.stringify(d));
-  d.cartes = r.deck.cartes;
-  d.reserve = r.deck.reserve;
-  d.couverture = r.deck.couverture;
-  atelier.onglet = 'deck';
-  render();
-  SFX.jouer('gagne');
-  const coul = r.couleurs.map(k => COLORS[k].nom).join(' et ');
-  toast(r.complet ? `Deck ${coul}, ${Decks.STYLES[r.style].nom.toLowerCase()} : ${r.joueurs} Joueurs, dont ${r.bas} qui attaquent pour 1 ou 2 Essences.`
-    : `Il manque des cartes pour finir le Club (${Decks.total(r.deck.cartes)} sur ${Combat.REGLE.CLUB}).`);
 }
 
 async function sauverDeck() {

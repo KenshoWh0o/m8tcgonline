@@ -1,4 +1,4 @@
-// Généré par tools/build-verif.py (empreinte f50b63681848) : ne pas modifier à la main.
+// Généré par tools/build-verif.py (empreinte 22ec4bf8d21b) : ne pas modifier à la main.
 // Le code du jeu, tel que le navigateur le charge, pour rejouer un combat sur le serveur.
 /* eslint-disable */
 // @ts-nocheck
@@ -5165,161 +5165,85 @@ function bilan(deck) {
   return { reperes, note, sur: reperes.length, nom, joueurs, bas, accord };
 }
 
-/* ---------- L'assistant (3.0.14) ---------- */
-/* Le propriétaire, le 1er novembre 2026 : « un assistant qui fait le deck
-   selon tes préférences, mais qui fait un vrai deck optimisé et fort tout en
-   respectant les préférences. » Il remplace « Compléter pour moi », qui
-   prenait les cartes de plus grande « valeur » pour l'IA (une formule écrite
-   à la main : la Défense, l'attaque, le mot-clé ; tous les Objets à 26).
-
-   Ce qui fait la force d'une carte, ici, c'est sa cote (COTES, plus bas) :
-   mesurée sur des milliers de parties entre decks tirés au sort
-   (tools/assistant-decks.js), la part de victoires qu'elle ajoute aux decks
-   de sa couleur. L'assistant prend les cartes les mieux cotées que le joueur
-   possède, dans les couleurs voulues, en tenant les règles (40 cartes, trois
-   exemplaires par nom et couleur) et les conseils des règles officielles (des
-   Joueurs en nombre, la majorité attaquant pour 1 ou 2 Essences, une ou deux
-   couleurs) ; le style déplace un peu les curseurs. Ce qu'il vaut est mesuré
-   par le même outil (docs/economie-3.0.md, « L'assistant de deck »).
-
-   Préférences : { couleurs: [] (à son choix) | ['rose'] | ['rose', 'jade'],
-   style: 'rapide' | 'equilibre' | 'solide', garder: true (le deck en cours
-   reste, l'assistant le complète) }. `possede` : id → exemplaires ; `base` :
-   le deck en cours ({ cartes }). Rend { deck: { cartes, reserve, couverture },
-   couleurs, style, complet, ajoutees, retirees, joueurs, bas, meilleures }. */
-const STYLES = {
-  rapide: { nom: 'Rapide', dit: 'Des attaques qui partent tôt.', cibles: { joueur: 20, objet: 7, instant: 13 }, bas: 0.7 },
-  equilibre: { nom: 'Équilibré', dit: 'Le meilleur de tes cartes, sans parti pris.', cibles: { joueur: 18, objet: 8, instant: 14 }, bas: 0.55 },
-  solide: { nom: 'Solide', dit: 'Des Joueurs qui tiennent : Défense, Garde, Provocation.', cibles: { joueur: 17, objet: 9, instant: 14 }, bas: 0.45 }
-};
-const famille = c => (c.cat === 'joueur' ? 'joueur' : c.cat === 'objet' ? 'objet' : 'instant');
-const coutBas = c => Math.min(...c.atks.map(a => Combat.totalCout(a.cout))) <= 2;
-function noteCarte(c, style) {
-  let v = COTES[c.id] != null ? COTES[c.id] : COTES[Combat.baseId(c.id)] != null ? COTES[Combat.baseId(c.id)] : 0;
-  if (c.cat === 'joueur') {
-    if (style === 'rapide') v += coutBas(c) ? 0.012 : -0.012;
-    if (style === 'solide') v += (c.def - 100) / 8000 + (c.kw && /^(garde|provocation)$/.test(Combat.O.sansAccent(c.kw.nom)) ? 0.012 : 0);
+/* ---------- Les clés d'un deck (3.0.15) ---------- */
+/* Le propriétaire, le 2 novembre 2026, en retirant l'assistant de deck (« il
+   ruine tout l'aspect création et plaisir de créer ») : « Compense ce manque
+   par un meilleur feedback […] donner les meilleurs clés pour créer un bon
+   deck, sans trop prendre par la main. Le joueur doit être aidé sans se
+   sentir sur un rail. » Les clés disent ce que fait le deck, chiffres à
+   l'appui, sans jamais dire quelle carte mettre : des chances de pioche
+   exactes (loi hypergéométrique, sur le Club et la Réserve tels qu'ils
+   sont), et un repère mesuré sur tout le catalogue (l'attaque médiane à deux
+   Essences). Plus de « Compléter pour moi » : seule la Réserve se règle d'un
+   geste (reserveAuto, « Régler d'après mes attaques »). */
+const comb = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r; };
+/* La chance d'avoir au moins une des `k` cartes en en tirant `t` d'une pile de `n`. */
+const auMoins = (n, k, t) => (n <= 0 || k <= 0 || t <= 0) ? 0 : k >= n ? 1 : 1 - comb(n - k, Math.min(t, n)) / comb(n, Math.min(t, n));
+/* Ce qu'on a vu de son Club à son 3e tour : la main de départ, puis une
+   pioche à chaque entretien (« l'entretien pioche aussi pour le premier
+   CEO »). */
+const VUES_TOUR3 = R.MAIN + 3;
+let repereCat = null;
+function repereCatalogue() {
+  if (repereCat) return repereCat;
+  const v = [];
+  for (const c of Object.values(Combat.toutes())) {
+    if (!c || c.cat !== 'joueur' || c.cachee || Combat.baseId(c.id) !== c.id) continue;
+    for (const a of c.atks) if (Combat.totalCout(a.cout) === 2 && a.degats != null) v.push(a.degats);
   }
-  return v;
+  v.sort((x, y) => x - y);
+  return (repereCat = { atk2: v.length ? v[Math.floor(v.length / 2)] : 120 });
 }
+const GARDIENS = ['Garde', 'Provocation', 'Shield'];
 
-/* Les cartes qu'on possède, regroupées par « même carte » (nom et couleur) :
-   combien on peut en jouer (trois au plus), et dans quelles versions. */
-function groupes(possede) {
-  const g = {};
-  for (const id in possede) {
-    const c = Combat.carte(id);
-    if (!(possede[id] > 0) || !jouable(c) || c.unique) continue;
-    const k = cleCopie(id);
-    (g[k] = g[k] || { cle: k, c, ids: [], dispo: 0 }).ids.push(id);
-    g[k].dispo += possede[id];
+function cles(deck) {
+  const cartes = deck.cartes || {}, res = deck.reserve || {};
+  const N = total(cartes) || R.CLUB, NR = total(res) || R.RESERVE;
+  const { atk2 } = repereCatalogue();
+  let joueurs = 0, bas = 0, tiennent = 0, gardiens = 0, resil = 0;
+  const copies = {}, colorees = {};
+  for (const id in cartes) {
+    const c = Combat.carte(id), q = +cartes[id] || 0;
+    if (!c || !q) continue;
+    copies[cleCopie(id)] = (copies[cleCopie(id)] || 0) + q;
+    if (c.res) resil += q;
+    if (c.cat === 'joueur') {
+      joueurs += q;
+      if (Math.min(...c.atks.map(a => Combat.totalCout(a.cout))) <= 2) bas += q;
+      if (c.def > atk2) tiennent += q;
+      if (c.kw && GARDIENS.includes(c.kw.nom)) gardiens += q;
+    } else if (c.col && c.col !== 'neutre') colorees[c.col] = (colorees[c.col] || 0) + q;
   }
-  const rang = id => ({ c: 0, r: 1, p: 2 }[id[0]] ?? 3);
-  for (const k in g) {
-    g[k].ids.sort((a, b) => rang(a) - rang(b) || (a < b ? -1 : 1));
-    g[k].c = Combat.carte(g[k].ids[0]);
-    g[k].dispo = Math.min(R.COPIES, g[k].dispo);
-  }
-  return Object.values(g);
-}
-
-/* Un deck dans des couleurs données. */
-function construire(couleurs, style, possede, base, garder) {
-  const S = STYLES[style] || STYLES.equilibre;
-  const cartes = {};
-  const parCle = {};
-  const fam = { joueur: 0, objet: 0, instant: 0 };
-  let bas = 0;
-  const ajouter = (id, n) => {
-    const c = Combat.carte(id);
-    cartes[id] = (cartes[id] || 0) + n;
-    parCle[cleCopie(id)] = (parCle[cleCopie(id)] || 0) + n;
-    fam[famille(c)] += n;
-    if (c.cat === 'joueur' && coutBas(c)) bas += n;
-  };
-  if (garder && base) {
-    for (const id in base) {
-      const c = Combat.carte(id);
-      const n = Math.min(+base[id] || 0, possede[id] || 0, R.COPIES - (parCle[cleCopie(id)] || 0));
-      if (jouable(c) && n > 0 && total(cartes) + n <= R.CLUB) ajouter(id, n);
-    }
-  }
-  const tous = groupes(possede).map(x => Object.assign(x, { note: noteCarte(x.c, style) }))
-    .sort((a, b) => b.note - a.note || (a.cle < b.cle ? -1 : 1));
-  const dans = x => x.c.col === 'neutre' || couleurs.includes(x.c.col);
-  /* Prendre une carte : ses exemplaires, jusqu'à trois, dans ses versions. */
-  const prendre = (x, max) => {
-    let n = Math.min(x.dispo - (parCle[x.cle] || 0), max, R.CLUB - total(cartes));
-    for (const id of x.ids) {
-      if (n <= 0) break;
-      const k = Math.min(n, (possede[id] || 0) - (cartes[id] || 0));
-      if (k > 0) { ajouter(id, k); n -= k; }
-    }
-  };
-  const remplir = (filtre, cible) => {
-    for (const x of tous) {
-      if (cible() <= 0 || total(cartes) >= R.CLUB) break;
-      if (filtre(x)) prendre(x, cible());
-    }
-  };
-  /* Les Joueurs : d'abord ceux qui attaquent tôt, jusqu'à la part voulue ;
-     puis les meilleurs, quel que soit leur coût. */
-  const cibleJ = S.cibles.joueur;
-  remplir(x => dans(x) && x.c.cat === 'joueur' && coutBas(x.c), () => Math.ceil(S.bas * cibleJ) - bas);
-  remplir(x => dans(x) && x.c.cat === 'joueur', () => cibleJ - fam.joueur);
-  remplir(x => dans(x) && famille(x.c) === 'objet', () => S.cibles.objet - fam.objet);
-  remplir(x => dans(x) && famille(x.c) === 'instant', () => S.cibles.instant - fam.instant);
-  /* Une famille trop courte : le reste dans les couleurs, puis n'importe où. */
-  remplir(dans, () => R.CLUB - total(cartes));
-  remplir(() => true, () => R.CLUB - total(cartes));
-  const score = Object.keys(cartes).reduce((s, id) => s + cartes[id] * noteCarte(Combat.carte(id), style), 0);
-  return { cartes, score, joueurs: fam.joueur, bas };
-}
-
-function assistant(prefs, possede, base) {
-  prefs = prefs || {};
-  possede = possede || {};
-  const style = STYLES[prefs.style] ? prefs.style : 'equilibre';
-  const garder = !!prefs.garder && base && total(base.cartes || base) > 0;
-  const cartesBase = base ? (base.cartes || base) : {};
-  let couleurs = (prefs.couleurs || []).filter(k => Combat.COULEURS.includes(k) && k !== 'neutre').slice(0, 2);
-  if (!couleurs.length && garder) {
-    /* Les couleurs du deck en cours, les deux plus présentes. */
-    const n = {};
-    for (const id in cartesBase) { const c = Combat.carte(id); if (c && c.col !== 'neutre') n[c.col] = (n[c.col] || 0) + cartesBase[id]; }
-    couleurs = Object.keys(n).sort((a, b) => n[b] - n[a]).slice(0, 2);
-  }
-  let meilleur;
-  if (couleurs.length) meilleur = Object.assign(construire(couleurs, style, possede, cartesBase, garder), { couleurs });
-  else {
-    /* À son choix : chaque couleur, et chaque paire, avec ce que le joueur
-       possède ; une paire doit faire nettement mieux (une Réserve partagée
-       entre deux couleurs paie moins souvent ses attaques). */
-    const cand = Combat.COULEURS.filter(k => k !== 'neutre');
-    const essais = cand.map(k => [k]);
-    for (let i = 0; i < cand.length; i++) for (let j = i + 1; j < cand.length; j++) essais.push([cand[i], cand[j]]);
-    for (const cs of essais) {
-      const d = construire(cs, style, possede, cartesBase, garder);
-      const v = d.score - (cs.length > 1 ? 0.12 : 0) - (total(d.cartes) < R.CLUB ? 10 : 0);
-      if (!meilleur || v > meilleur.v) meilleur = Object.assign(d, { couleurs: cs, v });
-    }
-  }
-  const cartes = meilleur.cartes;
-  const reserve = reserveAuto(cartes, meilleur.couleurs[0] || 'rose');
-  const avant = cartesBase || {};
-  let ajoutees = 0, retirees = 0;
-  for (const id in cartes) ajoutees += Math.max(0, cartes[id] - (avant[id] || 0));
-  for (const id in avant) retirees += Math.max(0, (avant[id] || 0) - (cartes[id] || 0));
-  const meilleures = Object.keys(cartes).filter(id => Combat.carte(id).cat === 'joueur')
-    .sort((a, b) => noteCarte(Combat.carte(b), style) - noteCarte(Combat.carte(a), style)).slice(0, 3);
+  /* 1. Le départ : un Joueur qui attaque tôt dans la main de départ, puis
+        avec le changement de main (une fois). */
+  const p1 = auMoins(N, bas, R.MAIN), p2 = 1 - (1 - p1) * (1 - p1);
+  /* 2. Les Essences : chaque couleur que demandent les attaques ou les
+        cartes de couleur (« ne peuvent être jouées que si vous avez une
+        Essence de la couleur correspondante déployée »), et quand la
+        première arrive : une Essence par tour, dans l'ordre de la Réserve. */
+  const b = besoins(cartes);
+  const couleurs = [...new Set([...Object.keys(b), ...Object.keys(colorees)])]
+    .sort((x, y) => ((b[y] || 0) + (colorees[y] || 0)) - ((b[x] || 0) + (colorees[x] || 0)))
+    .map(k => {
+      const e = +res[k] || 0;
+      return { coul: k, e, sur: NR, attaques: b[k] || 0, cartes: colorees[k] || 0,
+        tour2: auMoins(NR, e, 2), tour3: auMoins(NR, e, 3) };
+    });
+  const jamais = couleurs.filter(x => !x.e);
+  /* 3. La régularité : combien de noms en 3, 2, 1 exemplaires, et la
+        chance d'avoir vu une carte précise à son 3e tour. */
+  const n = [0, 0, 0, 0];
+  for (const k in copies) n[Math.min(3, copies[k])]++;
   return {
-    deck: { cartes, reserve, couverture: meilleures[0] || couverture(cartes) },
-    couleurs: meilleur.couleurs, style, complet: total(cartes) === R.CLUB,
-    ajoutees, retirees, joueurs: meilleur.joueurs, bas: meilleur.bas, meilleures
+    depart: { bas, main: p1, avecChangement: p2, ok: p2 >= 0.85 },
+    essences: { couleurs, jamais, ok: !jamais.length },
+    regularite: { en3: n[3], en2: n[2], en1: n[1], vue3: auMoins(N, 3, VUES_TOUR3), vue1: auMoins(N, 1, VUES_TOUR3) },
+    tenue: { joueurs, tiennent, atk2, gardiens },
+    pv: { resil, auMoinsUne: auMoins(N, resil, R.PV), moyenne: R.PV * resil / N }
   };
 }
 
-/* COTES:debut — généré par tools/assistant-decks.js (6000 parties), ne pas modifier à la main. */
+/* COTES:debut — généré par tools/cotes-cartes.js (6000 parties), ne pas modifier à la main. */
 const COTES = {
   c010: -0.018, c011: 0.034, c012: 0.027, c013: 0.031, c014: -0.003, c015: 0.025, c016: -0.016, c017: 0.017,
   c018: 0.028, c019: 0.012, c020: -0.019, c021: -0.001, c022: 0.027, c023: 0.002, c024: 0.013, c025: -0.018,
@@ -5380,7 +5304,7 @@ function copieStarter(deck, possede) {
 }
 
 const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, copieStarter, aleatoire, tirerCouleurs, couverture, encoder, decoder, total, bilan, BON, CIBLES,
-  assistant, STYLES, COTES, noteCarte };
+  cles, auMoins, COTES };
 if (typeof module !== 'undefined' && module.exports) module.exports = Decks;
 racine.Decks = Decks;
 
@@ -6684,5 +6608,5 @@ const Verif = (() => {
 // ---- le catalogue des cartes, comme au démarrage de la page
 var __cartes = buildCards();
 Combat.catalogue(__cartes.concat(buildPromos(), buildReverses(__cartes), buildUniques(), buildSecretes()));
-export const EMPREINTE = 'f50b63681848';
+export const EMPREINTE = '22ec4bf8d21b';
 export const Jeu = { Verif, Combat: globalThis.Combat, IA: globalThis.IA, Decks: globalThis.Decks };
