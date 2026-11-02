@@ -493,6 +493,9 @@ async function labDemoTout() {
       .concat(Object.keys(TITRES).filter(k => !horsDemo(k) && k !== 't_admin'),
         Object.keys(TAPIS).filter(k => k !== 't_base'), Object.keys(SLEEVES).filter(k => k !== 's_base')) });
     Backend.apply(await Backend.labo('labo_monnaies', { p_valeurs: { eclats: 50000, fragments: 60000, boosters: 20 } }));
+    /* Les Promos arrivent avec le reste : pas six scènes d'obtention à la
+       suite (elles se regardent une à une plus bas). */
+    filePromos.length = 0;
     labEtatCharge = false;
     toast('Tout est débloqué : les cartes, les cosmétiques, et de quoi dépenser.');
     SFX.jouer('gagne');

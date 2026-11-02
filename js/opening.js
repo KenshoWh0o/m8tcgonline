@@ -158,7 +158,7 @@ function showStack() {
   /* La carte à surprise ne porte pas encore sa rareté : sa couleur ne doit rien révéler
      avant la révélation. doReveal() ajoute la classe au dernier moment. */
   theater(`<div class="th-stage${rv.god ? ' god' : ''}${anim ? ' packed' : ''}" id="opening" style="--rk:${rv.god ? 1 : rv.k}">
-    <div class="th-top"><span class="th-count" id="opcount">1 / ${n}</span>${rv.test ? '<span class="th-test">Test</span>' : ''}<button class="th-skip" data-t="skip">Tout voir</button></div>
+    <div class="th-top"><span class="th-count" id="opcount">1 / ${n}</span>${rv.test ? `<span class="th-test">${DEMO ? 'Aperçu' : 'Test'}</span>` : ''}<button class="th-skip" data-t="skip">Tout voir</button></div>
     <div class="stackwrap">${rv.god ? '<div class="godaura" aria-hidden="true"></div><div class="godwash" aria-hidden="true"></div>' : ''}<div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
       <div class="stack3d" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
         const f = i === last && fin;
