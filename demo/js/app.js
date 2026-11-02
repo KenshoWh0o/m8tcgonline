@@ -839,7 +839,7 @@ function visiteDuJourFaite() {
 }
 
 (async () => {
-  if (window.demoAcces) await window.demoAcces(); /* demo : la porte a code (tools/demo.py) */
+  if (window.demoAcces) await window.demoAcces(); /* la porte a code (tools/demo.py) */
   cards = buildCards();
   promos = buildPromos();
   brillantes = buildBrillantes(cards);

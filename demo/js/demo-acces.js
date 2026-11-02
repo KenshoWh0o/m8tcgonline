@@ -1,28 +1,33 @@
 /* =====================================================================
-   La démo présentée à Gentle Mates (matetcg.com/demo) : la porte à code.
+   La porte à code de la démo (matetcg.com/demo, pour Gentle Mates) et de
+   la pré-prod (matetcg.com/preprod, pour le propriétaire).
 
-   tools/demo.py --demo copie ce fichier dans demo/js/demo-acces.js et fait
+   tools/demo.py copie ce fichier dans js/demo-acces.js en y posant
+   l'empreinte et l'étiquette de la démo ou de la pré-prod (PORTES), et fait
    attendre le démarrage du jeu (js/app.js) sur window.demoAcces(). Tant
    que le bon code n'est pas entré, rien ne démarre : ni partie, ni joueurs
    simulés, ni fenêtre.
 
-   Le code n'est écrit nulle part : la page ne connaît que son empreinte
-   (SHA-256 du code en capitales, sans espace ni tiret). Une fois entré, il
-   est retenu sur l'appareil.
+   Le code n'est écrit nulle part dans le dépôt : la page ne connaît que son
+   empreinte (SHA-256 du code en capitales, sans espace ni tiret). Une fois
+   entré, c'est le code lui-même qui est retenu sur l'appareil, et chaque
+   visite le revérifie : recopier l'empreinte, qui se lit dans ce fichier,
+   n'ouvre rien.
 
    Ce que cette porte ne fait pas : protéger les fichiers. Le site est
    statique ; ses scripts et ses images restent téléchargeables à leur
-   adresse par qui la connaît. Elle tient à l'écart un visiteur de passage,
-   pas quelqu'un de déterminé.
+   adresse par qui la connaît. Elle tient à l'écart un visiteur, pas
+   quelqu'un qui lirait le code pour en tirer le jeu.
    ===================================================================== */
 "use strict";
 
 (() => {
   const EMPREINTE = '8fc52f5a20989490a20f9c149083bf8ca3365b4a680150f3c531241ce62d8e47';
+  const ETIQUETTE = 'Démo privée';
   const CLE = 'mtcg.demo.acces';
 
   const lu = () => { try { return localStorage.getItem(CLE); } catch (e) { return null; } };
-  const retenir = () => { try { localStorage.setItem(CLE, EMPREINTE); } catch (e) { /* mode privé : on redemandera */ } };
+  const retenir = code => { try { localStorage.setItem(CLE, code); } catch (e) { /* mode privé : on redemandera */ } };
   const normaliser = v => String(v || '').trim().toUpperCase().replace(/[\s-]/g, '');
 
   async function empreinte(v) {
@@ -61,8 +66,9 @@
 @media (prefers-reduced-motion:reduce){#demo-acces.da-sort{transition:none}}`;
 
   /* Le jeu attend ici avant de démarrer (js/app.js). */
-  window.demoAcces = () => {
-    if (lu() === EMPREINTE) return Promise.resolve();
+  window.demoAcces = async () => {
+    const garde = lu();
+    if (garde) { try { if (await empreinte(garde) === EMPREINTE) return; } catch (e) { /* pas de https : on redemande */ } }
     return new Promise(ok => {
       const st = document.createElement('style');
       st.textContent = STYLE;
@@ -77,7 +83,7 @@
       z.innerHTML = `<div class="da-carte">
           <img class="da-logo" src="${logo}" alt="Mate TCG Online">
           <div class="da-art" aria-hidden="true"><img src="${art}" alt=""></div>
-          <span class="da-tag">Démo privée</span>
+          <span class="da-tag">${ETIQUETTE}</span>
           <h1 id="da-titre">Mate TCG Online</h1>
           <p>Entre le code d'accès qui t'a été transmis.</p>
           <form novalidate>
@@ -107,7 +113,7 @@
           champ.select();
           return;
         }
-        retenir();
+        retenir(v);
         document.body.classList.remove('demo-verrou');
         z.classList.add('da-sort');
         setTimeout(() => { z.remove(); st.remove(); }, 400);

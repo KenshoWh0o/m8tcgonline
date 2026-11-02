@@ -108,6 +108,10 @@ function joueurVide(o, i) {
 
 const compteursVides = () => ({
   attaques: 0, pvRecup: [0, 0], deploie: 0, coachs: 0, remplace: 0,
+  /* Les Coachs joués ce tour-ci par le CEO qui n'est pas actif (« Jouez
+     cette carte », par Résilience) : la limite d'un Coach par tour vaut
+     pour lui aussi (docs/regles-3.0.md, § 11, point 5). */
+  coachsHors: 0,
   combatFini: false, doitAttaquer: 0
 });
 
