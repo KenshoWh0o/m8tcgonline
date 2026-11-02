@@ -1,0 +1,498 @@
+/* Version 2.0 « Reflets » : l'événement, Devine l'illu, la Collection en
+   trois vues, les titres, la personnalisation du profil. */
+
+/* ============ Le Prisme, la monnaie de l'événement ============ */
+.prismeico{width:1.05em;height:1.05em;flex:0 0 auto;vertical-align:-.15em}
+.sac.prismes b{background:linear-gradient(90deg,#ff5bb0,var(--accent-soft),#39b8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ============ Le fond holographique, partagé ============ */
+.rf-holo{position:absolute;inset:-20%;z-index:-1;pointer-events:none;opacity:.55;mix-blend-mode:screen;
+  background:
+    repeating-linear-gradient(118deg,rgba(255,91,176,.0) 0%,rgba(255,91,176,.35) 4%,rgba(179,140,255,.35) 8%,rgba(127,216,255,.35) 12%,rgba(157,255,207,.25) 16%,rgba(255,91,176,0) 20%),
+    radial-gradient(60% 50% at 30% 30%,rgba(255,255,255,.25),transparent 70%);
+  background-size:220% 220%,100% 100%;animation:rfholo 12s ease-in-out infinite}
+@keyframes rfholo{0%,100%{background-position:0% 30%,0 0}50%{background-position:100% 70%,0 0}}
+
+/* ============ L'onglet de l'événement ============ */
+.rf{display:flex;flex-direction:column;gap:14px}
+
+/* L'en-tête : le nom, le compte à rebours, le solde, et les sous-onglets
+   en pied — une seule pièce, rien qui colle ou qui flotte. */
+/* L'illustration de fond (rfArt, .rf-fond) : La Relève, une pleine
+   illustration. On zoome (--z, en largeur de carte) et on centre le point
+   --t de la hauteur de la carte — ici le duo sur le rocher, sous les deux
+   visages. La hauteur de la carte vaut 1,397 fois sa largeur :
+     décalage = 50 % du jeu + (0,5 − t) × z × 139,7 × largeur
+   L'image s'efface par un masque, pas sous un voile : elle se fond
+   vraiment dans le fond. */
+.rf-fond{position:absolute;inset:0;z-index:-3;overflow:hidden;container-type:inline-size;pointer-events:none}
+.rf-fond>i{position:absolute;inset:0;background-repeat:no-repeat;background-size:calc(var(--z,1.5) * 100%) auto;
+  background-position:50% calc(50% + (0.5 - var(--t,.36)) * var(--z,1.5) * 139.7cqw)}
+/* Le reflet nacré qui passe, lentement, et revient. */
+@keyframes rfnacre{from{background-position:100% 0}to{background-position:0% 0}}
+
+.rf-tete{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--radius-lg);padding:22px 16px 0;color:#fff;
+  background:var(--plate);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.24),var(--sh-3)}
+.rf-tete .rf-fond{left:22%;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 45%),linear-gradient(0deg,transparent,#000 42%);-webkit-mask-composite:source-in;
+  mask:linear-gradient(90deg,transparent,#000 45%),linear-gradient(0deg,transparent,#000 42%);mask-composite:intersect}
+.rf-tete .rf-fond>i{--t:.37;--z:1.45;filter:saturate(1.15) brightness(.92)}
+.rf-tete::after{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
+  background:radial-gradient(80% 120% at 0% 40%,rgba(20,11,36,.55),transparent 70%)}
+.rf-tete::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;mix-blend-mode:overlay;opacity:.8;
+  background:linear-gradient(110deg,transparent 25%,rgba(255,124,200,.7) 40%,rgba(255,255,255,.9) 48%,rgba(127,216,255,.7) 56%,transparent 72%) no-repeat;
+  background-size:300% 100%;animation:rfnacre 7s ease-in-out infinite alternate}
+.rf-tetehaut{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.rf-tetenom small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.rf-tetenom h1{margin:4px 0 0;font-family:var(--display);font-stretch:120%;font-style:italic;font-weight:900;font-size:40px;line-height:1;
+  padding-right:.1em;background:linear-gradient(100deg,#fff 0%,#ffd1ef 30%,#d8c8ff 55%,#c4f0ff 80%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 10px rgba(0,0,0,.6))}
+.rf-tetechiffres{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.rf-solde,.rf-fin{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:12px;color:#fff;
+  background:rgba(18,17,25,.62);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.rf-solde b{font-family:var(--display);font-weight:900;font-size:16px}
+.rf-fin svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+.rf-onglets{display:flex;gap:0;margin:20px -16px 0;padding:0 8px;overflow-x:auto;scrollbar-width:none;
+  border-top:1px solid rgba(255,255,255,.1);background:rgba(18,17,25,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.rf-onglets::-webkit-scrollbar{display:none}
+.rf-onglets button{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:0;background:none;cursor:pointer;
+  font:inherit;font-size:13px;font-weight:800;color:rgba(255,255,255,.6);padding:12px 10px 13px;transition:color .15s}
+.rf-onglets button:hover{color:rgba(255,255,255,.85)}
+.rf-onglets button.on{color:#fff}
+.rf-onglets button.on::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:3px;border-radius:3px 3px 0 0;
+  background:#fff}
+.rf-pastille{min-width:18px;height:18px;padding:0 5px;border-radius:999px;display:inline-grid;place-items:center;font-style:normal;
+  font-size:10.5px;font-weight:900;color:#fff;background:var(--brand)}
+.rf-point{width:7px;height:7px;border-radius:50%;background:var(--accent-soft)}
+
+.rf-page{display:flex;flex-direction:column;gap:12px;min-height:50vh}
+.rf-ptitre{margin-top:4px}
+.rf-ptitre h2{margin:0;font-size:22px}
+.rf-ptitre p{margin:3px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
+.rf-ptitre p b{color:var(--text)}
+.rf-sous{margin:6px 0 0;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.rf-sous small{font-size:12px;text-transform:none;letter-spacing:0;font-weight:700}
+.qreward.prismes{color:var(--accent-soft)}
+
+/* Accueil : trois raccourcis vers ce qui attend aujourd'hui */
+.rf-tuiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.rf-tuile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border:0;border-radius:var(--radius);
+  text-align:left;cursor:pointer;font:inherit;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);
+  transition:background .15s,transform .18s var(--spring)}
+.rf-tuile:hover{background:var(--surface-2)}
+.rf-tuile:active{transform:scale(.97)}
+/* Une tuile où quelque chose attend : un filet lavande, et sa ligne en couleur. */
+.rf-tuile.chaud{box-shadow:inset 0 0 0 1.5px var(--accent-soft),var(--tuile)}
+.rf-tuileico{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius-sm);color:var(--deco-ink);background:var(--deco-wash)}
+.rf-tuileico svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.rf-tuiletxt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.rf-tuiletxt small{font-size:11px;font-weight:800;color:var(--muted)}
+.rf-tuiletxt b{font-family:var(--display);font-weight:900;font-size:16px;line-height:1.2}
+.rf-tuiletxt span{font-size:11.5px;line-height:1.3;color:var(--muted)}
+.rf-tuile.chaud .rf-tuiletxt span{color:var(--accent-soft);font-weight:800}
+
+/* Accueil : ce que la 2.0 apporte */
+.rf-nouveau{display:flex;flex-direction:column;gap:10px}
+.rf-nvgrille{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.rf-nv{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.rf-nv.grand{flex-direction:row;align-items:center;gap:16px;
+  background:radial-gradient(120% 160% at 0% 50%,rgba(157,140,255,.16),transparent 60%),var(--surface)}
+.rf-nvvisuel{display:grid;place-items:center;min-height:64px}
+.rf-nv.grand .rf-nvvisuel{flex:0 0 96px}
+.rf-nvcarte{width:100%;rotate:-5deg;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+.rf-nvtexte{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.rf-nvtexte>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:16px}
+.rf-nv.grand .rf-nvtexte>b{font-size:20px}
+.rf-nvtexte p{margin:0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.rf-nvtexte p b{color:var(--text)}
+.rf-nvtexte .btn{margin-top:4px}
+.rf-nvjauge{display:flex;flex-direction:column;align-items:center;line-height:1}
+.rf-nvjauge b{font-family:var(--display);font-weight:900;font-size:34px;background:linear-gradient(90deg,#ff5bb0,var(--accent-soft),#7fd8ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.rf-nvjauge small{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rf-nvillu{display:grid;grid-template-columns:repeat(4,16px);gap:2px;border-radius:6px;overflow:hidden}
+.rf-nvillu i{height:16px}
+.rf-nvillu i:nth-child(1){background:#5b3a8f}.rf-nvillu i:nth-child(2){background:#8a5bd0}.rf-nvillu i:nth-child(3){background:#c48ad8}.rf-nvillu i:nth-child(4){background:#7a4aa6}
+.rf-nvillu i:nth-child(5){background:#3c6ea8}.rf-nvillu i:nth-child(6){background:#f2c5de}.rf-nvillu i:nth-child(7){background:#e88fb8}.rf-nvillu i:nth-child(8){background:#5b3a8f}
+.rf-nvillu i:nth-child(9){background:#2b3f6b}.rf-nvillu i:nth-child(10){background:#d07aa8}.rf-nvillu i:nth-child(11){background:#9a5ab0}.rf-nvillu i:nth-child(12){background:#3c2a5a}
+.rf-nvinvit{font-family:ui-monospace,monospace;font-weight:800;font-size:14px;letter-spacing:.04em;padding:8px 10px;border-radius:10px;
+  border:1.5px dashed var(--accent-soft);white-space:nowrap}
+
+/* Le Pass */
+.rf-passtete{display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:var(--radius-lg);
+  background:radial-gradient(100% 140% at 0% 50%,rgba(157,140,255,.14),transparent 60%),var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.rf-passniv{flex:0 0 74px;height:74px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;
+  background:radial-gradient(circle,var(--surface) 62%,transparent 63%),conic-gradient(var(--accent-deep),#9d8cff,var(--deco-ink),var(--accent-deep))}
+.rf-passniv small{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.rf-passniv b{font-family:var(--display);font-weight:900;font-size:26px}
+.rf-passniv b span{font-size:12px;color:var(--muted)}
+.rf-passjauge{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.rf-passchiffres{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.rf-passchiffres span b{font-family:var(--display);font-weight:900;font-size:18px;color:var(--text)}
+.rf-passchiffres small{font-size:12px}
+.rf-passchiffres small b{color:var(--text)}
+.rf-passjauge>small{font-size:11px}
+.rf-jauge{height:9px;border-radius:999px;background:var(--bg-2);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+.rf-jauge i{display:block;height:100%;border-radius:999px;background:var(--progress)}
+.rf-tout{width:100%;gap:7px}
+.rf-tout svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4}
+.rf-pass{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rf-pal{position:relative;display:flex;align-items:center;gap:12px}
+/* Le rail : il relie les paliers, en couleur jusqu'au dernier atteint. */
+.rf-pal::before{content:"";position:absolute;left:17px;top:50%;height:calc(100% + 8px);width:2px;background:var(--line-2)}
+.rf-pal:last-child::before{display:none}
+.rf-pal.pris::before,.rf-pal.pret::before{background:linear-gradient(#9d8cff,var(--accent-deep))}
+.rf-palnum{position:relative;z-index:1;flex:0 0 36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  font-weight:900;font-size:13px;color:var(--muted);background:var(--bg-2);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.rf-pal.pris .rf-palnum,.rf-pal.pret .rf-palnum{color:#fff;background:var(--cta);box-shadow:none}
+.rf-pal.prochain .rf-palnum{color:var(--text);box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.rf-palnum svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6}
+.rf-palcarte{flex:1;min-width:0;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.rf-pal.rare .rf-palcarte{background:linear-gradient(110deg,rgba(245,196,81,.1),transparent 70%),var(--surface)}
+.rf-pal.pret .rf-palcarte{box-shadow:inset 0 0 0 1.5px var(--accent-soft),0 0 18px var(--accent-wash)}
+.rf-pal.prochain .rf-palcarte{box-shadow:inset 0 0 0 1.5px var(--line-3)}
+.rf-pal.pris .rf-palcarte{opacity:.5}
+.rf-palico{flex:0 0 40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--deco-wash);color:var(--deco-ink)}
+.rf-palico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round;stroke-linecap:round}
+.rf-palico .shard{width:22px;height:22px;stroke:none;color:var(--brand-light)}
+.rf-palico .ava{width:32px;height:32px}
+.rf-paltxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rf-paltxt b{font-size:13.5px;line-height:1.25}
+.rf-paltxt small{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:var(--muted)}
+.rf-palcarte .btn{flex:0 0 auto;padding:8px 12px;font-size:11.5px}
+.rf-paletat{font-size:11.5px;font-weight:800;color:var(--muted);white-space:nowrap}
+.rf-pal.prochain .rf-paletat{color:var(--accent-soft)}
+.rf-gain{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-bottom:6px}
+.rf-gain>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:20px}
+.rf-gainico{display:grid;place-items:center;width:84px;height:84px;border-radius:24px;color:#fff;
+  background:var(--cta);box-shadow:0 10px 26px var(--accent-glow)}
+.rf-gainico svg{width:42px;height:42px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round;stroke-linecap:round}
+.rf-gainico .shard{stroke:none}
+.rf-gaincartes{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.rf-gaincartes button{width:96px;padding:0;border:0;background:none;cursor:pointer}
+.rf-gainliste{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:6px;text-align:left}
+.rf-gainliste li{display:flex;align-items:center;gap:10px;font-weight:800;font-size:13.5px}
+.rf-gainliste .rf-palico{flex-basis:34px;height:34px}
+
+/* La boutique */
+.rf-arts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.rf-art{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px 12px;border-radius:var(--radius);text-align:center;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.rf-artvis{height:78px;display:grid;place-items:center;color:var(--deco-ink)}
+.rf-artvis svg{width:46px;height:46px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.rf-artvis .qrtitre{font-size:12px;padding:6px 10px}
+.rf-art>b{font-size:14px;line-height:1.25}
+.rf-art>small{flex:1;font-size:12px;line-height:1.4;color:var(--muted)}
+.rf-artreste{font-size:11px;font-weight:800;color:var(--muted)}
+.rf-art .btn{width:100%;gap:5px}
+.rf-art.fini{opacity:.6}
+
+/* Le classement */
+.rf-top{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.rf-top li{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rf-top li.moi{box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.rf-rang{flex:0 0 24px;font-family:var(--display);font-weight:900;font-size:17px;color:var(--muted);text-align:center}
+.rf-rang.r1{color:var(--gold)}.rf-rang.r2{color:#d6dbe8}.rf-rang.r3{color:#e09a62}
+.rf-joueur{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rf-joueur b{font-size:14px}
+.rf-pts{display:inline-flex;align-items:center;gap:4px;font-family:var(--display);font-weight:900}
+
+/* ============ Devine l'illu ============ */
+.illu{display:flex;flex-direction:column;gap:12px}
+.il-cadre{position:relative;aspect-ratio:3/2;border-radius:var(--radius);overflow:hidden;background:var(--bg-2);
+  box-shadow:0 0 0 1px var(--line),0 14px 34px rgba(0,0,0,.4)}
+.il-pix{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.il-pix.net{animation:ilnet .7s ease-out}
+@keyframes ilnet{from{filter:brightness(1.7) saturate(.3);scale:1.04}}
+/* La fin : l'illustration entière, cadrée comme les pixels l'étaient
+   (la zone de tools/illu-pixels.js). */
+.il-art{position:absolute;inset:0;background-size:128.2% auto;background-position:50% 23.3%;animation:ilrevele .9s ease-out}
+@keyframes ilrevele{from{filter:blur(10px) brightness(1.4);scale:1.06}}
+.il-marches{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.il-marches li{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:11px;color:var(--muted)}
+.il-marches li span{font-weight:800}
+.il-marches li b,.il-marches li small{display:inline-flex;align-items:center;gap:3px}
+.il-marches li b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
+.il-marches li .shard{width:12px;height:12px;color:var(--brand-light)}
+.il-marches li.cours{box-shadow:inset 0 0 0 1.5px var(--accent-soft);background:rgba(179,140,255,.08);color:var(--text)}
+.il-marches li.rate{opacity:.38}
+.il-marches li.ok{box-shadow:inset 0 0 0 2px #55e6a6;background:rgba(85,230,166,.1);color:var(--text)}
+.il-saisie input{width:100%;font:inherit;font-size:16px;padding:13px 14px;border-radius:var(--radius-sm);
+  background:var(--surface);border:1.5px solid var(--accent-soft);color:var(--text)}
+.il-saisie input:focus{outline:0;box-shadow:0 0 0 3px rgba(179,140,255,.3)}
+.il-sugg{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.il-sugg:empty{display:none}
+.il-prop{display:flex;align-items:center;gap:10px;padding:11px 12px;border:0;border-radius:var(--radius-sm);text-align:left;cursor:pointer;
+  font:inherit;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.il-prop:hover{box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.il-prop b{flex:1;font-size:14px}
+.il-prop small{color:var(--muted);font-weight:700}
+.il-fin{display:flex;align-items:center;gap:14px;padding:12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.il-fin.gagne{box-shadow:inset 0 0 0 2px #55e6a6,0 0 20px rgba(85,230,166,.18)}
+.il-carte{flex:0 0 84px;padding:0;border:0;background:none;cursor:pointer}
+.il-fin>div>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:18px}
+.il-fin p{margin:4px 0}
+.il-gain{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:13px}
+.il-gain .shard{width:14px;height:14px;color:var(--brand-light)}
+.il-fin .btn{margin-top:6px}
+
+/* ============ Le bandeau de l'événement (écran Boosters) ============ */
+/* Une ligne, pas une affiche : le booster reste la vedette. */
+.rfban{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;max-width:520px;flex:0 0 auto;
+  margin:0 0 6px;padding:11px 12px 11px 16px;border:0;border-radius:var(--radius-lg);cursor:pointer;font:inherit;text-align:left;color:#fff;
+  background:var(--plate);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.24),var(--sh-3);transition:box-shadow .15s,transform .2s var(--spring)}
+.rfban:active{transform:scale(.98)}
+.rfban:hover{box-shadow:inset 0 0 0 1px rgba(210,184,255,.5),0 8px 22px rgba(0,0,0,.35)}
+.rfban .rf-fond{left:30%;-webkit-mask:linear-gradient(90deg,transparent,#000 55%);mask:linear-gradient(90deg,transparent,#000 55%)}
+.rfban .rf-fond>i{--t:.34;--z:1.55;filter:brightness(.9)}
+.rfban::after{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
+  background:linear-gradient(90deg,rgba(20,11,36,.35),transparent 60%)}
+.rfban::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;mix-blend-mode:overlay;
+  background:linear-gradient(110deg,transparent 25%,rgba(255,124,200,.8) 40%,rgba(255,255,255,.95) 48%,rgba(127,216,255,.8) 56%,transparent 72%) no-repeat;
+  background-size:300% 100%;animation:rfnacre 6s ease-in-out infinite alternate}
+.rfban-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.15}
+.rfban-txt b{font-family:var(--display);font-stretch:115%;font-style:italic;font-weight:900;font-size:21px;padding-right:.12em;width:max-content;
+  background:linear-gradient(100deg,#fff,#ffd1ef 35%,#d8c8ff 60%,#c4f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rfban-txt small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.rfban-n{min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:900;background:#ff5bb0}
+.rfban-solde{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:800;padding:5px 10px;border-radius:999px;
+  background:rgba(14,8,26,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.rfban-fl{font-size:24px;line-height:1;color:rgba(255,255,255,.8);margin-left:-2px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+
+@media (max-width:480px){
+  .rf-tuiles{grid-template-columns:1fr}
+  .rf-tuile{flex-direction:row;align-items:center}
+  .rf-tuiletxt{flex:1}
+  .rf-nvgrille{grid-template-columns:1fr}
+  .rf-nv:not(.grand){flex-direction:row;align-items:center}
+  .rf-nv:not(.grand) .rf-nvvisuel{flex:0 0 76px}
+  .rf-tetenom h1{font-size:30px}
+}
+
+/* ============ La Collection en trois vues ============ */
+.colvues{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0 12px}
+.colvue{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 11px 13px;border:0;cursor:pointer;
+  border-radius:var(--radius);font:inherit;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);text-align:left;
+  transition:background .15s,transform .18s var(--spring)}
+.colvue:active{transform:scale(.97)}
+.colvue b{font-size:13px}
+.colvue span{font-family:var(--display);font-weight:900;font-size:16px}
+.colvue span small{font-size:11px;color:var(--muted);font-weight:700}
+/* La vue choisie : du verre plus clair, comme un segment (docs/design-3.0.md). */
+.colvue.on,.colvue.reverses.on{background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.16)}
+.colvuebar{position:absolute;left:11px;right:11px;bottom:6px;height:3px;border-radius:999px;background:var(--bg-2);overflow:hidden}
+.colvuebar i{display:block;height:100%;background:var(--progress)}
+.colvue.reverses .colvuebar i{background:linear-gradient(90deg,#ff5bb0,var(--accent-soft),#39b8ff)}
+/* Les Spéciales ont leur jauge, comme les Reverses (3.0.13) : le rose des
+   Promos vers l'or de la carte unique. */
+.colvue.speciales .colvuebar i{background:linear-gradient(90deg,var(--r-pr),var(--gold))}
+.colsous{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px;font-size:12.5px;color:var(--muted)}
+.colsous b{color:var(--text)}
+.colsous .colfab{display:inline-flex;align-items:center;gap:5px}
+.colsous .colfab svg{width:14px;height:14px;fill:none;stroke:var(--deco-ink);stroke-width:2}
+.gcell .num .revico{margin-left:.25em}
+
+/* ============ Les titres ============ */
+.titreligne{display:inline-block;margin-top:2px;font-size:11px;font-weight:800;letter-spacing:.03em;line-height:1.3}
+.titreligne.tC{color:var(--muted)}
+.titreligne.tR{color:#39b8ff}
+.titreligne.tE{color:var(--accent-soft)}
+.titreligne.tL{color:#e0a800}
+.titreligne.tADM{color:#1fa971}
+.titreligne.tEV,.titreligne.tUN{background:linear-gradient(90deg,#ff5bb0,var(--accent-soft),#39b8ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.titreligne.tUN{background-image:linear-gradient(90deg,var(--gold),#ff7cc8,#ec8fff)}
+.clnom .titreligne{display:block;margin-top:0}
+.titrechoix .titreligne{margin:0;font-size:inherit;letter-spacing:0}
+.qrtitre{display:inline-block;font-size:10.5px;font-weight:900;padding:4px 8px;border-radius:8px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.qrtitre.tEV,.qrtitre.tUN{color:var(--accent-soft)}
+.qrtitre.tL{color:#e0a800}.qrtitre.tE{color:var(--accent-soft)}.qrtitre.tR{color:#39b8ff}
+
+/* ============ La personnalisation du profil ============ */
+.persotitre{margin:14px 0 8px;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.titregrille{display:flex;flex-wrap:wrap;gap:6px}
+.titrechoix{border:0;cursor:pointer;font:inherit;font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:999px;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--text)}
+.titrechoix.on{background:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1.5px rgba(255,255,255,.6)}
+.titresverrou{margin-top:10px;font-size:12.5px}
+.titresverrou summary{cursor:pointer;color:var(--muted);font-weight:700}
+.titresverrou ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.titresverrou li{display:flex;flex-direction:column;gap:1px;opacity:.75}
+.titresverrou small{color:var(--muted)}
+.banchoix{display:flex;align-items:center;gap:14px}
+.banapercu{flex:0 0 64px}
+.banvide{display:grid;place-items:center;height:88px;border-radius:8px;font-size:11px;color:var(--muted);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.iddevise{margin:3px 0 0;font-size:12.5px;font-style:italic;color:var(--subtle);line-height:1.35}
+.idcard.banniere,.fiche.banniere{position:relative;isolation:isolate;overflow:hidden}
+.fiche.banniere{padding:14px;border-radius:var(--radius)}
+/* La bannière : l'illustration de la carte, pas la carte. L'illustration
+   occupe 78 % de la largeur d'une carte (d'où 128,2 %), et on centre la
+   bannière à 30 % de la hauteur de la carte — un peu au-dessus du milieu de
+   l'illustration (15 à 50,5 %), là où sont les visages. Le décalage dépend du
+   rapport largeur/hauteur du bloc : `cqw` (la largeur, via le conteneur) le
+   calcule quelle que soit sa taille.
+     décalage = 50 % du jeu + (0,8955 − 1,791 × 0,30) × largeur */
+.idbanniere{position:absolute;inset:0;z-index:-1;overflow:hidden;container-type:inline-size}
+.idbanniere>i{position:absolute;inset:0;background-repeat:no-repeat;background-size:128.2% auto;
+  background-position:50% calc(50% + 35.8cqw);filter:blur(1.5px) saturate(1.2);opacity:.5;scale:1.06}
+.idbanniere::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--surface) 10%,transparent 70%)}
+.avapick.verrou{opacity:.55;cursor:default}
+.avapick.verrou small{font-size:9.5px;color:var(--muted);text-align:center;line-height:1.2;white-space:normal}
+.avapick>span:not(.ava){max-width:100%}
+
+/* ============ Les cadres décorés ============ */
+/* Comme les décorations d'avatar de Discord : une illustration qui entoure
+   l'avatar et déborde de son cercle, animée de l'intérieur. Une par cadre,
+   dans assets/cadres/ (128 × 128, l'avatar au centre sur un rayon de 50 :
+   d'où le débord de 14 % de chaque côté). Le cercle de couleur des cadres
+   simples s'efface derrière. */
+.ava.fx{overflow:visible;box-shadow:none}
+.ava.xl.fx{box-shadow:0 0 22px var(--violet-glow)}
+.fx-deco{position:absolute;inset:-14%;z-index:2;pointer-events:none;background:center/contain no-repeat;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
+.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=25cc48')}
+.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=25cc48')}
+.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=25cc48')}
+.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=25cc48')}
+.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=25cc48')}
+.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=25cc48')}
+.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=25cc48')}
+/* Version 2.5 : le Pass de L'Échauffement. */
+.ava.fx-braise .fx-deco{background-image:url('../assets/cadres/braise.svg?v=25cc48')}
+.ava.fx-ardeur .fx-deco{background-image:url('../assets/cadres/ardeur.svg?v=25cc48')}
+
+/* ============ Boutique : invitations, limites ============ */
+.ofbadge.limite{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.ofinvit,.rf-nvinvit{font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.06em}
+.ofinvit{font-size:15px;padding:8px 10px;border-radius:10px;border:1.5px dashed var(--accent-soft);color:var(--text)}
+.offrag svg{width:44px;height:44px;fill:none;stroke:var(--deco-ink);stroke-width:1.6}
+.rfban.shopev{max-width:none;margin:0 0 12px}
+.rfban.shopev .rfban-ico{flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ff5bb0,var(--accent-soft) 55%,#7fd8ff)}
+.rfban.shopev .rfban-ico svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round}
+.rfban.shopev .rfban-txt b{font-size:16px}
+.rfban.shopev .rfban-txt small{text-transform:none;letter-spacing:0;font-weight:600;font-size:11.5px}
+.mesinvit{margin-top:12px}
+.mesinvit h3{margin:0 0 8px;font-size:13px}
+.invligne{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;margin-bottom:6px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.invligne code,.invcode{font-family:ui-monospace,monospace;font-weight:800;letter-spacing:.05em}
+.invligne.utilisee{opacity:.65}
+.invfiche{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.invcode{font-size:24px;padding:10px 16px;border-radius:12px;border:2px dashed var(--accent-soft)}
+.invlien{font-size:11.5px;word-break:break-all;color:var(--muted)}
+.a3d-titre{display:flex;flex-direction:column;align-items:center;gap:6px}
+.a3d-titre b{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px}
+.a3d-invit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 24px;border-radius:14px;border:2px dashed var(--accent-soft);
+  background:linear-gradient(135deg,rgba(255,91,176,.12),rgba(57,184,255,.12))}
+.a3d-invit b{font-family:ui-monospace,monospace;font-size:20px;letter-spacing:.06em}
+.a3d-invit small,.a3d-invit span{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+
+/* ============ L'écran d'attente : le code d'invitation ============ */
+.lockinvit{margin:4px 0 10px;width:100%}
+.lockinvit .findrow input{text-transform:uppercase;letter-spacing:.05em}
+
+/* ============ La fenêtre « Version 2.0 » ============ */
+.nvhero.v2{isolation:isolate;background:radial-gradient(120% 140% at 30% 30%,#5b2bb8 0%,#2a1050 55%,#120822 100%)}
+.nvtrio{position:relative;flex:0 0 38%;height:130px}
+.nvtrio .nvcarte{position:absolute;width:62%;max-width:96px;top:8px}
+.nvtrio .nvcarte:nth-child(1){left:0;rotate:-12deg}
+.nvtrio .nvcarte:nth-child(2){left:20%;top:0;rotate:0deg;z-index:2}
+.nvtrio .nvcarte:nth-child(3){left:40%;rotate:12deg}
+
+@media (prefers-reduced-motion:reduce){
+  .rf-holo,.il-pix.net,.il-art,.rfban::before,.rf-tete::before{animation:none}
+}
+html.rm .rf-holo,html.rm .il-pix.net,html.rm .il-art,html.rm .rfban::before,html.rm .rf-tete::before{animation:none}
+.segbar.trrev{margin:4px 0 10px}
+.segbar.trrev .revico{margin-left:5px}
+
+/* ============ Échanges : chez tes amis ============ */
+.chezamis{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.chezami{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.chezcarte{flex:0 0 58px;padding:0;border:0;background:none;cursor:pointer}
+.chezinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chezinfo>b{font-size:14px}
+.chezinfo>small{font-size:11.5px;font-weight:800}
+.chezqui{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chezqui .amichip i{font-style:normal;font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
+
+/* ============ Après l'événement : le récap ============ */
+.rf-tete.rf-recap{padding-bottom:20px}
+.rr-continue{display:flex;flex-direction:column}
+.rf-quitter{position:relative;margin-top:12px}
+.rf-page h2{margin:0 0 10px;font-size:18px}
+.rr-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rr-stat{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rr-stat:first-child{grid-column:1/-1;background:radial-gradient(120% 160% at 0% 0%,rgba(179,140,255,.2),transparent 60%),var(--surface)}
+.rr-stat .rr-ico{width:26px;height:26px;display:grid;place-items:center;border-radius:8px;color:#fff;margin-bottom:4px;
+  background:linear-gradient(135deg,#ff5bb0,var(--accent-soft) 55%,#7fd8ff)}
+.rr-ico svg,.rr-ico .prismeico{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.rr-stat b{font-family:var(--display);font-weight:900;font-size:26px;line-height:1}
+.rr-stat:first-child b{font-size:36px}
+.rr-stat b small{font-size:14px;color:var(--muted)}
+.rr-stat>span{font-size:12.5px;font-weight:800;color:var(--subtle)}
+.rr-stat>small{font-size:11.5px;color:#ff7cc8;font-weight:800}
+.rr-stat>small sup{font-size:.7em}
+.rr-podium ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:8px}
+.rr-podium li{display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 6px 12px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);text-align:center;min-width:0}
+.rr-podium li.p1{order:2;padding-top:20px;box-shadow:inset 0 0 0 1.5px var(--gold),0 0 22px var(--gold-wash)}
+.rr-podium li.p2{order:1}.rr-podium li.p3{order:3}
+.rr-podium li.moi{box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.rr-place{font-family:var(--display);font-weight:900;font-size:15px;color:var(--muted)}
+.rr-podium li.p1 .rr-place{color:var(--gold)}
+.rr-podium b{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rr-podium small{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:800;color:var(--muted)}
+.rr-cartes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rr-lien{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;border:0;border-radius:var(--radius-sm);cursor:pointer;
+  font:inherit;color:var(--text);text-align:left;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rr-lien:hover{box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
+.rr-lien b{font-size:13.5px}.rr-lien small{font-size:12px;color:var(--muted);line-height:1.35}
+.rr-suite{display:flex;flex-direction:column;gap:8px}
+.rr-teaser{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;gap:14px;padding:16px;border-radius:var(--radius);color:#fff}
+.rr-teaser.combats{background:radial-gradient(120% 160% at 100% 50%,#6b1d2e,#2a0f1a 60%,#140a12)}
+.rr-teaser.secrets{background:radial-gradient(120% 160% at 100% 50%,#2a1452,var(--plate) 60%,#0d0818)}
+.rr-teaser small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65)}
+.rr-teaser b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px}
+.rr-teaser p{margin:3px 0 0;font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.8)}
+.rr-tico{flex:0 0 46px;height:46px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.rr-tico svg{width:24px;height:24px;fill:none;stroke:#ff8a9a;stroke-width:1.9;stroke-linejoin:round}
+.rr-secrets{position:relative;flex:0 0 46px;height:52px}
+.rr-secrets i{position:absolute;top:4px;width:28px;height:40px;border-radius:4px;
+  background:linear-gradient(165deg,#2c2244,#120c1e);box-shadow:inset 0 0 0 1px rgba(179,140,255,.5),0 0 12px rgba(179,140,255,.25)}
+.rr-secrets i:nth-child(1){left:0;rotate:-10deg}.rr-secrets i:nth-child(2){left:9px;top:0;z-index:2}.rr-secrets i:nth-child(3){left:18px;rotate:10deg}
+.rr-secrets i:nth-child(2)::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;font-weight:900;color:#d2b8ff}
+.rr-pop{display:flex;flex-direction:column;gap:12px}
+.rr-poptete{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:2px;padding:20px 16px;border-radius:var(--radius);color:#fff;background:var(--plate)}
+.rr-poptete .rf-fond{left:30%;-webkit-mask:linear-gradient(90deg,transparent,#000 55%);mask:linear-gradient(90deg,transparent,#000 55%)}
+.rr-poptete .rf-fond>i{--t:.36;--z:1.5}
+.rr-poptete b{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px}
+.rr-poptete small{font-size:12.5px;color:rgba(255,255,255,.8)}
+.rr-popstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:6px}
+.rr-popstats div{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:12px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rr-popstats b{font-family:var(--display);font-weight:900;font-size:20px}
+.rr-popstats small{font-size:11px;font-weight:800;color:var(--muted)}
+/* Les Reverses ouvertes (reporté de la 2.5) : dans la fenêtre du récap. */
+.rr-popneuf{display:flex;align-items:flex-start;gap:10px;margin:0;padding:10px 12px;border-radius:12px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);font-size:12.5px;color:var(--muted)}
+.rr-popneuf svg{flex:none;width:18px;height:18px;margin-top:1px;fill:none;stroke:var(--accent-soft);stroke-width:2;stroke-linejoin:round}
+.rr-popneuf b{display:block;color:var(--text);font-size:13px}
+.rfban.rf-recap .rfban-solde{font-size:12px}
+
+/* ============ Une carte en avatar : son illustration ============ */
+/* L'illustration va de 15 à 54,5 % de la hauteur de la carte (1,397 × sa
+   largeur), sur 84 % de sa largeur : un disque d'une demi-largeur de carte
+   y tient tout entier. D'où une carte à 200 % du cercle, centrée sur le
+   point (50 %, 35 %) : décalage vertical = 50 % − 0,35 × 279,4 % = −47,8 %.
+   Le recadrage rond se fait dans .ava-illu : un cadre décoré laisse
+   déborder l'avatar, pas son image. */
+.ava.carte .ava-illu{position:absolute;inset:0;border-radius:50%;overflow:hidden}
+.ava.carte .ava-illu img{inset:auto;left:-50%;top:-47.8%;width:200%;height:auto;max-width:none;border-radius:0;object-fit:fill}
+@media (min-width:720px){
+  .rr-stats{grid-template-columns:repeat(5,1fr)}
+  .rr-stat:first-child{grid-column:auto}
+  .rr-stat:first-child b{font-size:26px}
+}

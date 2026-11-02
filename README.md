@@ -21,9 +21,9 @@ Pour reprendre le travail sans rien demander au propriétaire. Ce README est la 
 - **Le lancement public a été annulé** le 24 septembre 2026, après échange avec Gentle Mates : l'écran d'entrée affiche « Projet annulé · Merci » (`vAnnonceArret()`, `js/gate.js` ; dans la DA de la 3.0 depuis le 1er novembre) et seuls les comptes invités jouent (`beta_lancement()` vaut `infinity`, voir « Écran d'entrée et bêta fermée »). Le jeu vit pour eux.
 - **Le vrai site** (racine de `main`) est la **2.5 du 25 octobre, en ligne avant sa sortie** (publiée le 25 à 02 h 22 UTC avec l'accord du propriétaire, `e9f0c36`) : L'Échauffement devenu un événement complet (Braises, Pass, quêtes, boutique, classement, récap) sur la charpente de l'écran Reflets, son mode sans fin à partir du 4 novembre, la fin de combat en scène, l'entrée en face-à-face, la révélation des 21 étoiles, le Labo refait, les Reverses recyclables et fabricables. Il se montre en 2.1.3, avec le récap de Reflets et le teasing de la 2.5, jusqu'au **lundi 26 octobre 2026, 0 h (heure de Paris)**, puis bascule tout seul en 2.5.
 - **La vraie base a la mise à jour 2.5 complète** (`MAJ-2.5.sql`, collé par le propriétaire le 25 octobre vers 02 h 35 UTC, après le site) : elle est identique à une installation neuve de la branche — 118 fonctions (définitions et droits), 236 colonnes, 37 tables, 11 règles d'accès, le déclencheur de L'Échauffement, et le même contenu (Pass, quêtes, boutique, défis, indices, adversaires du mode sans fin, calendrier). Le détail, et ce qu'il a fallu corriger (des fins de ligne Windows) : « La mise en ligne » plus bas.
-- **La 3.0** se développe sur `version-3.0` et ne se voit qu'en pré-prod (`matetcg.com/preprod/`). Sa date n'est pas fixée.
+- **La 3.0** se développe sur `version-3.0`. Depuis le 2 novembre 2026, elle ne se voit plus qu'à **`matetcg.com/demo/`** : la démo présentée à Gentle Mates, derrière un code d'accès, republiée seulement à la demande du propriétaire. `preprod/` et `prebuild/` ont été retirés de `main` et ne sont plus versionnés (le propriétaire : « enlève le de partout »). Sa date n'est pas fixée.
 
-**Où vit quoi.** La racine de `main` (le vrai site), `main/prebuild/` (la démo de la 2.x en préparation), `main/preprod/` (la démo de la 3.0), la branche `version-2.5` (ce README : la ligne 2.x), la branche `version-3.0` (la 3.0, son propre README). Le tableau complet est dans « La pré-prod ».
+**Où vit quoi.** La racine de `main` (le vrai site), `main/demo/` (la démo de la 3.0 présentée à Gentle Mates), la branche `version-2.5` (ce README : la ligne 2.x), la branche `version-3.0` (la 3.0, son propre README). Le tableau complet est dans « La démo de la 3.0, et les branches ».
 
 **La direction artistique de la 2.x, en bref** (le détail : « Habillage », « Les onglets », « Le thème ») :
 - **sombre uniquement** : des fonds noirs teintés prune, des jetons dans `css/tokens.css` (une feuille prend un jeton, pas une couleur en dur) ;
@@ -37,7 +37,7 @@ Ce qui est hors de cette DA (la palette « Graphite et lavande » partout, les n
 **Liste de reprise.**
 1. Lire `CLAUDE.md`, ce README et `docs/feuille-de-route.md` (importés d'office dans Claude Code : il faut quand même les lire en entier).
 2. `git fetch origin` : comparer avec `origin/main`, `origin/version-2.5`, `origin/version-3.0`, jamais avec une branche locale en retard.
-3. Servir le dépôt (`python3 -m http.server`), ouvrir `/prebuild/` après `python3 tools/demo.py --prebuild` : c'est là que la 2.x en préparation se teste, Labo ouvert.
+3. Servir le dépôt (`python3 -m http.server`), ouvrir `/prebuild/` après `python3 tools/demo.py --prebuild` : c'est là que la 2.x en préparation se teste, Labo ouvert (en local seulement : `prebuild/` n'est plus versionné ni publié depuis le 2 novembre 2026).
 4. Tester le SQL sur un PostgreSQL 16 local (la base de `main`, puis la mise à jour deux fois), l'interface dans Chromium aux quatre tailles (390 × 844, 375 × 667, 360 × 740, 1 280 × 800).
 5. Avant tout SQL sur la vraie base : l'accord du propriétaire, et la comparaison des fonctions (`CLAUDE.md`).
 6. Ce qui n'est pas propre à la 2.x se reporte dans la 3.0 (`docs/feuille-de-route.md`, § 5).
@@ -74,7 +74,7 @@ mate-tcg-online/
 ├── CLAUDE.md           Consignes pour les agents (règles du propriétaire, quoi lire, quoi tenir à jour)
 ├── docs/
 │   └── feuille-de-route.md  Où on en est, ce qui vient, le calendrier (copie identique sur version-3.0)
-├── prebuild/           La démo de la prochaine 2.x, construite (tools/demo.py --prebuild), publiée sur main
+├── prebuild/           La démo de la prochaine 2.x, construite en local (tools/demo.py --prebuild), non versionnée (.gitignore)
 ├── cards/              Les images des cartes (une par carte, .avif)
 ├── assets/             Habillage : logos, visuels de booster, dos de carte, essences
 │   ├── boosters/       Les quatre visuels de paquet
@@ -609,7 +609,7 @@ En trois temps, tous faits : le jeudi 22 octobre 2026, sous le nom 2.1.4 (avec l
   - **Dans la démo** : la date est le début de L'Échauffement de la démo (`revDes()`, `_demo/serveur.js`), lui-même à la fin du récap de Reflets ; le prébuild, où L'Échauffement est ouvert, les a donc ouvertes.
 ### Le prébuild
 
-- `python3 tools/demo.py --prebuild` construit la démo de cette version dans `prebuild/` (stockage à part, pas de service worker, Labo ouvert, L'Échauffement ouvert d'office avec ses sept défis, Reflets fini, des Joueurs offerts) ; publié sur `main`, il se teste à **matetcg.com/prebuild/**. Ne jamais lancer `--preprod` depuis une branche 2.x : `preprod/` est la 3.0. Le prébuild contient le faux serveur, donc **le texte des indices** : il n'est pas plus secret que la pré-prod 3.0, publiée au même endroit.
+- `python3 tools/demo.py --prebuild` construit la démo de cette version dans `prebuild/` (stockage à part, pas de service worker, Labo ouvert, L'Échauffement ouvert d'office avec ses sept défis, Reflets fini, des Joueurs offerts) ; elle se teste en local (`/prebuild/`). Elle a été publiée sur `main` (matetcg.com/prebuild/) jusqu'au 2 novembre 2026, puis retirée, et n'est plus versionnée (le propriétaire : « enlève le de partout »). Ne jamais lancer `--preprod` depuis une branche 2.x : `preprod/` est la 3.0. Le prébuild contient le faux serveur, donc **le texte des indices** : ne pas le republier sans y penser.
 
 ## Succès, historique et partage
 
@@ -854,25 +854,20 @@ Ce qui a été retiré en 2.5 (alors appelée 2.1.4), parce que plus rien ne s'e
 
 Pour obtenir une Promo **pour de vrai** sur son compte sans le master set — et vérifier la détection, la boutique et les paliers de bout en bout — les requêtes sont commentées en bas de `supabase/03b_promos.sql`.
 
-## La pré-prod
+## La démo de la 3.0, et les branches
 
-La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site, sans le toucher (et une version 2.x en préparation à **matetcg.com/prebuild/**, construite par `python3 tools/demo.py --prebuild` depuis sa branche) :
+Depuis le 2 novembre 2026, la 3.0 se montre à **matetcg.com/demo/** : la démo présentée à Gentle Mates (le propriétaire la leur envoie pour leur montrer le projet et demander leur accord pour le publier), construite depuis `version-3.0` par `python3 tools/demo.py --demo` (README de la 3.0, « Les démos »). Faux serveur (`_demo/serveur.js`), joueurs simulés, un Labo de test, derrière un **code d'accès** ; le jeu y est montré à son premier jour (ni version, ni nouveautés, ni événements passés). **Elle ne se republie qu'à la demande du propriétaire.** Comme la pré-prod qu'elle remplace, tout ce qu'elle range dans le navigateur porte un préfixe à part (`demo:` pour le stockage local, une base IndexedDB à son nom) : elle ne lit ni n'écrase les réglages ou la session du vrai site, qui partage l'adresse ; elle n'a pas de service worker, et la page n'est pas indexée. Le code d'accès tient à l'écart un visiteur de passage, pas quelqu'un de déterminé : les fichiers d'un site statique restent téléchargeables à leur adresse.
 
-    python3 tools/demo.py --preprod
-
-C'est la démo autonome (faux serveur, `_demo/serveur.js`) publiée dans `preprod/` : pas de compte, pas de vrai serveur, des joueurs simulés, et le Labo ouvert. Un bandeau « Pré-prod » le rappelle, et la page n'est pas indexée. Tout ce qu'elle range dans le navigateur porte un préfixe à part (`preprod:` pour le stockage local, une base IndexedDB à son nom) : elle ne lit ni n'écrase les réglages ou la session du vrai site, qui partage l'adresse. Elle n'a pas de service worker, pour ne pas vider les caches de celui du vrai site.
-
-Le développement se fait sur une branche à part ; `main` reste le site public. Trois lignes coexistent :
+`preprod/` (la démo de travail de la 3.0, publiée à matetcg.com/preprod/ jusque-là) et `prebuild/` (celle de la 2.x) ont été retirés de `main` et ne sont plus versionnés, ni ici ni sur `version-3.0` (le propriétaire, 1er novembre 2026 : « arrête de mettre à jour le fichier demo dans le repo et enlève le de partout ») ; ils se construisent en local, `--preprod` depuis `version-3.0`, `--prebuild` depuis `version-2.5`.
 
 | Lieu | Contenu |
 |---|---|
-| `main`, à la racine | le vrai site : depuis le 25 octobre 2026, la 2.5 complète en attente de sa sortie (elle se montre en « 2.1.3 » jusqu'au lundi 26 octobre, 0 h, puis bascule toute seule : « Version 2.5 · La sortie datée ») |
-| `main`, `prebuild/` | la démo de la 2.x en préparation (la 2.5), construite depuis `version-2.5` |
-| `main`, `preprod/` | la démo de la 3.0, construite depuis la branche `version-3.0` (qui a son propre README et son `CLAUDE.md`) |
+| `main`, à la racine | le vrai site : la 2.5, sortie d'elle-même le lundi 26 octobre 2026 à 0 h, heure de Paris (« Version 2.5 · La sortie datée » ; aucune session ne l'a vérifiée sur le vrai site après cette minute : `docs/feuille-de-route.md`, § 6) |
+| `main`, `demo/` | la démo de la 3.0 présentée à Gentle Mates, derrière un code d'accès, construite depuis `version-3.0` (qui a son propre README et son `CLAUDE.md`) |
 | branche `version-2.5` | la ligne 2.x (ce README), partie de `main` ; publiée sur `main` seulement avec l'accord du propriétaire. Elle remplace `claude/interface-ux-fixes-o92u4a` et `teaser-2.x`, tout leur contenu étant dans `version-2.5` et dans `main` ; ces deux-là sont **à supprimer par le propriétaire** (une session de Claude Code n'a pas le droit de supprimer une branche) |
 | branche `version-3.0` | la 3.0 ; **ne se fusionne jamais dans `main`** |
 
-Pour publier une pré-prod ou un prébuild : le construire sur sa branche, puis reporter **ce seul dossier** sur `main` (un `git worktree` d'`origin/main`, copier le dossier, `git status` ne doit lister que lui). Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
+Pour republier la démo (à la demande du propriétaire) : la construire sur `version-3.0`, puis reporter **ce seul dossier** sur `main` (un `git worktree` d'`origin/main`, copier le dossier, `git status` ne doit lister que lui ; README de la 3.0, § 2.5). Le SQL de la version suivante ne touche pas la vraie base avant la sortie : il est testé sur une base PostgreSQL locale, et le faux serveur en reproduit les règles.
 
 ## Mettre à jour le site
 
