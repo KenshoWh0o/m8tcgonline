@@ -165,7 +165,7 @@ body.en-arene .preprod-bandeau{display:none}
 .ar-place{position:relative;container-type:inline-size;aspect-ratio:63/88;border-radius:6.5cqi;
   background:rgba(8,7,12,.32);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12),inset 0 1px 0 rgba(255,255,255,.08);transition:background .2s,box-shadow .2s}
 .ar-place::before{content:"";position:absolute;inset:36%;border-radius:50%;opacity:.1;pointer-events:none;filter:grayscale(1) brightness(1.8);
-  background:url('../assets/pack-star.svg?v=25cc48') center/contain no-repeat}
+  background:url('../assets/pack-star.svg?v=0d5375') center/contain no-repeat}
 .ar-place:has(.ar-j)::before{display:none}
 /* Une place libre pour le Joueur qu'on tient (version 3.0.8) : ce qu'on
    peut faire, donc la lavande. Plus de grand « + » : la carte elle-même y

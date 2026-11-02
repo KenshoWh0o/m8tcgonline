@@ -1,7 +1,7 @@
 /* Réglages de la démo — le seul fichier à retoucher à la main.
    Ils ne s'appliquent qu'à une démo neuve : pour repartir de zéro avec de
    nouveaux réglages, ouvrir la démo avec ?reinitialiser à la fin de
-   l'adresse (voir LISEZMOI.txt). */
+   l'adresse. */
 "use strict";
 
 const DEMO_REGLAGES = {

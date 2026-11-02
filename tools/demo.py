@@ -1,44 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Fabrique la demo autonome : le jeu entier, sans compte ni serveur.
-
-    python3 tools/demo.py
-
-Produit :
-  _build/m8tcg-demo/       le dossier, pret a ouvrir (index.html)
-  _build/m8tcg-demo.zip    le meme, a envoyer
+"""Fabrique la demo de la 2.x en preparation : le jeu entier, sans compte ni
+serveur.
 
 Comment ca marche : le jeu ne parle au serveur que par le client Supabase.
 La demo remplace ce client par un faux (_demo/serveur.js) qui applique les
-memes regles, dans le navigateur. Le code du jeu est copie tel quel : rien
-de ce qui est publie sur le site ne change, et le site ne contient pas la
-demo (les dossiers commencant par _ ne sont pas publies par GitHub Pages).
+memes regles, dans le navigateur. Le code du jeu est copie tel quel.
 
-A relancer apres chaque modification du jeu, pour que la demo suive.
+    python3 tools/demo.py --prebuild
 
-    python3 tools/demo.py --preprod
-
-Produit la meme demo dans preprod/, publiee par GitHub Pages a cote du vrai
-site (matetcg.com/preprod/) : c'est la que se teste la version suivante,
-sans compte et sans toucher au vrai serveur. Par rapport a la demo :
+Produit la demo dans prebuild/, publiee par GitHub Pages a cote du vrai
+site (matetcg.com/prebuild/) : c'est la que se teste la version 2.x
+suivante, sans compte et sans toucher au vrai serveur.
   - tout ce que la page range dans le navigateur (localStorage, IndexedDB)
-    porte un prefixe a part : la pre-prod ne lit ni n'ecrase les reglages,
-    les fenetres deja vues ou la session du vrai site, qui partage l'adresse ;
+    porte un prefixe a part : elle ne lit ni n'ecrase les reglages, les
+    fenetres deja vues ou la session du vrai site, qui partage l'adresse ;
   - pas de service worker : celui du vrai site couvre deja l'adresse, et deux
     service workers sur la meme origine se videraient leurs caches ;
-  - un bandeau « PRE-PROD », pas d'indexation, et le Labo ouvert."""
-import json, os, re, shutil, sys, zipfile
+  - un bandeau, pas d'indexation, et le Labo ouvert.
+--preprod existe aussi, mais preprod/ est la 3.0 : ne jamais le lancer
+depuis cette branche (CLAUDE.md).
+
+La demo autonome en zip (sans option) a ete retiree le 2 novembre 2026, a
+la demande du proprietaire."""
+import json, os, re, shutil, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, '_demo')
-BUILD = os.path.join(ROOT, '_build')
 PREBUILD = '--prebuild' in sys.argv
 PREPROD = '--preprod' in sys.argv or PREBUILD
+if not PREPROD:
+    raise SystemExit('Usage : python3 tools/demo.py --prebuild (prebuild/).')
 # Le prebuild : la meme chose que la pre-prod, mais pour la version 2.x en
 # cours (une branche partie de main), dans prebuild/, avec son propre
 # stockage — la pre-prod de la 3.0 et lui vivent cote a cote sur main.
 DOSSIER = 'prebuild' if PREBUILD else 'preprod'
-OUT = os.path.join(ROOT, DOSSIER) if PREPROD else os.path.join(BUILD, 'm8tcg-demo')
+OUT = os.path.join(ROOT, DOSSIER)
 
 # Ce qui part dans la demo. Tout le reste (serveur SQL, outils, kit presse,
 # page de diagnostic, adresse du site) n'a rien a y faire.
@@ -73,7 +70,6 @@ for d in DOSSIERS:
 # --- le faux serveur et ses reglages
 shutil.copy2(os.path.join(SRC, 'serveur.js'), os.path.join(OUT, 'js', 'demo-serveur.js'))
 shutil.copy2(os.path.join(SRC, 'reglages.js'), os.path.join(OUT, 'js', 'demo-reglages.js'))
-shutil.copy2(os.path.join(SRC, 'LISEZMOI.txt'), os.path.join(OUT, 'LISEZMOI.txt'))
 
 # --- Devine l'illu : les grilles de pixels du serveur (supabase/21b_illu.sql).
 #     Une demo n'a rien a cacher : le faux serveur les garde dans la page.
@@ -167,7 +163,6 @@ if PREPROD:
         lambda m: ('"name": "Mate TCG Prébuild",\n  "short_name": "TCG Prébuild"' if PREBUILD
                    else '"name": "Mate TCG Pré-prod",\n  "short_name": "TCG Pré-prod"'), 'les noms du manifeste'))
     os.remove(os.path.join(OUT, 'sw.js'))
-    os.remove(os.path.join(OUT, 'LISEZMOI.txt'))
     # Le joueur de la pre-prod est administrateur : le Labo sert a tout tester.
     ecrire('js/demo-serveur.js', remplacer(lire('js/demo-serveur.js'),
         r"S\.profils\[MOI\] = nouveauProfil\(MOI, D\.pseudo, \{ shards: D\.eclats \}\);",
@@ -175,17 +170,3 @@ if PREPROD:
         'la creation du joueur dans demo-serveur.js'))
     print(f'{"Prebuild" if PREBUILD else "Pre-prod"} pret(e) : {DOSSIER}/ (version {v}), publie(e) a matetcg.com/{DOSSIER}/ une fois pousse(e) sur main')
     sys.exit(0)
-
-# --- l'archive a envoyer
-archive = os.path.join(BUILD, 'm8tcg-demo.zip')
-if os.path.exists(archive):
-    os.remove(archive)
-with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
-    for dossier, _, fichiers in os.walk(OUT):
-        for f in sorted(fichiers):
-            chemin = os.path.join(dossier, f)
-            z.write(chemin, os.path.join('m8tcg-demo', os.path.relpath(chemin, OUT)))
-
-taille = os.path.getsize(archive) / 1e6
-print(f'Demo prete : {os.path.relpath(OUT, ROOT)}/index.html')
-print(f'Archive    : {os.path.relpath(archive, ROOT)} ({taille:.1f} Mo)')

@@ -82,10 +82,10 @@ mate-tcg-online/
 │   ├── icon-*.png      Icônes de l'application installée (générées)
 │   └── og-image.png    Image affichée quand le lien du site est partagé (générée)
 ├── presse/             Kit presse : visuels prêts à publier et leur mode d'emploi
-├── _demo/              La démo autonome : faux serveur, réglages, mode d'emploi (non publié)
+├── _demo/              Le faux serveur et ses réglages, pour le prébuild (non publié)
 ├── tools/              Petits scripts de maintenance (Python, sans dépendance)
 │   ├── build-sql.py    Assemble supabase/TOUT.sql
-│   ├── demo.py         Fabrique la démo autonome dans _build/ (ou prebuild/ avec --prebuild)
+│   ├── demo.py         Fabrique le prébuild (prebuild/, avec --prebuild)
 │   ├── version.py      Pose le numéro de version et marque les fichiers
 │   ├── gen-icons.py    Régénère icônes, favicons et image de partage
 │   ├── kit-presse.py   Régénère les visuels de presse/visuels/
@@ -220,7 +220,7 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Lancer un événement, ouvrir la chasse | requêtes en bas de `supabase/15_evenements.sql` |
 | Ajouter ou modifier un succès | `succes_de()` dans `supabase/15_evenements.sql` **et** `SUCCES` dans `js/config.js` |
 | Changer les critères du classement | `classement()` dans `supabase/14_classement.sql` + `CRITERES` dans `js/classement.js` |
-| Fabriquer la démo autonome à envoyer | `python3 tools/demo.py` — voir « La démo autonome » |
+| Fabriquer le prébuild (la démo de la 2.x en préparation) | `python3 tools/demo.py --prebuild` — voir « Le faux serveur » et « Le prébuild » |
 | Régler la démo (pseudo, Éclats de départ, recharge) | `_demo/reglages.js` |
 | Accepter d'autres champs de carte | `makeCard()` dans `js/cards.js` |
 | Déplacer la saison de L'Échauffement | Labo › Serveur (« Aller à un état », « Avancer d'un jour » : `labo_calendrier`, `labo_decaler`), ou `ech_saison` à la main ; en démo, les mêmes boutons |
@@ -232,21 +232,15 @@ Chaque feuille de style porte aussi ses propres règles d'adaptation — télép
 | Changer le Pass, les quêtes ou la boutique de L'Échauffement | le Pass : `evt_piste` dans `supabase/22e_echauffement-evenement.sql` (+ `ECH_PISTE`, `js/echauffement.js`, copie pour les aperçus et la démo) ; quêtes et boutique : `supabase/04_seed.sql` (+ `QUETES`, `BOUTIQUE` dans `_demo/serveur.js`) ; ce que rapportent les étoiles : `ech_terminer` (`22b`) et `ECH_PRIX`, `ECH_BRAISES` (`js/echauffement.js`, `_demo/serveur.js`) |
 | Changer un adversaire du mode sans fin, ou ce qu'il rapporte | `ech_sf_adversaires` dans `supabase/22f_sans-fin.sql` **et** `ECH_SF` dans `_demo/serveur.js` (recalibrer la Défense par simulation : en-tête du fichier) ; les Éclats : `ech_sf_terminer` (`22f`) et `ECH_SF_PRIX` (`js/echauffement.js`, `_demo/serveur.js`) |
 
-## La démo autonome
+## Le faux serveur
 
-Une version du jeu **entière, sans compte ni serveur**, à envoyer en fichier : boosters, collection, quêtes, boutique, recyclage, profil, amis, échanges et boîte de réception. Tout est enregistré dans le navigateur de celui qui l'ouvre.
+Le prébuild (« Le prébuild », plus bas) est le jeu **entier, sans compte ni serveur** : boosters, collection, quêtes, boutique, recyclage, profil, amis, échanges et boîte de réception. Tout est enregistré dans le navigateur de celui qui l'ouvre. La démo autonome en zip qui s'en fabriquait (`python3 tools/demo.py` sans option, avec `_demo/LISEZMOI.txt`) a été **retirée le 2 novembre 2026** à la demande du propriétaire.
 
-```
-python3 tools/demo.py
-```
-
-produit `_build/m8tcg-demo/` (ouvrir `index.html`) et `_build/m8tcg-demo.zip` à envoyer. `_build/` n'est pas versionné.
-
-**Comment ça marche.** Le jeu ne parle au serveur que par le client Supabase (`Backend.sb`). La démo remplace la bibliothèque Supabase par un faux client (`_demo/serveur.js`) qui répond aux mêmes appels avec les mêmes réponses : chaque fonction y est la traduction de sa jumelle SQL, citée en commentaire. Le code du jeu est copié tel quel : **rien ne change sur le site**, et le site ne contient pas la démo — GitHub Pages ne publie pas les dossiers qui commencent par `_`.
+**Comment ça marche.** Le jeu ne parle au serveur que par le client Supabase (`Backend.sb`). Le prébuild remplace la bibliothèque Supabase par un faux client (`_demo/serveur.js`) qui répond aux mêmes appels avec les mêmes réponses : chaque fonction y est la traduction de sa jumelle SQL, citée en commentaire. Le code du jeu est copié tel quel : **rien ne change sur le site**, et le site ne contient pas le faux serveur — GitHub Pages ne publie pas les dossiers qui commencent par `_`.
 
 **Les autres joueurs sont simulés** : Lumen et Mira sont amis dès le départ, Kairo envoie une demande d'ami peu après l'arrivée, Nova.92 attend qu'on l'ajoute. Ils acceptent les demandes d'ami, répondent aux échanges (le premier est toujours accepté s'il est possible, les suivants trois fois sur quatre) et proposent des échanges de temps en temps.
 
-> **À garder synchronisé.** Les quêtes, la boutique, les taux de drop, `cfg()` et les règles des actions sont recopiés dans `_demo/serveur.js`. Quand ils changent dans `supabase/`, il faut les changer là aussi, puis relancer `tools/demo.py`. Le script s'arrête avec un message clair si `index.html` ou `sw.js` ont changé au point qu'il ne s'y retrouve plus.
+> **À garder synchronisé.** Les quêtes, la boutique, les taux de drop, `cfg()` et les règles des actions sont recopiés dans `_demo/serveur.js`. Quand ils changent dans `supabase/`, il faut les changer là aussi, puis relancer `tools/demo.py --prebuild`. Le script s'arrête avec un message clair si `index.html` ou `sw.js` ont changé au point qu'il ne s'y retrouve plus.
 
 Pour repartir de zéro dans la démo : ajouter `?reinitialiser` à la fin de l'adresse.
 
@@ -860,7 +854,7 @@ La version suivante se teste à **matetcg.com/preprod/**, à côté du vrai site
 
     python3 tools/demo.py --preprod
 
-C'est la démo autonome (faux serveur, `_demo/serveur.js`) publiée dans `preprod/` : pas de compte, pas de vrai serveur, des joueurs simulés, et le Labo ouvert. Un bandeau « Pré-prod » le rappelle, et la page n'est pas indexée. Tout ce qu'elle range dans le navigateur porte un préfixe à part (`preprod:` pour le stockage local, une base IndexedDB à son nom) : elle ne lit ni n'écrase les réglages ou la session du vrai site, qui partage l'adresse. Elle n'a pas de service worker, pour ne pas vider les caches de celui du vrai site.
+C'est le jeu avec le faux serveur (`_demo/serveur.js`), publié dans `preprod/` : pas de compte, pas de vrai serveur, des joueurs simulés, et le Labo ouvert. Un bandeau « Pré-prod » le rappelle, et la page n'est pas indexée. Tout ce qu'elle range dans le navigateur porte un préfixe à part (`preprod:` pour le stockage local, une base IndexedDB à son nom) : elle ne lit ni n'écrase les réglages ou la session du vrai site, qui partage l'adresse. Elle n'a pas de service worker, pour ne pas vider les caches de celui du vrai site.
 
 Le développement se fait sur une branche à part ; `main` reste le site public. Trois lignes coexistent :
 
