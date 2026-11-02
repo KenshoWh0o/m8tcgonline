@@ -299,7 +299,9 @@ function vAtAnalyse(d, b) {
    sans dire quelle carte y mettre. Une clé ne s'allume en rouge que pour un
    vrai trou : un départ sans attaque une fois sur sept ou plus, une couleur
    que la Réserve ne fournit pas. */
-const pcCle = x => `${Math.round(100 * x)} %`;
+/* Une chance arrondie, sans faire croire à une certitude : 99,7 % s'écrit
+   « plus de 99 % », pas « 100 % ». */
+const pcCle = x => (x >= 1 ? '100 %' : x > 0.99 ? 'plus de 99 %' : x <= 0 ? '0 %' : x < 0.01 ? 'moins de 1 %' : `${Math.round(100 * x)} %`);
 function vClesDeck(d) {
   if (!Decks.total(d.cartes)) return '';
   const k = Decks.cles(d), R = Combat.REGLE;

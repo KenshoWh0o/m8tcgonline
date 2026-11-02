@@ -1919,8 +1919,6 @@
   function mondeM8() {
     if (S.m8) return;
     S.m8 = 1;
-    const tout = {};
-    for (const k of Combat.toutes()) if (Decks.jouable(k)) tout[k.id] = 3;
     BOTS.forEach(b => {
       const pr = S.profils[b.id];
       if (!pr) return;
@@ -1947,8 +1945,14 @@
       S.evt.comptes[b.id + '|choc'] = { solde: Math.round(b.etincelles / 3), total: b.etincelles };
       c.decks = c.decks.filter(x => !x.public);
       if (b.deck) {
-        const [nom, coul, style] = b.deck;
-        const x = Decks.assistant({ couleurs: [coul], style }, tout).deck;
+        /* Un deck tiré dans sa couleur (Decks.aleatoire, niveau 4 : des
+           cartes plutôt rares), la même graine à chaque fois. L'assistant de
+           deck qui le construisait a été retiré en 3.0.15. */
+        const [nom, coul] = b.deck;
+        let g = 0;
+        for (const ch of b.id + coul) g = (g * 31 + ch.charCodeAt(0)) >>> 0;
+        const rand = () => ((g = (g * 1664525 + 1013904223) >>> 0) / 4294967296);
+        const x = Decks.aleatoire(rand, { couleurs: [coul], niveau: 4, nom });
         c.decks.push({ id: 'd' + (++S.seq), nom, cartes: x.cartes, reserve: x.reserve, couverture: x.couverture, public: true });
       }
     });
