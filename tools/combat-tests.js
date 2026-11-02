@@ -565,6 +565,37 @@ test('le Raid : des phases de plus en plus dures, des paliers croissants, un Inf
   const p = Choc.RAID.perso;
   for (let k = 1; k < p.length; k++) vrai(p[k].seuil > p[k - 1].seuil, 'paliers personnels croissants');
 });
+test('l\'assistant : un deck valide, dans les couleurs voulues, avec les cartes qu\'on a, et qui garde le deck en cours', () => {
+  const r = rng(31);
+  for (let k = 0; k < 30; k++) {
+    /* Une collection au hasard : chaque carte avec une chance sur deux, en 1 à 4 exemplaires. */
+    const possede = {};
+    for (const c of Combat.toutes()) if (Decks.jouable(c) && r() < 0.5) possede[c.id] = 1 + Math.floor(r() * 4);
+    for (const style of ['rapide', 'equilibre', 'solide']) {
+      const x = Decks.assistant({ style }, possede);
+      if (!x.complet) continue;
+      egal(Decks.verifier(x.deck, possede), [], `collection ${k}, ${style}`);
+      vrai(x.couleurs.length >= 1 && x.couleurs.length <= 2, 'une ou deux couleurs');
+    }
+    /* Une couleur imposée : rien d'une autre, sauf faute de cartes. */
+    const y = Decks.assistant({ couleurs: ['rose'], style: 'equilibre' }, possede);
+    const autres = Object.keys(y.deck.cartes).filter(id => !['rose', 'neutre'].includes(Combat.carte(id).col)).length;
+    const rosesEtNeutres = Object.keys(possede).filter(id => ['rose', 'neutre'].includes(Combat.carte(id).col)).reduce((s, id) => s + Math.min(3, possede[id]), 0);
+    if (rosesEtNeutres >= 60) egal(autres, 0, 'collection ' + k + ' : que du Rose et du Neutre');
+  }
+  /* Garder le deck en cours : ses cartes restent, il le complète. */
+  const tout = {};
+  for (const c of Combat.toutes()) if (Decks.jouable(c)) tout[c.id] = 3;
+  const base = { cartes: { c051: 2, c052: 3 } };
+  const g = Decks.assistant({ style: 'equilibre', garder: true }, tout, base);
+  vrai(g.deck.cartes.c051 >= 2 && g.deck.cartes.c052 >= 3 && g.complet, 'les cartes gardées restent');
+  vrai(g.couleurs.includes('mauve'), 'les couleurs du deck en cours');
+  /* Le style rapide : plus de Joueurs qui attaquent tôt que le solide. */
+  const ra = Decks.assistant({ couleurs: ['violette'], style: 'rapide' }, tout), so = Decks.assistant({ couleurs: ['violette'], style: 'solide' }, tout);
+  vrai(ra.bas / ra.joueurs > so.bas / so.joueurs, `rapide ${ra.bas}/${ra.joueurs}, solide ${so.bas}/${so.joueurs}`);
+  /* Aucune carte : rien, sans erreur. */
+  egal(Decks.total(Decks.assistant({}, {}).deck.cartes), 0);
+});
 test('le Raid : la page et le serveur ont les mêmes phases, les mêmes coffres, la même vie des boss', () => {
   /* 27_raid.sql garde sa copie des chiffres (raid_phases, raid_perso,
      raid_vie) : elle doit dire la même chose que js/combat/choc-data.js. */

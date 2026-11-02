@@ -618,6 +618,7 @@ function vBonDeck() {
       ${point('Une ou deux couleurs.', 'Ta Réserve paie tes attaques et permet de jouer tes cartes de couleur. Dans l\'atelier, « Régler d\'après mes attaques » l\'accorde à ton Club.')}
       ${point('Des attaques à 1 ou 2 Essences.', 'Une Essence arrive par tour : au moins la moitié de tes Joueurs.')}
     </ol>
+    <p class="dk-bon-assist"><b>L'assistant</b> de l'atelier construit un deck avec tes cartes les mieux cotées, dans tes couleurs et ton style, en suivant ces trois conseils. La cote d'une carte, en cinq barres : ce qu'elle ajoute aux victoires de sa couleur, mesuré sur des milliers de parties.</p>
     <p class="muted small">Un conseil suivi, une étoile. Pour démarrer vite : un Starter Deck se joue sans en posséder les cartes.</p>
   </details>`;
 }

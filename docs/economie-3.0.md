@@ -248,6 +248,28 @@ Les mesures ci-dessus datent des règles reconstituées (Club de 30, 5 PV, un Jo
 
 Le bilan d'un deck (`Decks.bilan`) suit désormais les conseils officiels : **15 Joueurs au moins** (16 avant, d'après la mesure de la 3.0.6), une Réserve accordée, la moitié des Joueurs qui attaquent pour 1 ou 2 Essences.
 
+### L'assistant de deck (3.0.14) [mesuré] `Decks.assistant`, `Decks.COTES` ; `node tools/assistant-decks.js`
+
+Le propriétaire, le 1er novembre 2026 : « la fonction "Compléter pour moi" doit être optimisée voire repensée […] un assistant qui fait le deck selon tes préférences, mais qui fait un vrai deck optimisé et fort tout en respectant les préférences. »
+
+- **La cote d'une carte** [mesuré] : 6 000 parties entre decks tirés au sort (`Decks.aleatoire`, une ou deux couleurs, raretés du niveau 3), l'adversaire du jeu au niveau 2 des deux côtés (≈ 0,15 s la partie : le niveau 3 aurait demandé deux fois et demie plus de temps). Pour chaque carte, la part de victoires des decks qui la jouent, moins celle des decks de sa couleur qui ne la jouent pas (pour une Neutre : tous les decks), ramenée vers 0 quand elle a peu joué (60 parties fictives à la moyenne). 122 cartes cotées, de −0,083 (Champions du Major) à +0,072 (Trauma Dump I) ; les meilleures ensuite : Les Rois du Saloon, Zéro Soucis, SBG, Worlds Japon. Marge : ± 0,03 environ pour une carte qui a peu joué. Elles sont écrites dans `js/combat/decks.js` (`COTES`, entre deux marques, par `fusion`).
+- **Ce que la cote ne voit pas** [limite connue] : les associations (deux cartes qui ne valent que l'une avec l'autre), le jeu d'un humain (l'adversaire du niveau 2 ne joue pas comme un joueur), les Promos et Secrètes qui sortent peu des tirages (sans cote, elles comptent 0). Elle change si une règle ou une carte change : `node tools/assistant-decks.js cotes 1500 <graine>` sur quatre processus (≈ 4 min), puis `fusion`. Dans l'atelier, elle se lit en cinq barres (le rang parmi les cartes cotées), avec la mention « un repère, pas une règle ».
+- **L'assistant** [fait] : les cartes du joueur, les mieux cotées, dans ses couleurs (une ou deux ; à son choix, chaque couleur et chaque paire, une paire devant faire nettement mieux), en tenant les règles (40 cartes, trois exemplaires par nom et couleur, ses propres exemplaires) et les conseils des règles officielles ; le style déplace les curseurs : **Rapide** 20 Joueurs (70 % au moins attaquant pour 1 ou 2 Essences), 7 Objets, 13 Coachs et Moments ; **Équilibré** 18 / 8 / 14 (55 %) ; **Solide** 17 / 9 / 14 (45 %), la Défense et Garde ou Provocation comptées en plus. Il peut garder le deck en cours et le compléter (ses couleurs deviennent celles du deck). La Réserve suit les attaques (`reserveAuto`). Le geste s'annule.
+- **Ce que valent ses decks** [mesuré] (`mesurer` et `auto`, l'adversaire du jeu au niveau 3 des deux côtés, 60 parties par deck contre une série de dix adversaires : les deux Starters et huit decks tirés au sort ; marge ± 12 points). Toute la collection, une couleur imposée :
+
+| Couleur | Rapide | Équilibré | Solide | L'ancien « Compléter pour moi » |
+|---|---|---|---|---|
+| Rose | 87 % | 93 % | 92 % | 32 % |
+| Violette | 88 % | 83 % | 77 % | 47 % |
+| Azur | 77 % | 78 % | 75 % | 47 % |
+| Orange | 70 % | 78 % | 58 % | 42 % |
+| Mauve | 77 % | 68 % | 67 % | 25 % |
+| Verte | 57 % | 60 % | 50 % | 32 % |
+| Bleue | 43 % | 53 % | 53 % | 27 % |
+
+  Les couleurs à son choix : avec toute la collection, Rose et Violette, 90 / 87 / 82 % (l'ancien, aux mêmes couleurs : 23 %) ; avec 60 % des cartes (deux collections tirées au sort), Rose et Violette, 87 à 95 % (l'ancien : 30 et 42 %) ; avec 35 %, Rose et Mauve 68 à 72 % (45 %), ou Rose et Violette 52 à 57 % (45 %). **[lecture]** Le Rose domine, comme le Starter Toxique (§ 3 bis) : ce n'est pas l'assistant qui le crée, il le trouve.
+- **[ouvert]** Des decks aussi forts, partagés par code, pèsent sur le Versus et les classements de combat. L'assistant ne fait qu'utiliser les cartes qu'on a ; mais si le Rose reste au-dessus du reste, c'est un équilibrage des cartes (ou des Starters) qu'il faudra, pas un réglage de l'assistant.
+
 ## 3 ter. La maîtrise des cartes (version 3.0.7, rééquilibrée en 3.0.8, refaite en 3.0.13, allégée en 3.0.14)
 
 Le rôle : donner un usage durable aux Fragments et aux doublons une fois la collection complète. **Depuis la 3.0.13, c'est l'endgame du jeu**, à la demande du propriétaire (31 octobre 2026) : « Il faut un certain nombre d'exemplaire et de fragments pour monter le niveau, et ce nombre d'exemplaire et de fragments dépend de la rareté. Il n'est pas possible de compenser un manque d'exemplaire avec des fragments. Quand tu montes la mastery, les exemplaires sont CONSOMMES. Il faut que monter la mastery soit une tâche ardue, c'est un peu l'endgame du jeu. » Les règles sont dans l'en-tête de `supabase/installation/28_maitrise.sql` (le serveur décide), dans `js/maitrise.js` (l'affichage) et dans `_demo/serveur.js` (la pré-prod) ; les trois portent les mêmes montants.
