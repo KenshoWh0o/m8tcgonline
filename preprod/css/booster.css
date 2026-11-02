@@ -1,0 +1,247 @@
+/* Écran du booster : bandeau d'extension, paquet 3D, réserve, et la déchirure d'ouverture. */
+/* ============ Écran booster ============ */
+/* L'écran Boosters est une vitrine : un paquet, une réserve, un bouton. Il
+   tient dans la fenêtre, quelle qu'en soit la hauteur, et ne défile jamais.
+
+   La hauteur du paquet n'est pas devinée : `.pack3d` absorbe la place qui
+   reste une fois l'en-tête, la réserve et le bouton posés, le paquet la
+   remplit, et `aspect-ratio` en déduit sa largeur. C'est la seule façon d'être
+   juste à 568 px de haut comme à 1080 — une constante retranchée à `100dvh`
+   tombait forcément à côté quelque part, et l'écran débordait de dix-huit
+   pixels sur les fenêtres où elle tombait court. */
+#main.tab-boosters{overflow:hidden}
+.packzone{display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  height:100%;min-height:0;width:100%;gap:4px}
+
+.setbar{position:relative;text-align:center;width:100%;max-width:520px}
+.setlogo{display:block;width:min(250px,58vw);margin:0 auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.7));
+  transition:padding .2s}
+.setmeta{margin:8px 0 0;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.02em}
+.edition{position:absolute;right:2%;top:2%;width:clamp(38px,11vw,52px);height:auto;rotate:8deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+
+.packstage{position:relative;flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  perspective:1300px;padding:14px 0 0;
+  /* Le halo (124vw) déborde de côté, transparent : coupé là, il ne fait plus
+     défiler la page en largeur à 320 px (3.0.13, WCAG 1.4.10). En hauteur,
+     rien n'est coupé. */
+  overflow-x:clip}
+.packglow{position:absolute;top:44%;left:50%;width:min(620px,124vw);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,var(--violet-glow),rgba(140,120,255,.12) 40%,transparent 64%)}
+/* `translate` est une propriété à part : le flottement se compose avec la rotation posée par le script. */
+.pack3d{position:relative;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;
+  transform-style:preserve-3d;will-change:transform;animation:packbob 5.4s ease-in-out infinite}
+@keyframes packbob{50%{translate:0 -10px}}
+/* Le paquet remplit la hauteur qu'on lui laisse ; `aspect-ratio` en déduit la
+   largeur (337 x 460, les proportions du visuel — à corriger ici si les images
+   changent). `max-height` est la même contrainte exprimée dans l'autre sens :
+   elle borne la hauteur pour que la largeur ne dépasse jamais 66 % de l'écran
+   ni 340 px, sans quoi un écran large et bas donnerait un paquet démesuré. */
+.pack{position:relative;display:block;width:auto;height:100%;aspect-ratio:337/460;
+  max-height:calc(min(66vw,340px) * 460 / 337);
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform-style:preserve-3d;
+  filter:drop-shadow(0 28px 40px rgba(0,0,0,.72));transition:filter .25s}
+.pack:active{cursor:grabbing}
+.pack-art{display:block;width:100%;height:100%;object-fit:contain}
+.pack-foil{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.5;
+  background:linear-gradient(112deg,transparent 33%,rgba(255,255,255,.55) 48%,transparent 63%);background-size:280% 100%;
+  background-position:var(--fx,50%) 0}
+/* Paquet ouvrable : un halo respire derrière lui, le geste est évident sans ligne d'explication. */
+.pack.ready::after{content:'';position:absolute;inset:-8% -10%;border-radius:22px;pointer-events:none;
+  background:radial-gradient(closest-side,var(--accent-glow),transparent 72%);animation:packpulse 2.8s ease-in-out infinite}
+@keyframes packpulse{50%{opacity:.3}}
+.pack.ready:hover{filter:drop-shadow(0 28px 40px rgba(0,0,0,.72)) drop-shadow(0 0 26px var(--accent-glow))}
+.packshadow{width:min(190px,44vw);height:18px;margin-top:14px;border-radius:50%;flex:0 0 auto;
+  background:radial-gradient(closest-side,rgba(0,0,0,.78),transparent)}
+
+/* ============ Réserve ============ */
+/* Une rangée d'alvéoles, une par booster. Pleines, elles brillent ; la première
+   vide se remplit au fil de la recharge. On lit « il m'en reste trois, le
+   quatrième arrive dans deux heures » sans compter et sans lire.
+
+   Ce qu'il y avait avant : deux pastilles, un compteur et un sablier affichant
+   « Max », qu'il fallait décoder l'une après l'autre. */
+.packfoot{flex:0 0 auto;width:100%;max-width:390px;padding-top:14px;display:flex;flex-direction:column;
+  gap:13px;align-items:center}
+
+.reserve{width:100%;display:flex;flex-direction:column;align-items:center;gap:9px}
+.resjetons{display:flex;gap:7px;width:100%;max-width:320px;align-items:center;justify-content:center}
+
+.resjeton{position:relative;flex:1 1 0;height:11px;max-width:60px;border-radius:99px;overflow:hidden;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);
+  transition:box-shadow .3s,background .3s}
+/* Une alvéole pleine : un jeton de couleur, avec son reflet et son halo. */
+.resjeton.plein{background:linear-gradient(90deg,#a98bff,var(--accent-soft));
+  box-shadow:inset 0 1px 0 var(--gloss-soft),0 0 12px var(--violet-glow);
+  animation:respop .34s cubic-bezier(.2,1.4,.4,1)}
+@keyframes respop{from{transform:scaleX(.5);opacity:.4}}
+/* L'alvéole en cours : la jauge de recharge, là où elle veut dire quelque chose. */
+.resjeton.encours::after{content:'';position:absolute;inset:0;width:var(--p,0%);border-radius:99px;
+  background:linear-gradient(90deg,rgba(169,139,255,.5),rgba(255,122,196,.75));opacity:.85;
+  transition:width .9s linear}
+.reserve.pleine .resjeton.plein{box-shadow:inset 0 1px 0 var(--gloss-soft),0 0 16px var(--violet-glow)}
+/* Au-dessus du plafond : les alvéoles ne peuvent plus compter, un compteur
+   prend le relais. Ces boosters-là sont bien là — le plafond n'arrête que la
+   recharge, pas les achats. */
+.ressurplus{display:inline-grid;place-items:center;flex:0 0 auto;height:19px;padding:0 8px;
+  border-radius:99px;font-family:var(--display);font-weight:900;font-size:12px;font-style:italic;
+  color:var(--on-accent);background:linear-gradient(180deg,var(--accent-soft),var(--accent));
+  box-shadow:0 0 12px var(--accent-glow);margin-left:2px}
+
+.reslab{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;font-size:12.5px;
+  font-weight:700;color:var(--muted);flex-wrap:wrap}
+.reslab b{font-family:var(--display);font-weight:900;font-style:italic;font-size:17px;line-height:1;
+  color:var(--text)}
+.resmax{font-size:12px;font-weight:700;margin-left:-4px}
+.ressep{width:4px;height:4px;border-radius:50%;background:var(--line-2);flex:0 0 auto}
+.reslab svg{width:14px;height:14px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.restemps{font-weight:700}
+.reserve.pleine .reslab b{color:var(--text)}
+.reserve.illimite .resinf{width:20px;height:auto}
+.reserve.illimite .resjetons b{font-family:var(--display);font-weight:900;font-size:22px;color:var(--accent-soft)}
+
+.packbtn{max-width:340px}
+/* Les boosters en plus (boutique, cadeaux) : un second bouton, à part de la
+   réserve. Rose quand il est seul, en retrait quand la réserve a aussi les siens. */
+.bonusbtn.ghost{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1.5px var(--accent-soft)}
+.bonusbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.bonusbtn .rc-reste{margin-left:8px}
+.bonusbtn.ghost .rc-reste{background:var(--brand);color:#fff;box-shadow:none}
+.bonuslab{margin:-4px 0 0;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.35}
+
+/* ============ Départ de l'ouverture ============ */
+/* Le paquet plonge vers la caméra, le théâtre prend le relais avec la déchirure. */
+.pack.tear{animation:packdive .34s cubic-bezier(.5,0,.9,.4) forwards}
+@keyframes packdive{to{scale:1.35;opacity:0;filter:brightness(1.6) blur(3px)}}
+.pack.tear::after{animation:none;opacity:0}
+
+/* ============ Déchirure (le paquet vit dans la même scène que la pile) ============ */
+/* Posé par-dessus la pile : tant qu'il est là, les cartes sont « dedans ». */
+.packrip{position:absolute;left:50%;top:50%;z-index:5;width:113%;aspect-ratio:337/460;translate:-50% -50%;
+  transform-style:preserve-3d;pointer-events:none;filter:drop-shadow(0 26px 38px rgba(0,0,0,.75))}
+.rp-body{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+/* Bord déchiré : la même ligne en dents de scie sur les deux moitiés du paquet. */
+.rip-open .rp-body{clip-path:polygon(0.0% 9.6%, 2.9% 11.9%, 5.9% 9.6%, 8.8% 11.9%, 11.8% 9.6%, 14.7% 11.9%, 17.6% 9.6%, 20.6% 11.9%, 23.5% 9.6%, 26.5% 11.9%, 29.4% 9.6%, 32.4% 11.9%, 35.3% 9.6%, 38.2% 11.9%, 41.2% 9.6%, 44.1% 11.9%, 47.1% 9.6%, 50.0% 11.9%, 52.9% 9.6%, 55.9% 11.9%, 58.8% 9.6%, 61.8% 11.9%, 64.7% 9.6%, 67.6% 11.9%, 70.6% 9.6%, 73.5% 11.9%, 76.5% 9.6%, 79.4% 11.9%, 82.4% 9.6%, 85.3% 11.9%, 88.2% 9.6%, 91.2% 11.9%, 94.1% 9.6%, 97.1% 11.9%, 100.0% 9.6%, 100% 100%, 0% 100%)}
+.rp-top{position:absolute;inset:0;clip-path:polygon(0% 0%, 100% 0%, 100.0% 9.6%, 97.1% 11.9%, 94.1% 9.6%, 91.2% 11.9%, 88.2% 9.6%, 85.3% 11.9%, 82.4% 9.6%, 79.4% 11.9%, 76.5% 9.6%, 73.5% 11.9%, 70.6% 9.6%, 67.6% 11.9%, 64.7% 9.6%, 61.8% 11.9%, 58.8% 9.6%, 55.9% 11.9%, 52.9% 9.6%, 50.0% 11.9%, 47.1% 9.6%, 44.1% 11.9%, 41.2% 9.6%, 38.2% 11.9%, 35.3% 9.6%, 32.4% 11.9%, 29.4% 9.6%, 26.5% 11.9%, 23.5% 9.6%, 20.6% 11.9%, 17.6% 9.6%, 14.7% 11.9%, 11.8% 9.6%, 8.8% 11.9%, 5.9% 9.6%, 2.9% 11.9%, 0.0% 9.6%);transform-origin:50% 11%;transform-style:preserve-3d}
+.rp-top img{display:block;width:100%;height:100%;object-fit:contain}
+/* La bande s'assombrit en basculant vers l'arrière : c'est ce qui donne le volume. */
+.rp-top::after{content:'';position:absolute;inset:0;opacity:0;background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,0) 72%)}
+/* `--rk` (version 3.0.11) : le rythme de la déchirure, posé sur la scène par
+   packOpen (js/opening.js) — 1 pour un godpack, plus vif sinon, plus vif
+   encore pour un booster enchaîné depuis le récap. */
+.rip-open .rp-top{animation:riptop calc(1.05s * var(--rk,1)) cubic-bezier(.24,.72,.3,1) forwards}
+.rip-open .rp-top::after{animation:ripshade calc(1.05s * var(--rk,1)) ease-out forwards}
+@keyframes riptop{
+  20%{transform:translateY(-3%) rotateX(58deg)}
+  58%{transform:translate(9%,-42%) rotateX(112deg) rotateZ(9deg);opacity:1}
+  100%{transform:translate(28%,-126%) rotateX(168deg) rotateZ(25deg);opacity:0}}
+@keyframes ripshade{35%{opacity:.95}100%{opacity:1}}
+
+.rp-line{position:absolute;left:3%;right:3%;top:10.5%;height:3px;border-radius:3px;background:#fff;transform-origin:left center;scale:0 1;
+  box-shadow:0 0 12px #fff,0 0 26px var(--accent)}
+.rip-cut .rp-line{animation:ripcut calc(.32s * var(--rk,1)) ease-out forwards}
+.god .rp-line{box-shadow:0 0 12px #fff,0 0 30px var(--r-l)}
+@keyframes ripcut{0%{scale:0 1;opacity:1}70%{scale:1 1;opacity:1}100%{scale:1 1;opacity:0}}
+
+.rip-shake .packrip{animation:ripshake calc(.38s * var(--rk,1)) ease-in-out}
+@keyframes ripshake{
+  15%{transform:rotateZ(-1.6deg) rotateY(-6deg)}
+  40%{transform:rotateZ(1.6deg) rotateY(6deg)}
+  65%{transform:rotateZ(-1.1deg) rotateY(-3deg)}
+  85%{transform:rotateZ(.7deg) rotateY(2deg)}}
+
+/* ---- Godpack : la lumière monte dans le paquet avant même la déchirure ---- */
+/* La couture s'allume peu à peu et le paquet tremble de plus en plus : on sent que ça va lâcher. */
+.god .rp-leak{position:absolute;left:6%;right:6%;top:10.4%;height:4px;border-radius:99px;opacity:0;
+  background:linear-gradient(90deg,transparent,#fff 26%,#fff 74%,transparent);
+  box-shadow:0 0 10px #fff,0 0 30px #ffe08a,0 0 80px rgba(255,199,59,.95),0 0 150px rgba(255,150,0,.55)}
+/* Le paquet s'assombrit pendant que la couture s'allume : la seule lumière vient de l'intérieur. */
+.rip-wake .rp-body,.rip-wake .rp-top img{animation:goddim 1.5s ease-in forwards}
+@keyframes goddim{to{filter:brightness(.52) saturate(.65)}}
+.rip-cut .rp-body,.rip-cut .rp-top img{animation:godlight .6s ease-out forwards}
+@keyframes godlight{0%{filter:brightness(.52) saturate(.65)}45%{filter:brightness(1.7) saturate(1.1)}100%{filter:none}}
+.rip-wake .rp-leak{animation:leakwake 1.5s cubic-bezier(.4,0,.55,1) forwards}
+@keyframes leakwake{0%{opacity:0;scale:.15 1}55%{opacity:.7;scale:.82 1}100%{opacity:1;scale:1 1.7}}
+.rip-cut .rp-leak{animation:leakflash .55s ease-out forwards}
+@keyframes leakflash{0%{opacity:1;scale:1 1.7}40%{opacity:1;scale:1 5}100%{opacity:0;scale:1 9}}
+.rip-wake .packrip{animation:godtremble 1.5s cubic-bezier(.4,0,.6,1)}
+@keyframes godtremble{
+  0%{transform:none}
+  30%{transform:rotateZ(-.4deg) rotateY(-2deg)}
+  50%{transform:rotateZ(.7deg) rotateY(3deg)}
+  68%{transform:rotateZ(-1deg) rotateY(-4deg)}
+  82%{transform:rotateZ(1.4deg) rotateY(5deg)}
+  92%{transform:rotateZ(-1.9deg) rotateY(-6deg)}
+  100%{transform:rotateZ(1.2deg) rotateY(4deg)}}
+/* Faisceau qui s'échappe de la fente : un cône flou qui s'évase vers le haut et se dissout.
+   La découpe en trapèze + le flou + le masque radial lui donnent du volume ; sans ça c'est un bloc blanc. */
+.god .rp-beam{position:absolute;left:50%;bottom:89.4%;width:200%;height:155%;translate:-50% 0;transform-origin:50% 100%;
+  opacity:0;pointer-events:none;filter:blur(20px);
+  clip-path:polygon(47.5% 100%,52.5% 100%,90% 0,10% 0);
+  background:linear-gradient(180deg,rgba(255,206,96,0),rgba(255,224,150,.5) 50%,rgba(255,246,214,.98));
+  -webkit-mask:radial-gradient(78% 100% at 50% 100%,#000 3%,rgba(0,0,0,.5) 44%,transparent 90%);
+  mask:radial-gradient(78% 100% at 50% 100%,#000 3%,rgba(0,0,0,.5) 44%,transparent 90%)}
+.rip-open .rp-beam{animation:beamup 1.9s cubic-bezier(.14,.78,.3,1) forwards}
+@keyframes beamup{
+  0%{opacity:0;transform:scale(.3,.06)}
+  14%{opacity:1;transform:scale(1,1)}
+  46%{opacity:.8;transform:scale(1.06,1.08)}
+  100%{opacity:0;transform:scale(1.4,1.28)}}
+
+/* On tire les cartes vers soi : le paquet vide bascule et descend hors champ. */
+.rip-pull .packrip{animation:packaway calc(1.05s * var(--rk,1)) cubic-bezier(.32,.76,.36,1) forwards}
+@keyframes packaway{
+  28%{transform:translateY(9%) rotateX(9deg) rotateZ(-2deg)}
+  100%{transform:translateY(128%) rotateX(32deg) rotateZ(-9deg);opacity:0}}
+
+/* ---- Téléphone : le paquet a le droit d'être un peu plus large ---- */
+@media (max-width:560px){
+  .packzone{gap:0}
+  /* 72vw plutôt que 66 : sur un téléphone haut, le plafond de largeur était
+     atteint bien avant celui de hauteur, et le paquet flottait au milieu d'un
+     grand vide. */
+  .pack{max-height:calc(min(72vw,360px) * 460 / 337)}
+  .packfoot{padding-top:10px;gap:11px}
+}
+
+/* Téléphone court — le SE, les vieux Android. Le paquet a déjà rétréci tout
+   seul ; on lui rend quelques pixels en serrant ce qui l'entoure. */
+@media (max-width:560px) and (max-height:700px){
+  .setlogo{width:min(190px,46vw)}
+  .setmeta{margin-top:5px;font-size:11px}
+  .edition{width:clamp(32px,9vw,42px)}
+  .packshadow{margin-top:8px;height:12px}
+  .packfoot{padding-top:8px;gap:9px}
+  .reserve{gap:7px}
+}
+
+/* ============ Bandeau d'événement ============ */
+/* Au-dessus du logo de l'extension, dans la colonne du paquet : il prend sa
+   hauteur au paquet, qui se redimensionne tout seul (voir .packzone). */
+.evban{position:relative;display:flex;align-items:center;gap:12px;width:100%;max-width:520px;flex:0 0 auto;margin:0 0 8px;
+  padding:11px 12px 11px 14px;border:1px solid var(--line-2);border-top-color:var(--line-3);border-radius:var(--radius-lg);
+  text-align:left;color:#fff;overflow:hidden;cursor:pointer;
+  background:radial-gradient(120% 170% at 100% 40%,rgba(140,120,255,.55) 0%,rgba(44,22,92,.6) 55%,rgba(16,10,40,.7) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 26px -10px var(--violet-glow);transition:transform .18s var(--spring)}
+.evban:active{transform:scale(.98)}
+.evban::before{content:"";position:absolute;inset:0;pointer-events:none;translate:-100% 0;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.1) 45%,transparent 60%);
+  animation:evbreflet 6s ease-in-out infinite}
+@keyframes evbreflet{0%,55%{translate:-100% 0}100%{translate:100% 0}}
+.evbtxt{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.evbhaut{display:flex;align-items:center;gap:8px;margin-bottom:3px;font-size:11.5px;color:rgba(255,255,255,.72)}
+.evbtag{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;background:var(--gold);color:var(--gold-ink)}
+.evban.encours .evbtag{background:var(--ok);color:#03281b}
+.evban.chasse .evbtag{background:var(--deco-ink);color:#1d0a40}
+.evbtemps b{color:#fff;font-weight:800;font-variant-numeric:tabular-nums}
+.evbtitre{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
+.evbsous{font-size:12.5px;line-height:1.35;color:rgba(255,255,255,.82)}
+.evbchasse{display:flex;align-items:flex-start;gap:7px;margin-top:6px;padding-top:7px;
+  border-top:1px solid rgba(255,255,255,.12);font-size:12px;font-weight:700;line-height:1.35;color:#ffd9f6}
+.evbchasse svg{flex:0 0 auto;width:15px;height:11px;margin-top:2px;color:#ec8fff}
+.evbcarte{position:relative;flex:0 0 56px;rotate:6deg;border-radius:4px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 22px rgba(236,143,255,.55)}
+.evbcarte img{display:block;width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.evban::before{animation:none;display:none}}
+
