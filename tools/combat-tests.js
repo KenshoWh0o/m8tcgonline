@@ -295,6 +295,22 @@ test('Résilience : « Jouez cette carte » joue l\'effet au lieu de la garder',
   if (d && d.type === 'choix' && d.but === 'desengagerAllie') repondre(E, L(E, 1, 0).u);
   egal(E.j[1].defausse.slice(-1)[0].id, 'c104');
 });
+test('Résilience : un deuxième Coach joué par « Jouez cette carte » le même tour ne se joue pas (un Coach par tour)', () => {
+  const E = situation({ lignes: [['c078', 'c078'], ['c010']], ess: [['rose', 'rose'], ['mauve']] });
+  /* Deux Lofi Girl (Coach Neutre, « Résilience : Jouez cette carte ») en tête des PV de 1. */
+  E.j[1].pv[0] = { u: ++E.seq, id: 'c104', j: 1 };
+  E.j[1].pv[1] = { u: ++E.seq, id: 'c104', j: 1 };
+  L(E, 1, 0).eng = true;
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
+  egal(Combat.demande(E).but, 'resilience', 'la première se joue');
+  repondre(E, 'oui');
+  let d = Combat.demande(E);
+  if (d && d.type === 'choix' && d.but === 'desengagerAllie') repondre(E, L(E, 1, 0).u);
+  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 1).u, k: 0, cible: 'ceo' });
+  d = Combat.demande(E);
+  vrai(!d || d.but !== 'resilience', 'la seconde ne se propose pas');
+  vrai(E.j[1].main.some(c => c.id === 'c104'), 'la seconde revient en main');
+});
 test('bench : la carte va à la défausse (« une carte déployée est envoyée à la défausse »)', () => {
   const E = situation({ lignes: [['c078'], ['c057']], ess: [['rose']], main: [['c092'], []] });
   L(E, 1, 0).obj.push({ u: ++E.seq, id: 'c087', j: 1 });

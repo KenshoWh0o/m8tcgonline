@@ -386,49 +386,80 @@ précédentes, que les règles officielles ne changent pas) :
   « la première attaque » est toujours à venir ; une Riposte pendant le tour
   adverse n'est pas une attaque « que vous déclenchez ce tour ».
 
-## 11. Ce que les règles officielles ne tranchent pas — la liste
+## 11. Ce que les règles officielles ne tranchent pas — tranché
 
-Sans prétendre à l'exhaustivité (d'autres trous peuvent se révéler à
-l'usage). Pour chaque point : la lecture retenue, puis l'autre.
+**Tranché le 2 novembre 2026 par la session**, à la demande du propriétaire
+(« pour la liste des règles non résolues, je te laisse trancher car je n'en
+saurai pas plus que toi »). Un seul point change le moteur : le 5. Les
+autres confirment la lecture qu'il appliquait déjà. La règle suivie : le
+texte au plus près, et un même mot lu de la même façon partout (« jouer »
+une carte, c'est la jouer, par l'action comme par un effet). D'autres trous
+peuvent se révéler à l'usage : la liste n'est pas exhaustive.
 
-1. **Provocation** : la cible imposée n'est pas engagée et on compare à sa
-   Défense ; un Joueur avec Garde peut défendre à sa place. — Autre : la
-   Provocation obligerait seulement à la déclarer comme défenseur.
-2. **Une attaque sans valeur** se déclare sur le CEO, se défend et touche. —
-   Autre : elle ne fait que son effet.
-3. **Le soutien** : un seul, désengagé, seule sa valeur s'ajoute (pas son
-   effet), ce n'est pas une attaque. — Autre : son effet imprimé se jouerait
-   aussi, ou il compterait comme une attaque.
-4. **La Riposte** : seule sa valeur compte, elle ne se défend pas. — Autre :
-   son effet imprimé se jouerait.
-5. **Un Coach joué par Résilience** ne compte pas dans la limite. — Autre :
-   il compte.
-6. **« Jouez cette carte » respecte la restriction par couleur.** — Autre :
-   une Résilience passe outre.
-7. **Le mélange des piles** (§ 9) : chercher mélange, regarder garde l'ordre,
-   un texte qui place les cartes l'emporte, un échange de PV garde l'ordre.
-   — Autre : tout ce qui touche une pile la mélange, même un placement
-   imprimé.
+1. **Provocation** : l'attaquant qui fait face au Joueur qui a Provocation
+   doit le cibler ; on compare à sa Défense, il n'est pas engagé (il n'est
+   pas déclaré défenseur) ; un Joueur qui a Garde peut défendre à sa place.
+   *Pourquoi* : le texte contraint l'attaquant (« L'attaquant face à ce
+   Joueur doit le cibler »), pas le défenseur, et Garde « peut défendre
+   n'importe quelle attaque ».
+2. **Une attaque sans valeur** est une attaque comme une autre : elle se
+   déclare sur le CEO, se défend (elle ne peut vaincre personne) et touche.
+   *Pourquoi* : « Attaques : permettent au Joueur de cibler le CEO adverse
+   afin de le toucher », sans exception.
+3. **Le soutien** : un seul Joueur, adjacent, désengagé, qui paie les
+   Essences de son attaque ; seule sa valeur s'ajoute, ce n'est pas une
+   attaque. *Pourquoi* : « un de ses Joueur adjacents », « on ajoute la
+   valeur d'attaque du soutien à la valeur du Joueur attaquant ».
+4. **La Riposte** : seule sa valeur compte, elle ne se défend pas, un Shield
+   l'ignore. *Pourquoi* : elle « cibl[e] le Joueur attaquant », pas le CEO,
+   donc personne ne la défend ; et le Joueur qui riposte est déjà vaincu :
+   l'effet imprimé de son attaque, qui parle de lui, n'a plus de source.
+5. **Un Coach joué par Résilience (« Jouez cette carte ») compte dans la
+   limite d'un Coach par tour** — **changé** : il n'y comptait pas. *Pourquoi* :
+   « Vous ne pouvez jouer qu'une seule carte Coach par tour », et « Jouez
+   cette carte » est un « jouer », le même qui fait respecter la restriction
+   par couleur (point 6). En pratique : touché deux fois dans le même tour
+   adverse, un CEO ne joue qu'un des deux Coachs ; l'autre revient en main.
+   Seule *Lofi Girl* (c104) est concernée aujourd'hui (`coachsHors`,
+   `js/combat/effets.js` ; test « un deuxième Coach joué par « Jouez cette
+   carte » le même tour ne se joue pas »).
+6. **« Jouez cette carte » respecte la restriction par couleur.** *Pourquoi* :
+   les cartes de couleur « ne peuvent être jouées que si vous avez une
+   Essence de la couleur correspondante déployée ».
+7. **Le mélange des piles** (§ 9) : chercher mélange, regarder ou révéler
+   garde l'ordre, un texte qui place une carte (sur le dessus, sous la pile,
+   à la place d'un PV) l'emporte. *Pourquoi* : c'est le Nota Bene (« Chaque
+   fois qu'une pile est touchée par un effet de jeu, vous devez la
+   mélanger », sauf regarder ou révéler) ; mélanger après un placement
+   imprimé annulerait le texte de la carte, qui prime.
 8. **« Le perdant commencera la partie suivante »** — **tranché par le
    propriétaire le 31 octobre** : chaque partie se tire à pile ou face (il
    n'y a pas de match en plusieurs parties).
-9. **Le remplacement** : le nouveau Joueur prend la case du Joueur bench. —
-   Pas d'autre lecture sensée (c'est la seule case disponible).
-10. **Une Essence jouée de la Réserve entre désengagée.**
-11. **Le mulligan** : les deux CEO décident l'un après l'autre.
-12. **Piocher plus que le Club n'en a** fait perdre aussitôt.
-13. **La liste des Starter Decks** : inconnue (le propriétaire la fournira).
-    Le texte de P03, P04 et des Secrètes 124, 126 et 127 est connu depuis la
-    3.0.13 (photos du propriétaire, 1er novembre 2026).
-14. **GP Explorer II** (§ 10) : celui qui la joue choisit d'abord ; « jouer un
-    Joueur » couvre aussi un effet qui dit « jouez ». — Autre : les deux CEO
-    choisiraient en même temps, sans voir le choix de l'autre ; ou seule
-    l'action de la phase d'action serait interdite.
-15. **Paris Gentle Mates** (§ 10) : les Essences engagées partent d'abord, et
-    seule la valeur de l'attaque double. — Autre : le joueur choisirait ses
-    deux Essences ; le soutien doublerait aussi.
-16. **« Sermont »**, l'attaque de Brawks Trop Déter (Secrète 124) : écrit tel
-    qu'imprimé sur la photo ; peut-être une coquille de « Serment ».
+9. **Le remplacement** : le nouveau Joueur prend la case du Joueur bench
+   (c'est la seule case disponible).
+10. **Une Essence jouée de la Réserve entre désengagée.** *Pourquoi* :
+    l'entretien désengage d'abord, puis joue la Réserve ; rien ne l'engage.
+11. **Le mulligan** : les deux CEO décident l'un après l'autre, et la
+    décision de l'autre se voit. *Pourquoi* : l'ordre n'est pas écrit, et à
+    une vraie table on voit son adversaire remélanger sa main dans son Club.
+12. **Piocher plus que le Club n'en a** fait perdre aussitôt. *Pourquoi* :
+    c'est la condition de victoire (« votre adversaire doit piocher dans son
+    Club mais est dans l'impossibilité de le faire »).
+13. **La liste des Starter Decks** : ce n'est pas une règle à trancher ; le
+    propriétaire la fournira (31 octobre). Le texte de P03, P04 et des
+    Secrètes 124, 126 et 127 est connu depuis la 3.0.13.
+14. **GP Explorer II** (§ 10) : celui qui la joue choisit d'abord, puis
+    l'adversaire ; « jouer un Joueur » couvre aussi un effet qui dit
+    « jouez ». *Pourquoi* : le CEO dont c'est le tour d'abord, comme pour les
+    effets simultanés ; et « jouer » se lit partout de la même façon (points
+    5 et 6).
+15. **Paris Gentle Mates** (§ 10) : les Essences engagées partent d'abord (les
+    garder ne sert à rien ce tour-ci), et seule la valeur de l'attaque double,
+    pas le soutien. *Pourquoi* : « doubler la valeur de la première attaque » ;
+    le soutien est déclaré après, à part, et s'ajoute à cette valeur.
+16. **« Sermont »**, l'attaque de Brawks Trop Déter (Secrète 124) : le nom
+    reste tel qu'imprimé, sans effet sur le jeu ; une coquille de
+    « Serment » est possible, un scan le dira.
 
 ## 12. Ce qui a changé depuis les règles reconstituées (3.0 à 3.0.11)
 

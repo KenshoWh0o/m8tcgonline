@@ -1,4 +1,4 @@
-// Généré par tools/build-verif.py (empreinte 06a2a808b215) : ne pas modifier à la main.
+// Généré par tools/build-verif.py (empreinte f50b63681848) : ne pas modifier à la main.
 // Le code du jeu, tel que le navigateur le charge, pour rejouer un combat sur le serveur.
 /* eslint-disable */
 // @ts-nocheck
@@ -2213,6 +2213,10 @@ function joueurVide(o, i) {
 
 const compteursVides = () => ({
   attaques: 0, pvRecup: [0, 0], deploie: 0, coachs: 0, remplace: 0,
+  /* Les Coachs joués ce tour-ci par le CEO qui n'est pas actif (« Jouez
+     cette carte », par Résilience) : la limite d'un Coach par tour vaut
+     pour lui aussi (docs/regles-3.0.md, § 11, point 5). */
+  coachsHors: 0,
   combatFini: false, doitAttaquer: 0
 });
 
@@ -3543,13 +3547,19 @@ function* echangerPV(x) {
 }
 
 /* « Jouez cette carte » : la Résilience la plus courante. Un Instant joue son
-   effet ; un Objet se lie à un de vos Joueurs. Jouer une carte, c'est
-   respecter la restriction par couleur (une Essence de sa couleur déployée,
-   Combat.couleurOk). Le texte officiel ne dit pas si un Coach joué ainsi,
-   hors de son tour, compte dans la limite d'un Coach par tour : il n'y
-   compte pas (docs/regles-3.0.md, « Ce que les règles ne tranchent pas »). */
+   effet ; un Objet se lie à un de vos Joueurs. Jouer une carte, c'est jouer
+   la carte : la restriction par couleur (une Essence de sa couleur déployée,
+   Combat.couleurOk) et la limite d'un Coach par tour s'appliquent, comme
+   pendant sa propre phase d'action (« Vous ne pouvez jouer qu'une seule
+   carte Coach par tour »). Tranché le 2 novembre 2026 (docs/regles-3.0.md,
+   § 11, point 5) : le même « jouer » que la restriction par couleur. */
+const coachsCeTour = x => x.j === x.E.actif ? x.E.cpt.coachs : x.E.cpt.coachsHors;
 function* jouerCetteCarte(x) {
   if (!O.couleurOk(x.E, x.j, x.c)) return;
+  if (O.estCat(x.c, 'coach')) {
+    if (coachsCeTour(x) >= R.COACHS) return;
+    if (x.j === x.E.actif) x.E.cpt.coachs++; else x.E.cpt.coachsHors++;
+  }
   if (estObjet(x.c)) {
     const t = yield* choisirAllie(x, 'Lier à quel Joueur ?', null, 'lierAllie');
     if (t) yield* O.lier(x.E, x.j, x.c, t);
@@ -3560,6 +3570,7 @@ function* jouerCetteCarte(x) {
 }
 function peutJouerCetteCarte(x) {
   if (!O.couleurOk(x.E, x.j, x.c)) return false;
+  if (O.estCat(x.c, 'coach') && coachsCeTour(x) >= R.COACHS) return false;
   if (estObjet(x.c)) return joueurs(x).length > 0;
   const s = O.scr(x.c.id);
   return !!s.effet && (!s.jouable || s.jouable(x));
@@ -6673,5 +6684,5 @@ const Verif = (() => {
 // ---- le catalogue des cartes, comme au démarrage de la page
 var __cartes = buildCards();
 Combat.catalogue(__cartes.concat(buildPromos(), buildReverses(__cartes), buildUniques(), buildSecretes()));
-export const EMPREINTE = '06a2a808b215';
+export const EMPREINTE = 'f50b63681848';
 export const Jeu = { Verif, Combat: globalThis.Combat, IA: globalThis.IA, Decks: globalThis.Decks };

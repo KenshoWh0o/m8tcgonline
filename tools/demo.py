@@ -17,7 +17,9 @@ au vrai serveur.
     les fenetres deja vues ou la session du vrai site, qui partage l'adresse ;
   - pas de service worker : celui du vrai site couvre deja l'adresse, et deux
     service workers sur la meme origine se videraient leurs caches ;
-  - un bandeau « PRE-PROD », pas d'indexation, et le Labo ouvert.
+  - un bandeau « PRE-PROD », pas d'indexation, et le Labo ouvert ;
+  - une porte a code (_demo/acces.js), depuis le 2 novembre 2026 : le
+    proprietaire ne veut rien de jouable sans code.
 
     python3 tools/demo.py --demo
 
@@ -25,8 +27,8 @@ Produit la demo presentee a Gentle Mates dans demo/, reportee sur main a
 matetcg.com/demo/ (version 3.0.14, a la demande du proprietaire). Comme la
 pre-prod (stockage a part, prefixe « demo: », pas de service worker, pas
 d'indexation, le Labo ouvert), avec en plus :
-  - une porte a code (_demo/acces.js) : le jeu ne demarre qu'une fois le bon
-    code entre ; la page n'en connait que l'empreinte ;
+  - une porte a code, comme la pre-prod, mais avec un autre code (PORTES) :
+    celui de la demo n'ouvre pas la pre-prod ;
   - window.DEMO_M8 = true, que lit js/config.js (DEMO) : ni numero de
     version, ni nouveautes, ni traces des evenements passes, une
     presentation a la premiere visite, le Labo en console de test ;
@@ -44,6 +46,15 @@ DEMO_M8 = '--demo' in sys.argv
 if PREPROD == DEMO_M8:
     raise SystemExit('Usage : python3 tools/demo.py --preprod (preprod/) ou --demo (demo/).')
 OUT = os.path.join(ROOT, 'preprod' if PREPROD else 'demo')
+
+# Les portes a code (_demo/acces.js). Seules les empreintes sont ici : SHA-256
+# du code en capitales, sans espace ni tiret. Les codes ne sont ecrits nulle
+# part dans le depot ; le proprietaire les a. Changer un code : en poser
+# l'empreinte ici (printf '%s' 'CODE' | sha256sum), puis reconstruire.
+PORTES = {
+    'demo': ('8fc52f5a20989490a20f9c149083bf8ca3365b4a680150f3c531241ce62d8e47', 'Démo privée'),
+    'preprod': ('a54d9626d326e4e86a52a6081a395508875fe80dbf50ba79b1eb93ad071b0f36', 'Pré-prod'),
+}
 
 # Ce qui part dans la demo. Tout le reste (serveur SQL, outils, kit presse,
 # page de diagnostic, adresse du site) n'a rien a y faire.
@@ -167,12 +178,11 @@ if PREPROD or DEMO_M8:
                      lambda m: '<title>Mate TCG Online · Démo</title>' if DEMO_M8 else f'<title>PRÉ-PROD {v} · Mate TCG Online</title>',
                      'le titre de la page')
     page = remplacer(page, r'<link rel="canonical"[^>]*>\n', lambda m: '', "l'adresse canonique d'index.html")
-    if DEMO_M8:
-        # La porte a code, chargee juste avant js/app.js, qui l'attend.
-        page = remplacer(page, r'<script src="js/app\.js',
-                         lambda m: f'<script src="js/demo-acces.js?v={marque}"></script>\n' + m.group(0),
-                         "la balise de js/app.js dans index.html")
-    else:
+    # La porte a code, chargee juste avant js/app.js, qui l'attend.
+    page = remplacer(page, r'<script src="js/app\.js',
+                     lambda m: f'<script src="js/demo-acces.js?v={marque}"></script>\n' + m.group(0),
+                     "la balise de js/app.js dans index.html")
+    if not DEMO_M8:
         page = remplacer(page, r'<body([^>]*)>',
                          lambda m: m.group(0) + "\n<div class=\"preprod-bandeau\">Pré-prod · démo, rien n'est réel</div>",
                          "la balise <body> d'index.html")
@@ -183,11 +193,14 @@ if PREPROD or DEMO_M8:
         page = page.replace('?v=' + marque, '?v=' + neutre)
         v = neutre
     ecrire('index.html', page)
-    if DEMO_M8:
-        shutil.copy2(os.path.join(SRC, 'acces.js'), os.path.join(OUT, 'js', 'demo-acces.js'))
-        ecrire('js/app.js', remplacer(lire('js/app.js'), r'\(async \(\) => \{\n  cards = buildCards\(\);',
-            lambda m: '(async () => {\n  if (window.demoAcces) await window.demoAcces(); /* demo : la porte a code (tools/demo.py) */\n  cards = buildCards();',
-            'le demarrage du jeu dans js/app.js'))
+    empreinte, etiquette = PORTES[prefixe]
+    porte = open(os.path.join(SRC, 'acces.js'), encoding='utf-8').read()
+    porte = remplacer(porte, r"'__EMPREINTE__'", lambda m: repr(empreinte), "l'empreinte dans _demo/acces.js")
+    porte = remplacer(porte, r"'__ETIQUETTE__'", lambda m: repr(etiquette), "l'etiquette dans _demo/acces.js")
+    ecrire('js/demo-acces.js', porte)
+    ecrire('js/app.js', remplacer(lire('js/app.js'), r'\(async \(\) => \{\n  cards = buildCards\(\);',
+        lambda m: '(async () => {\n  if (window.demoAcces) await window.demoAcces(); /* la porte a code (tools/demo.py) */\n  cards = buildCards();',
+        'le demarrage du jeu dans js/app.js'))
     # Une base IndexedDB a part.
     ecrire('js/storage.js', remplacer(lire('js/storage.js'), r"indexedDB\.open\('premier-lobby'",
                                       lambda m: f"indexedDB.open('premier-lobby-{prefixe}'", 'la base IndexedDB de js/storage.js'))
