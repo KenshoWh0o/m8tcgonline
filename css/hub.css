@@ -273,35 +273,52 @@
 .qperiode.fini{background:linear-gradient(135deg,var(--ok-wash),var(--surface) 64%);border-color:var(--ok-line)}
 .qperiode.fini .qpico{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
 
-/* ============ Aujourd'hui (3.0.13), en tête des Quêtes ============ */
-/* Les rendez-vous du jour : une rangée qui défile au doigt, une grille sur
-   ordinateur. Ce qui reste à faire porte la lavande de l'action ; ce qui
-   est fait se coche en vert et s'efface d'un ton. */
-.auj{margin:0 0 var(--gap-3)}
-.auj-tete{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 2px 8px}
-.auj-tete h2{margin:0;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;font-size:17px;letter-spacing:-.02em}
-.auj-tete small{font-size:12.5px;color:var(--muted)}
-.auj-l{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
-  scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;scroll-padding-inline:16px}
-.auj-l::-webkit-scrollbar{display:none}
-.auj-c{flex:0 0 auto;display:flex;align-items:center;gap:10px;min-width:0;max-width:220px;padding:10px 14px 10px 10px;
-  border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);text-align:left;scroll-snap-align:start;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
-.auj-c:active{transform:scale(.97);transition:transform .18s var(--spring)}
-.auj-ico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border-radius:var(--radius-sm);
-  background:var(--accent-wash-2);color:var(--accent-soft)}
-.auj-ico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.auj-tx{min-width:0}
-.auj-tx b{display:block;font-size:14px;font-weight:800;line-height:1.2;white-space:nowrap}
-.auj-tx small{display:block;font-size:12px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.auj-c.fait{background:transparent;border-color:var(--line)}
-.auj-c.fait .auj-ico{background:var(--ok-wash);color:var(--ok)}
-.auj-c.fait .auj-tx b{color:var(--subtle)}
-.auj-c.fait .auj-tx small{color:var(--muted)}
-@media (min-width:900px){
-  .auj-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));overflow:visible;margin:0;padding:0}
-  .auj-c{max-width:none}
-}
+/* ============ « Ta journée » (3.0.13, refaite en 3.0.14), en tête des Quêtes ============ */
+/* Une carte : l'anneau des rendez-vous (un segment chacun), ce qui reste et
+   ce qu'il y a à gagner, la série ; puis les rendez-vous en tuiles, tous à
+   l'écran. Le prochain porte la lavande de l'action ; ce qui est fait se
+   coche et passe en retrait. Tout fait : une ligne verte. */
+.auj{position:relative;margin:0 0 var(--gap-3);padding:12px;border-radius:var(--radius-xl);
+  background:radial-gradient(120% 90% at 0% 0%,rgba(138,120,245,.2),transparent 60%),var(--surface);
+  box-shadow:inset 0 0 0 1px rgba(179,166,255,.22),var(--tuile)}
+.auj-tete{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.auj-anneau{position:relative;display:grid;place-items:center;width:56px;height:56px;flex:none}
+.auj-anneau svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);fill:none;stroke-width:5;stroke-linecap:butt}
+.auj-anneau circle{stroke:rgba(255,255,255,.1)}
+.auj-anneau circle.on{stroke:var(--accent-soft);filter:drop-shadow(0 0 3px rgba(179,166,255,.5))}
+.auj-anneau b{font-family:var(--display);font-style:italic;font-weight:900;font-size:18px;line-height:1}
+.auj-anneau b small{font-size:11px;font-style:normal;color:var(--muted)}
+.auj-t{flex:1;min-width:0}
+.auj-t h2{margin:0;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;font-size:19px;letter-spacing:-.02em}
+.auj-t p{margin:2px 0 0;font-size:13px;line-height:1.4;color:var(--subtle)}
+.auj-t p b{color:var(--text)}
+.auj-t small{display:block;margin-top:2px;font-size:11.5px;color:var(--muted)}
+.auj-gain{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.auj-gain .shard{width:13px;height:13px;color:var(--accent-soft)}
+/* La série : la flamme, en ambre (le seul endroit : c'est elle). */
+.auj-serie{align-self:flex-start;flex:none;display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;
+  color:#ffcf9a;background:rgba(255,160,80,.12);box-shadow:inset 0 0 0 1px rgba(255,160,80,.3)}
+.auj-serie svg{width:13px;height:13px;fill:#ff9f4a}
+.auj-l{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.auj-c{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:8px 4px 7px;border:0;border-radius:16px;font:inherit;color:var(--text);
+  text-align:center;cursor:pointer;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);transition:transform .18s var(--spring)}
+.auj-c:active{transform:scale(.96)}
+.auj-ico{position:relative;display:grid;place-items:center;width:32px;height:32px;margin-bottom:2px;border-radius:11px;color:var(--accent-soft);background:var(--accent-wash-2)}
+.auj-ico>svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.auj-ico i{position:absolute;right:-5px;bottom:-5px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--surface)}
+.auj-ico i svg{width:11px;height:11px;stroke:#0e2a20;fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.auj-c b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;line-height:1.15}
+.auj-c small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;line-height:1.2;color:var(--subtle)}
+.auj-c.fait{background:transparent}
+.auj-c.fait .auj-ico{color:var(--muted);background:rgba(255,255,255,.06)}
+.auj-c.fait b,.auj-c.fait small{color:var(--muted)}
+.auj-c.suivant{background:linear-gradient(180deg,rgba(157,140,255,.22),rgba(93,75,217,.12));box-shadow:inset 0 0 0 1.5px rgba(179,166,255,.6),0 6px 18px -8px var(--accent-glow)}
+.auj-c.suivant small{color:var(--text)}
+.auj.boucle{display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(110deg,var(--ok-wash),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.auj.boucle .auj-anneau{width:44px;height:44px}
+.auj.boucle .auj-anneau circle.on{stroke:var(--ok);filter:none}
+.auj.boucle .auj-t h2{font-size:16px}
+@media (min-width:900px){.auj-l{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}}
 .qperiode.fini .qpreste small{color:var(--ok)}
 .qpok{display:grid;place-items:center;width:26px;height:26px;margin:0 0 3px auto;border-radius:50%;
   background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
@@ -1529,3 +1546,72 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
 .segbar.clseg::-webkit-scrollbar{display:none}
 .segbar.clseg button{flex:0 0 auto;padding-inline:14px}
 @media (min-width:900px){.segbar.clseg button{flex:1 0 auto}}
+
+/* ============ Réglages (refaits en 3.0.14) ============ */
+/* Quatre sections : des onglets sur téléphone, une colonne sur ordinateur.
+   Chaque réglage est une ligne d'un groupe — son icône, ce qu'il fait, son
+   interrupteur (ou un chevron) — et toute la ligne se touche. */
+.rg{display:flex;flex-direction:column;gap:14px}
+.rg-nav{position:sticky;top:-8px;z-index:4;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:4px;border-radius:18px;
+  background:var(--glass-solid);box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-2)}
+.rg-nav button{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;min-height:52px;padding:6px 4px;border:0;border-radius:14px;
+  font:inherit;font-size:12px;font-weight:800;color:var(--muted);background:none;cursor:pointer}
+.rg-nav button span{display:grid;place-items:center}
+.rg-nav button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rg-nav button:hover:not(.on){color:var(--subtle);background:var(--hover)}
+.rg-nav button.on{color:var(--text);background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),var(--sh-1)}
+.rg-corps{display:flex;flex-direction:column;gap:16px;min-width:0}
+.rg-g h3{margin:0 4px 7px;font-family:var(--body);font-style:normal;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.rg-c{border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);overflow:hidden}
+.rg-l{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;border:0;border-top:1px solid var(--line);
+  font:inherit;color:var(--text);text-align:left;text-decoration:none;background:none;cursor:pointer}
+.rg-c>.rg-l:first-child,.rg-c>p:first-child+.rg-l{border-top:0}
+.rg-b:hover,label.rg-l:hover{background:var(--hover)}
+.rg-ico{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:10px;color:var(--accent-soft);background:var(--accent-wash)}
+.rg-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rg-ico svg[fill="currentColor"]{fill:currentColor;stroke:none}
+.rg-ico:empty{background:none}
+.rg-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rg-tx b{font-size:14.5px;font-weight:700}
+.rg-tx small{font-size:12.5px;line-height:1.35;color:var(--muted)}
+.rg-chev{display:grid;place-items:center;color:var(--muted)}
+.rg-chev svg{width:16px;height:16px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
+.rg-val{font-size:13.5px;font-weight:800;color:var(--subtle)}
+.rg-note{margin:7px 6px 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+/* L'interrupteur : une piste, un bouton rond ; vert quand il est mis. */
+.rg-sw{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:46px;height:28px;margin:0;border-radius:99px;cursor:pointer;
+  background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);transition:background .2s}
+.rg-sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .2s var(--spring)}
+.rg-sw:checked{background:var(--ok-deep)}
+.rg-sw:checked::after{transform:translateX(18px)}
+.rg-sw:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.rg-curseur{cursor:default}
+.rg-curseur .slider{flex:1;min-width:0;margin:0}
+.rg-curseur.off .rg-ico{opacity:.4}
+.rg-moi{display:flex;align-items:center;gap:12px;padding:14px}
+.rg-ok{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:var(--ok);vertical-align:1px}
+.rg-garder{padding:12px 14px}
+.rg-dit{margin:0 0 4px;font-size:13px;line-height:1.45;color:var(--subtle)}
+.rg-garder .garde-groupe{margin:12px 0 0;font-size:12.5px;font-weight:800;color:var(--subtle)}
+.rg-apropos .mentions{margin:10px 6px 0}
+@media (prefers-reduced-motion:reduce){.rg-sw,.rg-sw::after{transition:none}}
+html.rm .rg-sw,html.rm .rg-sw::after{transition:none}
+/* Sur ordinateur : la navigation à gauche, en colonne. */
+@media (min-width:900px){
+  .rg{display:grid;grid-template-columns:200px minmax(0,1fr);gap:22px;align-items:start}
+  .rg-nav{top:-8px;grid-template-columns:1fr;padding:6px}
+  .rg-nav button{flex-direction:row;justify-content:flex-start;gap:10px;min-height:44px;padding:8px 12px;font-size:14px}
+}
+/* Un écran bas (375 × 667) : les sections courtes tiennent sans défiler d'un
+   rien — des lignes et des titres plus serrés. */
+@media (max-height:700px) and (max-width:899px){
+  .rg{gap:10px}
+  .rg-corps{gap:12px}
+  .rg-nav button{min-height:46px;padding:4px}
+  .rg-l{min-height:50px;padding:7px 12px}
+  .rg-tx small{font-size:12px}
+  .rg-note{margin-top:5px;font-size:12px}
+  .rg-g h3{margin-bottom:5px}
+  .rg-moi{padding:10px 12px}
+  .rg-apropos .mentions{margin-top:6px;font-size:11px}
+}

@@ -216,8 +216,8 @@ function vQuetes() {
     ${vQuetesSection(qVue)}`;
 }
 
-/* ---------- Aujourd'hui (3.0.13) ---------- */
-/* Ce qu'il reste à faire aujourd'hui, en une rangée, en tête des Quêtes :
+/* ---------- Aujourd'hui (3.0.13, « Ta journée » en 3.0.14) ---------- */
+/* Ce qu'il reste à faire aujourd'hui, en tête des Quêtes :
    les rendez-vous qui ont un plafond par jour — les boosters de la réserve,
    Devine l'illu, l'Épreuve du Choc, les tentatives du Raid, les victoires
    payées en solo, les défis payés entre amis. Pas un onglet de plus (le
@@ -231,22 +231,26 @@ function chargerAujourdhui() {
   if (evenementEnCours() === 'choc' && !chEtat) chargerChoc();
 }
 
+/* « Ta journée » (refaite en 3.0.14 ; le propriétaire : « vraiment moche et
+   pas intuitif. Il doit être bien designé et doit pousser l'envie de faire
+   ses quotis, sans forcément être envahissant ») : une carte, pas une bande
+   qui défile — un anneau, un segment par rendez-vous, ce qui reste et ce
+   qu'il y a encore à gagner en quêtes du jour, la série de jours ; puis les
+   rendez-vous en tuiles, tous à l'écran, le prochain mis en avant. Tout
+   fait : une seule ligne, et l'heure où tout repart. */
+const ICO_FLAMME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c1.5 3.3 5.8 5.4 5.8 10.5a5.8 5.8 0 0 1-11.6 0c0-2.5 1.2-4.2 2.6-5.4.1 1.9.8 3 2 3.3-.5-2.9.1-5.6 1.2-8.4Z"/></svg>';
 function vAujourdhui() {
   if (Backend.mode !== 'cloud') return '';
   const l = [];
-  const ajoute = (fait, ico, titre, etat, lien) => l.push({ fait, html:
-    `<button class="auj-c${fait ? ' fait' : ''}" ${lien}>
-      <span class="auj-ico" aria-hidden="true">${NAVICO[fait ? 'check' : ico]}</span>
-      <span class="auj-tx"><b>${titre}</b><small>${etat}</small></span>
-    </button>` });
+  const ajoute = (fait, ico, titre, etat, lien) => l.push({ fait, ico, titre, etat, lien });
 
   const n = save.unlimited ? 1 : (save.tickets || 0) + (save.bonus || 0);
   ajoute(n <= 0, 'star', 'Boosters',
-    save.unlimited ? 'illimités' : n > 0 ? `${n} à ouvrir` : `le prochain dans ${timerClock()}`, 'data-tab="boosters"');
+    save.unlimited ? 'illimités' : n > 0 ? `${n} à ouvrir` : `dans ${timerClock()}`, 'data-tab="boosters"');
 
   if (typeof illuData !== 'undefined' && illuData) {
     ajoute(!!illuData.fini, 'illu', 'Devine l\'illu',
-      illuData.fini ? (illuData.trouve ? 'trouvée' : 'à demain') : 'l\'illustration du jour', 'data-tab="illu"');
+      illuData.fini ? (illuData.trouve ? 'trouvée' : 'à demain') : 'celle du jour', 'data-tab="illu"');
   }
 
   if (evenementEnCours() === 'choc' && typeof chEtat !== 'undefined' && chEtat && chEtat.epreuve) {
@@ -262,18 +266,43 @@ function vAujourdhui() {
     }
     const j = e.jour;
     ajoute(j.recompensees >= j.plafond, 'sword', 'Solo',
-      `${Math.min(j.recompensees, j.plafond)}/${j.plafond} victoires payées`, 'data-tab="combats" data-cbv="solo"');
+      `${Math.min(j.recompensees, j.plafond)}/${j.plafond} victoires`, 'data-tab="combats" data-cbv="solo"');
     ajoute(j.defis >= j.defis_plafond, 'amis', 'Versus',
-      `${Math.min(j.defis, j.defis_plafond)}/${j.defis_plafond} défis payés`, 'data-tab="combats" data-cbv="versus"');
+      `${Math.min(j.defis, j.defis_plafond)}/${j.defis_plafond} défis`, 'data-tab="combats" data-cbv="versus"');
   } else {
     ajoute(false, 'sword', 'Combats', 'choisis ta Section', 'data-tab="combats"');
   }
 
-  const reste = l.filter(x => !x.fait).length;
-  l.sort((a, b) => a.fait - b.fait);
+  const total = l.length, faits = l.filter(x => x.fait).length;
+  /* Ce que les quêtes du jour rapportent encore (prêtes comprises). */
+  const gain = questesDe('daily').filter(q => !q.claimed && q.reward > 0 && q.monnaie !== 'prismes').reduce((s, q) => s + q.reward, 0);
+  const remise = resteAvantRemise('daily');
+  const serie = save.streak > 1 ? `<span class="auj-serie" title="Jours de connexion d'affilée">${ICO_FLAMME}<b class="tnum">${save.streak}</b> jours</span>` : '';
+  /* L'anneau : un segment par rendez-vous. */
+  const N = Math.max(1, total), vide = 14;
+  const segs = Array.from({ length: N }, (_, i) => `<circle cx="26" cy="26" r="21" pathLength="${N * 100}" stroke-dasharray="${100 - vide} ${N * 100 - 100 + vide}" stroke-dashoffset="${-i * 100 - vide / 2}" class="${i < faits ? 'on' : ''}"/>`).join('');
+  const anneau = `<span class="auj-anneau" role="img" aria-label="${faits} rendez-vous faits sur ${total}"><svg viewBox="0 0 52 52" aria-hidden="true">${segs}</svg><b class="tnum">${faits}<small>/${total}</small></b></span>`;
+
+  if (faits === total && !gain) {
+    return `<section class="auj boucle" aria-labelledby="auj-titre">
+      ${anneau}<div class="auj-t"><h2 id="auj-titre">Journée bouclée</h2><p>Tout repart dans <b class="tnum">${dureeCourte(remise)}</b>.</p></div>${serie}
+    </section>`;
+  }
+  /* Le prochain rendez-vous : le premier pas fait, dans l'ordre de la liste. */
+  const suivant = l.find(x => !x.fait);
+  const reste = total - faits;
   return `<section class="auj" aria-labelledby="auj-titre">
-      <div class="auj-tete"><h2 id="auj-titre">Aujourd'hui</h2><small>${reste ? `${reste} à faire` : 'Tout est fait'}</small></div>
-      <div class="auj-l" data-defil="auj">${l.map(x => x.html).join('')}</div>
+      <div class="auj-tete">
+        ${anneau}
+        <div class="auj-t"><h2 id="auj-titre">Ta journée</h2>
+          <p>${reste ? `Encore <b>${reste}</b> rendez-vous` : 'Tous tes rendez-vous sont faits'}${gain ? ` · <span class="auj-gain">${shardIco}<b class="tnum">${fmtN(gain)}</b> à gagner en quêtes</span>` : ''}</p>
+          <small>Tout repart dans <span class="tnum">${dureeCourte(remise)}</span></small></div>
+        ${serie}
+      </div>
+      <div class="auj-l">${l.map(x => `<button class="auj-c${x.fait ? ' fait' : ''}${x === suivant ? ' suivant' : ''}" ${x.lien}>
+          <span class="auj-ico" aria-hidden="true">${NAVICO[x.ico]}${x.fait ? `<i>${NAVICO.check}</i>` : ''}</span>
+          <b>${x.titre}</b><small>${x.etat}</small>
+        </button>`).join('')}</div>
     </section>`;
 }
 

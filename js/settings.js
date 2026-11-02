@@ -1,4 +1,4 @@
-/* Onglet Réglages : apparence, son, jeu, compte, données.
+/* Onglet Réglages : jeu, affichage et son, compte, à propos (3.0.14).
    Le Labo n'apparaît jamais ici : il est réservé aux profils marqués
    administrateurs par le serveur (voir supabase/installation/05_admin.sql).
 
@@ -42,7 +42,10 @@ const JEU = {
   /* Incliner les cartes avec le gyroscope pendant l'ouverture. */
   gyro: true,
   /* Les combats en accéléré (le bouton « Vitesse » de l'arène). */
-  rapide: false
+  rapide: false,
+  /* Version 3.0.14 : demander avant de finir un tour quand un Joueur peut
+     encore attaquer (js/combat/table.js, confirmerFin). */
+  confirmerFin: true
 };
 
 (function chargerJeu() {
@@ -63,104 +66,107 @@ function vibrer(motif) {
 }
 
 /* ---------- L'écran ---------- */
+/* Refait en 3.0.14 (le propriétaire : « fait vachement entassé, découpe le
+   en section, et n'hésite pas à le repenser vu que beaucoup de choses ont
+   changé ») : quatre sections — Jeu, Affichage, Compte, À propos —, une à la
+   fois sur téléphone (des onglets en tête), une colonne de navigation sur
+   ordinateur. Chaque réglage est une ligne : son icône, ce qu'il fait, son
+   interrupteur ; une ligne entière se touche. Nouveau : les combats
+   accélérés (jusque-là dans l'arène seulement), « Demander avant de finir
+   un tour », le tutoriel, les règles, « Personnaliser mon profil », les
+   nouveautés. */
+let rgVue = 'jeu';
+const RG_SECTIONS = [
+  ['jeu', 'Jeu', 'sword'], ['affichage', 'Affichage', 'gear'], ['compte', 'Compte', 'user'], ['apropos', 'À propos', 'promo']
+];
+const RG_ICO = {
+  recap: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="7" height="9.5" rx="1.5"/><rect x="13.5" y="5" width="7" height="9.5" rx="1.5"/><path d="M5 18.5h14"/></svg>',
+  vibre: '<svg viewBox="0 0 24 24"><rect x="7.5" y="3.5" width="9" height="17" rx="2"/><path d="M4 9v6M20 9v6M11 17.5h2"/></svg>',
+  gyro: '<svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5"/><path d="M20.5 4.5v4h-4"/><rect x="9" y="8" width="6" height="8" rx="1.2" transform="rotate(12 12 12)"/></svg>',
+  vitesse: '<svg viewBox="0 0 24 24"><path d="M4.5 16a7.5 7.5 0 1 1 15 0"/><path d="m12 16 4-5.5"/><circle cx="12" cy="16" r="1.4"/></svg>',
+  main: '<svg viewBox="0 0 24 24"><path d="M8 13.5V6a1.5 1.5 0 0 1 3 0v6M11 11V4.8a1.5 1.5 0 0 1 3 0V11M14 11V6.3a1.5 1.5 0 0 1 3 0v7.2c0 3.6-2.5 6.5-6 6.5-2.4 0-3.9-1.2-5.2-3.2L4.3 14a1.4 1.4 0 0 1 2.3-1.6L8 14"/></svg>',
+  livre: '<svg viewBox="0 0 24 24"><path d="M4.5 5.5c2.6-1 5.2-1 7.5.8 2.3-1.8 4.9-1.8 7.5-.8v13c-2.6-1-5.2-1-7.5.8-2.3-1.8-4.9-1.8-7.5-.8Z"/><path d="M12 6.3v13"/></svg>',
+  mouvement: '<svg viewBox="0 0 24 24"><path d="M3.5 12h4l2-5 4 10 2-5h5"/></svg>',
+  son: '<svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5l4.5 4V5.5L7.5 9.5Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+  garder: '<svg viewBox="0 0 24 24"><rect x="5" y="4" width="10" height="14" rx="1.8"/><path d="M9 20h8.5A1.5 1.5 0 0 0 19 18.5V8"/></svg>',
+  sortir: '<svg viewBox="0 0 24 24"><path d="M14 4.5H6.5A1.5 1.5 0 0 0 5 6v12a1.5 1.5 0 0 0 1.5 1.5H14"/><path d="M10.5 12H20m-3.5-3.5L20 12l-3.5 3.5"/></svg>',
+  courrier: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>',
+  install: '<svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M12 7.5v7m-3-3 3 3 3-3"/></svg>',
+  neuf: '<svg viewBox="0 0 24 24"><path d="M12 3.5 14 9l5.5 2-5.5 2-2 5.5-2-5.5-5.5-2L10 9Z"/></svg>'
+};
+
 function vReglages() {
   const r = SFX.reglages;
   const enLigne = Backend.mode === 'cloud';
+  if (!RG_SECTIONS.some(([k]) => k === rgVue)) rgVue = 'jeu';
 
-  const curseur = (id, label, val, on) =>
-    `<div class="slider${on ? '' : ' off'}" style="--pct:${Math.round(val * 100)}%">
-      <label for="${id}">${label}</label>
-      <input id="${id}" type="range" min="0" max="100" value="${Math.round(val * 100)}" ${on ? '' : 'disabled'}>
-      <output>${Math.round(val * 100)}</output></div>`;
+  /* Une ligne : toute la ligne se touche pour basculer. */
+  const bascule = (id, ico, titre, sous, on) =>
+    `<label class="rg-l" for="${id}"><span class="rg-ico" aria-hidden="true">${RG_ICO[ico] || NAVICO[ico] || ''}</span>
+      <span class="rg-tx"><b>${titre}</b>${sous ? `<small>${sous}</small>` : ''}</span>
+      <input type="checkbox" class="rg-sw" role="switch" id="${id}" ${on ? 'checked' : ''}></label>`;
+  const bouton = (attrs, ico, titre, sous, fin) =>
+    `<button class="rg-l rg-b" ${attrs}><span class="rg-ico" aria-hidden="true">${RG_ICO[ico] || NAVICO[ico] || ''}</span>
+      <span class="rg-tx"><b>${titre}</b>${sous ? `<small>${sous}</small>` : ''}</span>${fin || `<i class="rg-chev" aria-hidden="true">${NAVICO.caret}</i>`}</button>`;
+  const groupe = (titre, lignes, note) => `<section class="rg-g">${titre ? `<h3>${titre}</h3>` : ''}<div class="rg-c">${lignes}</div>${note ? `<p class="rg-note">${note}</p>` : ''}</section>`;
 
-  const bascule = (id, titre, sous, on) =>
-    `<label class="toggle"><span>${titre}<small>${sous}</small></span>
-      <input type="checkbox" id="${id}" ${on ? 'checked' : ''}></label>`;
+  let corps = '';
+  if (rgVue === 'jeu') {
+    corps = groupe('Ouverture des boosters',
+      bascule('set-recap', 'recap', 'Aller droit au récap', 'Sans faire défiler les cartes une à une', JEU.recapDirect)
+      + bascule('set-vibrer', 'vibre', 'Vibrations', 'Une pulsation sur les révélations', JEU.vibrer)
+      + bascule('set-gyro', 'gyro', 'Incliner avec le téléphone', 'Les cartes suivent le mouvement de l\'appareil', JEU.gyro))
+    + groupe('Combats',
+      bascule('set-rapide', 'vitesse', 'Combats accélérés', 'Les animations de l\'arène deux fois plus vite', JEU.rapide)
+      + bascule('set-confirmer', 'main', 'Demander avant de finir un tour', 'Quand un de tes Joueurs peut encore attaquer', JEU.confirmerFin !== false)
+      + bouton('data-cb="tuto"', 'sword', 'Rejouer le tutoriel', 'Une partie guidée de cinq tours')
+      + bouton('data-tab="combats" data-cbv="guides"', 'livre', 'Les règles', 'Le guide des combats, et son glossaire'))
+    + (enLigne ? vGarderReglage() : '');
+  } else if (rgVue === 'affichage') {
+    corps = groupe('Mouvement',
+      bascule('set-rm', 'mouvement', 'Animations réduites', 'Moins de mouvement à l\'écran', reglageRM()),
+      'Si ton appareil est déjà réglé sur « réduire les animations », le jeu le respecte sans rien toucher ici.')
+    + groupe('Son',
+      bascule('set-sfx', 'son', 'Bruitages', 'Cartes, paquets, boutons', r.sfx)
+      + `<div class="rg-l rg-curseur${r.sfx ? '' : ' off'}"><span class="rg-ico" aria-hidden="true"></span>
+          <div class="slider${r.sfx ? '' : ' off'}" style="--pct:${Math.round(r.volSfx * 100)}%">
+            <label for="set-volsfx">Volume</label>
+            <input id="set-volsfx" type="range" min="0" max="100" value="${Math.round(r.volSfx * 100)}" ${r.sfx ? '' : 'disabled'}>
+            <output>${Math.round(r.volSfx * 100)}</output></div></div>`
+      + bouton('data-act="son-test"', 'son', 'Tester le son', 'Trois notes, et ce qu\'en dit le navigateur'),
+      'Sur iPhone, l\'interrupteur « silencieux » coupe aussi le son des sites.');
+  } else if (rgVue === 'compte') {
+    corps = enLigne
+      ? `<section class="rg-g"><div class="rg-c rg-moi">
+            ${avatarHTML(save.avatar, save.frame, 'md', maPhoto(), monXp())}
+            <span class="rg-tx"><b>${h(save.pseudo)}</b><small><i class="rg-ok"></i>En ligne · ta progression vit sur le serveur</small></span>
+          </div></section>`
+        + groupe('', bouton('data-act="pf-perso"', 'user', 'Personnaliser mon profil', 'Avatar, cadre, titre, bannière, devise')
+          + bouton('data-tab="profil"', 'user', 'Voir mon profil', 'Ce que les autres voient de toi'))
+        + groupe('', bouton('data-act="deconnexion"', 'sortir', 'Se déconnecter', 'Ta collection reste sur ton compte', ''))
+        + groupe('Données', `<a class="rg-l rg-b" href="mailto:${h(CONTACT)}"><span class="rg-ico" aria-hidden="true">${RG_ICO.courrier}</span>
+            <span class="rg-tx"><b>Repartir de zéro ou supprimer mon compte</b><small>Écris-nous : ${h(CONTACT)}</small></span></a>`)
+      : groupe('Compte', Backend.dispo
+          ? bouton('data-act="connexion"', 'user', CONNEXION.email ? 'Créer un compte ou se connecter' : 'Se connecter avec Discord', 'Échanges, quêtes et boutique demandent un compte')
+          : `<div class="rg-l"><span class="rg-tx"><b>Hors ligne</b><small>Le serveur n'est pas encore branché sur ce site : la progression reste dans ce navigateur.</small></span></div>`)
+        + groupe('Données', bouton('data-act="reset"', 'sortir', 'Réinitialiser ma progression', 'Les boosters et la collection reviennent au départ', ''));
+  } else {
+    corps = groupe('Le jeu',
+      bouton('data-act="installer"', 'install', 'Installer le jeu', 'Sur l\'écran d\'accueil, en plein écran, comme une application')
+      + bouton('data-act="nouveautes"', 'neuf', 'Les nouveautés', 'Ce qui a changé avec cette version')
+      + `<a class="rg-l rg-b" href="${h(DISCORD_URL)}" target="_blank" rel="noopener"><span class="rg-ico" aria-hidden="true">${ICON.discord}</span>
+          <span class="rg-tx"><b>Le Discord</b><small>L'actualité, l'entraide, les échanges</small></span><i class="rg-chev" aria-hidden="true">${NAVICO.caret}</i></a>`)
+    + `<section class="rg-g rg-apropos"><h3>À propos</h3><div class="rg-c">
+        <div class="rg-l"><span class="rg-tx"><b>${h(GAME_NAME)}</b><small>Jeu de collection sans argent réel : les ${MONNAIE.nom} se gagnent en jouant.</small></span><span class="rg-val tnum" title="Version">v${APP_VERSION}</span></div>
+      </div><p class="mentions">${MENTIONS}</p></section>`;
+  }
 
   return `<div class="pagehead"><div><h1>Réglages</h1></div></div>
-
-  <section class="panel">
-    <h2>Apparence</h2>
-    ${bascule('set-rm', 'Animations réduites', 'Moins de mouvement à l\'écran', reglageRM())}
-    <p class="muted small">Si ton appareil est déjà réglé sur « réduire les animations »,
-      le jeu le respecte sans rien toucher ici.</p>
-  </section>
-
-  <section class="panel">
-    <h2>Son</h2>
-    ${bascule('set-sfx', 'Bruitages', 'Cartes, paquets, boutons', r.sfx)}
-    ${curseur('set-volsfx', 'Volume', r.volSfx, r.sfx)}
-    <div class="row"><button class="btn ghost tiny" data-act="son-test">Tester le son</button></div>
-    <p class="muted small" style="margin-top:10px">Sur iPhone, l'interrupteur « silencieux »
-      coupe aussi le son des sites.</p>
-  </section>
-
-  <section class="panel">
-    <h2>Ouverture des boosters</h2>
-    ${bascule('set-recap', 'Aller droit au récap', 'Sans faire défiler les cartes une à une', JEU.recapDirect)}
-    ${bascule('set-vibrer', 'Vibrations', 'Une pulsation sur les révélations', JEU.vibrer)}
-    ${bascule('set-gyro', 'Incliner avec le téléphone', 'Les cartes suivent le mouvement de l\'appareil', JEU.gyro)}
-  </section>
-
-  ${enLigne ? vGarderReglage() : ''}
-
-  <section class="panel">
-    <h2>Compte</h2>
-    ${enLigne
-      ? `<div class="found">${avatarHTML(save.avatar, save.frame, 'sm', maPhoto(), monXp())}<b>${h(save.pseudo)}</b>
-           <span class="qtag ok">En ligne</span></div>
-         <p class="muted small">Ta progression est enregistrée sur le serveur :
-           tu la retrouves sur n'importe quel appareil.</p>
-         <div class="row" style="margin-top:12px">
-           <button class="btn ghost" data-act="deconnexion">Se déconnecter</button>
-         </div>`
-      : Backend.dispo
-        ? `<p class="muted small">Tu joues hors ligne : la progression reste dans ce navigateur
-             et disparaît si tu effaces tes données. Les échanges, quêtes et la boutique
-             demandent un compte.</p>
-           <div class="row" style="margin-top:12px">
-             <button class="btn" data-act="connexion">${CONNEXION.email
-               ? 'Créer un compte ou se connecter' : 'Se connecter avec Discord'}</button>
-           </div>`
-        : `<p class="muted small">Le serveur n'est pas encore branché sur ce site.
-             La progression reste dans ce navigateur.</p>`}
-  </section>
-
-  <section class="panel">
-    <h2>Communauté</h2>
-    <p class="muted small">L'actualité du jeu, l'entraide et les échanges : la
-      communauté se retrouve sur le Discord.</p>
-    <div class="row" style="margin-top:12px">
-      ${lienDiscord('btn discord', 'Rejoindre le Discord')}
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Installer le jeu</h2>
-    <p class="muted small">Ajouté à l'écran d'accueil, Mate TCG s'ouvre en plein écran,
-      sans barre de navigateur, comme une vraie application.</p>
-    <div class="row" style="margin-top:12px">
-      <button class="btn ghost" data-act="installer">Comment faire ?</button>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Données</h2>
-    ${enLigne
-      ? `<p class="muted small">Pour repartir de zéro ou supprimer ton compte,
-           écris-nous : <a href="mailto:${CONTACT}">${CONTACT}</a></p>`
-      : `<p class="muted small">Remet les boosters et la collection au départ.
-           Les cartes du jeu ne bougent pas.</p>
-         <div class="row"><button class="btn ghost" data-act="reset">Réinitialiser ma progression</button></div>`}
-  </section>
-
-  <section class="panel about">
-    <h2>À propos</h2>
-    <p class="muted small">${h(GAME_NAME)} — Jeu de collection sans argent réel :
-      les ${MONNAIE.nom} se gagnent en jouant.</p>
-    <p class="muted small">Version ${APP_VERSION}</p>
-    <p class="mentions">${MENTIONS}</p>
-  </section>`;
+    <div class="rg">
+      <nav class="rg-nav" role="tablist" aria-label="Sections des réglages">${RG_SECTIONS.map(([k, nom, ico]) =>
+        `<button role="tab" aria-selected="${rgVue === k}" class="${rgVue === k ? 'on' : ''}" data-rgv="${k}"><span aria-hidden="true">${NAVICO[ico]}</span>${nom}</button>`).join('')}</nav>
+      <div class="rg-corps" role="tabpanel">${corps}</div>
+    </div>`;
 }
 
 /* ---------- Exemplaires à garder (version 2.1) ---------- */
@@ -180,15 +186,16 @@ function vGarderReglage() {
           aria-label="${(RAR[rar] || RAR.C).nom}${rev ? ' Reverse' : ''} : garder ${n}">${n}</button>`).join('')}</div>
     </div>`;
   const revRars = RAR_FILTRES.filter(r => reverses.some(c => c.rar === r));
-  return `<section class="panel" id="reglages-garder">
-    <h2>Exemplaires à garder</h2>
-    <p class="muted small">Combien d'exemplaires de chaque carte tu veux conserver. Le recyclage n'y
-      touche pas, et tes amis ne les voient pas comme des doublons.</p>
-    <h3 class="garde-groupe">Classiques</h3>
-    <div class="gardes">${RAR_FILTRES.map(r => ligne(r, r, false)).join('')}</div>
-    ${revRars.length ? `<h3 class="garde-groupe">Reverses<i class="revico"></i></h3>
-    <div class="gardes">${revRars.map(r => ligne('r' + r, r, true)).join('')}</div>` : ''}
-    <p class="muted small">Pour une carte en particulier, touche-la dans ta Collection.${perso
+  return `<section class="rg-g" id="reglages-garder"><h3>Collection · exemplaires à garder</h3>
+    <div class="rg-c rg-garder">
+      <p class="rg-dit">Combien d'exemplaires de chaque carte tu veux conserver. Le recyclage n'y
+        touche pas, et tes amis ne les voient pas comme des doublons.</p>
+      <h4 class="garde-groupe">Classiques</h4>
+      <div class="gardes">${RAR_FILTRES.map(r => ligne(r, r, false)).join('')}</div>
+      ${revRars.length ? `<h4 class="garde-groupe">Reverses<i class="revico"></i></h4>
+      <div class="gardes">${revRars.map(r => ligne('r' + r, r, true)).join('')}</div>` : ''}
+    </div>
+    <p class="rg-note">Pour une carte en particulier, touche-la dans ta Collection.${perso
       ? ` ${perso} carte${perso > 1 ? 's ont leur' : ' a son'} propre réglage.` : ''}</p>
   </section>`;
 }
@@ -204,6 +211,7 @@ async function reglerGardeDefaut(cle, n) {
 
 /* Depuis le Recyclage : la page, et la section. */
 function versGarder() {
+  rgVue = 'jeu';
   aller('reglages');
   requestAnimationFrame(() => {
     const el = $('#reglages-garder');
@@ -246,6 +254,8 @@ function bindReglages() {
     if (e.checked) vibrer(18);
   });
   b('set-gyro', e => e.onchange = () => { JEU.gyro = e.checked; sauverJeu(); });
+  b('set-rapide', e => e.onchange = () => { JEU.rapide = e.checked; sauverJeu(); });
+  b('set-confirmer', e => e.onchange = () => { JEU.confirmerFin = e.checked; sauverJeu(); });
 
   /* Collection : la case « seulement mes cartes ». */
   b('col-poss', e => e.onchange = () => { colPossedees = e.checked; render(); });

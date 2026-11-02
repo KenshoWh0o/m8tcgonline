@@ -272,7 +272,7 @@ const VUES = {
    sans faire défiler. Après un toucher ou un clic, le navigateur ne montre
    pas d'anneau de focus (:focus-visible) : rien ne change à l'œil. */
 const FOCUS_ATTRS = ['data-cb', 'data-act', 'data-v', 'data-tab', 'data-show', 'data-q', 'data-lab', 'data-t', 'data-ech', 'data-ong', 'data-c', 'data-id',
-  'data-colvue', 'data-clv', 'data-qv', 'data-ch', 'data-rfvue', 'data-rd'];
+  'data-colvue', 'data-clv', 'data-qv', 'data-ch', 'data-rfvue', 'data-rd', 'data-rgv'];
 function retenirFocus(m) {
   const el = document.activeElement;
   if (!el || el === document.body || !m.contains(el)) return null;
@@ -455,7 +455,7 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-lab],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-lab],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes],[data-rgv]');
   if (!el) return;
   const d = el.dataset;
 
@@ -499,6 +499,8 @@ async function clicPage(e) {
   if (d.tr) { trRetenirMot(); trVue = d.tr; if (d.tr === 'amis') trDoublons = null; return render(); }
   if (d.soc) { socVue = d.soc; return render(); }
   if (d.qv) { qVue = d.qv; return render(); }
+  /* Les sections des Réglages (3.0.14). */
+  if (d.rgv) { rgVue = d.rgv; render(); return $('#main').scrollTo({ top: 0 }); }
   if (d.clv) { clVue = d.clv; render(); return chargerClassement(); }
   if (d.craft) return ouvrirFabrication(d.craft);
   if (d.tirpart) {

@@ -662,6 +662,7 @@ html.rm .ar-f-geste svg,html.rm .ar-place-f{animation:none}
 .ar-s-titre{margin:0 0 4px;text-align:center;font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.15}
 .ar-s-texte{margin:0 0 6px;text-align:center;font-size:13.5px;line-height:1.4;color:rgba(255,255,255,.78)}
 .ar-s-titre.gauche,.ar-s-texte.gauche{text-align:left}
+.ar-s-texte.petit{margin:12px 0 0;font-size:12px;color:rgba(255,255,255,.55)}
 .ar-s-aide{margin:8px 0 0;text-align:center;font-size:12.5px;line-height:1.35;color:rgba(255,255,255,.6)}
 .ar-s-act{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px}
 .ar-b{flex:1 1 130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:48px;padding:8px 16px;

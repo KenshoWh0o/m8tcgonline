@@ -1262,8 +1262,13 @@ const Table = (() => {
     if (k === 'abandon-ok') return abandonner();
     if (T.occupe) return;
     const d = Combat.demande(T.E);
-    if (k === 'fin') {
-      if (!d || d.type !== 'tour' || d.qui !== T.moi) return;
+    if (k === 'fin' || k === 'fin-ok') {
+      if (!d || d.type !== 'tour' || d.qui !== T.moi) return fermerSheet();
+      /* 3.0.14 : un doigt qui glisse finissait le tour trop tôt. S'il reste
+         une attaque, on demande (Réglages › Jeu le coupe ; jamais dans le
+         tutoriel, qui guide chaque geste). */
+      if (k === 'fin' && JEU.confirmerFin !== false && !T.o.guide && Combat.optionsTour(T.E).some(a => a.t === 'attaquer')) return confirmerFin();
+      fermerSheet();
       fermerFocus();
       return jouer({ t: 'finTour' });
     }
@@ -1665,6 +1670,13 @@ const Table = (() => {
       </div>
       <div class="ar-s-act"><button class="ar-b ghost" data-ar="annuler">Reprendre</button></div>`, 'menu');
   }
+  function confirmerFin() {
+    const n = new Set(Combat.optionsTour(T.E).filter(a => a.t === 'attaquer').map(a => a.u)).size;
+    ouvrirSheet(`<p class="ar-s-titre">Finir le tour ?</p><p class="ar-s-texte">${n > 1 ? `${n} de tes Joueurs peuvent encore attaquer.` : 'Un de tes Joueurs peut encore attaquer.'}</p>
+      <div class="ar-s-act"><button class="ar-b or" data-ar="fin-ok">Finir le tour</button><button class="ar-b ghost" data-ar="annuler">Continuer</button></div>
+      <p class="ar-s-texte petit">Cette question se coupe dans Réglages › Jeu.</p>`, 'menu');
+  }
+
   function confirmerAbandon() {
     ouvrirSheet(`<p class="ar-s-titre">Abandonner ?</p><p class="ar-s-texte">${texteAbandon(T.o.abandon)}</p>
       <div class="ar-s-act"><button class="ar-b rouge" data-ar="abandon-ok">Abandonner</button><button class="ar-b ghost" data-ar="annuler">Continuer</button></div>`, 'menu');
