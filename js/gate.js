@@ -145,19 +145,22 @@ function vCoquillePorte(corps, maint) {
   </div></div>`;
 }
 
-/* L'annonce d'arrêt, commune aux deux écrans. */
+/* L'annonce d'arrêt, commune aux deux écrans. Depuis le 1er novembre 2026
+   (reporté de la 2.x) : la phrase qui compte, « ne verra pas le jour », est
+   posée dans une tuile, sous le titre, et le paquet ne flotte plus — il ne
+   promet plus rien (fin de css/auth.css). */
 const MATEPEDIA_URL = 'https://matepedia.com/fr/trading-card-game';
 
 function vAnnonceArret() {
   return `<span class="locktag refus">Projet annulé</span>
     <h1 class="locktitle">Merci</h1>
-    <div class="muted lockdit lockarret">
-      <p><b>M8 TCG Online</b> ne verra finalement pas le jour.</p>
+    <div class="lockfin">
+      <strong><span class="lockfin-nom">M8 TCG Online</span> ne verra pas le jour.</strong>
       <p>Après échange avec Gentle Mates, certaines fonctionnalités essentielles
         du projet ne peuvent pas être proposées. Nous avons donc décidé
         d'annuler son lancement.</p>
-      <p>Merci à toutes les personnes qui ont suivi et soutenu le projet. 🩷</p>
-    </div>`;
+    </div>
+    <p class="lockmerci">Merci à toutes les personnes qui ont suivi et soutenu le projet. 🩷</p>`;
 }
 
 function vMatepedia() {
@@ -209,7 +212,7 @@ function essayerInvitationGardee() {
 function vPorteAttente() {
   const code = codeInvitation();
   const connexion = Backend.dispo
-    ? `<button class="linkbtn lockacces" data-act="porte-discord">${code ? 'Me connecter avec Discord' : 'J\'ai déjà un accès'}</button>`
+    ? `<button class="linkbtn lockacces" data-act="porte-discord">${code ? 'Me connecter avec Discord' : 'J\'ai un accès'}</button>`
     : '';
   if (code) {
     return `<span class="locktag">Invitation</span>
@@ -234,16 +237,16 @@ function vPorteAttente() {
 function vPorteRefus() {
   const qui = save && save.pseudo ? save.pseudo : 'Ce compte';
   return `${vAnnonceArret()}
-    <p class="muted small lockaide"><b>${h(qui)}</b> n'a pas d'accès au jeu.</p>
+    <p class="muted small lockaide"><b>${h(qui)}</b> n'a pas accès au jeu.</p>
     <div class="lockinvit">
-      <p class="muted small">Un ami t'a invité ? Entre son code :</p>
+      <label class="muted small" for="porte-code">Un ami t'a invité ? Entre son code :</label>
       <div class="findrow"><input id="porte-code" type="text" maxlength="20" placeholder="M8-XXXX-XXXX"
         value="${h(codeInvitation())}" autocomplete="off" autocapitalize="characters" spellcheck="false">
         <button class="btn tiny" data-act="porte-code">Entrer</button></div>
     </div>
     <div class="lockentree">
       ${lienDiscord('btn discord', 'Rejoindre le Discord')}
-      <button class="btn ghost" data-act="porte-sortir">Changer de compte</button>
+      <button class="linkbtn lockacces" data-act="porte-sortir">Changer de compte</button>
     </div>
     ${vMatepedia()}`;
 }
