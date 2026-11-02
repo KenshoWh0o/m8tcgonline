@@ -39,7 +39,8 @@ const RAID = {
      jour ; un boss Neutre en prend deux) ; `visage` : le point de
      l'illustration gardé au centre (illuCadre) ; `cadre` et `tapis` : ce
      qu'il porte en combat (le tapis d'un boss : TAPIS ou TAPIS_BOSS,
-     js/combat/table.js). */
+     js/combat/table.js) ; `ajuste` : ce qu'il a en combat de plus ou de
+     moins que la phase ; `vie` : ses seuils de phase, multipliés. */
   bosses: [
     { id: 'c116', nom: 'The French Sorcerer', couleur: 'mauve', visage: [.46, .24], cadre: 'f_foudre', tapis: 't_orage',
       dit: 'Ses éclairs envoient tes Joueurs à la défausse et frappent à 200.',
@@ -50,7 +51,7 @@ const RAID = {
          un PV et une Essence d'avance de moins, comme le Marionnettiste :
          65 %, 30 % et 15 % (phases 2, 4 et 6 : 51 %, 40 %, 4 %). Les
          Essences seules (un PV de moins, non) laissaient la phase 3 à 10 %. */
-      ajuste: { pv: -1, ess: -1 } },
+      ajuste: { pv: -1, ess: -1 }, vie: 1 },
     { id: 'c121', nom: 'Le Marionnettiste', couleur: 'neutre', visage: [.45, .58], cadre: 'f_nebuleuse', tapis: 't_ficelles',
       dit: 'Il joue les couleurs des autres, deux nouvelles chaque jour, frappe à 160, et riposte quand il tombe.',
       /* À phases égales, il est plus dur que le Sorcier : son attaque ne
@@ -63,8 +64,15 @@ const RAID = {
          y vaut les PV de la phase + 4, comme contre le Sorcier). Une IA plus
          douce rendait la phase 1 trop facile (68 %) sans sauver la 5 (3 %).
          Avec les règles officielles (3.0.12), le même réglage : 66 %, 33 %,
-         26 %, 25 %, 8 % et 3 % des phases 1 à 6. raidCombat(cle, boss). */
-      ajuste: { pv: -1, ess: -1 } }
+         26 %, 25 %, 8 % et 3 % des phases 1 à 6. raidCombat(cle, boss).
+         `vie` (version 3.0.14) : ses seuils de phase, multipliés. Mesuré
+         (tools/equilibre-raid.js, 100 combats par phase et par profil), un
+         joueur lui prend 6,4, 6,2, 5,7, 5,4, 4,4 et 3,3 dégâts par tentative
+         des phases 1 à 6, contre 6,9, 6,9, 6,1, 7,0, 6,4 et 4,0 au Sorcier :
+         il reste plus dur à chaque combat, mais avec 80 % de sa vie, le
+         serveur l'abat au même rythme (la sixième phase, le dernier jour,
+         une saison sur deux pour une dizaine de joueurs actifs). */
+      ajuste: { pv: -1, ess: -1 }, vie: 0.8 }
   ],
   /* Le premier boss (avant la 3.0.11, le seul). */
   boss: 'c116',
@@ -75,17 +83,22 @@ const RAID = {
      `depart`. */
   saison: { jours: 14, depart: '2026-10-12' },
   /* Les six phases. `seuil` : les dégâts cumulés de tout le serveur dans la
-     saison pour l'abattre — calculés pour une dizaine de joueurs, et
-     multipliés sur le vrai serveur par parametres.raid_echelle. Puis le
-     combat (le niveau de l'IA, les PV du boss, ses Essences d'avance) et le
-     coffre commun. */
+     saison pour l'abattre — calculés pour une dizaine de joueurs actifs
+     (version 3.0.14, tools/equilibre-raid.js), multipliés par la vie du
+     boss (`vie` plus haut) et, sur le vrai serveur, par
+     parametres.raid_echelle. Puis le combat (le niveau de l'adversaire, les
+     PV du boss, ses Essences d'avance) et le coffre commun. Le dernier est
+     l'exploit (le propriétaire, 1er novembre 2026 : « finir la dernière
+     phase doit être ressenti comme un vrai exploit ») : une Légendaire qui
+     manque, et un titre qu'on ne gagne que là (`bonus`). */
   phases: [
-    { seuil: 120, ia: 2, pv: 5, ess: 0, commun: { type: 'boosters', montant: 2, titre: '2 boosters' } },
-    { seuil: 300, ia: 3, pv: 6, ess: 0, commun: { type: 'fragments', montant: 300, titre: '300 Fragments' } },
-    { seuil: 550, ia: 3, pv: 7, ess: 1, commun: { type: 'boosters', montant: 3, titre: '3 boosters' } },
-    { seuil: 850, ia: 4, pv: 7, ess: 1, commun: { type: 'eclats', montant: 500, titre: '500 Éclats' } },
-    { seuil: 1200, ia: 4, pv: 8, ess: 2, commun: { type: 'boosters', montant: 4, titre: '4 boosters' } },
-    { seuil: 1600, ia: 5, pv: 9, ess: 2, commun: { type: 'boosters', montant: 5, titre: '5 boosters' } }
+    { seuil: 100, ia: 2, pv: 5, ess: 0, commun: { type: 'boosters', montant: 2, titre: '2 boosters' } },
+    { seuil: 250, ia: 3, pv: 6, ess: 0, commun: { type: 'fragments', montant: 300, titre: '300 Fragments' } },
+    { seuil: 450, ia: 3, pv: 7, ess: 1, commun: { type: 'boosters', montant: 3, titre: '3 boosters' } },
+    { seuil: 700, ia: 4, pv: 7, ess: 1, commun: { type: 'eclats', montant: 500, titre: '500 Éclats' } },
+    { seuil: 1000, ia: 4, pv: 8, ess: 2, commun: { type: 'boosters', montant: 5, titre: '5 boosters' } },
+    { seuil: 1400, ia: 5, pv: 9, ess: 2, commun: { type: 'legendaire', montant: 1, titre: 'Une Légendaire',
+      bonus: { type: 'titre', montant: 1, objet: 't_heros_raid', titre: 'le titre « Héros du Raid »', court: '+ un titre' } } }
   ],
   /* Les paliers personnels de la saison : les dégâts de chacun. */
   perso: [

@@ -220,6 +220,9 @@ const TITRES = {
   t_sections:  { nom: 'Champion des Sections',     ton: 'L',  comment: 'Finir la campagne des Combats' },
   t_legende:   { nom: 'Tombeur de Légende',        ton: 'E',  comment: 'Gagner en Arcade, difficulté Légende' },
   t_stratege:  { nom: 'Stratège',                  ton: 'R',  comment: 'Gagner 100 combats' },
+  /* Version 3.0.14 : le coffre de la dernière phase d'un Raid (RAID.phases,
+     js/combat/choc-data.js ; raid_reclamer, 27_raid.sql). */
+  t_heros_raid:{ nom: 'Héros du Raid',             ton: 'L',  comment: 'Abattre la dernière phase d\'un Raid' },
   /* L'événement de la 3.0, « Le Choc des Sections » (js/combat/choc-data.js). */
   t_recrue:    { nom: 'Recrue du Choc',            ton: 'EV', comment: 'Palier 3 du Pass du Choc' },
   t_veteran:   { nom: 'Vétéran du Choc',           ton: 'EV', comment: 'Palier 19 du Pass du Choc' },

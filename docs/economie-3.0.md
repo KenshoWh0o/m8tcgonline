@@ -97,25 +97,50 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 
 ### Le Raid, par saisons et phases [fait] `RAID`, `js/combat/choc-data.js` ; `supabase/27_raid.sql`
 
-Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière des boss de guilde d'*AFK Journey*.
+Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière des boss de guilde d'*AFK Journey*. **Version 3.0.14 : réglé de nouveau**, à la demande du propriétaire (1er novembre 2026) : « Équilibre bien le raid pour un serveur avec une dizaine de joueurs actifs, et rends la tâche pas trop facile, finir la dernière phase doit être ressenti comme un vrai exploit. Ajuste les récompenses en conséquence. »
 
-- Un boss commun, The French Sorcerer, par **saisons de 14 jours** (la première a commencé le 12 octobre 2026). Les dégâts de tous s'additionnent sur la saison.
-- **Six phases**, chacune à un seuil de dégâts cumulés : 120, 300, 550, 850, 1 200, 1 600 (multipliés sur le vrai serveur par `parametres.raid_echelle`, 1 par défaut). Chaque phase est un combat plus dur :
+- Un boss commun par **saisons de 14 jours**, comptées depuis le premier jour du Choc (`raid_ancre`) : The French Sorcerer, puis Le Marionnettiste, à tour de rôle. Les dégâts de tous s'additionnent sur la saison.
+- **Six phases**, chacune à un seuil de dégâts cumulés, multiplié par la **vie du boss** (`RAID.bosses` › `vie` ; `raid_vie`, 3.0.14 : 1 pour le Sorcier, 0,8 pour le Marionnettiste) et, sur le vrai serveur, par `parametres.raid_echelle` (1 par défaut). Chaque phase est un combat plus dur :
 
-| Phase | Seuil | IA | PV du boss | Essences d'avance | Coffre commun |
-|---|---|---|---|---|---|
-| 1 | 120 | 2 ★ | 5 | 0 | 2 boosters |
-| 2 | 300 | 3 ★ | 6 | 0 | 300 Fragments |
-| 3 | 550 | 3 ★ | 7 | 1 | 3 boosters |
-| 4 | 850 | 4 ★ | 7 | 1 | 500 Éclats |
-| 5 | 1 200 | 4 ★ | 8 | 2 | 4 boosters |
-| 6 | 1 600 | 5 ★ | 9 | 2 | 5 boosters |
+| Phase | Seuil (Sorcier) | Seuil (Marionnettiste) | IA | PV du boss | Essences d'avance | Coffre commun |
+|---|---|---|---|---|---|---|
+| 1 | 100 | 80 | 2 ★ | 5 | 0 | 2 boosters |
+| 2 | 250 | 200 | 3 ★ | 6 | 0 | 300 Fragments |
+| 3 | 450 | 360 | 3 ★ | 7 | 1 | 3 boosters |
+| 4 | 700 | 560 | 4 ★ | 7 | 1 | 500 Éclats |
+| 5 | 1 000 | 800 | 4 ★ | 8 | 2 | 5 boosters |
+| 6 | 1 400 | 1 120 | 5 ★ | 9 | 2 | **une Légendaire qui manque, et le titre « Héros du Raid »** |
 
-- **[fait] Ce que le joueur affronte vraiment (3.0.11, puis 3.0.12)** : chaque boss a un réglage (`RAID.bosses` › `ajuste`). Depuis les règles officielles (le joueur a 4 PV au lieu de 5), **les deux boss ont un PV et une Essence d'avance de moins que la phase** (phase 1 : 4 PV, 0 Essence ; phase 6 : 8 PV, 1 Essence). **[mesuré]** Un Starter, IA niveau 3, 80 combats par case : le joueur gagne contre le Sorcier 65 %, 51 %, 30 %, 40 %, 15 % et 4 % des phases 1 à 6, contre le Marionnettiste 66 %, 33 %, 26 %, 25 %, 8 % et 3 % (marge ± 10 points). Le serveur garde les chiffres du tableau pour compter les dégâts : une victoire vaut toujours « PV de la phase + 1 + 3 ».
+- **Jusqu'à la 3.0.13** : seuils 120, 300, 550, 850, 1 200, 1 600 pour les deux boss ; coffres 2 boosters, 300 Fragments, 3 boosters, 500 Éclats, 4 boosters, 5 boosters. **[calcul, sur les mesures ci-dessous]** Avec les règles officielles (4 PV), un serveur de dix joueurs actifs n'abattait jamais la sixième phase (0 % des saisons simulées) : ce n'était pas un exploit, c'était impossible.
+- **[fait] Le dernier coffre (3.0.14)** : une Légendaire de l'extension que le joueur n'a pas (`accorder('legendaire')` ; s'il les a toutes, 4 000 Fragments, la moitié d'une fabrication), et le titre « Héros du Raid » (`t_heros_raid`, ton Légendaire), qu'on ne gagne que là — une seule fois : les raids suivants redonnent la Légendaire, pas le titre. **[choix de la session, à valider]** La Légendaire plutôt que des boosters : c'est le goulot de la collection (dix cartes à 4 %, README « L'équilibrage »), une récompense qui se sent. **[calcul]** Pour un serveur qui l'abat une saison sur deux, une Légendaire par mois ; un joueur régulier en fabrique une en un peu moins de quatre semaines de Fragments (README, « Le recyclage »).
+- **[fait] Ce que le joueur affronte vraiment** : chaque boss a un réglage (`RAID.bosses` › `ajuste`) ; depuis les règles officielles, **les deux boss ont un PV et une Essence d'avance de moins que la phase** (phase 1 : 4 PV, 0 Essence ; phase 6 : 8 PV, 1 Essence). Le serveur garde les chiffres du tableau pour compter les dégâts : une victoire vaut « PV de la phase + 1 + 3 », une défaite les PV pris, au plus PV de la phase + 1.
+- **[mesuré] 3.0.14** (`tools/equilibre-raid.js mesurer`, 100 combats par phase, par boss et par profil ; le joueur tenu par l'adversaire du jeu avec un Starter : débutant au niveau 2, régulier au niveau 3, fort au niveau 4) : les dégâts que le serveur compte, par tentative, en moyenne des trois profils.
+
+| Phase | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| The French Sorcerer : dégâts par tentative | 6,9 | 6,9 | 6,1 | 7,0 | 6,4 | 4,0 |
+| … victoires (débutant / régulier / fort) | 63 / 66 / 63 % | 50 / 55 / 45 % | 23 / 28 / 31 % | 41 / 34 / 39 % | 16 / 27 / 25 % | 0 / 7 / 6 % |
+| Le Marionnettiste : dégâts par tentative | 6,4 | 6,2 | 5,7 | 5,4 | 4,4 | 3,3 |
+| … victoires (débutant / régulier / fort) | 52 / 55 / 61 % | 40 / 36 / 40 % | 21 / 30 / 16 % | 11 / 20 / 23 % | 3 / 3 / 5 % | 0 / 1 / 2 % |
+
+  Marge : environ ± 10 points sur une part de victoires, ± 0,3 sur une moyenne de dégâts. Ce qui se lit : les phases 1 à 5 du Sorcier rapportent à peu près autant chacune (une victoire en phase 5 vaut plus de dégâts, ce qui compense des victoires plus rares) ; le mur, c'est la phase 6 (adversaire au niveau 5). Le Marionnettiste devient plus dur à chaque phase. Le profil « fort » (niveau 4) ne fait pas mieux que le régulier : le niveau du joueur simulé change peu, à deck égal ; les profils se distinguent surtout par leur activité.
+- **[calcul, simulation] Les saisons** (`tools/equilibre-raid.js simuler`, 2 000 saisons de 14 jours par ligne ; chaque tentative tire ses dégâts dans la mesure de la phase en cours). **[hypothèse]** Les serveurs : « dix actifs », 3 forts à 2,6 tentatives par jour, 4 réguliers à 1,8, 3 débutants à 1 (18 tentatives par jour) ; « acharnés », les mêmes à 3 tentatives chaque jour (30) ; « calme », six joueurs, 5,6 tentatives par jour.
+
+| Serveur | Boss | Jour médian où tombent les phases 1 à 6 | La 6ᵉ tombe dans les 14 jours |
+|---|---|---|---|
+| Dix actifs | Sorcier | 1, 2, 4, 6, 9, 14 | 62 % des saisons |
+| Dix actifs | Marionnettiste | 1, 2, 4, 6, 9, 14 | 50 % |
+| Acharnés | Sorcier | 1, 2, 3, 4, 6, 9 | 100 % |
+| Acharnés | Marionnettiste | 1, 2, 2, 4, 6, 9 | 100 % |
+| Calme | Sorcier | 3, 7, 13, —, —, — | 0 % (la phase 3 : 97 %) |
+| Calme | Marionnettiste | 3, 6, 11, —, —, — | 0 % (la phase 3 : 100 %) |
+
+  Une dizaine de joueurs actifs abat donc la dernière phase le dernier jour, une saison sur deux : il faut tenir jusqu'au bout. Sans la vie à 0,8, le Marionnettiste ne tombait jamais (0 %) ; à 0,75, 95 % des saisons.
+- **[inconnu]** L'activité réelle. Elle décide de tout : 5 % de dégâts en plus ou en moins sur la saison font passer la dernière phase d'une saison sur trois à quatre sur cinq. Le réglage se fait sans redéployer, par `raid_echelle` (Labo › Serveur › Raid) : un serveur plus petit le baisse (0,6 pour six joueurs actifs, à peu près), un plus grand le monte.
 - Une phase tombée ouvre un **coffre commun** pour **chaque joueur qui a combattu au moins une fois dans la saison**, même s'il n'a pas porté le dernier coup. Il se réclame pendant la saison et la suivante.
-- Trois **paliers personnels** par saison, sur ses propres dégâts : 30 (1 booster), 80 (300 Fragments), 150 (2 boosters).
+- Trois **paliers personnels** par saison, sur ses propres dégâts : 30 (1 booster), 80 (300 Fragments), 150 (2 boosters). **[calcul]** Sur une saison du serveur « dix actifs » : un fort fait environ 200 dégâts (les trois paliers), un régulier 140 (deux, parfois trois), un débutant 75 (un, parfois deux) ; un peu moins contre le Marionnettiste.
 - Les six phases tombées, le **mode Infini** : chaque victoire fait monter son propre palier (boss jusqu'à 12 PV et 3 Essences d'avance, puis c'est le joueur qui a moins de PV). Il ne débloque plus rien pour tous : c'est la performance de chacun, avec son classement.
-- Ce que paie un combat (inchangé) : pendant le Choc, 3 Étincelles par dégât et 15 si le boss tombe ; le reste du temps, 2 Éclats par dégât et 15. Une victoire compte « PV du boss + 1 » dégâts, plus 3 de bonus (9 en phase 1, 13 en phase 6) ; une défaite, les PV pris. Les dégâts d'un combat sont plafonnés côté serveur.
+- Ce que paie un combat (inchangé) : pendant le Choc, 3 Étincelles par dégât et 15 si le boss tombe ; le reste du temps, 2 Éclats par dégât et 15. Depuis la 3.0.14, le serveur rejoue le combat avant de compter (§ « Ce que le serveur vérifie »).
 
 | [calcul] Par jour, au plus (3 victoires) | Phase 1 (boss à 5 PV) | Phase 6 (boss à 9 PV) |
 |---|---|---|
@@ -123,16 +148,7 @@ Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière 
 | Hors événement, en Éclats | 3 × (9 × 2 + 15) = 99 | 3 × (13 × 2 + 15) = 123 |
 | Pendant le Choc, en Étincelles | 3 × (9 × 3 + 15) = 126 | 3 × (13 × 3 + 15) = 162 |
 
-**[calcul, sur des hypothèses d'activité]** Combien de phases tombent dans une saison, à `raid_echelle = 1` :
-
-| [hypothèse] Activité | Dégâts par jour | Sur 14 jours | Phases abattues | Jour où tombe la 6ᵉ |
-|---|---|---|---|---|
-| 10 joueurs, 3 tentatives, 7 dégâts en moyenne | 210 | 2 940 | 6 | ≈ 8ᵉ jour |
-| 6 joueurs, 2 tentatives, 6 dégâts | 72 | 1 008 | 4 | jamais (22 jours) |
-| 4 joueurs, 1,5 tentative, 5 dégâts | 30 | 420 | 2 | jamais |
-
-- **[inconnu]** L'activité réelle : c'est elle qui décide si l'Infini arrive (« si ça arrive, ce n'est même pas sûr »). Le réglage se fait sans redéployer, par `raid_echelle` : à 1, un serveur très engagé finit en une semaine, un serveur moyen s'arrête vers la phase 4.
-- **[calcul]** Tout ce qu'une saison complète donne à chaque participant, en coffres communs : 14 boosters, 300 Fragments, 500 Éclats ; plus 3 boosters et 300 Fragments de paliers personnels.
+- **[calcul]** Tout ce qu'une saison complète donne à chaque participant, en coffres communs : 10 boosters, 300 Fragments, 500 Éclats, une Légendaire (et le titre, la première fois) ; plus 3 boosters et 300 Fragments de paliers personnels. Jusqu'à la 3.0.13 : 14 boosters, 300 Fragments, 500 Éclats — mais la sixième phase ne tombait pas, et les cinq premières donnaient 9 boosters (10 désormais).
 
 ### Ce que rapportent les Étincelles [calcul]
 

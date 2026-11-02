@@ -141,15 +141,20 @@ language sql immutable as $$
 $$;
 
 -- Les six phases (RAID.phases) : le seuil de degats, le combat, le coffre.
+-- Version 3.0.14 : les seuils refaits pour une dizaine de joueurs actifs
+-- (tools/equilibre-raid.js), et le coffre de la derniere phase, l'exploit :
+-- une Legendaire qui manque (accorder 'legendaire'), et le titre « Heros du
+-- Raid » (`bonus`).
 create or replace function public.raid_phases() returns jsonb
 language sql immutable as $$
   select '[
-    {"seuil": 120,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",  "montant": 2,   "titre": "2 boosters"}},
-    {"seuil": 300,  "ia": 3, "pv": 6, "ess": 0, "commun": {"type": "fragments", "montant": 300, "titre": "300 Fragments"}},
-    {"seuil": 550,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "boosters",  "montant": 3,   "titre": "3 boosters"}},
-    {"seuil": 850,  "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "eclats",    "montant": 500, "titre": "500 Éclats"}},
-    {"seuil": 1200, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "boosters",  "montant": 4,   "titre": "4 boosters"}},
-    {"seuil": 1600, "ia": 5, "pv": 9, "ess": 2, "commun": {"type": "boosters",  "montant": 5,   "titre": "5 boosters"}}
+    {"seuil": 100,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",   "montant": 2,   "titre": "2 boosters"}},
+    {"seuil": 250,  "ia": 3, "pv": 6, "ess": 0, "commun": {"type": "fragments",  "montant": 300, "titre": "300 Fragments"}},
+    {"seuil": 450,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "boosters",   "montant": 3,   "titre": "3 boosters"}},
+    {"seuil": 700,  "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "eclats",     "montant": 500, "titre": "500 Éclats"}},
+    {"seuil": 1000, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "boosters",   "montant": 5,   "titre": "5 boosters"}},
+    {"seuil": 1400, "ia": 5, "pv": 9, "ess": 2, "commun": {"type": "legendaire", "montant": 1,   "titre": "Une Légendaire",
+      "bonus": {"type": "titre", "montant": 1, "objet": "t_heros_raid", "titre": "le titre « Héros du Raid »", "court": "+ un titre"}}}
   ]'::jsonb;
 $$;
 -- Les paliers personnels (RAID.perso).
@@ -162,10 +167,20 @@ language sql immutable as $$
   ]'::jsonb;
 $$;
 
--- Le seuil d'une phase, a l'echelle du serveur.
-create or replace function public.raid_seuil(k int) returns integer
+-- La vie d'un boss (RAID.bosses › vie, version 3.0.14) : ses seuils de
+-- phase sont multiplies par elle. Le Marionnettiste est plus dur a chaque
+-- combat ; avec moins de vie, le serveur l'abat au meme rythme que le Sorcier.
+create or replace function public.raid_vie(b text) returns numeric
+language sql immutable as $$
+  select case b when 'c121' then 0.8 else 1 end::numeric;
+$$;
+
+-- Le seuil d'une phase du raid `s`, a l'echelle du serveur et a la vie de
+-- son boss. (Avant la 3.0.14 : raid_seuil(k), sans le raid.)
+drop function if exists public.raid_seuil(int);
+create or replace function public.raid_seuil(k int, s int) returns integer
 language sql stable security definer set search_path = public as $$
-  select greatest(10, round(((raid_phases()->(k - 1))->>'seuil')::int
+  select greatest(10, round(((raid_phases()->(k - 1))->>'seuil')::int * raid_vie(raid_boss(s))
                             * (select raid_echelle from parametres where id = 1))::int);
 $$;
 
@@ -175,24 +190,26 @@ create or replace function public.raid_phase(s int) returns integer
 language plpgsql stable security definer set search_path = public as $$
 declare d int := coalesce((select degats from raid_saisons where n = s), 0); k int := 1;
 begin
-  while k <= 6 and d >= raid_seuil(k) loop k := k + 1; end loop;
+  while k <= 6 and d >= raid_seuil(k, s) loop k := k + 1; end loop;
   return k;
 end $$;
 
 -- Le combat d'une cle : 'p3' (la phase 3) ou 'i5' (l'Infini, palier 5).
 -- RAID.infini : le boss a plus de PV et d'Essences, puis c'est le joueur
--- qui a moins de PV.
+-- qui a moins de PV. Le joueur part des 4 PV des regles officielles (3.0.12 ;
+-- 5 avant, ecrit ici jusqu'a la 3.0.14 — sans effet : seuls les PV du boss
+-- comptent les degats, et le combat se rebatit dans la page).
 create or replace function public.raid_combat(p_cle text) returns jsonb
 language plpgsql immutable as $$
 declare n int := greatest(1, coalesce(nullif(substr(p_cle, 2), '')::int, 1)); ph jsonb;
 begin
   if left(p_cle, 1) = 'i' then
     return jsonb_build_object('infini', true, 'n', n, 'ia', 5, 'pv_boss', least(12, 9 + n),
-                              'ess', least(3, 2 + n / 3), 'pv_moi', greatest(2, 5 - greatest(0, n - 3) / 2));
+                              'ess', least(3, 2 + n / 3), 'pv_moi', greatest(2, 4 - greatest(0, n - 3) / 2));
   end if;
   ph := raid_phases()->(least(n, 6) - 1);
   return jsonb_build_object('infini', false, 'n', n, 'ia', (ph->>'ia')::int, 'pv_boss', (ph->>'pv')::int,
-                            'ess', (ph->>'ess')::int, 'pv_moi', 5);
+                            'ess', (ph->>'ess')::int, 'pv_moi', 4);
 end $$;
 
 -- ===================================================== 4. ouvrir, clore
@@ -298,10 +315,10 @@ begin
     'n', s, 'boss', raid_boss(s), 'debut', raid_saison_debut(s), 'fin', raid_saison_debut(s + 1), 'degats', d,
     'phase', raid_phase(s),
     'phases', (select jsonb_agg(x.ph || jsonb_build_object(
-                 'n', x.k, 'seuil', raid_seuil(x.k::int),
+                 'n', x.k, 'seuil', raid_seuil(x.k::int, s),
                  -- Abattue : les degats du serveur ont passe son seuil (meme si
                  -- raid_echelle a baisse entre-temps).
-                 'tombee', d >= raid_seuil(x.k::int),
+                 'tombee', d >= raid_seuil(x.k::int, s),
                  'pris', exists (select 1 from raid_pris r where r.saison = s and r.user_id = p and r.quoi = 'commun' and r.n = x.k))
                order by x.k)
                from jsonb_array_elements(raid_phases()) with ordinality as x(ph, k)),
@@ -342,6 +359,8 @@ end $$;
 
 -- Un coffre : commun (une phase abattue, pour qui a combattu dans le raid)
 -- ou personnel (un palier de ses degats). Le raid en cours ou le precedent.
+-- Version 3.0.14 : un coffre peut donner un objet (`objet`) et un second
+-- present (`bonus` : le titre du dernier).
 create or replace function public.raid_reclamer(p_saison int, p_quoi text, p_n int) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); s int := raid_saison(jour_paris()); moi raid_participants; c jsonb; cartes jsonb;
@@ -366,13 +385,16 @@ begin
   end if;
   insert into raid_pris (saison, user_id, quoi, n) values (p_saison, p, p_quoi, p_n) on conflict do nothing;
   if not found then raise exception 'Coffre déjà ouvert.'; end if;
-  cartes := accorder(p, c->>'type', (c->>'montant')::int, null);
+  cartes := accorder(p, c->>'type', (c->>'montant')::int, c->>'objet');
+  if c ? 'bonus' then
+    cartes := cartes || accorder(p, c->'bonus'->>'type', (c->'bonus'->>'montant')::int, c->'bonus'->>'objet');
+  end if;
   return jsonb_build_object('cartes', cartes, 'etat', me());
 end $$;
 
 -- ============================================================ 6. droits
 revoke all on function public.raid_ancre, public.raid_saison, public.raid_saison_debut, public.raid_boss,
-  public.raid_phases, public.raid_perso,
+  public.raid_phases, public.raid_perso, public.raid_vie,
   public.raid_seuil, public.raid_phase, public.raid_combat, public.raid_debut, public.raid_fin,
   public.raid_vue_saison from public, anon, authenticated;
 revoke all on function public.raid_etat, public.raid_reclamer from public, anon;

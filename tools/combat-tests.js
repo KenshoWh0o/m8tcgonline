@@ -565,6 +565,23 @@ test('le Raid : des phases de plus en plus dures, des paliers croissants, un Inf
   const p = Choc.RAID.perso;
   for (let k = 1; k < p.length; k++) vrai(p[k].seuil > p[k - 1].seuil, 'paliers personnels croissants');
 });
+test('le Raid : la page et le serveur ont les mêmes phases, les mêmes coffres, la même vie des boss', () => {
+  /* 27_raid.sql garde sa copie des chiffres (raid_phases, raid_perso,
+     raid_vie) : elle doit dire la même chose que js/combat/choc-data.js. */
+  const sql = require('fs').readFileSync(require('path').join(__dirname, '../supabase/installation/27_raid.sql'), 'utf8');
+  const bloc = f => JSON.parse(sql.split('function public.' + f + '()')[1].split("select '")[1].split("'::jsonb")[0]);
+  egal(bloc('raid_phases'), JSON.parse(JSON.stringify(Choc.RAID.phases)), 'raid_phases');
+  egal(bloc('raid_perso'), JSON.parse(JSON.stringify(Choc.RAID.perso)), 'raid_perso');
+  const vie = sql.split('function public.raid_vie(b text)')[1].split('$$;')[0];
+  for (const b of Choc.RAID.bosses) {
+    const m = vie.match(new RegExp("when '" + b.id + "' then ([0-9.]+)"));
+    egal(m ? Number(m[1]) : 1, b.vie || 1, 'la vie de ' + b.id);
+  }
+  /* Le dernier coffre est l'exploit : une Légendaire, et un titre qui existe. */
+  const fin = Choc.RAID.phases[5].commun;
+  egal(fin.type, 'legendaire');
+  vrai(fin.bonus && fin.bonus.type === 'titre' && Choc.TITRES[fin.bonus.objet], 'le titre du dernier coffre existe');
+});
 test('les raids durent deux semaines depuis le premier jour du Choc, sans trou ni chevauchement', () => {
   /* Un Choc ouvert le lundi 2 novembre à minuit, pour 21 jours. */
   const A = '2026-11-02';

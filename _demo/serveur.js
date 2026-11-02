@@ -1358,7 +1358,7 @@
         epreuves: Object.keys(ch.epreuves).length, gagnees: Object.keys(ch.gagnees).length,
         raid: Object.values(ch.joueurs).reduce((n, x) => n + (x.degats || 0), 0) },
       raid: { saison: sa, boss: vs.boss, debut: vs.debut, fin: vs.fin, degats: degatsSaison(sa), phase: phaseDemo(sa),
-        seuils: RAID.phases.map((x, i) => seuilDemo(i + 1)), echelle: echelleRaid(),
+        seuils: RAID.phases.map((x, i) => seuilDemo(i + 1, sa)), echelle: echelleRaid(),
         joueurs: Object.entries(r.part).filter(([k, x]) => k.startsWith(sa + '|') && x.combats > 0).length },
       reverses: { des: revDes() == null ? null : iso(revDes()), manuel: !!S.parametres.fabrication_reverse, ouvertes: revOuvertes() },
       sections: { toxique: cbs.filter(c => c.section === 'toxique').length, deter: cbs.filter(c => c.section === 'deter').length },
@@ -1442,7 +1442,7 @@
     estAdmin(p);
     if (!(p_phase >= 1 && p_phase <= 7)) refuser('Une phase de 1 à 7.');
     const r = raidDe(), sa = saisonDemo();
-    r.saisons[sa] = p_phase === 1 ? 0 : seuilDemo(p_phase - 1);
+    r.saisons[sa] = p_phase === 1 ? 0 : seuilDemo(p_phase - 1, sa);
     for (let k = 1; k <= RAID.phases.length; k++) {
       if (k < p_phase) r.tombees[sa + '|' + k] = r.tombees[sa + '|' + k] || now();
       else delete r.tombees[sa + '|' + k];
@@ -2451,11 +2451,13 @@
      _demo/reglages.js). */
   /* L'échelle : celle du Labo (parametres.raid_echelle), sinon celle des réglages. */
   const echelleRaid = () => (S.parametres && S.parametres.raid_echelle) || D.raid_echelle || 1;
-  const seuilDemo = k => Math.max(10, Math.round(RAID.phases[k - 1].seuil * echelleRaid()));
+  /* raid_seuil(k, s) : le seuil de la phase k du raid sa, à l'échelle et à la
+     vie de son boss (RAID.bosses › vie, version 3.0.14). */
+  const seuilDemo = (k, sa) => Math.max(10, Math.round(RAID.phases[k - 1].seuil * (raidBoss(sa).vie || 1) * echelleRaid()));
   const degatsSaison = sa => (raidDe().saisons[sa] || 0);
   function phaseDemo(sa) {
     let k = 1;
-    while (k <= RAID.phases.length && degatsSaison(sa) >= seuilDemo(k)) k++;
+    while (k <= RAID.phases.length && degatsSaison(sa) >= seuilDemo(k, sa)) k++;
     return k;
   }
   const partDe = (sa, p) => (raidDe().part[sa + '|' + p] = raidDe().part[sa + '|' + p]
@@ -2525,7 +2527,7 @@
     return {
       n: sa, boss: raidBoss(sa).id, debut: jourDe(sa - 1), fin: jourDe(sa), degats: degatsSaison(sa), phase: phaseDemo(sa),
       phases: RAID.phases.map((ph, i) => Object.assign({}, ph, {
-        n: i + 1, seuil: seuilDemo(i + 1), tombee: degatsSaison(sa) >= seuilDemo(i + 1), pris: !!r.pris[sa + '|' + p + '|commun|' + (i + 1)] })),
+        n: i + 1, seuil: seuilDemo(i + 1, sa), tombee: degatsSaison(sa) >= seuilDemo(i + 1, sa), pris: !!r.pris[sa + '|' + p + '|commun|' + (i + 1)] })),
       moi: { participe: !!x, combats: moi.combats, degats: moi.degats, victoires: moi.victoires, infini: moi.infini,
         perso: RAID.perso.map((pa, i) => Object.assign({}, pa, { n: i + 1, pris: !!r.pris[sa + '|' + p + '|perso|' + (i + 1)] })) }
     };
@@ -2570,7 +2572,9 @@
     const k = s + '|' + p + '|' + p_quoi + '|' + n;
     if (r.pris[k]) refuser('Coffre déjà ouvert.');
     r.pris[k] = now();
-    const cartes = accorder(p, c.type, c.montant || 0, null);
+    /* Version 3.0.14 : un objet, et un second présent (le titre du dernier coffre). */
+    const cartes = accorder(p, c.type, c.montant || 0, c.objet || null);
+    if (c.bonus) cartes.push(...accorder(p, c.bonus.type, c.bonus.montant || 0, c.bonus.objet || null));
     return { cartes, etat: me(p) };
   };
 

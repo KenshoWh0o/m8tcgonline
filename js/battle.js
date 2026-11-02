@@ -514,7 +514,7 @@ function vCbArcade(e) {
 }
 
 /* ---------- Le Raid ---------- */
-const vCbRaid = () => cbSousTete('Raid', `${rdEtat ? `N° ${rdEtat.n} · ` : ''}un boss pour tout le serveur`) + vRaid();
+const vCbRaid = () => cbSousTete('Raid', 'Tout le serveur contre un boss') + vRaid();
 
 /* ---------- Les défis entre amis ---------- */
 function vCbDefis(e) {

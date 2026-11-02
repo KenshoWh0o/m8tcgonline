@@ -115,7 +115,7 @@ begin
       'saison', sa, 'boss', raid_boss(sa), 'debut', raid_saison_debut(sa), 'fin', raid_saison_debut(sa + 1),
       'degats', coalesce((select degats from raid_saisons where n = sa), 0),
       'phase', raid_phase(sa),
-      'seuils', (select jsonb_agg(raid_seuil(k) order by k) from generate_series(1, 6) k),
+      'seuils', (select jsonb_agg(raid_seuil(k, sa) order by k) from generate_series(1, 6) k),
       'echelle', (select raid_echelle from parametres where id = 1),
       'joueurs', (select count(*) from raid_participants where saison = sa and combats > 0)),
     'reverses', (select jsonb_build_object('des', reverses_des, 'manuel', fabrication_reverse,
@@ -257,7 +257,7 @@ declare sa int := raid_saison(jour_paris()); d int;
 begin
   perform labo_garde();
   if p_phase is null or p_phase < 1 or p_phase > 7 then raise exception 'Une phase de 1 à 7.'; end if;
-  d := case when p_phase = 1 then 0 else raid_seuil(p_phase - 1) end;
+  d := case when p_phase = 1 then 0 else raid_seuil(p_phase - 1, sa) end;
   insert into raid_saisons (n, degats) values (sa, d) on conflict (n) do update set degats = excluded.degats;
   delete from raid_tombees where saison = sa and phase >= p_phase;
   insert into raid_tombees (saison, phase) select sa, k from generate_series(1, p_phase - 1) k
