@@ -292,7 +292,17 @@ button.cb-une:active{transform:scale(.98)}
 .cb-etape-art img{width:100%;height:auto;margin-top:-12%;transform:scale(1.5);transform-origin:50% 20%}
 .cb-etape.boss .cb-etape-art,.cb-etape.final .cb-etape-art{width:80px;height:80px}
 .cb-etape.fait .cb-etape-art{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--ok),0 8px 18px rgba(0,0,0,.45)}
-.cb-etape.ouvert .cb-etape-art{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent-soft),0 0 26px var(--accent-glow);animation:ar-pouls 1.6s ease-in-out infinite}
+/* La prochaine étape : son halo respire, derrière elle. Version 3.0.16 (le
+   propriétaire : « les icônes clignotent et laissent apparaître le tracé
+   derrière ») : l'animation faisait varier l'opacité de l'icône entière,
+   et le pointillé du chemin se voyait à travers. L'icône reste pleine. */
+.cb-etape.ouvert .cb-etape-art{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent-soft),0 8px 18px rgba(0,0,0,.45)}
+.cb-etape.ouvert::before{content:"";position:absolute;left:var(--x);top:50%;width:66px;height:66px;translate:-50% -50%;border-radius:50%;pointer-events:none;
+  box-shadow:0 0 28px 6px var(--accent-glow);animation:cb-halo 1.6s ease-in-out infinite}
+.cb-etape.ouvert.boss::before,.cb-etape.ouvert.final::before{width:80px;height:80px}
+@keyframes cb-halo{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.cb-etape.ouvert::before{animation:none}}
+html.rm .cb-etape.ouvert::before{animation:none}
 .cb-etape.ferme .cb-etape-art img{filter:grayscale(1) brightness(.4)}
 .cb-etape-t{position:absolute;top:50%;translate:0 -50%;display:flex;flex-direction:column;gap:2px;min-width:0}
 .cb-etape.lbl-d .cb-etape-t{left:calc(var(--x) + 50px);right:8px;align-items:flex-start}
