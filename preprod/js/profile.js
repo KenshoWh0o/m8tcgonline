@@ -286,7 +286,8 @@ function enregistrerDevise() {
 }
 
 function ouvrirChoixBanniere() {
-  const liste = toutesCartes().filter(c => (save.col[c.id] || 0) > 0 && c.img).sort(parRarete);
+  /* Les Secrètes aussi (3.0.16 : toutesCartes ne les compte pas, d'où leur absence). */
+  const liste = toutesCartes().concat(secretes).filter(c => (save.col[c.id] || 0) > 0 && c.img).sort(parRarete);
   openSheet({
     title: 'Un fond',
     body: liste.length

@@ -91,76 +91,74 @@ const rdCoffres = () => rdCoffresListe().length;
 const ETOILE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>';
 const etoiles = n => `<span class="etoiles" role="img" aria-label="${n} sur 5">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}">${ETOILE}</i>`).join('')}</span>`;
 
-/* La page du Raid, refaite en 3.0.15 (le propriétaire : « un peu mieux,
-   mais fait un peu cheapos […] c'est une nouveauté majeure, ça doit être à
-   la hauteur » ; « rendre le système de raid assez simple et intuitif, le
-   but est pas de se casser la tête »). Trois temps, dans cet ordre :
-     - le boss : son illustration en grand, et la vie que tout le serveur
-       lui prend — une barre découpée en ses six phases (chaque tronçon a la
-       largeur des dégâts qu'il demande), puis, dans l'Infini, un palier à
-       la fois ; et qui frappe avec toi ;
-     - ton combat : le boss face à toi, tes tentatives, un seul bouton ;
-     - le chemin du serveur : les six phases puis l'Infini, une étape par
-       ligne — ce qu'elle donne à tous, et où on en est ; puis toi (tes
-       dégâts, ton rang, tes trois coffres), le classement, l'aide en trois
+/* La page du Raid, refaite en 3.0.16 (le propriétaire, 2 novembre : « fais
+   une vraie review de l'écran du raid, prends du recul et critique, je le
+   trouve encore bancal. rends le beau bordel et intuitif »). Ce qui n'allait
+   pas : le bouton « Affronter » sous la ligne de flottaison (le boss prenait
+   tout le premier écran) ; « Phase 4 » écrit trois fois, les dégâts qui
+   manquent deux fois, les coffres personnels en piste puis en liste ; une
+   barre de vie qui se lisait à l'envers, sans légende ; « Sans avance »,
+   « Comme en partie », « Après ton 1er combat » ; trois écrans de long. Trois
+   temps désormais, dans l'ordre où on s'en sert :
+     - le boss et sa vie : la barre dit ce qu'elle est (« Vie du boss ») et
+       ce qui manque, une fois ;
+     - ton combat du jour : le boss et toi en deux lignes, ton deck, un seul
+       bouton, visible sans défiler sur un téléphone ;
+     - les coffres : ceux qui sont prêts d'abord, puis la piste commune (six
+       médaillons et l'Infini) et la tienne ; le classement ; l'aide en trois
        lignes. */
 
 /* Les dégâts que le serveur compte pour une victoire (raid_fin) : les PV
    de la phase (ceux du serveur), plus 1, plus le bonus. */
 const rdDegatsVictoire = cle => {
   const n = Math.max(1, parseInt(String(cle).slice(1), 10) || 1);
-  const pv = String(cle)[0] === 'i' ? Math.min(12, 9 + n) : RAID.phases[Math.min(n, NB_PHASES()) - 1].pv;
+  const pv = String(cle)[0] === 'i' ? RAID.infini(n).pvBoss : RAID.phases[Math.min(n, NB_PHASES()) - 1].pv;
   return pv + 1 + RAID.bonusDegats;
 };
 const ICO_INFINI = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c-2-2.7-3.8-4-5.5-4a4 4 0 0 0 0 8c1.7 0 3.5-1.3 5.5-4Zm0 0c2 2.7 3.8 4 5.5 4a4 4 0 0 0 0-8c-1.7 0-3.5 1.3-5.5 4Z"/></svg>';
+const rdS = n => (n > 1 ? 's' : '');
 
-/* La vie du boss : six tronçons (les phases), ou le palier Infini en cours. */
+/* La vie du boss : six tronçons (les phases, chacun large des dégâts qu'il
+   demande), ce qui reste en rouge, ce qui est pris en sombre ; dans
+   l'Infini, le palier en cours. */
 function vRaidVie(r) {
   const nv = rdNiveau(r);
   if (nv.infini) {
-    const lab = `Infini, palier ${nv.n} : encore ${nv.manque} dégâts pour le faire tomber`;
     return `<div class="rd-vie infini">
-      <div class="rd-vie-t"><b><span class="rd-inf">${ICO_INFINI}</span>Infini · palier ${nv.n}</b><span><b class="tnum">${fmtN(nv.manque)}</b> dégât${nv.manque > 1 ? 's' : ''} avant le palier ${nv.n + 1}</span></div>
-      <div class="rd-vie-barre" role="img" aria-label="${h(lab)}"><span class="rd-seg encours" style="flex:1"><i style="width:${((1 - nv.fait) * 100).toFixed(1)}%"></i></span></div>
-      <p class="rd-vie-msg">Les six phases sont tombées. Le boss revient plus fort, palier après palier, pour tout le serveur.</p>
+      <div class="rd-vie-t"><small>Vie du boss</small><b><span class="rd-inf">${ICO_INFINI}</span>Infini · palier ${nv.n}</b></div>
+      <div class="rd-vie-barre" role="img" aria-label="${h(`Infini, palier ${nv.n} : encore ${nv.manque} dégâts`)}"><span class="rd-seg encours" style="flex:1"><i style="width:${((1 - nv.fait) * 100).toFixed(1)}%"></i></span></div>
+      <p class="rd-vie-msg"><b class="tnum">${fmtN(nv.manque)}</b> dégât${rdS(nv.manque)} pour abattre ce palier</p>
     </div>`;
   }
   const lo = i => (i ? r.phases[i - 1].seuil : 0);
   const etat = ph => (ph.tombee ? 'tombe' : r.phase === ph.n ? 'encours' : 'plein');
   const seg = r.phases.map((ph, i) => {
     const reste = ph.tombee ? 0 : Math.max(0, Math.min(1, 1 - (r.degats - lo(i)) / (ph.seuil - lo(i))));
-    return `<span class="rd-seg ${etat(ph)}" style="flex:${ph.seuil - lo(i)}"><i style="width:${(reste * 100).toFixed(1)}%"></i></span>`;
+    return `<span class="rd-seg ${etat(ph)}" style="flex:${ph.seuil - lo(i)}"><i style="width:${(reste * 100).toFixed(1)}%"></i><em aria-hidden="true">${ph.tombee ? NAVICO.check : ph.n}</em></span>`;
   }).join('');
-  const nums = r.phases.map((ph, i) => `<em class="${etat(ph)}" style="flex:${ph.seuil - lo(i)}">${ph.n}</em>`).join('');
-  const apres = nv.n < NB_PHASES() ? `la phase ${nv.n + 1}` : 'l\'Infini';
-  const lab = `Phase ${nv.n} sur ${NB_PHASES()} : encore ${nv.manque} dégâts avant ${apres}`;
   return `<div class="rd-vie">
-    <div class="rd-vie-t"><b>Phase ${nv.n} <small>sur ${NB_PHASES()}</small></b><span><b class="tnum">${fmtN(nv.manque)}</b> dégât${nv.manque > 1 ? 's' : ''} avant ${apres}</span></div>
-    <div class="rd-vie-barre" role="img" aria-label="${h(lab)}">${seg}</div>
-    <div class="rd-vie-n" aria-hidden="true">${nums}</div>
+    <div class="rd-vie-t"><small>Vie du boss</small><b>Phase ${nv.n} <span>/ ${NB_PHASES()}</span></b></div>
+    <div class="rd-vie-barre" role="img" aria-label="${h(`Phase ${nv.n} sur ${NB_PHASES()} : encore ${nv.manque} dégâts pour l'abattre`)}">${seg}</div>
+    <p class="rd-vie-msg"><b class="tnum">${fmtN(nv.manque)}</b> dégât${rdS(nv.manque)} pour abattre la phase ${nv.n}</p>
   </div>`;
 }
 
-/* Le boss, sa vie, et le serveur qui frappe avec toi. */
+/* Le boss : son illustration, son nom, ce qu'il fait, sa vie. */
 function vRaidHero(r) {
   const b = rdBoss(r);
   const k = byId[b.id] || {};
   const j = rdJours(r);
-  const avs = (r.top || []).slice(0, 5);
   return `<section class="rd-hero">
-    ${k.img ? `<span class="rd-hero-art" aria-hidden="true">${illuCadre(k, b.visage[0], b.visage[1])}</span>` : ''}
-    <div class="rd-hero-haut"><span class="rd-tag">Raid ${r.n}</span><span class="rd-tag">${NAVICO.clock}${j} jour${j > 1 ? 's' : ''}</span></div>
-    <div class="rd-hero-bas">
-      <h2>${h(b.nom)}</h2>
-      <p class="rd-dit">${h(b.dit)}</p>
-      ${vRaidVie(r)}
-      <div class="rd-ens">${avs.length ? `<span class="rd-ens-av" aria-hidden="true">${avs.map(x => avatarHTML(x.avatar, x.frame, 'sm', x.photo)).join('')}</span>` : ''}
-        <span><b class="tnum">${fmtN(r.degats)}</b> dégâts pris par le serveur${r.joueurs ? `, ${r.joueurs} joueur${r.joueurs > 1 ? 's' : ''}` : ''}</span></div>
+    <div class="rd-hero-img">
+      ${k.img ? `<span class="rd-hero-art" aria-hidden="true">${illuCadre(k, b.visage[0], b.visage[1])}</span>` : ''}
+      <div class="rd-hero-haut"><span class="rd-tag">Raid ${r.n}</span>${r.joueurs ? `<span class="rd-tag" title="${h(`${fmtN(r.degats)} dégâts en tout`)}">${NAVICO.amis}${r.joueurs} joueur${rdS(r.joueurs)}</span>` : ''}<span class="rd-tag rd-tag-j">${NAVICO.clock}${j} jour${rdS(j)}</span></div>
+      <div class="rd-hero-nom"><h2>${h(b.nom)}</h2><p>${h(b.dit)}</p></div>
     </div>
+    ${vRaidVie(r)}
   </section>`;
 }
 
-/* Ton combat : le boss face à toi, un seul bouton. */
+/* Ton combat du jour : le boss et toi en deux lignes, ton deck, un bouton. */
 function vRaidCombat(r) {
   const nv = rdNiveau(r);
   const cle = rdCle(r);
@@ -174,72 +172,55 @@ function vRaidCombat(r) {
   const monnaie = ev ? CHOC.monnaie.nom : 'Éclats';
   const parPv = ev ? RAID.parDegat : RAID.parDegatEclats;
   return `<section class="rd-combat">
-    <div class="rd-combat-t"><h3>${nv.infini ? `Infini · palier ${nv.n}` : `Phase ${nv.n}`}<small>Ton combat</small></h3>
-      <span class="rd-tent" role="img" aria-label="${tr} tentative${tr > 1 ? 's' : ''} sur ${r.max} aujourd'hui"><span class="rd-pips">${pips}</span>${tr}/${r.max}</span></div>
-    <div class="rd-face">
-      <div class="rd-face-c boss">${k.img ? `<span class="rd-face-av">${illuCadre(k, b.visage[0], b.visage[1], 1.6)}</span>` : ''}
-        <span><small>Le boss</small><b class="tnum">${c.pvBoss} PV</b><span class="rd-face-d">${c.ess ? `${c.ess} Essence${c.ess > 1 ? 's' : ''} d'avance` : 'Sans avance'}</span>${etoiles(c.ia)}</span></div>
-      <span class="rd-face-vs" aria-hidden="true">VS</span>
-      <div class="rd-face-c moi">${avatarHTML(save.avatar, save.frame, 'md', maPhoto())}
-        <span><small>Toi</small><b class="tnum">${c.pvMoi} PV</b><span class="rd-face-d">${c.pvMoi < Combat.REGLE.PV ? `${Combat.REGLE.PV - c.pvMoi} de moins qu'en partie` : 'Comme en partie'}</span></span></div>
+    <div class="rd-combat-t"><h3>Ton combat du jour</h3>
+      <span class="rd-tent" role="img" aria-label="${tr} combat${rdS(tr)} sur ${r.max} aujourd'hui"><span class="rd-pips">${pips}</span>${tr}/${r.max}</span></div>
+    <div class="rd-duel">
+      <div class="rd-duel-l boss">${k.img ? `<span class="rd-duel-av">${illuCadre(k, b.visage[0], b.visage[1], 1.6)}</span>` : ''}
+        <span><b class="tnum"><span class="sr">${h(b.nom)} : </span>${c.pvBoss} PV</b><span class="sr">Difficulté</span>${etoiles(c.ia)}${c.ess ? `<small>${c.ess} Essence${rdS(c.ess)} d'avance</small>` : ''}</span></div>
+      <span class="rd-duel-vs" aria-hidden="true">VS</span>
+      <div class="rd-duel-l moi">${avatarHTML(save.avatar, save.frame, 'md', maPhoto())}
+        <span><b class="tnum">${c.pvMoi} PV</b><small>Toi</small></span></div>
     </div>
     ${sec ? vChoixDeck() : ''}
-    ${sec ? `<button class="btn cb-lancer" data-rd="go" ${tr ? '' : 'disabled'}>${tr ? 'Affronter' : 'Plus de tentative : reviens demain'}</button>`
+    ${sec ? `<button class="btn cb-lancer" data-rd="go" ${tr ? '' : 'disabled'}>${tr ? 'Affronter' : 'Plus de combat aujourd\'hui : reviens demain'}</button>`
       : '<button class="btn cb-lancer" data-tab="combats">Choisis d\'abord ta Section</button>'}
-    <p class="rd-gain">Chaque PV pris : <b>1 dégât</b> pour tous, <b>${parPv} ${monnaie}</b> pour toi. Le faire tomber : <b>${rdDegatsVictoire(cle)} dégâts</b> et ${RAID.victoireEclats} ${monnaie} de plus.</p>
+    <p class="rd-gain"><span>Chaque PV pris : <b>1 dégât pour tous</b>, ${parPv} ${monnaie} pour toi.</span><span>Le battre : <b>${rdDegatsVictoire(cle)} dégâts</b> et ${ev ? RAID.victoire : RAID.victoireEclats} ${monnaie}.</span></p>
   </section>`;
 }
 
-/* Le chemin du serveur : les six phases, puis l'Infini — une étape par
-   ligne, ce qu'elle donne à tous, et où on en est. */
-function vRaidChemin(r) {
+/* Les coffres : ceux qui attendent d'abord (de ce raid et du précédent),
+   puis la piste commune — six médaillons et l'Infini — et la tienne. */
+function vRaidCoffres(r) {
   const nv = rdNiveau(r);
-  const part = r.moi.participe;
-  const reste = () => `<small class="tnum">encore ${fmtN(nv.manque)}</small>`;
-  const action = (tombee, pris, n) => (tombee && pris ? `<small class="rd-et-ok">${NAVICO.check}Ouvert</small>`
-    : tombee && part ? `<button class="btn tiny" data-rd="coffre" data-s="${r.n}" data-q="commun" data-v="${n}" data-snd="piece">Ouvrir</button>`
-    : tombee ? '<small class="rd-et-att">Après ton 1<sup>er</sup> combat</small>' : '');
-  const etat = (tombee, pris) => (tombee ? (pris ? 'fait' : part ? 'pret' : 'attend') : '');
-  const ligne = (cls, ico, num, titre, gain, act, p) => `<li class="rd-et ${cls}"${p != null ? ` style="--p:${Math.round(p * 100)}"` : ''}>
-      <span class="rd-et-n"><i>${ico}</i>${num ? `<em>${num}</em>` : ''}</span>
-      <span class="rd-et-t"><b>${titre}</b><small>${gain}</small></span>${act ? `<span class="rd-et-a">${act}</span>` : ''}</li>`;
-  const l = r.phases.map(ph => {
-    const c = ph.commun;
-    const fin = ph.n === NB_PHASES();
-    const enCours = !nv.infini && r.phase === ph.n;
-    const cls = (etat(ph.tombee, ph.pris) || (enCours ? 'encours' : 'avenir')) + (fin ? ' final' : '');
-    const gain = `${h(c.titre)}${c.bonus ? ` <i class="rd-et-plus">${h(c.bonus.court || '')}</i>` : ''}`;
-    return ligne(cls, raidIco(c), ph.n, `Phase ${ph.n}`, gain, enCours ? reste() : action(ph.tombee, ph.pris, ph.n), enCours ? nv.fait : null);
-  });
+  const prets = rdOuvrables(r).concat(rdOuvrables(r.precedente));
+  const pret = x => `<li class="rd-pret"><span class="rd-pret-ico">${raidIco(x)}</span>
+      <span><small>${x.saison !== r.n ? `Raid ${x.saison} · ` : ''}${h(x.dit)}</small><b>${h(x.titre)}${x.bonus ? ` <i class="rd-plus">${h(x.bonus.court || '')}</i>` : ''}</b></span>
+      <button class="btn tiny" data-rd="coffre" data-s="${x.saison}" data-q="${x.quoi}" data-v="${x.n}" data-snd="piece">Ouvrir</button></li>`;
+  /* La piste commune. */
   const ci = rdCoffreInfini(r);
-  ((r.infini && r.infini.paliers) || []).forEach(pa => {
-    l.push(ligne(etat(true, pa.pris) + ' infini', ICO_INFINI, pa.n, `Infini · palier ${pa.n}`, h(ci.titre), action(true, pa.pris, NB_PHASES() + pa.n)));
-  });
-  l.push(nv.infini
-    ? ligne('encours infini', ICO_INFINI, nv.n, `Infini · palier ${nv.n}`, `${h(ci.titre)} pour tous, à chaque palier`, reste(), nv.fait)
-    : ligne('avenir infini', ICO_INFINI, '', 'Puis l\'Infini', `Le boss revient plus fort, palier après palier. ${h(ci.titre)} pour tous à chacun.`, ''));
-  return `<section class="rd-chemin">
-    <div class="rd-sec-t"><h3>Le chemin du serveur</h3><small>Chaque étape qui tombe ouvre un coffre pour tous ceux qui ont combattu dans ce raid.</small></div>
-    <ol class="rd-ets">${l.join('')}</ol>
-  </section>`;
-}
-
-/* Toi : tes dégâts, ton rang, tes trois coffres. */
-function vRaidToi(r) {
+  const med = (cls, ico, n, titre) => `<li class="rd-m ${cls}" title="${h(titre)}"><span class="rd-m-c">${ico}</span><em>${n}</em></li>`;
+  const etatPh = ph => (ph.tombee ? (ph.pris || !r.moi.participe ? 'fait' : 'pret') : !nv.infini && r.phase === ph.n ? 'encours' : 'avenir');
+  const meds = r.phases.map(ph => med(etatPh(ph) + (ph.n === NB_PHASES() ? ' final' : ''), raidIco(ph.commun), ph.n, `Phase ${ph.n} : ${ph.commun.titre}`)).join('')
+    + med(nv.infini ? 'encours infini' : 'avenir infini', ICO_INFINI, nv.infini ? nv.n : '∞', `L'Infini : ${ci.titre} à chaque palier`);
+  const prochain = nv.infini
+    ? `<b>${h(ci.titre)}</b> pour tous au palier ${nv.n} · encore <b class="tnum">${fmtN(nv.manque)}</b>`
+    : (() => { const ph = r.phases[nv.n - 1]; return `<b>${h(ph.commun.titre)}</b>${ph.commun.bonus ? ` et ${h(ph.commun.bonus.titre)}` : ''} pour tous à la phase ${nv.n} · encore <b class="tnum">${fmtN(nv.manque)}</b>`; })();
+  /* La piste personnelle. */
   const m = r.moi;
   const max = RAID.perso[RAID.perso.length - 1].seuil;
   const pos = x => Math.min(100, (100 * x) / max);
-  const rang = m.degats > 0 && r.rang ? `${r.rang}<sup>e</sup>` : '—';
-  const etat = pa => (pa.pris ? 'fait' : m.degats >= pa.seuil ? 'pret' : '');
-  const marques = m.perso.map(pa => `<span class="rd-pm ${etat(pa)}" style="left:${pos(pa.seuil).toFixed(1)}%">${raidIco(pa)}</span>`).join('');
-  const lignes = m.perso.map(pa => `<li class="${etat(pa)}"><small class="tnum">${fmtN(pa.seuil)} dégâts</small><b>${h(pa.titre)}</b>${pa.pris ? `<small class="rd-et-ok">${NAVICO.check}Ouvert</small>`
-    : m.degats >= pa.seuil ? `<button class="btn tiny" data-rd="coffre" data-s="${r.n}" data-q="perso" data-v="${pa.n}" data-snd="piece">Ouvrir</button>`
-      : `<small class="tnum">encore ${fmtN(pa.seuil - m.degats)}</small>`}</li>`).join('');
-  return `<section class="rd-toi">
-    <div class="rd-sec-t"><h3>Toi</h3><small>Tes propres dégâts de ce raid ouvrent aussi trois coffres, rien qu'à toi.</small></div>
-    <div class="rd-toi-ch"><span><b class="tnum">${fmtN(m.degats)}</b><small>dégâts</small></span><span><b class="tnum">${m.victoires}</b><small>victoire${m.victoires > 1 ? 's' : ''}</small></span><span><b>${rang}</b><small>au classement</small></span></div>
-    <div class="rd-piste" role="img" aria-label="${m.degats} dégâts sur ${max}"><span class="rd-piste-f" style="width:${pos(m.degats).toFixed(1)}%"></span>${marques}</div>
-    <ol class="rd-perso">${lignes}</ol>
+  const suivant = m.perso.find(pa => m.degats < pa.seuil);
+  const marques = m.perso.map(pa => `<span class="rd-pm ${pa.pris ? 'fait' : m.degats >= pa.seuil ? 'pret' : ''}" style="left:${pos(pa.seuil).toFixed(1)}%" title="${h(`${fmtN(pa.seuil)} dégâts : ${pa.titre}`)}">${raidIco(pa)}</span>`).join('');
+  return `<section class="rd-cof">
+    <div class="rd-sec-t"><h3>Les coffres</h3><small>Une phase abattue ouvre un coffre à chacun de ceux qui ont combattu.</small></div>
+    ${prets.length ? `<ol class="rd-prets">${prets.map(pret).join('')}</ol>` : ''}
+    <ol class="rd-piste-c" aria-label="Les coffres communs" style="--p:${((nv.infini ? NB_PHASES() : nv.n - 1) / NB_PHASES()).toFixed(3)}">${meds}</ol>
+    <p class="rd-prochain">${prochain}</p>
+    <div class="rd-moi">
+      <div class="rd-moi-t"><b>Les tiens</b><span><b class="tnum">${fmtN(m.degats)}</b> dégât${rdS(m.degats)}${m.victoires ? ` · ${m.victoires} victoire${rdS(m.victoires)}` : ''}${m.degats > 0 && r.rang ? ` · ${r.rang}<sup>e</sup>` : ''}</span></div>
+      <div class="rd-piste" role="img" aria-label="${m.degats} dégâts sur ${max}"><span class="rd-piste-f" style="width:${pos(m.degats).toFixed(1)}%"></span>${marques}</div>
+      <p class="rd-prochain">${suivant ? `Prochain : <b>${h(suivant.titre)}</b> à ${fmtN(suivant.seuil)} dégâts · encore <b class="tnum">${fmtN(suivant.seuil - m.degats)}</b>` : 'Tes trois coffres sont gagnés.'}</p>
+    </div>
   </section>`;
 }
 
@@ -249,41 +230,43 @@ function vRaid() {
   if (rdErreur) return vide('Raid indisponible', rdErreur);
   if (!rdEtat) { relireRaid(); return '<p class="muted boitecharge">Chargement du Raid…</p>'; }
   const r = rdEtat;
-  /* Les coffres du raid précédent, encore à ouvrir. */
-  const avant = rdOuvrables(r.precedente).map(x => `<div class="rd-coffre">
-      <span class="rd-coffre-ico">${raidIco(x)}</span>
-      <span><small>Raid ${x.saison} · ${h(x.dit)}</small><b>${h(x.titre)}</b></span>
-      <button class="btn tiny" data-rd="coffre" data-s="${x.saison}" data-q="${x.quoi}" data-v="${x.n}" data-snd="piece">Ouvrir</button>
-    </div>`).join('');
   return `<div class="rd">
-    ${avant ? `<section class="rd-coffres"><div class="rd-sec-t"><h3>Le raid précédent</h3><small>Ses coffres s'ouvrent jusqu'à la fin de celui-ci.</small></div>${avant}</section>` : ''}
     ${vRaidHero(r)}
     ${vRaidCombat(r)}
-    ${vRaidChemin(r)}
-    ${vRaidToi(r)}
+    ${vRaidCoffres(r)}
     ${vTopRaid(5)}
     <details class="rd-aide" data-garde="rd-aide"${r.moi.participe ? '' : ' open'}>
       <summary>Comment ça marche</summary>
-      <ol>
-        <li><b>Tout le serveur frappe le même boss</b>, pendant deux semaines. Trois tentatives par jour.</li>
-        <li><b>Chaque PV que tu lui prends compte pour tous.</b> Quand une phase tombe, chacun de ceux qui ont combattu dans le raid ouvre son coffre. La sixième donne une Légendaire et le titre « ${h(TITRES.t_heros_raid.nom)} ».</li>
-        <li><b>Ensuite, l'Infini</b> : le boss revient plus fort, palier après palier, et chaque palier tombé ouvre un coffre pour tous. Le classement dit qui a le plus frappé.</li>
-      </ol>
+      <ul>
+        <li>Tout le serveur frappe le même boss, pendant deux semaines : trois combats par jour chacun.</li>
+        <li>Chaque PV que tu lui prends compte pour tous. Une phase abattue ouvre un coffre à chacun de ceux qui ont combattu ; la sixième donne une Légendaire et le titre « ${h(TITRES.t_heros_raid.nom)} ».</li>
+        <li>Ensuite, l'Infini : des paliers communs, un coffre à chacun. Le Raid ne compte pas dans ton bilan de victoires.</li>
+      </ul>
     </details>
   </div>`;
 }
 
-/* Le classement du raid : les dégâts de chacun. */
-function vTopRaid(n) {
+/* Le classement du raid : les dégâts de chacun ; toi en bas si tu n'es pas
+   dans les premiers. En lignes serrées sur la page du Raid ; `enListe` :
+   la liste seule, comme celle des Étincelles (le classement du Choc). */
+function vTopRaid(n, enListe) {
   const r = rdEtat;
   if (!r) return '';
-  const top = (r.top || []).slice(0, n || 10);
+  const tous = r.top || [];
+  const top = tous.slice(0, n || 10);
   if (!top.length) return '';
-  return `<section class="rd-top"><div class="rd-sec-t"><h3>Classement du raid</h3><small>Les dégâts de chacun dans ce raid.</small></div>
-    <ol class="rf-top">${top.map((j, i) => `<li class="${j.moi ? 'moi' : ''}">
-      <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo, j.xp)}
-      <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.section ? `<small class="ch-sec">${emblemeSection(j.section)}${h(SECTIONS[j.section].court)}</small>` : ''}</span>
-      <span class="rf-pts tnum">${fmtN(j.degats)}<small class="muted">&nbsp;dégâts</small></span></li>`).join('')}</ol></section>`;
+  const moi = !top.some(j => j.moi) && r.moi && r.moi.degats > 0 && r.rang ? { moi: true, pseudo: save.pseudo || 'Toi', avatar: save.avatar, frame: save.frame, photo: maPhoto(), degats: r.moi.degats, rang: r.rang } : null;
+  const l = moi ? top.map((j, i) => [j, i + 1]).concat([[moi, moi.rang]]) : top.map((j, i) => [j, i + 1]);
+  if (enListe) {
+    return `<ol class="rf-top">${l.map(([j, rang]) => `<li class="${j.moi ? 'moi' : ''}">
+        <span class="rf-rang r${rang}">${rang}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
+        <span class="rf-joueur"><b>${h(j.pseudo)}</b></span>
+        <span class="rf-pts tnum">${fmtN(j.degats)}<small> dégâts</small></span></li>`).join('')}</ol>`;
+  }
+  const ligne = ([j, rang]) => `<li class="${j.moi ? 'moi' : ''}"><span class="rd-cl-r r${rang}">${rang}</span>${avatarHTML(j.avatar, j.frame, 'sm', j.photo)}
+      <b>${h(j.pseudo)}</b><span class="tnum">${fmtN(j.degats)}<small> dégâts</small></span></li>`;
+  return `<section class="rd-top"><div class="rd-sec-t"><h3>Classement</h3></div>
+    <ol class="rd-cl">${l.map(ligne).join('')}</ol></section>`;
 }
 
 /* L'affiche du Raid, à la une de l'accueil des Combats : le boss, la phase

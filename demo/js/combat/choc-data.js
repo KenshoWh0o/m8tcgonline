@@ -91,14 +91,25 @@ const RAID = {
      PV du boss, ses Essences d'avance) et le coffre commun. Le dernier est
      l'exploit (le propriétaire, 1er novembre 2026 : « finir la dernière
      phase doit être ressenti comme un vrai exploit ») : une Légendaire qui
-     manque, et un titre qu'on ne gagne que là (`bonus`). */
+     manque, et un titre qu'on ne gagne que là (`bonus`). Version 3.0.16 (le
+     propriétaire, 3 novembre : « beaucoup trop compliqué […] facilite-le un
+     chouille ») : les combats plus doux d'un cran (l'IA, les PV, les
+     Essences) ; mesuré (tools/equilibre-raid.js, 60 combats par case), un
+     joueur régulier gagne 73 %, 50 %, 50 %, 35 %, 50 % et 28 % des combats
+     des phases 1 à 6 contre le Sorcier (7 % en phase 6 avant), 57 %, 35 %,
+     35 %, 25 %, 18 % et 7 % contre le Marionnettiste (1 % avant). Chaque
+     tentative rapporte donc plus : les seuils montent (115 … 1 620, au lieu
+     de 100 … 1 400) pour que la sixième phase reste l'affaire du dernier
+     jour — simulé, une dizaine de joueurs actifs l'abat le 14ᵉ jour, 98 %
+     des saisons contre le Sorcier et 88 % contre le Marionnettiste (62 % et
+     50 % avant). docs/economie-3.0.md, § 3. */
   phases: [
-    { seuil: 100, ia: 2, pv: 5, ess: 0, commun: { type: 'boosters', montant: 2, titre: '2 boosters' } },
-    { seuil: 250, ia: 3, pv: 6, ess: 0, commun: { type: 'fragments', montant: 300, titre: '300 Fragments' } },
-    { seuil: 450, ia: 3, pv: 7, ess: 1, commun: { type: 'boosters', montant: 3, titre: '3 boosters' } },
-    { seuil: 700, ia: 4, pv: 7, ess: 1, commun: { type: 'eclats', montant: 500, titre: '500 Éclats' } },
-    { seuil: 1000, ia: 4, pv: 8, ess: 2, commun: { type: 'boosters', montant: 5, titre: '5 boosters' } },
-    { seuil: 1400, ia: 5, pv: 9, ess: 2, commun: { type: 'legendaire', montant: 1, titre: 'Une Légendaire',
+    { seuil: 115, ia: 2, pv: 5, ess: 0, commun: { type: 'boosters', montant: 2, titre: '2 boosters' } },
+    { seuil: 290, ia: 2, pv: 6, ess: 0, commun: { type: 'fragments', montant: 300, titre: '300 Fragments' } },
+    { seuil: 520, ia: 3, pv: 6, ess: 1, commun: { type: 'boosters', montant: 3, titre: '3 boosters' } },
+    { seuil: 810, ia: 3, pv: 7, ess: 1, commun: { type: 'eclats', montant: 500, titre: '500 Éclats' } },
+    { seuil: 1150, ia: 4, pv: 7, ess: 1, commun: { type: 'boosters', montant: 5, titre: '5 boosters' } },
+    { seuil: 1620, ia: 4, pv: 8, ess: 2, commun: { type: 'legendaire', montant: 1, titre: 'Une Légendaire',
       bonus: { type: 'titre', montant: 1, objet: 't_heros_raid', titre: 'le titre « Héros du Raid »', court: '+ un titre' } } }
   ],
   /* Les paliers personnels de la saison : les dégâts de chacun. */
@@ -114,14 +125,16 @@ const RAID = {
      dégâts. Chaque palier demande `infiniPas` dégâts de plus à tout le
      serveur (à la vie du boss et à l'échelle, comme les phases :
      raid_seuil, 27_raid.sql) et ouvre `infiniCoffre` pour tous ceux qui ont
-     combattu. Au combat, le boss a plus de PV et d'Essences, puis c'est toi
-     qui as moins de PV. */
-  infiniPas: 400,
+     combattu. Au combat, un palier se joue comme la sixième phase (plus
+     bas, `infini`). */
+  infiniPas: 250,
   infiniCoffre: { type: 'boosters', montant: 1, titre: '1 booster' },
-  infini: n => {
-    const k = Math.max(1, n);
-    return { ia: 5, pvBoss: Math.min(12, 9 + k), ess: Math.min(3, 2 + Math.floor(k / 3)), pvMoi: Math.max(2, Combat.REGLE.PV - Math.floor(Math.max(0, k - 3) / 2)) };
-  },
+  /* Version 3.0.16 (le propriétaire, 3 novembre : « Le raid est beaucoup
+     trop compliqué, surtout en mode infini, facilite-le un chouille ») : un
+     palier Infini se joue comme la sixième phase, sans durcir — l'IA au
+     niveau 5, le boss jusqu'à 12 PV et le joueur réduit à 2 PV ne laissaient
+     presque aucune chance ; c'est le seuil commun qui monte. */
+  infini: () => ({ ia: 4, pvBoss: 8, ess: 2, pvMoi: Combat.REGLE.PV }),
   /* Ce que rapporte un combat : par PV pris, et s'il tombe (+ bonusDegats
      dégâts). Pendant le Choc, en Étincelles ; sinon, en Éclats. */
   parDegat: 3, victoire: 15, bonusDegats: 3,

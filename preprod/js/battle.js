@@ -237,7 +237,7 @@ function vCbAccueil(e) {
      Guide ne suffisait pas à le faire voir. */
   const tuto = typeof tutoFait === 'function' && !tutoFait();
   return `<section class="cb-hero">
-      <span class="cb-hero-art" aria-hidden="true"></span>
+      <span class="cb-hero-art" aria-hidden="true">${illuCadre('c078', 0.62, 0.33, 1.1)}</span>
       <div class="cb-hero-haut"><span class="cb-badge" title="Ta Section">${emblemeSection(e.section)}<b>${h(SECTIONS[e.section].court)}</b></span>${vCbNivAnneau(e)}</div>
       <h1 class="cb-hero-titre">Combats</h1>
     </section>
@@ -554,7 +554,10 @@ const DEFI_GAIN = { victoire: 40, defaite: 15, plafond: 3 };
    Brillantes). Le deck actif en tête, en grand, avec sa note ; les autres
    en lignes ; et ce qui fait un bon deck, à portée de main. */
 let cbDecksVue = 'decks';
-const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" role="img" aria-label="${n} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+/* Les étoiles d'un deck, par demies depuis la 3.0.16 (Decks.bilan). */
+const ETOILES_DECK = (n, sur = 3) => `<span class="dk-etoiles" role="img" aria-label="${String(n).replace('.', ',')} étoile${n > 1 ? 's' : ''} sur ${sur}">${Array.from({ length: sur }, (_, i) => `<i class="${i + 1 <= n ? 'on' : i + 0.5 === n ? 'demi' : ''}"></i>`).join('')}</span>`;
+const noteDeck = b => `${String(b.note).replace('.', ',')} étoile${b.note > 1 ? 's' : ''} sur ${b.sur}`;
+const icoRepere = x => (x.etat === 'ok' ? NAVICO.check : x.etat === 'presque' ? '½' : '!');
 function vCbDecks(e) {
   const seg = `<div class="dk-seg" role="tablist">
       <button class="${cbDecksVue === 'decks' ? 'on' : ''}" data-cb="decks-vue" data-v="decks" role="tab">Mes decks</button>
@@ -618,8 +621,7 @@ function vBonDeck() {
       ${point('Une ou deux couleurs.', 'Ta Réserve paie tes attaques et permet de jouer tes cartes de couleur. Dans l\'atelier, « Régler d\'après mes attaques » l\'accorde à ton Club.')}
       ${point('Des attaques à 1 ou 2 Essences.', 'Une Essence arrive par tour : au moins la moitié de tes Joueurs.')}
     </ol>
-    <p class="dk-bon-assist"><b>Les clés</b> de l'analyse disent ce que fait ton deck : son départ, ses Essences, sa régularité, sa tenue, ses PV. La cote d'une carte, en cinq barres : ce qu'elle ajoute aux victoires de sa couleur, mesuré sur des milliers de parties.</p>
-    <p class="muted small">Un conseil suivi, une étoile. Pour démarrer vite : un Starter Deck se joue sans en posséder les cartes.</p>
+    <p class="muted small">Un conseil suivi, une étoile ; presque suivi, une demi-étoile. Pour démarrer vite : un Starter Deck se joue sans en posséder les cartes.</p>
   </details>`;
 }
 
@@ -631,10 +633,9 @@ function ouvrirBilan(id) {
   const b = Decks.bilan(d);
   openSheet({
     title: `${d.nom} · ${b.nom}`,
-    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${b.note} conseil${b.note > 1 ? 's' : ''} suivi${b.note > 1 ? 's' : ''} sur ${b.sur}</span></div>
-      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}"><i aria-hidden="true">${x.ok ? NAVICO.check : '!'}</i>
+    body: `<div class="dk-bilan-tete">${ETOILES_DECK(b.note, b.sur)}<span>${noteDeck(b)}</span></div>
+      <ul class="dk-bilan">${b.reperes.map(x => `<li class="${x.etat}"><i aria-hidden="true">${icoRepere(x)}</i>
         <span><b>${x.titre}</b><small>${h(x.dit)} ${h(x.pourquoi)}</small></span></li>`).join('')}</ul>
-      ${typeof vClesDeck === 'function' ? vClesDeck(d) : ''}
       ${typeof vStatsDeck === 'function' && Decks.total(d.cartes) ? vStatsDeck(d) : ''}`,
     actions: [{ label: 'Fermer', primary: true, fn: closeSheet }]
   });
@@ -890,8 +891,9 @@ function ouvrirArene(partie, meta) {
     brillantes: [brillantesMoi(), []],
     titre: meta.titre, sousTitre: meta.sousTitre, boss: meta.boss,
     sauver: CLE_COMBAT, meta,
-    /* Ce que coûte un abandon (3.0.14) : une défaite au Raid, rien en solo. */
-    abandon: meta.mode === 'raid' ? 'defaite' : 'rien',
+    /* Ce que coûte un abandon (3.0.14 ; 3.0.16 : le Raid hors du bilan) :
+       au Raid, ses dégâts et la tentative ; rien en solo. */
+    abandon: meta.mode === 'raid' ? 'raid' : 'rien',
     surFin: (E, gagne) => finirCombat(meta, E, gagne),
     surQuitter: () => { render(); }
   }));
@@ -989,7 +991,7 @@ function oublierCombat() {
   if (s && s.fini) {
     return openSheet({
       title: 'Oublier ce résultat ?',
-      body: `<p class="muted">Il ne sera pas envoyé.${s.meta && s.meta.mode === 'raid' ? ' Au Raid, le serveur compte ce combat comme perdu au prochain que tu ouvres.' : ''}</p>`,
+      body: `<p class="muted">Il ne sera pas envoyé.${s.meta && s.meta.mode === 'raid' ? ' Au Raid, la tentative reste prise, et ses dégâts ne comptent pas.' : ''}</p>`,
       actions: [
         { label: 'Oublier', primary: true, fn: () => { closeSheet(); try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ } render(); } },
         { label: 'Garder', fn: closeSheet }
@@ -998,7 +1000,7 @@ function oublierCombat() {
   }
   openSheet({
     title: 'Abandonner ce combat ?',
-    body: `<p class="muted">${texteAbandon(s && s.meta && s.meta.mode === 'raid' ? 'defaite' : 'rien')}</p>`,
+    body: `<p class="muted">${texteAbandon(s && s.meta && s.meta.mode === 'raid' ? 'raid' : 'rien')}</p>`,
     actions: [
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();

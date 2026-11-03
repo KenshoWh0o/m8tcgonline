@@ -32,11 +32,14 @@
 
 /* Ce que coûte un abandon (3.0.14, le propriétaire : « Les combats
    abandonnés comptent comme une défaite seulement en online ou en raid. Et
-   ils n'aident pas à avancer des quêtes ») : `defaite` (Raid, Versus),
-   `tuto` (le tutoriel), sinon rien (solo). Les mêmes règles côté serveur :
-   combat_fin, defi_fin, raid_fin. */
+   ils n'aident pas à avancer des quêtes ») : `defaite` (Versus), `raid`
+   (depuis la 3.0.16, le Raid n'entre plus dans le bilan : ses dégâts
+   comptent, la tentative est prise), `tuto` (le tutoriel), sinon rien
+   (solo). Les mêmes règles côté serveur : combat_payer, defi_fin_verifie,
+   raid_fin. */
 function texteAbandon(k) {
   return k === 'defaite' ? 'Il compte comme une défaite, et ne fait avancer aucune quête.'
+    : k === 'raid' ? 'Les PV déjà pris comptent, la tentative aussi ; aucune quête n\'avance.'
     : k === 'tuto' ? 'Le tutoriel se rejoue depuis le Guide.'
     : 'Il ne compte pas : ni défaite, ni XP, ni quête.';
 }
@@ -773,6 +776,68 @@ const Table = (() => {
       else if (T.cible) { T.cible = null; consigne(null); rendre(); }
     };
     document.addEventListener('keydown', T.echap);
+    /* Glisser vers le bas referme une feuille sans décision (3.0.16, le
+       propriétaire : « L'historique des cartes jouées n'est pas refermable en
+       swipant ») : le menu, une pile, les cartes jouées — comme la feuille du
+       site (js/ui.js). Une décision attend sa réponse : pas de geste. Le
+       doigt ne vole ni un défilement (la liste n'est pas tout en haut) ni un
+       glissé horizontal. */
+    {
+      const sh = qs('.ar-sheet');
+      let g = null;
+      const defile = x => { for (; x && x !== sh; x = x.parentElement) if (x.scrollTop > 0) return true; return false; };
+      sh.addEventListener('touchstart', e => {
+        g = null;
+        const f = sh.querySelector('.ar-s-in');
+        if (!sh.classList.contains('voile') || !f || e.touches.length > 1 || !f.contains(e.target)) return;
+        const t = e.touches[0];
+        const poignee = t.clientY - f.getBoundingClientRect().top < 30;
+        g = { f, x0: t.clientX, y0: t.clientY, dy: 0, parti: false, defile: !poignee && defile(e.target), y: t.clientY, t: performance.now(), v: 0 };
+      }, { passive: true });
+      sh.addEventListener('touchmove', e => {
+        if (!g) return;
+        const t = e.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+        if (!g.parti) {
+          if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+          if (g.defile || dy <= 0 || Math.abs(dx) > Math.abs(dy)) { g = null; return; }
+          g.parti = true;
+          g.f.style.animation = 'none';
+          g.f.style.transition = 'none';
+        }
+        if (e.cancelable) e.preventDefault();
+        const now = performance.now();
+        if (now > g.t) g.v = (t.clientY - g.y) / (now - g.t);
+        g.y = t.clientY; g.t = now;
+        g.dy = Math.max(0, dy);
+        g.f.style.transform = `translateY(${g.dy}px)`;
+      }, { passive: false });
+      const lacherFeuille = () => {
+        const x = g;
+        g = null;
+        if (!x || !x.parti) return;
+        const f = x.f, haut = f.offsetHeight;
+        if (x.dy > Math.min(haut * .3, 140) || (x.v > .5 && x.dy > 30)) {
+          T.bloqueClic = true;
+          setTimeout(() => { if (T) T.bloqueClic = false; }, 350);
+          if (RM()) return fermerSheet();
+          f.style.transition = 'transform .2s cubic-bezier(.4,0,1,1)';
+          f.style.transform = `translateY(${haut + 40}px)`;
+          sh.style.transition = 'opacity .2s';
+          sh.style.opacity = '0';
+          setTimeout(() => {
+            sh.style.transition = ''; sh.style.opacity = '';
+            /* Une autre feuille a pu s'ouvrir entre-temps : on ne ferme que la nôtre. */
+            if (f.isConnected) fermerSheet();
+          }, 200);
+        } else {
+          f.style.transition = 'transform .26s cubic-bezier(.2,1.1,.4,1)';
+          f.style.transform = '';
+        }
+      };
+      sh.addEventListener('touchend', lacherFeuille);
+      sh.addEventListener('touchcancel', lacherFeuille);
+    }
+
     /* Glisser une carte jouable de la main vers sa place. */
     let appui = null;
     el.addEventListener('pointerdown', e => {
@@ -965,10 +1030,23 @@ const Table = (() => {
       <button class="ar-bouton ar-f-x" data-ar="fermer-focus" aria-label="Fermer">✕</button>
     </div>`;
     z.hidden = false;
+    if (!large) ajusterFocus(z);
     if (f.main) rendre();
     /* Le tutoriel allume aussi ce qui est sous la carte (son attaque). */
     else if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
     if (ouverture) { const b = z.querySelector('.ar-f-atq.ok,.ar-f-jouer,.ar-f-x'); if (b) b.focus({ preventScroll: true }); }
+  }
+
+  /* La carte au-dessus de ses détails (téléphone) : la place qu'ils
+     prennent vraiment, mesurée (3.0.16). L'estimation d'avant oubliait une
+     deuxième rangée d'Objets ou le texte déplié : la carte débordait, ou
+     restait trop grande. */
+  function ajusterFocus(z) {
+    const inn = z && z.querySelector('.ar-f-in'), bas = z && z.querySelector('.ar-f-bas');
+    if (!inn || !bas || z.classList.contains('large')) return;
+    const cs = getComputedStyle(bas);
+    const hb = bas.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    inn.style.setProperty('--bas', `${Math.ceil(hb) + 12}px`);
   }
 
   /* La ligne d'état d'un Joueur en jeu : sa Défense réelle, prêt ou engagé,
@@ -997,11 +1075,17 @@ const Table = (() => {
       const possible = opts.filter(o => o.k === i);
       const chev = possible.some(o => o.chevaliere) && !possible.some(o => !o.chevaliere);
       const raison = actif && !possible.length ? pourquoiPas(c, i, inf) : '';
+      /* La cible imposée (3.0.16) : « Vise Pas Compris · Provocation ». */
+      const forcee = possible.length && possible.every(o => o.cible != null && o.cible !== 'ceo') ? possible[0].cible : null;
+      const pq = forcee != null ? Combat.raisonCible(E, c, forcee) : null;
+      const vise = forcee != null ? `<small class="ar-pret">Vise ${h(Combat.nomDe(Combat.trouverSurPlateau(E, forcee)))}${pq ? ` · ${h(pq)}` : ''}</small>` : '';
       const val = a.degats == null ? null : inf.val;
       const sens = val == null ? '' : val > a.degats ? 'plus' : val < a.degats ? 'moins' : '';
       const sous = detail
-        ? (a.effet ? `<small>${h(a.effet)}</small>` : '') + (raison ? `<small class="ar-raison">${h(raison)}</small>` : '')
-        : raison ? `<small class="ar-raison">${h(raison)}</small>` : possible.length ? '<small class="ar-pret">Touche pour attaquer</small>' : a.effet ? `<small>${h(a.effet)}</small>` : '';
+        ? (a.effet ? `<small>${h(a.effet)}</small>` : '') + (raison ? `<small class="ar-raison">${h(raison)}</small>` : '') + vise
+        : raison ? `<small class="ar-raison">${h(raison)}</small>`
+          : possible.length ? (a.degats == null && a.effet ? `<small class="ar-pret">${h(a.effet)}</small>` : vise || '<small class="ar-pret">Touche pour attaquer</small>')
+          : a.effet ? `<small>${h(a.effet)}</small>` : '';
       const corps = `${coutHTML(chev ? { neutre: 2 } : inf.cout)}<span class="ar-f-at"><b>${h(a.nom)}</b>${sous}</span>
         ${val == null ? '' : `<em class="${sens}">${val}${val !== a.degats ? `<s>${a.degats}</s>` : ''}</em>`}`;
       return actif
@@ -1243,6 +1327,7 @@ const Table = (() => {
       t.hidden = !t.hidden;
       b.dataset.lab = b.dataset.lab || b.textContent;
       b.textContent = t.hidden ? b.dataset.lab : 'Masquer le texte';
+      ajusterFocus(qs('.ar-focus'));
       return;
     }
     if (k === 'annuler') { T.cible = null; T.remplacement = null; consigne(null); fermerFocus(); fermerSheet(); return rendre(); }
@@ -1333,9 +1418,15 @@ const Table = (() => {
     T.focus = { main: true, u, drag: true };
     marquerPlacesCarte(u);
     const r = a.el.getBoundingClientRect();
-    const fant = a.el.cloneNode(true);
+    /* La carte seule (3.0.16) : le clone du bouton de la main perdait ses
+       réglages (`.ar-m`) et prenait le fond et la marge d'un bouton du
+       navigateur — un carré sombre autour de la carte, sur iPhone. Sa
+       largeur est celle de la carte, sans la rotation de l'éventail. */
+    const fant = document.createElement('div');
     fant.className = 'ar-fantome';
-    fant.style.width = r.width + 'px';
+    fant.setAttribute('aria-hidden', 'true');
+    fant.style.width = (a.el.offsetWidth || r.width) + 'px';
+    fant.innerHTML = a.el.innerHTML;
     document.body.appendChild(fant);
     a.drag = { fant, dx: e.clientX - r.left, dy: e.clientY - r.top, u };
     a.el.classList.add('leve');
@@ -2251,16 +2342,24 @@ const Table = (() => {
       if (x) x.classList.add('assaut');
       SFX.jouer('woosh');
       /* La carte qui attaque se lève : la bande ne dit que l'attaque et sa cible. */
-      const cible = e.cible === 'ceo' ? (adv(e.j) === T.moi ? 'ton CEO' : 'son CEO') : e.cible ? h(carte(trouverId(e.cible) || '').nom || 'un Joueur') : '';
-      /* L'attaque de l'adversaire dit aussi ce qu'elle fait. */
+      const nc = e.cible && e.cible !== 'ceo' ? carte(trouverId(e.cible) || '').nom || 'Ce Joueur' : '';
+      const cible = e.cible === 'ceo' ? (adv(e.j) === T.moi ? 'ton CEO' : 'son CEO') : nc ? h(nc) : '';
+      /* Pourquoi elle vise un Joueur (3.0.16) : sans ça, on croyait que
+         l'adversaire avait le droit de viser des cartes et pas soi. */
+      const pq = e.pourquoi === 'Provocation' ? `${nc} a Provocation : il faut le viser.`
+        : e.pourquoi === 'Signature' ? `${nc}, désengagé, impose qu'on le vise.`
+        : e.pourquoi === 'Jus de bagarre' ? 'Jus de bagarre : il vise le Joueur d\'en face.' : '';
+      /* L'attaque de l'adversaire dit aussi ce qu'elle fait ; une attaque
+         sans valeur aussi, de chaque côté : elle ne fait que ça. */
       const a = (carte(trouverId(e.u)).atks || [])[e.k] || {};
-      const effet = e.j !== T.moi && a.effet ? a.effet : '';
-      ticker(`<b>${h(e.nom)}</b>${cible ? `<i class="ar-fl">→</i>${cible}` : ''}${effet ? `<small>${h(effet)}</small>` : ''}`);
+      const effet = (e.j !== T.moi || a.degats == null) && a.effet ? a.effet : '';
+      const sous = [pq, effet].filter(Boolean).join(' ');
+      ticker(`<b>${h(e.nom)}</b>${cible ? `<i class="ar-fl">→</i>${cible}` : ''}${sous ? `<small>${h(sous)}</small>` : ''}`);
       /* Version 3.0.7 : une flèche de l'attaquant à sa cible, et la cible
          cerclée — on voit d'un coup d'œil qui vise qui. Elle reste jusqu'à
          l'impact (effacerVisee). */
       if (e.cible != null) viser(x, e.cible === 'ceo' ? elCEO(adv(e.j)) : elU(e.cible), e.j === T.moi);
-      await attendre(e.j === T.moi ? 620 : Math.min(2800, 1200 + effet.length * 14));
+      await attendre(e.j === T.moi && !sous ? 620 : Math.min(2800, 1200 + sous.length * 14));
     },
     async defend(e) {
       const x = elU(e.u);
@@ -2547,7 +2646,8 @@ const Table = (() => {
       case 'deploie': return noter(`${n(e.j)} ${e.pose ? 'commence avec' : 'déploie'} ${k(e.id)}${e.eng ? ' (engagé)' : ''}.`);
       case 'joue': return noter(`${n(e.j)} joue ${k(e.id)}.`);
       case 'lie': return noter(`${n(e.j)} lie ${k(e.id)}.`);
-      case 'attaque': return noter(`${k(trouverId(e.u))} attaque${e.cible === 'ceo' ? ' le CEO' : e.cible ? ' ' + k(trouverId(e.cible)) : ''} (${h(e.nom)}).`);
+      case 'attaque': return noter(e.cible == null ? `${k(trouverId(e.u))} lance ${h(e.nom)}.`
+        : `${k(trouverId(e.u))} attaque${e.cible === 'ceo' ? ' le CEO' : ' ' + k(trouverId(e.cible)) + (e.pourquoi ? ` (${h(e.pourquoi)})` : '')} (${h(e.nom)}).`);
       case 'defend': return noter(`${k(trouverId(e.u))} défend.`);
       case 'repousse': return noter(`Il tient : ${e.val} contre ${e.def}.`);
       case 'impact': return e.cible !== 'ceo' && e.def != null && e.val >= e.def ? noter(`${e.val} contre ${e.def} : le défenseur tombe.`) : undefined;
@@ -2612,27 +2712,27 @@ const Table = (() => {
    `img` absent : le tapis de base, dessiné par la page (css/arene.css). */
 const TAPIS = {
   t_base:      { nom: 'Nuit M8', img: null, prix: 0 },
-  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=c37785', prix: 4000 },
-  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=c37785', prix: 4000 },
-  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=c37785', prix: 5000 },
-  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=c37785', prix: 4000 },
-  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=c37785', prix: 4000 },
-  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=c37785', prix: 4000 },
+  t_chateau:   { nom: 'Champions du Monde', img: 'assets/combat/tapis/t_chateau.webp?v=6bc4fa', prix: 4000 },
+  t_reverie:   { nom: 'La Relève', img: 'assets/combat/tapis/t_reverie.webp?v=6bc4fa', prix: 4000 },
+  t_chevalier: { nom: 'La Luxueuse III', img: 'assets/combat/tapis/t_chevalier.webp?v=6bc4fa', prix: 5000 },
+  t_veste:     { nom: 'Marteen Supreme', img: 'assets/combat/tapis/t_veste.webp?v=6bc4fa', prix: 4000 },
+  t_pilote:    { nom: 'Baby Driver', img: 'assets/combat/tapis/t_pilote.webp?v=6bc4fa', prix: 4000 },
+  t_peche:     { nom: 'Vanyabubu', img: 'assets/combat/tapis/t_peche.webp?v=6bc4fa', prix: 4000 },
   /* L'événement « Le Choc des Sections » : ni en vente, ni en Éclats.
      `ev` : où on le gagne ; `vue` : le sous-onglet qui y mène (js/choc.js). */
-  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=c37785', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
-  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=c37785', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
+  t_arene:     { nom: 'Le Choc des Sections', img: 'assets/combat/tapis/t_arene.webp?v=6bc4fa', prix: 0, ev: 'Pass du Choc', vue: 'pass' },
+  t_orage:     { nom: 'The French Sorcerer', img: 'assets/combat/tapis/t_orage.webp?v=6bc4fa', prix: 0, ev: 'Boutique du Choc', vue: 'boutique' }
 };
 /* Les tapis des boss du Raid qui n'en ont pas dans TAPIS (RAID.bosses,
    js/combat/choc-data.js) : sous leurs cartes seulement, ni en vente ni à
    gagner (version 3.0.11). Le Sorcier a le sien dans TAPIS : la boutique du
    Choc le vend. Dessinés par tools/choc-visuels.py. */
 const TAPIS_BOSS = {
-  t_ficelles:  { nom: 'Le Marionnettiste', img: 'assets/combat/tapis/t_ficelles.webp?v=c37785' }
+  t_ficelles:  { nom: 'Le Marionnettiste', img: 'assets/combat/tapis/t_ficelles.webp?v=6bc4fa' }
 };
 const SLEEVES = {
-  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=c37785', prix: 0 },
-  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=c37785', prix: 3000 },
-  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=c37785', prix: 2500 },
-  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=c37785', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
+  s_base:    { nom: 'Classique', img: 'assets/card-back.webp?v=6bc4fa', prix: 0 },
+  s_sorcier: { nom: '6W26L', img: 'assets/combat/sleeves/s_sorcier.webp?v=6bc4fa', prix: 3000 },
+  s_argent:  { nom: 'Argent', img: 'assets/combat/sleeves/s_argent.webp?v=6bc4fa', prix: 2500 },
+  s_choc:    { nom: 'Le Choc', img: 'assets/combat/sleeves/s_choc.webp?v=6bc4fa', prix: 0, ev: 'Pass du Choc', vue: 'pass' }
 };
