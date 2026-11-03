@@ -181,8 +181,16 @@ function instantUtile(E, j, o) {
 function scoreAttaque(E, j, o) {
   const c = O.trouverSurPlateau(E, o.u);
   const a = Combat.carte(c.id).atks[o.k];
-  if (a.degats == null) return 30;
-  const val = Combat.valeurAttaque(E, c, o.k);
+  /* Une attaque sans valeur ne touche personne (3.0.16) : elle ne vaut que
+     par son effet — engager un Joueur adverse qui pourrait défendre, en
+     bench un, ou regarder son Club. */
+  if (a.degats == null) {
+    const b = Combat.baseId(c.id), lui = O.joueursDe(E, O.adv(j));
+    if (b === 'c011' || b === 'c022') return lui.some(x => !x.eng) ? 32 : 2;
+    if (b === 'c116') return lui.length ? 70 : 2;
+    return 12;
+  }
+  const val = Combat.valeurPrevue(E, c, o.k);
   if (o.cible === 'ceo') {
     /* Un défenseur en face qui tient l'attaque : peu d'intérêt. */
     const defs = Combat.defenseurs(E, c, 'ceo');

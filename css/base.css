@@ -24,6 +24,14 @@
    illustration la couvre (--cw : la largeur de la carte, d'après la case,
    en unités de conteneur), puis décalée pour amener le point (--fx, --fy)
    au centre, sans jamais laisser voir le bord de l'illustration (clamp). */
+/* Le chargement (3.0.16) : jusqu'à ce que les polices, l'habillage et le
+   premier écran soient prêts, six secondes au plus (Chargement, js/app.js). */
+#chargement{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--bg);transition:opacity .4s ease}
+#chargement img{width:min(46vw,190px);height:auto}
+#chargement .chg-barre{width:min(50vw,200px);height:4px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.1)}
+#chargement .chg-barre i{display:block;height:100%;background:var(--progress);transform:scaleX(.06);transform-origin:left;transition:transform .3s ease}
+#chargement.fini{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){#chargement,#chargement .chg-barre i{transition:none}}
 .illu-cadre{position:absolute;inset:0;overflow:hidden;container-type:size;pointer-events:none}
 .illu-cadre>i{position:absolute;display:block;aspect-ratio:1000/1397;background:center/100% 100% no-repeat;
   --cw:calc(max(100cqw / .81, 100cqh / .479) * var(--z,1));

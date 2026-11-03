@@ -603,22 +603,26 @@ test('le Raid : des phases de plus en plus dures, des paliers croissants, un Inf
   const p = Choc.RAID.perso;
   for (let k = 1; k < p.length; k++) vrai(p[k].seuil > p[k - 1].seuil, 'paliers personnels croissants');
 });
-test('les clés d\'un deck : des chances de pioche exactes, et une couleur absente se voit', () => {
-  /* La loi hypergéométrique : au moins une de k cartes en en tirant t de n. */
-  egal(Math.round(1000 * Decks.auMoins(40, 3, 8)), 498);
-  egal(Math.round(1000 * Decks.auMoins(40, 1, 8)), 200);
-  egal(Decks.auMoins(10, 10, 2), 1);
-  egal(Decks.auMoins(10, 0, 3), 0);
-  const k = Decks.cles(Decks.STARTERS.toxique);
-  vrai(k.depart.main > 0.8 && k.depart.avecChangement > k.depart.main, 'le départ du Starter Toxique');
-  vrai(k.essences.ok && k.essences.couleurs[0].coul === 'rose', 'ses Essences');
-  egal(k.regularite.en3 + k.regularite.en2 + k.regularite.en1 > 0, true);
-  /* Le même Club avec une Réserve tout en Mauve : le Rose manque. */
+test('les étoiles d\'un deck : trois conseils, comptés par demies (3.0.16), plus de clés ni de cote', () => {
+  const b = Decks.bilan(Decks.STARTERS.toxique);
+  egal(b.sur, 3);
+  vrai(b.note === 3 && b.nom === 'Solide', 'le Starter Toxique : trois étoiles');
+  /* Le même Club avec une Réserve tout en Mauve : la Réserve n'est plus
+     accordée (0 ou une demi-étoile), et le conseil dit pourquoi. */
   const d = JSON.parse(JSON.stringify(Decks.STARTERS.toxique));
   d.reserve = { mauve: 10 };
-  const k2 = Decks.cles(d);
-  vrai(!k2.essences.ok && k2.essences.jamais.some(x => x.coul === 'rose'), 'une couleur absente de la Réserve');
-  /* Rien ne remplit plus le Club à la place du joueur. */
+  const r = Decks.bilan(d).reperes.find(x => x.cle === 'reserve');
+  vrai(r.etat !== 'ok' && /pour l'étoile entière/.test(r.dit), 'une Réserve mal accordée');
+  /* 13 Joueurs : presque (une demi-étoile), « encore 2 ». */
+  const treize = {};
+  let nj = 0;
+  for (const [id, q] of Object.entries(Decks.STARTERS.toxique.cartes)) {
+    if (Combat.carte(id).cat !== 'joueur' || nj >= 13) continue;
+    treize[id] = Math.min(q, 13 - nj); nj += treize[id];
+  }
+  const j = Decks.bilan({ cartes: treize, reserve: {} }).reperes.find(x => x.cle === 'joueurs');
+  vrai(j.etat === 'presque' && /encore 2/.test(j.dit), '13 Joueurs : presque');
+  vrai(typeof Decks.cles === 'undefined' && typeof Decks.COTES === 'undefined', 'plus de clés ni de cote');
   vrai(typeof Decks.assistant === 'undefined', 'plus d\'assistant');
 });
 test('le Raid : la page et le serveur ont les mêmes phases, les mêmes coffres, la même vie des boss', () => {

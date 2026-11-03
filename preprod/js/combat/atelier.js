@@ -21,9 +21,7 @@
      · sur ordinateur, plus d'onglets (tout est à l'écran) : deux jauges qui
        ne se cliquent pas ; les filtres toujours ouverts ; l'analyse du deck
        toujours visible au-dessus du Club ;
-     · partout, la cote de chaque carte (cinq crans : ce qu'elle ajoute aux
-       victoires de sa couleur, mesuré, Decks.COTES), un tri (numéro, coût,
-       cote) et un filtre par coût d'attaque ;
+     · un tri (numéro, coût) et un filtre par coût d'attaque ;
      · (l'assistant de deck de la 3.0.14 a été retiré en 3.0.15.)
 
    Version 3.0.15 (le propriétaire : l'assistant « ruine tout l'aspect
@@ -31,9 +29,15 @@
    (seulement pour les essences) » ; « un meilleur feedback […] sans trop
    prendre par la main ») : plus rien ne remplit le Club à la place du
    joueur ; la Réserve se règle toujours d'un geste (« Régler d'après mes
-   attaques ») ; l'analyse garde ses trois étoiles et gagne cinq clés
-   chiffrées (Decks.cles) : le départ, les Essences, la régularité, la tenue,
-   les PV.
+   attaques ») ; l'analyse garde ses trois étoiles.
+
+   Version 3.0.16 (le propriétaire : « les 5 clés du decks sont très
+   confusantes, oublie ça et laisse juste le système des 3 étoiles, quitte à
+   le moduler » ; « enlève le système de côte, ça discrimine des cartes […]
+   c'est au joueur de trouver quelle carte est meilleure » ; les filtres
+   « pas du tout clean ») : plus de clés ni de cote ; les étoiles se
+   comptent par demies (Decks.bilan) ; les filtres en trois lignes
+   étiquetées, le tri dans un menu à part.
 
    Rien n'est enregistré tant qu'on n'a pas appuyé sur « Enregistrer » : le
    serveur revérifie le deck (deck_sauver, supabase/installation/23_combats.sql). */
@@ -163,24 +167,8 @@ function vAtEtape(n, nr) {
   return `<div class="at-etape"><p>${etape}</p></div>`;
 }
 
-/* La cote d'une carte en cinq crans (Decks.COTES, mesurée par
-   tools/cotes-cartes.js) : son rang parmi les cartes cotées. */
-let rangsCotes = null;
-function forceCarte(id) {
-  if (!rangsCotes) {
-    const l = Object.entries(Decks.COTES || {}).sort((a, b) => a[1] - b[1]);
-    rangsCotes = {};
-    l.forEach(([k], i) => { rangsCotes[k] = 1 + Math.floor(5 * i / l.length); });
-  }
-  return rangsCotes[id] || rangsCotes[Combat.baseId(id)] || 0;
-}
-const barresForce = id => {
-  const f = forceCarte(id);
-  return f ? `<span class="at-force f${f}" role="img" aria-label="Cote ${f} sur 5" title="Cote ${f} sur 5 : ce que la carte ajoute aux victoires de sa couleur, mesuré sur des milliers de parties. Un repère, pas une règle.">${'<i></i>'.repeat(5)}</span>` : '';
-};
-
 /* ---------- Les cartes ---------- */
-const AT_TRIS = [['num', 'Numéro'], ['cout', 'Coût'], ['cote', 'Cote']];
+const AT_TRIS = [['num', 'Numéro'], ['cout', 'Coût d\'attaque']];
 function vAtCartes() {
   const f = atelier.filtres;
   const actifs = (f.type !== 'tous') + (f.coul !== 'all') + !!f.toutes + !!f.cout;
@@ -192,18 +180,18 @@ function vAtCartes() {
         <button class="at-filtrer${atelier.filtresOuverts ? ' on' : ''}" data-cb="at-filtres" aria-expanded="${!!atelier.filtresOuverts}">${NAVICO.filtre}Filtres${actifs ? ` <i class="tnum">${actifs}</i>` : ''}</button>
       </div>
       <div class="at-filtres-l${atelier.filtresOuverts ? ' ouvert' : ''}">
-        <div class="at-chips" data-defil="at-types" role="group" aria-label="Type">${AT_TYPES.map(([id, nom]) => `<button class="at-chip${f.type === id ? ' on' : ''}" data-cb="at-type" data-v="${id}" aria-pressed="${f.type === id}">${nom}</button>`).join('')}</div>
-        <div class="at-chips coul" data-defil="at-couls" role="group" aria-label="Couleur">
+        <div class="at-f-ligne"><span class="at-f-t" id="at-ft-type">Type</span>
+          <div class="at-chips" data-defil="at-types" role="group" aria-labelledby="at-ft-type">${AT_TYPES.map(([id, nom]) => `<button class="at-chip${f.type === id ? ' on' : ''}" data-cb="at-type" data-v="${id}" aria-pressed="${f.type === id}">${nom}</button>`).join('')}</div></div>
+        <div class="at-f-ligne"><span class="at-f-t" id="at-ft-coul">Couleur</span>
+          <div class="at-chips coul" data-defil="at-couls" role="group" aria-labelledby="at-ft-coul">
           <button class="at-chip${f.coul === 'all' ? ' on' : ''}" data-cb="at-coul" data-v="all" aria-pressed="${f.coul === 'all'}">Toutes</button>
           ${['rose', 'orange', 'jade', 'violette', 'jaune', 'mauve', 'verte', 'bleue', 'azur', 'neutre'].map(k => `<button class="at-chip e${f.coul === k ? ' on' : ''}" data-cb="at-coul" data-v="${k}" aria-pressed="${f.coul === k}" aria-label="${COLORS[k].nom}" title="${COLORS[k].nom}">${essIcon(k)}</button>`).join('')}
-        </div>
-        <div class="at-chips" role="group" aria-label="Coût de l'attaque la moins chère">
-          <span class="at-chips-t">Attaque à</span>
-          ${[[0, 'tout coût'], [1, '1'], [2, '2'], [3, '3'], [4, '4+']].map(([v, nom]) => `<button class="at-chip${f.cout === v ? ' on' : ''}" data-cb="at-cout" data-v="${v}" aria-pressed="${f.cout === v}">${nom}</button>`).join('')}
-        </div>
+          </div></div>
+        <div class="at-f-ligne"><span class="at-f-t" id="at-ft-cout">Attaque</span>
+          <div class="at-chips" role="group" aria-labelledby="at-ft-cout">${[[0, 'Tout coût'], [1, '1'], [2, '2'], [3, '3'], [4, '4+']].map(([v, nom]) => `<button class="at-chip${f.cout === v ? ' on' : ''}" data-cb="at-cout" data-v="${v}" aria-pressed="${f.cout === v}"${v ? ` aria-label="${nom} Essence${v > 1 ? 's' : ''}"` : ''}>${nom}</button>`).join('')}</div></div>
         <div class="at-filtres-bas">
-          <button class="at-chip at-toutes${f.toutes ? ' on' : ''}" data-cb="at-toutes" aria-pressed="${!!f.toutes}">Aussi celles que je n'ai pas</button>
-          <span class="at-tri" role="group" aria-label="Trier par"><small>Trier</small>${AT_TRIS.map(([v, nom]) => `<button class="${f.tri === v ? 'on' : ''}" data-cb="at-tri" data-v="${v}" aria-pressed="${f.tri === v}">${nom}</button>`).join('')}</span>
+          <button class="at-bascule${f.toutes ? ' on' : ''}" role="switch" data-cb="at-toutes" aria-checked="${!!f.toutes}"><i aria-hidden="true"></i>Aussi celles que je n'ai pas</button>
+          <label class="at-trisel"><span>Trier par</span><select id="at-tri">${AT_TRIS.map(([v, nom]) => `<option value="${v}"${f.tri === v ? ' selected' : ''}>${nom}</option>`).join('')}</select></label>
         </div>
       </div>
     </div>
@@ -226,8 +214,6 @@ function filtrerAtelier() {
     }
     return true;
   });
-  const cote = c => { const v = Decks.COTES[c.id] != null ? Decks.COTES[c.id] : Decks.COTES[Combat.baseId(c.id)]; return v == null ? -1 : v; };
-  if (f.tri === 'cote') return l.sort((a, b) => cote(b) - cote(a) || ordreAtelier(a) - ordreAtelier(b));
   if (f.tri === 'cout') return l.sort((a, b) => (a.cat === 'joueur' ? coutMinAtelier(a) : 9) - (b.cat === 'joueur' ? coutMinAtelier(b) : 9) || ordreAtelier(a) - ordreAtelier(b));
   return l.sort((a, b) => ordreAtelier(a) - ordreAtelier(b));
 }
@@ -247,7 +233,7 @@ function grilleAtelier() {
     return `<div class="at-carte${dans ? ' dedans' : ''}${a ? '' : ' absente'}">
       <button class="at-carte-c" data-cb="at-plus" data-v="${c.id}" ${plein ? 'aria-disabled="true"' : ''} aria-label="Ajouter ${h(c.nom)}">${renderCard(c)}</button>
       ${dans ? `<span class="at-n">${dans}</span><button class="at-moins" data-cb="at-moins" data-v="${c.id}" aria-label="Retirer">−</button>` : ''}
-      <span class="at-info">${barresForce(c.id)}<span class="at-poss" title="${a ? `Tu en as ${a}` : 'Tu ne l\'as pas'}">${a ? `×${a}` : 'pas à toi'}</span><button class="at-i" data-show="${c.id}" aria-label="Voir ${h(c.nom)}">i</button></span>
+      <span class="at-info"><span class="at-poss" title="${a ? `Tu en as ${a}` : 'Tu ne l\'as pas'}">${a ? `×${a}` : 'pas à toi'}</span><button class="at-i" data-show="${c.id}" aria-label="Voir ${h(c.nom)}">i</button></span>
     </div>`;
   }).join('');
 }
@@ -274,7 +260,7 @@ function vAtDeck() {
         const atk = couts.length ? `${couts.join(' et ')} Essence${couts.length === 1 && couts[0] <= 1 ? '' : 's'}` : '';
         return `<div class="at-ligne${d.couverture === id ? ' couv' : ''}">
           <span class="at-ligne-art" style="--art:url('${c.img ? new URL(c.img, document.baseURI).href : ''}');--sc:${tcol(c)}"></span>
-          <span class="at-ligne-nom"><b>${nomH(c)}</b><small>${barresForce(id)}${c.cat === 'joueur' ? `Défense ${c.def} · ${atk}` : (RAR[c.rar] || {}).nom || ''}</small></span>
+          <span class="at-ligne-nom"><b>${nomH(c)}</b><small>${c.cat === 'joueur' ? `Défense ${c.def} · ${atk}` : (RAR[c.rar] || {}).nom || ''}</small></span>
           <span class="at-ligne-act">
             <button data-cb="at-couv" data-v="${id}" class="at-etoile${d.couverture === id ? ' on' : ''}" aria-pressed="${d.couverture === id}" title="${d.couverture === id ? 'La couverture du deck' : 'En faire la couverture du deck'}" aria-label="${d.couverture === id ? 'Couverture du deck' : 'En faire la couverture du deck'}">★</button>
             <button data-cb="at-moins" data-v="${id}" aria-label="Retirer un ${h(c.nom)}">−</button><b class="tnum">${d.cartes[id]}</b>
@@ -285,44 +271,13 @@ function vAtDeck() {
 }
 
 /* Sur ordinateur, l'analyse reste à l'écran, au-dessus du Club : les trois
-   conseils (les étoiles), les clés, puis la répartition, la courbe. */
+   conseils (les étoiles), puis la répartition, la courbe. */
 function vAtAnalyse(d, b) {
   return `<section class="at-analyse" aria-label="Analyse du deck">
-    <div class="at-an-tete">${ETOILES_DECK(b.note, b.sur)}<b>${b.nom}</b><small>${b.note} conseil${b.note > 1 ? 's' : ''} sur ${b.sur}</small></div>
-    <ul class="at-an-l">${b.reperes.map(x => `<li class="${x.ok ? 'ok' : 'ko'}" title="${h(x.pourquoi)}"><i aria-hidden="true">${x.ok ? NAVICO.check : '!'}</i><span><b>${x.titre}</b><small>${h(x.dit)}</small></span></li>`).join('')}</ul>
-    ${vClesDeck(d)}
+    <div class="at-an-tete">${ETOILES_DECK(b.note, b.sur)}<b>${b.nom}</b><small>${noteDeck(b)}</small></div>
+    <ul class="at-an-l">${b.reperes.map(x => `<li class="${x.etat}" title="${h(x.pourquoi)}"><i aria-hidden="true">${icoRepere(x)}</i><span><b>${x.titre}</b><small>${h(x.dit)}</small></span></li>`).join('')}</ul>
     ${vStatsDeck(d)}
   </section>`;
-}
-
-/* Les clés (Decks.cles, 3.0.15) : ce que fait le deck, chiffres à l'appui,
-   sans dire quelle carte y mettre. Une clé ne s'allume en rouge que pour un
-   vrai trou : un départ sans attaque une fois sur sept ou plus, une couleur
-   que la Réserve ne fournit pas. */
-/* Une chance arrondie, sans faire croire à une certitude : 99,7 % s'écrit
-   « plus de 99 % », pas « 100 % ». */
-const pcCle = x => (x >= 1 ? '100 %' : x > 0.99 ? 'plus de 99 %' : x <= 0 ? '0 %' : x < 0.01 ? 'moins de 1 %' : `${Math.round(100 * x)} %`);
-function vClesDeck(d) {
-  if (!Decks.total(d.cartes)) return '';
-  const k = Decks.cles(d), R = Combat.REGLE;
-  const pl = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
-  const l = [];
-  const dep = k.depart;
-  l.push(['Le départ', `Un Joueur qui attaque pour 1 ou 2 Essences dans ta main de départ : ${pcCle(dep.main)} ; ${pcCle(dep.avecChangement)} en changeant de main.${dep.ok ? '' : ' Sinon, tes premiers tours passent sans attaque.'}`, dep.ok ? '' : 'ko']);
-  const ess = k.essences.couleurs.slice(0, 3).map(x => {
-    const nom = (COLORS[x.coul] || {}).nom || x.coul;
-    if (x.e) return `<i class="at-cle-c" style="--ec:${(COLORS[x.coul] || {}).c || '#888'}"></i>${nom}, ${x.e} sur ${x.sur} : en jeu dès ton 2<sup>e</sup> tour ${pcCle(x.tour2)} du temps, dès le 3<sup>e</sup> ${pcCle(x.tour3)}.`;
-    const quoi = [x.cartes ? `${pl(x.cartes, 'carte')} ${nom} ne se joueront pas` : '', x.attaques ? 'des attaques ne se paieront pas' : ''].filter(Boolean).join(', et ');
-    return `<i class="at-cle-c" style="--ec:${(COLORS[x.coul] || {}).c || '#888'}"></i>Aucune Essence ${nom} dans ta Réserve : ${quoi}.`;
-  });
-  if (ess.length) l.push(['Tes Essences', ess.join('<br>'), k.essences.ok ? '' : 'ko']);
-  const r = k.regularite;
-  l.push(['La régularité', `${pl(r.en3, 'carte')} en 3 exemplaires, ${r.en2} en 2, ${r.en1} en 1. À ton 3<sup>e</sup> tour, tu as vu une carte en 3 exemplaires ${pcCle(r.vue3)} du temps ; en 1, ${pcCle(r.vue1)}.`, '']);
-  const t = k.tenue;
-  if (t.joueurs) l.push(['La tenue', `${t.tiennent} Joueur${t.tiennent > 1 ? 's' : ''} sur ${t.joueurs} survi${t.tiennent > 1 ? 'vent' : 't'} à une attaque typique à 2 Essences (${t.atk2}) ; ${t.gardiens} avec Garde, Provocation ou Shield.`, '']);
-  const pv = k.pv;
-  l.push(['Tes PV', pv.resil ? `${pl(pv.resil, 'carte')} à Résilience : au moins une parmi tes ${R.PV} PV ${pcCle(pv.auMoinsUne)} du temps.` : `Aucune carte à Résilience : un PV perdu ne déclenche rien.`, '']);
-  return `<div class="at-cles"><h5>Les clés</h5><ul>${l.map(([titre, txt, etat]) => `<li class="${etat}"><b>${titre}</b><span>${txt}</span></li>`).join('')}</ul></div>`;
 }
 
 function statsDeck(d) {
@@ -427,7 +382,6 @@ function atelierAction(k, el) {
     case 'at-ess-': if (d.reserve[v] > 1) d.reserve[v]--; else delete d.reserve[v]; return render();
     case 'at-res-auto': d.reserve = Decks.reserveAuto(d.cartes, 'rose'); return render();
     case 'at-cout': atelier.filtres.cout = +v; return majGrille(true);
-    case 'at-tri': atelier.filtres.tri = v; return majGrille(true);
     case 'at-sauver': return sauverDeck();
     case 'at-menu': return menuAtelier();
   }
@@ -456,6 +410,11 @@ function bindAtelier() {
   if (q && !q.dataset.lie) {
     q.dataset.lie = '1';
     q.addEventListener('input', () => { atelier.filtres.q = q.value; majGrille(false); });
+  }
+  const t = $('#at-tri');
+  if (t && !t.dataset.lie) {
+    t.dataset.lie = '1';
+    t.addEventListener('change', () => { atelier.filtres.tri = t.value; majGrille(true); });
   }
   const n = $('#at-nom');
   if (n && !n.dataset.lie) {

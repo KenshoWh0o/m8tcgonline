@@ -59,12 +59,15 @@
   border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;
   background:linear-gradient(180deg,rgba(18,17,25,0) 20%,rgba(18,17,25,.55) 55%,rgba(24,23,33,.97) 88%),
     radial-gradient(70% 80% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
-    url('../assets/combat/banniere-combats.webp') 55% 100%/165% auto no-repeat,var(--surface);
+    var(--surface);
   box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
 /* Le chevalier est cadré comme dans l'onglet Combats (.cb-hero-art) : sur le
    médaillon d'or de son plastron, pas sur le casque. Plus large que haute,
    la tuile prend l'image en largeur et descend jusqu'au médaillon. */
-@media (min-width:640px){.ch-nv-une.ch-nv-combats{background-size:auto,auto,cover;background-position:0 0,0 0,50% 92%}}
+/* 3.0.16 : le Chevalier Rose (c078) à la place du médaillon, sous le dégradé. */
+.ch-nv-une>.ch-nv-art{position:absolute;inset:0;z-index:-2;width:auto;height:auto;margin:0}
+.ch-nv-combats::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(18,17,25,0) 20%,rgba(18,17,25,.55) 55%,rgba(24,23,33,.97) 88%),radial-gradient(70% 80% at 100% 0%,rgba(138,120,245,.3),transparent 70%)}
 .ch-nv-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .ch-nv-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
 .ch-nv-une-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:28px;line-height:1}

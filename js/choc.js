@@ -192,7 +192,7 @@ function vChNouveautes() {
     ? `<i style="--i:${i - 1};background-image:url('${h(TAPIS[k].img.replace('.webp', '-mini.webp'))}')"></i>` : '').join('');
   return `<section class="ch-nouveau">
     <h3 class="rf-sous">${DEMO ? 'À découvrir' : 'Nouveau dans la 3.0'}</h3>
-    <button class="ch-nv-une ch-nv-combats" data-tab="combats">
+    <button class="ch-nv-une ch-nv-combats" data-tab="combats"><span class="ch-nv-art" aria-hidden="true">${illuCadre('c078', 0.62, 0.33, 1.1)}</span>
       <span class="ch-nv-une-t"><small>${DEMO ? 'Le cœur de l\'événement' : 'Le grand ajout'}</small><b>Les Combats</b>
         <span>Choisis ta Section, construis ton deck, et entre dans l'arène.</span>
         <span class="ch-nv-modes"><i>Campagne</i><i>Arcade</i><i>Raid</i><i>Versus</i></span></span>

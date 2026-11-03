@@ -1,4 +1,4 @@
-// Généré par tools/build-verif.py (empreinte 9a73fa1f3d58) : ne pas modifier à la main.
+// Généré par tools/build-verif.py (empreinte bedc9e58a40a) : ne pas modifier à la main.
 // Le code du jeu, tel que le navigateur le charge, pour rejouer un combat sur le serveur.
 /* eslint-disable */
 // @ts-nocheck
@@ -5174,123 +5174,37 @@ function bilan(deck) {
   const b = besoins(cartes), r = deck.reserve || {};
   const tb = total(b), tr = total(r) || 1;
   const accord = tb ? Object.keys(b).reduce((s, k) => s + Math.min((r[k] || 0) / tr, b[k] / tb), 0) : 1;
+  /* Version 3.0.16 (le propriétaire : « les 5 clés du decks sont très
+     confusantes, oublie ça et laisse juste le système des 3 étoiles, quitte
+     à le moduler ») : un conseil presque suivi vaut une demi-étoile, et
+     chaque conseil dit ce qui manque pour l'étoile entière. */
+  const etat = (x, ok, presque) => (x >= ok ? 'ok' : x >= presque ? 'presque' : 'ko');
+  const s = n => (n > 1 ? 's' : '');
+  const eJ = etat(joueurs, BON.joueurs, BON.joueurs - 3);
+  const eR = etat(accord, BON.accord, 0.6);
+  const eB = joueurs ? etat(bas / joueurs, BON.bas, 0.35) : 'ko';
+  const manqueJ = Math.max(0, BON.joueurs - joueurs);
+  const manqueB = Math.max(0, Math.ceil(BON.bas * Math.max(joueurs, 1)) - bas);
   const reperes = [
-    { cle: 'joueurs', ok: joueurs >= BON.joueurs, titre: `${BON.joueurs} Joueurs au moins`,
-      dit: `${joueurs} Joueur${joueurs > 1 ? 's' : ''}.`,
-      pourquoi: joueurs >= BON.joueurs ? 'De quoi remplir tes trois cases toute la partie.'
+    { cle: 'joueurs', etat: eJ, titre: `${BON.joueurs} Joueurs au moins`,
+      dit: `${joueurs} Joueur${s(joueurs)}${manqueJ ? ` : encore ${manqueJ} pour l'étoile entière` : ''}.`,
+      pourquoi: eJ === 'ok' ? 'De quoi remplir tes trois cases toute la partie.'
         : 'Les règles officielles conseillent ce minimum « pour être sûr de ne pas manquer ».' },
-    { cle: 'reserve', ok: accord >= BON.accord, titre: 'Une Réserve accordée',
-      dit: `Accord avec tes attaques : ${Math.round(100 * accord)} %.`,
-      pourquoi: accord >= BON.accord ? 'Tes Essences paient tes attaques.'
+    { cle: 'reserve', etat: eR, titre: 'Une Réserve accordée',
+      dit: `Accord avec tes attaques : ${Math.round(100 * accord)} %${eR === 'ok' ? '' : ` (${Math.round(100 * BON.accord)} % pour l'étoile entière)`}.`,
+      pourquoi: eR === 'ok' ? 'Tes Essences paient tes attaques.'
         : 'Des Essences ne paient aucune de tes attaques et ne permettent pas de jouer tes cartes de couleur. « Régler d\'après mes attaques » la corrige.' },
-    { cle: 'bas', ok: joueurs > 0 && bas / joueurs >= BON.bas, titre: 'Des attaques qui partent tôt',
-      dit: `${bas} Joueur${bas > 1 ? 's' : ''} sur ${joueurs} attaque${bas > 1 ? 'nt' : ''} pour 1 ou 2 Essences.`,
-      pourquoi: joueurs && bas / joueurs >= BON.bas ? 'Tu frappes dès les premiers tours.'
+    { cle: 'bas', etat: eB, titre: 'Des attaques qui partent tôt',
+      dit: `${bas} Joueur${s(bas)} sur ${joueurs} attaque${bas > 1 ? 'nt' : ''} pour 1 ou 2 Essences${eB === 'ok' ? '' : ` : encore ${manqueB} pour l'étoile entière`}.`,
+      pourquoi: eB === 'ok' ? 'Tu frappes dès les premiers tours.'
         : 'Une seule Essence arrive par tour. Les règles officielles conseillent « majoritairement » des attaques à une ou deux Essences.' }
   ];
-  const note = reperes.filter(x => x.ok).length;
+  reperes.forEach(x => { x.ok = x.etat === 'ok'; });
+  const note = reperes.reduce((t, x) => t + (x.etat === 'ok' ? 1 : x.etat === 'presque' ? 0.5 : 0), 0);
   const nom = note >= 3 ? 'Solide' : note >= 2 ? 'Jouable' : 'À revoir';
   return { reperes, note, sur: reperes.length, nom, joueurs, bas, accord };
 }
 
-/* ---------- Les clés d'un deck (3.0.15) ---------- */
-/* Le propriétaire, le 2 novembre 2026, en retirant l'assistant de deck (« il
-   ruine tout l'aspect création et plaisir de créer ») : « Compense ce manque
-   par un meilleur feedback […] donner les meilleurs clés pour créer un bon
-   deck, sans trop prendre par la main. Le joueur doit être aidé sans se
-   sentir sur un rail. » Les clés disent ce que fait le deck, chiffres à
-   l'appui, sans jamais dire quelle carte mettre : des chances de pioche
-   exactes (loi hypergéométrique, sur le Club et la Réserve tels qu'ils
-   sont), et un repère mesuré sur tout le catalogue (l'attaque médiane à deux
-   Essences). Plus de « Compléter pour moi » : seule la Réserve se règle d'un
-   geste (reserveAuto, « Régler d'après mes attaques »). */
-const comb = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r; };
-/* La chance d'avoir au moins une des `k` cartes en en tirant `t` d'une pile de `n`. */
-const auMoins = (n, k, t) => (n <= 0 || k <= 0 || t <= 0) ? 0 : k >= n ? 1 : 1 - comb(n - k, Math.min(t, n)) / comb(n, Math.min(t, n));
-/* Ce qu'on a vu de son Club à son 3e tour : la main de départ, puis une
-   pioche à chaque entretien (« l'entretien pioche aussi pour le premier
-   CEO »). */
-const VUES_TOUR3 = R.MAIN + 3;
-let repereCat = null;
-function repereCatalogue() {
-  if (repereCat) return repereCat;
-  const v = [];
-  for (const c of Object.values(Combat.toutes())) {
-    if (!c || c.cat !== 'joueur' || c.cachee || Combat.baseId(c.id) !== c.id) continue;
-    for (const a of c.atks) if (Combat.totalCout(a.cout) === 2 && a.degats != null) v.push(a.degats);
-  }
-  v.sort((x, y) => x - y);
-  return (repereCat = { atk2: v.length ? v[Math.floor(v.length / 2)] : 120 });
-}
-const GARDIENS = ['Garde', 'Provocation', 'Shield'];
-
-function cles(deck) {
-  const cartes = deck.cartes || {}, res = deck.reserve || {};
-  const N = total(cartes) || R.CLUB, NR = total(res) || R.RESERVE;
-  const { atk2 } = repereCatalogue();
-  let joueurs = 0, bas = 0, tiennent = 0, gardiens = 0, resil = 0;
-  const copies = {}, colorees = {};
-  for (const id in cartes) {
-    const c = Combat.carte(id), q = +cartes[id] || 0;
-    if (!c || !q) continue;
-    copies[cleCopie(id)] = (copies[cleCopie(id)] || 0) + q;
-    if (c.res) resil += q;
-    if (c.cat === 'joueur') {
-      joueurs += q;
-      if (Math.min(...c.atks.map(a => Combat.totalCout(a.cout))) <= 2) bas += q;
-      if (c.def > atk2) tiennent += q;
-      if (c.kw && GARDIENS.includes(c.kw.nom)) gardiens += q;
-    } else if (c.col && c.col !== 'neutre') colorees[c.col] = (colorees[c.col] || 0) + q;
-  }
-  /* 1. Le départ : un Joueur qui attaque tôt dans la main de départ, puis
-        avec le changement de main (une fois). */
-  const p1 = auMoins(N, bas, R.MAIN), p2 = 1 - (1 - p1) * (1 - p1);
-  /* 2. Les Essences : chaque couleur que demandent les attaques ou les
-        cartes de couleur (« ne peuvent être jouées que si vous avez une
-        Essence de la couleur correspondante déployée »), et quand la
-        première arrive : une Essence par tour, dans l'ordre de la Réserve. */
-  const b = besoins(cartes);
-  const couleurs = [...new Set([...Object.keys(b), ...Object.keys(colorees)])]
-    .sort((x, y) => ((b[y] || 0) + (colorees[y] || 0)) - ((b[x] || 0) + (colorees[x] || 0)))
-    .map(k => {
-      const e = +res[k] || 0;
-      return { coul: k, e, sur: NR, attaques: b[k] || 0, cartes: colorees[k] || 0,
-        tour2: auMoins(NR, e, 2), tour3: auMoins(NR, e, 3) };
-    });
-  const jamais = couleurs.filter(x => !x.e);
-  /* 3. La régularité : combien de noms en 3, 2, 1 exemplaires, et la
-        chance d'avoir vu une carte précise à son 3e tour. */
-  const n = [0, 0, 0, 0];
-  for (const k in copies) n[Math.min(3, copies[k])]++;
-  return {
-    depart: { bas, main: p1, avecChangement: p2, ok: p2 >= 0.85 },
-    essences: { couleurs, jamais, ok: !jamais.length },
-    regularite: { en3: n[3], en2: n[2], en1: n[1], vue3: auMoins(N, 3, VUES_TOUR3), vue1: auMoins(N, 1, VUES_TOUR3) },
-    tenue: { joueurs, tiennent, atk2, gardiens },
-    pv: { resil, auMoinsUne: auMoins(N, resil, R.PV), moyenne: R.PV * resil / N }
-  };
-}
-
-/* COTES:debut — généré par tools/cotes-cartes.js (6000 parties), ne pas modifier à la main. */
-const COTES = {
-  c010: -0.018, c011: 0.034, c012: 0.027, c013: 0.031, c014: -0.003, c015: 0.025, c016: -0.016, c017: 0.017,
-  c018: 0.028, c019: 0.012, c020: -0.019, c021: -0.001, c022: 0.027, c023: 0.002, c024: 0.013, c025: -0.018,
-  c026: 0.001, c027: -0.032, c028: -0.009, c029: 0.017, c030: 0.01, c031: 0.003, c032: 0.027, c033: 0.016,
-  c034: 0.006, c035: -0.023, c036: 0.03, c037: -0.01, c039: 0.054, c040: 0.068, c041: 0.072, c042: -0.023,
-  c043: 0.01, c044: 0.006, c045: 0.008, c046: 0.005, c047: -0.012, c048: 0.017, c050: 0.01, c051: 0.003,
-  c052: 0.029, c053: -0.009, c054: 0.012, c055: 0.01, c056: -0.006, c057: -0.029, c058: 0.027, c059: -0.013,
-  c060: -0.037, c061: -0.083, c062: -0.022, c063: -0.022, c064: -0.017, c065: 0.011, c066: 0.009, c067: 0.011,
-  c068: -0.027, c069: 0.011, c070: 0.037, c071: 0.035, c072: -0.026, c073: 0.002, c074: 0.017, c075: -0.019,
-  c076: -0.014, c077: 0.004, c078: 0.001, c079: -0.001, c080: -0.02, c081: -0.027, c082: -0.007, c083: 0.034,
-  c084: -0.004, c085: 0.01, c086: 0.001, c087: -0.001, c088: -0.001, c089: -0.009, c090: 0.004, c091: -0.014,
-  c092: 0.003, c093: -0.022, c094: -0.013, c095: 0.012, c096: -0.019, c097: -0.005, c098: -0.009, c099: -0.008,
-  c100: -0.009, c101: -0.004, c102: 0.019, c103: -0.011, c104: -0.006, c105: 0.007, c106: -0.007, c107: 0.006,
-  c108: -0.008, c109: -0.034, c110: 0.001, c111: -0.018, c112: -0.029, c113: -0.053, c114: 0.047, c115: -0.014,
-  c116: -0.042, c117: 0.033, c118: -0.015, c119: 0.019, c120: 0.023, c121: -0.023, c122: -0.01, c123: -0.017,
-  c124: -0.004, c125: 0.005, c126: -0.033, c127: -0.018, p01: 0.001, p02: 0.026, p03: 0.004, p04: 0,
-  p05: -0.004, p06: -0.015
-};
-/* COTES:fin */
 
 /* ---------- La copie d'un Starter (3.0.14) ---------- */
 /* Un Starter se joue prêté, mais ne se copie qu'avec ses propres cartes (le
@@ -5332,7 +5246,7 @@ function copieStarter(deck, possede) {
 }
 
 const Decks = { cleCopie, limite, jouable, verifier, versMoteur, besoins, reserveAuto, STARTERS, copieStarter, aleatoire, tirerCouleurs, couverture, encoder, decoder, total, bilan, BON, CIBLES,
-  cles, auMoins, COTES };
+};
 if (typeof module !== 'undefined' && module.exports) module.exports = Decks;
 racine.Decks = Decks;
 
@@ -6673,5 +6587,5 @@ const Verif = (() => {
 // ---- le catalogue des cartes, comme au démarrage de la page
 var __cartes = buildCards();
 Combat.catalogue(__cartes.concat(buildPromos(), buildReverses(__cartes), buildUniques(), buildSecretes()));
-export const EMPREINTE = '9a73fa1f3d58';
+export const EMPREINTE = 'bedc9e58a40a';
 export const Jeu = { Verif, Combat: globalThis.Combat, IA: globalThis.IA, Decks: globalThis.Decks };

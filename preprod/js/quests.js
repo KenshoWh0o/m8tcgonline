@@ -343,12 +343,17 @@ function trierQuetes(l) {
 function vListeQuetes(liste, cle) {
   const l = trierQuetes(liste);
   const faites = l.filter(q => q.claimed);
-  /* Plusieurs récompenses à prendre : un seul geste (version 3.0.11). */
-  const prets = l.filter(questePrete);
-  const tout = prets.length > 1 ? `<button class="btn rf-tout qtout" data-act="quetes-tout" data-ids="${prets.map(q => h(q.id)).join(',')}" data-snd="piece">${NAVICO.check}Tout récupérer · ${prets.length} quêtes</button>` : '';
-  return `${tout}<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
+  return `${vToutRecuperer(l)}<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
     ${faites.length ? `<details class="qfaites" data-garde="qfaites-${cle || 'liste'}"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
       <div class="questlist">${faites.map(q => vQuete(q)).join('')}</div></details>` : ''}`;
+}
+
+/* Plusieurs récompenses à prendre : un seul geste (version 3.0.11 ; les
+   saisonnières aussi depuis la 3.0.16, le propriétaire : « Pas de bouton
+   tout récupérer dans l'onglet saisonnier »). */
+function vToutRecuperer(liste) {
+  const prets = liste.filter(questePrete);
+  return prets.length > 1 ? `<button class="btn rf-tout qtout" data-act="quetes-tout" data-ids="${prets.map(q => h(q.id)).join(',')}" data-snd="piece">${NAVICO.check}Tout récupérer · ${prets.length} quêtes</button>` : '';
 }
 
 /* « Tout récupérer » (version 3.0.11) : les quêtes prêtes d'une liste, une
@@ -415,7 +420,7 @@ function vJalons(liste) {
       <summary><b>${nom}</b><small>${l.length}</small>${pretes ? `<i class="pastille">${pretes}</i>` : ''}<span class="qchev">${NAVICO.caret}</span></summary>
       <div class="questlist">${l.map(q => vQuete(q, apres(q.id))).join('')}</div></details>`;
   }).join('');
-  return blocs + (faites.length ? `<details class="qfaites" data-garde="qfaites-jalons"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
+  return vToutRecuperer(liste) + blocs + (faites.length ? `<details class="qfaites" data-garde="qfaites-jalons"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
     <div class="questlist">${trierQuetes(faites).map(q => vQuete(q)).join('')}</div></details>` : '');
 }
 

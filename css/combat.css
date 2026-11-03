@@ -29,7 +29,8 @@
 .cb-hero{position:relative;isolation:isolate;height:calc(252px + env(safe-area-inset-top,0px));overflow:hidden;
   margin:calc(-1 * (var(--top-h) + env(safe-area-inset-top,0px) + 8px)) -16px 0}
 /* Cadré sur le médaillon d'or de son plastron, pas sur le casque. */
-.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg) url('../assets/combat/banniere-combats.webp') 55% 100%/165% auto no-repeat}
+/* Le Chevalier Rose (c078), depuis la 3.0.16 (le propriétaire : le médaillon « pas très beau ») ; son cadrage : illuCadre, js/battle.js. */
+.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg)}
 .cb-hero::after{content:"";position:absolute;inset:0;z-index:-1;
   background:radial-gradient(90% 60% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
     linear-gradient(180deg,rgba(18,17,25,.55),rgba(18,17,25,0) 30%,rgba(18,17,25,0) 50%,rgba(18,17,25,.7) 78%,var(--bg))}
@@ -733,27 +734,30 @@ html.rm .cb-etape.ouvert::before{animation:none}
 .at-filtrer i{font-style:normal;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;font-size:11px;color:var(--plate);background:#fff}
 .at-filtres-l{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .at-filtres-l:not(.ouvert){display:none}
-.at-chips-t{flex:none;align-self:center;padding:0 2px 0 4px;font-size:12px;font-weight:800;color:var(--muted)}
+.at-f-ligne{display:grid;grid-template-columns:62px minmax(0,1fr);align-items:center;gap:8px}
+.at-f-t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.at-bascule{display:inline-flex;align-items:center;gap:9px;min-height:32px;padding:0;border:0;font:inherit;font-size:12.5px;font-weight:700;color:var(--subtle);background:none;cursor:pointer}
+.at-bascule i{position:relative;width:32px;height:18px;flex:none;border-radius:999px;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2);transition:background .15s}
+.at-bascule i::after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.at-bascule.on{color:var(--text)}
+.at-bascule.on i{background:var(--accent)}
+.at-bascule.on i::after{transform:translateX(14px);background:#fff}
+.at-trisel{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted)}
+.at-trisel select{height:32px;padding:0 30px 0 12px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:700;color:var(--text);cursor:pointer;-webkit-appearance:none;appearance:none;
+  background:var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c4c1d6' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 10px center/14px no-repeat;
+  box-shadow:inset 0 0 0 1px var(--line)}
+@media (max-width:360px){.at-f-ligne{grid-template-columns:54px minmax(0,1fr)}}
 .at-filtres-bas{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
-/* Le tri : trois choix, un seul à la fois. */
-.at-tri{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
-.at-tri small{padding:0 6px 0 8px;font-size:12px;font-weight:800;color:var(--muted)}
-.at-tri button{min-height:30px;padding:4px 11px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:800;color:var(--muted);background:none;cursor:pointer}
-.at-tri button.on{color:var(--text);background:rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
 /* La cote d'une carte : cinq barres qui montent. */
-.at-force{display:inline-flex;align-items:flex-end;gap:1.5px;height:11px;flex:none;vertical-align:-1px;margin-right:6px}
-.at-force i{width:3px;border-radius:1px;background:rgba(255,255,255,.16)}
-.at-force i:nth-child(1){height:30%}.at-force i:nth-child(2){height:45%}.at-force i:nth-child(3){height:60%}.at-force i:nth-child(4){height:80%}.at-force i:nth-child(5){height:100%}
-.at-force.f1 i:nth-child(-n+1),.at-force.f2 i:nth-child(-n+2),.at-force.f3 i:nth-child(-n+3),.at-force.f4 i:nth-child(-n+4),.at-force.f5 i{background:var(--accent-soft)}
-.at-force.f5 i{background:var(--deco-ink);box-shadow:0 0 4px rgba(200,191,255,.5)}
 .at-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;touch-action:pan-x}
 .at-chips::-webkit-scrollbar{display:none}
-.at-chip{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:7px 13px;border:0;border-radius:999px;font:inherit;font-size:13px;font-weight:800;
-  color:var(--subtle);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
-.at-chip.e{padding:6px 9px}
+.at-chip{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:34px;height:32px;padding:0 12px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:700;
+  color:var(--subtle);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;transition:background .15s,color .15s}
+.at-chip:hover{color:var(--text)}
+.at-chip.e{width:32px;min-width:32px;padding:0}
 .at-chip .ess{width:20px;height:20px}
-.at-chip.on{color:var(--text);background:rgba(255,255,255,.17);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.14)}
-.at-toutes{align-self:flex-start}
+.at-chip.on{color:#15141c;background:var(--text);box-shadow:none}
+.at-chip.e.on{background:var(--surface-3);box-shadow:inset 0 0 0 2px var(--text)}
 .at-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px 10px}
 .at-carte{position:relative;display:flex;flex-direction:column;gap:4px}
 .at-carte-c{padding:0;border:0;background:none;cursor:pointer;border-radius:8px;transition:transform .12s}
@@ -840,6 +844,7 @@ html.rm .cb-etape.ouvert::before{animation:none}
 .at-an-l li{display:flex;align-items:flex-start;gap:8px}
 .at-an-l li>i{display:grid;place-items:center;width:18px;height:18px;flex:none;margin-top:1px;border-radius:50%;font-style:normal;font-size:11px;font-weight:900;color:#1a1a22;background:var(--warn)}
 .at-an-l li.ok>i{background:var(--ok)}
+.at-an-l li.ko>i{color:#fff;background:var(--danger)}
 .at-an-l li>i svg{width:11px;height:11px;fill:none;stroke:#0e2a20;stroke-width:3.2}
 .at-an-l span{display:flex;flex-direction:column;min-width:0}
 .at-an-l b{font-size:12.5px}
@@ -983,6 +988,7 @@ html.rm .cb-etape.ouvert::before{animation:none}
 .dk-etoiles{display:inline-flex;gap:2px}
 .dk-etoiles i{width:11px;height:11px;background:var(--surface-3);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
 .dk-etoiles i.on{background:var(--accent-soft)}
+.dk-etoiles i.demi{background:linear-gradient(90deg,var(--accent-soft) 50%,var(--surface-3) 50%)}
 .dk-boutons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
 .dk-nouveau{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:0;border-radius:var(--radius);font:inherit;font-weight:800;font-size:13.5px;
   color:var(--subtle);background:transparent;box-shadow:inset 0 0 0 1.5px var(--line-2);cursor:pointer}
@@ -1019,7 +1025,8 @@ html.rm .cb-etape.ouvert::before{animation:none}
 .dk-bilan li{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
 .dk-bilan li>i{display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:50%;font-style:normal;font-weight:900;font-size:13px}
 .dk-bilan li.ok>i{color:var(--ok);background:var(--ok-wash)}
-.dk-bilan li.ko>i{color:var(--warn);background:rgba(255,184,77,.14)}
+.dk-bilan li.presque>i{color:var(--warn);background:rgba(255,184,77,.14)}
+.dk-bilan li.ko>i{color:var(--danger);background:rgba(255,107,107,.14)}
 .dk-bilan li>i svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6}
 .dk-bilan li span{display:flex;flex-direction:column;gap:2px}
 .dk-bilan li b{font-size:13.5px}
@@ -1150,14 +1157,3 @@ html.rm .cb-etape.ouvert::before{animation:none}
 
 
 /* ============ Les clés d'un deck (3.0.15) ============ */
-.at-cles{margin:12px 0 2px}
-.at-cles h5{margin:0 0 7px;font:800 11px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.at-cles ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.at-cles li{display:grid;gap:3px;padding:9px 11px;border-radius:12px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
-.at-cles li b{font-size:12.5px;letter-spacing:.01em}
-.at-cles li span{font-size:12.5px;line-height:1.42;color:var(--subtle)}
-.at-cles li sup{font-size:.7em}
-.at-cles li.ko{box-shadow:inset 0 0 0 1px rgba(255,107,129,.5)}
-.at-cles li.ko b{color:var(--danger)}
-.at-cle-c{display:inline-block;width:8px;height:8px;margin:0 6px 1px 0;border-radius:50%;background:var(--ec);vertical-align:middle}
-.at-analyse .at-cles li{padding:8px 10px}

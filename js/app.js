@@ -838,7 +838,29 @@ function visiteDuJourFaite() {
   return String(save.lastCheckin).slice(0, 10) === jour;
 }
 
-(async () => {
+/* Le chargement (3.0.16 ; le propriétaire : « un chargement des ressources
+   au lancement du site afin d'éviter tout bug et tout chargement
+   dégueulasse ») : l'écran #chargement d'index.html reste tant que les
+   polices, les images de l'habillage et le démarrage ne sont pas prêts, six
+   secondes au plus. */
+const Chargement = (() => {
+  const image = src => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => ok(); im.src = src; });
+  function attendre(demarrage) {
+    const e = document.getElementById('chargement');
+    if (!e) return;
+    const barre = e.querySelector('i');
+    const l = [document.fonts ? document.fonts.ready : null, demarrage]
+      .concat([ART.logo, ART.back].concat(PACK_ARTS.map(p => (typeof p === 'string' ? p : p.img || p.src))).filter(Boolean).map(image))
+      .filter(Boolean);
+    let fait = 0;
+    l.forEach(p => Promise.resolve(p).catch(() => {}).then(() => { if (barre) barre.style.transform = `scaleX(${Math.max(0.06, ++fait / l.length)})`; }));
+    const fin = () => { e.classList.add('fini'); setTimeout(() => e.remove(), reglageRM() ? 0 : 450); };
+    Promise.race([Promise.all(l.map(p => Promise.resolve(p).catch(() => {}))), new Promise(ok => setTimeout(ok, 6000))]).then(fin);
+  }
+  return { attendre };
+})();
+
+const demarrage = (async () => {
   cards = buildCards();
   promos = buildPromos();
   brillantes = buildBrillantes(cards);
@@ -900,3 +922,4 @@ function visiteDuJourFaite() {
     toast("La sauvegarde n'est pas disponible sur ce navigateur : ta progression sera perdue en quittant.");
   }
 })();
+Chargement.attendre(demarrage);
