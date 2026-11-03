@@ -123,10 +123,10 @@ const SECRET_DATA = [
     ambiance: 'Vous savez que j\'ai participé à la première World Cup moi ?'
   },
   {
-    fichier: '124_S_Joueur_Violette_Brawks-Trop-Deter.webp', num: 124, nom: 'Brawks Trop Déter',
+    fichier: '124_S_Joueur_Violette_Brawks-Trop-Deter-scan.webp', num: 124, nom: 'Brawks Trop Déter',
     categorie: 'Joueur', couleur: 'Violette', def: 130,
     attaques: [
-      /* « Sermont » : tel qu'imprimé sur la carte photographiée. */
+      /* « Sermont » : tel qu'imprimé, confirmé par le scan du 3 novembre 2026. */
       { nom: 'Sermont', cout: { violette: 1, neutre: 1 }, degats: 110 }
     ],
     mot_cle: { nom: 'Signature', icone: 'declencheur', texte: 'Lorsque votre adversaire récupère un PV suite à l\'attaque de ce Joueur, désengagez tous vos Joueurs.' },
@@ -144,7 +144,7 @@ const SECRET_DATA = [
     ambiance: 'Je reviens mais à une condition...'
   },
   {
-    fichier: '126_S_Moment-Instant_Neutre_GP-Explorer-II.webp', num: 126, nom: 'GP Explorer II',
+    fichier: '126_S_Moment-Instant_Neutre_GP-Explorer-II-scan.webp', num: 126, nom: 'GP Explorer II',
     categorie: 'Moment', sous_type: 'Instant', couleur: 'Neutre',
     effets: [
       { icone: 'etoile', texte: 'Les CEO choisissent chacun 2 de leurs Joueurs et récupèrent les autres en main. Vous ne pouvez plus jouer de Joueur pour le reste de ce tour.' }
@@ -153,7 +153,7 @@ const SECRET_DATA = [
     ambiance: 'On s\'émerveille, yeux dans les yeux'
   },
   {
-    fichier: '127_S_Moment-Instant_Mauve_Paris-Gentle-Mates.webp', num: 127, nom: 'Paris Gentle Mates',
+    fichier: '127_S_Moment-Instant_Mauve_Paris-Gentle-Mates-scan.webp', num: 127, nom: 'Paris Gentle Mates',
     categorie: 'Moment', sous_type: 'Instant', couleur: 'Mauve',
     effets: [
       { icone: 'etoile', texte: 'Mélangez 2 de vos Essences Mauves dans votre Réserve pour doubler la valeur de la première attaque que vous déclenchez ce tour.' }

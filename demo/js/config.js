@@ -42,21 +42,21 @@ const CARD_DIR = 'cards/';
 /* ---------- Habillage ---------- */
 /* Les quatre visuels de booster : un est tiré au sort à chaque paquet, sans effet sur le contenu. */
 const PACK_ARTS = [
-  'assets/boosters/booster-01.webp?v=6bc4fa',
-  'assets/boosters/booster-02.webp?v=6bc4fa',
-  'assets/boosters/booster-03.webp?v=6bc4fa',
-  'assets/boosters/booster-04.webp?v=6bc4fa'
+  'assets/boosters/booster-01.webp?v=11e5da',
+  'assets/boosters/booster-02.webp?v=11e5da',
+  'assets/boosters/booster-03.webp?v=11e5da',
+  'assets/boosters/booster-04.webp?v=11e5da'
 ];
 
-/* Le sceau assets/pack-star.svg?v=6bc4fa sert d'icône au compteur de boosters, directement dans index.html. */
+/* Le sceau assets/pack-star.svg?v=11e5da sert d'icône au compteur de boosters, directement dans index.html. */
 const ART = {
-  logo: 'assets/logo-m8.webp?v=6bc4fa',         /* logo du jeu, en en-tête */
-  back: 'assets/card-back.webp?v=6bc4fa',       /* dos de carte */
-  set: 'assets/extension-logo.svg?v=6bc4fa',    /* logo de l'extension */
-  edition: 'assets/1st-edition.svg?v=6bc4fa',   /* pastille 1re édition */
-  seal: 'assets/pack-star.svg?v=6bc4fa',        /* sceau, icône de la réserve */
-  star: 'assets/star-pink.svg?v=6bc4fa',        /* étincelle, repli d'avatar */
-  jeton: 'assets/jeton-echange.webp?v=6bc4fa'   /* le jeton d'échange, frappé du M8 */
+  logo: 'assets/logo-m8.webp?v=11e5da',         /* logo du jeu, en en-tête */
+  back: 'assets/card-back.webp?v=11e5da',       /* dos de carte */
+  set: 'assets/extension-logo.svg?v=11e5da',    /* logo de l'extension */
+  edition: 'assets/1st-edition.svg?v=11e5da',   /* pastille 1re édition */
+  seal: 'assets/pack-star.svg?v=11e5da',        /* sceau, icône de la réserve */
+  star: 'assets/star-pink.svg?v=11e5da',        /* étincelle, repli d'avatar */
+  jeton: 'assets/jeton-echange.webp?v=11e5da'   /* le jeton d'échange, frappé du M8 */
 };
 
 /* Petites icônes en ligne : elles héritent de la couleur du texte qui les entoure.
@@ -72,16 +72,16 @@ const ICON = {
 /* ---------- Référentiels ---------- */
 /* Couleurs officielles des neuf essences ; `ic` est le symbole affiché dans l'interface. */
 const COLORS = {
-  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=6bc4fa' },
-  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=6bc4fa' },
-  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=6bc4fa' },
-  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=6bc4fa' },
-  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=6bc4fa' },
-  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=6bc4fa' },
-  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=6bc4fa' },
-  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=6bc4fa' },
-  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=6bc4fa' },
-  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=6bc4fa' }
+  rose: { nom: 'Rose', c: '#ee0073', ic: 'assets/essences/rose.svg?v=11e5da' },
+  orange: { nom: 'Orange', c: '#f77514', ic: 'assets/essences/orange.svg?v=11e5da' },
+  jade: { nom: 'Jade', c: '#55e6a6', ic: 'assets/essences/jade.svg?v=11e5da' },
+  violette: { nom: 'Violette', c: '#8936ff', ic: 'assets/essences/violette.svg?v=11e5da' },
+  jaune: { nom: 'Jaune', c: '#ffc73b', ic: 'assets/essences/jaune.svg?v=11e5da' },
+  mauve: { nom: 'Mauve', c: '#ec8fff', ic: 'assets/essences/mauve.svg?v=11e5da' },
+  verte: { nom: 'Verte', c: '#9df244', ic: 'assets/essences/verte.svg?v=11e5da' },
+  bleue: { nom: 'Bleue', c: '#2f7fc9', ic: 'assets/essences/bleue.svg?v=11e5da' },
+  azur: { nom: 'Azur', c: '#39b8ff', ic: 'assets/essences/azur.svg?v=11e5da' },
+  neutre: { nom: 'Neutre', c: '#90b2a5', ic: 'assets/essences/neutre.png?v=11e5da' }
 };
 
 /* `PR` n'est pas une rareté de plus dans l'échelle : c'est une case à part.
@@ -326,11 +326,11 @@ const FRAMES = {
    Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
    avatarHTML dans js/ui.js). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=6bc4fa', ico: true, bg: '#5d4bd9' },
-  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=6bc4fa', objet: true, pos: '50%' },
-  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=6bc4fa', objet: true, pos: '40%' },
-  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=6bc4fa', ico: true, bg: '#5d4bd9' },
-  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=6bc4fa', ico: true, bg: '#ee0073' }
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg?v=11e5da', ico: true, bg: '#5d4bd9' },
+  back: { nom: 'Dos de carte', art: 'assets/card-back.webp?v=11e5da', objet: true, pos: '50%' },
+  pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp?v=11e5da', objet: true, pos: '40%' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg?v=11e5da', ico: true, bg: '#5d4bd9' },
+  ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg?v=11e5da', ico: true, bg: '#ee0073' }
 };
 
 /* ---------- Échanges ---------- */
