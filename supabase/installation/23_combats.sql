@@ -522,7 +522,7 @@ create or replace function public.combat_debut(p_mode text, p_cle text, p_niveau
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; v_n int; niv int := p_niveau; ph int; gr bigint; x jsonb;
-        cid text; ouverts int; err text; v_boss text; v_jour int; deck jsonb := p_deck;
+        cid text; err text; v_boss text; v_jour int; deck jsonb := p_deck;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -555,9 +555,10 @@ begin
   -- 3.0.14 (le proprietaire : « Les combats abandonnes comptent comme une
   -- defaite seulement en online ou en raid ») : seul un combat de Raid
   -- laisse compte comme perdu ; un combat solo laisse ne compte pas.
-  with fermes as (delete from combats_ouverts where user_id = p returning mode)
-  select count(*) filter (where mode = 'raid') into ouverts from fermes;
-  if ouverts > 0 then update combat_joueurs set defaites = defaites + ouverts, serie = 0 where user_id = p; end if;
+  -- Version 3.0.16 (le proprietaire : « pas niquer le ratio W-L ») : le
+  -- Raid ne compte plus dans le bilan ni la serie ; sa tentative, elle,
+  -- reste prise (raid_debut).
+  delete from combats_ouverts where user_id = p;
   cid := 'cb' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
   insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine, deck, section, boss, n)
   values (cid, p, p_mode, p_cle, niv, ph, jour_paris(), gr, deck, c.section, v_boss, v_jour);
@@ -594,11 +595,14 @@ begin
   end if;
   if not v_abandon then perform bump_quests(p, 'combats', 1); end if;
 
-  perform combat_serie(p, p_gagne);
+  -- Le Raid hors du bilan victoires-defaites et de la serie (3.0.16) : il
+  -- a ses propres comptes (raid_participants) ; ses victoires font avancer
+  -- les quetes comme les autres.
+  if o.mode <> 'raid' then perform combat_serie(p, p_gagne); end if;
   if not p_gagne then
-    update combat_joueurs set defaites = defaites + 1 where user_id = p;
+    if o.mode <> 'raid' then update combat_joueurs set defaites = defaites + 1 where user_id = p; end if;
   else
-    update combat_joueurs set victoires = victoires + 1 where user_id = p;
+    if o.mode <> 'raid' then update combat_joueurs set victoires = victoires + 1 where user_id = p; end if;
     perform bump_quests(p, 'victoires', 1);
     perform bump_quests(p, 'vaincus', least(20, greatest(0, coalesce((v->>'vaincus')::int, 0))));
     if o.niveau >= 4 then perform bump_quests(p, 'victoires_dures', 1); end if;

@@ -173,7 +173,7 @@ const GUIDES = (() => {
         <p>Choisis la difficulté, de 1 à 5 : ton adversaire reçoit un deck tiré au sort, différent à chaque partie. Plus c'est dur, plus ça rapporte.</p>
         ${note('En solo, les cinq premières victoires du jour rapportent des Éclats (Arcade, et combats de campagne rejoués). L\'XP n\'a pas de limite.')}
         <h3>Raid</h3>
-        <p>Un boss pour tout le serveur, <b>un nouveau toutes les deux semaines</b>. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place au <b>mode Infini</b>. Trois tentatives par jour.</p>
+        <p>Un boss pour tout le serveur, <b>un nouveau toutes les deux semaines</b>. Chaque PV que tu lui prends compte pour tous : à chaque palier de dégâts, une <b>phase</b> tombe et ouvre un <b>coffre commun</b> pour tous ceux qui ont combattu ; tes propres dégâts paient aussi des <b>paliers personnels</b>. Six phases ; la dernière abattue, place à l'<b>Infini</b>, des paliers communs. Trois tentatives par jour ; le Raid ne compte pas dans ton bilan de victoires.</p>
         <h3>Versus</h3>
         <p>Pas de recherche d'adversaire : tu défies un de tes amis, il accepte, et vous jouez en direct, 60 secondes par tour. Les trois premiers défis de la journée rapportent des Éclats.</p>`
     },
@@ -232,7 +232,7 @@ const GLOSSAIRE = (() => {
     m('Essence Brillante', 'La version rare d\'une Essence : si tu la possèdes, tes Essences de sa couleur brillent en combat. Rien d\'autre ne change.', 'deck'),
     m('Fin de tour', `La dernière phase : défausser jusqu'à garder ${R().MAIN_MAX} cartes en main au plus.`, 'tour'),
     m('Garde', 'Mot-clé : ce Joueur peut défendre n\'importe quelle attaque.', 'motscles'),
-    m('Infini (mode)', 'Au Raid, une fois les six phases tombées : chaque victoire fait monter d\'un palier, plus dur, pour la performance de chacun.', 'modes'),
+    m('Infini (Raid)', 'Au Raid, une fois les six phases tombées : des paliers de dégâts communs, sans fin ; chacun ouvre un coffre à ceux qui ont combattu.', 'modes'),
     m('Joueur', 'La carte qui se déploie, attaque et défend. Il a une Défense, des attaques, parfois des capacités.', 'cartes'),
     m('Légion', 'Mot-clé : vaincu, tu peux défausser une carte pour le récupérer dans ta main.', 'motscles'),
     m('Lier', 'Attacher un Objet à un de tes Joueurs. Il le garde tant qu\'il reste en jeu ; pas de limite d\'Objets.', 'cartes'),

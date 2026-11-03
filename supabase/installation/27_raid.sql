@@ -145,16 +145,19 @@ $$;
 -- Version 3.0.14 : les seuils refaits pour une dizaine de joueurs actifs
 -- (tools/equilibre-raid.js), et le coffre de la derniere phase, l'exploit :
 -- une Legendaire qui manque (accorder 'legendaire'), et le titre « Heros du
--- Raid » (`bonus`).
+-- Raid » (`bonus`). Version 3.0.16 (le proprietaire : « beaucoup trop
+-- complique […] facilite-le un chouille ») : les combats plus doux d'un cran,
+-- et les seuils un peu plus hauts (115 … 1 620) pour que la sixieme phase
+-- reste l'affaire du dernier jour (docs/economie-3.0.md, § 3).
 create or replace function public.raid_phases() returns jsonb
 language sql immutable as $$
   select '[
-    {"seuil": 100,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",   "montant": 2,   "titre": "2 boosters"}},
-    {"seuil": 250,  "ia": 3, "pv": 6, "ess": 0, "commun": {"type": "fragments",  "montant": 300, "titre": "300 Fragments"}},
-    {"seuil": 450,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "boosters",   "montant": 3,   "titre": "3 boosters"}},
-    {"seuil": 700,  "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "eclats",     "montant": 500, "titre": "500 Éclats"}},
-    {"seuil": 1000, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "boosters",   "montant": 5,   "titre": "5 boosters"}},
-    {"seuil": 1400, "ia": 5, "pv": 9, "ess": 2, "commun": {"type": "legendaire", "montant": 1,   "titre": "Une Légendaire",
+    {"seuil": 115,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",   "montant": 2,   "titre": "2 boosters"}},
+    {"seuil": 290,  "ia": 2, "pv": 6, "ess": 0, "commun": {"type": "fragments",  "montant": 300, "titre": "300 Fragments"}},
+    {"seuil": 520,  "ia": 3, "pv": 6, "ess": 1, "commun": {"type": "boosters",   "montant": 3,   "titre": "3 boosters"}},
+    {"seuil": 810,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "eclats",     "montant": 500, "titre": "500 Éclats"}},
+    {"seuil": 1150, "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "boosters",   "montant": 5,   "titre": "5 boosters"}},
+    {"seuil": 1620, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "legendaire", "montant": 1,   "titre": "Une Légendaire",
       "bonus": {"type": "titre", "montant": 1, "objet": "t_heros_raid", "titre": "le titre « Héros du Raid »", "court": "+ un titre"}}}
   ]'::jsonb;
 $$;
@@ -178,7 +181,7 @@ $$;
 -- au classement des degats. Avant la 3.0.15 : un palier par joueur.
 create or replace function public.raid_infini() returns jsonb
 language sql immutable as $$
-  select '{"pas": 400, "coffre": {"type": "boosters", "montant": 1, "titre": "1 booster"}}'::jsonb;
+  select '{"pas": 250, "coffre": {"type": "boosters", "montant": 1, "titre": "1 booster"}}'::jsonb;
 $$;
 
 -- La vie d'un boss (RAID.bosses › vie, version 3.0.14) : ses seuils de
@@ -222,8 +225,8 @@ language plpgsql immutable as $$
 declare n int := greatest(1, coalesce(nullif(substr(p_cle, 2), '')::int, 1)); ph jsonb;
 begin
   if left(p_cle, 1) = 'i' then
-    return jsonb_build_object('infini', true, 'n', n, 'ia', 5, 'pv_boss', least(12, 9 + n),
-                              'ess', least(3, 2 + n / 3), 'pv_moi', greatest(2, 4 - greatest(0, n - 3) / 2));
+    -- 3.0.16 : un palier Infini se joue comme la sixieme phase (RAID.infini).
+    return jsonb_build_object('infini', true, 'n', n, 'ia', 4, 'pv_boss', 8, 'ess', 2, 'pv_moi', 4);
   end if;
   ph := raid_phases()->(least(n, 6) - 1);
   return jsonb_build_object('infini', false, 'n', n, 'ia', (ph->>'ia')::int, 'pv_boss', (ph->>'pv')::int,

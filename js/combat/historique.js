@@ -191,12 +191,16 @@ function vCbHistorique() {
   if (cbHistoErreur) return tete + vide('Historique indisponible', cbHistoErreur);
   if (!cbHisto) { chargerHisto(); return tete + '<p class="muted boitecharge">Chargement…</p>'; }
   if (!cbHisto.length) return tete + vide('Aucun combat pour l\'instant', 'Tes combats en solo et tes défis entre amis arrivent ici, tour par tour.');
-  const v = cbHisto.filter(x => x.gagne).length;
-  return tete + `<div class="hc-bilan">
+  /* Le bilan, sans le Raid (3.0.16 : il n'entre plus dans les victoires et
+     les défaites, ni ici ni au profil) ; ses combats restent dans la liste. */
+  const bil = cbHisto.filter(x => x.mode !== 'raid');
+  const v = bil.filter(x => x.gagne).length;
+  const hors = bil.length < cbHisto.length;
+  return tete + (bil.length ? `<div class="hc-bilan">
       <span><b class="tnum">${v}</b><small>victoire${v > 1 ? 's' : ''}</small></span>
-      <span><b class="tnum">${cbHisto.length - v}</b><small>défaite${cbHisto.length - v > 1 ? 's' : ''}</small></span>
-      <span><b class="tnum">${Math.round(100 * v / cbHisto.length)} %</b><small>de victoires</small></span>
-    </div>
+      <span><b class="tnum">${bil.length - v}</b><small>défaite${bil.length - v > 1 ? 's' : ''}</small></span>
+      <span><b class="tnum">${Math.round(100 * v / bil.length)} %</b><small>de victoires${hors ? ', hors Raid' : ''}</small></span>
+    </div>` : '') + `
     <ol class="hc-liste">${cbHisto.map(vHistoLigne).join('')}</ol>`;
 }
 

@@ -655,12 +655,14 @@ test('les raids durent deux semaines depuis le premier jour du Choc, sans trou n
 });
 test('une partie de Raid (phase 5) va à son terme, contre chaque boss, avec son réglage', () => {
   const ph = Choc.raidCombat('p5');
-  egal([ph.pvBoss, ph.ess], [8, 2], 'les chiffres de la phase');
+  /* La phase 5 depuis la 3.0.16 (le Raid allégé) : 7 PV, une Essence
+     d'avance. */
+  egal([ph.pvBoss, ph.ess], [7, 1], 'les chiffres de la phase');
   /* Règles officielles (3.0.12) : les deux boss, un PV et une Essence de
      moins que la phase. */
   for (const id of ['c121', 'c116']) {
     const m = Choc.raidCombat('p5', id);
-    egal([m.pvBoss, m.ess], [7, 1], `${id} : un PV et une Essence de moins`);
+    egal([m.pvBoss, m.ess], [6, 0], `${id} : un PV et une Essence de moins`);
   }
   for (const b of Choc.RAID.bosses) {
     const p = Choc.raidCombat('p5', b.id);

@@ -504,7 +504,7 @@ function vChClassement() {
         <span class="rf-pts tnum">${etincelleIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
       : `<p class="muted">Personne n'a encore gagné d'${CHOC.monnaie.nom} : à toi de commencer.</p>`;
   } else {
-    corps = vTopRaid(10) || `<p class="muted">Personne n'a encore frappé ${h(rdBoss().nom)}.</p>`;
+    corps = vTopRaid(10, true) || `<p class="muted">Personne n'a encore frappé ${h(rdBoss().nom)}.</p>`;
   }
   return `${chTitre('Classement', `Ceux qui frappent le plus fort, et ceux qui gagnent le plus d'${CHOC.monnaie.nom}.`)}
     <div class="segbar ch-seg">${seg}</div>${corps}`;

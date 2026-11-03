@@ -2255,8 +2255,9 @@
     c.ouverts = c.ouverts || {};
     /* Un seul combat ouvert à la fois : le précédent est abandonné. Version
        3.0.14 (combat_debut, 23_combats.sql) : seul un combat de Raid laissé
-       compte comme perdu. */
-    Object.keys(c.ouverts).forEach(k => { if (c.ouverts[k].mode === 'raid') { c.stats.defaites++; c.stats.serie = 0; } delete c.ouverts[k]; });
+       compte comme perdu — au Raid seulement (sa tentative est prise) ;
+       depuis la 3.0.16, ni dans le bilan ni dans la série. */
+    Object.keys(c.ouverts).forEach(k => { delete c.ouverts[k]; });
     if (p_mode === 'campagne') niveau = combatsCampagne(c.section).find(x => x.id === p_cle).niveau;
     c.ouverts[id] = { mode: p_mode, cle: p_cle, niveau, phase, jour: auj, debut: now(), graine, deck, section: c.section, boss, n: nJour };
     return { id, graine, mode: p_mode, cle: p_cle, niveau, jour: auj, section: c.section, boss, n: nJour };
@@ -2308,7 +2309,9 @@
     if (abandon && o.mode !== 'raid') return { etat: me(p), recompense: Object.assign(r, { message: 'Combat abandonné : il ne compte pas.' }) };
     if (!abandon) bump(p, 'combats', 1);
     if (!trop) r.xp = gagnerXp(p, xpCombat(o.mode, o.niveau, !!p_gagne, +res.vaincus || 0, +res.tours || 0));
-    serieDe(c, !!p_gagne);
+    /* Le Raid hors du bilan et de la série (3.0.16, le propriétaire : « pas
+       niquer le ratio W-L des joueurs ») : il a ses propres comptes. */
+    if (o.mode !== 'raid') serieDe(c, !!p_gagne);
     if (o.mode === 'raid') return finRaid(p, c, o, !!p_gagne, res, trop, r);
     if (o.mode === 'epreuve') return finChoc(p, c, o, !!p_gagne, res, trop, r);
     if (!p_gagne) {
@@ -2589,8 +2592,8 @@
 
   /* raid_fin : pendant le Choc, des Étincelles ; le reste du temps, des Éclats. */
   function finRaid(p, c, o, gagne, res, trop, r) {
-    if (gagne) { c.stats.victoires++; bump(p, 'victoires', 1); bump(p, 'vaincus', Math.min(20, Math.max(0, +res.vaincus || 0))); }
-    else c.stats.defaites++;
+    /* Hors du bilan victoires-défaites (3.0.16) ; les quêtes, si. */
+    if (gagne) { bump(p, 'victoires', 1); bump(p, 'vaincus', Math.min(20, Math.max(0, +res.vaincus || 0))); }
     if (o.niveau >= 4 && gagne) bump(p, 'victoires_dures', 1);
     if (!res.abandon) bump(p, 'raid', 1);
     if (trop) { r.message = 'Combat trop court pour compter.'; return { etat: me(p), recompense: r }; }

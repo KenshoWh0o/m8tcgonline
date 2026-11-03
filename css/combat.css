@@ -398,188 +398,211 @@ html.rm .cb-etape.ouvert::before{animation:none}
 .rd-pv{display:block;height:10px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .rd-pv i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,var(--danger));box-shadow:0 0 12px rgba(255,107,107,.5)}
 .rd-pv.mini{max-width:170px;height:6px;margin:5px 0 3px}
-/* La page du Raid (refaite en 3.0.15 : « fait un peu cheapos […] ça doit
-   être à la hauteur », selon le propriétaire, et « simple et intuitif »).
-   Le boss en grand et la vie que tout le serveur lui prend ; ton combat ;
-   le chemin du serveur (les six phases, puis l'Infini) ; toi ; le
-   classement ; l'aide. */
+/* La page du Raid (refaite en 3.0.16 ; le propriétaire, 2 novembre 2026 :
+   « je le trouve encore bancal. rends le beau bordel et intuitif »). Trois
+   temps, dans l'ordre où on s'en sert : le boss et sa vie, ton combat du
+   jour (son bouton visible sans défiler sur un téléphone), les coffres ;
+   puis le classement et l'aide. */
 .rd-pv.infini i{background:linear-gradient(90deg,#7a68ec,var(--accent-soft));box-shadow:0 0 12px var(--accent-glow)}
-.rd{display:flex;flex-direction:column;gap:14px}
+.rd{display:flex;flex-direction:column;gap:12px}
 .rd-sec-t{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
 .rd-sec-t h3{margin:0;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:18px;letter-spacing:-.01em}
 .rd-sec-t small{font-size:12.5px;line-height:1.4;color:var(--muted)}
-.rd-tag{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--text);
+.rd-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--text);
   background:var(--glass);box-shadow:inset 0 0 0 1px var(--glass-line),var(--glass-hi);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .rd-tag svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.rd-ico svg:not(.shard),.rd-m-c>svg,.rd-pret-ico>svg:not(.shard),.rd-pm>svg:not(.shard),.rd-inf svg,.rd-gainico svg:not(.shard){fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 
-/* Le boss : son illustration en grand, son nom, ce qu'il fait, sa vie. */
-.rd-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;min-height:clamp(400px,112vw,470px);
-  padding:16px;border-radius:var(--radius-lg);background:var(--plate);box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-3)}
-.rd-hero-art{position:absolute;inset:0 0 28% 0;z-index:-2}
-.rd-hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,rgba(18,17,25,.25) 0%,rgba(18,17,25,0) 22%,rgba(18,17,25,.6) 48%,rgba(18,17,25,.95) 66%,var(--plate) 82%),
-    radial-gradient(90% 55% at 50% 100%,rgba(255,107,107,.14),transparent 70%)}
-.rd-hero-haut{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px}
-.rd-hero h2{margin:0;font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:clamp(30px,8.6vw,38px);line-height:.98;letter-spacing:-.025em;
-  text-shadow:0 2px 20px rgba(0,0,0,.65)}
-.rd-dit{margin:7px 0 0;max-width:38em;font-size:13px;line-height:1.42;color:var(--subtle)}
-/* Sa vie : une barre, six tronçons, chacun large des dégâts qu'il demande ;
-   ce qui lui reste en corail, ce que le serveur lui a pris est vide. */
-.rd-vie{margin-top:16px}
-.rd-vie-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
-.rd-vie-t>b{display:inline-flex;align-items:center;gap:7px;font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;white-space:nowrap}
-.rd-vie-t>b small{font-family:var(--body);font-style:normal;font-weight:700;font-size:12px;color:var(--muted)}
-.rd-vie-t>span{font-size:12.5px;line-height:1.3;color:var(--subtle);text-align:right}
-.rd-vie-t>span b{color:var(--text)}
-.rd-vie-barre{display:flex;gap:3px;height:20px;padding:3px;border-radius:999px;background:rgba(6,5,10,.85);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 0 2px 6px rgba(0,0,0,.6),0 8px 22px rgba(0,0,0,.4)}
-.rd-seg{position:relative;display:flex;min-width:0;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.045)}
+/* Le boss : une bande d'illustration (son nom, ce qu'il fait), puis sa vie. */
+.rd-hero{position:relative;overflow:hidden;border-radius:var(--radius-lg);background:var(--plate);box-shadow:var(--sh-3)}
+.rd-hero::after{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px var(--line-2)}
+.rd-hero-img{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;height:clamp(150px,41vw,230px);padding:14px 16px 6px}
+.rd-hero-art{position:absolute;inset:0;z-index:-2}
+.rd-hero-img::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(22,21,30,.4) 0%,rgba(22,21,30,0) 26%,rgba(22,21,30,.5) 58%,var(--plate) 100%),
+    linear-gradient(90deg,rgba(22,21,30,.55),rgba(22,21,30,0) 62%)}
+.rd-hero-haut{position:absolute;top:12px;left:12px;right:12px;display:flex;flex-wrap:wrap;gap:6px}
+.rd-tag-j{margin-left:auto}
+.rd-hero-nom h2{margin:0;font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:clamp(26px,7.4vw,36px);line-height:.98;letter-spacing:-.025em;
+  text-shadow:0 2px 18px rgba(0,0,0,.7)}
+.rd-hero-nom p{margin:5px 0 0;max-width:34em;font-size:12.5px;line-height:1.38;color:var(--subtle);text-shadow:0 1px 8px rgba(0,0,0,.85)}
+/* Sa vie : six tronçons, un par phase, chacun large des dégâts qu'il
+   demande. Le rouge, c'est ce qui lui reste ; ce que le serveur lui a pris
+   s'éteint, de gauche à droite, dans l'ordre des phases (le même que celui
+   des coffres plus bas). */
+.rd-vie{padding:8px 16px 16px}
+.rd-vie-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.rd-vie-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.rd-vie-t b{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-style:italic;font-weight:900;font-size:17px;white-space:nowrap}
+.rd-vie-t b>span:not(.rd-inf){font-family:var(--body);font-style:normal;font-weight:700;font-size:12.5px;color:var(--muted)}
+.rd-vie-barre{display:flex;gap:3px;height:24px;padding:3px;border-radius:999px;background:rgba(6,5,10,.85);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 0 2px 6px rgba(0,0,0,.6)}
+.rd-seg{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.05)}
 .rd-seg:first-child{border-radius:999px 4px 4px 999px}
 .rd-seg:last-child{border-radius:4px 999px 999px 4px}
 .rd-seg:only-child{border-radius:999px}
-.rd-seg i{display:block;height:100%;margin-left:auto;background:linear-gradient(180deg,#ff9a85 0%,#f05a63 55%,#c93a50 100%);
+.rd-seg i{position:absolute;top:0;right:0;bottom:0;background:linear-gradient(180deg,#ff9a85 0%,#f05a63 55%,#c93a50 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:width .6s cubic-bezier(.2,.8,.2,1)}
-.rd-seg.plein i{width:100%!important;background:linear-gradient(180deg,#c95463,#8f2f42);opacity:.85}
-.rd-seg.encours{box-shadow:0 0 0 1px rgba(255,154,133,.75),0 0 16px rgba(255,107,107,.55)}
+.rd-seg.plein i{background:linear-gradient(180deg,#d5606b,#9a3446)}
+.rd-seg em{position:relative;z-index:1;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:900;line-height:1;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.rd-seg em svg{width:12px;height:12px;fill:none;stroke:var(--accent-soft);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.rd-seg.encours{box-shadow:0 0 0 1.5px rgba(255,170,150,.85),0 0 14px rgba(255,107,107,.5)}
 .rd-seg.encours i{animation:rd-pouls 2.4s ease-in-out infinite}
-@keyframes rd-pouls{50%{filter:brightness(1.18)}}
-.rd-vie-n{display:flex;gap:3px;padding:0 3px;margin-top:7px}
-.rd-vie-n em{min-width:0;text-align:center;font-style:normal;font-size:11px;font-weight:800;color:var(--muted)}
-.rd-vie-n em.encours{color:#ffb4a6}
-.rd-vie-n em.tombe{color:var(--accent-soft)}
+@keyframes rd-pouls{50%{opacity:.82}}
 .rd-vie.infini .rd-seg i{background:linear-gradient(180deg,#d6ceff 0%,#9a88ff 55%,#6f5ce6 100%)}
-.rd-vie.infini .rd-seg.encours{box-shadow:0 0 0 1px rgba(179,166,255,.75),0 0 18px var(--accent-glow)}
-.rd-inf{display:inline-grid;place-items:center;width:22px;height:22px;color:var(--deco-ink)}
-.rd-inf svg,.rd-et-n i>svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.rd-vie.infini .rd-seg.encours{box-shadow:0 0 0 1.5px rgba(179,166,255,.8),0 0 16px var(--accent-glow)}
+.rd-inf{display:inline-grid;place-items:center;width:20px;height:20px;color:var(--deco-ink)}
+.rd-inf svg{width:100%;height:100%;stroke-width:2.2}
 .rd-vie-msg{margin:8px 0 0;font-size:12.5px;line-height:1.4;color:var(--subtle)}
-/* Le serveur qui frappe avec toi. */
-.rd-ens{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;line-height:1.35;color:var(--subtle)}
-.rd-ens b{color:var(--text)}
-.rd-ens-av{display:flex;flex:none;padding-left:6px}
-.rd-ens-av .ava{margin-left:-7px;box-shadow:0 0 0 2px var(--plate)}
+.rd-vie-msg b{color:var(--text)}
 
-/* Ton combat : le boss face à toi, un seul bouton. */
-.rd-combat{padding:16px;border-radius:var(--radius-lg);
-  background:radial-gradient(120% 90% at 0% 0%,rgba(255,107,107,.09),transparent 55%),radial-gradient(120% 90% at 100% 0%,rgba(157,140,255,.12),transparent 55%),var(--surface);
+/* Ton combat du jour : le boss face à toi, ton deck, un bouton. */
+.rd-combat{padding:14px 16px 14px;border-radius:var(--radius-lg);
+  background:radial-gradient(120% 90% at 0% 0%,rgba(255,107,107,.08),transparent 55%),radial-gradient(120% 90% at 100% 0%,rgba(157,140,255,.11),transparent 55%),var(--surface);
   box-shadow:inset 0 0 0 1px var(--line-2),inset 0 1px 0 rgba(255,255,255,.07),var(--sh-2)}
 .rd-combat-t{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.rd-combat-t h3{display:flex;flex-direction:column;margin:0;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:19px;line-height:1.05}
-.rd-combat-t h3 small{order:-1;margin-bottom:2px;font-family:var(--body);font-style:normal;font-weight:800;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.rd-tent{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;color:var(--subtle);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-combat-t h3{display:flex;flex-direction:column;min-width:0;margin:0;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:19px;line-height:1.05}
+.rd-combat-t h3 small{order:-1;margin-bottom:3px;font-family:var(--body);font-style:normal;font-weight:800;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.rd-tent{display:inline-flex;flex:none;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;color:var(--subtle);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
 .rd-pips{display:inline-flex;gap:4px}
 .rd-pips i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.14)}
 .rd-pips i.on{background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
-.rd-face{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch;gap:8px;margin-bottom:12px}
-.rd-face-c{display:flex;align-items:center;gap:10px;min-width:0;padding:10px;border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
-.rd-face-c.boss{box-shadow:inset 0 0 0 1px rgba(255,107,107,.28)}
-.rd-face-c.moi{flex-direction:row-reverse;text-align:right;box-shadow:inset 0 0 0 1px rgba(157,140,255,.3)}
-.rd-face-av{position:relative;flex:none;width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px rgba(255,107,107,.6),0 0 14px rgba(255,107,107,.3)}
-.rd-face-c .ava{flex:none;width:44px;height:44px}
-.rd-face-c>span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
-.rd-face-c.moi>span:last-child{align-items:flex-end}
-.rd-face-c small{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.rd-face-c b{font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;line-height:1.05}
-.rd-face-d{font-size:11.5px;line-height:1.25;color:var(--subtle)}
-.rd-face-vs{align-self:center;font-family:var(--display);font-style:italic;font-weight:900;font-size:13px;color:var(--muted)}
+.rd-duel{display:grid;grid-template-columns:minmax(0,1.4fr) auto minmax(0,1fr);align-items:stretch;gap:8px;margin-bottom:10px}
+.rd-duel-l{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
+.rd-duel-l.boss{box-shadow:inset 0 0 0 1px rgba(255,107,107,.3)}
+.rd-duel-l.moi{flex-direction:row-reverse;text-align:right;box-shadow:inset 0 0 0 1px rgba(157,140,255,.32)}
+.rd-duel-av{position:relative;flex:none;width:42px;height:42px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px rgba(255,107,107,.65),0 0 14px rgba(255,107,107,.3)}
+.rd-duel-l .ava{flex:none;width:42px;height:42px}
+.rd-duel-l>span:last-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rd-duel-l.moi>span:last-child{align-items:flex-end}
+.rd-duel-l b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1}
+.rd-duel-l small{font-size:11.5px;line-height:1.25;color:var(--subtle)}
+.rd-duel-l .etoiles i{width:12px;height:12px}
+.rd-duel-vs{align-self:center;font-family:var(--display);font-style:italic;font-weight:900;font-size:13px;letter-spacing:.02em;color:var(--muted)}
+.rd-combat .cb-choixdeck{padding:8px 8px 8px 10px;margin-bottom:10px;background:var(--bg-2)}
+.rd-combat .cb-choixdeck-art{width:30px}
+.rd-combat .cb-choixdeck>span:nth-child(2){min-width:0}
+.rd-combat .cb-choixdeck b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-gain{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);text-align:center}
+.rd-gain>span{display:block}
 .rd-gain b{color:var(--subtle)}
 
-/* Le chemin du serveur : une étape par ligne, reliées par un trait. */
-.rd-chemin,.rd-toi,.rd-top,.rd-coffres{padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
-.rd-ets{list-style:none;margin:0;padding:0}
-.rd-et{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;padding:7px 0}
-.rd-et+.rd-et::before{content:"";position:absolute;left:20px;top:-7px;height:14px;width:2px;border-radius:2px;background:rgba(255,255,255,.1)}
-.rd-et.fait+.rd-et::before,.rd-et.pret+.rd-et::before,.rd-et.attend+.rd-et::before{background:var(--accent-soft)}
-.rd-et-n{position:relative;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2)}
-.rd-et-n>i{position:relative;z-index:1;display:grid;place-items:center;width:22px;height:22px;font-style:normal}
-.rd-et-n>i>img,.rd-et-n>i>svg{width:22px;height:22px}
-.rd-et-n em{position:absolute;z-index:2;right:-4px;bottom:-4px;display:grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;
-  font-style:normal;font-size:10.5px;font-weight:900;color:var(--text);background:var(--surface-2);box-shadow:0 0 0 2px var(--surface),inset 0 0 0 1px var(--line-2)}
-.rd-et-t{display:flex;flex-direction:column;gap:2px;min-width:0}
-.rd-et-t b{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.rd-et-t small{font-size:14px;font-weight:800;line-height:1.3;color:var(--text)}
-.rd-et-plus{font-style:normal;font-size:12px;font-weight:800;color:var(--gold)}
-.rd-et-a{justify-self:end;text-align:right}
-.rd-et-a small{font-size:12px;line-height:1.3;color:var(--muted)}
-.rd-et-ok{display:inline-flex;align-items:center;gap:5px;color:var(--ok)!important;font-weight:800}
-.rd-et-ok svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6}
-.rd-et.fait .rd-et-n{background:var(--accent-wash-2);box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
-.rd-et.pret .rd-et-n{background:var(--gold-wash);box-shadow:inset 0 0 0 1.5px var(--gold),0 0 18px rgba(245,196,81,.35)}
-.rd-et.pret .rd-et-t small{color:var(--gold-light)}
-.rd-et-att{white-space:nowrap}
-.rd-et-att sup{font-size:.7em}
-/* L'étape en cours : un anneau qui se remplit (la part déjà prise). */
-.rd-et.encours .rd-et-n{background:conic-gradient(var(--danger) calc(var(--p,0) * 1%),rgba(255,255,255,.09) 0);box-shadow:0 0 16px rgba(255,107,107,.25)}
-.rd-et.encours .rd-et-n::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--surface-2)}
-.rd-et.encours .rd-et-a small{font-weight:800;color:#ffb4a6}
-.rd-et.avenir .rd-et-n,.rd-et.avenir .rd-et-t{opacity:.5}
-.rd-et.final .rd-et-n{box-shadow:inset 0 0 0 1.5px var(--gold-line),0 0 14px rgba(245,196,81,.18)}
-.rd-et.final.avenir .rd-et-n{opacity:.8}
-.rd-et.final .rd-et-t small{color:var(--gold-light)}
-.rd-et.infini .rd-et-n>i{color:var(--deco-ink)}
-.rd-et.infini.encours .rd-et-n{background:conic-gradient(var(--accent-soft) calc(var(--p,0) * 1%),rgba(255,255,255,.09) 0);box-shadow:0 0 16px var(--accent-glow)}
-.rd-et.infini.encours .rd-et-a small{color:var(--deco-ink)}
-.rd-et.infini.avenir .rd-et-t small{font-size:12.5px;font-weight:600;color:var(--subtle)}
+/* Les blocs du dessous. */
+.rd-cof,.rd-top{padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
 
-/* Toi : tes dégâts, ton rang, tes trois coffres. */
-.rd-toi-ch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.rd-toi-ch>span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border-radius:var(--radius-sm);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
-.rd-toi-ch b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
-.rd-toi-ch b sup{font-size:.55em}
-.rd-toi-ch small{font-size:11px;color:var(--muted)}
-.rd-piste{position:relative;height:8px;margin:24px 14px 22px;border-radius:999px;background:rgba(255,255,255,.08);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+/* Les coffres : ceux qui attendent, puis la piste commune et la tienne. */
+.rd-prets{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:8px}
+.rd-pret{display:flex;align-items:center;gap:12px;padding:9px 10px 9px 12px;border-radius:var(--radius-sm);background:var(--gold-wash);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.rd-pret-ico{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:50%;color:var(--gold-light);background:rgba(245,196,81,.12);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.rd-pret-ico>img,.rd-pret-ico>svg{width:20px;height:20px}
+.rd-pret>span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd-pret small{font-size:11.5px;color:var(--muted)}
+.rd-pret b{font-size:14px;line-height:1.3}
+.rd-plus{font-style:normal;font-size:12px;font-weight:800;color:var(--gold)}
+.rd-pret .btn{flex:none;width:auto;padding-inline:16px}
+/* La piste commune : sept médaillons sur un fil, qui se remplit jusqu'à la
+   phase en cours. */
+.rd-piste-c{--p:0;position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:start}
+.rd-piste-c::before,.rd-piste-c::after{content:"";position:absolute;top:17px;left:calc(100% / 14);height:2px;border-radius:2px}
+.rd-piste-c::before{right:calc(100% / 14);background:rgba(255,255,255,.1)}
+.rd-piste-c::after{width:calc((100% - 100% / 7) * var(--p));background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
+.rd-m{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.rd-m-c{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;color:var(--subtle);background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1px var(--line-2)}
+.rd-m-c>img,.rd-m-c>svg{width:18px;height:18px}
+.rd-m em{font-style:normal;font-size:11px;font-weight:800;line-height:1;color:var(--muted)}
+.rd-m.final .rd-m-c{width:42px;height:42px;margin:-3px 0;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--gold-line),0 0 14px rgba(245,196,81,.18)}
+.rd-m.fait .rd-m-c{color:var(--deco-ink);background:#2e2a48;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--accent-soft)}
+.rd-m.fait em{color:var(--accent-soft)}
+.rd-m.pret .rd-m-c{color:var(--gold-light);background:#3a3122;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--gold),0 0 14px rgba(245,196,81,.45)}
+.rd-m.pret em{color:var(--gold)}
+.rd-m.encours .rd-m-c{color:var(--text);background:#3a2129;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px #ff9a85,0 0 14px rgba(255,107,107,.4)}
+.rd-m.encours em{color:#ffb4a6}
+.rd-m.avenir .rd-m-c>*{opacity:.5}
+.rd-m.infini .rd-m-c{color:var(--deco-ink)}
+.rd-m.infini .rd-m-c>svg{width:22px;height:22px}
+.rd-m.infini.encours .rd-m-c{background:#2e2a48;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--accent-soft),0 0 16px var(--accent-glow)}
+.rd-m.infini.encours em{color:var(--deco-ink)}
+.rd-prochain{margin:12px 0 0;font-size:12.5px;line-height:1.45;color:var(--subtle)}
+.rd-prochain b{color:var(--text)}
+/* La tienne : tes dégâts, et tes trois coffres personnels sur une barre. */
+.rd-moi{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.rd-moi-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rd-moi-t>b{font-size:14px;font-weight:800}
+.rd-moi-t>span{font-size:12.5px;color:var(--muted);text-align:right}
+.rd-moi-t>span b{color:var(--text)}
+.rd-moi-t sup{font-size:.7em}
+.rd-piste{position:relative;height:8px;margin:22px 14px 20px;border-radius:999px;background:rgba(255,255,255,.08);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
 .rd-piste-f{position:absolute;left:0;top:0;bottom:0;border-radius:inherit;background:var(--progress);box-shadow:0 0 12px var(--accent-glow)}
-.rd-pm{position:absolute;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;display:grid;place-items:center;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2),0 2px 8px rgba(0,0,0,.4)}
+.rd-pm{position:absolute;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;display:grid;place-items:center;border-radius:50%;color:var(--subtle);background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1px var(--line-2)}
 .rd-pm>img,.rd-pm>svg{width:15px;height:15px}
-.rd-pm.fait{background:var(--accent-wash-2);box-shadow:inset 0 0 0 1.5px var(--accent-soft)}
-.rd-pm.pret{background:var(--gold-wash);box-shadow:inset 0 0 0 1.5px var(--gold),0 0 12px rgba(245,196,81,.4)}
+.rd-pm.fait{color:var(--deco-ink);background:#2e2a48;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--accent-soft)}
+.rd-pm.pret{color:var(--gold-light);background:#3a3122;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--gold),0 0 12px rgba(245,196,81,.4)}
 .rd-pm:last-child{margin-left:-28px}
-.rd-perso{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.rd-perso li{display:grid;grid-template-columns:86px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
-.rd-perso li>small:first-child{font-size:12px;color:var(--muted)}
-.rd-perso li>b{font-size:13.5px}
-.rd-perso li>small:last-child{font-size:12px;color:var(--muted);text-align:right}
-.rd-perso li.pret{box-shadow:inset 0 0 0 1px var(--gold-line)}
-
-/* Le classement, dans un bloc comme les autres. */
-.rd-top .rf-top{margin:0}
-
-/* Les coffres du raid précédent, encore à ouvrir. */
-.rd-coffre{display:flex;align-items:center;gap:12px;padding:10px 0}
-.rd-coffre+.rd-coffre{border-top:1px solid var(--line)}
-.rd-coffre>span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
-.rd-coffre small{font-size:11.5px;color:var(--muted)}
-.rd-coffre-ico{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:50%;background:var(--gold-wash);box-shadow:inset 0 0 0 1px var(--gold-line)}
-.rd-coffre-ico>img,.rd-coffre-ico>svg{width:20px;height:20px}
+.rd-moi .rd-prochain{margin-top:0}
 .rd-gainico svg,.rd-gainico img{width:46px;height:46px}
+
+/* Le classement : des lignes serrées, toi en couleur. */
+.rd-cl{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.rd-cl li{display:grid;grid-template-columns:22px auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;padding:5px 10px;border-radius:var(--radius-sm)}
+.rd-cl li:nth-child(odd){background:var(--bg-2)}
+.rd-cl li.moi{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+.rd-cl-r{font-family:var(--display);font-style:italic;font-weight:900;font-size:15px;text-align:center;color:var(--muted)}
+.rd-cl-r.r1{color:var(--gold)}
+.rd-cl-r.r2{color:#d9dce6}
+.rd-cl-r.r3{color:#e3a774}
+.rd-cl .ava{width:32px;height:32px}
+.rd-cl li>b{min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-cl li>.tnum{font-size:13.5px;font-weight:800;white-space:nowrap}
+.rd-cl li>.tnum small{font-size:11.5px;font-weight:600;color:var(--muted)}
+/* Le même classement, dans l'onglet du Choc (sans le bloc autour). */
+.ch-classement .rd-top,.rf-page>.rd-top{padding:0;background:none;box-shadow:none}
 
 /* L'aide : trois lignes. */
 .rd-aide{padding:14px 16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .rd-aide summary{cursor:pointer;font-weight:800}
-.rd-aide ol{margin:10px 0 0;padding-left:20px;display:grid;gap:8px;font-size:13px;line-height:1.45;color:var(--subtle)}
-.rd-aide b{color:var(--text)}
+.rd-aide ul{margin:10px 0 0;padding-left:18px;display:grid;gap:8px;font-size:13px;line-height:1.45;color:var(--subtle)}
 @media (prefers-reduced-motion:reduce){.rd-seg i{transition:none}.rd-seg.encours i{animation:none}}
 
-/* Sur un petit téléphone, le face-à-face se resserre. */
+/* Dans l'onglet du Choc, sous la grande tête de l'événement : la bande du
+   boss se resserre, pour que le bouton tienne dans l'écran. */
+@media (max-width:899px){
+  .ch .rd-hero-img{height:clamp(100px,26vw,140px)}
+  .ch .rd-hero-nom p{display:none}
+  .ch .rd-hero-nom h2{font-size:clamp(24px,6.6vw,30px)}
+}
+/* Un écran bas : la bande du boss se resserre, pour que le bouton tienne. */
+@media (max-height:700px) and (max-width:899px){
+  .rd{gap:10px}
+  .rd-hero-img{height:118px}
+  .rd-hero-nom p{display:none}
+  .rd-hero-nom h2{font-size:25px}
+  .rd-vie{padding-bottom:12px}
+  .rd-combat-t{margin-bottom:10px}
+}
+/* Un petit téléphone : le face-à-face se resserre. */
 @media (max-width:380px){
-  .rd-face-c{gap:8px;padding:8px}
-  .rd-face-av,.rd-face-c .ava{width:36px;height:36px}
-  .rd-face-c b{font-size:18px}
-  .rd-perso li{grid-template-columns:74px minmax(0,1fr) auto}
+  .rd-duel{gap:6px}
+  .rd-duel-l{gap:8px;padding:8px}
+  .rd-duel-av,.rd-duel-l .ava{width:36px;height:36px}
+  .rd-duel-l b{font-size:17px}
+  .rd-m-c{width:32px;height:32px}
+  .rd-m.final .rd-m-c{width:38px;height:38px}
+  .rd-piste-c::before,.rd-piste-c::after{top:15px}
 }
 
-/* Sur ordinateur : le boss à gauche, ton combat et le chemin à droite ;
-   toi et le classement dessous. */
+/* Sur ordinateur : le boss à gauche, ton combat à droite ; dessous, les
+   coffres à droite et le classement à gauche ; l'aide sur toute la largeur. */
 @media (min-width:900px){
-  .rd{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+  .rd{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
   .rd>*{grid-column:1/-1}
-  .rd>.rd-hero{grid-column:1;grid-row:span 2;align-self:stretch;min-height:560px;padding:24px}
-  .rd>.rd-combat,.rd>.rd-chemin{grid-column:2}
-  .rd>.rd-toi{grid-column:1}
-  .rd>.rd-top{grid-column:2}
-  .rd>.rd-coffres~.rd-hero{grid-row:span 2}
-  .rd-hero h2{font-size:48px}
-  .rd-hero-art{bottom:22%}
+  .rd>.rd-hero{grid-column:1;grid-row:1;align-self:stretch;display:flex;flex-direction:column}
+  .rd>.rd-hero>.rd-hero-img{flex:1;height:auto;min-height:250px;padding:20px 22px 8px}
+  .rd>.rd-hero>.rd-vie{padding:8px 22px 20px}
+  .rd>.rd-combat{grid-column:2;grid-row:1;align-self:stretch;display:flex;flex-direction:column;justify-content:space-between;padding:18px 20px}
+  .rd>.rd-cof{grid-column:2;grid-row:2}
+  .rd>.rd-top{grid-column:1;grid-row:2}
+  .rd>.rd-aide{grid-row:3}
+  .rd-hero-nom h2{font-size:42px}
 }
 
 /* Les défis */

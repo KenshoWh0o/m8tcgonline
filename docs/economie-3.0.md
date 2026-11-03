@@ -97,23 +97,47 @@ XP cumulée : niveau 5 = 550 · niveau 10 = 1 800 · niveau 20 = 6 175 · niveau
 
 ### Le Raid, par saisons et phases [fait] `RAID`, `js/combat/choc-data.js` ; `supabase/27_raid.sql`
 
-Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière des boss de guilde d'*AFK Journey*. **Version 3.0.14 : réglé de nouveau**, à la demande du propriétaire (1er novembre 2026) : « Équilibre bien le raid pour un serveur avec une dizaine de joueurs actifs, et rends la tâche pas trop facile, finir la dernière phase doit être ressenti comme un vrai exploit. Ajuste les récompenses en conséquence. »
+Version 3.0.6 : pensé pour un serveur d'une dizaine de joueurs, à la manière des boss de guilde d'*AFK Journey*. **Version 3.0.14 : réglé de nouveau**, à la demande du propriétaire (1er novembre 2026) : « Équilibre bien le raid pour un serveur avec une dizaine de joueurs actifs, et rends la tâche pas trop facile, finir la dernière phase doit être ressenti comme un vrai exploit. Ajuste les récompenses en conséquence. » **Version 3.0.16 : allégé** (le propriétaire, 3 novembre 2026 : « Le raid est beaucoup trop compliqué, surtout en mode infini, facilite-le un chouille histoire de s'amuser et de pas niquer le ratio W-L des joueurs ») : les combats plus doux d'un cran, l'Infini qui ne durcit plus, des seuils un peu plus hauts pour garder l'exploit du dernier jour, et le Raid hors du bilan victoires-défaites (README § 7.9, « Le Raid allégé »).
 
 - Un boss commun par **saisons de 14 jours**, comptées depuis le premier jour du Choc (`raid_ancre`) : The French Sorcerer, puis Le Marionnettiste, à tour de rôle. Les dégâts de tous s'additionnent sur la saison.
 - **Six phases**, chacune à un seuil de dégâts cumulés, multiplié par la **vie du boss** (`RAID.bosses` › `vie` ; `raid_vie`, 3.0.14 : 1 pour le Sorcier, 0,8 pour le Marionnettiste) et, sur le vrai serveur, par `parametres.raid_echelle` (1 par défaut). Chaque phase est un combat plus dur :
 
 | Phase | Seuil (Sorcier) | Seuil (Marionnettiste) | IA | PV du boss | Essences d'avance | Coffre commun |
 |---|---|---|---|---|---|---|
-| 1 | 100 | 80 | 2 ★ | 5 | 0 | 2 boosters |
-| 2 | 250 | 200 | 3 ★ | 6 | 0 | 300 Fragments |
-| 3 | 450 | 360 | 3 ★ | 7 | 1 | 3 boosters |
-| 4 | 700 | 560 | 4 ★ | 7 | 1 | 500 Éclats |
-| 5 | 1 000 | 800 | 4 ★ | 8 | 2 | 5 boosters |
-| 6 | 1 400 | 1 120 | 5 ★ | 9 | 2 | **une Légendaire qui manque, et le titre « Héros du Raid »** |
+| 1 | 115 | 92 | 2 ★ | 5 | 0 | 2 boosters |
+| 2 | 290 | 232 | 2 ★ | 6 | 0 | 300 Fragments |
+| 3 | 520 | 416 | 3 ★ | 6 | 1 | 3 boosters |
+| 4 | 810 | 648 | 3 ★ | 7 | 1 | 500 Éclats |
+| 5 | 1 150 | 920 | 4 ★ | 7 | 1 | 5 boosters |
+| 6 | 1 620 | 1 296 | 4 ★ | 8 | 2 | **une Légendaire qui manque, et le titre « Héros du Raid »** |
+| Infini, chaque palier | + 250 | + 200 | 4 ★ | 8 | 2 | 1 booster |
+
+- **Jusqu'à la 3.0.15** : seuils 100, 250, 450, 700, 1 000, 1 400 ; IA 2, 3, 3, 4, 4, 5 ★ ; PV 5, 6, 7, 7, 8, 9 ; Essences d'avance 0, 0, 1, 1, 2, 2 ; un palier Infini tous les 400 dégâts, joué contre une IA à 5 ★, un boss à 10, 11 puis 12 PV et jusqu'à 3 Essences d'avance, le joueur réduit jusqu'à 2 PV.
 
 - **Jusqu'à la 3.0.13** : seuils 120, 300, 550, 850, 1 200, 1 600 pour les deux boss ; coffres 2 boosters, 300 Fragments, 3 boosters, 500 Éclats, 4 boosters, 5 boosters. **[calcul, sur les mesures ci-dessous]** Avec les règles officielles (4 PV), un serveur de dix joueurs actifs n'abattait jamais la sixième phase (0 % des saisons simulées) : ce n'était pas un exploit, c'était impossible.
 - **[fait] Le dernier coffre (3.0.14)** : une Légendaire de l'extension que le joueur n'a pas (`accorder('legendaire')` ; s'il les a toutes, 4 000 Fragments, la moitié d'une fabrication), et le titre « Héros du Raid » (`t_heros_raid`, ton Légendaire), qu'on ne gagne que là — une seule fois : les raids suivants redonnent la Légendaire, pas le titre. **[choix de la session, à valider]** La Légendaire plutôt que des boosters : c'est le goulot de la collection (dix cartes à 4 %, README « L'équilibrage »), une récompense qui se sent. **[calcul]** Pour un serveur qui l'abat une saison sur deux, une Légendaire par mois ; un joueur régulier en fabrique une en un peu moins de quatre semaines de Fragments (README, « Le recyclage »).
-- **[fait] Ce que le joueur affronte vraiment** : chaque boss a un réglage (`RAID.bosses` › `ajuste`) ; depuis les règles officielles, **les deux boss ont un PV et une Essence d'avance de moins que la phase** (phase 1 : 4 PV, 0 Essence ; phase 6 : 8 PV, 1 Essence). Le serveur garde les chiffres du tableau pour compter les dégâts : une victoire vaut « PV de la phase + 1 + 3 », une défaite les PV pris, au plus PV de la phase + 1.
+- **[fait] Ce que le joueur affronte vraiment** : chaque boss a un réglage (`RAID.bosses` › `ajuste`) ; depuis les règles officielles, **les deux boss ont un PV et une Essence d'avance de moins que la phase** (phase 1 : 4 PV, 0 Essence ; phase 6 et Infini, depuis la 3.0.16 : 7 PV, 1 Essence). Le serveur garde les chiffres du tableau pour compter les dégâts : une victoire vaut « PV de la phase + 1 + 3 », une défaite les PV pris, au plus PV de la phase + 1.
+- **[mesuré] 3.0.16** (`tools/equilibre-raid.js mesurer`, 60 combats par phase, par boss et par profil, mêmes profils que ci-dessous ; marge : environ ± 12 points sur une part de victoires) : les dégâts que le serveur compte par tentative, en moyenne des trois profils, et les victoires. Un palier Infini se joue comme la phase 6.
+
+| Phase | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| The French Sorcerer : dégâts par tentative | 7,4 | 6,7 | 6,7 | 6,7 | 7,5 | 6,5 |
+| … victoires (débutant / régulier / fort) | 73 / 73 / 72 % | 38 / 50 / 53 % | 42 / 50 / 47 % | 27 / 35 / 40 % | 33 / 50 / 52 % | 18 / 28 / 30 % |
+| Le Marionnettiste : dégâts par tentative | 6,6 | 5,9 | 6,2 | 5,2 | 5,6 | 4,9 |
+| … victoires (débutant / régulier / fort) | 57 / 57 / 65 % | 28 / 35 / 43 % | 40 / 35 / 37 % | 18 / 25 / 13 % | 22 / 18 / 28 % | 17 / 7 / 3 % |
+
+  Ce qui se lit : la phase 6 n'est plus un mur contre le Sorcier (28 % de victoires pour un régulier, contre 7 %), et chaque tentative y rapporte 6,5 dégâts au lieu de 4,0 ; le Marionnettiste reste le plus dur en fin de raid (3 à 17 % en phase 6). **[calcul, simulation]** Les saisons, aux nouveaux seuils (2 000 saisons de 14 jours par ligne, mêmes serveurs que ci-dessous) :
+
+| Serveur | Boss | Jour médian où tombent les phases 1 à 6 | La 6ᵉ tombe dans les 14 jours |
+|---|---|---|---|
+| Dix actifs | Sorcier | 1, 3, 5, 7, 10, 14 | 98 % des saisons |
+| Dix actifs | Marionnettiste | 1, 3, 4, 7, 9, 14 | 88 % |
+| Acharnés | Sorcier | 1, 2, 3, 4, 6, 8 | 100 % |
+| Acharnés | Marionnettiste | 1, 2, 3, 4, 6, 8 | 100 % |
+| Calme | Sorcier | 3, 8, 14, —, —, — | 0 % (la phase 3 : 70 %) |
+| Calme | Marionnettiste | 3, 7, 13, —, —, — | 0 % (la phase 3 : 98 %) |
+
+  **[choix de la session, à valider]** Le point d'équilibre : aux seuils de la 3.0.15 (100 … 1 400), avec ces combats, dix joueurs actifs abattraient la sixième phase le 12ᵉ jour, à coup sûr (100 % des saisons, contre les deux boss) ; aux seuils 110 … 1 550, le 13ᵉ jour, 100 et 99 % ; aux seuils 115 … 1 620, le 14ᵉ jour, presque toujours (98 et 88 %) ; aux seuils 120 … 1 700, le 14ᵉ jour, 76 et 46 % des saisons — le même risque d'échec qu'avant. Le premier aurait retiré l'exploit, le troisième n'aurait rien allégé de l'objectif commun. **[calcul]** Un serveur acharné, qui abat la phase 6 le 8ᵉ jour, prend ensuite environ 195 dégâts par jour (30 tentatives à 6,5) : à peu près un palier Infini par jour contre le Sorcier jusqu'à la fin du raid, donc cinq boosters de plus par joueur. Ces chiffres valent pour l'adversaire du jeu tenant le joueur avec un Starter ; **[inconnu]** comment de vrais joueurs, avec leurs propres decks, s'en sortent.
 - **[mesuré] 3.0.14** (`tools/equilibre-raid.js mesurer`, 100 combats par phase, par boss et par profil ; le joueur tenu par l'adversaire du jeu avec un Starter : débutant au niveau 2, régulier au niveau 3, fort au niveau 4) : les dégâts que le serveur compte, par tentative, en moyenne des trois profils.
 
 | Phase | 1 | 2 | 3 | 4 | 5 | 6 |

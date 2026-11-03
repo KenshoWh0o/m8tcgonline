@@ -29,7 +29,16 @@
    700, 1 000, 1 400 et la vie du Marionnettiste à 0,8 : la sixième tombe
    le dernier jour, 62 % des saisons (Sorcier) et 50 % (Marionnettiste) ;
    le 9ᵉ jour si tous jouent leurs trois tentatives ; jamais pour six
-   joueurs calmes (la phase 3). */
+   joueurs calmes (la phase 3).
+
+   Version 3.0.16 (le propriétaire : « beaucoup trop compliqué, surtout en
+   mode infini, facilite-le un chouille ») : les combats plus doux d'un cran
+   (RAID.phases : IA 2 2 3 3 4 4, PV 5 6 6 7 7 8, Essences 0 0 1 1 1 2 ;
+   l'Infini comme la phase 6). N = 60 : le Sorcier 7,4 6,7 6,7 6,7 7,5 6,5 ;
+   le Marionnettiste 6,6 5,9 6,2 5,2 5,6 4,9. Aux seuils 115, 290, 520, 810,
+   1 150, 1 620 : la sixième tombe le 14ᵉ jour, 98 % des saisons (Sorcier)
+   et 88 % (Marionnettiste) ; aux seuils d'avant, le 13ᵉ jour, presque à
+   coup sûr ; à 120 … 1 700, 76 et 46 %. */
 "use strict";
 const fs = require('fs');
 const S = require('./combat-sim.js');

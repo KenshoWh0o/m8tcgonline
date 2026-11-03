@@ -32,11 +32,14 @@
 
 /* Ce que coûte un abandon (3.0.14, le propriétaire : « Les combats
    abandonnés comptent comme une défaite seulement en online ou en raid. Et
-   ils n'aident pas à avancer des quêtes ») : `defaite` (Raid, Versus),
-   `tuto` (le tutoriel), sinon rien (solo). Les mêmes règles côté serveur :
-   combat_fin, defi_fin, raid_fin. */
+   ils n'aident pas à avancer des quêtes ») : `defaite` (Versus), `raid`
+   (depuis la 3.0.16, le Raid n'entre plus dans le bilan : ses dégâts
+   comptent, la tentative est prise), `tuto` (le tutoriel), sinon rien
+   (solo). Les mêmes règles côté serveur : combat_payer, defi_fin_verifie,
+   raid_fin. */
 function texteAbandon(k) {
   return k === 'defaite' ? 'Il compte comme une défaite, et ne fait avancer aucune quête.'
+    : k === 'raid' ? 'Les PV déjà pris comptent, la tentative aussi ; aucune quête n\'avance.'
     : k === 'tuto' ? 'Le tutoriel se rejoue depuis le Guide.'
     : 'Il ne compte pas : ni défaite, ni XP, ni quête.';
 }

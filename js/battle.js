@@ -890,8 +890,9 @@ function ouvrirArene(partie, meta) {
     brillantes: [brillantesMoi(), []],
     titre: meta.titre, sousTitre: meta.sousTitre, boss: meta.boss,
     sauver: CLE_COMBAT, meta,
-    /* Ce que coûte un abandon (3.0.14) : une défaite au Raid, rien en solo. */
-    abandon: meta.mode === 'raid' ? 'defaite' : 'rien',
+    /* Ce que coûte un abandon (3.0.14 ; 3.0.16 : le Raid hors du bilan) :
+       au Raid, ses dégâts et la tentative ; rien en solo. */
+    abandon: meta.mode === 'raid' ? 'raid' : 'rien',
     surFin: (E, gagne) => finirCombat(meta, E, gagne),
     surQuitter: () => { render(); }
   }));
@@ -989,7 +990,7 @@ function oublierCombat() {
   if (s && s.fini) {
     return openSheet({
       title: 'Oublier ce résultat ?',
-      body: `<p class="muted">Il ne sera pas envoyé.${s.meta && s.meta.mode === 'raid' ? ' Au Raid, le serveur compte ce combat comme perdu au prochain que tu ouvres.' : ''}</p>`,
+      body: `<p class="muted">Il ne sera pas envoyé.${s.meta && s.meta.mode === 'raid' ? ' Au Raid, la tentative reste prise, et ses dégâts ne comptent pas.' : ''}</p>`,
       actions: [
         { label: 'Oublier', primary: true, fn: () => { closeSheet(); try { localStorage.removeItem(CLE_COMBAT); } catch (e) { /* */ } render(); } },
         { label: 'Garder', fn: closeSheet }
@@ -998,7 +999,7 @@ function oublierCombat() {
   }
   openSheet({
     title: 'Abandonner ce combat ?',
-    body: `<p class="muted">${texteAbandon(s && s.meta && s.meta.mode === 'raid' ? 'defaite' : 'rien')}</p>`,
+    body: `<p class="muted">${texteAbandon(s && s.meta && s.meta.mode === 'raid' ? 'raid' : 'rien')}</p>`,
     actions: [
       { label: 'Abandonner', primary: true, fn: async () => {
         closeSheet();

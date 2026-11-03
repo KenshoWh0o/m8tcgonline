@@ -14,7 +14,7 @@
 --   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
 --   annule tout.
 --
---   Assemble le 2026-11-02
+--   Assemble le 2026-11-03
 --
 -- =====================================================================
 
@@ -5153,7 +5153,7 @@ create or replace function public.combat_debut(p_mode text, p_cle text, p_niveau
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := auth.uid(); c combat_joueurs; v_n int; niv int := p_niveau; ph int; gr bigint; x jsonb;
-        cid text; ouverts int; err text; v_boss text; v_jour int; deck jsonb := p_deck;
+        cid text; err text; v_boss text; v_jour int; deck jsonb := p_deck;
 begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -5186,9 +5186,10 @@ begin
   -- 3.0.14 (le proprietaire : « Les combats abandonnes comptent comme une
   -- defaite seulement en online ou en raid ») : seul un combat de Raid
   -- laisse compte comme perdu ; un combat solo laisse ne compte pas.
-  with fermes as (delete from combats_ouverts where user_id = p returning mode)
-  select count(*) filter (where mode = 'raid') into ouverts from fermes;
-  if ouverts > 0 then update combat_joueurs set defaites = defaites + ouverts, serie = 0 where user_id = p; end if;
+  -- Version 3.0.16 (le proprietaire : « pas niquer le ratio W-L ») : le
+  -- Raid ne compte plus dans le bilan ni la serie ; sa tentative, elle,
+  -- reste prise (raid_debut).
+  delete from combats_ouverts where user_id = p;
   cid := 'cb' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
   insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine, deck, section, boss, n)
   values (cid, p, p_mode, p_cle, niv, ph, jour_paris(), gr, deck, c.section, v_boss, v_jour);
@@ -5225,11 +5226,14 @@ begin
   end if;
   if not v_abandon then perform bump_quests(p, 'combats', 1); end if;
 
-  perform combat_serie(p, p_gagne);
+  -- Le Raid hors du bilan victoires-defaites et de la serie (3.0.16) : il
+  -- a ses propres comptes (raid_participants) ; ses victoires font avancer
+  -- les quetes comme les autres.
+  if o.mode <> 'raid' then perform combat_serie(p, p_gagne); end if;
   if not p_gagne then
-    update combat_joueurs set defaites = defaites + 1 where user_id = p;
+    if o.mode <> 'raid' then update combat_joueurs set defaites = defaites + 1 where user_id = p; end if;
   else
-    update combat_joueurs set victoires = victoires + 1 where user_id = p;
+    if o.mode <> 'raid' then update combat_joueurs set victoires = victoires + 1 where user_id = p; end if;
     perform bump_quests(p, 'victoires', 1);
     perform bump_quests(p, 'vaincus', least(20, greatest(0, coalesce((v->>'vaincus')::int, 0))));
     if o.niveau >= 4 then perform bump_quests(p, 'victoires_dures', 1); end if;
@@ -6246,16 +6250,19 @@ $$;
 -- Version 3.0.14 : les seuils refaits pour une dizaine de joueurs actifs
 -- (tools/equilibre-raid.js), et le coffre de la derniere phase, l'exploit :
 -- une Legendaire qui manque (accorder 'legendaire'), et le titre « Heros du
--- Raid » (`bonus`).
+-- Raid » (`bonus`). Version 3.0.16 (le proprietaire : « beaucoup trop
+-- complique […] facilite-le un chouille ») : les combats plus doux d'un cran,
+-- et les seuils un peu plus hauts (115 … 1 620) pour que la sixieme phase
+-- reste l'affaire du dernier jour (docs/economie-3.0.md, § 3).
 create or replace function public.raid_phases() returns jsonb
 language sql immutable as $$
   select '[
-    {"seuil": 100,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",   "montant": 2,   "titre": "2 boosters"}},
-    {"seuil": 250,  "ia": 3, "pv": 6, "ess": 0, "commun": {"type": "fragments",  "montant": 300, "titre": "300 Fragments"}},
-    {"seuil": 450,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "boosters",   "montant": 3,   "titre": "3 boosters"}},
-    {"seuil": 700,  "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "eclats",     "montant": 500, "titre": "500 Éclats"}},
-    {"seuil": 1000, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "boosters",   "montant": 5,   "titre": "5 boosters"}},
-    {"seuil": 1400, "ia": 5, "pv": 9, "ess": 2, "commun": {"type": "legendaire", "montant": 1,   "titre": "Une Légendaire",
+    {"seuil": 115,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",   "montant": 2,   "titre": "2 boosters"}},
+    {"seuil": 290,  "ia": 2, "pv": 6, "ess": 0, "commun": {"type": "fragments",  "montant": 300, "titre": "300 Fragments"}},
+    {"seuil": 520,  "ia": 3, "pv": 6, "ess": 1, "commun": {"type": "boosters",   "montant": 3,   "titre": "3 boosters"}},
+    {"seuil": 810,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "eclats",     "montant": 500, "titre": "500 Éclats"}},
+    {"seuil": 1150, "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "boosters",   "montant": 5,   "titre": "5 boosters"}},
+    {"seuil": 1620, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "legendaire", "montant": 1,   "titre": "Une Légendaire",
       "bonus": {"type": "titre", "montant": 1, "objet": "t_heros_raid", "titre": "le titre « Héros du Raid »", "court": "+ un titre"}}}
   ]'::jsonb;
 $$;
@@ -6279,7 +6286,7 @@ $$;
 -- au classement des degats. Avant la 3.0.15 : un palier par joueur.
 create or replace function public.raid_infini() returns jsonb
 language sql immutable as $$
-  select '{"pas": 400, "coffre": {"type": "boosters", "montant": 1, "titre": "1 booster"}}'::jsonb;
+  select '{"pas": 250, "coffre": {"type": "boosters", "montant": 1, "titre": "1 booster"}}'::jsonb;
 $$;
 
 -- La vie d'un boss (RAID.bosses › vie, version 3.0.14) : ses seuils de
@@ -6323,8 +6330,8 @@ language plpgsql immutable as $$
 declare n int := greatest(1, coalesce(nullif(substr(p_cle, 2), '')::int, 1)); ph jsonb;
 begin
   if left(p_cle, 1) = 'i' then
-    return jsonb_build_object('infini', true, 'n', n, 'ia', 5, 'pv_boss', least(12, 9 + n),
-                              'ess', least(3, 2 + n / 3), 'pv_moi', greatest(2, 4 - greatest(0, n - 3) / 2));
+    -- 3.0.16 : un palier Infini se joue comme la sixieme phase (RAID.infini).
+    return jsonb_build_object('infini', true, 'n', n, 'ia', 4, 'pv_boss', 8, 'ess', 2, 'pv_moi', 4);
   end if;
   ph := raid_phases()->(least(n, 6) - 1);
   return jsonb_build_object('infini', false, 'n', n, 'ia', (ph->>'ia')::int, 'pv_boss', (ph->>'pv')::int,
