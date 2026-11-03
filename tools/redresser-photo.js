@@ -17,6 +17,8 @@
      carte  photo    coins                                  largeur  qualité  sortie
      P03    7.jpg    912,810;1478,918;1350,1745;755,1625    640      0.9      cards/promos/P03-Brawks_Deter.webp
      P04    7.jpg    122,815;680,805;698,1628;102,1630      640      0.9      cards/promos/P04-Squeezie_Le_Toxique.webp
+     (3.0.16 : 124, 126 et 127 remplacées par des scans, cards/*-scan.webp ; les lignes qui suivent
+      refont les anciennes photos.)
      124    8.jpg    275,357;880,352;908,1228;255,1235      900      0.76     cards/124_S_Joueur_Violette_Brawks-Trop-Deter.webp
      126    10.webp  275,430;1232,425;1100,1615;310,1618    900      0.84     cards/126_S_Moment-Instant_Neutre_GP-Explorer-II.webp
      127    9.jpg    248,405;1210,385;1248,1758;242,1768    900      0.82     cards/127_S_Moment-Instant_Mauve_Paris-Gentle-Mates.webp
