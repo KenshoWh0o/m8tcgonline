@@ -965,10 +965,23 @@ const Table = (() => {
       <button class="ar-bouton ar-f-x" data-ar="fermer-focus" aria-label="Fermer">✕</button>
     </div>`;
     z.hidden = false;
+    if (!large) ajusterFocus(z);
     if (f.main) rendre();
     /* Le tutoriel allume aussi ce qui est sous la carte (son attaque). */
     else if (T.o.guide && T.o.guide.apresRendu) T.o.guide.apresRendu(T);
     if (ouverture) { const b = z.querySelector('.ar-f-atq.ok,.ar-f-jouer,.ar-f-x'); if (b) b.focus({ preventScroll: true }); }
+  }
+
+  /* La carte au-dessus de ses détails (téléphone) : la place qu'ils
+     prennent vraiment, mesurée (3.0.16). L'estimation d'avant oubliait une
+     deuxième rangée d'Objets ou le texte déplié : la carte débordait, ou
+     restait trop grande. */
+  function ajusterFocus(z) {
+    const inn = z && z.querySelector('.ar-f-in'), bas = z && z.querySelector('.ar-f-bas');
+    if (!inn || !bas || z.classList.contains('large')) return;
+    const cs = getComputedStyle(bas);
+    const hb = bas.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    inn.style.setProperty('--bas', `${Math.ceil(hb) + 12}px`);
   }
 
   /* La ligne d'état d'un Joueur en jeu : sa Défense réelle, prêt ou engagé,
@@ -1243,6 +1256,7 @@ const Table = (() => {
       t.hidden = !t.hidden;
       b.dataset.lab = b.dataset.lab || b.textContent;
       b.textContent = t.hidden ? b.dataset.lab : 'Masquer le texte';
+      ajusterFocus(qs('.ar-focus'));
       return;
     }
     if (k === 'annuler') { T.cible = null; T.remplacement = null; consigne(null); fermerFocus(); fermerSheet(); return rendre(); }
@@ -1333,9 +1347,15 @@ const Table = (() => {
     T.focus = { main: true, u, drag: true };
     marquerPlacesCarte(u);
     const r = a.el.getBoundingClientRect();
-    const fant = a.el.cloneNode(true);
+    /* La carte seule (3.0.16) : le clone du bouton de la main perdait ses
+       réglages (`.ar-m`) et prenait le fond et la marge d'un bouton du
+       navigateur — un carré sombre autour de la carte, sur iPhone. Sa
+       largeur est celle de la carte, sans la rotation de l'éventail. */
+    const fant = document.createElement('div');
     fant.className = 'ar-fantome';
-    fant.style.width = r.width + 'px';
+    fant.setAttribute('aria-hidden', 'true');
+    fant.style.width = (a.el.offsetWidth || r.width) + 'px';
+    fant.innerHTML = a.el.innerHTML;
     document.body.appendChild(fant);
     a.drag = { fant, dx: e.clientX - r.left, dy: e.clientY - r.top, u };
     a.el.classList.add('leve');
