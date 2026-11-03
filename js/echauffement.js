@@ -671,7 +671,7 @@ function vEchSfClassement() {
 function vEchRecap() {
   const r = echRecapApercu || echRecap;
   if (!r) { chargerEch(true); return '<p class="muted boitecharge">Chargement du récap…</p>'; }
-  const stat = (ico, val, lib, sous) => `<div class="rr-stat"><span class="rr-ico">${ico}</span>
+  const stat = (ico, val, lib, sous, cls) => `<div class="rr-stat${cls ? ` ${cls}` : ''}"><span class="rr-ico">${ico}</span>
     <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
   const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
       <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
@@ -683,17 +683,33 @@ function vEchRecap() {
         ${stat(braiseIco, fmtN(r.total || 0), echBraises(), r.rang ? `${r.rang}<sup>${r.rang > 1 ? 'e' : 're'}</sup> sur ${fmtN(r.joueurs)}` : '')}
         ${stat(NAVICO.trophy, `${r.paliers || 0}<small>/${r.paliers_max || 20}</small>`, 'paliers du Pass', (r.paliers || 0) >= (r.paliers_max || 20) ? 'Pass terminé' : '')}
         ${stat(NAVICO.star, `${r.etoiles || 0}<small>/${defis * 3}</small>`, 'étoiles', `${r.gagnes || 0} défi${(r.gagnes || 0) > 1 ? 's' : ''} gagné${(r.gagnes || 0) > 1 ? 's' : ''}`)}
-        ${stat(NAVICO.cards, `${r.parfaits || 0}<small>/${defis}</small>`, 'indices', '')}
-        ${stat(NAVICO.sword, fmtN(r.combats || 0), 'combats', '')}
-        ${stat(NAVICO.quest, fmtN(r.quetes || 0), 'quêtes', '')}
+        ${stat(NAVICO.cards, `${r.parfaits || 0}<small>/${defis}</small>`, 'indices', '', 'mineur')}
+        ${stat(NAVICO.sword, fmtN(r.combats || 0), 'combats', '', 'mineur')}
+        ${stat(NAVICO.quest, fmtN(r.quetes || 0), 'quêtes', '', 'mineur')}
       </div>
     </section>
     ${podium ? `<section class="rr-podium"><h2>Le podium</h2><ol>${podium}</ol></section>` : ''}
     <section class="rr-continue">
-      <h2>Ce qui continue</h2>
+      <h2>La suite</h2>
       <button class="rr-lien ech-suite" data-ech="sf-onglet" data-o="jour"><span class="rr-ico">${NAVICO.sword}</span>
-        <span><b>Le défi du jour</b><small>Un adversaire par jour, de Facile à Redoutable : trois essais, jusqu'à ${ECH_SF_PRIX.reduce((a, b) => a + b, 0)} ${MONNAIE.nom}.</small></span></button>
+        <span><b>Le défi du jour</b><small><span class="ech-long">Un adversaire par jour, de Facile à Redoutable : trois essais, jusqu'à ${ECH_SF_PRIX.reduce((a, b) => a + b, 0)} ${MONNAIE.nom}.</span><span class="ech-court">Un adversaire par jour, jusqu'à ${ECH_SF_PRIX.reduce((a, b) => a + b, 0)} ${MONNAIE.nom}.</span></small></span></button>
+      ${vEchSuite30()}
     </section>`;
+}
+
+/* La 3.0 (PROCHAINE, js/config.js) : ses deux dates, et le temps qui reste
+   avant sa sortie (heure du serveur, srvTime). Rien une fois la version
+   sortie. La veille au soir, à minuit : la date qui précède minuit. */
+const ech30Jour = (iso, court) => `${new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: court ? 'short' : 'long', timeZone: 'Europe/Paris' })
+  .format(new Date(Date.parse(iso) - 3600000))} au soir, à minuit`;
+const ech30AVenir = () => typeof PROCHAINE !== 'undefined' && Date.now() < srvTime(PROCHAINE.sortie);
+function vEchSuite30() {
+  if (!ech30AVenir()) return '';
+  const s = srvTime(PROCHAINE.sortie);
+  return `<div class="rr-lien ech-suite ech-30" role="note"><span class="rr-ico">${NAVICO.clock}</span>
+      <b>La version ${h(PROCHAINE.version)}</b>
+      <strong class="ech-30-t tnum" title="Avant la sortie">dans <span data-rebours="${s}">${h(dureeCourte(s - Date.now()))}</span></strong>
+      <small><span>Maintenance : ${h(ech30Jour(PROCHAINE.maintenance, true))}</span><span>Sortie : ${h(ech30Jour(PROCHAINE.sortie, true))}</span></small></div>`;
 }
 
 /* ---------- Le défi ---------- */
@@ -1246,6 +1262,7 @@ async function montrerEchRecap() {
       <ol class="bvpoints nvpoints">
         <li><span class="bvico">${NAVICO.sword}</span><span><b>L'Échauffement continue.</b> Dans l'onglet Combats, un défi par jour, le même pour tout le monde : un adversaire et une règle, de Facile à Redoutable.</span></li>
         <li><span class="bvico">${shardIco}</span><span><b>Jusqu'à ${ECH_SF_PRIX.reduce((x, y) => x + y, 0)} ${MONNAIE.nom} par jour</b> (★ ${ECH_SF_PRIX.join(', ')}), trois essais ; et un titre pour dix jours gagnés.</span></li>
+        ${ech30AVenir() ? `<li><span class="bvico">${NAVICO.clock}</span><span><b>La version ${h(PROCHAINE.version)}</b> : maintenance le ${h(ech30Jour(PROCHAINE.maintenance))}, sortie le ${h(ech30Jour(PROCHAINE.sortie))}.</span></li>` : ''}
       </ol>`,
     actions: [{ label: 'Le défi du jour', primary: true, fn: () => { closeSheet(); echSfOnglet = 'jour'; echVue = 'accueil'; aller('combats'); } },
               { label: 'Voir le récap', fn: () => { closeSheet(); echSfOnglet = 'recap'; echVue = 'accueil'; aller('combats'); } }]
