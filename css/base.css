@@ -38,13 +38,15 @@
    dépoli, nette, bordée d'un filet — et non plus le bord flou et dégradé
    d'avant, qui effaçait le haut de la page sur toute sa hauteur et 26 px
    en dessous (« un faded de flou », jugé bizarre sur téléphone). Le flou
-   ne s'anime pas (DA) : il apparaît d'un coup. */
+   ne s'anime pas (DA) : il apparaît d'un coup. Version 3.0.16 (le
+   propriétaire, 3 novembre : « Retirer le flou en haut de l'écran ») : plus
+   de flou du tout — la bande est pleine, de la couleur du fond, avec son
+   filet ; la page passe dessous sans se brouiller. */
 .top{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;
   justify-content:space-between;gap:10px;height:calc(var(--top-h) + env(safe-area-inset-top,0px));
   padding:env(safe-area-inset-top,0px) 14px 0}
 .top::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;visibility:hidden;
-  background:rgba(18,17,25,.84);box-shadow:inset 0 -1px 0 var(--glass-line);
-  -webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%)}
+  background:var(--bg);box-shadow:inset 0 -1px 0 var(--glass-line),0 6px 14px -8px rgba(0,0,0,.55)}
 body.defile .top::before{visibility:visible}
 #brand{display:flex;align-items:center;user-select:none;cursor:pointer}
 #brand img{display:block;height:clamp(32px,9vw,38px);width:auto;
@@ -113,7 +115,6 @@ body.intheater #nav,body.intheater .top,body.intheater main,body.intheater .bgde
   #nav,.sheet,.tiroir-panneau,#toast,.qn,.recpied,.rf-solde,.rf-fin,.rf-onglets,.cb-badge,.cb-porte-ico,
   .ar-bouton,.ar-mainadv,.ar-fin:disabled,.ar-focus,.ar-s-in,.ar-journal{background:var(--glass-solid)!important;
     -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-  .top::before{background:var(--veil-2);-webkit-backdrop-filter:none;backdrop-filter:none}
 }
 
 /* ============ Typo ============ */
