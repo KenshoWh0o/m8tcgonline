@@ -2,7 +2,7 @@
 
 > **Ce fichier existe en deux copies identiques**, une sur `version-3.0` et une à la racine de `main` (la branche `version-2.5`, qui la portait, a été supprimée par le propriétaire le 2 novembre 2026). Toute modification se fait aux deux endroits, dans la même session : copier le fichier (`git show origin/version-3.0:docs/feuille-de-route.md > docs/feuille-de-route.md` dans un clone de `main`, ou l'inverse), puis vérifier que `git diff origin/main origin/version-3.0 -- docs/feuille-de-route.md` est vide une fois les deux poussées. Ni l'une ni l'autre n'est publiée sur matetcg.com depuis le 2 novembre 2026 (`_config.yml`).
 
-Mise à jour : lundi 2 novembre 2026, le soir (la 3.0.15).
+Mise à jour : mardi 3 novembre 2026, dans la nuit (la date de la 3.0, annoncée par le récap de L'Échauffement sur le vrai site).
 
 ## 1. Ce que le propriétaire a dicté
 
@@ -170,6 +170,35 @@ Il y joignait le message de Gentle Mates de septembre (non recopié ici). Ce qu'
 > * je pense qu'on déploiera la 3.0 début de semaine prochaine, parce que j'ai déjà bientôt atteint ma limite de Claude (70%). sauf si tu penses qu'il reste très peu de choses à faire et que ça peut passer ?
 > * pour la liste des règles non résolues, je te laisse trancher car je n'en saurai pas plus que toi.
 
+**Le 2 novembre 2026, dans la nuit** (après la 3.0.15) ; mot pour mot :
+
+> * les 5 clés du decks sont très confusantes, oublie ça et laisse juste le système des 3 étoiles, quitte à le moduler
+> * l'interface du filtrage dans la création de decks n'est pas du tout clean. "trier" est pareil que "numéro" "cout" ..., les pastilles sont moches etc
+> * enlève le système de côte, ça discrimine des cartes et les met de côté implicitement, c'est au joueur de trouver quelle carte est meilleure
+> * l'image qui illustre les combats (le médaillon) me dérange un peu, elle est pas très belle (dans les nouveautés du choc et dans l'onglet combats). remplace par l'illu du chevalier rose (et bien cadré stp)
+> * fais une vraie review de l'écran du raid, prends du recul et critique, je le trouve encore bancal. rends le beau bordel et intuitif
+> * pk on peut pas mettre de secrète en bannière de profil ?
+>
+> sur le vrai site (main) :
+> * rajoute dans le récap de l'échauffement (qui arrive dans 24h) la date de sortie de la 3.0 : maintenance lundi 9 novembre SOIR à minuit, sortie de la version mardi 10 novembre SOIR à minuit.
+> * on a donc le planning officiel. dans ton compte-rendu, dis-moi ce qu'il reste à faire avant ces deadlines. quel est notre planning.
+
+**Le 3 novembre 2026**, une liste en PDF (« TCG 3.0 », quatre pages, avec des captures d'un iPhone : la fiche d'une carte en combat qui sort de l'écran à droite, une carte tenue au doigt dans un carré blanc, la lueur du paquet sur l'écran Boosters), ajoutée à la précédente (« reprends où tu t'es arrêté, et rajoute ça dans ta to-do liste ») ; le texte, mot pour mot, sans les captures :
+
+> * Retirer le flou en haut de l'écran
+> * Visualisation de cartes cassée sur mobile (et beaucoup trop grosse). Globalement tout est mal centré (la chronologie au milieu de l'arène, etc)
+> * Mauvais comportements d'attaque, il faut review toutes les attaques (ex : Namifique, son attaque “engagez un joueur adverse” compte comme une attaque au CEO au lieu de juste offrir le choix de désangager quelqu'un
+> * Saisir une carte la crop en carré avec des bords moches
+> * Pk les adversaires peuvent cibler des cartes, alors que le joueur vise automatiquement le CEO ? Que disent les règles ? Est-il obligatoire de viser le CEO ?
+> * Les icones des combats dans la campagne cligotent et ça rend le truc moche (laisse apparaître le tracé derrière)
+> * L'historique des cartes jouées n'est pas refermable en swipant
+> * Effet de surbrillance buggé sur mobile sur l'onglet boosters
+> * Pas de bouton “tout récupérer” dans l'onglet saisonnier des quêtes
+> * Le raid est beaucoup trop compliqué, surtout en mode infini, facilite-le un chouille histoire de s'amuser et de pas niquer le ratio W-L des joueurs
+> * Il faudrait ajouter un chargement des ressources au lancement du site afin d'éviter tout bug et tout chargement dégueulasse
+
+**Lecture des dates de la 3.0 (2 novembre, dans la nuit).** « lundi 9 novembre SOIR à minuit » est lu comme la nuit du lundi 9 au mardi 10 novembre à 0 h (heure de Paris), et « mardi 10 novembre SOIR à minuit » comme la nuit du mardi 10 au mercredi 11 à 0 h ; en UTC, lundi 9 et mardi 10 à 23 h. C'est ce que le récap affiche (« lundi 9 nov. au soir, à minuit ») : à corriger dans `PROCHAINE` (`js/config.js` de `main`) si ce n'est pas la bonne lecture.
+
 **Lecture de « le fichier demo » (1er novembre au soir).** La session l'a d'abord pris pour `preprod/`, et a retiré `preprod/` et `prebuild/` de `main` (environ une heure, le 2 novembre) ; c'était la démo autonome en zip (`python3 tools/demo.py` sans option), confirmé par le propriétaire le 2. Tout est remis (§ 7).
 
 **Lecture des deux dictées sur le mode sans fin.** Le 23 disait « avec moins de récompense (mais pas comme devine l'illu, ça reste un event) » ; le 24 dit « des récompenses équilibrées, comme le devine l'illu devenu permanent ». Le plus récent a été suivi : le niveau de récompense de Devine l'illu (120 Éclats au plus par jour), dans un mode qui garde des atours d'événement (l'onglet Combats, un classement, une série, un titre). C'est une interprétation : à confirmer par le propriétaire.
@@ -183,11 +212,13 @@ Il y joignait le message de Gentle Mates de septembre (non recopié ici). Ce qu'
 | **dim. 25 oct., minuit (lun. 26, 0 h, heure d'hiver)** | **Sortie de la 2.5** : fin du récap de Reflets, L'Échauffement (défi 1) et son événement (Braises, Pass, quêtes, boutique, classement), Reverses recyclables et fabricables, numéro « 2.5 », fenêtre des nouveautés | `evenements.recap_jusqua`, `ech_saison.debut` (la ligne d'événement `echauffement` la suit), `parametres.reverses_des`, `parametres.sorties` ; `SORTIE` dans `js/config.js` |
 | lun. 26 → dim. 1er nov., chaque jour à 0 h | Un défi de plus (2 le mardi 27… 7 le dimanche 1er) ; les quêtes du jour de l'événement se renouvellent | `ech_jour_ouvert()` (24 h depuis `ech_saison.debut`) |
 | lun. 2 et mar. 3 nov. | Pas de nouveau défi : on rattrape (trois essais par défi et par jour, jours passés jouables) | — |
-| **mer. 4 nov., 0 h** (+ une heure de grâce pour un essai commencé) | Fin de la saison et de l'événement ; **le récap** commence (bandeau sur Boosters, sous-onglet « Le récap » de Combats, une fenêtre qui explique la suite) ; **le mode sans fin** commence : un défi par jour, le même pour tous | `ech_saison.fin` ; `evenements.recap_jusqua` (fin + 3 jours) ; `ech_sf_premier()` |
+| **mer. 4 nov., 0 h** (+ une heure de grâce pour un essai commencé) | Fin de la saison et de l'événement ; **le récap** commence (bandeau sur Boosters, sous-onglet « Le récap » de Combats, une fenêtre qui explique la suite), et annonce **la 3.0** (ses deux dates, le temps qui reste avant sa sortie) ; **le mode sans fin** commence : un défi par jour, le même pour tous | `ech_saison.fin` ; `evenements.recap_jusqua` (fin + 3 jours) ; `ech_sf_premier()` ; `PROCHAINE` dans `js/config.js` |
 | sam. 7 nov., 0 h | Fin du récap de L'Échauffement | `evenements.recap_jusqua` |
 | ensuite, chaque jour à 0 h | Un nouvel adversaire du mode sans fin (21 adversaires, puis on recommence), sans date de fin, jusqu'à la 3.0 (qui le ferme) | `ech_sf_adversaires`, `22f_sans-fin.sql` |
+| **lun. 9 nov., minuit (mar. 10, 0 h)** | **Maintenance de la 3.0** : le jour J commence (README de la 3.0, § 2.7) | le propriétaire et la session ; l'annonce : `PROCHAINE.maintenance` |
+| **mar. 10 nov., minuit (mer. 11, 0 h)** | **Sortie de la 3.0** ; le mode sans fin s'arrête | l'annonce : `PROCHAINE.sortie` |
 
-En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; la fin de Reflets, le vendredi 23 à 22 h 00 UTC ; la fin de la saison, le mardi 3 novembre à 23 h 00 UTC.
+En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; la fin de Reflets, le vendredi 23 à 22 h 00 UTC ; la fin de la saison, le mardi 3 novembre à 23 h 00 UTC ; la maintenance de la 3.0, le **lundi 9 novembre à 23 h 00 UTC** ; sa sortie, le **mardi 10 novembre à 23 h 00 UTC**.
 
 ## 3. La 2.5
 
@@ -215,6 +246,7 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - **25 octobre, dans la nuit : la 2.5 est en ligne, site et base** (accord du propriétaire, § 1). Le site : `version-2.5` fusionnée dans `main` (`e9f0c36`), servie à 02 h 22 UTC ; elle se montre en « 2.1.3 » jusqu'à lundi 0 h. La base : `MAJ-2.5.sql` collé par le propriétaire vers 02 h 35 UTC (l'outil Supabase n'a pas reçu ses confirmations), fins de ligne Windows corrigées (`fix-crlf.sql`), puis vérifiée : identique à une installation neuve (§ 6, et README, « La mise en ligne »).
 
 - **1er novembre** (le propriétaire, § 1) : l'écran « Merci » dans la DA de la 3.0, sur cet écran seulement ; « M8 TCG Online ne verra pas le jour. » en évidence, « J'ai un accès », plus de « pas encore » ni de « Rendez-vous à l'ouverture » ; publié sur `main` le jour même. Reporté dans la 3.0 le 2 novembre (§ 5).
+- **3 novembre** (le propriétaire, § 1) : **le récap de L'Échauffement annonce la 3.0** — dans le sous-onglet « Le récap » (une carte « La version 3.0 » : la maintenance, la sortie, le temps qui reste avant la sortie) et dans la fenêtre de fin (une ligne) ; les dates sont dans `PROCHAINE` (`js/config.js`), lues à l'heure du serveur ; plus rien une fois la 3.0 sortie. Pour que le récap tienne encore dans l'écran (règle 8), sur téléphone les trois chiffres de second plan du bilan (indices, combats, quêtes) passent en pastilles d'une ligne, et le défi du jour a une phrase plus courte sur les écrans bas ; mesuré dans Chromium : 0 px de débordement aux quatre tailles (marge de 7 à 24 px), la fenêtre aussi. Publié sur `main` le jour même.
 - **2 novembre** (le propriétaire, § 1) : la démo autonome en zip retirée (`tools/demo.py` sans option, `_demo/LISEZMOI.txt`), sur les deux branches. Le même jour, `prebuild/` a été retiré de `main` par erreur pendant environ une heure, puis remis tel quel (§ 7).
 
 **Décidé le 24 octobre sur le mode sans fin** (les quatre questions laissées ouvertes le 23) :
@@ -282,7 +314,7 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 *L'avis de la session, le 25 (une opinion, pas un fait) :* pour lundi, 21 seulement, si le propriétaire veut une nouveauté de plus le jour où les Reverses ouvrent ; pendant l'événement (une 2.5.1), 11 et 12 ensemble, puis 15 et 19 ; avant le 4 novembre, 20 ou 14, pas les deux ; dès que la date de la 3.0 est connue, 23 et 24. De la première série, 1 et 2 restent les moins chères (aucun code).
 
 **Prévu par le propriétaire, pas encore fait :**
-- Dès que la date de sortie de la 3.0 est connue : le **teasing final**, puis une **maintenance**, puis la mise à jour 3.0. Rien n'est préparé côté 2.x pour la maintenance (pas d'écran de maintenance aujourd'hui ; l'écran d'attente de la bêta, `js/gate.js`, en est le plus proche). Le mode sans fin s'arrête avec la 3.0 (son `29_labo.sql` en retire les fonctions).
+- ~~Dès que la date de sortie de la 3.0 est connue : le teasing final~~ : **la date est connue** (le propriétaire, 2 novembre au soir : maintenance dans la nuit du lundi 9 au mardi 10 novembre à 0 h, sortie dans la nuit du mardi 10 au mercredi 11 à 0 h) et **le récap de L'Échauffement l'annonce** depuis le 3 novembre (plus haut). Reste la **maintenance**, puis la mise à jour 3.0 : la maintenance est celle de la 3.0 (une base 2.x qui a des joueurs y entre d'office en recevant son `TOUT.sql`, et l'écran vient de son code) ; la 2.x n'a pas d'écran de maintenance et n'en aura pas. Le mode sans fin s'arrête avec la 3.0 (son `29_labo.sql` en retire les fonctions).
 
 ## 4. La 3.0
 
@@ -373,7 +405,7 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - une démo pour Gentle Mates, à `matetcg.com/demo` derrière un code (1er novembre) : **faite le 2 novembre** (la 3.0.14, plus haut) ;
 - « … » : la liste reste ouverte.
 
-**Ce qu'il reste avant la sortie de la 3.0 (2 novembre).** La liste de ce que la session connaît ; d'autres choses peuvent se révéler à l'usage. Pour chaque point : qui le fait.
+**Ce qu'il reste avant la sortie de la 3.0 (2 novembre ; la date est fixée depuis le soir : maintenance dans la nuit du lundi 9 au mardi 10 novembre, sortie dans la nuit du mardi 10 au mercredi 11, à 0 h).** La liste de ce que la session connaît ; d'autres choses peuvent se révéler à l'usage. Pour chaque point : qui le fait.
 1. **Des scans propres de P03, P04 et des Secrètes 124, 126, 127** — le propriétaire. Les photos redressées font l'affaire en attendant (126, prise sous un cadre, est la plus terne) ; un scan les remplace sous un autre nom de fichier (`fichier`, `js/promos-data.js`), sans rien d'autre à changer.
 2. **Les listes officielles des Starter Decks** — le propriétaire (« plus tard », 31 octobre). Celles de la pré-prod sont des compositions de la session, **et déséquilibrées** : le Toxique gagne 68,5 % des parties face au Déter (274 sur 400, IA de même niveau), avant comme après l'arrivée des vraies Promos ; quinze variantes essayées ne le corrigent pas (`docs/economie-3.0.md`).
 3. ~~Les lectures des règles~~ : **tranchées par la session le 2 novembre au soir**, à la demande du propriétaire (`docs/regles-3.0.md` § 11 ; un seul point change le moteur). Ce qui suit était la liste : la Provocation, une attaque sans valeur, le soutien, la Riposte, un Coach joué par Résilience, « Jouez cette carte » et la couleur, le mélange des piles, le remplacement, l'Essence qui entre désengagée, l'ordre du mulligan, piocher plus que le Club ; et, depuis le 1er novembre, GP Explorer II, Paris Gentle Mates et « Sermont » (l'attaque de Brawks Trop Déter, peut-être une coquille de « Serment »). Le point 8 (qui commence) est tranché : pile ou face. Chaque lecture se change en un endroit du moteur.
@@ -429,6 +461,7 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 | La démo autonome en zip retirée (`tools/demo.py` sans option, `_demo/LISEZMOI.txt`) | 2 nov. | **retirée aussi** (2 nov., `034bd78`) |
 | `_config.yml` : la doc, le SQL, les outils et le kit presse ne sont plus publiés sur matetcg.com | 2 nov., le soir | **reporté** (le même fichier sur `version-3.0`, pour que la 3.0 le garde en sortant) |
 | `prebuild/` retiré de `main` ; la branche `version-2.5` supprimée (le propriétaire) | 2 nov., le soir | rien à reporter : la doc de la 3.0 ne renvoie plus à `version-2.5` |
+| La date de la 3.0 dans le récap de L'Échauffement (`PROCHAINE`, `vEchSuite30`) | 3 nov. | propre à la 2.x : rien à reporter (la 3.0 ferme L'Échauffement) |
 
 ## 6. Dimanche 25 octobre : publier la 2.5 (fait, sauf les contrôles d'après minuit)
 
@@ -502,3 +535,4 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - **2 nov., le soir.** Les règles non tranchées sont tranchées par la session, à la demande du propriétaire ; le principe : le texte au plus près, et un même mot lu de la même façon partout.
 - **2 nov., le soir.** La doc et le code serveur quittent matetcg.com (`_config.yml`), la pré-prod passe derrière son propre code (le propriétaire). Le code de la pré-prod a été choisi par la session et donné au propriétaire en conversation, jamais écrit dans le dépôt.
 - **2 nov., le soir.** `prebuild/` est retiré : le propriétaire a supprimé `version-2.5`, « on ne va plus toucher à la 2.x ».
+- **2 nov., dans la nuit.** La date de la 3.0 (le propriétaire) : maintenance dans la nuit du lundi 9 au mardi 10 novembre, sortie dans la nuit du mardi 10 au mercredi 11, à 0 h ; « lundi soir à minuit » est lu comme la nuit du lundi au mardi (la session, § 1). Le récap de L'Échauffement l'annonce ; pour qu'il tienne encore sur téléphone, ses trois chiffres de second plan passent en pastilles (la session).
