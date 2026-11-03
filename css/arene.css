@@ -939,8 +939,10 @@ button.ar-lc:not(.grise)::after{content:"";position:absolute;inset:-2px;border-r
 }
 html.rm .ar-place.cible,html.rm .ar-j.attaquant,html.rm .ar-c.holo::after,html.rm .ar-c.rev .ar-rev,html.rm .ar-c.secrete::before,html.rm .ar-c.secrete::after,html.rm .ar-gem.brille::after{animation:none}
 html.rm .ar-eclair{animation:none!important}
-/* Une feuille sans décision (menu, pile) : un voile qui la referme. */
+/* Une feuille sans décision (menu, pile) : un voile qui la referme ; sur un
+   écran tactile, une poignée (on la tire vers le bas pour fermer, 3.0.16). */
 .ar-sheet.voile{top:0;align-items:flex-end;pointer-events:auto;background:rgba(8,7,12,.5);animation:ar-voile .2s ease-out}
+@media (hover:none){.ar-sheet.voile .ar-s-in::before{content:"";display:block;width:38px;height:4.5px;margin:-6px auto 10px;border-radius:99px;background:rgba(255,255,255,.3)}}
 @keyframes ar-voile{from{background:rgba(8,7,12,0)}}
 
 /* ============ Le tutoriel (js/combat/tutoriel.js) ============ */

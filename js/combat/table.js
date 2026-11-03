@@ -773,6 +773,68 @@ const Table = (() => {
       else if (T.cible) { T.cible = null; consigne(null); rendre(); }
     };
     document.addEventListener('keydown', T.echap);
+    /* Glisser vers le bas referme une feuille sans décision (3.0.16, le
+       propriétaire : « L'historique des cartes jouées n'est pas refermable en
+       swipant ») : le menu, une pile, les cartes jouées — comme la feuille du
+       site (js/ui.js). Une décision attend sa réponse : pas de geste. Le
+       doigt ne vole ni un défilement (la liste n'est pas tout en haut) ni un
+       glissé horizontal. */
+    {
+      const sh = qs('.ar-sheet');
+      let g = null;
+      const defile = x => { for (; x && x !== sh; x = x.parentElement) if (x.scrollTop > 0) return true; return false; };
+      sh.addEventListener('touchstart', e => {
+        g = null;
+        const f = sh.querySelector('.ar-s-in');
+        if (!sh.classList.contains('voile') || !f || e.touches.length > 1 || !f.contains(e.target)) return;
+        const t = e.touches[0];
+        const poignee = t.clientY - f.getBoundingClientRect().top < 30;
+        g = { f, x0: t.clientX, y0: t.clientY, dy: 0, parti: false, defile: !poignee && defile(e.target), y: t.clientY, t: performance.now(), v: 0 };
+      }, { passive: true });
+      sh.addEventListener('touchmove', e => {
+        if (!g) return;
+        const t = e.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+        if (!g.parti) {
+          if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+          if (g.defile || dy <= 0 || Math.abs(dx) > Math.abs(dy)) { g = null; return; }
+          g.parti = true;
+          g.f.style.animation = 'none';
+          g.f.style.transition = 'none';
+        }
+        if (e.cancelable) e.preventDefault();
+        const now = performance.now();
+        if (now > g.t) g.v = (t.clientY - g.y) / (now - g.t);
+        g.y = t.clientY; g.t = now;
+        g.dy = Math.max(0, dy);
+        g.f.style.transform = `translateY(${g.dy}px)`;
+      }, { passive: false });
+      const lacherFeuille = () => {
+        const x = g;
+        g = null;
+        if (!x || !x.parti) return;
+        const f = x.f, haut = f.offsetHeight;
+        if (x.dy > Math.min(haut * .3, 140) || (x.v > .5 && x.dy > 30)) {
+          T.bloqueClic = true;
+          setTimeout(() => { if (T) T.bloqueClic = false; }, 350);
+          if (RM()) return fermerSheet();
+          f.style.transition = 'transform .2s cubic-bezier(.4,0,1,1)';
+          f.style.transform = `translateY(${haut + 40}px)`;
+          sh.style.transition = 'opacity .2s';
+          sh.style.opacity = '0';
+          setTimeout(() => {
+            sh.style.transition = ''; sh.style.opacity = '';
+            /* Une autre feuille a pu s'ouvrir entre-temps : on ne ferme que la nôtre. */
+            if (f.isConnected) fermerSheet();
+          }, 200);
+        } else {
+          f.style.transition = 'transform .26s cubic-bezier(.2,1.1,.4,1)';
+          f.style.transform = '';
+        }
+      };
+      sh.addEventListener('touchend', lacherFeuille);
+      sh.addEventListener('touchcancel', lacherFeuille);
+    }
+
     /* Glisser une carte jouable de la main vers sa place. */
     let appui = null;
     el.addEventListener('pointerdown', e => {
