@@ -1010,11 +1010,17 @@ const Table = (() => {
       const possible = opts.filter(o => o.k === i);
       const chev = possible.some(o => o.chevaliere) && !possible.some(o => !o.chevaliere);
       const raison = actif && !possible.length ? pourquoiPas(c, i, inf) : '';
+      /* La cible imposée (3.0.16) : « Vise Pas Compris · Provocation ». */
+      const forcee = possible.length && possible.every(o => o.cible != null && o.cible !== 'ceo') ? possible[0].cible : null;
+      const pq = forcee != null ? Combat.raisonCible(E, c, forcee) : null;
+      const vise = forcee != null ? `<small class="ar-pret">Vise ${h(Combat.nomDe(Combat.trouverSurPlateau(E, forcee)))}${pq ? ` · ${h(pq)}` : ''}</small>` : '';
       const val = a.degats == null ? null : inf.val;
       const sens = val == null ? '' : val > a.degats ? 'plus' : val < a.degats ? 'moins' : '';
       const sous = detail
-        ? (a.effet ? `<small>${h(a.effet)}</small>` : '') + (raison ? `<small class="ar-raison">${h(raison)}</small>` : '')
-        : raison ? `<small class="ar-raison">${h(raison)}</small>` : possible.length ? '<small class="ar-pret">Touche pour attaquer</small>' : a.effet ? `<small>${h(a.effet)}</small>` : '';
+        ? (a.effet ? `<small>${h(a.effet)}</small>` : '') + (raison ? `<small class="ar-raison">${h(raison)}</small>` : '') + vise
+        : raison ? `<small class="ar-raison">${h(raison)}</small>`
+          : possible.length ? (a.degats == null && a.effet ? `<small class="ar-pret">${h(a.effet)}</small>` : vise || '<small class="ar-pret">Touche pour attaquer</small>')
+          : a.effet ? `<small>${h(a.effet)}</small>` : '';
       const corps = `${coutHTML(chev ? { neutre: 2 } : inf.cout)}<span class="ar-f-at"><b>${h(a.nom)}</b>${sous}</span>
         ${val == null ? '' : `<em class="${sens}">${val}${val !== a.degats ? `<s>${a.degats}</s>` : ''}</em>`}`;
       return actif
@@ -2271,16 +2277,24 @@ const Table = (() => {
       if (x) x.classList.add('assaut');
       SFX.jouer('woosh');
       /* La carte qui attaque se lève : la bande ne dit que l'attaque et sa cible. */
-      const cible = e.cible === 'ceo' ? (adv(e.j) === T.moi ? 'ton CEO' : 'son CEO') : e.cible ? h(carte(trouverId(e.cible) || '').nom || 'un Joueur') : '';
-      /* L'attaque de l'adversaire dit aussi ce qu'elle fait. */
+      const nc = e.cible && e.cible !== 'ceo' ? carte(trouverId(e.cible) || '').nom || 'Ce Joueur' : '';
+      const cible = e.cible === 'ceo' ? (adv(e.j) === T.moi ? 'ton CEO' : 'son CEO') : nc ? h(nc) : '';
+      /* Pourquoi elle vise un Joueur (3.0.16) : sans ça, on croyait que
+         l'adversaire avait le droit de viser des cartes et pas soi. */
+      const pq = e.pourquoi === 'Provocation' ? `${nc} a Provocation : il faut le viser.`
+        : e.pourquoi === 'Signature' ? `${nc}, désengagé, impose qu'on le vise.`
+        : e.pourquoi === 'Jus de bagarre' ? 'Jus de bagarre : il vise le Joueur d\'en face.' : '';
+      /* L'attaque de l'adversaire dit aussi ce qu'elle fait ; une attaque
+         sans valeur aussi, de chaque côté : elle ne fait que ça. */
       const a = (carte(trouverId(e.u)).atks || [])[e.k] || {};
-      const effet = e.j !== T.moi && a.effet ? a.effet : '';
-      ticker(`<b>${h(e.nom)}</b>${cible ? `<i class="ar-fl">→</i>${cible}` : ''}${effet ? `<small>${h(effet)}</small>` : ''}`);
+      const effet = (e.j !== T.moi || a.degats == null) && a.effet ? a.effet : '';
+      const sous = [pq, effet].filter(Boolean).join(' ');
+      ticker(`<b>${h(e.nom)}</b>${cible ? `<i class="ar-fl">→</i>${cible}` : ''}${sous ? `<small>${h(sous)}</small>` : ''}`);
       /* Version 3.0.7 : une flèche de l'attaquant à sa cible, et la cible
          cerclée — on voit d'un coup d'œil qui vise qui. Elle reste jusqu'à
          l'impact (effacerVisee). */
       if (e.cible != null) viser(x, e.cible === 'ceo' ? elCEO(adv(e.j)) : elU(e.cible), e.j === T.moi);
-      await attendre(e.j === T.moi ? 620 : Math.min(2800, 1200 + effet.length * 14));
+      await attendre(e.j === T.moi && !sous ? 620 : Math.min(2800, 1200 + sous.length * 14));
     },
     async defend(e) {
       const x = elU(e.u);
@@ -2567,7 +2581,8 @@ const Table = (() => {
       case 'deploie': return noter(`${n(e.j)} ${e.pose ? 'commence avec' : 'déploie'} ${k(e.id)}${e.eng ? ' (engagé)' : ''}.`);
       case 'joue': return noter(`${n(e.j)} joue ${k(e.id)}.`);
       case 'lie': return noter(`${n(e.j)} lie ${k(e.id)}.`);
-      case 'attaque': return noter(`${k(trouverId(e.u))} attaque${e.cible === 'ceo' ? ' le CEO' : e.cible ? ' ' + k(trouverId(e.cible)) : ''} (${h(e.nom)}).`);
+      case 'attaque': return noter(e.cible == null ? `${k(trouverId(e.u))} lance ${h(e.nom)}.`
+        : `${k(trouverId(e.u))} attaque${e.cible === 'ceo' ? ' le CEO' : ' ' + k(trouverId(e.cible)) + (e.pourquoi ? ` (${h(e.pourquoi)})` : '')} (${h(e.nom)}).`);
       case 'defend': return noter(`${k(trouverId(e.u))} défend.`);
       case 'repousse': return noter(`Il tient : ${e.val} contre ${e.def}.`);
       case 'impact': return e.cible !== 'ceo' && e.def != null && e.val >= e.def ? noter(`${e.val} contre ${e.def} : le défenseur tombe.`) : undefined;

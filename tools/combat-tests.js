@@ -194,11 +194,33 @@ test('sans PV, le CEO touché a perdu', () => {
   Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
   egal(E.fin, { gagnant: 0, raison: 'pv' });
 });
-test('une attaque sans valeur se déclare aussi sur le CEO et le touche si personne ne défend', () => {
-  /* Namifique, Omniscience (1 Rose, pas de valeur) : « Engagez un Joueur adverse ». */
-  const E = situation({ lignes: [['c022'], []], ess: [['rose']] });
-  Combat.agir(E, { t: 'attaquer', u: L(E, 0, 0).u, k: 0, cible: 'ceo' });
-  egal(E.j[1].pv.length, 3);
+test('une attaque sans valeur ne vise personne : son effet, sans toucher le CEO (3.0.16)', () => {
+  /* Namifique, Omniscience (1 Rose, pas de valeur) : « Engagez un Joueur
+     adverse ». Le propriétaire, 3 novembre : elle ne doit pas compter comme
+     une attaque au CEO. Même face à une Provocation (Pas Compris, c013). */
+  const E = situation({ lignes: [['c022'], ['c013', 'c078']], ess: [['rose']] });
+  const pv = E.j[1].pv.length;
+  const opts = attaques(E, L(E, 0, 0).u);
+  egal(opts.map(o => o.cible), [null], 'une seule option, sans cible');
+  Combat.agir(E, opts[0]);
+  const d = Combat.demande(E);
+  egal(d.qui, 0, 'le choix revient à l\'attaquant');
+  vrai(d.but === 'engagerAdverse', 'il choisit le Joueur à engager, pas de défense : ' + d.but);
+  Combat.agir(E, { t: 'choix', v: L(E, 1, 1).u });
+  vrai(L(E, 1, 1).eng, 'le Joueur choisi est engagé');
+  egal(E.j[1].pv.length, pv, 'le CEO n\'est pas touché');
+  vrai(L(E, 0, 0).eng, 'l\'attaquant s\'est engagé');
+  egal(E.cpt.attaques, 1, 'elle compte comme une attaque');
+});
+test('Confusion (+10 par Joueur engagé) : l\'aperçu compte l\'attaquant, la défense compte le défenseur (3.0.16)', () => {
+  /* Pas Compris (c013), Confusion 60+ ; personne d'engagé au départ. */
+  const E = situation({ lignes: [['c013'], ['c078']], ess: [['rose', 'rose', 'rose']] });
+  const c = L(E, 0, 0);
+  egal(Combat.infoAttaque(E, c, 0).val, 70, 'l\'aperçu : 60 + 10 (l\'attaquant, qui s\'engage)');
+  Combat.agir(E, attaques(E, c.u)[0]);
+  const d = Combat.demande(E);
+  egal(d.but, 'defense');
+  egal(d.options.find(o => o.u === L(E, 1, 0).u).info.val, 80, 'défendre engage le défenseur : 80');
 });
 test('un Joueur engagé ne peut pas attaquer ; le premier CEO n\'attaque pas au tour 1', () => {
   const E = situation({ lignes: [[['c078', { eng: true }]], []], ess: [['rose', 'rose']] });

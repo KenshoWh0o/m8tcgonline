@@ -184,7 +184,8 @@ const GUIDES = (() => {
         <p>Là où le texte officiel ne tranche pas, le jeu retient la lecture la plus proche du texte :</p>
         <ul class="gd-maison">
           <li><b>Provocation</b> : l'attaque se déclare sur ce Joueur, qui n'est pas engagé ; on compare à sa Défense. Un Joueur avec Garde peut encore défendre à sa place.</li>
-          <li><b>Une attaque sans valeur</b> (seulement un effet) est une attaque comme les autres : elle se défend, et touche le CEO si personne ne la défend.</li>
+          <li><b>Une attaque sans valeur</b> (seulement un effet) ne vise personne : on paie, le Joueur s'engage, et son effet se joue. Personne ne la défend, elle ne touche pas le CEO.</li>
+          <li><b>Une attaque vise le CEO adverse.</b> Seules exceptions : un Joueur qui a Provocation en face (on doit le viser), Slay désengagé en face, et Jus de bagarre (on peut viser le Joueur d'en face). La bande du milieu le dit quand ça arrive.</li>
           <li><b>Le soutien</b> : un seul voisin, désengagé ; seule sa valeur s'ajoute (pas son effet), et ce n'est pas une attaque de plus.</li>
           <li><b>La Riposte</b> ne se défend pas, et seule sa valeur compte.</li>
           <li><b>Un Coach joué par sa Résilience</b> (« Jouez cette carte ») compte dans la limite d'un Coach par tour : touché deux fois dans le même tour, tu n'en joues qu'un.</li>

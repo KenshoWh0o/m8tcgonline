@@ -65,7 +65,7 @@ const Historique = (() => {
         }
         case 'joue': x = ['jo', r(e.j), e.id]; break;
         case 'lie': x = ['li', r(e.j), e.id, id(e.cible)]; break;
-        case 'attaque': x = ['at', r(e.j), id(e.u), e.k, e.cible === 'ceo' ? 'ceo' : id(e.cible)]; break;
+        case 'attaque': x = ['at', r(e.j), id(e.u), e.k, e.cible === 'ceo' ? 'ceo' : e.cible == null ? null : id(e.cible)]; if (e.pourquoi) x.push(e.pourquoi); break;
         case 'soutien': x = ['so', r(e.j), id(e.u), e.val]; break;
         case 'defend': x = ['df', r(e.j), id(e.u)]; break;
         case 'repousse': x = ['ti', e.val, e.def]; break;
@@ -131,7 +131,9 @@ const Historique = (() => {
       case 'li': return `${s(x[1], 'lies', 'lie')} ${k(x[2])}${x[3] ? ` à ${k(x[3])}` : ''}.`;
       case 'at': {
         const n = nomAttaque(x[2], x[3]);
-        const cible = x[4] === 'ceo' ? (x[1] === 0 ? ` le CEO de ${A}` : ' ton CEO') : x[4] ? ` ${k(x[4])}` : '';
+        const cible = x[4] === 'ceo' ? (x[1] === 0 ? ` le CEO de ${A}` : ' ton CEO') : x[4] ? ` ${k(x[4])}${x[5] ? `, imposé par ${x[5] === 'Jus de bagarre' ? 'Jus de bagarre' : `sa ${h(x[5])}`}` : ''}` : '';
+        /* Une attaque sans valeur ne vise personne (3.0.16) : elle « lance » son effet. */
+        if (x[4] == null) return `${k(x[2])} lance ${n ? h(n) : 'son attaque'}.`;
         return `${k(x[2])} attaque${cible}${n ? ` (${h(n)})` : ''}.`;
       }
       case 'so': return `${k(x[2])} soutient l'attaque (+${fmtN(x[3])}).`;

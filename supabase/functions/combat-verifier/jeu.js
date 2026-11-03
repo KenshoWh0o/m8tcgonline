@@ -1,4 +1,4 @@
-// Généré par tools/build-verif.py (empreinte 40bb68e3936e) : ne pas modifier à la main.
+// Généré par tools/build-verif.py (empreinte fb9acc833195) : ne pas modifier à la main.
 // Le code du jeu, tel que le navigateur le charge, pour rejouer un combat sur le serveur.
 /* eslint-disable */
 // @ts-nocheck
@@ -2385,6 +2385,16 @@ function valeurAttaque(E, c, k, bonus) {
   return Math.max(0, v);
 }
 
+/* La valeur qu'aura l'attaque une fois déclarée (3.0.16) : déclarer engage
+   l'attaquant, défendre le défenseur, soutenir le soutien ; une valeur qui
+   compte les Joueurs engagés (Confusion de Pas Compris, « +10 par Joueur
+   engagé ») les compte déjà. L'aperçu affichait 10 de moins que le coup. */
+function valeurPrevue(E, c, k, autres, bonus) {
+  const l = [c].concat(autres || []).filter(x => x && !x.eng);
+  l.forEach(x => { x.eng = true; });
+  try { return valeurAttaque(E, c, k, bonus); } finally { l.forEach(x => { x.eng = false; }); }
+}
+
 /* ---------- Le coût d'une attaque ---------- */
 const copieCout = c => Object.assign({}, c);
 const totalCout = c => Object.values(c).reduce((a, b) => a + b, 0);
@@ -2704,12 +2714,13 @@ function optionsAttaque(E, j) {
       if (normal) variantes.push(false);
       if (avecChev && !normal) variantes.push(true);
       else if (avecChev && totalCout(coutAttaque(E, c, k, { chevaliere: true })) < totalCout(coutAttaque(E, c, k))) variantes.push(true);
-      /* Une attaque sans valeur imprimée (seulement un effet) est une attaque
-         comme les autres : elle se déclare sur le CEO adverse, se défend, et
-         touche si personne ne défend (règles officielles, « Déroulement de
-         la Phase de Combat » ; sa valeur compte pour 0). */
+      /* Une attaque sans valeur imprimée (seulement un effet : Glissade,
+         Omniscience, Rêverie, Foudre de Rage) ne vise personne (3.0.16, le
+         propriétaire : elle doit « juste offrir le choix » de son effet, pas
+         toucher le CEO) : ni CEO, ni Provocation, ni défense. */
+      const cibles = a.degats == null ? [null] : ciblesAttaque(E, c);
       for (const chevaliere of variantes) {
-        for (const cible of ciblesAttaque(E, c)) {
+        for (const cible of cibles) {
           out.push(Object.assign({ t: 'attaquer', u: c.u, k, cible }, chevaliere ? { chevaliere } : {}));
         }
       }
@@ -2730,6 +2741,18 @@ function ciblesAttaque(E, c) {
   if (face && c.obj.some(o => scr(o.id).jusDeBagarre)) cs.push(face.u);
   return cs;
 }
+/* Pourquoi une attaque vise un Joueur plutôt que le CEO (3.0.16) : la bande,
+   le journal et la fiche de l'attaque le disent — sans ça, on croyait que
+   l'adversaire avait le droit de viser des cartes et pas soi. */
+function raisonCible(E, c, cible) {
+  if (cible == null || cible === 'ceo') return null;
+  const t = trouverSurPlateau(E, cible);
+  if (!t) return null;
+  if (aMotCle(E, t, 'Provocation')) return 'Provocation';
+  if (scr(t.id).provocSiLibre && !t.eng) return 'Signature';
+  if (c && c.obj.some(o => scr(o.id).jusDeBagarre)) return 'Jus de bagarre';
+  return null;
+}
 
 /* Le soutien : « si le CEO adverse déclare un défenseur, le CEO actif peut
    engager les Essence nécessaires à l'attaque d'un de ses Joueur adjacents,
@@ -2743,7 +2766,7 @@ function soutiens(E, c) {
     const s = P.lignes[i];
     if (!s || s.eng) continue;
     carte(s.id).atks.forEach((a, k) => {
-      const val = valeurAttaque(E, s, k);
+      const val = valeurPrevue(E, s, k);
       if (val == null) return;
       const cout = coutAttaque(E, s, k, { rang: 0 });
       if (payable(E, c.j, cout)) out.push({ c: s, k, val, cout });
@@ -2843,14 +2866,17 @@ function* attaquer(E, j, c, k, cible, chevaliere) {
   /* L'attaquant s'engage (Worlds Lyon l'en dispense, une fois). */
   const lyon = E.temp.some(t => t.type === 'lyon' && t.camp === j) && c.obj.length > 0 && c.nAtt === 1;
   const X = { c, k, cible, rang, bonus: 0, annulee: false, vaincu: false, defenseur: null, j };
-  ev(E, { t: 'attaque', j, u: c.u, k, nom: atk.nom, cible });
+  const pourquoi = raisonCible(E, c, cible);
+  ev(E, Object.assign({ t: 'attaque', j, u: c.u, k, nom: atk.nom, cible }, pourquoi ? { pourquoi } : {}));
   if (!lyon) yield* engager(E, c);
   if (E.fin) return;
 
   yield* declencher(E, 'attaque', X);
   if (E.fin) return;
 
-  {
+  /* Une attaque sans valeur ne vise personne : pas de défense ni d'impact,
+     son effet seul (plus bas). */
+  if (atk.degats != null) {
     /* La cible a pu disparaître entre-temps. */
     if (X.cible !== 'ceo' && !enJeu(E, trouverSurPlateau(E, X.cible))) X.cible = 'ceo';
 
@@ -2859,10 +2885,12 @@ function* attaquer(E, j, c, k, cible, chevaliere) {
     const defs = defenseurs(E, c, X.cible);
     if (defs.length && enJeu(E, c)) {
       const val = valeurAttaque(E, c, k, X.bonus) || 0;
-      const opts = defs.map(d => ({
-        v: d.u, u: d.u, label: `Défendre avec ${nomDe(d)}`,
-        info: { def: defense(E, d), val, vaincu: val >= defense(E, d) && !shieldActif(E, d) }
-      }));
+      /* Défendre engage le défenseur : une valeur qui compte les Joueurs
+         engagés (Confusion) le compte déjà (valeurPrevue). */
+      const opts = defs.map(d => {
+        const vd = valeurPrevue(E, c, k, [d], X.bonus) || 0;
+        return { v: d.u, u: d.u, label: `Défendre avec ${nomDe(d)}`, info: { def: defense(E, d), val: vd, vaincu: vd >= defense(E, d) && !shieldActif(E, d) } };
+      });
       opts.push({ v: 'non', label: X.cible === 'ceo' ? 'Ne pas défendre' : 'Laisser passer' });
       const choix = yield {
         qui: opp, type: 'choix', but: 'defense', titre: `${nomDe(c)} attaque`,
@@ -3394,7 +3422,7 @@ function infoAttaque(E, c, k) {
   const a = carte(c.id).atks[k];
   const cout = coutAttaque(E, c, k);
   return {
-    nom: a.nom, cout, val: valeurAttaque(E, c, k), base: a.degats, effet: a.effet,
+    nom: a.nom, cout, val: valeurPrevue(E, c, k), base: a.degats, effet: a.effet,
     payable: payable(E, c.j, cout), plus: a.plus
   };
 }
@@ -3404,8 +3432,8 @@ const MODS_VISIBLES = ['def', 'atk', 'kw', 'pasAttaque', 'pasDefenseFace', 'pasJ
 const Combat = {
   REGLE, COULEURS, catalogue, scripts, carte, toutes, baseId, scr,
   creer, agir, demande, options, optionsTour, cloner, rejouer, valider, cle,
-  defense, valeurAttaque, coutAttaque, payable, totalCout, aMotCle, shieldActif,
-  ciblesAttaque, defenseurs, soutiens, couleurOk, peutAttaquer, infoAttaque, motCleImprime, nomDe,
+  defense, valeurAttaque, valeurPrevue, coutAttaque, payable, totalCout, aMotCle, shieldActif,
+  ciblesAttaque, raisonCible, defenseurs, soutiens, couleurOk, peutAttaquer, infoAttaque, motCleImprime, nomDe,
   joueursDe, tousJoueurs, joueurPermis, ligneDe, enJeu, trouverSurPlateau, porteurDe, premierTourDuPremier,
   /* Les outils des effets (js/combat/effets.js) */
   O: {
@@ -5494,8 +5522,16 @@ function instantUtile(E, j, o) {
 function scoreAttaque(E, j, o) {
   const c = O.trouverSurPlateau(E, o.u);
   const a = Combat.carte(c.id).atks[o.k];
-  if (a.degats == null) return 30;
-  const val = Combat.valeurAttaque(E, c, o.k);
+  /* Une attaque sans valeur ne touche personne (3.0.16) : elle ne vaut que
+     par son effet — engager un Joueur adverse qui pourrait défendre, en
+     bench un, ou regarder son Club. */
+  if (a.degats == null) {
+    const b = Combat.baseId(c.id), lui = O.joueursDe(E, O.adv(j));
+    if (b === 'c011' || b === 'c022') return lui.some(x => !x.eng) ? 32 : 2;
+    if (b === 'c116') return lui.length ? 70 : 2;
+    return 12;
+  }
+  const val = Combat.valeurPrevue(E, c, o.k);
   if (o.cible === 'ceo') {
     /* Un défenseur en face qui tient l'attaque : peu d'intérêt. */
     const defs = Combat.defenseurs(E, c, 'ceo');
@@ -6248,7 +6284,7 @@ const Historique = (() => {
         }
         case 'joue': x = ['jo', r(e.j), e.id]; break;
         case 'lie': x = ['li', r(e.j), e.id, id(e.cible)]; break;
-        case 'attaque': x = ['at', r(e.j), id(e.u), e.k, e.cible === 'ceo' ? 'ceo' : id(e.cible)]; break;
+        case 'attaque': x = ['at', r(e.j), id(e.u), e.k, e.cible === 'ceo' ? 'ceo' : e.cible == null ? null : id(e.cible)]; if (e.pourquoi) x.push(e.pourquoi); break;
         case 'soutien': x = ['so', r(e.j), id(e.u), e.val]; break;
         case 'defend': x = ['df', r(e.j), id(e.u)]; break;
         case 'repousse': x = ['ti', e.val, e.def]; break;
@@ -6314,7 +6350,9 @@ const Historique = (() => {
       case 'li': return `${s(x[1], 'lies', 'lie')} ${k(x[2])}${x[3] ? ` à ${k(x[3])}` : ''}.`;
       case 'at': {
         const n = nomAttaque(x[2], x[3]);
-        const cible = x[4] === 'ceo' ? (x[1] === 0 ? ` le CEO de ${A}` : ' ton CEO') : x[4] ? ` ${k(x[4])}` : '';
+        const cible = x[4] === 'ceo' ? (x[1] === 0 ? ` le CEO de ${A}` : ' ton CEO') : x[4] ? ` ${k(x[4])}${x[5] ? `, imposé par ${x[5] === 'Jus de bagarre' ? 'Jus de bagarre' : `sa ${h(x[5])}`}` : ''}` : '';
+        /* Une attaque sans valeur ne vise personne (3.0.16) : elle « lance » son effet. */
+        if (x[4] == null) return `${k(x[2])} lance ${n ? h(n) : 'son attaque'}.`;
         return `${k(x[2])} attaque${cible}${n ? ` (${h(n)})` : ''}.`;
       }
       case 'so': return `${k(x[2])} soutient l'attaque (+${fmtN(x[3])}).`;
@@ -6618,5 +6656,5 @@ const Verif = (() => {
 // ---- le catalogue des cartes, comme au démarrage de la page
 var __cartes = buildCards();
 Combat.catalogue(__cartes.concat(buildPromos(), buildReverses(__cartes), buildUniques(), buildSecretes()));
-export const EMPREINTE = '40bb68e3936e';
+export const EMPREINTE = 'fb9acc833195';
 export const Jeu = { Verif, Combat: globalThis.Combat, IA: globalThis.IA, Decks: globalThis.Decks };

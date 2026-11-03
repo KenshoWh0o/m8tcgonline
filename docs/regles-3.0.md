@@ -91,12 +91,14 @@ Défausse, « où sont placées toutes les cartes défaussées ou bench » ; le 
   engagées comme les autres, ce choix ne change donc que les attaques
   restantes, et le moteur garde les bonnes.
 - **Une attaque sans valeur** (Omniscience de Namifique, Glissade de Vandale,
-  Rêverie de Zzzzz, Foudre de Rage de The French Sorcerer) **[Lecture]** :
-  c'est une attaque comme les autres — déclarée sur le CEO adverse, elle peut
-  être défendue, et touche le CEO si personne ne la défend ; sa valeur compte
-  pour 0 ; son effet imprimé se joue dans tous les cas. Autre lecture
-  possible : une attaque sans valeur ne fait que son effet et ne touche
-  personne (c'était le choix des règles reconstituées).
+  Rêverie de Zzzzz, Foudre de Rage de The French Sorcerer) **[Lecture du
+  propriétaire, 3 novembre 2026]** : elle ne vise personne — ni le CEO, ni
+  un Joueur qui a Provocation —, ne se défend pas et ne touche pas ; on paie
+  ses Essences, on engage le Joueur, et son effet imprimé se joue (« juste
+  offrir le choix » d'engager un Joueur, pour Glissade et Omniscience). Elle
+  compte comme une attaque (« votre deuxième attaque… », M8 Résilience).
+  Jusqu'à la 3.0.15, la session l'avait lue comme une attaque sur le CEO,
+  qui le touchait si personne ne défendait : le propriétaire l'a corrigé.
 
 ## 4. Construire son jeu
 
@@ -402,10 +404,12 @@ peuvent se révéler à l'usage : la liste n'est pas exhaustive.
    *Pourquoi* : le texte contraint l'attaquant (« L'attaquant face à ce
    Joueur doit le cibler »), pas le défenseur, et Garde « peut défendre
    n'importe quelle attaque ».
-2. **Une attaque sans valeur** est une attaque comme une autre : elle se
-   déclare sur le CEO, se défend (elle ne peut vaincre personne) et touche.
-   *Pourquoi* : « Attaques : permettent au Joueur de cibler le CEO adverse
-   afin de le toucher », sans exception.
+2. **Une attaque sans valeur** ne vise personne : elle se paie, engage son
+   Joueur et joue son effet, sans défense ni CEO touché. *Pourquoi* : le
+   propriétaire, le 3 novembre 2026 (« son attaque “engagez un joueur
+   adverse” compte comme une attaque au CEO au lieu de juste offrir le
+   choix ») ; la lecture du 2 novembre (une attaque sur le CEO, qui touche)
+   est abandonnée.
 3. **Le soutien** : un seul Joueur, adjacent, désengagé, qui paie les
    Essences de son attaque ; seule sa valeur s'ajoute, ce n'est pas une
    attaque. *Pourquoi* : « un de ses Joueur adjacents », « on ajoute la
@@ -477,7 +481,7 @@ peuvent se révéler à l'usage : la liste n'est pas exhaustive.
 | Instants en phase de Combat | permis | **non** : les phases se suivent |
 | Cibles | le CEO, ou un Joueur adverse engagé | **le CEO** (sauf Provocation, Slay, Jus de bagarre) |
 | Soutien | absent | **un Joueur adjacent** ajoute sa valeur contre un défenseur |
-| Attaque sans valeur | ne vise personne, ne se défend pas | une attaque comme les autres |
+| Attaque sans valeur | ne vise personne, ne se défend pas | **ne vise personne** : son effet seul (le propriétaire, 3 novembre) |
 | Bench | au Banc, retour en main au tour suivant | **à la défausse** |
 | Fin de tour | rien | **défausser jusqu'à 5 cartes** |
 | Club vide | on pioche dans ses PV | **on perd** |
