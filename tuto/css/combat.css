@@ -1,0 +1,1159 @@
+/* Version 3.0 : l'onglet Combats (js/battle.js) et les guides.
+   L'arène elle-même a sa feuille : css/arene.css. */
+
+/* ============ L'onglet Combats ============ */
+.cb{display:flex;flex-direction:column;gap:12px;--sc:#9d8cff;--sc2:var(--deco-ink)}
+.champ{width:100%;font:inherit;font-size:16px;padding:12px 14px;border-radius:var(--radius-sm);border:0;color:var(--text);
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.champ:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent-soft)}
+
+/* L'emblème d'une Section, et son badge : Toxique est vert, Déter violet. */
+.cb-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 4px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;
+  background:var(--glass);box-shadow:inset 0 0 0 1px var(--glass-line)}
+.cb-embleme{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#fff;
+  background:radial-gradient(circle at 35% 30%,#fff7,var(--ec,#9d8cff))}
+.cb-embleme.sec-toxique{--ec:#62d84e}
+.cb-embleme.sec-toxique svg{fill:var(--plate)}
+.cb-embleme.sec-deter{--ec:#7c3aed}
+.cb-embleme svg{width:14px;height:12px;fill:#fff}
+
+/* ---- L'accueil ----
+   Un bandeau illustré, fondu dans la page : le chevalier du tapis « La
+   Luxueuse III », son casque et sa chaîne d'or. Sur téléphone, il passe sous
+   l'en-tête de verre et touche les bords. Le titre en bas à gauche, la
+   Section et le niveau en haut à droite : ils ne se croisent jamais. */
+/* La hauteur compte l'encoche du téléphone (safe-area) : le bandeau monte
+   sous elle, et le badge de la Section descend d'autant. Sans elle, sur
+   iPhone, le badge descendait de 47 px dans un bandeau de hauteur fixe et le
+   titre « Combats » lui passait dessus (version 3.0.7). */
+.cb-hero{position:relative;isolation:isolate;height:calc(252px + env(safe-area-inset-top,0px));overflow:hidden;
+  margin:calc(-1 * (var(--top-h) + env(safe-area-inset-top,0px) + 8px)) -16px 0}
+/* Cadré sur le médaillon d'or de son plastron, pas sur le casque. */
+/* Le Chevalier Rose (c078), depuis la 3.0.16 (le propriétaire : le médaillon « pas très beau ») ; son cadrage : illuCadre, js/battle.js. */
+.cb-hero-art{position:absolute;inset:0;z-index:-2;background:var(--bg)}
+.cb-hero::after{content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(90% 60% at 100% 0%,rgba(138,120,245,.3),transparent 70%),
+    linear-gradient(180deg,rgba(18,17,25,.55),rgba(18,17,25,0) 30%,rgba(18,17,25,0) 50%,rgba(18,17,25,.7) 78%,var(--bg))}
+.cb-hero-titre{position:absolute;left:18px;bottom:58px;margin:0;transform:rotate(-6deg);transform-origin:left bottom;
+  font-family:var(--display);font-stretch:116%;font-style:italic;font-weight:900;font-size:58px;letter-spacing:-.035em;line-height:1;color:#fff;
+  text-shadow:0 2px 0 rgba(0,0,0,.25),0 0 30px rgba(138,120,245,.5),0 12px 32px rgba(0,0,0,.6)}
+.cb-hero-haut{position:absolute;right:14px;top:calc(var(--top-h) + env(safe-area-inset-top,0px) + 6px);display:flex;align-items:center;gap:8px}
+.cb-hero-haut .cb-badge{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+
+/* Le niveau en médaillon : l'anneau se remplit avec l'XP. */
+.cb-anneau{flex:none;display:grid;place-items:center;width:46px;height:46px;padding:0;border:0;border-radius:50%;cursor:pointer;
+  background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.18) 0);box-shadow:0 6px 16px rgba(0,0,0,.45)}
+.cb-anneau>span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;line-height:1;color:#fff;
+  background:var(--cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.cb-anneau small{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
+.cb-anneau b{font-family:var(--display);font-weight:900;font-size:15px}
+
+/* Les barres de niveau (Missions, fiche du niveau). */
+.cb-niv{display:inline-flex;align-items:center;gap:9px;padding:4px;border:0;border-radius:999px;font:inherit;color:var(--text);cursor:pointer;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);flex:none}
+.cb-niv-n{display:flex;flex-direction:column;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;line-height:1;color:#fff;
+  background:var(--cta);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.cb-niv-n small{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
+.cb-niv-n b{font-family:var(--display);font-weight:900;font-size:15px}
+.cb-niv-t{display:none}
+.cb-niv-barre{display:block;height:6px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.35)}
+.cb-niv-barre i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
+.cb-niv-barre.grand{height:12px;margin:4px 0 8px}
+.cb-nivfiche p{margin:0 0 6px}
+.cb-nivfiche h4{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cb-paliers{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cb-paliers li{display:flex;gap:10px;align-items:baseline;padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface-2)}
+.cb-paliers b{flex:none;font-family:var(--display);font-style:italic;color:var(--accent-soft)}
+.cb-paliers span{font-size:13px;color:var(--subtle)}
+/* Ce que rapporte un combat (3.0.13) : une ligne par cas, plutôt qu'une phrase. */
+.cb-xp{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px}
+.cb-xp li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 10px;border-radius:var(--radius-sm);background:var(--surface-2);color:var(--subtle)}
+.cb-xp b{color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
+.cb-xp b small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+
+/* Les étoiles d'une difficulté : cinq places, pleines ou vides. */
+.etoiles{display:inline-flex;gap:1px;vertical-align:middle}
+.etoiles i{display:block;width:13px;height:13px}
+.etoiles svg{display:block;width:100%;height:100%;fill:rgba(255,255,255,.16)}
+.etoiles i.on svg{fill:var(--accent-soft);filter:drop-shadow(0 0 4px rgba(179,166,255,.45))}
+
+/* Ce qui se joue maintenant : une tuile pleine qui mord sur le bandeau. */
+.cb-une{position:relative;z-index:2;display:flex;align-items:center;gap:12px;width:100%;margin-top:-46px;padding:12px 12px 12px 12px;border:0;
+  border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06),var(--sh-3);transition:transform .18s var(--spring)}
+button.cb-une:active{transform:scale(.98)}
+.cb-une-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cb-une-t small{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-soft)}
+.cb-une-t b{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-une-t em{display:flex;align-items:center;gap:7px;font-style:normal;font-size:12px;color:var(--muted)}
+.cb-une-t em span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-une-go{flex:none;padding:11px 18px;border-radius:999px;font-family:var(--display);font-weight:800;font-size:14px;color:#fff;
+  background:var(--cta);text-shadow:0 1px 1px rgba(30,16,90,.35);box-shadow:inset 0 1px 0 var(--gloss),0 8px 20px -8px var(--accent-glow)}
+.cb-reprendre{cursor:default}
+.cb-reprendre-act{display:flex;flex-direction:column;gap:6px}
+.cb-reprendre-act .btn{width:auto;padding-inline:16px}
+
+/* Solo et Versus : deux portes, chacune illustrée par une carte (COUV,
+   js/battle.js). */
+.cb-portes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cb-porte{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  min-height:138px;padding:12px 14px 13px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);transition:transform .18s var(--spring)}
+.cb-porte:active{transform:scale(.97)}
+.cb-porte-art{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 22%/210% auto no-repeat}
+.cb-porte::after{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(180deg,rgba(18,17,25,.05),rgba(18,17,25,.3) 38%,rgba(36,35,47,.97) 80%)}
+.cb-porte-ico{display:grid;place-items:center;width:42px;height:42px;margin-bottom:auto;border-radius:13px;
+  background:rgba(18,17,25,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.cb-porte-t{display:flex;flex-direction:column;gap:2px;min-width:0;max-width:100%}
+.cb-porte-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:23px;line-height:1;letter-spacing:-.01em}
+.cb-porte-t small{font-size:11.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-porte .rf-pastille{position:absolute;top:10px;right:10px}
+.cb-porte-ico svg,.cb-petit-ico svg{display:block;fill:none;stroke:var(--deco-ink);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+.cb-porte-ico svg{width:30px;height:30px}
+.cb-porte-ico svg .f,.cb-petit-ico svg .f{fill:var(--deco-wash)}
+.cb-porte-ico svg .e,.cb-petit-ico svg .e{fill:var(--accent-soft);stroke:none}
+
+/* Le tutoriel, tant qu'il n'est pas fait : une tuile à lui, lumineuse, entre
+   le Raid et les portes. */
+.cb-tuto{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;min-height:64px;
+  padding:10px 12px 10px 76px;border:0;border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:linear-gradient(100deg,rgba(138,120,245,.34),rgba(138,120,245,.08) 60%),var(--surface);
+  box-shadow:inset 0 0 0 1px rgba(179,166,255,.55),0 0 22px -6px var(--accent-glow);transition:transform .18s var(--spring);
+  animation:cbTutoLueur 2.6s ease-in-out infinite}
+.cb-tuto:active{transform:scale(.98)}
+@keyframes cbTutoLueur{50%{box-shadow:inset 0 0 0 1px rgba(179,166,255,.9),0 0 30px -4px var(--accent-glow)}}
+.cb-tuto-art{position:absolute;left:0;top:0;bottom:0;width:66px;z-index:-1;background:var(--art) 50% 18%/240% auto no-repeat;
+  -webkit-mask-image:linear-gradient(90deg,#000 55%,transparent);mask-image:linear-gradient(90deg,#000 55%,transparent)}
+.cb-tuto-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.cb-tuto-t small{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-soft)}
+.cb-tuto-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:17px;line-height:1.1}
+.cb-tuto-t em{font-style:normal;font-size:11.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){.cb-tuto{animation:none}}
+
+/* Decks, Missions, Guide, Historique : quatre petites tuiles. */
+.cb-petits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cb-petit{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:80px;padding:9px 6px;border:0;
+  border-radius:var(--radius);font:inherit;color:var(--text);text-align:center;cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05);transition:transform .18s var(--spring),background .15s}
+.cb-petit:active{transform:scale(.96)}
+.cb-petit:hover,.cb-porte:hover{background-color:var(--surface-2)}
+.cb-petit-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--surface-2)}
+.cb-petit-ico svg{width:26px;height:26px}
+.cb-petit b{font-size:13px;font-weight:800}
+.cb-petit small{max-width:100%;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-petit .rf-pastille{position:absolute;top:8px;right:8px}
+
+/* Les pages : un retour, un titre. */
+.cb-sous{display:flex;align-items:center;gap:10px}
+.cb-retour{flex:none;display:grid;place-items:center;width:40px;height:40px;border:0;
+  border-radius:50%;cursor:pointer;color:var(--text);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.08)}
+.cb-retour svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;transform:rotate(90deg)}
+.cb-sous-t{flex:1;min-width:0}
+.cb-sous-t h1{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;line-height:1.05}
+.cb-sous-t p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.cb-intro{margin:0;font-size:13.5px;color:var(--subtle);line-height:1.45}
+.cb-jour-chip{display:flex;flex-direction:column;align-items:center;padding:5px 11px;border-radius:12px;line-height:1.1;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-jour-chip b{font-family:var(--display);font-weight:900;font-size:15px}
+.cb-jour-chip small{font-size:10px;color:var(--muted);font-weight:700}
+.cb-mgroupe h3{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 8px;font-size:15px}
+.cb-mgroupe h3 small{font-size:12px;font-weight:700;color:var(--muted)}
+
+/* Les plafonds du jour (Solo, Arcade, Versus) : des pastilles, et la règle
+   écrite une fois. */
+.cb-jour{padding:12px 14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-jour-l{display:flex;align-items:center;gap:10px}
+.cb-jour-l>b{flex:1;font-size:13.5px}
+.cb-jour-l>span.tnum{font-family:var(--display);font-weight:900;font-size:15px}
+.cb-jour p{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.cb-pips{display:inline-flex;gap:4px}
+.cb-pips i{width:10px;height:10px;border-radius:50%;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2)}
+.cb-pips i.on{background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
+
+/* Solo : deux grandes affiches, une par mode. */
+.cb-mode{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;gap:12px;min-height:196px;padding:16px;border:0;
+  border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface-2);
+  box-shadow:inset 0 0 0 1px var(--line),var(--tuile);transition:transform .18s var(--spring)}
+.cb-mode:active{transform:scale(.98)}
+.cb-mode-art{position:absolute;inset:0;z-index:-2;background:var(--art) 50% 20%/150% auto no-repeat}
+.cb-mode::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,0) 0,rgba(18,17,25,.35) 35%,rgba(24,23,33,.97) 78%)}
+.cb-mode.arcade::after{background:radial-gradient(70% 90% at 100% 0%,rgba(93,75,217,.4),transparent 70%),linear-gradient(180deg,rgba(18,17,25,0) 0,rgba(18,17,25,.35) 35%,rgba(24,23,33,.97) 78%)}
+.cb-mode-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cb-mode-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.cb-mode-t>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.05}
+.cb-mode-desc{font-size:12.5px;line-height:1.4;color:var(--subtle)}
+.cb-mode-prog{display:flex;align-items:center;gap:8px;margin-top:5px}
+.cb-mode-prog .cb-barre{flex:1;max-width:180px;margin:0;height:7px}
+.cb-mode-prog b{font-family:var(--display);font-weight:900;font-size:14px}
+.cb-mode-prog em{font-style:normal;font-size:12.5px;font-weight:800;color:var(--text)}
+.cb-mode .cb-une-go{align-self:flex-end}
+
+/* Choisir sa Section */
+.cb-choix{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:10px 0 24px}
+.cb-choix-tete small{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.cb-choix-tete h1{margin:4px 0 8px;font-family:var(--display);font-style:italic;font-weight:900;font-size:34px}
+.cb-choix-tete p{max-width:520px;margin:0 auto}
+.cb-secs{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:640px;margin-top:6px}
+.cb-vs{position:absolute;left:50%;top:38%;translate:-50% -50%;z-index:2;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;
+  font-family:var(--display);font-style:italic;font-weight:900;font-size:16px;color:#fff;background:var(--plate-2);box-shadow:0 0 0 3px var(--line-2),0 8px 20px rgba(0,0,0,.5)}
+.cb-sec{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px 16px;border:0;border-radius:var(--radius);
+  color:var(--text);font:inherit;cursor:pointer;
+  background:radial-gradient(100% 70% at 50% 0%,color-mix(in srgb,var(--sc) 35%,transparent),transparent 70%),var(--surface);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 45%,var(--line));transition:transform .2s,box-shadow .2s}
+.cb-sec:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 2px var(--sc),0 16px 34px color-mix(in srgb,var(--sc) 30%,transparent)}
+.cb-sec-boite{width:100%;max-width:220px;filter:drop-shadow(0 14px 24px rgba(0,0,0,.55));transition:transform .3s}
+.cb-sec:hover .cb-sec-boite{transform:rotate(-2deg) scale(1.03)}
+.cb-sec-txt{display:flex;flex-direction:column;gap:4px}
+.cb-sec-txt b{font-family:var(--display);font-style:italic;font-weight:900;font-size:18px;color:var(--sc2)}
+.cb-sec-txt small{font-size:12.5px;color:var(--subtle);line-height:1.35}
+.cb-sec-txt em{font-style:normal;font-size:11.5px;font-weight:800;color:var(--muted)}
+.cb-choix-pied{max-width:420px}
+.cb-choix>.btn.ghost{width:auto;padding-inline:20px}
+.cb-confirm{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.cb-confirm img{width:150px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
+
+.cb-barre{display:block;height:6px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin-top:6px}
+.cb-barre i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
+
+@media (max-width:560px){.cb-hero{margin-inline:-12px}}
+/* Sur téléphone, la Section et le niveau passent en haut à gauche : le titre,
+   penché, monte vers la droite — à droite, il finissait par passer sur le
+   badge de la Section (version 3.0.7). À gauche, il est à son plus bas. */
+@media (max-width:899px){.cb-hero-haut{left:16px;right:auto;flex-direction:row-reverse}}
+@media (max-width:380px){
+  .cb-hero-titre{font-size:50px}
+  .cb-porte-t b{font-size:20px}.cb-etape-t b{font-size:13px}
+  .cb-une{gap:10px}.cb-une-go{padding:10px 14px;font-size:13px}
+}
+/* Sur téléphone, l'accueil remplit l'écran, ni plus ni moins (version
+   3.0.7) : la page fait la hauteur de la zone entre l'en-tête et la barre du
+   bas, et les deux portes prennent ce qui reste — sur un grand écran, elles
+   grandissent au lieu de laisser un vide sous les petites tuiles. */
+@media (max-width:899px){
+  .cb.cb-v-accueil{min-height:calc(100dvh - var(--top-h) - env(safe-area-inset-top,0px) - 8px
+    - var(--nav-h) - env(safe-area-inset-bottom,0px) - 30px)}
+  .cb-v-accueil .cb-portes{flex:1 1 auto}
+}
+/* Un écran bas (moins de 720 px) : tout se resserre pour tenir sans défiler. */
+@media (max-height:720px) and (max-width:899px){
+  .cb-hero{height:calc(200px + env(safe-area-inset-top,0px))}.cb-hero-titre{font-size:46px;bottom:54px}
+  .cb-porte{min-height:96px}.cb-petit{min-height:58px;gap:2px}.cb-petit small{display:none}
+  .cb-petit-ico{width:30px;height:30px}.cb-petit-ico svg{width:22px;height:22px}
+  .rd-affiche{min-height:92px;padding:9px 12px}
+  .rd-affiche-t b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rd-affiche-t em{display:none}
+  .cb-porte-ico{width:36px;height:36px}.cb-porte-ico svg{width:26px;height:26px}
+  .cb-tuto{min-height:50px;padding-block:6px}.cb-tuto-t em{display:none}.cb-tuto-t b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* Sur ordinateur, le bandeau est une grande carte arrondie dans la colonne,
+   et les portes prennent de la hauteur. */
+@media (min-width:900px){
+  .cb-hero{height:330px;margin:0;border-radius:var(--radius-xl)}
+  .cb-hero-art{background-size:cover;background-position:50% 93%}
+  .cb-hero+.rd-affiche,.cb-hero+.cb-une{margin:-64px 20px 0;width:auto}
+  .cb-hero-haut{top:16px;right:18px}
+  .cb-hero-titre{font-size:76px;bottom:80px;left:30px}
+  .cb-une{margin:-64px 20px 0;width:auto}
+  .cb-portes{gap:14px}
+  .cb-porte{min-height:210px;padding:16px 18px}
+  .cb-porte-art{background-size:125% auto;background-position:50% 30%}
+  .cb-porte-t b{font-size:28px}
+  .cb-mode{min-height:230px;padding:22px}
+  .cb-acte-tete{padding-top:110px}
+}
+
+/* ---- La campagne ----
+   Les quatre actes en onglets ; l'acte choisi, sous un bandeau à l'image de
+   son boss ; ses cinq rivaux sur un chemin qui serpente. */
+.cb-actes-ong{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cb-acte-ong{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 9px;border:0;border-radius:var(--radius);font:inherit;color:var(--muted);cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-acte-ong small{font-size:11.5px;font-weight:800}
+.cb-acte-ong i{display:grid;place-items:center;height:18px;font-style:normal}
+.cb-acte-ong i b{font-family:var(--display);font-weight:900;font-size:13px;color:var(--text)}
+.cb-acte-ong svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.cb-acte-ong.fini i{color:var(--ok)}
+.cb-acte-ong.ferme{opacity:.45;cursor:not-allowed}
+.cb-acte-ong.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7),0 8px 20px -10px rgba(0,0,0,.5)}
+.cb-acte{border-radius:var(--radius-xl);overflow:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-acte-tete{position:relative;isolation:isolate;padding:58px 16px 14px;
+  background:linear-gradient(180deg,rgba(28,27,37,0),rgba(28,27,37,.6) 45%,var(--surface)),var(--art) 50% 22%/130% auto no-repeat,var(--surface-3)}
+.cb-acte-tete small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--accent-soft)}
+.cb-acte-tete h2{margin:2px 0 4px;font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;line-height:1.05;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.cb-acte-tete p{margin:0;font-size:13px;line-height:1.4;color:var(--subtle)}
+.cb-route{position:relative;margin:4px 0 6px}
+.cb-route-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.cb-route-svg path{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round}
+.cb-route-svg .fond{stroke:var(--line-3);stroke-width:3;stroke-dasharray:2 9}
+.cb-route-svg .fait{stroke:var(--accent-soft);stroke-width:3.5;filter:drop-shadow(0 0 6px rgba(138,120,245,.6))}
+.cb-etape{position:absolute;left:0;right:0;top:calc(var(--y) - 40px);height:80px;padding:0;border:0;background:none;font:inherit;color:var(--text);cursor:pointer;text-align:left}
+.cb-etape.ferme{cursor:default}
+.cb-etape-art{position:absolute;left:var(--x);top:50%;translate:-50% -50%;display:block;width:66px;height:66px;border-radius:50%;overflow:hidden;
+  background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--line-2),0 8px 18px rgba(0,0,0,.45)}
+.cb-etape-art img{width:100%;height:auto;margin-top:-12%;transform:scale(1.5);transform-origin:50% 20%}
+.cb-etape.boss .cb-etape-art,.cb-etape.final .cb-etape-art{width:80px;height:80px}
+.cb-etape.fait .cb-etape-art{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--ok),0 8px 18px rgba(0,0,0,.45)}
+/* La prochaine étape : son halo respire, derrière elle. Version 3.0.16 (le
+   propriétaire : « les icônes clignotent et laissent apparaître le tracé
+   derrière ») : l'animation faisait varier l'opacité de l'icône entière,
+   et le pointillé du chemin se voyait à travers. L'icône reste pleine. */
+.cb-etape.ouvert .cb-etape-art{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent-soft),0 8px 18px rgba(0,0,0,.45)}
+.cb-etape.ouvert::before{content:"";position:absolute;left:var(--x);top:50%;width:66px;height:66px;translate:-50% -50%;border-radius:50%;pointer-events:none;
+  box-shadow:0 0 28px 6px var(--accent-glow);animation:cb-halo 1.6s ease-in-out infinite}
+.cb-etape.ouvert.boss::before,.cb-etape.ouvert.final::before{width:80px;height:80px}
+@keyframes cb-halo{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.cb-etape.ouvert::before{animation:none}}
+html.rm .cb-etape.ouvert::before{animation:none}
+.cb-etape.ferme .cb-etape-art img{filter:grayscale(1) brightness(.4)}
+.cb-etape-t{position:absolute;top:50%;translate:0 -50%;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cb-etape.lbl-d .cb-etape-t{left:calc(var(--x) + 50px);right:8px;align-items:flex-start}
+.cb-etape.lbl-g .cb-etape-t{right:calc(100% - var(--x) + 50px);left:8px;align-items:flex-end;text-align:right}
+.cb-etape.lbl-b .cb-etape-t{top:calc(50% + 50px);translate:0 0;left:0;right:0;align-items:center;text-align:center}
+.cb-etape-t small{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cb-etape.boss .cb-etape-t small,.cb-etape.final .cb-etape-t small{color:var(--accent-soft)}
+.cb-etape-t b{font-size:14px;font-weight:800;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cb-etape-t em{font-style:normal;font-size:11.5px;color:var(--subtle)}
+.cb-etape.fait .cb-etape-t em{color:var(--ok)}
+.cb-etape.ferme .cb-etape-t{opacity:.55}
+.cb-coche{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,40,28,.45)}
+/* Un rival pas encore débloqué : une silhouette, un point d'interrogation. */
+.cb-mystere{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-family:var(--display);font-weight:900;font-size:26px;color:var(--muted);
+  background:radial-gradient(circle at 50% 38%,var(--surface-3) 0 22%,transparent 23%),radial-gradient(ellipse 60% 40% at 50% 100%,var(--surface-3) 0 98%,transparent 100%),var(--surface-2)}
+.cb-acte-tete.ferme{background:linear-gradient(180deg,rgba(28,27,37,0),var(--surface)),repeating-linear-gradient(135deg,var(--surface-2) 0 10px,var(--surface-3) 10px 20px)}
+/* Sur ordinateur, le chemin est centré dans l'acte (cette règle vient après
+   celle de .cb-route, qu'elle doit l'emporter). */
+@media (min-width:900px){.cb-acte .cb-route{max-width:620px;margin:8px auto 12px}}
+.cb-coche svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.cb-campagne-fin{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-lg);
+  background:linear-gradient(120deg,var(--gold-wash),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.cb-campagne-fin>.cwrap{width:78px;flex:none}
+.cb-campagne-fin small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--gold)}
+.cb-campagne-fin b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:18px}
+.cb-campagne-fin p{margin:3px 0 0}
+
+/* La fiche d'un rival */
+.cb-fiche{display:flex;gap:14px;align-items:flex-start}
+.cb-fiche-art{width:120px;flex:none}
+.cb-fiche-txt small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.cb-fiche-txt b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;margin:2px 0}
+.cb-fiche-txt p{margin:6px 0 0;font-size:13.5px}
+.cb-fiche-diff{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--text)}
+.cb-fiche-diff .etoiles i{width:15px;height:15px}
+.cb-regle{color:var(--subtle)}
+.cb-gain{color:var(--subtle)}
+.cb-choixdeck{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-fiche+.cb-choixdeck{margin-top:14px;background:var(--bg-2)}
+.cb-choixdeck-art{width:40px;flex:none}
+.cb-choixdeck>span:nth-child(2){flex:1;display:flex;flex-direction:column}
+.cb-choixdeck small{font-size:11px;color:var(--muted)}
+.cb-choixdeck .btn{width:auto;padding-inline:14px}
+.cb-decks-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.cb-deck-mini{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border:0;border-radius:var(--radius-sm);font:inherit;color:var(--text);cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-deck-mini.on{background:var(--surface-3);box-shadow:inset 0 0 0 2px rgba(255,255,255,.75)}
+.cb-deck-mini:disabled{opacity:.45;cursor:default}
+.cb-deck-mini>span{width:64px}
+.cb-deck-mini b{font-size:12px;text-align:center;line-height:1.2}
+.cb-deck-mini small{font-size:10.5px;color:var(--muted)}
+
+/* ---- L'Arcade ----
+   La difficulté choisie en grand ; les cinq en rangée, à choisir. */
+.cb-arc{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:14px;padding:18px 16px 16px;border-radius:var(--radius-xl);
+  background:radial-gradient(90% 80% at 50% 0%,rgba(138,120,245,calc(.12 + var(--i,.3) * .1)),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-arc.n1{--i:0}.cb-arc.n2{--i:.5}.cb-arc.n3{--i:1}.cb-arc.n4{--i:1.6}.cb-arc.n5{--i:2.4}
+.cb-arc-tete{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.cb-arc-tete small{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.cb-arc-tete>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:34px;line-height:1}
+.cb-arc-tete .etoiles i{width:22px;height:22px}
+.cb-arc-tete p{margin:2px 0 0;max-width:34ch;font-size:13px;line-height:1.4;color:var(--subtle)}
+.cb-arc-gains{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cb-arc-gains span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 6px;border-radius:var(--radius);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);text-align:center}
+.cb-arc-gains b{font-family:var(--display);font-weight:900;font-size:19px}
+.cb-arc-gains small{font-size:11px;color:var(--muted);line-height:1.25}
+.cb-arc-diffs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.cb-arc-diffs button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px;border:0;border-radius:var(--radius);font:inherit;color:var(--muted);cursor:pointer;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);transition:transform .18s var(--spring)}
+.cb-arc-diffs button b{font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;line-height:1;color:var(--text)}
+.cb-arc-diffs button small{font-size:10px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cb-arc-diffs button.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 2px rgba(255,255,255,.75),0 8px 20px -8px rgba(0,0,0,.5);transform:translateY(-2px)}
+.cb-lancer{font-size:17px}
+
+/* ---- Le Raid ----
+   Sur l'accueil : une affiche, le boss à droite fondu dans le noir. Sa page :
+   le boss, sa barre, les coffres, et un seul bouton. */
+.rd-affiche{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;min-height:118px;padding:14px;border:0;
+  border-radius:var(--radius-lg);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:#17151f;
+  box-shadow:inset 0 0 0 1px rgba(157,140,255,.26),var(--tuile);transition:transform .18s var(--spring)}
+.rd-affiche:active{transform:scale(.98)}
+/* À la une de l'accueil, elle mord sur le bandeau. */
+.cb-hero+.rd-affiche,.cb-hero+.cb-une{z-index:2;margin-top:-50px;box-shadow:inset 0 0 0 1px rgba(157,140,255,.3),var(--sh-3)}
+.rd-affiche-ph{font-size:12px;font-weight:800;color:var(--text)}
+.rd-affiche-art{position:absolute;top:0;bottom:0;right:0;width:68%;z-index:-2;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}
+.rd-affiche::after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(70% 120% at 0% 50%,rgba(93,75,217,.4),transparent 70%)}
+.rd-affiche-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rd-affiche-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.rd-affiche-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.05;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+.rd-affiche-t em{font-style:normal;font-size:12px;color:var(--subtle)}
+.rd-affiche .rf-pastille{position:absolute;top:10px;right:10px}
+.rd-pv{display:block;height:10px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.rd-pv i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d94b5c,var(--danger));box-shadow:0 0 12px rgba(255,107,107,.5)}
+.rd-pv.mini{max-width:170px;height:6px;margin:5px 0 3px}
+/* La page du Raid (refaite en 3.0.16 ; le propriétaire, 2 novembre 2026 :
+   « je le trouve encore bancal. rends le beau bordel et intuitif »). Trois
+   temps, dans l'ordre où on s'en sert : le boss et sa vie, ton combat du
+   jour (son bouton visible sans défiler sur un téléphone), les coffres ;
+   puis le classement et l'aide. */
+.rd-pv.infini i{background:linear-gradient(90deg,#7a68ec,var(--accent-soft));box-shadow:0 0 12px var(--accent-glow)}
+.rd{display:flex;flex-direction:column;gap:12px}
+.rd-sec-t{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
+.rd-sec-t h3{margin:0;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:18px;letter-spacing:-.01em}
+.rd-sec-t small{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.rd-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--text);
+  background:var(--glass);box-shadow:inset 0 0 0 1px var(--glass-line),var(--glass-hi);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.rd-tag svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.rd-ico svg:not(.shard),.rd-m-c>svg,.rd-pret-ico>svg:not(.shard),.rd-pm>svg:not(.shard),.rd-inf svg,.rd-gainico svg:not(.shard){fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* Le boss : une bande d'illustration (son nom, ce qu'il fait), puis sa vie. */
+.rd-hero{position:relative;overflow:hidden;border-radius:var(--radius-lg);background:var(--plate);box-shadow:var(--sh-3)}
+.rd-hero::after{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px var(--line-2)}
+.rd-hero-img{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;height:clamp(150px,41vw,230px);padding:14px 16px 6px}
+.rd-hero-art{position:absolute;inset:0;z-index:-2}
+.rd-hero-img::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(22,21,30,.4) 0%,rgba(22,21,30,0) 26%,rgba(22,21,30,.5) 58%,var(--plate) 100%),
+    linear-gradient(90deg,rgba(22,21,30,.55),rgba(22,21,30,0) 62%)}
+.rd-hero-haut{position:absolute;top:12px;left:12px;right:12px;display:flex;flex-wrap:wrap;gap:6px}
+.rd-tag-j{margin-left:auto}
+.rd-hero-nom h2{margin:0;font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:clamp(26px,7.4vw,36px);line-height:.98;letter-spacing:-.025em;
+  text-shadow:0 2px 18px rgba(0,0,0,.7)}
+.rd-hero-nom p{margin:5px 0 0;max-width:34em;font-size:12.5px;line-height:1.38;color:var(--subtle);text-shadow:0 1px 8px rgba(0,0,0,.85)}
+/* Sa vie : six tronçons, un par phase, chacun large des dégâts qu'il
+   demande. Le rouge, c'est ce qui lui reste ; ce que le serveur lui a pris
+   s'éteint, de gauche à droite, dans l'ordre des phases (le même que celui
+   des coffres plus bas). */
+.rd-vie{padding:8px 16px 16px}
+.rd-vie-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.rd-vie-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.rd-vie-t b{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-style:italic;font-weight:900;font-size:17px;white-space:nowrap}
+.rd-vie-t b>span:not(.rd-inf){font-family:var(--body);font-style:normal;font-weight:700;font-size:12.5px;color:var(--muted)}
+.rd-vie-barre{display:flex;gap:3px;height:24px;padding:3px;border-radius:999px;background:rgba(6,5,10,.85);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 0 2px 6px rgba(0,0,0,.6)}
+.rd-seg{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.05)}
+.rd-seg:first-child{border-radius:999px 4px 4px 999px}
+.rd-seg:last-child{border-radius:4px 999px 999px 4px}
+.rd-seg:only-child{border-radius:999px}
+.rd-seg i{position:absolute;top:0;right:0;bottom:0;background:linear-gradient(180deg,#ff9a85 0%,#f05a63 55%,#c93a50 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.rd-seg.plein i{background:linear-gradient(180deg,#d5606b,#9a3446)}
+.rd-seg em{position:relative;z-index:1;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:900;line-height:1;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.rd-seg em svg{width:12px;height:12px;fill:none;stroke:var(--accent-soft);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.rd-seg.encours{box-shadow:0 0 0 1.5px rgba(255,170,150,.85),0 0 14px rgba(255,107,107,.5)}
+.rd-seg.encours i{animation:rd-pouls 2.4s ease-in-out infinite}
+@keyframes rd-pouls{50%{opacity:.82}}
+.rd-vie.infini .rd-seg i{background:linear-gradient(180deg,#d6ceff 0%,#9a88ff 55%,#6f5ce6 100%)}
+.rd-vie.infini .rd-seg.encours{box-shadow:0 0 0 1.5px rgba(179,166,255,.8),0 0 16px var(--accent-glow)}
+.rd-inf{display:inline-grid;place-items:center;width:20px;height:20px;color:var(--deco-ink)}
+.rd-inf svg{width:100%;height:100%;stroke-width:2.2}
+.rd-vie-msg{margin:8px 0 0;font-size:12.5px;line-height:1.4;color:var(--subtle)}
+.rd-vie-msg b{color:var(--text)}
+
+/* Ton combat du jour : le boss face à toi, ton deck, un bouton. */
+.rd-combat{padding:14px 16px 14px;border-radius:var(--radius-lg);
+  background:radial-gradient(120% 90% at 0% 0%,rgba(255,107,107,.08),transparent 55%),radial-gradient(120% 90% at 100% 0%,rgba(157,140,255,.11),transparent 55%),var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line-2),inset 0 1px 0 rgba(255,255,255,.07),var(--sh-2)}
+.rd-combat-t{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.rd-combat-t h3{display:flex;flex-direction:column;min-width:0;margin:0;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:19px;line-height:1.05}
+.rd-combat-t h3 small{order:-1;margin-bottom:3px;font-family:var(--body);font-style:normal;font-weight:800;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.rd-tent{display:inline-flex;flex:none;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;color:var(--subtle);background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-pips{display:inline-flex;gap:4px}
+.rd-pips i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.14)}
+.rd-pips i.on{background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
+.rd-duel{display:grid;grid-template-columns:minmax(0,1.4fr) auto minmax(0,1fr);align-items:stretch;gap:8px;margin-bottom:10px}
+.rd-duel-l{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 10px;border-radius:var(--radius-sm);background:var(--bg-2)}
+.rd-duel-l.boss{box-shadow:inset 0 0 0 1px rgba(255,107,107,.3)}
+.rd-duel-l.moi{flex-direction:row-reverse;text-align:right;box-shadow:inset 0 0 0 1px rgba(157,140,255,.32)}
+.rd-duel-av{position:relative;flex:none;width:42px;height:42px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px rgba(255,107,107,.65),0 0 14px rgba(255,107,107,.3)}
+.rd-duel-l .ava{flex:none;width:42px;height:42px}
+.rd-duel-l>span:last-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rd-duel-l.moi>span:last-child{align-items:flex-end}
+.rd-duel-l b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1}
+.rd-duel-l small{font-size:11.5px;line-height:1.25;color:var(--subtle)}
+.rd-duel-l .etoiles i{width:12px;height:12px}
+.rd-duel-vs{align-self:center;font-family:var(--display);font-style:italic;font-weight:900;font-size:13px;letter-spacing:.02em;color:var(--muted)}
+.rd-combat .cb-choixdeck{padding:8px 8px 8px 10px;margin-bottom:10px;background:var(--bg-2)}
+.rd-combat .cb-choixdeck-art{width:30px}
+.rd-combat .cb-choixdeck>span:nth-child(2){min-width:0}
+.rd-combat .cb-choixdeck b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-gain{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);text-align:center}
+.rd-gain>span{display:block}
+.rd-gain b{color:var(--subtle)}
+
+/* Les blocs du dessous. */
+.rd-cof,.rd-top{padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
+
+/* Les coffres : ceux qui attendent, puis la piste commune et la tienne. */
+.rd-prets{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:8px}
+.rd-pret{display:flex;align-items:center;gap:12px;padding:9px 10px 9px 12px;border-radius:var(--radius-sm);background:var(--gold-wash);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.rd-pret-ico{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:50%;color:var(--gold-light);background:rgba(245,196,81,.12);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.rd-pret-ico>img,.rd-pret-ico>svg{width:20px;height:20px}
+.rd-pret>span:nth-child(2){flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.rd-pret small{font-size:11.5px;color:var(--muted)}
+.rd-pret b{font-size:14px;line-height:1.3}
+.rd-plus{font-style:normal;font-size:12px;font-weight:800;color:var(--gold)}
+.rd-pret .btn{flex:none;width:auto;padding-inline:16px}
+/* La piste commune : sept médaillons sur un fil, qui se remplit jusqu'à la
+   phase en cours. */
+.rd-piste-c{--p:0;position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:start}
+.rd-piste-c::before,.rd-piste-c::after{content:"";position:absolute;top:17px;left:calc(100% / 14);height:2px;border-radius:2px}
+.rd-piste-c::before{right:calc(100% / 14);background:rgba(255,255,255,.1)}
+.rd-piste-c::after{width:calc((100% - 100% / 7) * var(--p));background:var(--accent-soft);box-shadow:0 0 8px var(--accent-glow)}
+.rd-m{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.rd-m-c{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;color:var(--subtle);background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1px var(--line-2)}
+.rd-m-c>img,.rd-m-c>svg{width:18px;height:18px}
+.rd-m em{font-style:normal;font-size:11px;font-weight:800;line-height:1;color:var(--muted)}
+.rd-m.final .rd-m-c{width:42px;height:42px;margin:-3px 0;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--gold-line),0 0 14px rgba(245,196,81,.18)}
+.rd-m.fait .rd-m-c{color:var(--deco-ink);background:#2e2a48;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--accent-soft)}
+.rd-m.fait em{color:var(--accent-soft)}
+.rd-m.pret .rd-m-c{color:var(--gold-light);background:#3a3122;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--gold),0 0 14px rgba(245,196,81,.45)}
+.rd-m.pret em{color:var(--gold)}
+.rd-m.encours .rd-m-c{color:var(--text);background:#3a2129;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px #ff9a85,0 0 14px rgba(255,107,107,.4)}
+.rd-m.encours em{color:#ffb4a6}
+.rd-m.avenir .rd-m-c>*{opacity:.5}
+.rd-m.infini .rd-m-c{color:var(--deco-ink)}
+.rd-m.infini .rd-m-c>svg{width:22px;height:22px}
+.rd-m.infini.encours .rd-m-c{background:#2e2a48;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--accent-soft),0 0 16px var(--accent-glow)}
+.rd-m.infini.encours em{color:var(--deco-ink)}
+.rd-prochain{margin:12px 0 0;font-size:12.5px;line-height:1.45;color:var(--subtle)}
+.rd-prochain b{color:var(--text)}
+/* La tienne : tes dégâts, et tes trois coffres personnels sur une barre. */
+.rd-moi{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.rd-moi-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rd-moi-t>b{font-size:14px;font-weight:800}
+.rd-moi-t>span{font-size:12.5px;color:var(--muted);text-align:right}
+.rd-moi-t>span b{color:var(--text)}
+.rd-moi-t sup{font-size:.7em}
+.rd-piste{position:relative;height:8px;margin:22px 14px 20px;border-radius:999px;background:rgba(255,255,255,.08);box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+.rd-piste-f{position:absolute;left:0;top:0;bottom:0;border-radius:inherit;background:var(--progress);box-shadow:0 0 12px var(--accent-glow)}
+.rd-pm{position:absolute;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;display:grid;place-items:center;border-radius:50%;color:var(--subtle);background:var(--surface-3);box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1px var(--line-2)}
+.rd-pm>img,.rd-pm>svg{width:15px;height:15px}
+.rd-pm.fait{color:var(--deco-ink);background:#2e2a48;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--accent-soft)}
+.rd-pm.pret{color:var(--gold-light);background:#3a3122;box-shadow:0 0 0 3px var(--surface),inset 0 0 0 1.5px var(--gold),0 0 12px rgba(245,196,81,.4)}
+.rd-pm:last-child{margin-left:-28px}
+.rd-moi .rd-prochain{margin-top:0}
+.rd-gainico svg,.rd-gainico img{width:46px;height:46px}
+
+/* Le classement : des lignes serrées, toi en couleur. */
+.rd-cl{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.rd-cl li{display:grid;grid-template-columns:22px auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;padding:5px 10px;border-radius:var(--radius-sm)}
+.rd-cl li:nth-child(odd){background:var(--bg-2)}
+.rd-cl li.moi{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+.rd-cl-r{font-family:var(--display);font-style:italic;font-weight:900;font-size:15px;text-align:center;color:var(--muted)}
+.rd-cl-r.r1{color:var(--gold)}
+.rd-cl-r.r2{color:#d9dce6}
+.rd-cl-r.r3{color:#e3a774}
+.rd-cl .ava{width:32px;height:32px}
+.rd-cl li>b{min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-cl li>.tnum{font-size:13.5px;font-weight:800;white-space:nowrap}
+.rd-cl li>.tnum small{font-size:11.5px;font-weight:600;color:var(--muted)}
+/* Le même classement, dans l'onglet du Choc (sans le bloc autour). */
+.ch-classement .rd-top,.rf-page>.rd-top{padding:0;background:none;box-shadow:none}
+
+/* L'aide : trois lignes. */
+.rd-aide{padding:14px 16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.rd-aide summary{cursor:pointer;font-weight:800}
+.rd-aide ul{margin:10px 0 0;padding-left:18px;display:grid;gap:8px;font-size:13px;line-height:1.45;color:var(--subtle)}
+@media (prefers-reduced-motion:reduce){.rd-seg i{transition:none}.rd-seg.encours i{animation:none}}
+
+/* Dans l'onglet du Choc, sous la grande tête de l'événement : la bande du
+   boss se resserre, pour que le bouton tienne dans l'écran. */
+@media (max-width:899px){
+  .ch .rd-hero-img{height:clamp(100px,26vw,140px)}
+  .ch .rd-hero-nom p{display:none}
+  .ch .rd-hero-nom h2{font-size:clamp(24px,6.6vw,30px)}
+}
+/* Un écran bas : la bande du boss se resserre, pour que le bouton tienne. */
+@media (max-height:700px) and (max-width:899px){
+  .rd{gap:10px}
+  .rd-hero-img{height:118px}
+  .rd-hero-nom p{display:none}
+  .rd-hero-nom h2{font-size:25px}
+  .rd-vie{padding-bottom:12px}
+  .rd-combat-t{margin-bottom:10px}
+}
+/* Un petit téléphone : le face-à-face se resserre. */
+@media (max-width:380px){
+  .rd-duel{gap:6px}
+  .rd-duel-l{gap:8px;padding:8px}
+  .rd-duel-av,.rd-duel-l .ava{width:36px;height:36px}
+  .rd-duel-l b{font-size:17px}
+  .rd-m-c{width:32px;height:32px}
+  .rd-m.final .rd-m-c{width:38px;height:38px}
+  .rd-piste-c::before,.rd-piste-c::after{top:15px}
+}
+
+/* Sur ordinateur : le boss à gauche, ton combat à droite ; dessous, les
+   coffres à droite et le classement à gauche ; l'aide sur toute la largeur. */
+@media (min-width:900px){
+  .rd{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+  .rd>*{grid-column:1/-1}
+  .rd>.rd-hero{grid-column:1;grid-row:1;align-self:stretch;display:flex;flex-direction:column}
+  .rd>.rd-hero>.rd-hero-img{flex:1;height:auto;min-height:250px;padding:20px 22px 8px}
+  .rd>.rd-hero>.rd-vie{padding:8px 22px 20px}
+  .rd>.rd-combat{grid-column:2;grid-row:1;align-self:stretch;display:flex;flex-direction:column;justify-content:space-between;padding:18px 20px}
+  .rd>.rd-cof{grid-column:2;grid-row:2}
+  .rd>.rd-top{grid-column:1;grid-row:2}
+  .rd>.rd-aide{grid-row:3}
+  .rd-hero-nom h2{font-size:42px}
+}
+
+/* Les défis */
+.cb-bloc{padding:14px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06)}
+.cb-bloc h3{margin:0 0 10px;font-size:15px}
+.cb-bloc h4{margin:14px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cb-defi{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.cb-defi:first-of-type{border-top:0}
+.cb-defi>span:nth-child(2){flex:1;display:flex;flex-direction:column;min-width:0}
+.cb-defi small{font-size:12px;color:var(--muted)}
+.cb-defi-act{display:flex;gap:6px}
+
+/* Les decks */
+.cb-ko{color:#ffb4aa}
+.cb-deck-ess{display:flex;align-items:center;gap:2px;font-size:11px;color:var(--subtle)}
+.cb-deck-ess i{font-style:normal;margin-right:5px;font-weight:800}
+.cb-cosms{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.cb-cosms.tapis{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))}
+.cb-cosm{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px;border:0;border-radius:var(--radius-sm);font:inherit;color:var(--text);cursor:pointer;
+  background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.cb-cosm.on{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.8)}
+.cb-cosm b{font-size:11px;text-align:center;line-height:1.15}
+.cb-cosm-img{position:relative;display:block;width:100%;border-radius:8px;overflow:hidden}
+.cb-cosm.tapis .cb-cosm-img{aspect-ratio:9/16}
+.cb-cosm.sleeve .cb-cosm-img{aspect-ratio:63/88}
+.cb-cosm-img img{width:100%;height:100%;object-fit:cover;display:block}
+.cb-tapis-base{display:block;width:100%;height:100%;background:url('../assets/pack-star.svg?v=23cf86') center/40% no-repeat,radial-gradient(ellipse at 50% 50%,rgba(140,120,255,.4),transparent 70%),linear-gradient(180deg,var(--plate-2),var(--plate))}
+.cb-cosm.verrou .cb-cosm-img img,.cb-cosm.verrou .cb-tapis-base{filter:grayscale(.7) brightness(.55)}
+.cb-cosm-prix{position:absolute;left:50%;bottom:6px;translate:-50% 0;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:999px;
+  font-style:normal;font-size:10.5px;font-weight:900;background:rgba(18,17,25,.85);white-space:nowrap}
+.cb-cosm-prix .shard{width:11px;height:11px;color:var(--brand-light)}
+.cb-cosm-prix.ev{max-width:94%;overflow:hidden;text-overflow:ellipsis;font-size:9.5px;background:rgba(93,75,217,.9)}
+.cb-brillantes{display:flex;flex-wrap:wrap;gap:6px}
+.cb-br{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);opacity:.4}
+.cb-br.eue{opacity:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 0 12px rgba(255,255,255,.35);
+  background:conic-gradient(from 0deg,rgba(255,124,200,.35),rgba(255,199,59,.35),rgba(85,230,166,.35),rgba(57,184,255,.35),rgba(179,140,255,.35),rgba(255,124,200,.35))}
+.cb-br .ess{width:20px;height:20px}
+.cb-liste-deck{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:50vh;overflow:auto}
+.cb-ld{position:relative}
+.cb-ld i{position:absolute;right:2px;bottom:2px;font-style:normal;font-size:11px;font-weight:900;padding:1px 6px;border-radius:999px;background:rgba(18,17,25,.9);color:#fff}
+.oftapis{width:58%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;box-shadow:0 8px 18px rgba(0,0,0,.5)}
+.ofsleeve{width:56%;border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.5)}
+.a3d-tapis{width:min(56vw,230px);aspect-ratio:9/16;border-radius:18px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.6)}
+.a3d-tapis img,.a3d-sleeve img{width:100%;height:100%;object-fit:cover;display:block}
+.a3d-sleeve{width:min(46vw,190px);border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.6)}
+
+/* ============ L'atelier de decks (refait en 3.0.13) ============ */
+/* « Très peu accessible, beaucoup de texte entassé » (le propriétaire, le
+   31 octobre). Une tête collée en haut de l'écran — le nom, Enregistrer, et
+   trois onglets dont deux portent leur jauge —, une ligne pour la prochaine
+   étape, puis un seul contenu à la fois sur téléphone.
+   Ce qui défile, c'est <main>, et sa marge intérieure tient déjà compte de
+   l'en-tête du site : les positions collantes se comptent depuis cette
+   marge (top négatif). */
+.at{display:flex;flex-direction:column;gap:10px}
+.at-haut{position:sticky;top:-8px;z-index:5;display:flex;flex-direction:column;gap:6px;padding:6px;margin-inline:-6px;
+  border-radius:22px;background:var(--glass-solid);box-shadow:inset 0 0 0 1px var(--line-2),inset 0 1px 0 rgba(255,255,255,.05),var(--sh-3)}
+.at-tete{display:flex;align-items:center;gap:2px}
+.at-retour,.at-menu{display:grid;place-items:center;width:36px;height:44px;flex:none;border:0;border-radius:50%;
+  background:transparent;color:var(--subtle);cursor:pointer}
+.at-retour:hover,.at-menu:hover{background:var(--hover);color:var(--text)}
+.at-retour svg{width:22px;height:22px;transform:rotate(90deg);fill:none;stroke:currentColor;stroke-width:2.2}
+.at-menu svg{width:22px;height:22px;fill:currentColor}
+/* Le nom se modifie sur place : le crayon le dit, juste après le nom
+   (field-sizing : le champ prend la largeur de son texte ; sans lui, sa
+   largeur par défaut), et s'efface pendant la saisie. */
+.at-nomlab{flex:1;min-width:0;display:flex;align-items:center;gap:2px;cursor:text}
+.at-nom{flex:0 1 auto;min-width:4ch;max-width:100%;field-sizing:content;font:inherit;font-family:var(--display);font-style:italic;font-weight:900;font-size:16px;color:var(--text);
+  padding:9px 4px;border:0;border-radius:10px;background:transparent;text-overflow:ellipsis}
+.at-nom:hover{background:var(--hover)}
+.at-nom:focus{outline:none;background:var(--bg-2);box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.at-nomlab>svg{flex:none;width:14px;height:14px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linejoin:round;pointer-events:none}
+.at-nom:focus+svg{opacity:0}
+/* Enregistrer : discret tant que rien n'a changé, l'action principale ensuite. */
+.at-tete .at-sauver{flex:none;min-height:40px;padding:8px 12px;margin-left:2px;background:rgba(255,255,255,.085);color:var(--subtle);text-shadow:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.08)}
+@media (max-width:380px){.at-tete .at-sauver{padding-inline:10px}}
+.at.modifie .at-tete .at-sauver{background:var(--cta);color:var(--on-accent);box-shadow:inset 0 1px 0 var(--gloss),0 8px 20px -8px var(--accent-glow)}
+
+/* Les trois onglets. Le choisi est clair, comme partout (docs/design-3.0.md) ;
+   une jauge pleine passe au vert. */
+.at-onglets{display:grid;grid-template-columns:.8fr 1.1fr 1.1fr;gap:4px;padding:3px;border-radius:16px;background:var(--bg-2)}
+.at-tab{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;min-height:50px;padding:7px 10px;border:0;border-radius:13px;
+  font:inherit;text-align:left;color:var(--muted);background:none;cursor:pointer}
+.at-tab:hover:not(.on){background:var(--hover);color:var(--subtle)}
+.at-tab.on{color:var(--text);background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),var(--sh-1)}
+.at-tab>b{display:flex;align-items:baseline;justify-content:space-between;gap:6px;font-size:13.5px;font-weight:800;white-space:nowrap}
+.at-tab>b>span{font-size:12px;font-weight:800;color:var(--subtle)}
+.at-tab.on>b>span{color:var(--text)}
+.at-tab.plein>b>span{color:var(--ok)}
+.at-tab>small{font-size:11.5px;font-weight:700;color:var(--muted)}
+.at-barre{display:block;height:6px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.1)}
+.at-barre>i{display:block;height:100%;border-radius:inherit;background:var(--progress);transition:width .25s ease-out}
+.at-tab.plein .at-barre>i{background:var(--ok)}
+.at-pastilles{display:flex;gap:3px}
+.at-pastilles>i{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.1)}
+.at-pastilles>i[style]{background:var(--ec)}
+
+/* La prochaine étape : une ligne. */
+.at-etape{display:flex;align-items:center;gap:10px;min-height:40px;margin:0 2px}
+.at-etape>p{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0;font-size:13.5px;color:var(--subtle)}
+.at-etape b{color:var(--text)}
+.at-etape .ok{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--ok)}
+.at-etape .ok svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6}
+.at-etape .ko{color:var(--warn);font-weight:700}
+.at-lien{padding:4px 0;border:0;background:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--accent-soft);cursor:pointer;
+  text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.at-lien:hover{color:var(--text)}
+/* Sur téléphone, l'onglet Réserve dit lui-même ce qui reste à faire (la
+   ligne de ce qu'il y a dans les attaques, et son bouton) : la ligne d'étape
+   y ferait doublon, et pousserait les neuf tuiles sous la barre du bas. */
+@media (max-width:899px){.at.ong-reserve .at-etape{display:none}}
+
+/* Un seul contenu à la fois sur téléphone. */
+.at-corps.ong-cartes .at-cote{display:none}
+.at-corps.ong-deck .at-cartes,.at-corps.ong-deck .at-res{display:none}
+.at-corps.ong-reserve .at-cartes,.at-corps.ong-reserve .at-deck{display:none}
+
+/* ---- Cartes ---- */
+.at-filtres{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.at-cherche{display:flex;gap:8px}
+.at-cherche input{flex:1;min-width:0;font:inherit;font-size:15px;padding:11px 14px;border:0;border-radius:12px;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.at-cherche input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.at-filtrer{flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 14px;min-height:44px;border:0;border-radius:12px;font:inherit;font-size:13.5px;font-weight:800;
+  color:var(--subtle);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.at-filtrer svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.at-filtrer.on{color:var(--text);background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.at-filtrer i{font-style:normal;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;font-size:11px;color:var(--plate);background:#fff}
+.at-filtres-l{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.at-filtres-l:not(.ouvert){display:none}
+.at-f-ligne{display:grid;grid-template-columns:62px minmax(0,1fr);align-items:center;gap:8px}
+.at-f-t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.at-bascule{display:inline-flex;align-items:center;gap:9px;min-height:32px;padding:0;border:0;font:inherit;font-size:12.5px;font-weight:700;color:var(--subtle);background:none;cursor:pointer}
+.at-bascule i{position:relative;width:32px;height:18px;flex:none;border-radius:999px;background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2);transition:background .15s}
+.at-bascule i::after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.at-bascule.on{color:var(--text)}
+.at-bascule.on i{background:var(--accent)}
+.at-bascule.on i::after{transform:translateX(14px);background:#fff}
+.at-trisel{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted)}
+.at-trisel select{height:32px;padding:0 30px 0 12px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:700;color:var(--text);cursor:pointer;-webkit-appearance:none;appearance:none;
+  background:var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c4c1d6' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 10px center/14px no-repeat;
+  box-shadow:inset 0 0 0 1px var(--line)}
+@media (max-width:360px){.at-f-ligne{grid-template-columns:54px minmax(0,1fr)}}
+.at-filtres-bas{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+/* La cote d'une carte : cinq barres qui montent. */
+.at-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;touch-action:pan-x}
+.at-chips::-webkit-scrollbar{display:none}
+.at-chip{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:34px;height:32px;padding:0 12px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:700;
+  color:var(--subtle);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer;transition:background .15s,color .15s}
+.at-chip:hover{color:var(--text)}
+.at-chip.e{width:32px;min-width:32px;padding:0}
+.at-chip .ess{width:20px;height:20px}
+.at-chip.on{color:#15141c;background:var(--text);box-shadow:none}
+.at-chip.e.on{background:var(--surface-3);box-shadow:inset 0 0 0 2px var(--text)}
+.at-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:14px 10px}
+.at-carte{position:relative;display:flex;flex-direction:column;gap:4px}
+.at-carte-c{padding:0;border:0;background:none;cursor:pointer;border-radius:8px;transition:transform .12s}
+.at-carte-c:active{transform:scale(.96)}
+.at-carte-c[aria-disabled="true"]{cursor:not-allowed}
+.at-carte-c[aria-disabled="true"] .cwrap{filter:brightness(.55)}
+.at-carte.absente .cwrap{filter:grayscale(1) brightness(.45)}
+/* Une carte du deck : choisie, donc blanche (docs/design-3.0.md). */
+.at-carte.dedans .cwrap{box-shadow:0 0 0 2px rgba(255,255,255,.85),var(--sh-2)}
+.at-n{position:absolute;top:-7px;right:-7px;z-index:2;display:grid;place-items:center;min-width:26px;height:26px;padding:0 7px;border-radius:999px;
+  font-weight:900;font-size:13px;color:var(--plate);background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:none}
+.at-moins{position:absolute;top:-7px;left:-7px;z-index:2;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:50%;
+  font-weight:900;font-size:17px;line-height:1;color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2),0 2px 6px rgba(0,0,0,.5);cursor:pointer}
+.at-moins:hover{background:var(--danger);color:#fff}
+.at-info{display:flex;align-items:center;gap:4px;min-height:28px;font-size:12px;font-weight:700;color:var(--muted)}
+.at-info .at-poss{flex:1}
+.at-i{display:grid;place-items:center;width:28px;height:28px;flex:none;border:0;border-radius:50%;font:inherit;font-size:12px;font-weight:900;font-style:italic;
+  color:var(--subtle);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.at-i:hover{color:var(--text);background:var(--surface-3)}
+.at-vide{grid-column:1/-1;text-align:center;padding:20px}
+
+/* ---- Le Club ---- */
+.at-bilan{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2px 10px;width:100%;margin-bottom:12px;padding:10px 12px;border:0;border-radius:14px;
+  font:inherit;color:var(--text);text-align:left;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.at-bilan:hover{background:var(--surface-2)}
+.at-bilan b{font-size:14px}
+.at-bilan small{grid-column:1/3;font-size:12px;color:var(--subtle)}
+.at-bilan svg{grid-row:1/3;grid-column:3;width:16px;height:16px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
+.at-groupe{margin-bottom:12px}
+.at-groupe h4{margin:4px 2px 6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.at-groupe h4 i{font-style:normal;color:var(--text)}
+.at-ligne{position:relative;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 6px;margin-bottom:4px;border-radius:12px;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.at-ligne-art{width:50px;height:40px;flex:none;border-radius:8px;background:var(--art) 50% 22%/cover no-repeat,var(--surface-3)}
+.at-ligne-art:not([style*="http"]){background:linear-gradient(135deg,var(--sc,#9a73ff),var(--plate))}
+.at-ligne-nom{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.at-ligne-nom b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-ligne-nom small{font-size:11.5px;line-height:1.3;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-ligne-act{display:flex;align-items:center;gap:2px}
+.at-ligne-act button{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:10px;font:inherit;font-weight:900;font-size:17px;
+  color:var(--text);background:var(--surface-2);cursor:pointer}
+.at-ligne-act button:hover{background:var(--surface-3)}
+.at-ligne-act b{min-width:20px;text-align:center;font-size:14px}
+.at-etoile{color:var(--muted)!important;font-size:15px!important;background:transparent!important}
+.at-etoile.on{color:#fff!important}
+.at-ligne.couv{box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+.at-deckvide{display:flex;flex-direction:column;align-items:center;gap:8px;padding:28px 16px;text-align:center;border-radius:var(--radius);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.at-deckvide p{margin:0;color:var(--subtle)}
+.at-deckvide .btn{width:auto;padding-inline:20px;margin-top:4px}
+
+/* ---- La Réserve ---- */
+/* Neuf tuiles en trois colonnes : la couleur se lit d'un coup d'œil, et la
+   Réserve tient dans l'écran (en liste, elle débordait de 300 px sur 375 × 667). */
+.at-reserve{display:flex;flex-direction:column;gap:10px}
+.at-res-dit{margin:0 2px;font-size:13.5px;line-height:1.45;color:var(--subtle)}
+.at-res-dit b{color:var(--ec);font-weight:800;white-space:nowrap}
+.at-res-auto{width:100%}
+.at-res-vide{margin:0 2px;font-size:13px;color:var(--muted)}
+.at-res-ok{display:flex;align-items:center;gap:6px;margin:0 2px;font-size:13px;font-weight:700;color:var(--ok)}
+.at-res-ok svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.6}
+.at-ess{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.at-e{display:flex;flex-direction:column;gap:3px;padding:8px 7px 7px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.at-e.on{background:linear-gradient(180deg,color-mix(in srgb,var(--ec) 16%,transparent),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1.5px var(--ec)}
+.at-e.besoin:not(.on){box-shadow:inset 0 0 0 1.5px var(--warn)}
+.at-e-t{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px}
+.at-e-t .ess{width:24px;height:24px;flex:none}
+.at-e-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1}
+.at-e:not(.on) .at-e-t b{color:var(--muted)}
+.at-e-nom{padding:0 2px;font-size:12.5px;font-weight:700;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-e-act{display:flex;gap:4px;margin-top:2px}
+.at-e-act button{flex:1;display:grid;place-items:center;height:32px;border:0;border-radius:10px;font:inherit;font-weight:900;font-size:18px;color:var(--text);background:var(--surface-2);cursor:pointer}
+.at-e-act button:hover:not(:disabled){background:var(--surface-3)}
+.at-e-act button:disabled{opacity:.3;cursor:default}
+/* Écran bas (375 × 667) : les symboles suffisent, comme dans les filtres ;
+   le nom reste dit aux lecteurs d'écran (aria-label de la tuile). */
+@media (max-height:700px) and (max-width:899px){.at-e-nom{display:none}.at-e{gap:6px}}
+
+/* ---- L'analyse, à l'écran sur ordinateur (vAtAnalyse) ---- */
+.at-analyse{display:none}
+.at-an-tete{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.at-an-tete b{font-size:14.5px}
+.at-an-tete small{margin-left:auto;font-size:12px;color:var(--muted)}
+.at-an-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.at-an-l li{display:flex;align-items:flex-start;gap:8px}
+.at-an-l li>i{display:grid;place-items:center;width:18px;height:18px;flex:none;margin-top:1px;border-radius:50%;font-style:normal;font-size:11px;font-weight:900;color:#1a1a22;background:var(--warn)}
+.at-an-l li.ok>i{background:var(--ok)}
+.at-an-l li.ko>i{color:#fff;background:var(--danger)}
+.at-an-l li>i svg{width:11px;height:11px;fill:none;stroke:#0e2a20;stroke-width:3.2}
+.at-an-l span{display:flex;flex-direction:column;min-width:0}
+.at-an-l b{font-size:12.5px}
+.at-an-l small{font-size:11.5px;line-height:1.3;color:var(--muted)}
+.at-analyse .at-stats{margin-top:10px;padding:10px;background:var(--bg-2)}
+
+/* ---- L'analyse, dans la feuille du bilan (ouvrirBilan, js/battle.js) ---- */
+.at-stats{display:flex;flex-direction:column;gap:10px;margin-top:14px;padding:12px;border-radius:var(--radius);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.at-types{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
+.t-joueur{background:#e0628f}.t-objet{background:#d39a2e}.t-coach{background:#4b98dc}.t-moment{background:#8a78f5}
+.at-legende{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--subtle)}
+.at-legende span{display:inline-flex;align-items:center;gap:5px}
+.at-legende i{width:9px;height:9px;border-radius:3px}
+.at-courbe>small{font-size:12px;color:var(--muted)}
+.at-courbe>div{display:flex;align-items:flex-end;gap:10px;height:72px;margin-top:6px}
+.at-courbe span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%}
+.at-courbe span i{display:block;width:100%;min-height:2px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--deco-ink),var(--accent-deep))}
+.at-courbe span b{font-size:11.5px}
+.at-courbe span small{font-size:10.5px;color:var(--muted)}
+.at-stats p{margin:0}
+
+/* ---- Sur ordinateur : les cartes à gauche, le Club et la Réserve à droite ---- */
+/* Les jauges remplacent les onglets (rien à cliquer : tout est à l'écran). */
+.at-jauges{display:none}
+@media (min-width:900px){
+  .at-onglets{display:none}
+  .at-jauges{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:8px 12px 10px;border-radius:16px;background:var(--bg-2)}
+  .at-jauge{display:flex;flex-direction:column;gap:7px}
+  .at-jauge>b{display:flex;align-items:baseline;justify-content:space-between;font-size:13.5px;font-weight:800;color:var(--subtle)}
+  .at-jauge>b>span{font-size:12.5px;color:var(--text)}
+  .at-jauge.plein>b>span{color:var(--ok)}
+  .at-jauge.plein .at-barre>i{background:var(--ok)}
+  .at-filtrer{display:none}
+  .at-filtres-l:not(.ouvert){display:flex}
+  .at-bilan{display:none}
+  .at-analyse{display:block;margin-bottom:14px;padding:12px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+  .at-grille{grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:12px 8px}
+  .at-corps{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+  .at-corps .at-cartes,.at-corps .at-cote,.at-corps .at-deck,.at-corps .at-res{display:block!important}
+  .at-cote{position:sticky;top:132px;max-height:calc(100dvh - 260px);overflow:auto;overscroll-behavior:contain;padding:2px 4px 2px 2px;
+    scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  .at-res{margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+  .at-res::before{content:'Réserve';display:block;margin:0 2px 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+}
+
+/* ============ Les guides ============ */
+/* L'accueil du Guide : trois groupes de chapitres, du plus simple au plus fin. */
+.gd-groupe h3{margin:4px 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.gd-liste{display:flex;flex-direction:column;gap:6px}
+.gd-entree{display:flex;align-items:center;gap:12px;padding:11px 12px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);text-align:left;cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
+.gd-entree:hover{box-shadow:inset 0 0 0 1px var(--line-3)}
+.gd-entree-t,.gd-entree>span:last-of-type:not(.gd-num):not(.gd-ico){flex:1;min-width:0;display:flex;flex-direction:column}
+.gd-entree small{font-size:12px;color:var(--muted)}
+.gd-entree>svg{transform:rotate(-90deg);width:18px;height:18px;color:var(--muted);fill:none;stroke:currentColor;stroke-width:2}
+.gd-entree.lu .gd-ico{color:var(--muted);background:var(--surface-2)}
+.gd-lu{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;color:var(--ok);background:var(--ok-wash)}
+.gd-lu svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gd-num{display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:50%;font-size:12px;font-weight:900;color:var(--muted);background:var(--bg-2)}
+.gd-ico{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:var(--radius-sm);color:var(--deco-ink);background:var(--deco-wash)}
+.gd-ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gd-ico svg.ico-star{fill:currentColor;stroke:none}
+.gd{display:flex;flex-direction:column;gap:12px}
+.gd-avance{display:block;height:5px;margin-top:6px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
+.gd-avance i{display:block;height:100%;border-radius:inherit;background:var(--progress)}
+.gd-page{padding:16px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.06);line-height:1.55}
+.gd-page header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.gd-page h2{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:24px}
+.gd-page h3{margin:18px 0 6px;font-size:16px}
+.gd-page p,.gd-page li{font-size:14.5px;color:var(--subtle)}
+.gd-page b{color:var(--text)}
+.gd-page ul,.gd-page ol{padding-left:20px;margin:8px 0}
+.gd-page li{margin:4px 0}
+.gd-lead{font-size:16px!important;color:var(--text)!important}
+.gd-etapes{list-style:none;padding:0!important;counter-reset:gd}
+.gd-etapes li{position:relative;padding-left:34px;counter-increment:gd}
+.gd-etapes li::before{content:counter(gd);position:absolute;left:0;top:1px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;
+  font-size:12px;font-weight:900;color:#1d0a40;background:var(--deco-ink)}
+.gd-note{padding:10px 12px;border-radius:12px;background:var(--deco-wash);color:var(--text)!important;font-size:13.5px!important}
+.gd-types{display:flex;flex-direction:column;gap:8px}
+.gd-types>div{padding:10px 12px;border-radius:12px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.gd-types small{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.gd-types p{margin:4px 0 0}
+.gd-duel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gd-duel>div{padding:10px 12px;border-radius:12px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.gd-duel p{margin:4px 0 0;font-size:13.5px}
+.gd-kw{padding:10px 12px;margin-bottom:6px;border-radius:12px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.gd-kw b{color:#ffd7f0}
+.gd-kw p{margin:3px 0 0}
+.gd-voc{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0}
+.gd-voc dt{font-weight:800;color:var(--text);font-size:13.5px}
+.gd-voc dd{margin:0;font-size:13.5px;color:var(--subtle)}
+.gd-maison li{color:var(--text)}
+.gd-schema{margin:14px 0;padding:14px;border-radius:var(--radius);background:linear-gradient(180deg,var(--plate-2),var(--plate));box-shadow:inset 0 0 0 1px var(--line-2);text-align:center}
+.gd-camp{display:flex;justify-content:center;gap:14px}
+.gd-camp i{width:38px;aspect-ratio:63/88;border-radius:5px;background:linear-gradient(160deg,#ff9a9a,#b53a3a);box-shadow:0 4px 10px rgba(0,0,0,.5)}
+.gd-camp.moi i{background:linear-gradient(160deg,var(--accent-soft),var(--accent-deep))}
+.gd-camp i.eng{transform:rotate(90deg) scale(.8)}
+.gd-camp i.vide{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.25)}
+.gd-ligne-milieu{position:relative;height:30px;display:grid;place-items:center}
+.gd-ligne-milieu::before{content:"";position:absolute;left:10%;right:10%;top:50%;height:1px;background:rgba(255,255,255,.3)}
+.gd-ligne-milieu span{position:relative;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);background:var(--plate);padding:0 8px}
+.gd-schema p{margin:10px 0 0;font-size:12.5px!important}
+.gd-suite{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gd-voisin{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:0;border-radius:var(--radius);font:inherit;color:var(--text);cursor:pointer;
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.gd-voisin.prec{align-items:flex-start;text-align:left}
+.gd-voisin.suiv{grid-column:2;align-items:flex-end;text-align:right;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--accent-wash-2)}
+.gd-voisin small{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.gd-voisin b{font-size:14px}
+.gd-surcouche{position:absolute;inset:0;z-index:35;display:flex;justify-content:center;background:rgba(8,7,12,.9);overflow:auto;padding:16px;animation:fadein .2s}
+.gd-surcouche-in{width:min(560px,100%);display:flex;flex-direction:column;gap:10px;padding-top:env(safe-area-inset-top,0px)}
+.gd-surcouche-in>header{display:flex;align-items:center;justify-content:space-between}
+.gd-surcouche-in>header b{font-family:var(--display);font-style:italic;font-size:20px}
+.gd-surcouche .gd-page{color:var(--text)}
+
+/* ============ L'onglet Decks ============ */
+/* Deux volets (les decks, l'apparence) ; le deck actif en grand, avec sa
+   note ; les autres en lignes ; puis ce qui fait un bon deck. */
+.dk-seg{display:flex;gap:2px;padding:4px;margin-bottom:12px;border-radius:999px;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line)}
+.dk-seg button{flex:1;padding:9px 6px;border:0;border-radius:999px;font:inherit;font-weight:800;font-size:13.5px;color:var(--muted);background:none;cursor:pointer}
+.dk-seg button.on{color:var(--text);background:rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),var(--sh-1)}
+.dk-actif{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;min-height:170px;padding:16px;
+  border-radius:var(--radius-xl);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);background:var(--surface)}
+.dk-actif-art{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,.1) 0%,rgba(18,17,25,.55) 45%,rgba(24,23,33,.97) 85%),var(--art) 50% 22%/cover no-repeat}
+.dk-actif-t{flex:1 1 200px;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.dk-actif-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.dk-actif-t>b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dk-actif-act{display:flex;gap:8px}
+.dk-note{display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 8px;border:0;border-radius:999px;font:inherit;font-size:12.5px;font-weight:800;color:var(--text);
+  background:rgba(18,17,25,.65);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);cursor:pointer}
+.dk-note svg{width:12px;height:12px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
+.dk-note.petit{padding:2px 8px 2px 6px;font-size:11.5px;background:var(--bg-2);align-self:flex-start}
+/* Sur l'illustration du deck actif, les Essences de la Réserve prennent la
+   même pastille que la note : à 11 px sur une image, l'icône disparaissait. */
+.dk-actif .cb-deck-ess{padding:3px 10px 3px 7px;border-radius:999px;font-size:12.5px;color:var(--text);
+  background:rgba(18,17,25,.65);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.dk-actif .cb-deck-ess .ess{width:16px;height:16px}
+.dk-actif .cb-deck-ess i:last-child{margin-right:0}
+.dk-actif .cb-deck-ess:empty{display:none}
+.dk-etoiles{display:inline-flex;gap:2px}
+.dk-etoiles i{width:11px;height:11px;background:var(--surface-3);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.dk-etoiles i.on{background:var(--accent-soft)}
+.dk-etoiles i.demi{background:linear-gradient(90deg,var(--accent-soft) 50%,var(--surface-3) 50%)}
+.dk-boutons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+.dk-nouveau{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:0;border-radius:var(--radius);font:inherit;font-weight:800;font-size:13.5px;
+  color:var(--subtle);background:transparent;box-shadow:inset 0 0 0 1.5px var(--line-2);cursor:pointer}
+.dk-nouveau span{display:grid;place-items:center;width:20px;height:20px;font-size:20px;line-height:1}
+.dk-nouveau svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}
+.dk-sous{margin:14px 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.dk-liste{display:flex;flex-direction:column;gap:8px}
+.dk-ligne{display:flex;align-items:center;gap:12px;padding:8px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.05)}
+.dk-ligne-art{width:58px;height:58px;flex:none;padding:0;border:0;border-radius:12px;cursor:pointer;background:var(--art) 50% 22%/cover no-repeat,var(--surface-3)}
+.dk-ligne-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.dk-ligne-t>b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-ligne-t>small{font-size:12px;color:var(--muted)}
+.dk-ligne-act{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.dk-bon{margin-top:14px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.dk-bon summary{display:flex;align-items:center;gap:12px;padding:12px;list-style:none;cursor:pointer}
+.dk-bon summary::-webkit-details-marker{display:none}
+.dk-bon summary>span:nth-child(2){flex:1;display:flex;flex-direction:column}
+.dk-bon summary b{font-size:14.5px}
+.dk-bon summary small{font-size:12px;color:var(--muted)}
+.dk-bon summary>svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;transition:transform .2s}
+.dk-bon[open] summary>svg{transform:rotate(180deg)}
+.dk-bon-ico{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:12px;color:var(--deco-ink);background:var(--deco-wash)}
+.dk-bon-ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.dk-bon-assist{margin:10px 0 6px;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.45;color:var(--subtle);background:var(--accent-wash);box-shadow:inset 0 0 0 1px rgba(179,166,255,.25)}
+.dk-bon-assist b{color:var(--text)}
+.dk-bon-l{margin:0;padding:0 14px 0 34px;display:flex;flex-direction:column;gap:8px}
+.dk-bon-l li{font-size:13px;line-height:1.45}
+.dk-bon-l li b{display:block}
+.dk-bon-l li span{color:var(--subtle)}
+.dk-bon>p{margin:10px 14px 14px}
+.dk-bilan-tete{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-weight:800}
+.dk-bilan-tete .dk-etoiles i{width:16px;height:16px}
+.dk-bilan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.dk-bilan li{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.dk-bilan li>i{display:grid;place-items:center;width:24px;height:24px;flex:none;border-radius:50%;font-style:normal;font-weight:900;font-size:13px}
+.dk-bilan li.ok>i{color:var(--ok);background:var(--ok-wash)}
+.dk-bilan li.presque>i{color:var(--warn);background:rgba(255,184,77,.14)}
+.dk-bilan li.ko>i{color:var(--danger);background:rgba(255,107,107,.14)}
+.dk-bilan li>i svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6}
+.dk-bilan li span{display:flex;flex-direction:column;gap:2px}
+.dk-bilan li b{font-size:13.5px}
+.dk-bilan li small{font-size:12px;line-height:1.4;color:var(--subtle)}
+/* ============ Le Guide en glossaire (version 3.0.6) ============ */
+.gd-tuto{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;gap:12px;width:100%;min-height:150px;padding:16px;border:0;
+  border-radius:var(--radius-xl);font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.gd-tuto-art{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(18,17,25,.15),rgba(18,17,25,.6) 45%,rgba(24,23,33,.97) 88%),var(--art) 50% 18%/cover no-repeat}
+.gd-tuto-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.gd-tuto-t small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.gd-tuto.fait .gd-tuto-t small{color:var(--accent-soft)}
+.gd-tuto-t b{font-family:var(--display);font-style:italic;font-weight:900;font-size:24px;line-height:1.05}
+.gd-tuto-t em{font-style:normal;font-size:12.5px;color:var(--subtle)}
+.gd-cherche{position:sticky;top:-8px;z-index:4;margin:12px 0 6px;padding:6px 0;background:linear-gradient(var(--bg) 70%,transparent)}
+.gd-cherche input{width:100%;font:inherit;font-size:15px;padding:11px 14px;border:0;border-radius:12px;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.gd-cherche input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent-soft)}
+.gd-abc{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}
+.gd-abc a{display:grid;place-items:center;min-width:28px;height:28px;border-radius:8px;font-size:12px;font-weight:800;color:var(--subtle);text-decoration:none;background:var(--surface)}
+.gd-lettre h3{margin:14px 0 6px;font-family:var(--display);font-style:italic;font-size:20px;color:var(--accent-soft)}
+.gd-lettre dl{margin:0;display:flex;flex-direction:column;gap:6px}
+.gd-mot{padding:10px 12px;border-radius:var(--radius);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.gd-mot dt{font-weight:800;font-size:14px}
+.gd-mot dd{margin:2px 0 0;font-size:13px;line-height:1.45;color:var(--subtle)}
+.gd-voir{display:inline;padding:0;margin-left:4px;border:0;background:none;font:inherit;font-size:12px;font-weight:800;color:var(--accent-soft);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.gd-rien{text-align:center;padding:16px}
+/* Version 3.0.7 : Règles et Glossaire, deux onglets sous le tutoriel. */
+.gd-ong{margin:14px 0 4px}
+.gd-ong button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gd-regles-tete{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:13px;color:var(--muted)}
+.gd-regles-tete b{color:var(--text);font-family:var(--display);font-weight:900}
+.gd-regles-tete .btn{width:auto;max-width:100%;padding-inline:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Sur ordinateur, quand la tuile du tutoriel est là, les portes cèdent sa
+   hauteur : l'accueil tient toujours sans défiler. */
+@media (min-width:900px){
+  .cb-tuto+.cb-portes .cb-porte{min-height:150px}
+}
+/* Version 3.0.12 : un écran d'ordinateur de moins de 900 px de haut. À
+   1280 × 800, l'accueil dépassait de 75 px (de 99 avec la tuile du
+   tutoriel) : le bandeau et les portes rapetissent. */
+@media (min-width:900px) and (max-height:900px){
+  .cb-hero{height:250px}
+  .cb-hero-titre{font-size:62px;bottom:74px}
+  .cb-porte{min-height:170px}
+  .cb-tuto+.cb-portes .cb-porte{min-height:116px}
+}
+/* Version 3.0.12 : sur téléphone, la tuile du tutoriel ajoute 90 px. Jusqu'à
+   800 px de haut, l'accueil prend alors la forme resserrée des écrans bas
+   (à 360 × 740, il dépassait de 78 px). */
+@media (max-height:800px) and (max-width:899px){
+  .cb-v-accueil:has(.cb-tuto) .cb-hero{height:calc(200px + env(safe-area-inset-top,0px))}
+  .cb-v-accueil:has(.cb-tuto) .cb-hero-titre{font-size:46px;bottom:54px}
+  .cb-v-accueil:has(.cb-tuto) .cb-porte{min-height:96px}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit{min-height:58px;gap:2px}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit small{display:none}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit-ico{width:30px;height:30px}
+  .cb-v-accueil:has(.cb-tuto) .cb-petit-ico svg{width:22px;height:22px}
+  .cb-v-accueil:has(.cb-tuto) .rd-affiche{min-height:92px;padding:9px 12px}
+  .cb-v-accueil:has(.cb-tuto) .rd-affiche-t b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cb-v-accueil:has(.cb-tuto) .rd-affiche-t em{display:none}
+  .cb-v-accueil:has(.cb-tuto) .cb-tuto{min-height:50px;padding-block:6px}
+  .cb-v-accueil:has(.cb-tuto) .cb-tuto-t em{display:none}
+}
+
+/* ============ L'historique des combats (version 3.0.12) ============ */
+/* Le bilan des trente derniers, puis une ligne par combat : V ou D, le
+   visage de l'adversaire, le mode, quand et en combien de tours. Une ligne
+   s'ouvre sur son déroulé, tour par tour (js/combat/historique.js). */
+.hc-bilan{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hc-bilan span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 6px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.hc-bilan b{font-family:var(--display);font-weight:900;font-size:20px;line-height:1.1}
+.hc-bilan small{font-size:11px;color:var(--muted);font-weight:700}
+.hc-liste{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.hc-l{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px 12px 8px 8px;border:0;border-radius:var(--radius);
+  font:inherit;color:var(--text);text-align:left;cursor:pointer;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.04);transition:transform .18s var(--spring),background .15s}
+.hc-l:hover{background:var(--surface-2)}
+.hc-l:active{transform:scale(.985)}
+.hc-res{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;font-family:var(--display);font-weight:900;font-size:14px}
+.hc-l.v .hc-res{color:var(--ok);background:var(--ok-wash);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.hc-l.d .hc-res{color:var(--danger);background:var(--danger-wash);box-shadow:inset 0 0 0 1px var(--danger-line)}
+.hc-l .ava{flex:none}
+.hc-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hc-t b,.hc-t small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-t b{font-size:14px;font-weight:800}
+.hc-t small{font-size:11.5px;color:var(--muted)}
+.hc-d{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:11px;color:var(--muted)}
+.hc-d small:last-child{color:var(--subtle);font-weight:700}
+
+/* Le déroulé, dans une feuille. Un tour par bloc : le sien sur un filet
+   lavande, celui de l'adversaire sur un filet rouge, comme les deux camps
+   de l'arène. */
+.hc-fiche{display:flex;flex-direction:column;gap:8px}
+.hc-tete{display:flex;align-items:center;gap:12px}
+.hc-tete>span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.hc-tete b{font-size:16px;font-weight:800}
+.hc-tete small{font-size:12px;color:var(--muted)}
+.hc-tete small:last-child::first-letter{text-transform:uppercase}
+.hc-chiffres{margin:2px 0 0;font-size:13px;font-weight:700;color:var(--subtle)}
+.hc-fiche>.muted{margin:0}
+.hc-tours{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.hc-tour{padding:8px 10px 9px 12px;border-radius:var(--radius-sm);background:var(--surface);box-shadow:inset 3px 0 0 var(--accent-soft),inset 0 0 0 1px var(--line)}
+.hc-tour.lui{box-shadow:inset 3px 0 0 var(--danger),inset 0 0 0 1px var(--line)}
+.hc-tour.mise{box-shadow:inset 3px 0 0 var(--line-3),inset 0 0 0 1px var(--line)}
+.hc-tour h4{display:flex;align-items:baseline;gap:6px;margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hc-tour h4 small{font-size:11px;letter-spacing:0;text-transform:none;color:var(--text)}
+.hc-tour ul{display:flex;flex-direction:column;gap:3px;margin:0;padding:0;list-style:none}
+.hc-tour li{font-size:13px;line-height:1.4;color:var(--subtle)}
+.hc-tour li i{font-style:normal;font-weight:700;color:var(--text)}
+.hc-tour li b{font-weight:700;color:var(--text)}
+.hc-tour li.mal{color:var(--danger)}
+.hc-tour li.bien{color:var(--ok)}
+.hc-tour li.sys{margin-top:2px;font-weight:800;color:var(--text)}
+
+/* Montrer un deck sur son profil (3.0.13) : un interrupteur discret ; montré,
+   il porte une coche (un état, pas une action). */
+.dk-montre{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 10px;border:0;border-radius:999px;
+  font:inherit;font-size:11.5px;font-weight:800;color:var(--subtle);background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px var(--line-2);cursor:pointer}
+.dk-montre svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.dk-montre.on{color:var(--text);background:rgba(79,214,160,.12);box-shadow:inset 0 0 0 1px rgba(79,214,160,.45)}
+.dk-montre.on svg{stroke:var(--ok)}
+
+/* La fiche d'un Starter qu'on ne peut pas encore dupliquer (3.0.14) : ce
+   qui manque, en une tuile douce. */
+.cb-starter-manque{margin:10px 0 0;padding:10px 12px;border-radius:var(--radius-sm);background:var(--surface-2);
+  color:var(--subtle);font-size:13px;line-height:1.45}
+.cb-starter-manque b{display:block;color:var(--text);margin-bottom:2px}
+
+
+/* ============ Les clés d'un deck (3.0.15) ============ */

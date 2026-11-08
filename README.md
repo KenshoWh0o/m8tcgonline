@@ -189,6 +189,8 @@ Contrôle après coup : `git diff --stat origin/main~1 origin/main` ne liste que
 - **Le faux serveur** (`M8` dans `_demo/serveur.js`) : **douze joueurs simulés** au lieu de quatre (`BOTS_M8` : profils complets, Section, Étincelles, combats, decks montrés tirés dans leur couleur, `Decks.aleatoire`), pour que les classements, l'événement et le Raid vivent comme sur un serveur d'une dizaine de joueurs ; pas d'invitations (article et quêtes) ; **la chasse à la carte unique encore ouverte** ; un texte d'événement et une annonce sans version ; Kairo, le premier échange et le premier défi arrivent plus tôt.
 - Comme la pré-prod : stockage préfixé `demo:`, base IndexedDB `premier-lobby-demo`, pas de service worker, `noindex`, le visiteur administrateur. Pas de bandeau ; le titre est « Mate TCG Online · Démo » ; les marques de cache ne gardent que l'empreinte (`?v=<empreinte>`, sans le numéro de version).
 
+**Le tutoriel des combats, seul** (`python3 tools/demo.py --tuto`, sortie `tuto/`, suivie sur la branche comme `preprod/` pour rester en ligne après la sortie, publiée à `matetcg.com/tuto/` ; le propriétaire, 8 novembre 2026 : « juste le tuto, avec le même deck tout le temps ») : le jeu avec le faux serveur, ouvert à tous (ni code, ni Labo), et `_demo/tuto.js` chargé après `js/app.js` : un accueil (Commencer ou Rejouer, le Discord), puis le tutoriel (`js/combat/tutoriel.js` : les mêmes Clubs à chaque partie, le joueur s'appelle « Toi ») ; ni en-tête, ni onglets, ni fenêtres, ni notifications ; stockage `tuto:`. Vérifié dans Chromium : une partie complète gagnée à 390 × 844, l'accueil sans défilement à 390 × 844, 375 × 667 et 360 × 740.
+
 **La démo autonome en zip** (`python3 tools/demo.py` sans option, avec son `_demo/LISEZMOI.txt`) a été **retirée le 2 novembre 2026** à la demande du propriétaire : la démo en ligne la remplace. Sans option, le script s'arrête et rappelle les deux qui restent. Les réglages de départ du faux serveur (pseudo, Éclats offerts, rythme des boosters, échelle du Raid), communs à la pré-prod et à la démo, sont dans `_demo/reglages.js`.
 
 ### 2.7 Le jour d'une sortie en production
@@ -318,6 +320,7 @@ On peut aussi mettre en maintenance avant le jour J, pour l'annoncer avec un mes
 ├── _sources/              Images d'origine des visuels générés (non publié)
 ├── presse/                Kit presse : visuels, polices, mode d'emploi
 ├── preprod/               La pré-prod CONSTRUITE (ne jamais l'éditer à la main)
+├── tuto/                  Le tutoriel des combats seul CONSTRUIT (tools/demo.py --tuto), publié à matetcg.com/tuto/
 └── demo/                  La démo de Gentle Mates CONSTRUITE (tools/demo.py --demo), non versionnée ici (.gitignore), reportée sur main
 ```
 

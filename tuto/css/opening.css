@@ -1,0 +1,252 @@
+/* Ouverture plein écran : pile 3D, charge, révélation, godpack, récap. */
+/* ============ Théâtre (ouverture plein écran) ============ */
+#theater{position:fixed;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;color:#fff;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  background:radial-gradient(90% 52% at 50% 30%,rgba(140,120,255,.24) 0%,transparent 68%),linear-gradient(180deg,#17161f,#0a090e)}
+#theater[hidden]{display:none}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+.th-stage{position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:66px 16px 34px;overflow:hidden}
+.th-top{position:absolute;top:14px;left:50%;translate:-50% 0;z-index:3;width:min(100% - 32px,540px);display:flex;
+  justify-content:space-between;align-items:center;gap:8px}
+.th-count{font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.06em;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 14px}
+.th-test{font-size:10.5px;font-weight:800;letter-spacing:.08em;background:var(--r-l);color:#1a1205;padding:4px 10px;border-radius:999px}
+.th-skip{background:none;border:0;color:rgba(255,255,255,.62);font-weight:700;font-size:13px}
+.th-skip:hover{color:#fff}
+.stackwrap{position:relative;padding:34px 0 14px;perspective:1400px}
+.stack3d{position:relative;z-index:2;perspective:1000px}
+.scard .cwrap{box-shadow:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.stack{position:relative;width:min(430px,76vw,50vh);aspect-ratio:63/88;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;
+  transform-style:preserve-3d;will-change:transform}
+.scard{position:absolute;inset:0;transform-origin:50% 90%;transform-style:preserve-3d;transform:translateZ(calc(var(--z) * -7px));
+  transition:transform .3s cubic-bezier(.2,1,.3,1)}
+/* État « dans le paquet » puis retour à zéro : c'est cette seule transition qui sort les cartes,
+   alignées, et les ramène face au joueur. */
+.stack3d{transition:transform calc(1.15s * var(--rk,1)) cubic-bezier(.2,.86,.26,1)}
+/* La pile tassée doit tenir entière derrière le paquet : à 17 %, son bas
+   dépassait de quelques pixels sous le sachet, et la bordure crème des cartes
+   se voyait comme un petit rectangle blanc pendant la déchirure. À 11 %, il
+   reste une vingtaine de pixels de marge en bas sur téléphone, et le haut des
+   cartes reste bien sous la ligne de déchirure. */
+.packed .stack3d{transform:translateY(11%) scale(.82) rotateX(-16deg)}
+.sheen{position:absolute;inset:0;border-radius:5.5%/3.94%;pointer-events:none;opacity:0;overflow:hidden}
+.hitcard .sheen{opacity:1;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.8) 50%,transparent 65%);background-size:300% 100%;
+  animation:sweep 1.1s .1s ease-out both}
+@keyframes sweep{from{background-position:120% 0}to{background-position:-60% 0}}
+/* Une Reverse : un éclat nacré à son arrivée, qui retombe en halo doux. */
+.scard.revhit .cwrap{box-shadow:none;animation:revhit .95s ease-out both}
+@keyframes revhit{
+  0%{filter:brightness(1.3) drop-shadow(0 0 0 rgba(255,140,210,0))}
+  35%{filter:brightness(1.08) drop-shadow(0 0 14px rgba(255,140,210,.85)) drop-shadow(0 0 28px rgba(127,216,255,.55))}
+  100%{filter:drop-shadow(0 0 9px rgba(179,140,255,.55))}}
+html.rm .scard.revhit .cwrap{animation:none;filter:drop-shadow(0 0 9px rgba(179,140,255,.55))}
+.scard.hitcard.hR .cwrap{box-shadow:none;filter:drop-shadow(0 0 8px rgba(57,184,255,.95)) drop-shadow(0 0 22px rgba(57,184,255,.95))}
+.scard.hitcard.hE .cwrap{box-shadow:none;filter:drop-shadow(0 0 10px rgba(160,92,255,.95)) drop-shadow(0 0 26px rgba(160,92,255,.95))}
+.scard.hitcard.hL .cwrap{box-shadow:none;filter:drop-shadow(0 0 12px rgba(255,199,59,1)) drop-shadow(0 0 32px rgba(255,199,59,1))}
+
+/* carte voilée et charge */
+.scard.veiled .card>*{filter:blur(12px) saturate(1.2)}
+@keyframes breathe{50%{scale:1.025}}
+/* --tilt est posé par bindStack() : plus on incline la pile, plus la tranche du hit s'allume. */
+.scard.veiled .cwrap{box-shadow:none;filter:drop-shadow(0 0 calc(var(--tilt,0) * 22px) rgba(255,255,255,.9))}
+.scard.veiled .sheen{opacity:calc(var(--tilt,0) * .85);
+  background:linear-gradient(100deg,transparent 32%,rgba(255,255,255,.7) 50%,transparent 68%)}
+.scard.charging .cwrap,.scard.final.charging .cwrap{box-shadow:none;filter:drop-shadow(0 0 12px var(--rc)) drop-shadow(0 0 30px var(--rc))}
+.scard.charging{animation:breathe .45s ease-in-out infinite}
+.charge-L .scard.charging{animation-duration:.3s}
+.charge-ring{position:absolute;left:50%;top:50%;width:460px;height:460px;margin:-230px 0 0 -230px;border-radius:50%;opacity:0;pointer-events:none;
+  background:radial-gradient(circle,var(--rc,#fff) 0%,transparent 62%);transition:opacity .4s}
+.th-stage.charging .charge-ring{opacity:.42;animation:pulse .7s ease-in-out infinite}
+.th-stage.charge-E.charging .charge-ring{animation-duration:.5s;opacity:.52}
+.th-stage.charge-L.charging .charge-ring{animation-duration:.35s;opacity:.68;width:620px;height:620px;margin:-310px 0 0 -310px}
+@keyframes pulse{50%{transform:scale(1.12)}}
+.th-stage.charge-L.charging{background:radial-gradient(circle at 50% 45%,rgba(255,199,59,.3),transparent 60%)}
+/* Voile plein écran des éclairs de révélation ; les classes flash-* l'allument. */
+.th-stage::after{content:'';position:fixed;inset:0;pointer-events:none;opacity:0;z-index:40}
+.th-stage.flash-R::after{background:radial-gradient(circle,rgba(200,240,255,.8),transparent 70%);animation:flash .4s ease-out}
+.th-stage.flash-E::after{background:radial-gradient(circle,rgba(246,220,255,.95),rgba(160,92,255,.4) 50%,transparent 80%);animation:flash .55s ease-out}
+.th-stage.flash-L::after{background:radial-gradient(circle,#fff 0%,rgba(255,230,140,.95) 35%,rgba(255,199,59,.5) 60%,transparent 85%);animation:flash .8s ease-out}
+@keyframes flash{12%{opacity:1}100%{opacity:0}}
+.op-rar{position:relative;z-index:2;font-family:var(--display);font-stretch:110%;font-weight:900;font-style:italic;font-size:18px;min-height:1.6em;
+  display:flex;align-items:center;gap:9px}
+.op-rar.rC,.op-rar.rPC,.op-rar.rES{color:rgba(255,255,255,.6)}
+.op-rar.rR{color:var(--r-r)}.op-rar.rE{color:#c79bff}.op-rar.rL{color:var(--r-l)}
+.op-rar em{font-style:normal;font-family:var(--body);font-size:10.5px;font-weight:900;letter-spacing:.08em;background:var(--brand);
+  color:#fff;padding:3px 10px;border-radius:999px;box-shadow:0 0 14px rgba(137,54,255,.55)}
+.op-rar.big{font-size:38px;font-stretch:125%}
+.op-rar.big.rL .slam{background:linear-gradient(180deg,#fff6d0,#ffc73b 55%,#e08a00);-webkit-background-clip:text;background-clip:text;
+  color:transparent;filter:drop-shadow(0 3px 0 rgba(120,60,0,.6))}
+.slam{display:inline-block;animation:slam .55s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes slam{0%{transform:scale(3.2) rotate(-6deg);opacity:0}60%{opacity:1}}
+.op-hint{position:relative;z-index:2;color:rgba(255,255,255,.55);font-size:12.5px;font-weight:600;margin-top:2px;min-height:1.2em}
+
+/* ============ Godpack ============ */
+/* Rien ne le trahit tant que le paquet est fermé : c'est la lumière qui en sort qui l'annonce.
+   Pas de mot, pas d'écran, pas de surbrillance carte par carte — juste la scène qui s'embrase. */
+.th-stage.god.lit{background:radial-gradient(circle at 50% 42%,rgba(255,199,59,.2),transparent 62%)}
+.th-stage.god .stack3d{transition:transform 1.15s cubic-bezier(.2,.86,.26,1),filter 1.3s ease-out}
+.th-stage.god.lit .stack3d{filter:drop-shadow(0 0 32px rgba(255,199,59,.55))}
+/* Rayons lents, qui n'apparaissent qu'une fois le paquet ouvert. */
+.godaura{position:absolute;left:50%;top:50%;width:200%;aspect-ratio:1;translate:-50% -50%;pointer-events:none;opacity:0;z-index:0;
+  background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.55) 0 5deg,transparent 5deg 14deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
+  animation:spinaura 30s linear infinite;transition:opacity 1.5s ease-out}
+.lit .godaura{opacity:.22}
+@keyframes spinaura{to{rotate:360deg}}
+/* Nappe de lumière : elle jaillit de la fente, puis se pose autour de la pile et y reste. */
+.godwash{position:absolute;left:50%;top:32%;width:0;aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;opacity:0;z-index:1;
+  background:radial-gradient(circle,rgba(255,244,205,.95),rgba(255,199,59,.45) 30%,rgba(255,130,0,.12) 56%,transparent 72%);
+  transition:width 1.6s cubic-bezier(.16,.85,.3,1),top 1.6s ease-out,opacity 1.4s ease-out}
+.rip-open .godwash{width:300%;opacity:.9}
+.rip-pull .godwash{width:235%;top:48%;opacity:.5}
+
+/* Récap. Version 3.0 : il tient dans l'écran, sans défiler, du petit
+   téléphone à l'ordinateur. La page prend toute la hauteur ; la grande carte
+   prend ce qui reste une fois le reste posé (container query sur `.rc-hero`),
+   et les six cartes du paquet tiennent sur une seule rangée. Sur un écran
+   trop bas pour tout porter (paysage), la page défile, comme avant. */
+.recap{position:relative;height:100%;min-height:560px;display:flex;flex-direction:column;align-items:center;
+  padding:12px 14px 14px}
+.rc-head{text-align:center;flex:none}
+.rc-kicker{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.rc-setlogo{display:block;width:auto;height:clamp(34px,7dvh,64px);max-width:56vw;margin:6px auto 0;animation:slam .6s cubic-bezier(.2,1.5,.4,1) both;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
+.rc-hero{position:relative;flex:1 1 0;min-height:150px;width:100%;margin:10px 0 2px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;container-type:size}
+.rc-halo{position:absolute;top:50%;left:50%;width:360px;height:360px;margin:-200px 0 0 -180px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,var(--hc) 0%,transparent 60%);opacity:.8}
+.rc-hero{--hc:rgba(255,255,255,.28)}
+.rc-hero.rR{--hc:rgba(57,184,255,.5)}.rc-hero.rE{--hc:rgba(160,92,255,.55)}.rc-hero.rL{--hc:rgba(255,199,59,.65)}
+/* La carte : 0,716 de large pour 1 de haut ; 42 px sous elle pour l'étiquette. */
+.rc-best{position:relative;width:min(250px,60vw,calc((100cqh - 42px) * .716));background:none;border:0;padding:0;
+  animation:herocard .8s .1s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes herocard{from{transform:translateY(40px) scale(.6) rotate(-10deg);opacity:0}}
+.rc-hero.rL .rc-best .cwrap{box-shadow:none;filter:drop-shadow(0 0 10px rgba(255,199,59,.95)) drop-shadow(0 0 28px rgba(255,199,59,.95))}
+.rc-hero.rE .rc-best .cwrap{box-shadow:none;filter:drop-shadow(0 0 9px rgba(160,92,255,.9)) drop-shadow(0 0 24px rgba(160,92,255,.9))}
+.rc-hero.rR .rc-best .cwrap{box-shadow:none;filter:drop-shadow(0 0 8px rgba(57,184,255,.9)) drop-shadow(0 0 20px rgba(57,184,255,.9))}
+.rc-bestlabel{position:relative;display:flex;gap:8px;align-items:center;margin-top:10px}
+.rc-tag{font-family:var(--display);font-weight:900;font-style:italic;font-size:13px;background:#fff;color:#12111a;padding:5px 13px;border-radius:999px}
+.rc-tag.rR{background:var(--r-r)}.rc-tag.rE{background:#b67dff}.rc-tag.rL{background:var(--r-l)}
+.rc-bestlabel em{font-style:normal;font-weight:900;font-size:10.5px;letter-spacing:.08em;background:var(--brand);color:#fff;
+  padding:4px 11px;border-radius:999px;box-shadow:0 0 14px rgba(137,54,255,.5)}
+.rc-stats{flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:420px;margin:10px 0 12px}
+.rc-stats div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);padding:8px 6px;
+  text-align:center;animation:fadeup .5s both}
+.rc-stats div:nth-child(2){animation-delay:.08s}.rc-stats div:nth-child(3){animation-delay:.16s}
+.rc-stats b{display:block;font-family:var(--display);font-stretch:114%;font-weight:900;font-style:italic;font-size:20px;line-height:1}
+.rc-stats b small{font-size:12px;opacity:.55}
+.rc-stats span{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.6)}
+@keyframes fadeup{from{transform:translateY(12px);opacity:0}}
+/* Le paquet d'un trait : six cartes sur une rangée, il se lit d'un coup (deux
+   rangées de trois faisaient défiler la page sur téléphone). */
+.rc-grid{flex:none;display:grid;grid-template-columns:repeat(6,1fr);gap:6px;width:100%;max-width:420px}
+@media (min-width:640px){
+  .rc-grid{gap:12px;max-width:640px}
+}
+.rc-cell{position:relative;background:none;border:0;padding:0;color:#fff;animation:deal .5s var(--d) cubic-bezier(.2,1.3,.4,1) both}
+@media (max-width:639px){
+  .rc-cell .new{font-size:8px;padding:2px 5px;top:-6px}
+}
+@keyframes deal{from{transform:translateY(160px) rotate(-18deg) scale(.5);opacity:0}}
+.rc-actions{flex:none;display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px;margin-top:14px}
+/* Le nombre de boosters restants, posé dans le bouton : on sait avant d'appuyer
+   s'il y en aura un autre. */
+.rc-reste{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;
+  border-radius:999px;background:rgba(0,0,0,.28);font-size:13px;line-height:1;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+/* Réserve vide : plus de bouton qui promet ce qu'il ne peut pas tenir, une
+   ligne qui dit quand revenir. */
+.rc-vide{display:flex;align-items:center;justify-content:center;gap:7px;margin:4px 0 0;
+  font-size:12.5px;font-weight:600;color:rgba(255,255,255,.55)}
+.rc-vide b{color:rgba(255,255,255,.85);font-weight:800}
+.rc-vide svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* dernière carte : dos réel, rotation propre */
+.lifter,.spinner{position:relative;transform-style:preserve-3d}
+.spinner>.cwrap{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+/* Le reflet vit dans le `.spinner` de la dernière carte : il tourne avec elle,
+   et disparaît quand elle montre son dos. Posé plus haut, sur `.scard`, il
+   restait face à la caméra — un rectangle clair suspendu derrière la carte
+   pendant toute la rotation. */
+.spinner>.sheen{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+/* Le dos doit se lire comme une carte retournée, pas comme une plaque claire : pas de halo
+   rectangulaire autour, un rendu assombri et un liseré intérieur pour le relief. */
+.spinback{position:absolute;inset:0;border-radius:5.5%/3.94%;overflow:hidden;transform:rotateY(180deg);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.1),inset 0 0 46px rgba(0,0,0,.55)}
+.spinback img{display:block;width:100%;height:100%;object-fit:cover;filter:brightness(.66) contrast(1.06) saturate(.9)}
+.scard.spinE .spinner{animation:spinE .75s cubic-bezier(.15,.85,.3,1)}
+.scard.spinE .lifter{animation:liftE .75s ease-out}
+@keyframes spinE{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
+@keyframes liftE{40%{transform:translateZ(40px) scale(1.07)}}
+.scard.spinL .spinner{animation:spinL 1.15s cubic-bezier(.2,.75,.25,1)}
+.scard.spinL .lifter{animation:liftL 1.15s cubic-bezier(.3,.7,.3,1)}
+@keyframes spinL{from{transform:rotateY(0deg)}to{transform:rotateY(720deg)}}
+@keyframes liftL{35%{transform:translateZ(90px) translateY(-18px) scale(1.12)}}
+.scard.unveil .card{animation:unv .5s ease-out}
+@keyframes unv{from{filter:brightness(2.2)}}
+.stack3d.punch{animation:punch .32s cubic-bezier(.2,1.6,.4,1)}
+@keyframes punch{40%{transform:scale(1.07)}}
+.shock{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;border:6px solid #fff;opacity:0;
+  pointer-events:none;z-index:3}
+.shock.rR{border-color:var(--r-r)}.shock.rE{border-color:#b67dff}.shock.rL{border-color:var(--r-l)}
+.shock.go{animation:shock .55s cubic-bezier(.1,.7,.3,1)}
+@keyframes shock{0%{transform:scale(.35);opacity:1;border-width:16px}100%{transform:scale(2.4);opacity:0;border-width:1px}}
+
+/* ============ Essence Brillante et carte unique ============ */
+/* La Brillante tombe au milieu du paquet : un halo qui change de couleur. */
+.scard.hitcard.hBR .cwrap{box-shadow:none;animation:halobr 2.4s linear infinite}
+/* Pas de trait de lumière qui traverse la carte : un éclat qui s'ouvre depuis
+   son centre, puis s'éteint — la Brillante a déjà son propre reflet. */
+.scard.hitcard.hBR .sheen{background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.85),rgba(255,236,250,.35) 28%,transparent 60%);
+  background-size:100% 100%;animation:eclatbr 1.3s ease-out both}
+@keyframes eclatbr{from{opacity:0;transform:scale(.4)}30%{opacity:1}to{opacity:0;transform:scale(1.25)}}
+@keyframes halobr{
+  0%,100%{filter:drop-shadow(0 0 10px #ff5bb0) drop-shadow(0 0 24px #ff5bb0)}
+  33%{filter:drop-shadow(0 0 10px #55e6a6) drop-shadow(0 0 24px #39b8ff)}
+  66%{filter:drop-shadow(0 0 10px #ffc73b) drop-shadow(0 0 24px #a95cf2)}}
+/* Le dégradé est posé sur le mot lui-même (.slam), pas sur la ligne :
+   un texte animé dans un enfant échappe au `background-clip:text` du
+   parent (Safari comme Chrome) — « Brillante » devenait invisible, et le NEW restait décalé à
+   côté d'un mot qu'on ne voyait pas. */
+.op-rar.rBR{color:#ff8fd0}
+.op-rar.big.rBR .slam{background:linear-gradient(90deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2);
+  -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 rgba(60,20,90,.55))}
+/* L'Unique : tout ce que la Légendaire a, en plus fort et en toutes couleurs. */
+.charge-UN .scard.charging{animation-duration:.24s}
+.th-stage.charge-UN.charging .charge-ring{animation-duration:.28s;opacity:.8;width:720px;height:720px;margin:-360px 0 0 -360px}
+.th-stage.charge-UN.charging{background:radial-gradient(circle at 50% 45%,rgba(236,143,255,.34),rgba(255,199,59,.16) 40%,transparent 66%)}
+.th-stage.flash-UN::after{background:radial-gradient(circle,#fff 0%,rgba(255,230,140,.95) 28%,rgba(236,143,255,.7) 52%,rgba(57,184,255,.4) 70%,transparent 88%);animation:flash 1s ease-out}
+.shock.rUN{border-color:#ec8fff}
+.scard.hitcard.hUN .cwrap{box-shadow:none;filter:drop-shadow(0 0 14px #ffc73b) drop-shadow(0 0 36px #ec8fff)}
+.op-rar.rUN{color:#ffc73b}
+.op-rar.big.rUN .slam{background:linear-gradient(180deg,#fff6d0,#ffc73b 40%,#ec8fff 80%);-webkit-background-clip:text;background-clip:text;
+  color:transparent;filter:drop-shadow(0 3px 0 rgba(90,30,110,.6))}
+/* Deux boutons côte à côte sous « Ouvrir un autre » : partager, terminer. */
+.rc-duo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rc-duo .btn{display:flex;align-items:center;justify-content:center;gap:7px}
+.rc-duo .btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* La Reverse (version 2.0) : un mot pastel avant la rarete. */
+.op-rar .oprev{font-style:normal;font-family:var(--body);font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 10px;border-radius:999px;color:#fff;background:linear-gradient(110deg,#ff5bb0,#b38cff,#7fd8ff);
+  box-shadow:0 0 14px rgba(179,140,255,.5)}
+
+/* Version 3.0 : la Secrète. */
+.charge-S .scard.charging{animation-duration:.26s}
+.th-stage.charge-S.charging{background:radial-gradient(circle at 50% 45%,rgba(232,236,255,.3),rgba(127,216,255,.14) 40%,transparent 66%)}
+.th-stage.flash-S::after{background:radial-gradient(circle,#fff 0%,rgba(232,236,255,.95) 30%,rgba(255,124,200,.6) 55%,rgba(127,216,255,.4) 72%,transparent 88%);animation:flash 1s ease-out}
+.scard.hitcard.hS .cwrap{box-shadow:none;animation:s-revele 2.4s linear infinite;filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #ff7cc8) drop-shadow(0 0 60px #7fd8ff)}
+@keyframes s-revele{
+  0%,100%{filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #ff7cc8) drop-shadow(0 0 60px #7fd8ff)}
+  33%{filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #7fd8ff) drop-shadow(0 0 60px #ffe28a)}
+  66%{filter:drop-shadow(0 0 14px #fff) drop-shadow(0 0 34px #ffe28a) drop-shadow(0 0 60px #b38cff)}}
+/* Le coup de tonnerre de la Secrète : un anneau irisé qui s'élargit. */
+.shock.rS{border-color:#fff;box-shadow:0 0 0 4px rgba(255,124,200,.6),0 0 0 9px rgba(127,216,255,.45),0 0 40px rgba(255,226,138,.6)}
+.op-rar.rS{color:#e8ecff}
+.op-rar.big.rS .slam{background:linear-gradient(180deg,#fff,#c9d6ff 45%,#ff9ad5 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rc-tag.rS{background:linear-gradient(90deg,#ffd0ea,#e6e1ff 50%,#c9ecff);color:#1a1230}
+.rc-hero.rS{--hc:rgba(232,236,255,.6)}
+
+.rc-duo .rc-reste{margin-left:2px}
