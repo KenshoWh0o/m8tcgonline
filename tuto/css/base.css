@@ -1,0 +1,303 @@
+/* Structure générale : fond, en-tête, navigation, typo, boutons, fenêtres, notifications.
+   Aucune couleur écrite en dur : tout vient des jetons de css/tokens.css.
+
+   Version 3.0 : un fond anthracite, des tuiles pleines posées dessus, et
+   deux barres de verre qui flottent — l'en-tête et la barre des onglets. Le
+   contenu défile dessous : le verre n'a de sens que s'il a quelque chose à
+   flouter. Les illustrations vivent dans les bandeaux des écrans, pas dans
+   le fond. Les règles sont dans docs/design-3.0.md. */
+
+/* ============ Fond ============ */
+/* Un anthracite, et une lumière lavande très douce tout en haut : la page
+   a une profondeur sans rien voler aux illustrations. */
+.bgdeco{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:var(--bg)}
+.bgdeco::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(90% 38% at 50% -6%,rgba(140,120,255,.14),transparent 72%)}
+
+/* `display` posé sur une classe l'emporterait sur la règle du navigateur : on tranche. */
+[hidden]{display:none!important}
+/* Un texte pour les lecteurs d'écran seulement (version 3.0.13). */
+.sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* ============ Illustration recadrée (illuCadre, js/ui.js) ============ */
+/* La carte entière est posée derrière la case, assez grande pour que son
+   illustration la couvre (--cw : la largeur de la carte, d'après la case,
+   en unités de conteneur), puis décalée pour amener le point (--fx, --fy)
+   au centre, sans jamais laisser voir le bord de l'illustration (clamp). */
+/* Le chargement (3.0.16) : jusqu'à ce que les polices, l'habillage et le
+   premier écran soient prêts, six secondes au plus (Chargement, js/app.js). */
+#chargement{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--bg);transition:opacity .4s ease}
+#chargement img{width:min(46vw,190px);height:auto}
+#chargement .chg-barre{width:min(50vw,200px);height:4px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.1)}
+#chargement .chg-barre i{display:block;height:100%;background:var(--progress);transform:scaleX(.06);transform-origin:left;transition:transform .3s ease}
+#chargement.fini{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){#chargement,#chargement .chg-barre i{transition:none}}
+.illu-cadre{position:absolute;inset:0;overflow:hidden;container-type:size;pointer-events:none}
+.illu-cadre>i{position:absolute;display:block;aspect-ratio:1000/1397;background:center/100% 100% no-repeat;
+  --cw:calc(max(100cqw / .81, 100cqh / .479) * var(--z,1));
+  width:var(--cw);
+  left:clamp(calc(100cqw - var(--cw) * .895), calc(50cqw - var(--cw) * (.085 + .81 * var(--fx))), calc(var(--cw) * -.085));
+  top:clamp(calc(100cqh - var(--cw) * .684), calc(50cqh - var(--cw) * (.205 + .479 * var(--fy))), calc(var(--cw) * -.205))}
+
+/* ============ Tête ============ */
+/* Elle flotte au-dessus du contenu, sans fond ni filet : le logo à gauche,
+   des capsules de verre à droite. Version 3.0.11 : dès que la page passe
+   dessous (`body.defile`, majDefile dans js/app.js), une bande de verre
+   dépoli, nette, bordée d'un filet — et non plus le bord flou et dégradé
+   d'avant, qui effaçait le haut de la page sur toute sa hauteur et 26 px
+   en dessous (« un faded de flou », jugé bizarre sur téléphone). Le flou
+   ne s'anime pas (DA) : il apparaît d'un coup. Version 3.0.16 (le
+   propriétaire, 3 novembre : « Retirer le flou en haut de l'écran ») : plus
+   de flou du tout — la bande est pleine, de la couleur du fond, avec son
+   filet ; la page passe dessous sans se brouiller. */
+.top{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;height:calc(var(--top-h) + env(safe-area-inset-top,0px));
+  padding:env(safe-area-inset-top,0px) 14px 0}
+.top::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;visibility:hidden;
+  background:var(--bg);box-shadow:inset 0 -1px 0 var(--glass-line),0 6px 14px -8px rgba(0,0,0,.55)}
+body.defile .top::before{visibility:visible}
+#brand{display:flex;align-items:center;user-select:none;cursor:pointer}
+#brand img{display:block;height:clamp(32px,9vw,38px);width:auto;
+  filter:drop-shadow(0 2px 10px rgba(0,0,0,.4))}
+
+main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:calc(var(--top-h) + env(safe-area-inset-top,0px) + 8px) 16px
+          calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 30px);
+  scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+/* Sur `#main` et non sur `main` : une classe comme `.pagehead` pose un `margin`
+   raccourci, qui l'emporterait sur un sélecteur d'éléments seuls et décollerait
+   l'en-tête de page du reste de la colonne. */
+#main>*{max-width:1180px;margin-inline:auto}
+
+/* ============ Navigation ============ */
+/* Une capsule de verre qui flotte au-dessus du bas de l'écran, à distance des
+   bords : on la voit comme un objet qu'on touche, et la page passe dessous.
+   Tout est accroché à #nav, et non à l'élément <nav> : le panneau du tiroir en
+   est un aussi. */
+#nav{position:absolute;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:6;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:0;height:var(--nav-h);padding:6px;
+  border-radius:calc(var(--nav-h) / 2);background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
+  box-shadow:var(--glass-hi),var(--sh-4)}
+
+#nav button{position:relative;background:none;border:0;padding:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:800;letter-spacing:.01em;
+  color:var(--muted);border-radius:calc(var(--nav-h) / 2 - 6px);white-space:nowrap;
+  transition:color .16s,transform .16s var(--spring)}
+#nav button:active{transform:scale(.94)}
+#nav svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+/* L'étoile du logo est pleine : elle sert de marque, pas d'icône au trait. */
+#nav svg.ico-star,.btn svg.ico-star{width:24px;height:22px;stroke:none;fill:currentColor}
+
+/* L'onglet en cours : une lentille de verre plus clair sous l'icône et le
+   libellé. Elle glisse depuis l'onglet qu'on quitte (`--de`, posé par
+   navHTML dans js/app.js) : l'œil suit le mouvement au lieu de chercher. */
+#nav button .navbg{position:absolute;inset:0;border-radius:inherit;opacity:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(255,255,255,.07)}
+#nav button.on .navbg{opacity:1;animation:lentille .38s var(--spring)}
+@keyframes lentille{from{transform:translateX(calc(var(--de,0) * 100%))}}
+#nav button.on{color:var(--text)}
+#nav button.on svg{stroke:var(--accent-soft)}
+#nav button.on svg.ico-star{fill:var(--accent-soft);filter:drop-shadow(0 0 8px var(--accent-glow))}
+/* Le contenu passe au-dessus de la lentille. La pastille de compte garde son
+   positionnement absolu. */
+#nav button>svg,#nav button>span{position:relative;z-index:1}
+#nav button>.pastille{z-index:2}
+
+body.intheater #nav,body.intheater .top,body.intheater main,body.intheater .bgdeco{visibility:hidden}
+
+/* Pas de flou disponible, ou transparence réduite à la demande du système :
+   le verre devient un aplat. Rien ne doit devenir illisible faute de flou.
+   Tout élément de verre entre dans les deux listes : la barre, les feuilles,
+   le tiroir, les notifications, le pied collant du recyclage, les
+   capsules des bandeaux illustrés, et le verre de l'arène (boutons, carte
+   agrandie, feuilles, journal). */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  #nav,.sheet,.tiroir-panneau,#toast,.qn,.recpied,.rf-solde,.rf-fin,.rf-onglets,.cb-badge,.cb-porte-ico,
+  .ar-bouton,.ar-mainadv,.ar-fin:disabled,.ar-focus,.ar-s-in,.ar-journal{background:var(--glass-solid)!important}
+}
+@media (prefers-reduced-transparency:reduce){
+  #nav,.sheet,.tiroir-panneau,#toast,.qn,.recpied,.rf-solde,.rf-fin,.rf-onglets,.cb-badge,.cb-porte-ico,
+  .ar-bouton,.ar-mainadv,.ar-fin:disabled,.ar-focus,.ar-s-in,.ar-journal{background:var(--glass-solid)!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+}
+
+/* ============ Typo ============ */
+/* Le titre de page est en Archivo étiré et penché : c'est la typo du logo,
+   et le seul italique de l'écran avec les noms mis en scène. */
+h1{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;font-size:29px;
+  margin:6px 0 4px;letter-spacing:-.03em;line-height:1.04}
+
+/* Les titres de section : la même famille, droite. Un titre se lit, il n'a
+   pas besoin d'un trait de couleur pour exister. */
+h2{position:relative;font-family:var(--display);font-stretch:104%;font-weight:800;font-style:normal;
+  font-size:17px;letter-spacing:-.01em;text-transform:none;color:var(--text);
+  margin:var(--gap-5) 0 var(--gap-2);line-height:1.2}
+/* Un sous-titre glissé dans un h2 redevient une phrase. */
+h2 .small,h2 .muted{font-family:var(--body);font-weight:600;letter-spacing:0}
+
+h3{font-family:var(--display);font-stretch:104%;font-weight:800;font-size:15px;
+  margin:0 0 6px;letter-spacing:-.01em}
+p{line-height:1.5;margin:6px 0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+b,strong{font-weight:800}
+a{color:var(--accent-soft)}
+
+/* ============ Boutons ============ */
+/* Le bouton principal : une capsule rose, bombée par son reflet, avec une
+   lueur de sa couleur dessous. Il ne s'enfonce plus d'un rebord : il se
+   tasse sous le doigt, d'un ressort. Un écran n'en montre qu'un. */
+.btn{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  border:0;border-radius:999px;padding:15px 24px;font-family:var(--display);font-weight:800;
+  font-size:16px;letter-spacing:.005em;text-transform:none;color:var(--on-accent);
+  background:var(--cta);text-shadow:0 1px 1px rgba(30,16,90,.35);
+  box-shadow:inset 0 1px 0 var(--gloss),inset 0 -1px 0 rgba(0,0,0,.16),0 10px 26px -8px var(--accent-glow);
+  transition:transform .18s var(--spring),filter .15s,box-shadow .2s}
+.btn:hover:not(:disabled){filter:brightness(1.08)}
+.btn:active:not(:disabled){transform:scale(.97);filter:brightness(.96)}
+/* Le secondaire : du verre clair. Il accompagne, il ne rivalise pas. */
+.btn.ghost{background:rgba(255,255,255,.085);color:var(--text);text-shadow:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.1)}
+.btn.ghost:hover:not(:disabled){background:rgba(255,255,255,.12);filter:none}
+.btn.ghost.dark{background:rgba(255,255,255,.12);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.14)}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;filter:saturate(.4)}
+.btn svg{width:19px;height:19px;flex:0 0 auto}
+
+/* Petit bouton, pour les actions posées dans une ligne. */
+.btn.tiny{width:auto;flex:0 0 auto;padding:9px 16px;font-size:13px;border-radius:999px;gap:5px;
+  box-shadow:inset 0 1px 0 var(--gloss),0 6px 16px -6px var(--accent-glow)}
+.btn.tiny.ghost{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.1)}
+
+/* Un bouton peut être un lien : les destinations extérieures s'ouvrent comme
+   des liens, pas comme des gestes de l'application. */
+a.btn{text-decoration:none}
+
+.linkbtn{background:none;border:0;color:var(--muted);font-weight:700;font-size:13px;padding:6px}
+.linkbtn:hover{color:var(--text)}
+/* Une rangée d'actions. Elle passe à la ligne plutôt que de déborder. */
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row>.btn{flex:1 1 150px;min-width:0;padding-inline:16px}
+
+/* ============ Puces de filtre ============ */
+/* `overflow-y:hidden` et `touch-action:pan-x` : une rangée de puces se fait
+   glisser de gauche à droite, jamais de haut en bas.
+   La puce choisie est du verre plus clair et du texte blanc, comme l'onglet
+   en cours : choisir n'est pas agir, ça ne prend pas le rose. */
+.chips{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  touch-action:pan-x;padding:2px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:0 0 auto;border:0;background:var(--surface);
+  color:var(--subtle);padding:8px 15px;font-size:13px;font-weight:700;border-radius:999px;
+  box-shadow:inset 0 0 0 1px var(--line);
+  transition:color .14s,background .14s,transform .16s var(--spring)}
+.chips button:hover{color:var(--text);background:var(--surface-2)}
+.chips button:active{transform:scale(.95)}
+.chips button.on{background:rgba(255,255,255,.17);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 0 0 1px rgba(255,255,255,.14)}
+
+/* ============ Panneaux ============ */
+/* La tuile : la surface de contenu. Pleine, un filet, un reflet en haut et
+   une ombre douce dessous — une carte posée sur la table. */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:2px 16px 18px;margin-bottom:12px;box-shadow:var(--tuile)}
+.panel h2{margin-top:18px}
+.panel>h2:first-child{margin-top:16px}
+.empty{text-align:center;padding:56px 10px;color:var(--muted)}
+
+/* ============ Blocs dépliants ============ */
+details{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 16px;margin:10px 0}
+summary{font-weight:700;cursor:pointer}
+
+/* ============ Feuille modale ============ */
+/* Le verre couvrant : une feuille qui monte du bas, assez opaque pour qu'on
+   lise ce qu'elle porte, assez claire pour qu'on sache d'où elle vient. */
+.sheet-wrap{position:fixed;inset:0;background:var(--scrim);
+  display:flex;align-items:flex-end;justify-content:center;z-index:50;animation:fadein .2s}
+.sheet-wrap[hidden]{display:none}
+@keyframes fadein{from{opacity:0}}
+/* Le focus posé sur la feuille elle-même à son ouverture (js/ui.js) : pas
+   de contour autour de tout le panneau. */
+.sheet:focus{outline:none}
+.sheet{position:relative;background:var(--glass-strong);
+  -webkit-backdrop-filter:blur(32px) saturate(160%);backdrop-filter:blur(32px) saturate(160%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-bottom:0;
+  width:100%;max-width:520px;padding:24px 18px calc(18px + env(safe-area-inset-bottom,0px));
+  max-height:90%;overflow-y:auto;overscroll-behavior-y:none;border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow:var(--glass-hi),var(--sh-4);animation:up .34s var(--spring)}
+@keyframes up{from{transform:translateY(60px);opacity:.3}}
+/* La poignée : elle dit que le panneau vient du bas et qu'il y repartira — on
+   le tire vers le bas pour le fermer (voir « Glisser vers le bas », js/ui.js). */
+.sheet::before{content:'';position:absolute;top:8px;left:50%;width:38px;height:5px;translate:-50% 0;
+  border-radius:99px;background:rgba(255,255,255,.22)}
+.sheet h3{font-family:var(--display);font-stretch:108%;font-weight:900;font-style:italic;
+  margin:4px 0 10px;font-size:22px;letter-spacing:-.02em}
+.sheet .acts{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+/* Dans une feuille, une tuile se pose sur le verre : un peu plus claire, sans ombre. */
+.sheet .panel,.sheet details{background:var(--surface-2);box-shadow:none}
+
+/* ============ Notification passagère ============ */
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + var(--nav-h) + 22px);
+  transform:translateX(-50%) translateY(8px);background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);
+  color:var(--text);padding:11px 18px;border-radius:999px;font-weight:700;font-size:13.5px;z-index:80;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .24s var(--spring);max-width:90%;text-align:center;
+  box-shadow:var(--glass-hi),var(--sh-3)}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ============ Notification de quête et de promo ============ */
+/* Elles passent en haut, à l'opposé du toast : les deux peuvent tomber en même
+   temps et ne doivent pas se marcher dessus. Rien à fermer, rien à lire
+   absolument : la pastille de l'onglet garde la trace. */
+#qnotif{position:fixed;top:calc(env(safe-area-inset-top,0px) + var(--top-h) + 6px);left:50%;transform:translateX(-50%);
+  z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;
+  width:max-content;max-width:min(380px,calc(100vw - 32px));pointer-events:none}
+.qn{display:flex;align-items:center;gap:11px;width:100%;background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-radius:var(--radius-lg);
+  padding:10px 14px 10px 10px;box-shadow:var(--glass-hi),var(--sh-3);cursor:pointer;pointer-events:auto;
+  animation:qn-in .4s var(--spring)}
+.qn.out{animation:qn-out .3s ease-in forwards}
+.qnico{display:grid;place-items:center;flex:0 0 auto;width:34px;height:34px;border-radius:50%;
+  background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.qnico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.qntxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.qntxt b{font-size:13.5px;font-weight:800;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qntxt small{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ok)}
+.qngain{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-family:var(--display);
+  font-weight:900;font-size:14px;color:var(--brand-light)}
+.qngain .shard{width:15px;height:15px}
+@keyframes qn-in{from{opacity:0;transform:translateY(-14px) scale(.96)}}
+@keyframes qn-out{to{opacity:0;transform:translateY(-10px) scale(.97)}}
+/* Pendant une ouverture de booster, l'écran appartient aux cartes. */
+body.intheater #qnotif{visibility:hidden}
+
+/* Réduction des animations si demandé par le système */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ============ Le logo ============ */
+#brand{position:relative;border-radius:999px;padding:0 2px}
+#brand img{position:relative}
+
+.setbar .setlogo{position:relative}
+
+/* ============ Les bandes qui défilent de côté (3.0.14, js/ui.js) ============ */
+/* Un fondu sur le bord qui cache encore quelque chose ; une main qui tire,
+   à la souris. Pendant qu'on tire, l'aimantation (scroll-snap) attend qu'on
+   lâche, sinon elle se bat avec le geste. */
+.bd-d{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 30px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 30px),transparent)}
+.bd-g{-webkit-mask-image:linear-gradient(90deg,transparent,#000 30px);mask-image:linear-gradient(90deg,transparent,#000 30px)}
+.bd-g.bd-d{-webkit-mask-image:linear-gradient(90deg,transparent,#000 30px,#000 calc(100% - 30px),transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 30px,#000 calc(100% - 30px),transparent)}
+@media (hover:hover) and (pointer:fine){
+  .bd-g,.bd-d{cursor:grab}
+}
+.bd-tire{cursor:grabbing;scroll-snap-type:none!important;user-select:none;-webkit-user-select:none;scroll-behavior:auto!important}
+.bd-tire *{pointer-events:none}
