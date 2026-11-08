@@ -1087,7 +1087,10 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px var(--line);
   transition:background .14s,color .14s,box-shadow .14s}
 .amichip:hover{background:var(--surface-3);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
-.amichip span{max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 3.0.17, 8 novembre : le pseudo seul. « .amichip span » visait aussi les
+   <span> de l'avatar (.ava-nivw, .ava) : coupés à leur boîte, ils rognaient
+   l'anneau du cadre, le cadre décoré et la pastille de niveau. */
+.amichip-nom{max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Une alerte qui explique plutôt qu'elle ne bloque. */
 .autherr.doux{background:var(--surface-2);border-color:var(--line-2);color:var(--muted)}

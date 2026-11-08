@@ -418,7 +418,7 @@ html.rm .rf-holo,html.rm .il-pix.net,html.rm .il-art,html.rm .rfban::before,html
 .chezinfo>b{font-size:14px}
 .chezinfo>small{font-size:11.5px;font-weight:800}
 .chezqui{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.chezqui .amichip i{font-style:normal;font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
+.chezqui .amichip-n{font-style:normal;font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
 
 /* ============ Après l'événement : le récap ============ */
 .rf-tete.rf-recap{padding-bottom:20px}

@@ -1,6 +1,7 @@
 # Ce que GitHub Pages ne publie pas sur matetcg.com : la documentation, le code
-# serveur (SQL, fonctions), les outils et le kit presse. Ils restent dans le dépôt,
-# qui est privé. Demande du propriétaire, 2 novembre 2026 : « il est hors de
+# serveur (SQL, fonctions), les outils et le kit presse. Ils restent dans le dépôt
+# (public sur GitHub : constaté le 8 novembre 2026, seul le propriétaire peut le
+# rendre privé). Demande du propriétaire, 2 novembre 2026 : « il est hors de
 # question que le code et la doc soit public ». Le meme fichier vit sur
 # version-3.0 : publiee a la racine de main, la 3.0 le garde.
 #
