@@ -78,8 +78,8 @@
       z.setAttribute('role', 'dialog');
       z.setAttribute('aria-modal', 'true');
       z.setAttribute('aria-labelledby', 'da-titre');
-      const art = typeof PACK_ARTS !== 'undefined' && PACK_ARTS[0] ? PACK_ARTS[0] : 'assets/boosters/booster-01.webp?v=fa4b32';
-      const logo = typeof ART !== 'undefined' && ART.logo ? ART.logo : 'assets/logo-m8.webp?v=fa4b32';
+      const art = typeof PACK_ARTS !== 'undefined' && PACK_ARTS[0] ? PACK_ARTS[0] : 'assets/boosters/booster-01.webp?v=23cf86';
+      const logo = typeof ART !== 'undefined' && ART.logo ? ART.logo : 'assets/logo-m8.webp?v=23cf86';
       z.innerHTML = `<div class="da-carte">
           <img class="da-logo" src="${logo}" alt="Mate TCG Online">
           <div class="da-art" aria-hidden="true"><img src="${art}" alt=""></div>

@@ -197,6 +197,33 @@ Il y joignait le message de Gentle Mates de septembre (non recopié ici). Ce qu'
 > * Le raid est beaucoup trop compliqué, surtout en mode infini, facilite-le un chouille histoire de s'amuser et de pas niquer le ratio W-L des joueurs
 > * Il faudrait ajouter un chargement des ressources au lancement du site afin d'éviter tout bug et tout chargement dégueulasse
 
+**Le 8 novembre 2026**, avec le scan de la 127 et un PDF des scans de P03 et P04 ; mot pour mot (les deux listes des Starters, écrites en colonne, sont mises en ligne) :
+
+> Ok derniers ajustements :
+>
+> * Cadre mieux l'image en bannière du mode arcade, là c'est mal croppé
+> * Pour le mode campagne, mets l'image de la carte "Champions du Monde", pareil pour tout le monde tout le temps (et bien croppé)
+> * Ci-dessus le scan de la 127 sans erreur de rareté
+> * Ci dessus des scans des deux promos un peu plus cleans
+> * Il y a un problème sur le jeu, le recyclage de reverse ne donne pas le double du recyclage de normales ...
+> * Voici la liste des starters decks :
+>    * Starter Toxique : x1 P04, x2 012, x3 073, x3 034, x3 011, x3 013, x1 074, x2 016, x2 033, x3 097, x2 092, x3 083, x3 082, x3 015, x3 085, x3 087, x7 ES Rose, x3 ES Orange
+>    * Starter Déter : x1 P03, x2 077, x3 079, x3 040, x3 051, x3 052, x1 074, x2 041, x2 054, x3 097, x2 092, x3 083, x3 082, x3 087, x3 085, x3 053, x7 ES Mauve, x3 ES Violette
+> * Lorsque tout ça est fait, tu peux programmer la maintenance sur main pour la date prévue, et tout automatiser
+> * Puis dis-moi ce qu'il reste à faire pour bien préparer la sortie de la 3.0
+
+Puis, le même jour :
+
+> ne touche pas à supabase. dis-moi juste ce qu'il manque à faire pour la sortie. ça serait possible de sortir la 3.0 ce soir à minuit sans maitenance ?
+
+> vas-y on part pour ce soir minuit. mais tu me demandes de faire trop de choses, essaye d'automatiser ou de faire toi-même au maximum. juste Supabase je m'en occupe. Maintenance à 23h50, sortie à minuit. Mets sur le vrai site en évidence cette date de sortie pour hype les gens.
+
+Et en fin d'après-midi, avec une capture de la rangée « Avec » de la composition d'un échange :
+
+> je comprends pas ce que je dois faire pour combat-verifier, fais-le.
+>
+> * dans les échanges, les cadres sont mal croppés
+
 **Lecture des dates de la 3.0 (2 novembre, dans la nuit).** « lundi 9 novembre SOIR à minuit » est lu comme la nuit du lundi 9 au mardi 10 novembre à 0 h (heure de Paris), et « mardi 10 novembre SOIR à minuit » comme la nuit du mardi 10 au mercredi 11 à 0 h ; en UTC, lundi 9 et mardi 10 à 23 h. C'est ce que le récap affiche (« lundi 9 nov. au soir, à minuit ») : à corriger dans `PROCHAINE` (`js/config.js` de `main`) si ce n'est pas la bonne lecture.
 
 **Lecture de « le fichier demo » (1er novembre au soir).** La session l'a d'abord pris pour `preprod/`, et a retiré `preprod/` et `prebuild/` de `main` (environ une heure, le 2 novembre) ; c'était la démo autonome en zip (`python3 tools/demo.py` sans option), confirmé par le propriétaire le 2. Tout est remis (§ 7).
@@ -407,7 +434,7 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 
 **La 3.0.16** (3 novembre ; la dictée du 2 novembre au soir et la liste du 3, avec ses captures) : le Raid allégé (combats plus doux, l'Infini comme la sixième phase, seuils 115 … 1 620 : dix joueurs actifs abattent la sixième phase le 14ᵉ jour, 98 % des saisons contre le Sorcier, 88 % contre le Marionnettiste) et hors du bilan victoires-défaites ; sa page refaite (le bouton « Affronter » dans le premier écran) ; l'atelier sans les clés ni la cote, les étoiles par demies, les filtres étiquetés et le tri à part ; Le Chevalier Rose à la place du médaillon ; les Secrètes en fond de profil ; un écran de chargement ; et les onze points de la liste du 3 (README de la 3.0, § 7.9 et l'historique des versions). Vérifié : 70 tests du moteur, 17 essais Deno, les tests SQL, Chromium ; **pas** Safari ni un vrai téléphone.
 
-**La sortie avancée à ce soir** (le propriétaire, 8 novembre : « on part pour ce soir minuit […] Maintenance à 23h50, sortie à minuit » ; « Mets sur le vrai site en évidence cette date de sortie pour hype les gens ») : **maintenance dimanche 8 novembre à 23 h 50, sortie lundi 9 novembre à 0 h** (heure de Paris ; 22 h 50 et 23 h UTC). Automatisé : le bandeau et la fenêtre de la 3.0 sur le vrai site jusqu'à minuit, son écran de maintenance à 23 h 50, la publication du code de la 3.0 à 23 h 50 par la session (`tools/sortie.sh`), la levée de la maintenance et l'ouverture du Choc à 0 h par `TOUT.sql` lui-même. Au propriétaire, sur Supabase : déployer `combat-verifier`, coller `TOUT.sql` entre 23 h 50 et 0 h. Le planning d'avant (ci-dessous) est remplacé.
+**La sortie avancée à ce soir** (le propriétaire, 8 novembre : « on part pour ce soir minuit […] Maintenance à 23h50, sortie à minuit » ; « Mets sur le vrai site en évidence cette date de sortie pour hype les gens ») : **maintenance dimanche 8 novembre à 23 h 50, sortie lundi 9 novembre à 0 h** (heure de Paris ; 22 h 50 et 23 h UTC). Automatisé : le bandeau et la fenêtre de la 3.0 sur le vrai site jusqu'à minuit, son écran de maintenance à 23 h 50, la publication du code de la 3.0 à 23 h 50 par la session (`tools/sortie.sh`), la levée de la maintenance et l'ouverture du Choc à 0 h par `TOUT.sql` lui-même. **La fonction `combat-verifier` est déployée** depuis le 8 novembre en fin d'après-midi (la session, à la demande du propriétaire : « fais-le » ; README de la 3.0, § 2.7, étape 3). Au propriétaire, sur Supabase, il ne reste qu'à coller `TOUT.sql` entre 23 h 50 et 0 h. Le planning d'avant (ci-dessous) est remplacé.
 
 **Le planning officiel** (le propriétaire, 2 novembre) : maintenance dans la nuit du lundi 9 au mardi 10 novembre, 0 h (lundi 9, 23 h UTC) ; sortie de la 3.0 dans la nuit du mardi 10 au mercredi 11, 0 h (mardi 10, 23 h UTC). D'ici là, dans l'ordre : les validations du propriétaire (point 4) ; un export de la vraie base pour répéter la mise à jour (point 7) ; les essais sur de vrais téléphones (point 9) ; le jour J (point 8). Le récap de L'Échauffement disparaît du vrai site le samedi 7 novembre, 0 h : du 7 au 9, la 2.x n'a plus d'événement en cours.
 
@@ -542,3 +569,6 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - **2 nov., le soir.** La doc et le code serveur quittent matetcg.com (`_config.yml`), la pré-prod passe derrière son propre code (le propriétaire). Le code de la pré-prod a été choisi par la session et donné au propriétaire en conversation, jamais écrit dans le dépôt.
 - **2 nov., le soir.** `prebuild/` est retiré : le propriétaire a supprimé `version-2.5`, « on ne va plus toucher à la 2.x ».
 - **2 nov., dans la nuit.** La date de la 3.0 (le propriétaire) : maintenance dans la nuit du lundi 9 au mardi 10 novembre, sortie dans la nuit du mardi 10 au mercredi 11, à 0 h ; « lundi soir à minuit » est lu comme la nuit du lundi au mardi (la session, § 1). Le récap de L'Échauffement l'annonce ; pour qu'il tienne encore sur téléphone, ses trois chiffres de second plan passent en pastilles (la session).
+- **8 nov.** La sortie avancée à ce soir (le propriétaire) : maintenance dimanche 8 à 23 h 50, sortie lundi 9 à 0 h ; tout ce qui peut l'être est automatisé (la session) : l'écran de maintenance de la 2.x, la publication du code de la 3.0 (`tools/sortie.sh`, programmée à 23 h 50), la levée de la maintenance et l'ouverture du Choc par `TOUT.sql` lui-même.
+- **8 nov., fin d'après-midi.** `combat-verifier` déployée par la session (le propriétaire : « fais-le ») avec l'outil de Supabase, qui n'envoie pas un fichier de 313 Ko et refuse d'importer depuis matetcg.com : `jeu.js` est lu au déploiement dans le dépôt GitHub (commit `aca24fe`, le même fichier), et `verify_jwt` est désactivé (la fonction vérifie elle-même la session). Le moteur a été publié sur matetcg.com environ cinq minutes, à une adresse non listée, pour un premier essai refusé ; retiré aussitôt.
+- **8 nov., fin d'après-midi.** **Le dépôt GitHub est public** (constaté par la session) : la doc, le SQL et les outils ne sont plus sur matetcg.com depuis le 2 novembre, mais se lisent sur github.com. La doc le disait privé à tort, depuis le 2 novembre. Aucune clé secrète ni aucun code d'accès n'y figure (vérifié, historique compris). Le rendre privé est un réglage du propriétaire ; sur un compte GitHub gratuit, GitHub Pages ne sert alors plus matetcg.com.

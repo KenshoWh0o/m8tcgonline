@@ -146,7 +146,7 @@ function vChezAmis() {
       <div class="chezinfo">
         <b>${nomH(x.c)}</b><small class="r${x.c.rar}">${(RAR[x.c.rar] || RAR.C).nom} · #${String(x.c.num || 0).padStart(3, '0')}</small>
         <div class="chezqui">${x.amis.map(a => `<button class="amichip" data-trdemande="${h(a.pseudo)}" data-carte="${x.c.id}">
-          ${avatarHTML(a.avatar, a.frame, 'sm', a.photo, a.xp)}<span>${h(a.pseudo)}</span><i>×${a.n}</i></button>`).join('')}</div>
+          ${avatarHTML(a.avatar, a.frame, 'sm', a.photo, a.xp)}<span class="amichip-nom">${h(a.pseudo)}</span><i class="amichip-n">×${a.n}</i></button>`).join('')}</div>
       </div>
     </article>`).join('')}</div>`;
 }
@@ -351,7 +351,7 @@ function vAvecQui() {
     ${amis.length
       ? `<div class="amirow">${amis.map(a =>
           `<button class="amichip" data-troc="${h(a.pseudo)}">
-            ${avatarHTML(a.avatar, a.frame, 'sm', a.photo, a.xp)}<span>${h(a.pseudo)}</span></button>`).join('')}</div>`
+            ${avatarHTML(a.avatar, a.frame, 'sm', a.photo, a.xp)}<span class="amichip-nom">${h(a.pseudo)}</span></button>`).join('')}</div>`
       : '<p class="compo-note">Ajoute des amis dans l\'onglet Amis : entre amis, on voit la collection de l\'autre.</p>'}
     <div class="findrow">
       <input id="tr-pseudo" type="text" maxlength="16" placeholder="Ou un pseudo exact"

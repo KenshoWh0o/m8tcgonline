@@ -353,16 +353,16 @@
 .ava.xl.fx{box-shadow:0 0 22px var(--violet-glow)}
 .fx-deco{position:absolute;inset:-14%;z-index:2;pointer-events:none;background:center/contain no-repeat;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
-.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=fa4b32')}
-.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=fa4b32')}
-.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=fa4b32')}
-.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=fa4b32')}
-.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=fa4b32')}
-.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=fa4b32')}
-.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=fa4b32')}
+.ava.fx-prisme .fx-deco{background-image:url('../assets/cadres/prisme.svg?v=23cf86')}
+.ava.fx-sceau .fx-deco{background-image:url('../assets/cadres/sceau.svg?v=23cf86')}
+.ava.fx-maitre .fx-deco{background-image:url('../assets/cadres/maitre.svg?v=23cf86')}
+.ava.fx-reflet .fx-deco{background-image:url('../assets/cadres/reflet.svg?v=23cf86')}
+.ava.fx-aurore .fx-deco{background-image:url('../assets/cadres/aurore.svg?v=23cf86')}
+.ava.fx-miroir .fx-deco{background-image:url('../assets/cadres/miroir.svg?v=23cf86')}
+.ava.fx-nebuleuse .fx-deco{background-image:url('../assets/cadres/nebuleuse.svg?v=23cf86')}
 /* Version 2.5 : le Pass de L'Échauffement. */
-.ava.fx-braise .fx-deco{background-image:url('../assets/cadres/braise.svg?v=fa4b32')}
-.ava.fx-ardeur .fx-deco{background-image:url('../assets/cadres/ardeur.svg?v=fa4b32')}
+.ava.fx-braise .fx-deco{background-image:url('../assets/cadres/braise.svg?v=23cf86')}
+.ava.fx-ardeur .fx-deco{background-image:url('../assets/cadres/ardeur.svg?v=23cf86')}
 
 /* ============ Boutique : invitations, limites ============ */
 .ofbadge.limite{background:var(--bg-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
@@ -418,7 +418,7 @@ html.rm .rf-holo,html.rm .il-pix.net,html.rm .il-art,html.rm .rfban::before,html
 .chezinfo>b{font-size:14px}
 .chezinfo>small{font-size:11.5px;font-weight:800}
 .chezqui{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.chezqui .amichip i{font-style:normal;font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
+.chezqui .amichip-n{font-style:normal;font-size:11px;font-weight:800;color:var(--muted);margin-left:2px}
 
 /* ============ Après l'événement : le récap ============ */
 .rf-tete.rf-recap{padding-bottom:20px}
