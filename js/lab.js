@@ -147,7 +147,7 @@ function vLabMaintenance() {
     <p class="muted small">Pendant une maintenance, les joueurs voient l'écran de maintenance et le serveur refuse
       toutes leurs actions ; les administrateurs jouent, avec une pastille en haut de l'écran. Elle ne finit que
       quand on la lève ici, sauf celle de la mise à jour 3.0 : une base 2.x qui la reçoit y entre d'office, et
-      en sort d'elle-même à la sortie prévue (mercredi 11 novembre, 0 h) si elle l'a reçue avant.</p>
+      en sort d'elle-même à la sortie (lundi 9 novembre, 0 h ; cinq minutes après si elle la reçoit plus tard).</p>
     <label class="field"><span>Le message</span><textarea id="lab-maint-msg" rows="3" maxlength="300"
       placeholder="${h(MAINT_DEFAUT)}">${h(m.message || '')}</textarea></label>
     <label class="field"><span>Retour prévu (facultatif, à l'heure de cet appareil)</span>

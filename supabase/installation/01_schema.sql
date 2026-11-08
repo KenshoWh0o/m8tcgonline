@@ -297,9 +297,10 @@ $$;
 -- Vraie, la maintenance se leve d'elle-meme a son heure de retour (`fin`) :
 -- maintenance_active() ne la compte plus, porte() ne la montre plus, et les
 -- ecrans de maintenance rechargent la page (js/gate.js). La maintenance de la
--- mise a jour la pose pour la sortie prevue, mercredi 11 novembre 2026, 0 h
--- (heure de Paris), si on la colle avant ; collee apres, elle attend qu'un
--- administrateur la leve (Labo › Serveur), comme avant.
+-- mise a jour se leve d'elle-meme a la sortie, lundi 9 novembre 2026, 0 h
+-- (heure de Paris ; le proprietaire, 8 novembre : « maintenance a 23h50,
+-- sortie a minuit ») ; collee plus tard, cinq minutes apres. Un
+-- administrateur peut la lever plus tot, ou la prolonger (Labo › Serveur).
 do $$
 begin
   if to_regclass('public.maintenance') is null then
@@ -314,8 +315,8 @@ begin
     );
     insert into public.maintenance (id, actif, message, fin, fin_auto, depuis, par)
     select 1, true, 'La version 3.0 arrive : le jeu est en maintenance le temps de la mise à jour.',
-           case when now() < timestamptz '2026-11-11 00:00:00+01' then timestamptz '2026-11-11 00:00:00+01' end,
-           now() < timestamptz '2026-11-11 00:00:00+01', now(), 'la mise à jour 3.0'
+           greatest(timestamptz '2026-11-09 00:00:00+01', now() + interval '5 minutes'),
+           true, now(), 'la mise à jour 3.0'
      where to_regclass('public.combat_joueurs') is null and exists (select 1 from public.profiles);
   end if;
 end $$;

@@ -236,6 +236,27 @@ revoke all on function public.choc_graine, public.choc_score, public.choc_debut,
 revoke all on function public.choc_etat from public, anon;
 grant execute on function public.choc_etat to authenticated;
 
+-- Version 3.0.17 (le proprietaire, 8 novembre 2026 : la sortie ce soir a
+-- minuit, « essaye d'automatiser ou de faire toi-meme au maximum ») : une base
+-- 2.x qui recoit la 3.0 ouvre le Choc d'elle-meme, a la sortie (lundi
+-- 9 novembre 2026, 0 h, heure de Paris ; collee un autre jour, a minuit ce
+-- jour-la), pour quatorze jours : quatorze Epreuves, le raid 1 des le premier
+-- jour. Une seule fois : seulement si cette meme mise a jour vient de mettre
+-- la base en maintenance (01_schema.sql), et si aucun Choc n'existe.
+do $$
+declare d timestamptz;
+begin
+  if exists (select 1 from maintenance where id = 1 and par = 'la mise à jour 3.0' and depuis > now() - interval '1 hour')
+     and not exists (select 1 from evenements where code = 'choc') then
+    d := greatest(timestamptz '2026-11-09 00:00:00+01',
+                  (date_trunc('day', now() at time zone 'Europe/Paris')) at time zone 'Europe/Paris');
+    insert into evenements (titre, texte, debut, fin, code) values (
+      'Le Choc des Sections',
+      'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.',
+      d, d + interval '14 days', 'choc');
+  end if;
+end $$;
+
 -- =====================================================================
 --  Ouvrir l'evenement — a la main, le jour venu, dans le SQL Editor :
 --

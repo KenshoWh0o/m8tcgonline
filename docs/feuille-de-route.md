@@ -2,7 +2,7 @@
 
 > **Ce fichier existe en deux copies identiques**, une sur `version-3.0` et une à la racine de `main` (la branche `version-2.5`, qui la portait, a été supprimée par le propriétaire le 2 novembre 2026). Toute modification se fait aux deux endroits, dans la même session : copier le fichier (`git show origin/version-3.0:docs/feuille-de-route.md > docs/feuille-de-route.md` dans un clone de `main`, ou l'inverse), puis vérifier que `git diff origin/main origin/version-3.0 -- docs/feuille-de-route.md` est vide une fois les deux poussées. Ni l'une ni l'autre n'est publiée sur matetcg.com depuis le 2 novembre 2026 (`_config.yml`).
 
-Mise à jour : mardi 3 novembre 2026 (la 3.0.16).
+Mise à jour : dimanche 8 novembre 2026 (la 3.0.17 ; la sortie, ce soir à minuit).
 
 ## 1. Ce que le propriétaire a dicté
 
@@ -406,6 +406,8 @@ En UTC : la sortie de la 2.5 tombe le **dimanche 25 octobre à 23 h 00 UTC** ; l
 - « … » : la liste reste ouverte.
 
 **La 3.0.16** (3 novembre ; la dictée du 2 novembre au soir et la liste du 3, avec ses captures) : le Raid allégé (combats plus doux, l'Infini comme la sixième phase, seuils 115 … 1 620 : dix joueurs actifs abattent la sixième phase le 14ᵉ jour, 98 % des saisons contre le Sorcier, 88 % contre le Marionnettiste) et hors du bilan victoires-défaites ; sa page refaite (le bouton « Affronter » dans le premier écran) ; l'atelier sans les clés ni la cote, les étoiles par demies, les filtres étiquetés et le tri à part ; Le Chevalier Rose à la place du médaillon ; les Secrètes en fond de profil ; un écran de chargement ; et les onze points de la liste du 3 (README de la 3.0, § 7.9 et l'historique des versions). Vérifié : 70 tests du moteur, 17 essais Deno, les tests SQL, Chromium ; **pas** Safari ni un vrai téléphone.
+
+**La sortie avancée à ce soir** (le propriétaire, 8 novembre : « on part pour ce soir minuit […] Maintenance à 23h50, sortie à minuit » ; « Mets sur le vrai site en évidence cette date de sortie pour hype les gens ») : **maintenance dimanche 8 novembre à 23 h 50, sortie lundi 9 novembre à 0 h** (heure de Paris ; 22 h 50 et 23 h UTC). Automatisé : le bandeau et la fenêtre de la 3.0 sur le vrai site jusqu'à minuit, son écran de maintenance à 23 h 50, la publication du code de la 3.0 à 23 h 50 par la session (`tools/sortie.sh`), la levée de la maintenance et l'ouverture du Choc à 0 h par `TOUT.sql` lui-même. Au propriétaire, sur Supabase : déployer `combat-verifier`, coller `TOUT.sql` entre 23 h 50 et 0 h. Le planning d'avant (ci-dessous) est remplacé.
 
 **Le planning officiel** (le propriétaire, 2 novembre) : maintenance dans la nuit du lundi 9 au mardi 10 novembre, 0 h (lundi 9, 23 h UTC) ; sortie de la 3.0 dans la nuit du mardi 10 au mercredi 11, 0 h (mardi 10, 23 h UTC). D'ici là, dans l'ordre : les validations du propriétaire (point 4) ; un export de la vraie base pour répéter la mise à jour (point 7) ; les essais sur de vrais téléphones (point 9) ; le jour J (point 8). Le récap de L'Échauffement disparaît du vrai site le samedi 7 novembre, 0 h : du 7 au 9, la 2.x n'a plus d'événement en cours.
 
