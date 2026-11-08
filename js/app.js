@@ -225,6 +225,12 @@ const VUES = {
 };
 
 function render() {
+  /* La maintenance de la 3.0 (js/gate.js) passe avant tout. */
+  if (enMaintenance30()) {
+    document.body.className = 'inlock';
+    $('#main').innerHTML = vMaintenance30();
+    return;
+  }
   /* L'écran d'attente passe avant tout le reste : tant qu'il est là, le jeu
      n'existe pas pour le visiteur. */
   if (!porteOuverte()) {

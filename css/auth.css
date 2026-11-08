@@ -218,3 +218,5 @@ body.inlock .lockinvit .findrow input{padding:11px 13px}
   body.inlock .lockcard:has(.lockrefus) .lockart{display:none}
   body.inlock .lockcard:has(.lockrefus) .locktag{margin-top:10px}
 }
+/* La maintenance de la 3.0 (js/gate.js, vMaintenance30). */
+body.inlock .lockreste{margin:12px 0 0;font-weight:800;font-size:15px;color:var(--text)}

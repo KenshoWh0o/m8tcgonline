@@ -149,6 +149,55 @@ function vMatepedia() {
       <br>Un projet communautaire dédié au TCG Gentle Mates.</p>`;
 }
 
+/* ---------- La maintenance de la 3.0 (8 novembre 2026) ---------- */
+/* Le propriétaire : « programmer la maintenance sur main pour la date
+   prévue, et tout automatiser ». À PROCHAINE.maintenance (js/config.js :
+   mardi 10 novembre, 0 h, heure de Paris), comptée à l'heure du serveur, le
+   site 2.x ne montre plus que cet écran, à tout le monde, jusqu'à ce que la
+   3.0 le remplace à la racine de main. Une page déjà ouverte y passe d'elle-
+   même dans la seconde. Passé PROCHAINE.sortie, elle se recharge seule
+   (entre 45 s et 1 min 45, tirées au hasard) pour recevoir la 3.0. */
+const enMaintenance30 = () => typeof PROCHAINE !== 'undefined' && Date.now() >= srvTime(PROCHAINE.maintenance);
+const jourParis30 = iso => new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso));
+function resteMaint30() {
+  const ms = srvTime(PROCHAINE.sortie) - Date.now();
+  if (ms <= 0) return 'La mise à jour se termine : la page se recharge d\'elle-même.';
+  const hh = Math.floor(ms / 3600000), mm = Math.floor((ms % 3600000) / 60000);
+  return `Encore ${hh ? `${hh} h ${String(mm).padStart(2, '0')}` : `${mm} min`}`;
+}
+function vMaintenance30() {
+  return `<div class="lockwrap"><div class="lockcard">
+    <img class="locklogo" src="${ART.logo}" alt="${h(GAME_NAME)}">
+    <span class="locktag">Maintenance</span>
+    <h1 class="locktitle">La ${h(PROCHAINE.version)} arrive</h1>
+    <div class="lockfin">
+      <strong>Le jeu est en maintenance le temps de la mise à jour.</strong>
+      <p>Retour prévu le ${h(jourParis30(PROCHAINE.sortie))} à 0 h (heure de Paris), en version ${h(PROCHAINE.version)}.</p>
+      <p class="lockreste" id="m30-reste" role="timer">${resteMaint30()}</p>
+    </div>
+    <div class="lockentree">${lienDiscord('btn discord', 'Rejoindre le Discord')}</div>
+    <p class="mentions">${MENTIONS}</p>
+  </div></div>`;
+}
+let maint30Vue = enMaintenance30();
+let maint30Recharge = 0;
+setInterval(() => {
+  const m = enMaintenance30();
+  if (m !== maint30Vue) {
+    maint30Vue = m;
+    try { if (typeof closeSheet === 'function') closeSheet(); } catch (e) { /* sans gravité */ }
+    render();
+    return;
+  }
+  if (!m) return;
+  const el = document.getElementById('m30-reste');
+  if (el) el.textContent = resteMaint30();
+  if (Date.now() >= srvTime(PROCHAINE.sortie)) {
+    if (!maint30Recharge) maint30Recharge = Date.now() + 45000 + Math.random() * 60000;
+    if (Date.now() >= maint30Recharge) location.reload();
+  }
+}, 1000);
+
 /* ---------- Les invitations (version 2.0) ---------- */
 /* Un lien d'invitation (?invitation=CODE, js/shop.js) garde son code de côté :
    la personne se connecte avec Discord, et le code s'applique tout seul au

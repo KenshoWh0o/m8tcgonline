@@ -39,7 +39,7 @@ const PROMO_DATA = [
      provisoires. Visuels : les photos redressées (tools/redresser-photo.js),
      en attendant des scans propres. */
   {
-    code: 'P03', fichier: 'promos/P03-Brawks_Deter.webp', nom: 'Brawks Déter', section: 'deter',
+    code: 'P03', fichier: 'promos/P03-Brawks_Deter-scan.webp', nom: 'Brawks Déter', section: 'deter',
     categorie: 'Joueur', couleur: 'Neutre', def: 90,
     attaques: [
       { nom: "Déboîtement d'épaule", cout: { neutre: 1 }, degats: 90 }
@@ -50,7 +50,7 @@ const PROMO_DATA = [
     obtention: 'section'
   },
   {
-    code: 'P04', fichier: 'promos/P04-Squeezie_Le_Toxique.webp', nom: 'Squeezie le Toxique', section: 'toxique',
+    code: 'P04', fichier: 'promos/P04-Squeezie_Le_Toxique-scan.webp', nom: 'Squeezie le Toxique', section: 'toxique',
     categorie: 'Joueur', couleur: 'Rose', def: 110,
     attaques: [
       { nom: 'Trash-talk', cout: { rose: 1, neutre: 1 }, degats: 110 }
@@ -153,7 +153,7 @@ const SECRET_DATA = [
     ambiance: 'On s\'émerveille, yeux dans les yeux'
   },
   {
-    fichier: '127_S_Moment-Instant_Mauve_Paris-Gentle-Mates-scan.webp', num: 127, nom: 'Paris Gentle Mates',
+    fichier: '127_S_Moment-Instant_Mauve_Paris-Gentle-Mates-v2.webp', num: 127, nom: 'Paris Gentle Mates',
     categorie: 'Moment', sous_type: 'Instant', couleur: 'Mauve',
     effets: [
       { icone: 'etoile', texte: 'Mélangez 2 de vos Essences Mauves dans votre Réserve pour doubler la valeur de la première attaque que vous déclenchez ce tour.' }

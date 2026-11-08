@@ -672,7 +672,7 @@
   RPC.porte = () => {
     const m = maintDemo();
     return { ouvert: true, lancement: null, serveur: iso(now()), version: '3.0',
-      maintenance: m.actif ? { message: m.message, fin: m.fin, depuis: m.depuis } : null };
+      maintenance: m.actif && !(m.auto && m.fin && Date.parse(m.fin) <= now()) ? { message: m.message, fin: m.fin, depuis: m.depuis, auto: !!m.auto } : null };
   };
 
   RPC.set_profile = (p, { p_pseudo, p_avatar, p_frame }) => {
@@ -1255,7 +1255,9 @@
       if (!k) refuser('Carte inconnue.');
       if (k.promo) refuser('Cette carte ne se recycle pas.');
       if (k.rev && !revOuvertes()) refuser('Les Reverses ne se recyclent pas encore.');
-      const prix = cfg('recyclage_' + k.rar);
+      /* Une Reverse rapporte le double de sa classique (3.0.17). */
+      const base = cfg('recyclage_' + k.rar);
+      const prix = base == null ? null : base * (k.rev ? 2 : 1);
       if (prix == null) refuser('Cette carte ne se recycle pas.');
       const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === cid && t.status === 'pending').length;
       const g = gardeDe(p, cid);
@@ -1382,7 +1384,7 @@
   }
   RPC.labo_etat = p => { estAdmin(p); return laboEtat(p); };
   /* labo_maintenance (29_labo.sql, 3.0.12). */
-  RPC.labo_maintenance = (p, { p_actif, p_message, p_fin }) => {
+  RPC.labo_maintenance = (p, { p_actif, p_message, p_fin, p_auto }) => {
     estAdmin(p);
     const a = !!p_actif, m = maintDemo();
     if (a && p_fin && Date.parse(p_fin) <= now()) refuser('L\'heure de retour est déjà passée.');
@@ -1390,6 +1392,8 @@
     m.actif = a;
     m.message = a ? (String(p_message || '').trim().slice(0, 300) || null) : null;
     m.fin = a && p_fin ? iso(Date.parse(p_fin)) : null;
+    /* 3.0.17 : se lever d'elle-même à l'heure de retour (fin_auto). */
+    m.auto = !!(a && m.fin && (p_auto != null ? p_auto : deja && m.auto));
     m.depuis = !a ? null : deja ? m.depuis : iso(now());
     m.par = !a ? null : deja ? m.par : profil(p).pseudo;
     return laboEtat(p);
