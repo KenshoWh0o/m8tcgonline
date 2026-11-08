@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Devine l'illu (version 2.0) : réduit l'illustration de chaque carte en une
-   grille de 36 × 24 pixels, et l'écrit dans supabase/21b_illu.sql.
+   grille de 36 × 24 pixels, et l'écrit dans supabase/installation/21b_illu.sql.
 
        node tools/illu-pixels.js
 
@@ -8,7 +8,8 @@
    plus en plus nette à chaque essai. Si le navigateur recevait l'image, ou
    même toutes les grilles, il saurait déjà la réponse. Le serveur garde les
    grilles et n'envoie que la version floue du moment (illu_grille(),
-   supabase/21_reflets.sql), qu'il calcule en moyennant des blocs de celle-ci.
+   supabase/installation/21_reflets.sql), qu'il calcule en moyennant des
+   blocs de celle-ci.
 
    Une couleur tient sur 12 bits (4 par canal) : deux pixels font trois
    octets, et la plus fine des quatre grilles reste lisible.
@@ -102,6 +103,6 @@ insert into public.illu_pixels (card_id, data) values
 ${lignes.join(',\n')}
 on conflict (card_id) do update set data = excluded.data;
 `;
-  fs.writeFileSync(path.join(ROOT, 'supabase/21b_illu.sql'), sql);
-  console.log(`${ids.length} illustrations sur ${cartes.length} -> supabase/21b_illu.sql (${Math.round(sql.length / 1024)} Ko)`);
+  fs.writeFileSync(path.join(ROOT, 'supabase/installation/21b_illu.sql'), sql);
+  console.log(`${ids.length} illustrations sur ${cartes.length} -> supabase/installation/21b_illu.sql (${Math.round(sql.length / 1024)} Ko)`);
 });

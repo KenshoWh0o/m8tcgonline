@@ -1,5 +1,5 @@
 /* Onglet Quêtes. Toute la progression est comptée par le serveur au moment où
-   l'événement arrive vraiment (supabase/03_rpc.sql) : rien n'est déclaré par
+   l'événement arrive vraiment (supabase/installation/03_rpc.sql) : rien n'est déclaré par
    le navigateur, donc rien n'est gonflable depuis la console.
 
    Trois périodes, trois sous-onglets. Tout afficher d'un coup faisait une page
@@ -20,37 +20,48 @@ let qVue = 'daily';
 
 /* Une icône par famille d'objectif : on reconnaît la quête avant de la lire. */
 const QICO = {
-  checkin: 'clock', packs: 'star', new_cards: 'cards',
+  checkin: 'clock', packs: 'star', new_cards: 'cards', tutoriel: 'livre',
   rarity_R: 'quest', rarity_E: 'quest', rarity_L: 'coin',
   trades: 'swap', recycle: 'recycle', collection_pct: 'cards',
-  /* Toutes les cartes d'une rareté (supabase/04_seed.sql). */
+  /* Toutes les cartes d'une rareté (supabase/installation/04_seed.sql). */
   set_ES: 'cards', set_C: 'cards', set_PC: 'cards', set_R: 'cards', set_E: 'cards', set_L: 'coin',
   /* Version 2.0 : Reverses, Brillantes, Devine l'illu, invitations, personnalisation. */
   rev_R: 'reflets', rset_C: 'reflets', rset_PC: 'reflets', rset_R: 'reflets', rset_ALL: 'reflets',
   brill_ALL: 'promo', illu: 'illu', ev_visite: 'reflets', invite: 'amis', titre: 'user', perso: 'user',
-  /* Version 2.5 : L'Échauffement et son mode sans fin. */
-  ech_combat: 'sword', ech_victoire: 'trophy', ech_eclat: 'promo', ech_gagnes: 'sword', ech_parfaits: 'star',
-  ech_etoiles: 'star', ech_joueurs: 'cards', fab_rev: 'recycle', sf_victoire: 'sword',
   /* Version 2.1 : plusieurs exemplaires d'une même carte. */
-  ex_R: 'cards', ex_E: 'cards', ex_L: 'coin'
+  ex_R: 'cards', ex_E: 'cards', ex_L: 'coin',
+  /* Version 3.0 : les combats, les Secrètes, le Choc des Sections. */
+  combats: 'sword', victoires: 'sword', vaincus: 'sword', victoires_dures: 'sword', defis: 'amis',
+  campagne: 'trophy', legende: 'trophy', rarity_S: 'coin',
+  raid: 'foudre', raid_degats: 'foudre', raid_victoires: 'foudre', epreuve: 'epreuve', epreuve_victoires: 'epreuve',
+  deck: 'cards', cosm: 'user',
+  /* L'XP et le niveau de combattant (js/combat/niveaux.js). */
+  xp: 'niveau', niveau: 'niveau'
 };
+
+/* Les quêtes qui parlent de combat : la page Missions de l'onglet Combats
+   les réunit, et les quêtes de saison en font un thème. */
+const METRIQUES_COMBAT = ['combats', 'victoires', 'vaincus', 'victoires_dures', 'defis', 'campagne', 'legende',
+  'xp', 'niveau', 'raid', 'raid_degats', 'raid_victoires', 'epreuve', 'epreuve_victoires'];
+const estMissionCombat = q => METRIQUES_COMBAT.includes(q.metric);
 
 /* ---------- Comptages ---------- */
 const questesDe = scope => (save.quetes || []).filter(q => q.scope === scope);
 const questePrete = q => !q.claimed && q.progress >= q.goal;
 
-/* Nombre de récompenses à encaisser : sert la pastille de la barre du bas. */
-/* Les quêtes d'un événement vivent dans son onglet, qui a sa pastille : on ne
-   les compte pas deux fois. */
+/* Nombre de récompenses à encaisser : sert la pastille de la barre du bas.
+   Les seules quêtes de l'onglet : celles d'un événement ont leur pastille
+   sur l'onglet de l'événement, pas ici. */
+const SCOPES_ONGLET = SCOPES.map(s => s.id);
 function questesPretes() {
-  return (save.quetes || []).filter(q => !q.evenement && questePrete(q)).length;
+  return (save.quetes || []).filter(q => SCOPES_ONGLET.includes(q.scope) && questePrete(q)).length;
 }
 
 const questesPretesDe = scope => questesDe(scope).filter(questePrete).length;
 
 /* ---------- Remise à zéro ---------- */
 /* Les périodes sont calées sur l'heure de Paris côté serveur (period_key dans
-   supabase/01_schema.sql) : on calcule ici la même frontière, sinon le compte à
+   supabase/installation/01_schema.sql) : on calcule ici la même frontière, sinon le compte à
    rebours du joueur et la remise à zéro réelle ne tomberaient pas ensemble.
 
    `Intl` donne l'heure de Paris quelle que soit celle du téléphone, et gère
@@ -118,25 +129,42 @@ const questesFinies = liste =>
 function signalerQuetes(avant, apres) {
   if (!avant) return;
   const dejaFait = questesFinies(avant);
-  (apres || []).forEach(q => {
-    if (q.progress >= q.goal && !dejaFait.has(q.id)) notifQuete(q);
-  });
+  const neuves = (apres || []).filter(q => q.progress >= q.goal && !dejaFait.has(q.id));
+  /* Plusieurs à la fois (un combat en finit souvent trois) : une seule carte
+     qui les compte, au lieu d'une pile qui couvre la moitié de l'écran
+     (version 3.0.11). */
+  if (neuves.length > 1) notifQuetes(neuves);
+  else if (neuves.length) notifQuete(neuves[0]);
 }
 
 function notifQuete(q) {
+  /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
+     bannière de réussite donnerait l'impression d'un bug. */
+  const gain = q.reward > 0
+    ? `${q.monnaie === 'prismes' ? evIco() : shardIco}${fmtN(q.reward)}`
+    : q.item ? 'Récompense' : '';
+  carteQuete(q.titre, 'Quête accomplie', gain, q.scope);
+}
+
+/* Plusieurs quêtes d'un coup : leurs titres sur une ligne, et la somme de
+   leurs gains, monnaie par monnaie. */
+function notifQuetes(l) {
+  const somme = ev => l.filter(q => q.reward > 0 && (q.monnaie === 'prismes') === ev).reduce((s, q) => s + q.reward, 0);
+  const ec = somme(false), ev = somme(true);
+  const gain = [ec ? `${shardIco}${fmtN(ec)}` : '', ev ? `${evIco()}${fmtN(ev)}` : ''].filter(Boolean).join(' ');
+  carteQuete(l.map(q => q.titre).join(' · '), `${l.length} quêtes accomplies`, gain || 'Récompenses', l[0].scope);
+}
+
+/* La carte en haut de l'écran : ce qui est fait, une ligne d'état, le gain. */
+function carteQuete(titre, etat, gain, vue) {
   const pile = $('#qnotif');
   if (!pile) return;
 
   const el = document.createElement('div');
   el.className = 'qn';
   el.setAttribute('role', 'status');
-  /* Une quête qui paie en objet l'annonce en toutes lettres : « ◆ 0 » sur une
-     bannière de réussite donnerait l'impression d'un bug. */
-  const gain = q.reward > 0
-    ? `${q.monnaie === 'prismes' ? evIco() : shardIco}${fmtN(q.reward)}`
-    : q.item ? 'Récompense' : '';
   el.innerHTML = `<span class="qnico">${NAVICO.check}</span>
-    <span class="qntxt"><b>${h(q.titre)}</b><small>Quête accomplie</small></span>
+    <span class="qntxt"><b>${h(titre)}</b><small>${h(etat)}</small></span>
     ${gain ? `<span class="qngain">${gain}</span>` : ''}`;
 
   /* Deux quêtes peuvent tomber ensemble : un seul son pour la volée, sinon le
@@ -152,7 +180,7 @@ function notifQuete(q) {
     setTimeout(() => el.remove(), 320);
   };
   setTimeout(partir, QNOTIF_DUREE);
-  el.onclick = () => { partir(); qVue = q.scope; aller('quetes'); };
+  el.onclick = () => { partir(); qVue = vue; aller('quetes'); };
 }
 
 /* ---------- L'écran ---------- */
@@ -183,8 +211,99 @@ function vQuetes() {
       </div>
       <span class="wallet pageact">${shardIco}<b>${fmtN(save.shards)}</b></span>
     </div>
-    <div class="segbar">${onglets}</div>
+    ${vAujourdhui()}
+    <div class="segbar" role="tablist" aria-label="Période">${onglets}</div>
     ${vQuetesSection(qVue)}`;
+}
+
+/* ---------- Aujourd'hui (3.0.13, « Ta journée » en 3.0.14) ---------- */
+/* Ce qu'il reste à faire aujourd'hui, en tête des Quêtes :
+   les rendez-vous qui ont un plafond par jour — les boosters de la réserve,
+   Devine l'illu, l'Épreuve du Choc, les tentatives du Raid, les victoires
+   payées en solo, les défis payés entre amis. Pas un onglet de plus (le
+   propriétaire : « il y a déjà beaucoup d'onglets »), et pas une pastille
+   de plus : chaque rendez-vous a déjà la sienne là où il vit. Un toucher y
+   mène. Ce qui reste à faire passe devant ; ce qui est fait se coche. */
+function chargerAujourdhui() {
+  if (Backend.mode !== 'cloud' || !save) return;
+  if (typeof illuData !== 'undefined' && !illuData) chargerIllu();
+  if (cbEtat().section) relireRaid();
+  if (evenementEnCours() === 'choc' && !chEtat) chargerChoc();
+}
+
+/* « Ta journée » (refaite en 3.0.14 ; le propriétaire : « vraiment moche et
+   pas intuitif. Il doit être bien designé et doit pousser l'envie de faire
+   ses quotis, sans forcément être envahissant ») : une carte, pas une bande
+   qui défile — un anneau, un segment par rendez-vous, ce qui reste et ce
+   qu'il y a encore à gagner en quêtes du jour, la série de jours ; puis les
+   rendez-vous en tuiles, tous à l'écran, le prochain mis en avant. Tout
+   fait : une seule ligne, et l'heure où tout repart. */
+const ICO_FLAMME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c1.5 3.3 5.8 5.4 5.8 10.5a5.8 5.8 0 0 1-11.6 0c0-2.5 1.2-4.2 2.6-5.4.1 1.9.8 3 2 3.3-.5-2.9.1-5.6 1.2-8.4Z"/></svg>';
+function vAujourdhui() {
+  if (Backend.mode !== 'cloud') return '';
+  const l = [];
+  const ajoute = (fait, ico, titre, etat, lien) => l.push({ fait, ico, titre, etat, lien });
+
+  const n = save.unlimited ? 1 : (save.tickets || 0) + (save.bonus || 0);
+  ajoute(n <= 0, 'star', 'Boosters',
+    save.unlimited ? 'illimités' : n > 0 ? `${n} à ouvrir` : `dans ${timerClock()}`, 'data-tab="boosters"');
+
+  if (typeof illuData !== 'undefined' && illuData) {
+    ajoute(!!illuData.fini, 'illu', 'Devine l\'illu',
+      illuData.fini ? (illuData.trouve ? 'trouvée' : 'à demain') : 'celle du jour', 'data-tab="illu"');
+  }
+
+  if (evenementEnCours() === 'choc' && typeof chEtat !== 'undefined' && chEtat && chEtat.epreuve) {
+    const r = chEtat.epreuve.max - chEtat.epreuve.essais.length;
+    ajoute(r <= 0, 'epreuve', 'L\'Épreuve', r > 0 ? `${r} essai${r > 1 ? 's' : ''}` : 'faite', 'data-tab="choc" data-chv="epreuve"');
+  }
+
+  const e = cbEtat();
+  if (e.section) {
+    if (typeof rdEtat !== 'undefined' && rdEtat) {
+      const t = rdTentatives();
+      ajoute(t <= 0, 'foudre', 'Le Raid', t > 0 ? `${t} tentative${t > 1 ? 's' : ''}` : 'à demain', 'data-tab="combats" data-cbv="raid"');
+    }
+    const j = e.jour;
+    ajoute(j.recompensees >= j.plafond, 'sword', 'Solo',
+      `${Math.min(j.recompensees, j.plafond)}/${j.plafond} victoires`, 'data-tab="combats" data-cbv="solo"');
+    ajoute(j.defis >= j.defis_plafond, 'amis', 'Versus',
+      `${Math.min(j.defis, j.defis_plafond)}/${j.defis_plafond} défis`, 'data-tab="combats" data-cbv="versus"');
+  } else {
+    ajoute(false, 'sword', 'Combats', 'choisis ta Section', 'data-tab="combats"');
+  }
+
+  const total = l.length, faits = l.filter(x => x.fait).length;
+  /* Ce que les quêtes du jour rapportent encore (prêtes comprises). */
+  const gain = questesDe('daily').filter(q => !q.claimed && q.reward > 0 && q.monnaie !== 'prismes').reduce((s, q) => s + q.reward, 0);
+  const remise = resteAvantRemise('daily');
+  const serie = save.streak > 1 ? `<span class="auj-serie" title="Jours de connexion d'affilée">${ICO_FLAMME}<b class="tnum">${save.streak}</b> jours</span>` : '';
+  /* L'anneau : un segment par rendez-vous. */
+  const N = Math.max(1, total), vide = 14;
+  const segs = Array.from({ length: N }, (_, i) => `<circle cx="26" cy="26" r="21" pathLength="${N * 100}" stroke-dasharray="${100 - vide} ${N * 100 - 100 + vide}" stroke-dashoffset="${-i * 100 - vide / 2}" class="${i < faits ? 'on' : ''}"/>`).join('');
+  const anneau = `<span class="auj-anneau" role="img" aria-label="${faits} rendez-vous faits sur ${total}"><svg viewBox="0 0 52 52" aria-hidden="true">${segs}</svg><b class="tnum">${faits}<small>/${total}</small></b></span>`;
+
+  if (faits === total && !gain) {
+    return `<section class="auj boucle" aria-labelledby="auj-titre">
+      ${anneau}<div class="auj-t"><h2 id="auj-titre">Journée bouclée</h2><p>Tout repart dans <b class="tnum">${dureeCourte(remise)}</b>.</p></div>${serie}
+    </section>`;
+  }
+  /* Le prochain rendez-vous : le premier pas fait, dans l'ordre de la liste. */
+  const suivant = l.find(x => !x.fait);
+  const reste = total - faits;
+  return `<section class="auj" aria-labelledby="auj-titre">
+      <div class="auj-tete">
+        ${anneau}
+        <div class="auj-t"><h2 id="auj-titre">Ta journée</h2>
+          <p>${reste ? `Encore <b>${reste}</b> rendez-vous` : 'Tous tes rendez-vous sont faits'}${gain ? ` · <span class="auj-gain">${shardIco}<b class="tnum">${fmtN(gain)}</b> à gagner en quêtes</span>` : ''}</p>
+          <small>Tout repart dans <span class="tnum">${dureeCourte(remise)}</span></small></div>
+        ${serie}
+      </div>
+      <div class="auj-l">${l.map(x => `<button class="auj-c${x.fait ? ' fait' : ''}${x === suivant ? ' suivant' : ''}" ${x.lien}>
+          <span class="auj-ico" aria-hidden="true">${NAVICO[x.ico]}${x.fait ? `<i>${NAVICO.check}</i>` : ''}</span>
+          <b>${x.titre}</b><small>${x.etat}</small>
+        </button>`).join('')}</div>
+    </section>`;
 }
 
 function vQuetesSection(scope) {
@@ -221,12 +340,40 @@ function trierQuetes(l) {
   return l.slice().sort((a, b) => rangQuete(a) - rangQuete(b)
     || b.progress / b.goal - a.progress / a.goal || (a.ordre || 0) - (b.ordre || 0));
 }
-function vListeQuetes(liste) {
+function vListeQuetes(liste, cle) {
   const l = trierQuetes(liste);
   const faites = l.filter(q => q.claimed);
-  return `<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
-    ${faites.length ? `<details class="qfaites"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
+  return `${vToutRecuperer(l)}<div class="questlist">${l.filter(q => !q.claimed).map(q => vQuete(q)).join('')}</div>
+    ${faites.length ? `<details class="qfaites" data-garde="qfaites-${cle || 'liste'}"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
       <div class="questlist">${faites.map(q => vQuete(q)).join('')}</div></details>` : ''}`;
+}
+
+/* Plusieurs récompenses à prendre : un seul geste (version 3.0.11 ; les
+   saisonnières aussi depuis la 3.0.16, le propriétaire : « Pas de bouton
+   tout récupérer dans l'onglet saisonnier »). */
+function vToutRecuperer(liste) {
+  const prets = liste.filter(questePrete);
+  return prets.length > 1 ? `<button class="btn rf-tout qtout" data-act="quetes-tout" data-ids="${prets.map(q => h(q.id)).join(',')}" data-snd="piece">${NAVICO.check}Tout récupérer · ${prets.length} quêtes</button>` : '';
+}
+
+/* « Tout récupérer » (version 3.0.11) : les quêtes prêtes d'une liste, une
+   à une côté serveur (claim_quest : le serveur revérifie chacune), et un
+   seul message à la fin plutôt qu'un par quête. */
+async function recupererQuetes(ids) {
+  if (!ids.length) return;
+  occupe(true);
+  let n = 0;
+  try {
+    for (const id of ids) { await Backend.claimQuest(id); n++; }
+  } catch (e) {
+    toast(e.message || 'Une récompense n\'est pas passée.');
+  } finally {
+    occupe(false);
+  }
+  if (n) { SFX.jouer('gagne'); toast(`${n} récompense${n > 1 ? 's' : ''} encaissée${n > 1 ? 's' : ''}.`); }
+  render();
+  if (tab === 'choc' && typeof chargerChoc === 'function') chargerChoc();
+  if (tab === 'reflets' && typeof chargerReflets === 'function') chargerReflets();
 }
 
 /* Les quêtes de saison, par thème. Les paliers d'une même mesure (25, 50,
@@ -239,6 +386,8 @@ document.addEventListener('toggle', e => {
 }, true);
 const JALON_THEMES = [
   ['Collection', m => m === 'collection_pct' || m.startsWith('set_') || m.startsWith('rarity_') || m.startsWith('ex_')],
+  ['Combats', m => METRIQUES_COMBAT.includes(m) && m !== 'niveau'],
+  ['Niveau', m => m === 'niveau'],
   ['Reverses', m => m.startsWith('rset_')],
   ['Boosters', m => m === 'packs'],
   ['Et aussi', () => true]
@@ -267,11 +416,11 @@ function vJalons(liste) {
        ou si c'est le premier ; sinon, le choix du joueur tient jusqu'au
        rechargement. */
     const ouvert = qThemes[nom] != null ? qThemes[nom] : pretes > 0 || nom === JALON_THEMES[0][0];
-    return `<details class="qgroupe" data-qtheme="${nom}"${ouvert ? ' open' : ''}>
+    return `<details class="qgroupe" data-qtheme="${nom}" data-garde="qtheme-${nom}"${ouvert ? ' open' : ''}>
       <summary><b>${nom}</b><small>${l.length}</small>${pretes ? `<i class="pastille">${pretes}</i>` : ''}<span class="qchev">${NAVICO.caret}</span></summary>
       <div class="questlist">${l.map(q => vQuete(q, apres(q.id))).join('')}</div></details>`;
   }).join('');
-  return blocs + (faites.length ? `<details class="qfaites"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
+  return vToutRecuperer(liste) + blocs + (faites.length ? `<details class="qfaites" data-garde="qfaites-jalons"><summary>${NAVICO.check}Récupérées <b>${faites.length}</b></summary>
     <div class="questlist">${trierQuetes(faites).map(q => vQuete(q)).join('')}</div></details>` : '');
 }
 
@@ -314,7 +463,7 @@ function vQuete(q, apres) {
   const unite = q.metric === 'collection_pct' ? ' %' : '';
 
   return `<article class="quest${q.claimed ? ' done' : fini ? ' ready' : ''}">
-    <span class="qico">${NAVICO[fini ? 'check' : QICO[q.metric] || 'quest']}</span>
+    <span class="qico">${NAVICO[fini ? 'check' : (q.metric === 'ev_visite' && q.evenement === 'choc' ? 'choc' : QICO[q.metric]) || 'quest']}</span>
     <div class="qcorps">
       <div class="qhead"><b>${h(q.titre)}</b>${vRecompense(q)}</div>
       <p class="qdetail">${h(q.detail)}${apres ? ` <span class="qsuite">+${apres} palier${apres > 1 ? 's' : ''}</span>` : ''}${q.claimed ? '' : vMeilleure(q)}</p>

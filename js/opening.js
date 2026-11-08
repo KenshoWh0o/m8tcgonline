@@ -45,7 +45,8 @@ async function openBooster(opts) {
   header();
   if (!opts.test) noterPaquetOuvert();
 
-  rv = { cards: drawn, news, idx: 0, god: tirage.god, test: !!opts.test, opts, revealed: false };
+  rv = { cards: drawn, news, idx: 0, god: tirage.god, test: !!opts.test, opts, revealed: false,
+    k: opts.enchaine ? .55 : .72 };
 
   /* « Aller droit au récap » : on saute le défilé, pas le tirage. La
      collection a déjà été mise à jour par le serveur. */
@@ -78,9 +79,15 @@ function packOpen(done) {
   const god = rv.god;
   const cur = rv;
   const cols = god ? ['#fff6d0', '#ffc73b', '#ffffff', '#ffe08a'] : ['#ffffff', '#ffd7f0', '#a95cf2', '#8936ff'];
+  /* Version 3.0.11 : le rythme (`k`, aussi posé en `--rk` sur la scène pour
+     les animations CSS). Un godpack garde toute sa mise en scène ; un booster
+     ordinaire va un tiers plus vite, et celui qu'on enchaîne depuis le récap
+     presque deux fois plus : qui en ouvre beaucoup ne revoit pas la même
+     déchirure au ralenti. */
+  const k = god ? 1 : (cur.k || 1);
   const at = (ms, fn) => setTimeout(() => {
     if (rv === cur && document.body.contains(st)) fn();
-  }, ms);
+  }, ms * k);
   const blast = (y, n, speed, size) => {
     const r = pack.getBoundingClientRect();
     FX.burst(r.left + r.width / 2, r.top + r.height * y, { n, colors: cols, speed, up: 3, shape: 'star', size, g: .05, life: 48 });
@@ -150,8 +157,8 @@ function showStack() {
 
   /* La carte à surprise ne porte pas encore sa rareté : sa couleur ne doit rien révéler
      avant la révélation. doReveal() ajoute la classe au dernier moment. */
-  theater(`<div class="th-stage${rv.god ? ' god' : ''}${anim ? ' packed' : ''}" id="opening">
-    <div class="th-top"><span class="th-count" id="opcount">1 / ${n}</span>${rv.test ? '<span class="th-test">Test</span>' : ''}<button class="th-skip" data-t="skip">Tout voir</button></div>
+  theater(`<div class="th-stage${rv.god ? ' god' : ''}${anim ? ' packed' : ''}" id="opening" style="--rk:${rv.god ? 1 : rv.k}">
+    <div class="th-top"><span class="th-count" id="opcount">1 / ${n}</span>${rv.test ? `<span class="th-test">${DEMO ? 'Aperçu' : 'Test'}</span>` : ''}<button class="th-skip" data-t="skip">Tout voir</button></div>
     <div class="stackwrap">${rv.god ? '<div class="godaura" aria-hidden="true"></div><div class="godwash" aria-hidden="true"></div>' : ''}<div class="charge-ring" aria-hidden="true"></div><div class="shock" id="shock" aria-hidden="true"></div>
       <div class="stack3d" id="s3d"><div class="stack" id="stack">${rv.cards.map((c, i) => {
         const f = i === last && fin;
@@ -234,7 +241,7 @@ function announce() {
       cur.lock = false;
       const hint = $('#ophint');
       if (hint) hint.textContent = indice;
-    }, RM() ? 700 : 1600);
+    }, RM() ? 600 : 1000);
     return;
   }
   /* Une Reverse se montre un court instant avant qu'on puisse passer : le
@@ -251,7 +258,7 @@ function announce() {
       cur.lock = false;
       const hint = $('#ophint');
       if (hint) hint.textContent = indice;
-    }, RM() ? 300 : 750);
+    }, RM() ? 200 : 350);
     return;
   }
   $('#ophint').textContent = indice;
@@ -284,13 +291,13 @@ function doReveal(done) {
     stage.classList.remove('charging');
     top.classList.remove('veiled', 'charging');
     top.classList.add('unveil', 'hitcard', 'h' + c.rar);
-    const haut = c.rar === 'L' || c.rar === 'UN';
+    const haut = c.rar === 'L' || c.rar === 'UN' || c.rar === 'S';
     SFX.jouer(haut ? 'legend' : c.rar === 'E' ? 'epique' : 'rare');
     /* La vibration double le son : sur un téléphone en silencieux, c'est tout ce
        qui reste pour dire qu'il vient de se passer quelque chose. */
     vibrer(c.rar === 'UN' ? [40, 60, 40, 60, 40, 60, 120] : haut ? [30, 50, 30, 50, 60] : c.rar === 'E' ? [25, 45, 40] : 30);
     if (c.rar === 'E' || c.rar === 'L') top.classList.add('spin' + c.rar);
-    if (c.rar === 'UN') top.classList.add('spinL');
+    if (c.rar === 'UN' || c.rar === 'S') top.classList.add('spinL');
     rv.revealed = true;
 
     const r = top.getBoundingClientRect();
@@ -316,21 +323,21 @@ function doReveal(done) {
     void s3.offsetWidth;
     s3.classList.add('punch');
 
-    stage.classList.remove('flash-R', 'flash-E', 'flash-L');
+    stage.classList.remove('flash-R', 'flash-E', 'flash-L', 'flash-S', 'flash-UN');
     void stage.offsetWidth;
     stage.classList.add('flash-' + c.rar);
 
     FX.burst(cx, cy, { n: cfg.n, colors: cfg.colors, speed: cfg.speed, shape: 'star', g: .06, size: 4, life: 45 });
     FX.burst(cx, cy, { n: Math.round(cfg.n / 2), colors: cfg.colors, speed: cfg.speed * .55, g: .03, size: 2.2, life: 40 });
-    if (haut) setTimeout(() => FX.sparkle({ n: c.rar === 'UN' ? 220 : 120, colors: cfg.colors, size: 4 }), 200);
-    if (c.rar === 'UN') setTimeout(() => FX.sparkle({ n: 160, colors: cfg.colors, size: 3.4 }), 1100);
+    if (haut) setTimeout(() => FX.sparkle({ n: c.rar === 'UN' || c.rar === 'S' ? 220 : 120, colors: cfg.colors, size: 4 }), 200);
+    if (c.rar === 'UN' || c.rar === 'S') setTimeout(() => FX.sparkle({ n: 160, colors: cfg.colors, size: 3.4 }), 1100);
     else if (c.rar === 'E') setTimeout(() => FX.sparkle({ n: 45, colors: cfg.colors }), 200);
 
     $('#oprar').className = 'op-rar big r' + c.rar;
     $('#oprar').innerHTML = `<span class="slam">${cfg.label}</span>${rv.news[rv.idx] ? '<em>NEW</em>' : ''}`;
     $('#ophint').textContent = 'Glisse d\'un coup sec ou touche pour voir ton récap';
 
-    setTimeout(done, c.rar === 'UN' ? 1400 : c.rar === 'L' ? 900 : c.rar === 'E' ? 600 : 250);
+    setTimeout(done, c.rar === 'UN' || c.rar === 'S' ? 1400 : c.rar === 'L' ? 900 : c.rar === 'E' ? 600 : 250);
   }, RM() ? 0 : cfg.charge);
 }
 
@@ -470,7 +477,7 @@ function showRecap() {
   /* Toutes les cartes, Essences comprises : c'est le même total que l'onglet
      Collection, sinon les deux écrans s'obstinent à ne pas dire la même chose. */
   const all = cards;
-  const owned = all.filter(c => save.col[c.id] > 0).length;
+  const owned = mesCartesExtension();
   const R = RAR[best.rar] || RAR.C;
 
   theater(`<div class="recap ${rv.god ? 'god' : ''}">
@@ -487,7 +494,7 @@ function showRecap() {
   </div>`);
 
   SFX.jouer('gagne');
-  if ((best.rar === 'L' || best.rar === 'UN') && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: (REVEAL[best.rar] || REVEAL.L).colors }), 500);
+  if ((best.rar === 'L' || best.rar === 'UN' || best.rar === 'S') && !RM()) setTimeout(() => FX.sparkle({ n: 90, colors: (REVEAL[best.rar] || REVEAL.L).colors }), 500);
   /* Le paquet qu'on vient d'ouvrir, gardé pour le bouton « Partager ». */
   dernierTirage = { ids: drawn.map(c => c.id), god: rv.god, quand: new Date().toISOString() };
 }
@@ -504,7 +511,6 @@ function vRecapActions() {
     return '<button class="btn" data-t="again">Relancer ce test</button>'
       + '<button class="btn ghost dark" data-t="done">Terminer</button>';
   }
-
   /* Une série de boosters en plus (boutique, cadeau) : on enchaîne sur le
      suivant tant qu'il en reste. */
   if (rv.opts && rv.opts.bonus && save.bonus > 0) {
@@ -529,6 +535,10 @@ function vRecapActions() {
     <button class="btn ghost dark" data-t="done">Terminer</button></div>`;
 }
 
+/* Les cartes de l'extension qu'on a, les Secrètes au-delà (« 127 / 122 »). */
+const mesCartesExtension = () => cards.filter(c => save.col[c.id] > 0).length
+  + (typeof secretes !== 'undefined' ? secretes.filter(c => save.col[c.id] > 0).length : 0);
+
 $('#theater').addEventListener('click', e => {
   const t = e.target.closest('[data-t]');
   if (!t) return;
@@ -547,7 +557,7 @@ $('#theater').addEventListener('click', e => {
     }
     case 'again': {
       /* Les boosters en plus épuisés, « Ouvrir un autre » repart sur la réserve. */
-      const o = Object.assign({}, rv.opts);
+      const o = Object.assign({}, rv.opts, { enchaine: true });
       if (o.bonus && !(save.bonus > 0)) delete o.bonus;
       FX.clear();
       openBooster(o);
@@ -559,6 +569,12 @@ $('#theater').addEventListener('click', e => {
     case 'share':
       if (dernierTirage) partagerTirage(dernierTirage);
       break;
+    case 'grand': {
+      /* Le récap de plusieurs boosters : la carte en grand, sans quitter le récap. */
+      const c = byId[t.dataset.id];
+      if (c) openViewer(c);
+      break;
+    }
     /* La scène d'obtention d'une Promo vit dans le même théâtre, mais elle a
        sa propre sortie : voir fermerPromo() dans js/promos.js. */
     case 'promo-ok':

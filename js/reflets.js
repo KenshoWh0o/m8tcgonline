@@ -1,14 +1,15 @@
 /* Version 2.0 : l'événement « Reflets » et Devine l'illu.
 
    L'onglet de l'événement sert deux buts : faire jouer — quêtes, Pass,
-   boutique, Devine l'illu — et faire découvrir ce que la 2.0 apporte. Il
-   remplace Combats dans la barre du bas tant qu'il dure (js/app.js), et un
-   bandeau l'annonce en tête de l'écran Boosters (js/booster.js).
+   boutique, Devine l'illu — et faire découvrir ce que la 2.0 apporte. Tant
+   qu'il dure, il passe en tête du tiroir du compte (ongletsTiroir,
+   js/app.js), et un bandeau l'annonce en tête de l'écran Boosters
+   (js/booster.js).
 
    Un en-tête, et des sous-onglets qui ont chacun leur page : rien ne
    s'empile. Le sous-onglet ouvert vit dans `rfVue`.
 
-   Tout ce qui compte se décide côté serveur (supabase/21_reflets.sql) : le
+   Tout ce qui compte se décide côté serveur (supabase/installation/21_reflets.sql) : le
    solde de Prismes, les paliers, l'illustration du jour — que le navigateur
    ne reçoit qu'en pixels, et ne connaît qu'une fois la partie finie. */
 "use strict";
@@ -52,7 +53,7 @@ const rfQuetesPretes = () => (save.quetes || [])
 const rfPaliersPrets = () => rfData ? rfData.piste.filter(x => !x.pris && rfData.total >= x.seuil).length : 0;
 const rfIlluAJouer = () => !!(illuData && !illuData.fini);
 
-/* La pastille de l'onglet, dans la barre du bas. */
+/* La pastille de l'onglet, dans le tiroir et le rail. */
 function evQuetesPretes() {
   if (!evenementEnCours()) return 0;
   return rfQuetesPretes() + rfPaliersPrets() + (rfIlluAJouer() ? 1 : 0);
@@ -109,7 +110,7 @@ function vRfTete(fin) {
         <span class="rf-fin">${NAVICO.clock}<b data-rebours="${fin}">${h(dureeCourte(fin - Date.now()))}</b></span>
       </div>
     </div>
-    <nav class="rf-onglets" role="tablist">
+    <nav class="rf-onglets" role="tablist" data-defil="rf-onglets">
       ${RF_VUES.map(([id, nom]) => `<button class="${rfVue === id ? 'on' : ''}" data-rfvue="${id}" role="tab"
         aria-selected="${rfVue === id}">${nom}${pastille(id)}</button>`).join('')}
     </nav>
@@ -197,9 +198,9 @@ function vRfQuetes() {
   const ev = qs.filter(q => q.scope === 'ev');
   return `${rfTitre('Quêtes', `Elles paient en ${PRISMES.nom}, et chaque ${PRISMES.un} gagné fait avancer le Pass.`)}
     <h3 class="rf-sous">Du jour <small>· nouvelles dans ${h(dureeCourte(resteAvantRemise('daily')))}</small></h3>
-    ${vListeQuetes(jour)}
+    ${vListeQuetes(jour, 'rf-jour')}
     <h3 class="rf-sous">De l'événement</h3>
-    ${vListeQuetes(ev)}`;
+    ${vListeQuetes(ev, 'rf-ev')}`;
 }
 
 /* =====================================================================
@@ -357,7 +358,7 @@ function vRfBoutique() {
       <small>${h(it.detail)}</small>
       ${reste ? `<span class="rf-artreste">${fini && !it.unique_buy ? 'Épuisé' : reste}</span>` : ''}
       ${fini ? '<span class="qtag">Acquis</span>'
-        : `<button class="btn tiny" data-shop="${h(it.id)}" ${rfData.solde < it.prix ? 'disabled' : ''}>${prismeIco}${fmtN(it.prix)}</button>`}
+        : `<button class="btn tiny ghost" data-shop="${h(it.id)}" ${rfData.solde < it.prix ? 'disabled' : ''}>${prismeIco}${fmtN(it.prix)}</button>`}
     </article>`;
   };
   return `${rfTitre('Boutique', `En ${PRISMES.nom}, seulement pendant l'événement. Ton solde : ${prismeIco}<b class="tnum">${fmtN(rfData.solde)}</b>`)}
@@ -371,7 +372,7 @@ function vRfClassement() {
   const top = rfData.top || [];
   return `${rfTitre('Classement', `Ceux qui ont gagné le plus de ${PRISMES.nom} depuis le début de l'événement.`)}
     ${top.length ? `<ol class="rf-top">${top.map((j, i) => `<li class="${j.moi ? 'moi' : ''}">
-        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo)}
+        <span class="rf-rang r${i + 1}">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'md', j.photo, j.xp)}
         <span class="rf-joueur"><b>${h(j.pseudo)}</b>${j.titre && TITRES[j.titre] ? `<small class="titreligne t${TITRES[j.titre].ton}">${h(TITRES[j.titre].nom)}</small>` : ''}</span>
         <span class="rf-pts tnum">${prismeIco}${fmtN(j.total)}</span></li>`).join('')}</ol>`
       : '<p class="muted">Personne n\'a encore gagné de Prismes : à toi de commencer.</p>'}`;
@@ -483,7 +484,7 @@ async function illuProposer(id) {
     illuCherche = '';
     if (illuData.trouve) {
       SFX.jouer('gagne');
-      if (!RM()) FX.sparkle({ n: 110, colors: ['#55e6a6', '#ff7cc8', '#b38cff', '#fff'], size: 3.4 });
+      if (!RM()) FX.sparkle({ n: 110, colors: ['#4fd6a0', '#b3a6ff', '#c8bfff', '#fff'], size: 3.4 });
     } else SFX.jouer(illuData.fini ? 'erreur' : 'carte');
     try { rfData = await Backend.evenementEtat(); } catch (e) { /* l'ancien suffit */ }
     render();
@@ -514,7 +515,7 @@ function illuPartager() {
    ===================================================================== */
 async function chargerIllu() {
   try { illuData = await Backend.illuEtat(); } catch (e) { /* l'écran le dira */ }
-  if (tab === 'illu' || tab === 'reflets') render();
+  if (tab === 'illu' || tab === 'reflets' || tab === 'quetes') render();
   /* Ailleurs, seule la pastille de l'onglet change. */
   else if (typeof majDiscrete === 'function') majDiscrete(false);
 }
@@ -528,34 +529,15 @@ function vIlluPage() {
 /* =====================================================================
    Après l'événement : le récap (trois jours)
    ===================================================================== */
-/* L'événement fini depuis moins de trois jours (me(), supabase/21_reflets.sql),
-   ou l'aperçu du Labo. */
+/* L'événement fini depuis moins de trois jours (me(), supabase/installation/21_reflets.sql). */
 let rfRecap = null;
-let rfRecapApercu = null;
-const recapReflets = () => rfRecapApercu
-  || (save && save.recap && save.recap.code === 'reflets' && !evenementEnCours() ? save.recap : null);
+const recapReflets = () => (save && save.recap && save.recap.code === 'reflets' && !evenementEnCours() ? save.recap : null);
 
 async function chargerRecap() {
-  if (rfRecapApercu) { rfRecap = rfRecapApercu; return rfRecap; }
   try { rfRecap = await Backend.rpc('evenement_recap'); } catch (e) { rfRecap = null; }
   if (tab === 'reflets') render();
   return rfRecap;
 }
-
-/* L'aperçu du Labo : des chiffres plausibles, et rien d'enregistré. */
-function apercuRecap() {
-  const t = Date.now();
-  const bots = [['Nova.92', 't_elu', 1130], ['Lumen', 't_centurion', 1064], ['Mira', null, 980]];
-  rfRecapApercu = {
-    code: 'reflets', titre: 'Reflets', debut: new Date(t - 14 * 86400000).toISOString(), fin: new Date(t - 3600000).toISOString(),
-    jusqua: new Date(t + 3 * 86400000 - 3600000).toISOString(), apercu: true,
-    total: 870, paliers: 16, paliers_max: 20, pris: 16, illus: 9, reverses: 52, reverses_max: reverses.length || 85,
-    quetes: 41, rang: 5, joueurs: 37,
-    top: bots.map(([pseudo, titre, total]) => ({ pseudo, titre, total, avatar: 'star', frame: 'f_prisme', photo: null, moi: false }))
-  };
-  rfRecap = rfRecapApercu;
-}
-function quitterApercuRecap() { rfRecapApercu = null; rfRecap = null; aller('labo'); }
 
 function vRfRecap() {
   const r = rfRecap;
@@ -569,7 +551,6 @@ function vRfRecap() {
         ${reste ? `<span class="rf-fin">${NAVICO.clock}<span>encore <b data-rebours="${reste}">${h(dureeCourte(reste - Date.now()))}</b></span></span>` : ''}
       </div>
     </div>
-    ${r && r.apercu ? '<button class="btn tiny ghost rf-quitter" data-act="recap-quitter">Quitter l\'aperçu</button>' : ''}
   </header>`;
   if (!r) { chargerRecap(); return `<div class="rf">${tete}<p class="muted boitecharge">Chargement du récap…</p></div>`; }
 
@@ -577,7 +558,7 @@ function vRfRecap() {
     <b class="tnum">${val}</b><span>${lib}</span>${sous ? `<small>${sous}</small>` : ''}</div>`;
   const pct = r.reverses_max ? Math.round(r.reverses / r.reverses_max * 100) : 0;
   const podium = (r.top || []).map((j, i) => `<li class="p${i + 1}${j.moi ? ' moi' : ''}">
-      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo)}
+      <span class="rr-place">${i + 1}</span>${avatarHTML(j.avatar, j.frame, 'lg', j.photo, j.xp)}
       <b>${h(j.pseudo)}</b><small>${prismeIco}${fmtN(j.total)}</small></li>`).join('');
 
   return `<div class="rf">${tete}<div class="rf-page">
@@ -603,7 +584,6 @@ function vRfRecap() {
     </section>
     <section class="rr-suite">
       <h2>À suivre</h2>
-      ${vTeaser25()}
       <article class="rr-teaser combats">
         <span class="rr-tico">${NAVICO.sword}</span>
         <div><small>Version 3.0</small><b>Les Combats</b><p>Tes cartes vont bientôt quitter le classeur. Prépare ton deck.</p></div>
@@ -614,21 +594,6 @@ function vRfRecap() {
       </article>
     </section>
   </div></div>`;
-}
-
-/* Version 2.5 : ce qui arrive à la fin du récap (SORTIE, js/config.js), sur
-   le médaillon de L'Échauffement. Rien une fois la version sortie. */
-const sortieAVenir = () => (!sortieFaite() && sortieLe() ? srvTime(sortieLe()) : 0);
-function vTeaser25() {
-  const t = sortieAVenir();
-  if (!t) return '';
-  return `<article class="rr-teaser maj25">
-      ${typeof echIllu === 'function' ? echIllu(byId.c122, .6, .4, 'fond') : ''}
-      <span class="rr-tico">${NAVICO.sword}</span>
-      <div><small>Version 2.5 · ${h(jourParis(sortieLe()))}</small><b>L'Échauffement</b>
-        <p>Sept défis, un par jour, avec tes Joueurs. Et les Reverses se recyclent et se fabriquent.
-          Dans <strong data-rebours="${t}">${h(dureeCourte(t - Date.now()))}</strong>.</p></div>
-    </article>`;
 }
 
 /* Le bandeau de l'écran Boosters, en version récap. */
@@ -649,8 +614,8 @@ function recapAVoir() {
 }
 async function montrerRecap() {
   const a = recapReflets();
-  if (a && !a.apercu) accueilNoter({ recap: a.fin });
-  const r = rfRecapApercu || await chargerRecap();
+  if (a) accueilNoter({ recap: a.fin });
+  const r = await chargerRecap();
   if (!r) return;
   openSheet({
     title: 'Reflets, c\'est fini',
@@ -664,8 +629,6 @@ async function montrerRecap() {
         </div>
         ${revOuvertes() ? `<p class="rr-popneuf">${NAVICO.reflets}<span><b>Nouveau : les Reverses se recyclent et se fabriquent.</b>
           Fabriquer une Reverse coûte ${revCoutsTexte()} ${FRAGMENTS.nom}.</span></p>` : ''}
-        ${sortieAVenir() ? `<p class="rr-popneuf maj25">${NAVICO.sword}<span><b>La 2.5 arrive ${h(jourParis(sortieLe()))}.</b>
-          L'Échauffement : sept défis avec tes Joueurs. Et les Reverses se recyclent et se fabriquent.</span></p>` : ''}
         <p class="muted small">Le récap complet reste ${a && a.jusqua ? 'jusqu\'à ' + h(jourParis(a.jusqua)) : 'quelques jours'} dans l'onglet de l'événement. Devine l'illu, lui, continue.</p>
       </div>`,
     actions: [{ label: 'Voir le récap', primary: true, fn: () => { closeSheet(); aller('reflets'); } },

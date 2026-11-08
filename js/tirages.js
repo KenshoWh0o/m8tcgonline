@@ -1,6 +1,6 @@
 /* Mes tirages : l'historique des boosters.
 
-   Le serveur tient le journal (mes_tirages, supabase/15_evenements.sql) : les
+   Le serveur tient le journal (mes_tirages, supabase/installation/15_evenements.sql) : les
    trente derniers boosters, et des comptes sur tout ce qui a été tiré depuis
    la version 1.5.
 

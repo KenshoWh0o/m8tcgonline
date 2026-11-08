@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vérification — Mate TCG Online</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0c0910">
+<meta name="theme-color" content="#121119">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,700..900&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tokens.css?v=2.5-7dae2f">
-<link rel="stylesheet" href="css/base.css?v=2.5-7dae2f">
+<link rel="stylesheet" href="css/tokens.css?v=3.0.17-23cf86">
+<link rel="stylesheet" href="css/base.css?v=3.0.17-23cf86">
 <style>
 /* Page d'outillage : volontairement sobre, elle ne fait pas partie du jeu. */
 body{display:block;height:auto;min-height:100%}
@@ -71,8 +71,8 @@ code{background:var(--bg-2);border:1px solid var(--line);border-radius:5px;paddi
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="js/config.js?v=2.5-7dae2f"></script>
-<script src="js/supabase-config.js?v=2.5-7dae2f"></script>
+<script src="js/config.js?v=3.0.17-23cf86"></script>
+<script src="js/supabase-config.js?v=3.0.17-23cf86"></script>
 <script>
 "use strict";
 
@@ -103,7 +103,7 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
   /* ---- 1. Les deux clés ---- */
   if (!url || !cle) {
     poser({ etat: 'ko', titre: 'Les deux clés ne sont pas encore renseignées',
-      detail: 'Le jeu fonctionne, mais en mode hors ligne : la progression reste dans ce navigateur, sans compte ni échanges.',
+      detail: 'Sans elles, le jeu ne trouve pas de serveur et reste devant son écran d’entrée : il n’y a plus de jeu hors ligne.',
       faire: `Ouvre <code>js/supabase-config.js</code> et colle-y le <b>Project URL</b> et la clé
         <b>Publishable key</b> (ou <b>anon public</b> sur les projets plus anciens),
         que Supabase affiche dans <b>Settings › API</b>.
@@ -145,7 +145,7 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     return conclure();
   }
 
-  /* ---- 3. Inscription et confirmation par e-mail ---- */
+  /* ---- 3. Les inscriptions (Discord, et l'adresse e-mail si elle est rouverte) ---- */
   const emailOuvert = !!(typeof CONNEXION !== 'undefined' && CONNEXION.email);
   if (reglages.disable_signup) {
     poser({ etat: 'ko', titre: 'Les inscriptions sont fermées',
@@ -172,11 +172,16 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
 
   /* ---- 4. Discord ---- */
   const ext = reglages.external || {};
+  /* Discord est la seule connexion du jeu tant que l'adresse e-mail est fermée
+     (CONNEXION.email, js/config.js) : sans lui, personne n'entre. */
+  const faireDiscord = 'Étape 5 de <code>SETUP.md</code> : création de l’application Discord, puis <b>Authentication › Sign In / Providers › Discord</b> dans Supabase.';
   poser(ext.discord
     ? { etat: 'ok', titre: 'La connexion Discord est activée' }
-    : { etat: 'warn', titre: "La connexion Discord n'est pas activée",
-        detail: 'Ce n’est pas bloquant : la création de compte par e-mail suffit pour jouer.',
-        faire: 'Étape 6 de <code>SETUP.md</code> — création de l’application Discord, puis <b>Authentication › Providers › Discord</b> dans Supabase.' });
+    : emailOuvert
+      ? { etat: 'warn', titre: "La connexion Discord n'est pas activée",
+          detail: 'Ce n’est pas bloquant : l’inscription par adresse e-mail est ouverte.', faire: faireDiscord }
+      : { etat: 'ko', titre: "La connexion Discord n'est pas activée",
+          detail: 'C’est la seule façon de se connecter au jeu : personne ne peut entrer.', faire: faireDiscord });
 
   /* ---- 5. Les tables ---- */
   const sb = window.supabase.createClient(url, cle);
@@ -204,7 +209,10 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
     const extension = np == null ? nc : nc - np;
     poser(nc > 0
       ? { etat: 'ok', titre: 'La base est installée',
-          detail: `<b>${extension}</b> cartes d'extension${np ? ` et <b>${np}</b> promos` : ''},
+          /* « Autres cartes » : tout ce qui porte promo = true, soit les Promos,
+             les Reverses, les Brillantes, les Secrètes et la carte unique
+             (6 + 85 + 9 + 5 + 1 = 106 aujourd'hui). */
+          detail: `<b>${extension}</b> cartes d'extension${np ? ` et <b>${np}</b> autres cartes (Promos, Reverses, Brillantes, Secrètes, carte unique)` : ''},
             <b>${nq}</b> quêtes, <b>${ns}</b> articles en boutique.`
             + (np == null ? `<br><b>La colonne des promos manque</b> : rejoue
                  <code>supabase/TOUT.sql</code>, il ajoute les cartes Promo.` : '') }
@@ -259,48 +267,84 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
         faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
     : { etat: 'ok', titre: 'Écran d\'attente, boîte de réception, recyclage, fabrication, classement et historique sont installés' });
 
-  /* ---- 6 ter. La version 2.5 : L'Échauffement ---- */
-  /* Sans supabase/MAJ-2.5.sql, l'onglet Combats garde son annonce et
-     l'événement n'apparaît jamais : rien ne le signale ailleurs. */
-  {
-    const { error } = await sb.rpc('ech_etat');
-    poser(error && error.code === 'PGRST202'
-      ? { etat: 'ko', titre: 'L\'Échauffement (2.5) n\'est pas installé',
-          detail: 'La fonction <code>ech_etat()</code> manque : <code>supabase/MAJ-2.5.sql</code> n\'a pas été joué.',
-          faire: `Colle <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> (ou <code>supabase/TOUT.sql</code> en entier).` }
-      : { etat: 'ok', titre: 'L\'Échauffement (2.5) est installé' });
+  /* ---- 6 ter. La version 3.0 : les Combats et le Choc des Sections ---- */
+  /* PGRST202 : la fonction n'existe pas. Toute autre erreur (non connecté,
+     Section manquante, événement fini) prouve qu'elle est là. */
+  const manque30 = [];
+  for (const [fn, args, quoi] of [['combat_debut', { p_mode: '', p_cle: '', p_niveau: 0, p_deck: null }, 'les Combats'],
+                                   ['defi_etat', { p_id: '', p_depuis: 0 }, 'les défis entre amis'],
+                                   ['choc_etat', {}, 'l\'événement du Choc des Sections'],
+                                   ['raid_etat', {}, 'le Raid (27_raid.sql)'],
+                                   /* Une carte vide : refusée sans rien changer, même connecté. */
+                                   ['maitriser', { p_carte: '' }, 'la maîtrise des cartes (28_maitrise.sql)'],
+                                   ['combats_historique', {}, 'l\'historique des combats (3.0.12)']]) {
+    const { error } = await sb.rpc(fn, args);
+    if (error && error.code === 'PGRST202') manque30.push(quoi);
   }
-  /* Le 24 octobre 2026, L'Échauffement est devenu un événement (Braises,
-     Pass, quêtes, boutique : 22e_echauffement-evenement.sql) et a reçu son
-     mode sans fin (22f_sans-fin.sql). Une MAJ-2.5.sql collée avant n'a ni
-     l'un ni l'autre : l'onglet Combats reste alors aux seuls défis. */
+  poser(manque30.length
+    ? { etat: 'ko', titre: 'La version 3.0 n\'est pas installée sur le serveur',
+        detail: `Il manque : ${manque30.join(', ')}. Le jeu en 3.0 ne pourra ni ouvrir un combat, ni en payer un.`,
+        faire: `Rejoue <code>supabase/TOUT.sql</code> en entier dans le <b>SQL Editor</b>.` }
+    : { etat: 'ok', titre: 'Combats, défis, Choc des Sections, Raid, maîtrise et historique de la 3.0 sont installés' });
+
+  /* ---- 6 ter bis. La fonction qui vérifie les combats (3.0.14) ---- */
+  /* supabase/functions/combat-verifier : sans elle, aucun combat ne se paie
+     (le serveur ne croit plus la page). Appelée sans combat, elle répond
+     « non connecte » ou « Combat inconnu. » : elle est là. 404 : elle n'est
+     pas déployée. */
   {
-    const { error } = await sb.rpc('ech_sf_etat');
-    poser(error && (error.code === 'PGRST202' || /could not find the function/i.test(error.message || ''))
-      ? { etat: 'ko', titre: 'L\'événement de la 2.5 et son mode sans fin ne sont pas installés',
-          detail: 'La fonction <code>ech_sf_etat()</code> manque : la <code>supabase/MAJ-2.5.sql</code> collée date d\'avant le 24 octobre 2026 (sans Braises, Pass ni défi du jour).',
-          faire: 'Recolle la dernière <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' }
-      : { etat: 'ok', titre: 'L\'événement de la 2.5 (Braises, Pass) et son mode sans fin sont installés' });
+    let etat = null;
+    try {
+      const { data, error } = await sb.functions.invoke('combat-verifier', { body: {} });
+      if (!error) etat = 'ok';
+      else {
+        const st = error.context && error.context.status;
+        let corps = null;
+        try { corps = await error.context.json(); } catch (e) { /* pas de JSON */ }
+        etat = corps && corps.erreur ? 'ok' : st === 404 ? 'absente' : 'erreur:' + (st || error.message);
+      }
+    } catch (e) { etat = 'erreur:' + (e.message || e); }
+    poser(etat === 'ok'
+      ? { etat: 'ok', titre: 'La fonction qui vérifie les combats répond',
+          detail: 'Chaque combat est rejoué par le serveur avant d\'être payé (<code>combat-verifier</code>).' }
+      : { etat: 'ko', titre: etat === 'absente' ? 'La fonction qui vérifie les combats n\'est pas déployée' : 'La fonction qui vérifie les combats ne répond pas',
+          detail: `Sans elle, aucun combat ne rapporte rien${etat !== 'absente' ? ` (${E(String(etat).replace(/^erreur:/, ''))})` : ''}.`,
+          faire: 'Déploie <code>supabase/functions/combat-verifier</code> : <code>supabase functions deploy combat-verifier</code> (README, « La vérification des combats »).' });
+  }
+
+  /* ---- 6 quater. La version de la base et la maintenance (3.0.12) ---- */
+  /* porte() le dit à tout le monde, sans compte (supabase/installation/01_schema.sql). */
+  {
+    const { data: pt } = await sb.rpc('porte');
+    const m = pt && pt.maintenance;
+    poser(!pt || !pt.version
+      ? { etat: 'ko', titre: 'La base n\'a pas encore reçu la 3.0',
+          detail: '<code>porte()</code> ne donne pas de version : le site 3.0 montre l\'écran de maintenance à tout le monde, administrateurs compris.',
+          faire: 'Colle <code>supabase/TOUT.sql</code> dans le <b>SQL Editor</b>.' }
+      : m ? { etat: 'warn', titre: 'Le jeu est en maintenance',
+          detail: `Les joueurs voient l'écran de maintenance${m.message ? ` (« ${E(m.message)} »)` : ''} et le serveur refuse leurs actions ; seuls les administrateurs jouent.`,
+          faire: 'Pour la lever : Labo › Serveur › Maintenance.' }
+      : { etat: 'ok', titre: `Base en ${E(pt.version)}, sans maintenance en cours` });
   }
 
   /* ---- 7. L'adresse de retour ---- */
   const ici = location.origin + location.pathname.replace(/verif\.html$/, '');
   poser({ etat: 'warn', titre: 'Les adresses de retour sont à vérifier à la main',
     detail: `Cette page est servie depuis <code>${E(ici)}</code>. Sans cette adresse dans la
-      liste, le lien reçu par courriel et le retour de Discord tombent dans le vide.`,
+      liste, le retour de Discord tombe dans le vide.`,
     faire: `Supabase › <b>Authentication › URL Configuration</b> : mets cette adresse en
       <b>Site URL</b>, et ajoute <code>${E(ici)}**</code> dans <b>Redirect URLs</b>.
-      Ajoute aussi <code>http://localhost:8765/**</code> pour développer en local.` });
+      Ajoute aussi <code>http://localhost:8781/**</code> pour développer en local.` });
 
   /* ---- 8. Ton compte ---- */
   if (!session) {
     poser({ etat: 'att', titre: 'Tu n’es pas connecté sur cette page',
-      detail: 'Normal si tu n’as pas encore créé ton compte.',
-      faire: 'Ouvre le jeu, crée ton compte, confirme ton adresse par courriel, puis reviens ici.' });
+      detail: 'Normal si tu ne t’es pas encore connecté au jeu dans ce navigateur.',
+      faire: 'Invite-toi (étape 6 de <code>SETUP.md</code>), ouvre le jeu, connecte-toi avec Discord, puis reviens ici.' });
   } else {
     try {
       /* Par me(), et non par la table : le navigateur n'a pas le droit de lire
-         `profiles` directement (voir la fin de supabase/01_schema.sql). */
+         `profiles` directement (voir la fin de supabase/installation/01_schema.sql). */
       const { data: etat, error } = await sb.rpc('me');
       if (error) throw error;
       const data = etat && etat.profil;
@@ -309,36 +353,24 @@ const lien = (u, t) => `<a href="${u}" target="_blank" rel="noopener" style="col
             detail: 'L’onglet Labo t’est accessible dans le jeu.' }
         : { etat: 'warn', titre: `Connecté : ${data ? data.pseudo : session.user.email}`,
             detail: 'Ce compte n’a pas les droits d’administrateur.',
-            faire: `Pour te les donner : ouvre <code>supabase/05_admin.sql</code>, remplace
+            faire: `Pour te les donner : ouvre <code>supabase/administration/admin.sql</code>, remplace
               l’adresse par <code>${E(session.user.email || '')}</code>, et exécute-le dans le
               <b>SQL Editor</b>. Étape 7 de <code>SETUP.md</code>.` });
-      /* La version 2.5 : le Labo et la date de sortie (supabase/22d_admin.sql),
-         vérifiables seulement par un administrateur. */
-      if (data && data.is_admin) {
-        const { error: le } = await sb.rpc('labo_etat');
-        poser(le && (le.code === 'PGRST202' || /could not find the function/i.test(le.message || ''))
-          ? { etat: 'ko', titre: 'Le Labo de la 2.5 n\'est pas installé',
-              detail: 'La fonction <code>labo_etat()</code> manque : <code>supabase/MAJ-2.5.sql</code> n\'a pas été jouée en entier.',
-              faire: 'Colle <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' }
-          : le ? { etat: 'warn', titre: 'Le Labo répond mal', detail: E(le.message || '') }
-          : { etat: 'ok', titre: 'Le Labo de la 2.5 est installé' });
-      }
-      /* La version 2.5 : les Reverses (supabase/22c_reverses.sql). Une
-         MAJ-2.5.sql collée avant leur ajout installe L'Échauffement mais pas
-         elles : seul me() le dit, et seulement à un compte connecté. */
+      /* Les Reverses (reportées de la 2.5, supabase/installation/22c_reverses.sql) :
+         seul me() le dit, et seulement à un compte connecté. */
       const rv = etat && etat.parametres && etat.parametres.reverses;
       poser(rv
         ? { etat: 'ok', titre: rv.ouvertes ? 'Reverses : recyclage et fabrication ouverts'
               : rv.des ? `Reverses : ouverture le ${E(new Date(rv.des).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' }))}`
               : 'Reverses : installées, fermées, sans date d\'ouverture',
             detail: `Fabriquer : ${rv.couts.C} (Commune), ${rv.couts.PC} (Peu commune), ${rv.couts.R} (Rare) Fragments.` }
-        : { etat: 'ko', titre: 'Les Reverses (2.5) ne sont pas installées',
-            detail: '<code>me()</code> ne renvoie pas <code>parametres.reverses</code> : la <code>supabase/MAJ-2.5.sql</code> collée date d\'avant les Reverses.',
-            faire: 'Recolle la dernière <code>supabase/MAJ-2.5.sql</code> dans le <b>SQL Editor</b> : elle se rejoue sans danger.' });
+        : { etat: 'ko', titre: 'Les Reverses ne sont pas installées',
+            detail: '<code>me()</code> ne renvoie pas <code>parametres.reverses</code> : la base n\'a pas reçu <code>supabase/installation/22c_reverses.sql</code>.',
+            faire: 'Recolle <code>supabase/TOUT.sql</code> dans le <b>SQL Editor</b> : il se rejoue sans danger.' });
     } catch (e) {
       poser({ etat: 'warn', titre: 'Connecté, mais le profil est introuvable',
         detail: 'Le compte existe côté authentification, mais pas côté jeu.',
-        faire: 'Rejoue <code>supabase/TOUT.sql</code> : le déclencheur qui crée les profils en fait partie. Puis crée un nouveau compte.' });
+        faire: 'Rejoue <code>supabase/TOUT.sql</code> : le déclencheur qui crée les profils en fait partie. Puis reconnecte-toi avec Discord.' });
     }
   }
 
@@ -358,7 +390,7 @@ function conclure() {
   if (ko) {
     b.className = 'bilan ko';
     b.innerHTML = `<span class="gros">✕</span><div><b>${ko} point${ko > 1 ? 's' : ''} bloquant${ko > 1 ? 's' : ''}</b>
-      <p>Le jeu tourne, mais en hors ligne. Chaque point ci-dessous dit quoi faire.</p></div>`;
+      <p>Le jeu ne peut pas encore fonctionner. Chaque point ci-dessous dit quoi faire.</p></div>`;
   } else if (reste) {
     b.className = 'bilan ok';
     b.innerHTML = `<span class="gros">✓</span><div><b>Le serveur est branché</b>

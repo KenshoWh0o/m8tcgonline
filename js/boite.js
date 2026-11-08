@@ -2,7 +2,7 @@
 
    Demandes d'ami, demandes d'échange, réponses à ses propres demandes, et les
    annonces publiées pour tout le monde. C'est le serveur qui écrit chaque
-   événement au moment où il a lieu (supabase/11_boite.sql) : la page n'a rien
+   événement au moment où il a lieu (supabase/installation/11_boite.sql) : la page n'a rien
    à deviner, elle lit la boite et annonce ce qu'elle n'avait pas encore vu.
 
    ------------------------------------------------------------------------
@@ -47,7 +47,10 @@ const TEXTES_BOITE = {
   ami_accepte:     ['a accepté ta demande d\'ami', 'Nouvel ami'],
   echange_recu:    ['te propose un échange', 'Échange'],
   echange_accepte: ['a accepté ton échange', 'Échange conclu'],
-  echange_refuse:  ['a refusé ton échange', 'Échange refusé']
+  echange_refuse:  ['a refusé ton échange', 'Échange refusé'],
+  /* Version 3.0 : les défis entre amis. */
+  defi:            ['te défie en combat', 'Défi'],
+  defi_accepte:    ['accepte ton défi', 'Défi accepté']
 };
 
 /* ---------- Ce qu'il y a dans la boite ---------- */
@@ -75,7 +78,7 @@ function boiteNonLues() {
 /* La cloche, le titre de l'onglet, et la pastille de l'icône installée. */
 function majSignalBoite() {
   const n = boiteNonLues();
-  document.title = (n ? `(${n}) ` : '') + GAME_NAME;
+  document.title = (n ? `(${n}) ` : '') + TITRE_PAGE;
   try {
     if (navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge();
   } catch (e) { /* pas d'icône installée */ }
@@ -99,6 +102,7 @@ function boiteTexte(x) {
 function boiteAller(x) {
   if (x.type === 'annonce') return aller('boite');
   if (x.type === 'ami_demande' || x.type === 'ami_accepte') { socVue = 'amis'; return aller('social'); }
+  if (x.type === 'defi' || x.type === 'defi_accepte') return allerCb('defis');
   socVue = 'echanges';
   trVue = x.type === 'echange_recu' ? 'recues' : 'historique';
   aller('social');
@@ -115,7 +119,7 @@ function notifBoite(x) {
   el.setAttribute('role', 'status');
   el.innerHTML = `<span class="qnav">${x.type === 'annonce'
       ? `<span class="qnico">${NAVICO.annonce}</span>`
-      : avatarHTML(x.avatar, x.frame, 'sm', x.photo)}</span>
+      : avatarHTML(x.avatar, x.frame, 'sm', x.photo, x.xp)}</span>
     <span class="qntxt"><b>${texte}</b><small>${h(sous)}</small></span>`;
   pile.appendChild(el);
 
@@ -300,7 +304,7 @@ function vMessage(x) {
 
   return `<article class="bmsg${neuf ? ' neuf' : ''}">
     <button class="bava" data-fiche="${h(x.pseudo || '')}" aria-label="Profil de ${h(x.pseudo || '')}">
-      ${avatarHTML(x.avatar, x.frame, 'sm', x.photo)}</button>
+      ${avatarHTML(x.avatar, x.frame, 'sm', x.photo, x.xp)}</button>
     <div class="bcorps">
       <p class="btxt">${texte}</p>
       <time>${ilya(x.quand)}</time>

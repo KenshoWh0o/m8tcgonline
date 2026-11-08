@@ -16,9 +16,15 @@ function regen() {
   }
 }
 
+/* Le titre de l'onglet tel que la page l'a reçu : le nom du jeu, ou
+   « PRÉ-PROD 3.0.x · Mate TCG Online » dans la pré-prod (tools/demo.py).
+   brand() et majSignalBoite() (js/boite.js) partent de lui : réécrit avec
+   GAME_NAME seul, le titre perdait sa marque de pré-prod. */
+const TITRE_PAGE = document.title || GAME_NAME;
+
 function brand() {
   $('#brand').innerHTML = `<img src="${ART.logo}" alt="${h(GAME_NAME)}">`;
-  document.title = GAME_NAME;
+  document.title = TITRE_PAGE;
 }
 
 /* ---------- Compte à rebours ---------- */
@@ -53,30 +59,44 @@ function tickPct() {
 /* ---------- Tirage ---------- */
 /* Les cases tirées au sort du paquet. Le reste est fixe.
    Ces tables doivent rester identiques à celles de open_pack() dans
-   supabase/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux ouvertures de
+   supabase/installation/03_rpc.sql : le serveur tire, celui-ci ne sert qu'aux ouvertures de
    test du Labo, mais deux tables divergentes rendraient le Labo menteur. */
 const RATES = {
-  /* Quatrième carte, la Reverse (version 2.0). */
+  /* Cinquième carte, la Reverse (version 2.0). */
   REVERSE: { C: 50, PC: 35, R: 15 },
   /* La dernière, celle qu'on attend. */
-  HIT: { R: 80, E: 16, L: 4 },
-  /* Le godpack, case par case : ça monte jusqu'à la légendaire garantie. */
+  /* Version 3.0 : la Légendaire passe à 4,25 %, la Secrète arrive à 0,75 %
+     (la Rare cède le point qu'il fallait). */
+  HIT: { R: 79, E: 16, L: 4.25, S: 0.75 },
+  /* Le godpack (version 3.0.13) : trois Épiques, deux Légendaires, puis une
+     Secrète, la dernière, qui porte la révélation. */
   GODPACK: [
-    { R: 90, E: 10 },
-    { R: 70, E: 30 },
-    { R: 50, E: 50 },
-    { E: 90, L: 10 },
-    { E: 60, L: 40 },
-    { L: 100 }
+    { E: 100 },
+    { E: 100 },
+    { E: 100 },
+    { L: 100 },
+    { L: 100 },
+    { S: 100 }
   ]
 };
 const GOD = 1 / 2000;
 
+/* Une rareté vide se rabat sur la plus proche, dans l'ordre de pick_card
+   (supabase/installation/03_rpc.sql, et REPLI dans _demo/serveur.js) : le
+   Labo ne doit pas tirer autrement que le serveur. */
+const REPLI_RARETE = {
+  C: ['C', 'PC', 'R', 'E', 'L'], PC: ['PC', 'C', 'R', 'E', 'L'], R: ['R', 'PC', 'E', 'C', 'L'],
+  E: ['E', 'R', 'L', 'PC', 'C'], L: ['L', 'E', 'R', 'PC', 'C']
+};
+
 function pickFrom(pool, r) {
-  const order = ['C', 'PC', 'R', 'E', 'L'].sort((a, b) =>
-    Math.abs(RAR[a].rank - RAR[r].rank) - Math.abs(RAR[b].rank - RAR[r].rank) || RAR[b].rank - RAR[a].rank
-  );
-  for (const k of order) {
+  /* Une Secrète se tire dans les Secrètes (version 3.0). */
+  if (r === 'S') {
+    const l = (typeof secretes !== 'undefined' ? secretes : []);
+    if (l.length) return rnd(l);
+    r = 'L';
+  }
+  for (const k of REPLI_RARETE[r] || REPLI_RARETE.C) {
     const c = pool.filter(p => p.rar === k && p.cat !== 'essence');
     if (c.length) return rnd(c);
   }
@@ -100,10 +120,10 @@ function weighted(w) {
      3 · Peu commune
      4 · Essence
      5 · une Reverse : Commune 50 %, Peu commune 35 %, Rare 15 %
-     6 · le hit : Rare 80 %, Épique 16 %, Légendaire 4 %
+     6 · le hit : Rare 79 %, Épique 16 %, Légendaire 4,25 %, Secrète 0,75 %
    L'ordre compte : la pile se feuillette de la première à la dernière, et
    c'est la dernière qui porte la mise en scène de la révélation.
-   Godpack : six cartes qui montent, de la rare à la légendaire garantie. */
+   Godpack : trois Épiques, deux Légendaires, une Secrète (3.0.13). */
 function makeBooster(pool, god) {
   const out = [];
 
@@ -145,29 +165,8 @@ function pendant(ms) {
   return hh >= 48 ? `pendant ${Math.round(hh / 24)} jours` : `pendant ${hh} h`;
 }
 
-/* La 3.0 (le propriétaire, 8 novembre 2026 : « Mets sur le vrai site en
-   évidence cette date de sortie pour hype les gens ») : jusqu'à la sortie
-   (PROCHAINE, js/config.js), ce bandeau passe avant tous les autres, avec
-   son compte à rebours ; il ouvre la fenêtre de la 3.0 (montrerHype30,
-   js/bienvenue.js). */
-const hype30Actif = () => typeof PROCHAINE !== 'undefined' && Date.now() < srvTime(PROCHAINE.sortie);
-function vBandeau30() {
-  const s = srvTime(PROCHAINE.sortie);
-  const c = byId.c078;
-  return `<button class="rfban ban30" data-act="hype30" aria-label="La version ${h(PROCHAINE.version)} sort ce soir à minuit">
-    ${c && c.img ? `<span class="rf-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : ''}
-    <span class="rfban-txt">
-      <small>Version ${h(PROCHAINE.version)} · ce soir à minuit</small>
-      <b>Les combats arrivent</b>
-    </span>
-    <span class="ban30-rebours tnum" data-rebours="${s}">${h(dureeCourte(s - Date.now()))}</span>
-    <span class="rfban-fl" aria-hidden="true">›</span>
-  </button>`;
-}
-
 function vBandeauEvenement() {
   if (Backend.mode !== 'cloud' || !save) return '';
-  if (hype30Actif()) return vBandeau30();
   const ev = save.evenement;
   /* Version 2.0 : l'événement « Reflets » a son propre bandeau, qui mène à
      son onglet. */
@@ -175,12 +174,9 @@ function vBandeauEvenement() {
      mène au récap. */
   if (recapReflets()) return vBandeauRecap();
   if (ev && ev.code === 'reflets' && !ev.a_venir) return vBandeauReflets(ev);
-  /* Version 2.5 : L'Échauffement, qui mène à l'onglet Combats — pendant la
-     saison, son récap, puis le défi du jour. C'est aussi un événement (code
-     `echauffement`) : il n'a jamais le bandeau générique, même avant de
-     commencer (le récap de Reflets l'annonce déjà). */
-  const ech = vBandeauEch();
-  if (ech || (ev && ev.code === 'echauffement')) return ech;
+  /* Version 3.0 : le Choc des Sections, et son récap (js/choc.js). */
+  if (recapChoc()) return vBandeauChocRecap();
+  if (ev && ev.code === 'choc' && !ev.a_venir) return vBandeauChoc();
   const ch = save.chasse || {};
   const u = uniques[0];
   const nomU = u ? u.nom : 'la carte unique';
@@ -261,17 +257,11 @@ function prochaineBascule() {
   const ev = save.evenement;
   if (ev) t.push(srvTime(ev.a_venir ? ev.debut : ev.fin));
   if (chasseAnnoncee(save.chasse)) t.push(srvTime(save.chasse.ouvre_le));
-  /* Version 2.5 : l'ouverture des Reverses (supabase/22c_reverses.sql), la
-     fin du récap de Reflets et le début de L'Échauffement — la sortie de la
-     2.5 tombe à la même minute. */
+  /* La fin du récap d'un événement (evenements.recap_jusqua). */
+  if (save.recap && save.recap.jusqua) t.push(srvTime(save.recap.jusqua));
+  /* L'ouverture des Reverses (supabase/installation/22c_reverses.sql). */
   const rv = (save.parametres || {}).reverses;
   if (rv && !rv.ouvertes && rv.des) t.push(srvTime(rv.des));
-  if (save.recap && save.recap.jusqua) t.push(srvTime(save.recap.jusqua));
-  if (typeof echData !== 'undefined' && echData && !echData.apercu && !echData.ouvert && echData.debut) t.push(srvTime(echData.debut));
-  /* La fin de la saison (le mode sans fin commence), puis chaque minuit : un
-     nouvel adversaire (chargerEch, js/echauffement.js). */
-  if (typeof echActif === 'function' && echActif() && !echData.apercu) t.push(srvTime(echData.fin));
-  if (typeof echSf !== 'undefined' && echSf && echSf._fin) t.push(echSf._fin);
   return t.length ? Math.min(...t) : 0;
 }
 
@@ -305,12 +295,21 @@ function vBoosters() {
 
   <footer class="packfoot">
     ${vReserve(full)}
-    ${bonus && !can ? '' : `<button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>`}
-    ${bonus ? `<button class="btn packbtn bonusbtn${can ? ' ghost' : ''}" data-act="open-bonus">
-        ${NAVICO.promo}Ouvrir un booster en plus<span class="rc-reste">${bonus}</span></button>
-      <p class="bonuslab">Achetés ou offerts : hors réserve, ils ne touchent pas à sa recharge.</p>` : ''}
+    ${vBoutonsOuvrir(can, bonus)}
+    ${bonus ? '<p class="bonuslab">Achetés ou offerts : hors réserve, ils ne touchent pas à sa recharge.</p>' : ''}
   </footer>
 </section>`;
+}
+
+/* Les boutons d'ouverture : un booster de la réserve, un booster en plus
+   (achetés ou offerts). Pas de « Tout ouvrir » : la 3.0.11 en avait un, retiré
+   en 3.0.12 à la demande du propriétaire — un geste qu'on rate du doigt, et
+   chaque booster mérite sa révélation. */
+function vBoutonsOuvrir(can, bonus) {
+  const principal = bonus && !can ? '' : `<button class="btn packbtn" data-act="open" ${can ? '' : 'disabled'}>${ICON.star}${can ? 'Ouvrir' : 'Réserve vide'}</button>`;
+  const enPlus = bonus ? `<button class="btn packbtn bonusbtn${can ? ' ghost' : ''}" data-act="open-bonus">
+        ${NAVICO.promo}${can ? 'Un booster en plus' : 'Ouvrir un booster en plus'}<span class="rc-reste">${bonus}</span></button>` : '';
+  return principal + enPlus;
 }
 
 /* La réserve : une rangée de jetons, un par booster disponible, et la recharge
@@ -415,36 +414,27 @@ function bindPack() {
     }
   });
 
+  /* Le paquet ne bouge que s'il se voit (3.0.13) : la boucle tournait sous
+     l'arène, une fenêtre ou une ouverture, et onglet caché, à chaque image. */
+  let vu = true, raf = 0, io = null;
+  const relancer = () => { if (!raf && alive()) raf = requestAnimationFrame(frame); };
+  if ('IntersectionObserver' in window) {
+    io = new IntersectionObserver(l => { vu = l[l.length - 1].isIntersecting; if (vu) relancer(); });
+    io.observe(pk);
+  }
+  const cache = () => document.hidden || document.body.classList.contains('en-arene') || document.body.classList.contains('intheater');
   const frame = now => {
-    if (!alive()) return;
+    raf = 0;
+    if (!alive()) { if (io) io.disconnect(); return; }
+    if (!vu) return;
+    if (cache()) { setTimeout(relancer, 500); return; }
     const trx = T.manual ? T.mrx : (RM() ? 0 : Math.sin(now / 2400) * 3.5);
     const tryy = T.manual ? T.mry : (RM() ? 0 : Math.sin(now / 1900) * 6);
     T.rx += (trx - T.rx) * .12;
     T.ry += (tryy - T.ry) * .12;
     box.style.transform = `rotateX(${T.rx.toFixed(2)}deg) rotateY(${T.ry.toFixed(2)}deg)`;
     pk.style.setProperty('--fx', (50 + T.ry * 1.8).toFixed(1) + '%');
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
-}
-
-function bindTilt(root) {
-  (root || document).querySelectorAll('.tilt').forEach(el => {
-    const set = (x, y) => {
-      el.style.setProperty('--rx', ((.5 - y) * 16).toFixed(2) + 'deg');
-      el.style.setProperty('--ry', ((x - .5) * 20).toFixed(2) + 'deg');
-      el.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
-      el.style.setProperty('--my', (y * 100).toFixed(1) + '%');
-      el.style.setProperty('--ga', '1');
-    };
-    el.addEventListener('pointermove', e => {
-      const r = el.getBoundingClientRect();
-      set((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
-    });
-    el.addEventListener('pointerleave', () => {
-      el.style.setProperty('--rx', '0deg');
-      el.style.setProperty('--ry', '0deg');
-      el.style.setProperty('--ga', '0');
-    });
-  });
+  relancer();
 }

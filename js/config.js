@@ -2,11 +2,14 @@
 
    Identité et mentions légales, palette des essences, échelle de raretés,
    réglages de tirage et de révélation, cadres et avatars, liste des onglets et
-   jeu d'icônes. Aucune logique ici : ce fichier est lu, jamais exécuté.
+   jeu d'icônes. Presque aucune logique ici : des valeurs, que les autres
+   fichiers lisent. Deux exceptions : `PRISMES`, dont le nom suit l'événement
+   en cours (evMonnaieCode), et INTERVAL / TICKET_CAP, que Backend.apply
+   (js/backend.js) réécrit avec les valeurs du serveur.
 
    Les valeurs qui touchent à l'économie — taille d'un booster, plafond de la
    réserve, délai d'échange, palier des Promos — ont toutes un jumeau côté
-   serveur (cfg() dans supabase/01_schema.sql). Celles d'ici ne servent qu'à
+   serveur (cfg() dans supabase/installation/01_schema.sql). Celles d'ici ne servent qu'à
    l'affichage et au mode hors ligne : c'est le serveur qui tranche. */
 "use strict";
 
@@ -14,6 +17,13 @@
 /* Le dernier mot du nom devient la ligne basse du logo (comme « TRADING CARD GAME » sous « GentleMates »). */
 const GAME_NAME = 'Mate TCG Online';
 const SET_NAME = 'Tout commence ici';
+
+/* La démo présentée à Gentle Mates (matetcg.com/demo, tools/demo.py --demo,
+   3.0.14) : le jeu tel qu'il serait au premier jour. Ni numéro de version, ni
+   nouveautés, ni traces des événements passés ; une présentation à la
+   première visite, un Labo pour tout tester, pas de lien vers le Discord.
+   Posé par la page de la démo avant tout script ; faux partout ailleurs. */
+const DEMO = globalThis.DEMO_M8 === true;
 
 /* Mention légale, affichée à l'identique sur l'écran d'attente et dans Réglages.
    Un seul endroit pour la modifier : elle doit dire la même chose aux deux. */
@@ -25,24 +35,6 @@ const MENTIONS = 'Projet non affilié à Gentle Mates. Toutes les images présen
    tiendrait sur huit lignes et se lirait comme un bas de page oublié. */
 const MENTIONS_COURT = 'Projet non affilié à Gentle Mates. '
   + 'Marques et images appartenant à leurs détenteurs respectifs.';
-
-/* ---------- La sortie de la version ---------- */
-/* Une version peut être en ligne avant sa sortie : jusqu'à `le` (heure du
-   serveur), le jeu se montre tel qu'avant — le numéro lu par les joueurs est
-   `avant`, la fenêtre des nouveautés attend — puis bascule tout seul, page
-   ouverte ou non (sortieFaite, js/pwa.js). Si le serveur donne une date pour
-   cette version (me() › parametres.sorties), c'est la sienne qui compte :
-   le Labo la déplace avec le reste du calendrier. Ce qui se joue côté
-   serveur (L'Échauffement, les Reverses) a ses propres dates, posées à la
-   même minute par supabase/calendrier-2.5.sql. `le: null` : la version est
-   sortie dès sa mise en ligne. */
-const SORTIE = { version: '2.5', le: '2026-10-26T00:00:00+01:00', avant: '2.1.3' };
-/* La 3.0, annoncée par le récap de L'Échauffement (le propriétaire, 2 novembre
-   2026 : « maintenance lundi 9 novembre SOIR à minuit, sortie de la version
-   mardi 10 novembre SOIR à minuit ») : la maintenance commence dans la nuit
-   du lundi 9 au mardi 10 novembre à 0 h, la 3.0 sort dans la nuit du mardi 10
-   au mercredi 11 à 0 h, heure de Paris. vEchSuite30, js/echauffement.js. */
-const PROCHAINE = { version: '3.0', maintenance: '2026-11-08T23:50:00+01:00', sortie: '2026-11-09T00:00:00+01:00' };
 
 /* Dossier des images, ajouté devant le champ "fichier" de chaque carte de js/cards-data.js. */
 const CARD_DIR = 'cards/';
@@ -103,10 +95,13 @@ const RAR = {
   R: { nom: 'Rare', sym: '◆◆◆', rank: 3 },
   E: { nom: 'Épique', sym: '★', rank: 4 },
   L: { nom: 'Légendaire', sym: '★★', rank: 5 },
+  /* Version 3.0 : les Secrètes, au-delà des 122 (« 123/122 »). */
+  S: { nom: 'Secrète', sym: '✦✦', rank: 5.5 },
   PR: { nom: 'Promo', sym: '✦', rank: 6, promo: true },
-  /* Hors extension, comme les Promos : jamais dans les 122, jamais échangées
-     ni recyclées. La Brillante sort de la case Essence d'un booster, une fois
-     sur cinquante ; l'Unique n'existe qu'en un exemplaire dans tout le jeu. */
+  /* Hors extension, comme les Promos : jamais dans les 122, jamais recyclées.
+     La Brillante sort de la case Essence d'un booster, une fois sur cinquante,
+     et s'échange contre une autre Brillante (version 3.0.11) ; l'Unique
+     n'existe qu'en un exemplaire dans tout le jeu, et ne s'échange pas. */
   BR: { nom: 'Brillante', sym: '✧', rank: 7, promo: true },
   UN: { nom: 'Unique', sym: '◈', rank: 8, promo: true }
 };
@@ -119,24 +114,23 @@ const DEFD = { ES: 0, C: 60, PC: 80, R: 100, E: 120, L: 150 };
 
 /* ---------- Réglages des boosters ---------- */
 /* Valeurs de repli, utilisées hors ligne. Connecté, le serveur impose les siennes
-   (fonction cfg() dans supabase/01_schema.sql) : la montre du téléphone n'y peut rien. */
+   (fonction cfg() dans supabase/installation/01_schema.sql) : la montre du téléphone n'y peut rien. */
 let INTERVAL = 4 * 60 * 60 * 1000;
 let TICKET_CAP = 5;
 
 /* Nombre de cartes par booster. La composition case par case est dans
    makeBooster() (js/booster.js) et, pour de vrai, dans open_pack()
-   (supabase/03_rpc.sql). */
+   (supabase/installation/03_rpc.sql). */
 const PACK_SIZE = 6;
 
-/* Emplacements Secrets tenus en réserve dans la collection : numérotés à la suite des cartes
-   existantes, mais hors du total puisqu'ils ne sont pas encore sortis. 0 pour les masquer. */
-const SECRETS = 5;
 
 /* Mise en scène de la dernière carte selon la rareté (durée de charge en ms, particules, couleurs) */
 const REVEAL = {
   R: { charge: 450, colors: ['#39b8ff', '#ffffff', '#b8ecff'], n: 50, speed: 9, label: 'Rare', rc: '#39b8ff' },
   E: { charge: 800, colors: ['#8936ff', '#ec8fff', '#ffffff', '#d9b8ff'], n: 100, speed: 11, label: 'Épique', rc: '#8936ff' },
   L: { charge: 1150, colors: ['#ffc73b', '#fff3b0', '#ec8fff', '#ffffff'], n: 160, speed: 14, label: 'Légendaire', rc: '#ffc73b' },
+  /* Version 3.0 : la Secrète, presque aussi rare que l'Unique. */
+  S: { charge: 1500, colors: ['#ffffff', '#c9d6ff', '#ff7cc8', '#7fd8ff', '#ffe28a'], n: 200, speed: 15, label: 'Secrète', rc: '#e8ecff' },
   /* La carte unique : la plus longue charge du jeu, et toutes les couleurs. */
   UN: { charge: 1900, colors: ['#ffc73b', '#ec8fff', '#39b8ff', '#55e6a6', '#ffffff'], n: 240, speed: 16, label: 'Unique', rc: '#ec8fff' }
 };
@@ -170,14 +164,14 @@ const CONTACT = 'matetcgonline@gmail.com';
 /* ---------- Économie ---------- */
 const MONNAIE = { nom: 'Éclats', un: 'Éclat' };
 /* La seconde monnaie : ce que rapporte le recyclage, et ce que coûte une
-   carte fabriquée (supabase/12_recyclage.sql). Elle n'achète rien d'autre. */
+   carte fabriquée (supabase/installation/12_recyclage.sql). Elle n'achète rien d'autre. */
 const FRAGMENTS = { nom: 'Fragments', un: 'Fragment' };
 /* Une Essence Brillante une fois sur… Copie de cfg('foil_odds') : ne sert qu'aux
    ouvertures de test du Labo, c'est le serveur qui tire pour de vrai. */
 const FOIL_ODDS = 50;
 
 /* ---------- Les succès ---------- */
-/* Les identifiants viennent du serveur (succes_de, supabase/15_evenements.sql),
+/* Les identifiants viennent du serveur (succes_de, supabase/installation/15_evenements.sql),
    qui décide ; ici, ce qu'on en montre. L'ordre est celui de l'affichage. */
 const SUCCES = [
   { id: 'premier_booster',    nom: 'Premier paquet',     dit: 'Ouvrir un premier booster.',            ico: 'star',    ton: 'C' },
@@ -203,7 +197,7 @@ const SUCCES = [
 
 /* ---------- Les titres (version 2.0) ---------- */
 /* Un titre s'affiche sous le pseudo : profil, fiche, classement. La plupart
-   viennent d'un succès (titres_de, supabase/21_reflets.sql) ; les autres sont
+   viennent d'un succès (titres_de, supabase/installation/21_reflets.sql) ; les autres sont
    gagnés — Pass et boutique de l'événement, quêtes. `ton` : sa couleur, comme
    une rareté. `comment` : ce qu'il faut faire pour l'avoir. */
 const TITRES = {
@@ -218,8 +212,9 @@ const TITRES = {
   t_prisme:    { nom: 'Éclat absolu',              ton: 'L',  comment: 'Réunir les 9 Essences Brillantes' },
   t_maitre:    { nom: 'Maître de l\'extension',    ton: 'L',  comment: 'Posséder les 122 cartes' },
   t_reflet:    { nom: 'Miroir parfait',            ton: 'L',  comment: 'Réunir les 85 Reverses' },
+  /* Version 2.5 : L'Échauffement et son événement (supabase/22b_echauffement.sql,
+     22e et 22f de la 2.5). La 3.0 ne les donne plus ; ceux qui les ont les gardent. */
   t_echauffe:  { nom: 'Échauffé',                  ton: 'E',  comment: 'Les 21 étoiles de L\'Échauffement' },
-  /* Version 2.5 : L'Échauffement devenu événement (supabase/22e_echauffement-evenement.sql). */
   t_ech_round: { nom: 'Premier round',             ton: 'EV', comment: 'Palier 5 du Pass de L\'Échauffement' },
   t_ech_feu:   { nom: 'Feu sacré',                 ton: 'EV', comment: 'Palier 15 du Pass de L\'Échauffement' },
   t_ech_entraineur: { nom: 'Entraîneur',           ton: 'EV', comment: 'Boutique de l\'événement « L\'Échauffement »' },
@@ -228,20 +223,49 @@ const TITRES = {
   t_collect:   { nom: 'Collectionneur de Reflets', ton: 'EV', comment: 'Boutique de l\'événement « Reflets »' },
   t_ame:       { nom: 'Âme des Reflets',           ton: 'EV', comment: 'Palier 19 du Pass Reflets' },
   t_elu:       { nom: 'L\'Élu',                    ton: 'UN', comment: 'Posséder la carte unique' },
+  /* Version 3.0 : les combats. */
+  t_sections:  { nom: 'Champion des Sections',     ton: 'L',  comment: 'Finir la campagne des Combats' },
+  t_legende:   { nom: 'Tombeur de Légende',        ton: 'E',  comment: 'Gagner en Arcade, difficulté Légende' },
+  t_stratege:  { nom: 'Stratège',                  ton: 'R',  comment: 'Gagner 100 combats' },
+  /* Version 3.0.14 : le coffre de la dernière phase d'un Raid (RAID.phases,
+     js/combat/choc-data.js ; raid_reclamer, 27_raid.sql). */
+  t_heros_raid:{ nom: 'Héros du Raid',             ton: 'L',  comment: 'Abattre la dernière phase d\'un Raid' },
+  /* L'événement de la 3.0, « Le Choc des Sections » (js/combat/choc-data.js). */
+  t_recrue:    { nom: 'Recrue du Choc',            ton: 'EV', comment: 'Palier 3 du Pass du Choc' },
+  t_veteran:   { nom: 'Vétéran du Choc',           ton: 'EV', comment: 'Palier 19 du Pass du Choc' },
+  t_maitre_choc:{ nom: 'Maître du Choc',           ton: 'EV', comment: 'Palier 29 du Pass du Choc' },
+  t_supporter: { nom: 'Supporter du Choc',         ton: 'EV', comment: 'Boutique de l\'événement « Le Choc des Sections »' },
+  /* Les niveaux de combattant (js/combat/niveaux.js). */
+  t_bagarreur: { nom: 'Bagarreur',                 ton: 'C',  comment: 'Atteindre le niveau 5 de combattant' },
+  t_veteran_arene:{ nom: 'Vétéran de l\'arène',    ton: 'R',  comment: 'Atteindre le niveau 20 de combattant' },
+  t_maitre_arene:{ nom: 'Maître de l\'arène',      ton: 'E',  comment: 'Atteindre le niveau 40 de combattant' },
+  t_legende_arene:{ nom: 'Légende de l\'arène',    ton: 'L',  comment: 'Atteindre le niveau 50 de combattant' },
   t_admin:     { nom: 'Administrateur',            ton: 'ADM', comment: 'Réservé à l\'équipe du jeu' }
 };
 
-/* La monnaie d'un événement (supabase/21_reflets.sql) : elle se gagne en
+/* La démo de Gentle Mates (DEMO) montre le jeu à son premier jour : les
+   titres, les cadres et le succès qui disent un passé — les premières
+   versions, les invitations de la bêta, les événements Reflets et
+   L'Échauffement — n'y existent pas. Les cadres des succès (Maître, Reflet,
+   Aurore) restent : ils se gagnent toujours. Le titre d'administrateur non
+   plus : le visiteur de la démo l'est, pour le Labo. */
+const PASSES = new Set(['t_admin', 'pionnier', 't_pionnier', 't_hote', 't_eclaireur', 't_collect', 't_ame', 'f_miroir', 'f_nebuleuse',
+  't_echauffe', 't_ech_round', 't_ech_feu', 't_ech_entraineur', 't_ech_infatigable', 'f_braise', 'f_ardeur']);
+const horsDemo = k => DEMO && PASSES.has(k);
+
+/* La monnaie d'un événement (supabase/installation/21_reflets.sql) : elle se gagne en
    quêtes d'événement et se dépense dans sa boutique ; tout ce qu'on gagne fait
    avancer son Pass de récompenses. Chaque événement a la sienne : les Prismes
-   de Reflets (2.0), les Braises de L'Échauffement (2.5). Le serveur les range
-   toutes au même endroit (evt_comptes) et les appelle toutes `prismes` ;
-   seuls le nom et l'icône (evIco, js/ui.js) changent. `PRISMES` suit
-   l'événement en cours, ou celui dont on lit le récap. (La même chose que la
-   3.0, qui y ajoute ses Étincelles.) */
+   de Reflets (2.0), les Braises de L'Échauffement (2.5), les Étincelles du Choc
+   des Sections (3.0). Le serveur les range toutes au même endroit
+   (evt_comptes) ; seuls le nom et l'icône changent. `PRISMES` suit l'événement
+   en cours, ou celui dont on lit le récap. Les Braises sont là pour une 3.0
+   qui sortirait pendant L'Échauffement ou son récap (jusqu'au 7 novembre
+   2026) : sans elles, la page les appellerait « Prismes ». */
 const MONNAIES_EV = {
   reflets: { nom: 'Prismes', un: 'Prisme' },
-  echauffement: { nom: 'Braises', un: 'Braise' }
+  echauffement: { nom: 'Braises', un: 'Braise' },
+  choc: { nom: 'Étincelles', un: 'Étincelle' }
 };
 const evMonnaieCode = () => {
   const ev = typeof evenementEnCours === 'function' ? evenementEnCours() : null;
@@ -257,7 +281,7 @@ const PRISMES = {
 /* `vente: false` : le cadre existe, mais aucune boutique ne le vend. Le Sceau
    n'est pour l'instant donné par aucune quête : ceux qui l'ont déjà le
    gardent. Pour le rendre de nouveau accessible, le poser en `item_id` d'une
-   quête dans supabase/04_seed.sql. */
+   quête dans supabase/installation/04_seed.sql. */
 const FRAMES = {
   default: { nom: 'Aucun', c1: '#3f3450', c2: '#2e2539' },
   f_azur:  { nom: 'Azur',  c1: '#39b8ff', c2: '#2f7fc9' },
@@ -268,7 +292,7 @@ const FRAMES = {
   f_prisme:{ nom: 'Prisme', fx: 'prisme', c1: '#b7d4ff', c2: '#c9a8ff' },
   f_sceau: { nom: 'Sceau', fx: 'sceau', vente: false, c1: '#ffc73b', c2: '#5b1fc2' },
   /* Celui de la personne qui a tiré la carte unique, et de personne d'autre :
-     posé par le serveur au moment du tirage (open_pack, supabase/03_rpc.sql). */
+     posé par le serveur au moment du tirage (open_pack, supabase/installation/03_rpc.sql). */
   f_unique:{ nom: 'Unique', unique: true, vente: false, c1: '#ffc73b', c2: '#ec8fff' },
   /* Version 2.0 : gagnés en jouant (quêtes, Pass de l'événement). */
   f_master: { nom: 'Maître', fx: 'maitre', vente: false, c1: '#ee0073', c2: '#ff9ad5' },
@@ -276,10 +300,23 @@ const FRAMES = {
   f_aurore: { nom: 'Aurore', fx: 'aurore', vente: false, c1: '#1fd1a0', c2: '#ff6fb5' },
   f_miroir: { nom: 'Miroir', fx: 'miroir', vente: false, c1: '#e8ecff', c2: '#8e98b3' },
   f_nebuleuse:{ nom: 'Nébuleuse', fx: 'nebuleuse', vente: false, c1: '#b38cff', c2: '#ff7cc8' },
-  /* Version 2.5 : le Pass de L'Échauffement (paliers 10 et 20), aux couleurs
-     de l'événement — graphite et lavande, et le cœur chaud d'une braise. */
+  /* Version 2.5 : le Pass de L'Échauffement (paliers 10 et 20), dessinés par
+     tools/cadres.py. La 3.0 ne les donne plus ; ceux qui les ont les gardent. */
   f_braise: { nom: 'Braise', fx: 'braise', vente: false, c1: '#ffcf8a', c2: '#8a78f5' },
-  f_ardeur: { nom: 'Ardeur', fx: 'ardeur', vente: false, c1: '#c8bfff', c2: '#5d4bd9' }
+  f_ardeur: { nom: 'Ardeur', fx: 'ardeur', vente: false, c1: '#c8bfff', c2: '#5d4bd9' },
+  /* Version 3.0 : le Pass et le Raid du Choc des Sections. */
+  f_choc:   { nom: 'Choc', fx: 'choc', vente: false, c1: '#62d84e', c2: '#7c3aed' },
+  f_foudre: { nom: 'The French Sorcerer', fx: 'foudre', vente: false, c1: '#ec8fff', c2: '#6a2bd6' },
+  /* Version 3.0 : les niveaux de combattant (js/combat/niveaux.js), les deux
+     Sections (Boutique), et la première Secrète (quêtes).
+     Dessinés par tools/cadres-30.py. */
+  f_niv10:  { nom: 'Arène · Bronze', fx: 'niv10', vente: false, c1: '#d08a4c', c2: '#7a3f12' },
+  f_niv20:  { nom: 'Arène · Argent', fx: 'niv20', vente: false, c1: '#c9d1de', c2: '#6f7889' },
+  f_niv30:  { nom: 'Arène · Or', fx: 'niv30', vente: false, c1: '#f2c24a', c2: '#9a620a' },
+  f_niv50:  { nom: 'Arène · Prisme', fx: 'niv50', vente: false, c1: '#b38cff', c2: '#39b8ff' },
+  f_toxique:{ nom: 'Toxique', fx: 'toxique', c1: '#62d84e', c2: '#e3fbd6' },
+  f_deter:  { nom: 'Déter', fx: 'deter', c1: '#7c3aed', c2: '#ede4ff' },
+  f_secrete:{ nom: 'Secrète', fx: 'secrete', vente: false, c1: '#c9d6ff', c2: '#ffd0ec' }
 };
 
 /* Avatars livrés avec le jeu. Un avatar vaut aussi « discord » (la photo du
@@ -289,10 +326,10 @@ const FRAMES = {
    Elle est posée entière dans le cercle au lieu d'y être recadrée (voir
    avatarHTML dans js/ui.js). */
 const AVATARS = {
-  star: { nom: 'Étoile', art: 'assets/pack-star.svg', ico: true, bg: '#8936ff' },
+  star: { nom: 'Étoile', art: 'assets/pack-star.svg', ico: true, bg: '#5d4bd9' },
   back: { nom: 'Dos de carte', art: 'assets/card-back.webp', objet: true, pos: '50%' },
   pack: { nom: 'Booster', art: 'assets/boosters/booster-01.webp', objet: true, pos: '40%' },
-  set:  { nom: 'Extension', art: 'assets/extension-logo.svg', ico: true, bg: '#8936ff' },
+  set:  { nom: 'Extension', art: 'assets/extension-logo.svg', ico: true, bg: '#5d4bd9' },
   ed1:  { nom: '1re édition', art: 'assets/1st-edition.svg', ico: true, bg: '#ee0073' }
 };
 
@@ -305,32 +342,39 @@ const TRADE_COOLDOWN_H = 6;
 /* `bas` : la barre du bas sur mobile, le rail sur ordinateur. Cinq places, pas une
    de plus : ce sont les cinq endroits où l'on revient tout le temps.
    `tiroir` : le menu qui se déplie sous l'avatar — le compte et ses réglages,
-   pas le jeu. `admin` : réservé aux profils administrateurs. `cache` : une
-   page qui n'apparaît dans aucun menu, et qu'on ouvre d'ailleurs. */
+   pas le jeu. `admin` : réservé aux profils administrateurs. `evenement` :
+   l'onglet d'un événement (son code), en tête du tiroir pendant qu'il dure
+   et les trois jours de son récap. `horsEvenement` : un onglet qui disparaît
+   pendant l'événement de ce code. Une entrée sans `bas` ni `tiroir`
+   n'apparaît dans aucun menu : on l'ouvre d'ailleurs. */
 const TABS = [
   { id: 'boosters',   nom: 'Boosters',   bas: true, ico: 'star' },
   { id: 'collection', nom: 'Collection', bas: true, ico: 'cards' },
-  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'L\'Échauffement, en attendant la 3.0' },
-  /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, il prend la
-     place de Combats dans la barre (navHTML, js/app.js). */
-  { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets', online: true },
-  { id: 'social',     nom: 'Social',     bas: true, ico: 'amis',  online: true },
-  { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest', online: true },
+  { id: 'combats',    nom: 'Combats',    bas: true, ico: 'sword', desc: 'Campagne, Arcade, Raid, Versus' },
+  /* Version 2.0 : l'onglet de l'événement. Pendant qu'il dure, et les trois
+     jours de son récap, il passe en tête du tiroir (ongletsTiroir,
+     js/app.js) ; Combats garde sa place dans la barre du bas. */
+  { id: 'reflets',    nom: 'Reflets',    evenement: 'reflets', ico: 'reflets' },
+  /* Version 3.0 : « Le Choc des Sections » (js/choc.js). */
+  { id: 'choc',       nom: 'Le Choc',    evenement: 'choc', ico: 'choc',
+    desc: 'L\'événement : Raid, Épreuve du jour, Pass' },
+  { id: 'social',     nom: 'Social',     bas: true, ico: 'amis' },
+  { id: 'quetes',     nom: 'Quêtes',     bas: true, ico: 'quest' },
 
-  { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user', online: true,
+  { id: 'profil',   nom: 'Mon profil', tiroir: true, ico: 'user',
     desc: 'Pseudo, avatar, cadre et statistiques' },
-  { id: 'tirages', nom: 'Mes tirages', tiroir: true, ico: 'clock', online: true,
+  { id: 'tirages', nom: 'Mes tirages', tiroir: true, ico: 'clock',
     desc: 'Historique, statistiques et partage' },
   /* Devine l'illu vit dans l'onglet de l'événement tant qu'il dure, puis
      dans le sien (ongletDispo, js/app.js). */
-  { id: 'illu',     nom: 'Devine l\'illu', tiroir: true, ico: 'illu', online: true, horsEvenement: 'reflets',
+  { id: 'illu',     nom: 'Devine l\'illu', tiroir: true, ico: 'illu', horsEvenement: 'reflets',
     desc: 'Une illustration à deviner chaque jour' },
-  { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy', online: true,
+  { id: 'classement', nom: 'Classement', tiroir: true, ico: 'trophy',
     desc: 'Les meilleurs joueurs, tous confondus' },
-  { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop', online: true,
+  { id: 'boutique', nom: 'Boutique',   tiroir: true, ico: 'shop',
     desc: 'Dépenser tes Éclats' },
-  { id: 'recyclage', nom: 'Recyclage', tiroir: true, ico: 'recycle', online: true,
-    desc: 'Tes doublons contre des Éclats' },
+  { id: 'recyclage', nom: 'Recyclage', tiroir: true, ico: 'recycle',
+    desc: 'Tes doublons contre des Fragments' },
   { id: 'reglages', nom: 'Réglages',   tiroir: true, ico: 'gear',
     desc: 'Son, animations, compte, installation' },
   { id: 'labo',     nom: 'Labo',       tiroir: true, ico: 'flask', admin: true,
@@ -338,7 +382,7 @@ const TABS = [
 
   /* La boite de réception n'est dans aucune barre : on y entre par la cloche
      de l'en-tête, visible partout (voir js/boite.js). */
-  { id: 'boite', nom: 'Boîte de réception', cache: true, ico: 'bell', online: true }
+  { id: 'boite', nom: 'Boîte de réception', ico: 'bell' }
 ];
 
 /* Icônes de navigation : tracées au trait, sauf l'étoile du logo qui est pleine. */
@@ -378,9 +422,6 @@ const NAVICO = {
   menu:  '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/></svg>',
   promo: '<svg viewBox="0 0 24 24"><path d="M12 2.6 14.1 9h6.7l-5.4 3.9 2 6.4-5.4-4-5.4 4 2-6.4L3.2 9h6.7Z"/></svg>',
-  sun:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4 17 7M7 17l-1.6 1.6M18.6 18.6 17 17M7 7 5.4 5.4"/></svg>',
-  moon:  '<svg viewBox="0 0 24 24"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/></svg>',
-  auto:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></svg>',
   coeur: '<svg viewBox="0 0 24 24"><path d="M12 20.3s-7.6-4.5-9.4-9.1C1.3 7.9 3.3 4.4 6.9 4.4c2.1 0 3.7 1.1 5.1 3 1.4-1.9 3-3 5.1-3 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.4 9.1-9.4 9.1Z"/></svg>',
   lock:  '<svg viewBox="0 0 24 24"><rect x="4.5" y="10" width="15" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
@@ -394,12 +435,26 @@ const NAVICO = {
   illu: '<svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 15.5 8.5 11l4 3.5 2.5-2 5.5 4.5"/><path d="M14 4.5v4h-3.5v-4M10.5 8.5h3.5" opacity=".9"/><circle cx="16.7" cy="9" r="1.3"/></svg>',
   fragment:'<svg viewBox="0 0 24 24"><path d="M12 2.8 18.6 9 12 21.2 5.4 9Z"/><path d="M5.4 9h13.2M12 2.8 9.4 9 12 21.2 14.6 9Z"/></svg>',
   rotate:'<svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"/><path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"/><path d="M18 2.5V6h-3.5M6 21.5V18h3.5"/></svg>',
-  filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>'
+  filtre:'<svg viewBox="0 0 24 24"><path d="M3.5 5.5h17l-6.6 7.6v5.6l-3.8 2v-7.6Z"/></svg>',
+  /* Version 3.0 : le Choc des Sections (un écusson frappé d'un éclair), le
+     Raid (l'éclair de The French Sorcerer), l'Épreuve du jour (un
+     calendrier coché). */
+  choc: '<svg viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.6v6.2c0 4.4-3.1 7.6-7.5 9.4-4.4-1.8-7.5-5-7.5-9.4V5.6Z"/><path d="M13 6.5 9.5 12.5h3l-1.5 5 4-6.5h-3Z"/></svg>',
+  /* Les règles, le Guide : un livre ouvert. */
+  livre: '<svg viewBox="0 0 24 24"><path d="M3.5 5.6c2.9-1.1 5.8-.9 8.5.8v13.2c-2.7-1.7-5.6-1.9-8.5-.8Z"/><path d="M20.5 5.6c-2.9-1.1-5.8-.9-8.5.8v13.2c2.7-1.7 5.6-1.9 8.5-.8Z"/></svg>',
+  foudre: '<svg viewBox="0 0 24 24"><path d="M13.5 2.5 5.5 13.5h5.6l-1.6 8 8.5-11.4h-5.7Z"/></svg>',
+  /* Le niveau de combattant : trois chevrons de grade. */
+  niveau: '<svg viewBox="0 0 24 24"><path d="m5 11.5 7-5 7 5"/><path d="m5 16.5 7-5 7 5"/><path d="m5 21.5 7-5 7 5" opacity=".55"/></svg>',
+  epreuve: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/><path d="m9.3 14.3 1.9 1.9 3.6-3.8"/></svg>',
+  /* Version 3.0.13 : « Personnaliser » (le profil). */
+  crayon: '<svg viewBox="0 0 24 24"><path d="M4.5 19.5h3.8L19.4 8.4a2.2 2.2 0 0 0-3.1-3.1L5.2 16.4v3.1Z"/><path d="m14.6 7 2.9 2.9"/></svg>',
+  /* Voir (3.0.14) : un œil, pour « Ma fiche » au Profil. */
+  oeil: '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>'
 };
 
 /* ---------- Cartes Promo ---------- */
 /* Le palier de collection qui accorde la promo « palier ». Doit rester égal à
-   `cfg('promo_palier_pct')` dans supabase/01_schema.sql : c'est le serveur qui
+   `cfg('promo_palier_pct')` dans supabase/installation/01_schema.sql : c'est le serveur qui
    accorde la carte, ceci n'est que l'affichage. */
 const PROMO_PALIER = 75;
 
@@ -411,11 +466,15 @@ const PROMO_COMMENT = {
   boutique: 'En boutique',
   palier: 'Quêtes saisonnières',
   master: 'Quêtes saisonnières',
+  /* Version 3.0 : les Promos des Starter Decks, en Combats. */
+  section: 'Combats · Sections',
   bientot: 'Coming soon…'
 };
 
 /* Les emplacements Promo tenus en réserve : les cartes existent dans la série
    mais ne nous sont pas encore parvenues. Comme les Secrets de la collection,
-   ils occupent leur case pour que la suite de la numérotation se voie. */
-const PROMOS_A_VENIR = ['P03', 'P04'];
+   ils occupent leur case pour que la suite de la numérotation se voie.
+   Version 3.0 : P03 et P04, les Promos des Starter Decks, sont arrivées
+   (js/promos-data.js), avec leur vrai texte depuis la 3.0.13. */
+const PROMOS_A_VENIR = [];
 

@@ -52,15 +52,19 @@ function vCollection() {
   }
 
   const sp = speciales();
+  /* Les Secrètes se comptent au-delà du total, comme les cartes secrètes d'un
+     vrai jeu de cartes (« 127 / 122 ») : le nombre les compte, la jauge et le
+     pourcentage, qui disent où on en est de l'extension, non (`dans`). */
   const vues = [
-    { id: 'classiques', nom: 'Classiques', n: possedees(cards), total: cards.length },
+    { id: 'classiques', nom: 'Classiques', dans: possedees(cards), n: possedees(cards) + possedees(secretes), total: cards.length },
     { id: 'reverses', nom: 'Reverses', n: possedees(reverses), total: reverses.length },
     { id: 'speciales', nom: 'Spéciales', n: possedees(sp), total: sp.length }
   ].filter(v => v.total > 0);
+  vues.forEach(v => { if (v.dans == null) v.dans = v.n; });
   if (!vues.some(v => v.id === colVue)) colVue = 'classiques';
   const toutes = vues.reduce((n, v) => n + v.total, 0);
   const miennes = vues.reduce((n, v) => n + v.n, 0);
-  const pctTout = Math.floor(miennes / toutes * 100);
+  const pctTout = Math.floor(vues.reduce((n, v) => n + v.dans, 0) / toutes * 100);
 
   const tete = `<div class="colhead">
       <div class="colheadtop">
@@ -75,7 +79,7 @@ function vCollection() {
     <div class="colvues" role="tablist">${vues.map(v => `<button class="colvue ${v.id}${colVue === v.id ? ' on' : ''}" data-colvue="${v.id}"
         role="tab" aria-selected="${colVue === v.id}">
         <b>${v.nom}</b><span class="tnum">${v.n}<small> / ${v.total}</small></span>
-        <i class="colvuebar"><i style="width:${Math.round(v.n / v.total * 100)}%"></i></i></button>`).join('')}</div>`;
+        <i class="colvuebar"><i style="width:${Math.round(v.dans / v.total * 100)}%"></i></i></button>`).join('')}</div>`;
 
   return tete + (colVue === 'reverses' ? vColReverses() : colVue === 'speciales' ? vColSpeciales() : vColClassiques());
 }
@@ -89,7 +93,6 @@ function vColClassiques() {
   /* Les Secrets prennent la suite de la numérotation sans entrer dans le total.
      On ne les montre que sans filtre : ils n'ont encore ni catégorie ni essence. */
   const noFilter = !filtresActifs();
-  const secretFrom = all.reduce((m, c) => Math.max(m, c.num || 0), 0) + 1;
 
   return `${vLigneFragments(owned >= all.length)}
 
@@ -98,15 +101,26 @@ function vColClassiques() {
     ${vFiltres(all)}
 
     ${list.length
-      ? `<div class="grid">${list.map(vCase).join('')}${noFilter ? secretCells(secretFrom) : ''}</div>`
-      : `<p class="empty">Aucune carte avec ces filtres.
-          <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`}`;
+      ? `<div class="grid">${list.map(vCase).join('')}${noFilter ? cellulesSecretes() : ''}</div>`
+      : vVideFiltres()}`;
 }
 
-/* La ligne des Fragments, la même en tête des Classiques et des Reverses : le
-   solde, et ce qu'une case vide permet. Rien hors ligne ni une fois tout
-   possédé. `quoi` remplace la fin de la phrase (les Reverses, tant que leur
-   fabrication n'est pas ouverte). */
+/* Rien ne correspond : on dit pourquoi quand c'est un des trois « Afficher »
+   qui vide la grille (pas encore de favori, pas d'objectif posé). */
+function vVideFiltres() {
+  const pourquoi = colFavoris && !(save.favoris || []).length
+    ? 'Tu n\'as pas encore de favori : ouvre une carte et touche son cœur.'
+    : colObjectifs && !objectifsPoses()
+      ? 'Rien à compléter : choisis d\'abord combien d\'exemplaires garder (Réglages, ou sur une carte ouverte).'
+      : 'Aucune carte avec ces filtres.';
+  return `<p class="empty">${pourquoi}
+    <button class="linkbtn" data-act="col-reset">Tout réafficher</button></p>`;
+}
+
+/* La ligne des Fragments, la même en tête des Classiques et des Reverses
+   (reprise de la 2.5) : le solde, et ce qu'une case vide permet. Rien hors
+   ligne ni une fois tout possédé. `quoi` remplace la fin de la phrase (les
+   Reverses, tant que leur fabrication n'est pas ouverte). */
 function vLigneFragments(complet, quoi) {
   if (Backend.mode !== 'cloud' || complet) return '';
   return `<div class="colsous"><span class="colfab">${NAVICO.fragment}<b class="tnum">${fmtN(save.fragments || 0)}</b> ${FRAGMENTS.nom} · ${quoi || 'touche une case vide pour la fabriquer'}</span></div>`;
@@ -119,8 +133,7 @@ function vColReverses() {
   /* Ouverte à la date donnée par le serveur (revOuvertes, js/recyclage.js) ;
      avant, la ligne dit quand. */
   const quand = revQuand();
-  const ferme = revOuvertes() ? null
-    : quand ? `fabrication ${revAvec25() ? 'avec la 2.5, ' : ''}${quand}` : 'fabrication pas encore ouverte';
+  const ferme = revOuvertes() ? null : quand ? `fabrication ${quand}` : 'fabrication pas encore ouverte';
   return `${vLigneFragments(possedees(all) >= all.length, ferme)}
     ${vFiltres(all)}
     ${list.length
@@ -176,34 +189,26 @@ function vFiltres(all) {
     </button>
 
     <div class="filcorps">
-      ${ligne('Type', `<div class="chips">${cats.map(([k, l]) =>
+      ${ligne('Type', `<div class="chips" data-defil="col-types">${cats.map(([k, l]) =>
         `<button data-filter="${k}" class="${colFilter === k ? 'on' : ''}">${l}</button>`).join('')}</div>`)}
 
-      ${ligne('Rareté', `<div class="chips">
+      ${ligne('Rareté', `<div class="chips" data-defil="col-rars">
         <button data-rar="all" class="${rarFilter === 'all' ? 'on' : ''}">Toutes</button>
         ${rars.map(k => `<button data-rar="${k}" class="rarchip r${k} ${rarFilter === k ? 'on' : ''}">
           <i class="rardot"></i>${(RAR[k] || RAR.C).nom}</button>`).join('')}
       </div>`)}
 
-      ${ligne('Essence', `<div class="essrow">
+      ${ligne('Essence', `<div class="essrow" data-defil="col-ess">
         <button data-ess="all" class="${essFilter === 'all' ? 'on' : ''}">Toutes</button>
         ${essences.map(k => `<button data-ess="${k}" class="${essFilter === k ? 'on' : ''}"
           style="--ec:${COLORS[k].c}">${essIcon(k)}${COLORS[k].nom}</button>`).join('')}
       </div>`)}
 
-      <label class="toggle filtoggle">
-        <span>Seulement mes cartes<small>Masque les emplacements vides</small></span>
-        <input type="checkbox" id="col-poss" ${colPossedees ? 'checked' : ''}>
-      </label>
-      ${(save.favoris || []).length || colFavoris ? `<label class="toggle filtoggle">
-        <span>Mes favoris<small>Les cartes où tu as posé un cœur</small></span>
-        <input type="checkbox" id="col-fav" ${colFavoris ? 'checked' : ''}>
-      </label>` : ''}
-      ${objectifsPoses() || colObjectifs ? `<label class="toggle filtoggle">
-        <span>À compléter<small>Tu les as, mais moins que ce que tu veux garder</small></span>
-        <input type="checkbox" id="col-obj" ${colObjectifs ? 'checked' : ''}>
-      </label>` : ''}
-
+      ${ligne('Afficher', `<div class="chips filvues">
+        <label class="filpuce${colPossedees ? ' on' : ''}"><input type="checkbox" id="col-poss" ${colPossedees ? 'checked' : ''}>Mes cartes</label>
+        <label class="filpuce${colFavoris ? ' on' : ''}"><input type="checkbox" id="col-fav" ${colFavoris ? 'checked' : ''}>${NAVICO.coeur || '♥'}Favoris</label>
+        <label class="filpuce${colObjectifs ? ' on' : ''}"><input type="checkbox" id="col-obj" ${colObjectifs ? 'checked' : ''}>À compléter</label>
+      </div>`)}
       ${n ? '<button class="linkbtn filreset" data-act="col-reset">Tout réafficher</button>' : ''}
     </div>
   </div>`;
@@ -237,7 +242,10 @@ function vCase(c) {
   /* Une classique dont on a aussi la Reverse : un petit éclat nacré à côté
      de son numéro, sous la carte — rien sur l'illustration. */
   const rev = !c.rev && byId['r' + c.id.slice(1)] && save.col['r' + c.id.slice(1)] > 0;
-  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c)}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${vGarde(c, n)}</span></span></button>`;
+  /* Version 3.0.7 : sa maîtrise, immobile (une grille de cent cartes), et
+     son insigne à côté du numéro. */
+  const m = maitrisable(c) ? niveauMaitrise(c) : 0;
+  if (n) return `<button class="gcell${c.rev ? ' revcell' : ''}" data-show="${c.id}">${vCompte(n)}${renderCard(c, { m, calme: true })}<span class="num"><span class="numtxt">${vCoeur(c)}${no}${rev ? '<i class="revico" role="img" aria-label="Tu as aussi sa Reverse" title="Tu as aussi sa Reverse"></i>' : ''}${insigneMaitrise(m)}${vGarde(c, n)}</span></span></button>`;
   /* Une carte qui manque se fabrique (js/recyclage.js) : la case vide devient
      un bouton. Hors ligne, il n'y a pas de Fragments, elle reste une case. */
   if (Backend.mode !== 'cloud') return caseVide(no);
@@ -269,11 +277,14 @@ function vGarde(c, n) {
     Array.from({ length: g }, (_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('')}</i>`;
 }
 
-/* Les Secrets prolongent la grille sans en changer le total : des emplacements vides
-   comme les autres, seul le reflet les distingue. */
-function secretCells(from) {
-  return Array.from({ length: SECRETS }, (_, i) =>
-    caseVide('#' + String(from + i).padStart(3, '0'), 'secretcell')).join('');
+/* Les Secrètes (version 3.0) prolongent la grille sans en changer le total.
+   Obtenue, une Secrète s'y montre comme les autres — floutée si elle n'est
+   pas encore révélée ; sinon, un emplacement vide marqué d'un « ? ». */
+function cellulesSecretes() {
+  return secretes.map(c => (save.col[c.id] > 0 ? vCase(c)
+    : caseVide('#' + String(c.num).padStart(3, '0'), 'secretcell')
+      .replace('<div class="gcell secretcell"', '<button class="gcell secretcell" data-act="col-secrete" aria-label="Secrète, à trouver dans un booster"')
+      .replace(/<\/div>\s*$/, '</button>'))).join('');
 }
 
 /* ---------- Les Promos ---------- */

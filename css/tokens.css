@@ -1,100 +1,150 @@
-/* Jetons de design : couleurs, typos, rythme, profondeur. Tout part d'ici.
+/* Jetons de design : couleurs, matières, typos, rythme, profondeur. Tout part d'ici.
 
-   Un seul thème, sombre : c'est là que les cartes brillent. Le thème clair a
-   été retiré en version 2.0. Aucune couleur n'est écrite en dur ailleurs quand
-   un jeton existe : changer une teinte se fait ici. */
+   Version 3.0 : la refonte visuelle, palette « Graphite et lavande »
+   (choisie sur maquettes, docs/design-3.0.md). En bref :
+
+   - Un gris anthracite neutre, à peine violacé : il ne se dispute pas avec
+     les illustrations, qui portent toute la couleur de l'écran.
+   - Des tuiles pleines, posées sur le fond par une ombre douce — comme
+     Pokémon TCG Pocket —, et non des voiles translucides.
+   - Une seule couleur d'action, la lavande : le bouton principal, l'onglet
+     en cours, ce qu'on peut jouer en combat. Le rouge, pour l'adversaire.
+     Le blanc, pour ce qu'on a choisi.
+   - Le verre reste pour ce qui flotte : la barre des onglets, l'en-tête,
+     les feuilles.
+
+   Aucune couleur n'est écrite en dur ailleurs quand un jeton existe : changer
+   une teinte se fait ici. */
 
 /* ============ Le thème ============ */
 :root{
   box-sizing:border-box;
   color-scheme:dark;
 
-  /* --- Fonds : noir teinté prune, pour s'accorder au rose sans virer au gris froid --- */
-  --bg:#0b0810;
-  --bg-2:#120e19;
-  --surface:#181320;
-  --surface-2:#211a2c;
-  --surface-3:#2a2137;
-  /* Le voile posé sur les barres fixes : la page défile dessous sans la traverser. */
-  --veil:rgba(11,8,16,.86);
-  --veil-2:rgba(18,14,25,.94);
-  --scrim:rgba(5,3,8,.72);
+  /* --- Fonds et tuiles : un gris anthracite. L'élévation se lit à la
+     clarté de la tuile et à son ombre. --- */
+  --bg:#121119;
+  /* Le creux : une jauge vide, un rail de segments, une alvéole. */
+  --bg-2:rgba(0,0,0,.26);
+  --surface:#1c1b25;
+  --surface-2:#24232f;
+  --surface-3:#2d2b3a;
+  /* Les mêmes, pour ce qui se pose sur une image et doit la masquer. */
+  --plate:#16151e;
+  --plate-2:#1c1b25;
+  --plate-3:#2a2837;
+  --veil-2:rgba(18,17,25,.92);
+  --scrim:rgba(8,7,12,.66);
 
-  --line:#2e2539;
-  --line-2:#3f3450;
-  --line-3:#554566;
+  --line:rgba(255,255,255,.07);
+  --line-2:rgba(255,255,255,.12);
+  --line-3:rgba(255,255,255,.2);
 
   /* --- Texte --- */
-  --text:#f4eef7;
-  --subtle:#bcb0c6;
-  --muted:#8a7f96;
-  /* Ce qui se pose sur un aplat de la couleur d'action. */
+  --text:#f1f0f8;
+  --subtle:#c4c1d6;
+  --muted:#9a97ae;
   --on-accent:#fff;
 
-  /* --- Marque : l'orchidée et le rose du logo ne servent qu'aux halos et au
-     lettrage. Toute l'interface est en violet, pour ne garder qu'une couleur
-     active. --- */
-  --brand:#df6de8;
-  --brand-light:#ffd7f0;
-  --brand-deep:#7b0c84;
-  --brand-ink:#1a0a1e;
-  --accent:#8936ff;
-  --accent-soft:#a95cf2;
-  --accent-deep:#57189e;
-  /* Le violet dilué : fonds de pastilles, halos, lignes sélectionnées. */
-  --accent-wash:rgba(137,54,255,.18);
-  --accent-wash-2:rgba(137,54,255,.30);
-  --accent-glow:rgba(169,92,242,.42);
+  /* --- L'action : la lavande. Le bouton principal (un par écran), l'onglet
+     en cours, ce qu'on peut jouer. Le dégradé du bouton garde au moins 4,4:1
+     avec le blanc au milieu. --- */
+  --accent:#8a78f5;
+  --accent-soft:#b3a6ff;
+  --accent-deep:#5d4bd9;
+  --accent-wash:rgba(157,140,255,.12);
+  --accent-wash-2:rgba(157,140,255,.22);
+  --accent-glow:rgba(140,120,255,.45);
+  /* 3.0.13 : un cran plus profond, pour que le texte blanc tienne 4,5:1 au
+     milieu du bouton (#8f7dfb → #5d4bd9 n'y donnait que 4,4:1). */
+  --cta:linear-gradient(180deg,#8370f6,#5442cf);
+  /* La marque (le rose du logo) ne sert plus qu'au logo. Les pastilles qui
+     réclament l'attention sont rouges, comme partout. */
+  --brand:#ff5f7e;
+  /* Les pastilles de compte (3.0.13) : le rose de la marque, plus profond,
+     pour que leur chiffre blanc se lise (4,9:1 ; #ff5f7e ne donnait que
+     2,9:1). */
+  --badge:#d6294a;
+  --brand-light:#e6e1ff;
+
+  /* Le décor : les icônes au trait, les lavis. La même lavande, en clair. */
+  --violet-glow:rgba(140,120,255,.3);
+  --deco-wash:rgba(157,140,255,.13);
+  --deco-ink:#c8bfff;
+  --progress:linear-gradient(90deg,#7a68ec,#b3a6ff);
+
+  /* --- L'or : les récompenses et la rareté Légendaire, rien d'autre. --- */
+  --gold:#f5c451;
+  --gold-light:#ffdc85;
+  --gold-ink:#2a1d00;
+  --gold-wash:rgba(245,196,81,.13);
+  --gold-line:rgba(245,196,81,.45);
 
   /* --- Signaux --- */
-  --ok:#55e6a6;
-  --ok-deep:#3fbf8c;
-  --ok-wash:rgba(85,230,166,.15);
-  --ok-line:rgba(85,230,166,.42);
-  --warn:#ffc73b;
-  --danger:#ff4d8d;
-  --danger-wash:rgba(238,0,115,.13);
-  --danger-line:rgba(238,0,115,.42);
+  --ok:#4fd6a0;
+  --ok-deep:#1ea87a;
+  --ok-wash:rgba(79,214,160,.13);
+  --ok-line:rgba(79,214,160,.4);
+  --warn:#f5c451;
+  --danger:#ff6b6b;
+  --danger-wash:rgba(255,107,107,.12);
+  --danger-line:rgba(255,107,107,.42);
 
-  /* --- Raretés --- */
+  /* --- Raretés : elles appartiennent aux cartes. --- */
   --r-es:#90b2a5;
-  --r-c:#9d93a8;
+  --r-c:#a29dbb;
   --r-pc:#7bd6b4;
-  --r-r:#39b8ff;
-  --r-e:#a05cff;
-  --r-l:#ffc73b;
-  --r-pr:#ff5bb0;
+  --r-r:#5aa9ff;
+  --r-e:#a98bff;
+  --r-l:#f5c451;
+  --r-pr:#ff7eb6;
+  /* Le cœur des favoris (3.0.12) : un seul rose, partout. */
+  --fav:#ff7eb6;
 
-  /* --- Profondeur : cinq niveaux, jamais une ombre inventée sur place --- */
-  --sh-1:0 1px 2px rgba(0,0,0,.34);
-  --sh-2:0 3px 10px rgba(0,0,0,.4);
-  --sh-3:0 10px 26px rgba(0,0,0,.46);
-  --sh-4:0 20px 48px rgba(0,0,0,.55);
-  /* Le rebord plein sous les boutons pressables. */
-  --sh-press:#100c15;
-  /* Le reflet haut qui donne du relief aux surfaces bombées. */
-  --gloss:rgba(255,255,255,.4);
-  --gloss-soft:rgba(255,255,255,.16);
-  /* Le survol : un voile clair sur fond sombre. */
-  --hover:rgba(255,255,255,.055);
-  --hover-2:rgba(255,255,255,.1);
+  /* --- Le verre : ce qui flotte (barre des onglets, en-tête, feuilles).
+     Le flou s'écrit en dur dans les règles (Safari ignore une variable dans
+     `-webkit-backdrop-filter`). --- */
+  --glass:rgba(30,29,40,.74);
+  --glass-strong:linear-gradient(180deg,rgba(38,37,50,.95),rgba(24,23,32,.97));
+  --glass-line:rgba(255,255,255,.1);
+  --glass-line-top:rgba(255,255,255,.2);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.12);
+  --glass-solid:rgba(26,25,34,.97);
 
-  /* --- Typo --- */
+  /* --- Profondeur : des ombres douces, comme des cartes posées --- */
+  --sh-1:0 1px 2px rgba(0,0,0,.3);
+  --sh-2:0 4px 14px rgba(0,0,0,.32);
+  --sh-3:0 12px 30px rgba(0,0,0,.4);
+  --sh-4:0 24px 60px rgba(0,0,0,.5);
+  --gloss:rgba(255,255,255,.34);
+  --gloss-soft:rgba(255,255,255,.14);
+  --hover:rgba(255,255,255,.05);
+  /* La tuile : un reflet en haut, une ombre dessous. */
+  --tuile:inset 0 1px 0 rgba(255,255,255,.05),0 6px 18px rgba(0,0,0,.24);
+
+  /* --- Typo : Archivo pour les titres (la typo du logo), Figtree pour le
+     reste. L'italique est réservé aux grands titres et aux noms mis en
+     scène. --- */
   --display:'Archivo','Arial Black',system-ui,sans-serif;
   --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
 
-  /* --- Rayons : une seule échelle, du jeton au panneau --- */
+  /* --- Rayons concentriques --- */
   --radius-xs:8px;
   --radius-sm:12px;
-  --radius:16px;
+  --radius:18px;
   --radius-lg:22px;
+  --radius-xl:28px;
 
-  /* --- Rythme vertical : les marges entre blocs sortent d'ici --- */
-  --gap-1:6px;
   --gap-2:10px;
   --gap-3:14px;
   --gap-4:20px;
   --gap-5:28px;
+
+  --spring:cubic-bezier(.2,1.25,.4,1);
+  --ease:cubic-bezier(.2,.8,.2,1);
+
+  --top-h:58px;
+  --nav-h:66px;
 }
 
 /* ============ Réinitialisation ============ */
@@ -123,8 +173,18 @@ body{position:relative;height:100%;height:100dvh;margin:0;display:flex;flex-dire
 /* Dans l'app installée, la hauteur mesurée par js/cadrage.js. */
 html.cadre-app body{height:var(--app-h)}
 button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{
-  outline:2px solid var(--accent-soft);outline-offset:3px;border-radius:6px}
+/* Le contour du focus suit la forme de l'élément (une pilule reste une
+   pilule) : il ne lui impose pas de coins (3.0.13). */
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent-soft);outline-offset:2px}
+/* Un interrupteur (case cachée dans son libellé) : le contour va au libellé.
+   À part : un navigateur sans :has() ne perd que cette règle. */
+label:has(input:focus-visible){outline:2px solid var(--accent-soft);outline-offset:2px;border-radius:12px}
+/* Le zoom des doigts est permis (3.0.13, WCAG 1.4.4) ; le double toucher,
+   lui, ne zoome pas : il resterait un piège en plein combat. Et un champ de
+   moins de 16 px ferait zoomer l'iPhone dès qu'on le touche. */
+html{touch-action:manipulation}
+@media (pointer:coarse){input,select,textarea{font-size:max(16px,1em)}}
 img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:none}
 
 /* Les chiffres qui changent en place — compteurs, comptes à rebours, scores —
@@ -132,57 +192,20 @@ img{max-width:100%;-webkit-user-drag:none;user-drag:none;-webkit-touch-callout:n
 .tnum{font-variant-numeric:tabular-nums}
 
 /* ============ Les scènes qui restent noires ============ */
-/* Trois surfaces ne suivent pas le thème : le théâtre d'ouverture, la
+/* Trois surfaces ne suivent pas la page : le théâtre d'ouverture, la
    visionneuse, la scène des Promos. Ce sont des salles obscures — on y regarde
-   une carte, et une carte se regarde sur du noir, comme au cinéma.
-
-   Elles doivent donc rétablir la palette sombre pour tout ce qu'elles
-   contiennent. Sans ça, une couleur de rareté calculée pour du papier blanc —
-   l'or à `#a06b00`, le bleu à `#0d74c4` — se retrouverait posée sur du noir,
-   où elle disparaît. Redéclarer les jetons ici suffit : ils redescendent à tous
-   les descendants, sans qu'aucune règle ait à connaître le thème en cours. */
+   une carte, et une carte se regarde sur du noir, comme au cinéma. Elles
+   rétablissent des surfaces opaques : il n'y a pas d'ambiance à laisser
+   transparaître derrière elles. */
 #theater,#viewer,.promoscene{
   color-scheme:dark;
 
-  --bg:#0b0810;
-  --bg-2:#120e19;
-  --surface:#181320;
-  --surface-2:#211a2c;
-  --surface-3:#2a2137;
-  --line:#2e2539;
-  --line-2:#3f3450;
-  --line-3:#554566;
-
-  --text:#f4eef7;
-  --subtle:#bcb0c6;
-  --muted:#8a7f96;
-  --on-accent:#fff;
-
-  --brand:#df6de8;
-  --brand-light:#ffd7f0;
-  --accent:#8936ff;
-  --accent-soft:#a95cf2;
-  --accent-deep:#57189e;
-  --accent-wash:rgba(137,54,255,.18);
-  --accent-wash-2:rgba(137,54,255,.30);
-  --accent-glow:rgba(169,92,242,.42);
-
-  --ok:#55e6a6;
-  --ok-wash:rgba(85,230,166,.15);
-  --ok-line:rgba(85,230,166,.42);
-  --danger:#ff4d8d;
-
-  --r-es:#90b2a5;
-  --r-c:#9d93a8;
-  --r-pc:#7bd6b4;
-  --r-r:#39b8ff;
-  --r-e:#a05cff;
-  --r-l:#ffc73b;
-  --r-pr:#ff5bb0;
-
-  --sh-press:#100c15;
-  --gloss:rgba(255,255,255,.4);
-  --gloss-soft:rgba(255,255,255,.16);
-  --hover:rgba(255,255,255,.055);
-  --hover-2:rgba(255,255,255,.1);
+  --bg:#0c0b11;
+  --bg-2:#121119;
+  --surface:#1a1923;
+  --surface-2:#22212c;
+  --surface-3:#2b2a37;
+  --line:rgba(255,255,255,.1);
+  --line-2:rgba(255,255,255,.17);
+  --line-3:rgba(255,255,255,.26);
 }

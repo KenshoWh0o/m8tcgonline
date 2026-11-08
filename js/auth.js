@@ -17,7 +17,7 @@ const porteVisible = () => Backend.mode !== 'cloud';
 
 /* ---------- Retour d'un détour par Discord ---------- */
 /* Quand le serveur refuse l'inscription — le jeu n'est pas encore ouvert et le
-   compte n'a pas d'accès (voir handle_new_user dans supabase/01_schema.sql) —,
+   compte n'a pas d'accès (voir handle_new_user dans supabase/installation/01_schema.sql) —,
    Supabase nous renvoie ici avec l'erreur dans l'adresse. Sans cette lecture,
    l'écran de connexion réapparaissait sans un mot : on croyait que le bouton
    n'avait rien fait.
@@ -36,11 +36,12 @@ function lireErreurRetour() {
 
   /* Un refus à l'inscription vient presque toujours de là : le serveur refuse
      de créer un compte qui n'a pas d'accès (handle_new_user,
-     supabase/01_schema.sql), et Supabase ne renvoie qu'une erreur générique.
-     L'écran d'annonce le dit, au lieu de revenir sans un mot. Le projet est
-     annulé (js/gate.js) : rien n'ouvrira, la phrase ne promet donc rien.
-     Seule exception : la personne a elle-même refusé l'autorisation chez
-     Discord (`access_denied`), ce n'est alors pas une question d'accès. */
+     supabase/installation/01_schema.sql), et Supabase ne renvoie qu'une
+     erreur générique. L'écran d'annonce le dit, au lieu de revenir sans un
+     mot. Le projet est annulé (js/gate.js) : rien n'ouvrira, la phrase ne
+     promet donc rien. Seule exception : la personne a elle-même refusé
+     l'autorisation chez Discord (`access_denied`), ce n'est alors pas une
+     question d'accès. Reporté de la 2.x (1er novembre 2026). */
   porteRefus = !PORTE.active ? ''
     : /access_denied/i.test(src.get('error') || '') ? 'Connexion annulée.'
     : "Ce compte n'a pas accès au jeu.";

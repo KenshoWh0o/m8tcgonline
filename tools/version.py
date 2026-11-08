@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Pose un numero de version partout, et l'accroche aux fichiers du site.
 
-    python3 tools/version.py 2.5        (ou 2.5.1, etc.)
+    python3 tools/version.py 3.0.10     (ou 3.1, etc.)
 
 Ce que ca fait :
   - ecrit la version dans js/pwa.js (APP_VERSION, le numero que lit le joueur)
@@ -11,7 +11,7 @@ Ce que ca fait :
 
 L'empreinte : six caracteres tires du contenu de tous ces fichiers. Deux mises
 en ligne de la meme version avec un code different ont donc des adresses
-differentes (avant la 2.5, republier la meme version servait l'ancienne copie
+differentes (avant la 2.5 et la 3.0.10, republier la meme version servait l'ancienne copie
 pendant dix minutes) ; relancer le script sans rien changer ne change rien.
 
 A quoi ca sert : GitHub Pages sert les fichiers avec un cache de dix minutes.

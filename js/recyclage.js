@@ -11,7 +11,7 @@
 
    Plus de plafond : les Fragments n'achètent que des cartes manquantes, ils
    ne font tourner aucune boucle avec les boosters (le calcul est en tête de
-   supabase/12_recyclage.sql). Le serveur revérifie tout. Les montants
+   supabase/installation/12_recyclage.sql). Le serveur revérifie tout. Les montants
    viennent de lui, par me() : la page n'en garde qu'une copie de secours.
 
    ------------------------------------------------------------------------
@@ -36,9 +36,10 @@ const REC_DEFAUT = { ES: 1, C: 2, PC: 5, R: 20, E: 80, L: 250 };
 const FAB_DEFAUT = { ES: 20, C: 40, PC: 100, R: 400, E: 2000, L: 8000 };
 const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAUT;
 const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
-const recPrix = c => recValeurs()[c.rar] || 0;
+/* Une Reverse rapporte le double de sa classique (3.0.17, recycler). */
+const recPrix = c => (recValeurs()[c.rar] || 0) * (c.rev ? 2 : 1);
 /* Les Reverses (version 2.0) se recyclent et se fabriquent à partir d'une
-   date que donne le serveur (version 2.5, supabase/22c_reverses.sql) :
+   date que donne le serveur (reporté de la 2.5, supabase/installation/22c_reverses.sql) :
    la page bascule toute seule à l'heure dite, et prochaineBascule()
    (js/booster.js) redemande l'état au serveur. Elles rapportent comme leur
    classique, et coûtent le prix de leur vraie rareté (REV_DEFAUT). */
@@ -66,9 +67,6 @@ const revQuand = () => {
   const r = revEtat();
   return r.des ? `${jourParis(r.des)}, dans <b data-rebours="${srvTime(r.des)}">${h(dureeCourte(srvTime(r.des) - Date.now()))}</b>` : '';
 };
-/* L'ouverture tombe-t-elle avec la sortie de la version (SORTIE, js/config.js) ? */
-const revAvec25 = () => { const r = revEtat();
-  return !!(r.des && sortieLe() && !sortieFaite() && Math.abs(Date.parse(r.des) - Date.parse(sortieLe())) < 60000); };
 const fragIco = `<span class="fragico">${NAVICO.fragment}</span>`;
 
 /* Les exemplaires proposés dans une de mes demandes d'échange en attente. */

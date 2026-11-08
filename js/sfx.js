@@ -215,6 +215,12 @@ const RECETTES = {
       souffle({ f0: 3000 + Math.random() * 4000, duree: .03, gain: .06, q: 3, delai: .04 + i * .035 });
   },
   woosh:  () => { souffle({ f0: 300, f1: 2600, duree: .28, gain: .15, q: .6, attaque: .08 }); },
+  /* Un paquet qu'on mélange (le mulligan, 3.0.14) : une rafale de petits
+     claquements de carton, puis le paquet qu'on tasse. */
+  melange: () => { for (let i = 0; i < 13; i++)
+                     souffle({ f0: 1600 + Math.random() * 2600, duree: .03, gain: .05 + Math.random() * .03, q: 1.8,
+                               delai: i * .021 + Math.random() * .006 });
+                   souffle({ f0: 900, f1: 420, duree: .09, gain: .09, q: .8, delai: .3 }); },
 
   /* Révélations : trois paliers, même geste, de plus en plus large. */
   monte:  d => { const dur = (d || 800) / 1000;
@@ -245,25 +251,6 @@ const RECETTES = {
   piece:  () => { note({ f0: 1568, f1: 2093, duree: .09, gain: .11, onde: 'triangle' });
                   note({ f0: 2093, duree: .22, gain: .09, onde: 'triangle', delai: .07 }); },
   gagne:  () => carillon([523, 659, 784, 1046], .6, .11),
-  /* La fin d'un combat de L'Échauffement (version 2.5) : une note par étoile
-     qui se pose, de plus en plus haute (k : 1, 2 ou 3), puis le tampon
-     « Parfait » — un coup sourd et un carillon. */
-  etoile: k => { const f = [784, 988, 1319][(k || 1) - 1] || 784;
-                 note({ f0: f, f1: f * 1.5, duree: .12, gain: .11, onde: 'triangle' });
-                 note({ f0: f * 2, duree: .5, gain: .07, onde: 'sine', delai: .06 }); },
-  tampon: () => { note({ f0: 120, f1: 50, duree: .3, gain: .24, onde: 'sine' });
-                  souffle({ f0: 900, f1: 200, duree: .14, gain: .15, q: .7 });
-                  carillon([784, 988, 1175, 1568], 1, .1, .1); },
-  /* L'entrée d'un combat (le face-à-face) : un souffle qui traverse, un coup
-     sourd ; un coup arrêté par la Carapace : un tintement ; le coup d'éclat
-     qui porte : un choc plus lourd. */
-  vs:     () => { souffle({ f0: 300, f1: 2600, duree: .3, gain: .14, q: .6, attaque: .08 });
-                  note({ f0: 110, f1: 48, duree: .4, gain: .2, onde: 'sine', delai: .12 }); },
-  bloque: () => { note({ f0: 1250, f1: 980, duree: .07, gain: .05, onde: 'triangle' });
-                  note({ f0: 2500, duree: .12, gain: .025, onde: 'sine', delai: .02 }); },
-  impact: () => { note({ f0: 150, f1: 42, duree: .34, gain: .26, onde: 'sine' });
-                  souffle({ f0: 2400, f1: 300, duree: .22, gain: .18, q: .6 });
-                  note({ f0: 1568, duree: .25, gain: .06, onde: 'triangle', delai: .03 }); },
   ouvre:  () => { note({ f0: 300, f1: 640, duree: .16, gain: .10, onde: 'sine', filtre: 2000 }); },
   /* Le ping de la boite de réception : deux notes claires qui montent, plus
      court que le carillon d'une récompense — quelqu'un frappe, rien n'est

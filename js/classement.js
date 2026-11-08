@@ -1,7 +1,10 @@
 /* Le classement : tous les joueurs, pas seulement les amis.
 
-   Quatre critères, un sous-onglet chacun. Le serveur fait tout le calcul
-   (classement(), supabase/14_classement.sql) et renvoie les cinquante
+   Version 3.0.7 : quatre critères, pas plus — huit sous-onglets, c'était
+   trop. Le niveau de combattant, la collection, les Secrètes, le Versus.
+   Reverses, Boosters, Échanges et Série sont retirés de la page ; le serveur
+   sait toujours les calculer (classement(), supabase/installation/14_classement.sql) :
+   les remettre, c'est rajouter une ligne ici. Il renvoie les cinquante
    premiers, plus sa propre ligne : on veut savoir où l'on en est, pas
    seulement qui est devant.
 
@@ -9,20 +12,18 @@
 "use strict";
 
 const CRITERES = [
+  /* Version 3.0 : le niveau de combattant, les Secrètes, le Versus. */
+  { id: 'niveau', titre: 'Niveau', dit: 'Niveau de combattant (l\'XP gagnée en combat)',
+    val: xp => { const n = niveauDe(xp); return `Niv. ${n.niveau}<small> · ${fmtN(xp)} XP</small>`; } },
   { id: 'collection', titre: 'Collection', dit: 'Cartes différentes de l\'extension',
     val: n => `${fmtN(n)}<small> / ${cards.length}</small>` },
-  /* Version 2.0 */
-  { id: 'reverses', titre: 'Reverses', dit: 'Reverses différentes',
-    val: n => `${fmtN(n)}<small> / ${reverses.length}</small>` },
-  { id: 'boosters', titre: 'Boosters', dit: 'Boosters ouverts depuis le début',
-    val: n => fmtN(n) },
-  { id: 'echanges', titre: 'Échanges', dit: 'Échanges conclus',
-    val: n => fmtN(n) },
-  { id: 'serie', titre: 'Série', dit: 'Jours de connexion d\'affilée, en cours',
-    val: n => `${fmtN(n)}<small> j</small>` }
+  { id: 'secretes', titre: 'Secrètes', dit: 'Secrètes différentes',
+    val: n => `${fmtN(n)}<small> / ${(typeof secretes !== 'undefined' ? secretes : []).length || 5}</small>` },
+  { id: 'versus', titre: 'Versus', dit: 'Victoires en défi contre un ami',
+    val: n => `${fmtN(n)}<small> victoire${n > 1 ? 's' : ''}</small>` }
 ];
 
-let clVue = 'collection';
+let clVue = 'niveau';
 /* Une réponse par critère, gardée une minute : passer d'un sous-onglet à
    l'autre ne refait pas l'appel à chaque fois. */
 const clCache = {};
@@ -49,7 +50,7 @@ function vClassement() {
       <h1>Classement</h1>
       <p>Tous les joueurs, pas seulement tes amis.</p>
     </div></div>
-    <div class="segbar">${CRITERES.map(x =>
+    <div class="segbar clseg" role="tablist" data-defil="cl-seg">${CRITERES.map(x =>
       `<button data-clv="${x.id}" class="${x.id === def.id ? 'on' : ''}">${h(x.titre)}</button>`).join('')}</div>`;
 
   if (!c) return tete + '<p class="muted boitecharge">Chargement…</p>';
@@ -62,7 +63,7 @@ function vClassement() {
   const ligne = j => `<button class="clligne${j.moi ? ' moi' : ''}${j.rang <= 3 ? ' podium p' + j.rang : ''}"
       data-fiche="${h(j.pseudo)}" aria-label="${h(j.pseudo)}, ${j.rang}e">
     <span class="clrang tnum">${j.rang}</span>
-    ${avatarHTML(j.avatar, j.frame, 'sm', j.moi ? maPhoto() : j.photo)}
+    ${avatarHTML(j.avatar, j.frame, 'sm', j.moi ? maPhoto() : j.photo, j.moi ? monXp() : j.xp)}
     <span class="clnom">${h(j.pseudo)}${j.moi ? ' <i class="qtag">toi</i>' : ''}${vTitreLigne(j.titre)}</span>
     <span class="clval tnum">${def.val(j.valeur)}</span>
   </button>`;

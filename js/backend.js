@@ -1,6 +1,6 @@
 /* Couche d'accès aux données : un seul jeu d'appels pour l'interface, deux
    implantations derrière. Hors ligne, tout se passe dans IndexedDB comme en v1.
-   Connecté, chaque action passe par une fonction du serveur (supabase/03_rpc.sql),
+   Connecté, chaque action passe par une fonction du serveur (supabase/installation/03_rpc.sql),
    la seule à pouvoir toucher aux boosters, à la collection et aux échanges. */
 "use strict";
 
@@ -60,6 +60,17 @@ Backend.init = async function () {
 
   if (Backend.session) {
     Backend.mode = 'cloud';
+    /* Version 3.0.12 : la porte d'abord (js/gate.js). Une base qui n'a pas
+       encore reçu la 3.0 ne se lit pas : la page montre l'écran de
+       maintenance, et ne mélange pas l'état d'une 2.x avec le sien. */
+    if (typeof Porte !== 'undefined') {
+      await Porte.lire();
+      if (Porte.connu() && !Porte.base30()) {
+        await Backend.loadLocal();
+        Backend.ready = true;
+        return;
+      }
+    }
     try {
       await Backend.pull();
     } catch (e) {
@@ -68,6 +79,7 @@ Backend.init = async function () {
       console.warn('Serveur injoignable :', e);
       Backend.mode = 'local';
       Backend.panne = true;
+      Backend.erreur = (e && e.message) || String(e);
       authErr = 'Le serveur ne répond pas pour le moment. Réessaie dans un instant.';
       await Backend.loadLocal();
     }
@@ -122,7 +134,7 @@ Backend.apply = function (etat) {
     id: p.id,
     tickets: p.tickets,
     /* Les boosters en plus (boutique, cadeaux) : hors réserve, ils s'ouvrent à
-       part sans toucher au compte à rebours (open_pack, supabase/03_rpc.sql). */
+       part sans toucher au compte à rebours (open_pack, supabase/installation/03_rpc.sql). */
     bonus: p.boosters_bonus || 0,
     lastTick: srvTime(p.last_tick),
     unlimited: false,
@@ -130,7 +142,7 @@ Backend.apply = function (etat) {
     inv: etat.inv || {},
     shards: p.shards,
     /* Ce que rapporte le recyclage, et ce que coûte une carte fabriquée
-       (supabase/12_recyclage.sql). */
+       (supabase/installation/12_recyclage.sql). */
     fragments: p.fragments || 0,
     quetes: etat.quetes || [],
     pseudo: p.pseudo,
@@ -139,7 +151,7 @@ Backend.apply = function (etat) {
     isAdmin: !!p.is_admin,
     /* Avant l'ouverture : le serveur dit si ce compte a accès. C'est la seule
        réponse qu'il accorde à un compte qui ne l'a pas — toutes les autres
-       actions sont refusées (garde_beta, supabase/01_schema.sql).
+       actions sont refusées (garde_beta, supabase/installation/01_schema.sql).
        `=== true` et non `!== false` : un champ absent — une base pas encore
        à jour, une réponse tronquée — valait « invité ». Dans le doute, on
        n'ouvre pas. */
@@ -156,16 +168,16 @@ Backend.apply = function (etat) {
        tant que la boite elle-même n'est pas chargée (js/boite.js). */
     boiteNonLues: etat.boite || 0,
     /* Le recyclage et la fabrication : ce que rapporte chaque rareté en
-       Fragments, et ce que coûte une carte (supabase/12_recyclage.sql). */
+       Fragments, et ce que coûte une carte (supabase/installation/12_recyclage.sql). */
     recyclage: etat.recyclage || null,
     /* Les succès obtenus, l'événement en cours et la chasse à la carte unique
-       (supabase/15_evenements.sql). */
+       (supabase/installation/15_evenements.sql). */
     succes: etat.succes || [],
     evenement: etat.evenement || null,
     /* Version 2.0 : un événement fini depuis moins de trois jours, et son récap. */
     recap: etat.recap || null,
     chasse: etat.chasse || null,
-    /* Version 2.0 (supabase/21_reflets.sql) : le titre, la bannière et la
+    /* Version 2.0 (supabase/installation/21_reflets.sql) : le titre, la bannière et la
        devise du profil, les titres débloqués, les réglages ouverts à la main
        (fabrication des Reverses), les Prismes de l'événement en cours et les
        invitations achetées. */
@@ -176,13 +188,20 @@ Backend.apply = function (etat) {
     parametres: etat.parametres || {},
     prismes: etat.prismes || 0,
     invitations: etat.invitations || [],
-    /* Version 2.1 (supabase/22_garder.sql) : les exemplaires à garder, par
+    /* Version 2.1 (supabase/installation/22_garder.sql) : les exemplaires à garder, par
        rareté et carte par carte. */
     garder: p.garder || {},
     gardes: etat.gardes || {},
     favoris: etat.favoris || [],
     /* Version 2.1 : entré grâce au code d'un autre, il n'invite pas à son tour. */
-    filleul: p.filleul === true
+    filleul: p.filleul === true,
+    /* Version 3.0 (supabase/installation/23_combats.sql) : la Section, les decks, les
+       cosmétiques de combat, la campagne, les défis. */
+    combat: etat.combat || null,
+    /* Version 3.0.7 (supabase/installation/28_maitrise.sql) : le niveau de maîtrise de
+       chaque carte maîtrisée, et la carte fétiche du profil. */
+    maitrises: (etat.maitrise && etat.maitrise.niveaux) || {},
+    fetiche: (etat.maitrise && etat.maitrise.fetiche) || null
   };
   /* Une carte retirée du jeu ne doit plus apparaître dans la collection affichée. */
   Object.keys(save.col).forEach(id => { if (!byId[id]) delete save.col[id]; });
@@ -195,9 +214,15 @@ Backend.apply = function (etat) {
 Backend.rpc = async function (nom, args) {
   const { data, error } = await Backend.sb.rpc(nom, args || {});
   if (error) {
-    const brut = String(error.message || '').replace(/^.*?:\s*/, '').trim();
+    /* Seul un préfixe technique (« ERROR: », un code SQLSTATE) s'en va :
+       le texte d'un refus peut lui-même contenir « : » (« Épreuve terminée :
+       une nouvelle demain. »), qu'il ne faut pas couper. */
+    const brut = String(error.message || '').replace(/^(?:ERROR|ERREUR|[A-Z0-9]{5})\s*:\s*/, '').trim();
     const e = new Error(MSG_SERVEUR[brut] || brut || 'Le serveur a refusé.');
     e.code = brut;
+    /* Une maintenance a commencé pendant qu'on jouait : on relit la porte, et
+       l'écran de maintenance remplace le jeu (js/gate.js). */
+    if (brut === 'MAINTENANCE' && typeof Porte !== 'undefined') Porte.lire().then(() => render());
     throw e;
   }
   return data;
@@ -206,7 +231,7 @@ Backend.rpc = async function (nom, args) {
 /* Les refus que le serveur signale par un mot-clé, traduits pour le joueur. */
 const MSG_SERVEUR = {
   BETA_FERMEE: "Le jeu n'est pas encore ouvert.",
-  PLAFOND_RECYCLAGE: 'Ça dépasse ton plafond de recyclage de la semaine.',
+  MAINTENANCE: 'Maintenance en cours : le jeu revient très vite.',
   RESERVE_VIDE: 'Plus de booster pour le moment.',
   BONUS_VIDE: 'Plus de booster en plus à ouvrir.',
   BOOSTER_VIDE: 'Ce booster est vide : aucune carte à tirer.',
@@ -216,6 +241,26 @@ const MSG_SERVEUR = {
 
 Backend.pull = async function () {
   Backend.apply(await Backend.rpc('me'));
+};
+
+/* La fonction du serveur qui vérifie les combats (3.0.14,
+   supabase/functions/combat-verifier) : elle rejoue la partie et paie ce que
+   le moteur confirme. Mêmes messages qu'un refus du serveur. */
+Backend.verifier = async function (corps) {
+  const { data, error } = await Backend.sb.functions.invoke('combat-verifier', { body: corps });
+  let brut = data && data.erreur;
+  if (error) {
+    brut = error.message;
+    try { const x = await error.context.json(); if (x && x.erreur) brut = x.erreur; } catch (e) { /* pas de corps lisible */ }
+  }
+  if (brut) {
+    brut = String(brut).replace(/^(?:ERROR|ERREUR|[A-Z0-9]{5})\s*:\s*/, '').trim();
+    const e = new Error(MSG_SERVEUR[brut] || brut || 'Le serveur a refusé.');
+    e.code = brut;
+    if (brut === 'MAINTENANCE' && typeof Porte !== 'undefined') Porte.lire().then(() => render());
+    throw e;
+  }
+  return data;
 };
 
 Backend.checkin = async function () {
@@ -283,7 +328,7 @@ Backend.favori = async function (id, on) {
 };
 
 /* Version 2.1 : combien d'exemplaires garder, d'une carte (`null` : celui
-   de sa rareté) ou de chaque rareté (supabase/22_garder.sql). */
+   de sa rareté) ou de chaque rareté (supabase/installation/22_garder.sql). */
 Backend.reglerGarde = async (id, n) =>
   Backend.apply(await Backend.rpc('regler_garder', { p_carte: id, p_n: n }));
 Backend.reglerGardeDefaut = async garder =>
@@ -305,6 +350,11 @@ Backend.setProfile = async function (champs) {
 };
 
 Backend.setVitrine = async cartes => Backend.apply(await Backend.rpc('set_vitrine', { p_cards: cartes }));
+
+/* Version 3.0.7 : le niveau suivant d'une carte, et la carte fétiche
+   (`null` : la retirer). Le serveur revérifie tout (28_maitrise.sql). */
+Backend.maitriser = async id => Backend.apply(await Backend.rpc('maitriser', { p_carte: id }));
+Backend.setFetiche = async id => Backend.apply(await Backend.rpc('set_fetiche', { p_carte: id || null }));
 
 Backend.claimQuest = async id => Backend.apply(await Backend.rpc('claim_quest', { p_quest: id }));
 Backend.buy = async id => Backend.apply(await Backend.rpc('shop_buy', { p_item: id }));
@@ -357,7 +407,7 @@ Backend.tradeCancel = async function (id) {
   await Backend.loadTrades();
 };
 
-/* ---- Boite de réception (supabase/11_boite.sql) ---- */
+/* ---- Boite de réception (supabase/installation/11_boite.sql) ---- */
 Backend.loadBoite = async function () {
   if (Backend.mode !== 'cloud') return null;
   Backend.boite = await Backend.rpc('boite');
@@ -397,11 +447,11 @@ Backend.ecouterBoite = function (surNouveau) {
   }
 };
 
-/* ---- Fabrication et historique (supabase/12_recyclage.sql, 15_evenements.sql) ---- */
+/* ---- Fabrication et historique (supabase/installation/12_recyclage.sql, 15_evenements.sql) ---- */
 Backend.fabriquer = async carte => Backend.apply(await Backend.rpc('fabriquer', { p_carte: carte }));
 Backend.mesTirages = () => Backend.rpc('mes_tirages');
 
-/* ---- Version 2.0 (supabase/21_reflets.sql) ---- */
+/* ---- Version 2.0 (supabase/installation/21_reflets.sql) ---- */
 Backend.evenementEtat = () => Backend.rpc('evenement_etat');
 Backend.pisteReclamer = async palier => {
   const r = await Backend.rpc('piste_reclamer', { p_palier: palier });
@@ -409,22 +459,6 @@ Backend.pisteReclamer = async palier => {
   return r.cartes || [];
 };
 Backend.illuEtat = () => Backend.rpc('illu_etat');
-/* L'Échauffement (supabase/22b_echauffement.sql). */
-Backend.echEtat = () => Backend.rpc('ech_etat');
-Backend.echCommencer = (jour, equipe) => Backend.rpc('ech_commencer', { p_jour: jour, p_equipe: equipe });
-Backend.echTerminer = async (essai, eclat) => {
-  const r = await Backend.rpc('ech_terminer', { p_essai: essai, p_eclat: eclat || null });
-  Backend.apply(r.me);
-  return r;
-};
-/* Le mode sans fin (supabase/22f_sans-fin.sql) : le défi du jour, après la saison. */
-Backend.echSfEtat = () => Backend.rpc('ech_sf_etat');
-Backend.echSfCommencer = equipe => Backend.rpc('ech_sf_commencer', { p_equipe: equipe });
-Backend.echSfTerminer = async (essai, eclat) => {
-  const r = await Backend.rpc('ech_sf_terminer', { p_essai: essai, p_eclat: eclat || null });
-  Backend.apply(r.me);
-  return r;
-};
 Backend.illuEssai = async id => {
   const r = await Backend.rpc('illu_essai', { p_carte: id });
   Backend.apply(r.etat);
@@ -434,24 +468,22 @@ Backend.personnaliser = async (titre, banniere, devise) =>
   Backend.apply(await Backend.rpc('personnaliser', { p_titre: titre ?? null, p_banniere: banniere ?? null, p_devise: devise ?? null }));
 Backend.utiliserInvitation = async code => Backend.apply(await Backend.rpc('utiliser_invitation', { p_code: code }));
 
-/* ---- Cadeaux (supabase/18_cadeaux.sql) ---- */
+/* ---- Cadeaux (supabase/installation/18_cadeaux.sql) ---- */
 Backend.mesCadeaux = () => Backend.rpc('mes_cadeaux');
 Backend.ouvrirCadeau = async id => Backend.apply(await Backend.rpc('ouvrir_cadeau', { p_id: id }));
-Backend.adminJoueurs = () => Backend.rpc('admin_joueurs');
-/* Le Labo de la 2.5 (supabase/22d_admin.sql) : labo_etat, labo_calendrier…
-   pour tout le monde, labo_cartes, labo_monnaies… sur son propre compte.
-   Chaque fonction vérifie le droit d'administrateur ; le Labo (js/lab.js)
-   applique ce qu'elles rendent. */
+/* Le Labo (supabase/installation/29_labo.sql) : chaque fonction vérifie elle-même le
+   droit d'administrateur. */
 Backend.labo = (nom, args) => Backend.rpc(nom, args);
+Backend.adminJoueurs = () => Backend.rpc('admin_joueurs');
 Backend.offrirCadeau = c => Backend.rpc('offrir_cadeau', {
   p_joueurs: c.joueurs, p_eclats: c.eclats || 0, p_boosters: c.boosters || 0,
   p_fragments: c.fragments || 0, p_carte: c.carte || null, p_message: c.message || ''
 });
 
-/* ---- Classement (supabase/14_classement.sql) ---- */
+/* ---- Classement (supabase/installation/14_classement.sql) ---- */
 Backend.classement = critere => Backend.rpc('classement', { p_critere: critere });
 
-/* ---- Recyclage (supabase/12_recyclage.sql) ---- */
+/* ---- Recyclage (supabase/installation/12_recyclage.sql) ---- */
 Backend.recycler = async lots =>
   Backend.apply(await Backend.rpc('recycler', { p_lots: lots }));
 
@@ -521,3 +553,159 @@ function traduireAuth(m) {
   for (const [re, fr] of AUTH_FR) if (re.test(m)) return m.replace(re, fr);
   return m;
 }
+
+/* ================================================== Version 3.0 : les combats */
+/* Tout ce qui rapporte passe par le serveur (supabase/installation/23_combats.sql). Hors
+   ligne, le combat se joue quand même : la Section, les decks et les
+   cosmétiques restent dans le navigateur, et il n'y a rien à gagner. */
+const combatLocal = () => {
+  save.combat = save.combat || { section: null, decks: [], deck_actif: null, cosm: {}, campagne: { faits: [], finie: false }, jour: {}, stats: {}, defis: [] };
+  return save.combat;
+};
+
+Backend.combatSection = async function (section) {
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    if (c.section) throw new Error('Tu as déjà rejoint une Section.');
+    c.section = section;
+    const promo = SECTIONS[section].promo;
+    save.col[promo] = (save.col[promo] || 0) + 1;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('combat_section', { p_section: section }));
+};
+
+/* Le deck actif, le tapis, la sleeve. */
+Backend.combatReglages = async function (o) {
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    if (o.deck_actif !== undefined) c.deck_actif = o.deck_actif;
+    c.cosm = Object.assign({}, c.cosm, Object.fromEntries(['tapis', 'sleeve'].filter(k => o[k]).map(k => [k, o[k]])));
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('combat_reglages', { p_reglages: o }));
+};
+
+Backend.deckSauver = async function (deck) {
+  const err = Decks.verifier(deck, save.col).filter(e => !/manque|de trop|Réserve doit|au moins un Joueur/.test(e));
+  if (err.length) throw new Error(err[0]);
+  const propre = { id: deck.id, nom: deck.nom, cartes: deck.cartes, reserve: deck.reserve, couverture: deck.couverture };
+  /* Version 3.0.13 : public ou non (montré sur le profil et la fiche) ; sans
+     la clé, le serveur garde l'état du deck. */
+  if (deck.public !== undefined) propre.public = !!deck.public;
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    if (!propre.id) propre.id = 'd' + Date.now().toString(36);
+    c.decks = c.decks.filter(d => d.id !== propre.id).concat([propre]);
+    if (!c.deck_actif && !Decks.verifier(propre, save.col).length) c.deck_actif = propre.id;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('deck_sauver', { p_deck: propre }));
+};
+
+/* Version 3.0.13 : montrer un deck sur son profil et sa fiche, ou le
+   reprendre. Seul un deck complet se montre (le serveur le revérifie). */
+Backend.deckPublier = async function (id, on) {
+  if (Backend.mode !== 'cloud') {
+    const d = combatLocal().decks.find(x => x.id === id);
+    if (d) d.public = !!on;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('deck_publier', { p_id: id, p_public: !!on }));
+};
+
+Backend.deckSupprimer = async function (id) {
+  if (Backend.mode !== 'cloud') {
+    const c = combatLocal();
+    c.decks = c.decks.filter(d => d.id !== id);
+    if (c.deck_actif === id) c.deck_actif = null;
+    return persist();
+  }
+  Backend.apply(await Backend.rpc('deck_supprimer', { p_id: id }));
+};
+
+/* Un combat contre l'IA : le serveur l'ouvre, tire la graine et note le
+   deck (format du moteur ; l'Épreuve impose le sien). Version 3.0.14 : il
+   rend aussi ce qui fait la partie (jour, Section, boss, jour de
+   l'événement) — la page la bâtit avec (Verif.partie), le serveur rejouera
+   la même. */
+Backend.combatDebut = async function (mode, cle, niveau, deck) {
+  if (Backend.mode !== 'cloud') return { id: 'local-' + Date.now(), graine: (Math.random() * 4294967296) >>> 0, mode, cle: String(cle), niveau };
+  return Backend.rpc('combat_debut', { p_mode: mode, p_cle: String(cle), p_niveau: niveau, p_deck: deck || null });
+};
+
+/* … et le referme : la page envoie la partie (`journal`) et ce que
+   l'historique affiche (`meta` : titre, adversaire, deck) ; la fonction du
+   serveur la rejoue et paie ce qu'elle confirme (3.0.14 : avant, la page
+   disait qui avait gagné). `local` : { gagne, histo }, pour le mode hors
+   ligne, qui ne paie rien. */
+Backend.combatFin = async function (id, journal, meta, local) {
+  if (Backend.mode !== 'cloud') {
+    const gagne = !!(local && local.gagne);
+    const c = combatLocal();
+    c.stats = c.stats || {};
+    c.stats[gagne ? 'victoires' : 'defaites'] = (c.stats[gagne ? 'victoires' : 'defaites'] || 0) + 1;
+    /* L'historique (js/combat/historique.js), comme historique_ajouter. */
+    if (local && local.histo) {
+      const x = Object.assign({ id: Date.now(), le: new Date().toISOString(), mode: null, gagne }, local.histo);
+      c.historique = [x].concat(c.historique || []).slice(0, Historique.MAX);
+    }
+    await persist();
+    return { recompense: { message: 'Hors ligne : les combats ne rapportent rien.' } };
+  }
+  const r = await Backend.verifier({ id, journal, meta: meta || {} });
+  await Backend.pull();
+  return r;
+};
+
+/* L'historique des combats (js/combat/historique.js, 23_combats.sql) : la
+   liste, sans les déroulés, puis un combat avec le sien. */
+Backend.historique = async function () {
+  if (Backend.mode !== 'cloud') return (combatLocal().historique || []).map(x => Object.assign({}, x, { journal: !!x.journal }));
+  return Backend.rpc('combats_historique');
+};
+Backend.historiqueCombat = async function (id) {
+  if (Backend.mode !== 'cloud') {
+    const x = (combatLocal().historique || []).find(y => String(y.id) === String(id));
+    if (!x) throw new Error('Combat introuvable.');
+    return x;
+  }
+  return Backend.rpc('combat_historique', { p_id: Number(id) });
+};
+
+/* Version 3.0.6 : la partie du tutoriel gagnée (js/combat/tutoriel.js) ;
+   la quête « Premiers pas » avance, puis l'état est relu. */
+Backend.tutorielFini = async function () {
+  if (Backend.mode !== 'cloud') return;
+  await Backend.rpc('tutoriel_fini');
+  await Backend.pull();
+};
+
+/* L'événement « Le Choc des Sections » (js/choc.js, supabase/installation/25_choc.sql) :
+   l'Épreuve du jour. */
+Backend.chocEtat = () => Backend.rpc('choc_etat');
+/* Le Raid (js/raid.js, supabase/installation/27_raid.sql) : l'état de la saison, et un
+   coffre (commun : une phase abattue ; personnel : un palier de dégâts). */
+Backend.raidEtat = () => Backend.rpc('raid_etat');
+Backend.raidReclamer = async function (saison, quoi, n) {
+  const r = await Backend.rpc('raid_reclamer', { p_saison: saison, p_quoi: quoi, p_n: n });
+  Backend.apply(r.etat);
+  return r.cartes || [];
+};
+
+/* Les défis entre amis (js/combat/defis.js). */
+Backend.defiLancer = async (pseudo, deck) => Backend.apply(await Backend.rpc('defi_lancer', { p_pseudo: pseudo, p_deck: deck }));
+Backend.defiRepondre = async function (id, ok, deck) {
+  const r = await Backend.rpc('defi_repondre', { p_id: id, p_ok: !!ok, p_deck: deck || null });
+  Backend.apply(r.etat);
+  return r;
+};
+Backend.defiEtat = (id, depuis) => Backend.rpc('defi_etat', { p_id: id, p_depuis: depuis || 0 });
+Backend.defiJouer = (id, n, a) => Backend.rpc('defi_jouer', { p_id: id, p_n: n, p_action: a });
+/* La fin d'un défi (3.0.14) : le serveur rejoue les coups qu'il a rangés,
+   et leurs auteurs ; personne ne dit plus qui a gagné. */
+Backend.defiFin = async function (id) {
+  const r = await Backend.verifier({ defi: id });
+  await Backend.pull();
+  return r;
+};

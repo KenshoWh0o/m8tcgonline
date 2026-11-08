@@ -5,13 +5,16 @@
 --   Tout colle, tout d'un bloc, dans Supabase > SQL Editor > New query,
 --   puis « Run ». Il n'y a rien a modifier la-dedans.
 --
---   Ce fichier est assemble automatiquement a partir des quatre fichiers
---   du dossier supabase/. Ne pas l'editer a la main : editer les fichiers
---   d'origine, puis relancer `python3 tools/build-sql.py`.
+--   Ce fichier est assemble automatiquement a partir des fichiers du
+--   dossier supabase/installation/. Ne pas l'editer a la main : editer les
+--   fichiers d'origine, puis relancer `python3 tools/build-sql.py`.
 --
 --   Rejouable sans danger : chaque ligne est mise a jour si elle existe.
+--   Il n'a ni BEGIN ni COMMIT. L'editeur de Supabase l'envoie en une seule
+--   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
+--   annule tout.
 --
---   Assemble le 2026-10-25
+--   Assemble le 2026-11-08
 --
 -- =====================================================================
 
@@ -93,6 +96,10 @@ alter table public.cards add column if not exists promo boolean not null default
 -- du tirage classique — et `reverse` : c'est ce drapeau qui les rend
 -- echangeables, recyclables et fabricables, contrairement aux Promos.
 alter table public.cards add column if not exists reverse boolean not null default false;
+-- Version 3.0 : les Secretes (24_secretes.sql). Hors des 122 comme
+-- les Promos (`promo`), tirees a la place du hit une fois sur 133, et
+-- echangeables (`secrete`) — mais ni recyclables ni fabricables.
+alter table public.cards add column if not exists secrete boolean not null default false;
 create index if not exists cards_rar_idx on public.cards (rar) where in_booster;
 
 -- ------------------------------------------------------------ collection
@@ -103,6 +110,12 @@ create table if not exists public.collection (
   first_at timestamptz not null default now(),
   primary key (user_id, card_id)
 );
+
+-- La maitrise des cartes du pre-build 3.0 a ete retiree : son compteur
+-- d'exemplaires obtenus disparait si une base de test l'a encore.
+drop trigger if exists collection_total on public.collection;
+drop function if exists public.collection_total();
+alter table public.collection drop column if exists total;
 
 -- --------------------------------------------------------------- quetes
 create table if not exists public.quests (
@@ -152,7 +165,7 @@ alter table public.shop_items add column if not exists limite    integer;
 do $$ begin
   alter table public.shop_items drop constraint if exists shop_items_categ_check;
   alter table public.shop_items add constraint shop_items_categ_check
-    check (categ in ('boosters','echange','cosmetique','promo','evenement','invitation'));
+    check (categ in ('boosters','echange','cosmetique','promo','evenement','invitation','tapis','sleeve'));
   alter table public.shop_items drop constraint if exists shop_items_devise_check;
   alter table public.shop_items add constraint shop_items_devise_check
     check (devise in ('eclats','fragments','prismes'));
@@ -225,7 +238,7 @@ language sql immutable as $$
     -- Doit rester egal a PROMO_PALIER dans js/config.js, qui ne sert qu'a
     -- l'affichage : c'est check_promos() qui accorde vraiment la carte.
     when 'promo_palier_pct'  then 75
-    -- Recyclage (supabase/12_recyclage.sql) : ce que rapporte un doublon jete,
+    -- Recyclage (supabase/installation/12_recyclage.sql) : ce que rapporte un doublon jete,
     -- en Fragments. Les Fragments n'achetent qu'une chose — une carte qui
     -- manque (fabriquer) — : ils ne font pas tourner de boucle avec les
     -- boosters, il n'y a donc plus de plafond. Le calcul est en tete de
@@ -250,7 +263,7 @@ language sql immutable as $$
     -- Une Essence Brillante remplace l'Essence du paquet une fois sur 50 :
     -- environ une tous les huit jours pour un joueur regulier.
     when 'foil_odds'         then 50
-    -- La chasse a la carte unique (supabase/15_evenements.sql) : une chance
+    -- La chasse a la carte unique (supabase/installation/15_evenements.sql) : une chance
     -- sur 250 par booster, tant que personne ne l'a trouvee. Avec ~70 boosters
     -- ouverts par jour dans la communaute, elle sort en ~3 a 4 jours.
     when 'chasse_odds'       then 250
@@ -289,15 +302,83 @@ language sql stable as $$
   select now() >= beta_lancement();
 $$;
 
+-- =====================================================================
+--  La maintenance (version 3.0.12)
+-- =====================================================================
+-- Une ligne : en maintenance ou non, le message a montrer, l'heure de retour
+-- prevue (affichee seulement : la maintenance ne finit que quand un
+-- administrateur la leve, Labo › Serveur, labo_maintenance dans
+-- 29_labo.sql), depuis quand, et par qui. Pendant une maintenance,
+-- garde_beta() refuse toute action du jeu a qui n'est pas administrateur, et
+-- la page montre l'ecran de maintenance (js/gate.js) a tous les autres.
+--
+-- Une base 2.x qui recoit la 3.0 avec des joueurs entre d'office en
+-- maintenance : la page de la 2.x encore ouverte chez eux ne doit pas jouer
+-- sur une base 3.0, et le site 3.0 attend que l'administrateur l'ait
+-- verifie. La detection se fait a la creation de la table, donc une seule
+-- fois : sans table `combat_joueurs` (une base qui n'a jamais eu la 3.0) et
+-- avec au moins un profil. Une installation neuve, elle, n'a personne.
+--
+-- Version 3.0.17 (le proprietaire, 8 novembre 2026 : « programmer la
+-- maintenance […] pour la date prevue, et tout automatiser ») : `fin_auto`.
+-- Vraie, la maintenance se leve d'elle-meme a son heure de retour (`fin`) :
+-- maintenance_active() ne la compte plus, porte() ne la montre plus, et les
+-- ecrans de maintenance rechargent la page (js/gate.js). La maintenance de la
+-- mise a jour se leve d'elle-meme a la sortie, lundi 9 novembre 2026, 0 h
+-- (heure de Paris ; le proprietaire, 8 novembre : « maintenance a 23h50,
+-- sortie a minuit ») ; collee plus tard, cinq minutes apres. Un
+-- administrateur peut la lever plus tot, ou la prolonger (Labo › Serveur).
+do $$
+begin
+  if to_regclass('public.maintenance') is null then
+    create table public.maintenance (
+      id      int primary key check (id = 1),
+      actif   boolean not null default false,
+      message text,
+      fin     timestamptz,
+      fin_auto boolean not null default false,
+      depuis  timestamptz,
+      par     text
+    );
+    insert into public.maintenance (id, actif, message, fin, fin_auto, depuis, par)
+    select 1, true, 'La version 3.0 arrive : le jeu est en maintenance le temps de la mise à jour.',
+           greatest(timestamptz '2026-11-09 00:00:00+01', now() + interval '5 minutes'),
+           true, now(), 'la mise à jour 3.0'
+     where to_regclass('public.combat_joueurs') is null and exists (select 1 from public.profiles);
+  end if;
+end $$;
+alter table public.maintenance add column if not exists fin_auto boolean not null default false;
+insert into public.maintenance (id) values (1) on conflict (id) do nothing;
+alter table public.maintenance enable row level security;
+revoke all on public.maintenance from anon, authenticated;
+
+-- La maintenance compte-t-elle en ce moment ? Allumee, et pas passee son
+-- heure de retour si elle se leve d'elle-meme (fin_auto, 3.0.17).
+create or replace function public.maintenance_active() returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select m.actif and not (m.fin_auto and m.fin is not null and now() >= m.fin)
+                     from maintenance m where m.id = 1), false);
+$$;
+revoke all on function public.maintenance_active from public, anon, authenticated;
+
 -- Ce que l'ecran d'attente a besoin de savoir, sans compte : est-ce ouvert,
 -- quand ca ouvre, et quelle heure il est ICI. Le navigateur compte ensuite le
 -- temps ecoule avec une horloge que l'utilisateur ne peut pas regler
 -- (performance.now()), jamais avec la date de l'appareil.
+-- Version 3.0.12 : la version de la base (une page 3.0 devant une base qui
+-- n'a pas encore recu la 3.0 montre l'ecran de maintenance, js/gate.js) et
+-- la maintenance en cours. `security definer` : la table maintenance n'est
+-- lisible que par lui.
 create or replace function public.porte() returns jsonb
-language sql stable as $$
+language sql stable security definer set search_path = public as $$
   select jsonb_build_object('ouvert', beta_ouverte(),
                             'lancement', beta_lancement(),
-                            'serveur', now());
+                            'serveur', now(),
+                            'version', '3.0',
+                            'maintenance', (select case when maintenance_active() then jsonb_build_object(
+                                                     'message', m.message, 'fin', m.fin, 'depuis', m.depuis,
+                                                     'auto', m.fin_auto) end
+                                              from maintenance m where m.id = 1));
 $$;
 
 grant execute on function public.porte to anon, authenticated;
@@ -396,22 +477,37 @@ $$;
 -- donnait acces a tout le jeu sans aucun compte. Tant que la beta est fermee,
 -- une action n'aboutit que pour une personne invitee — et c'est le serveur qui
 -- le dit, pas la page.
-create or replace function public.garde_beta() returns void
+-- Version 3.0.14 : la meme garde pour un joueur donne. La fonction qui
+-- verifie les combats (supabase/functions/combat-verifier) appelle le
+-- serveur avec la cle de service : auth.uid() y est vide, elle dit pour qui.
+create or replace function public.garde_beta_de(p uuid) returns void
 language plpgsql security definer set search_path = public as $$
 begin
   -- L'ordre des deux tests compte : passe la date d'ouverture, on ne consulte
   -- plus la liste du tout. C'est le cas de la quasi-totalite des appels apres
   -- le lancement, et il ne coute alors rien.
-  if not beta_ouverte() and not est_invite(auth.uid()) then
+  if not beta_ouverte() and not est_invite(p) then
     raise exception 'BETA_FERMEE';
   end if;
+  -- Version 3.0.12 : pendant une maintenance, seuls les administrateurs
+  -- jouent (une ligne lue par sa cle : rien a payer le reste du temps).
+  if maintenance_active()
+     and not exists (select 1 from profiles where id = p and is_admin) then
+    raise exception 'MAINTENANCE';
+  end if;
+end $$;
+
+create or replace function public.garde_beta() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  perform garde_beta_de(auth.uid());
 end $$;
 
 -- `public` d'abord : Postgres accorde l'execution a tout le monde par defaut,
 -- et `anon` en herite. Ne retirer le droit qu'a `anon` et `authenticated`
 -- laissait donc ces deux fonctions appelables sans compte — on pouvait sonder
 -- la liste des invites identifiant par identifiant.
-revoke all on function public.est_invite, public.garde_beta from public, anon, authenticated;
+revoke all on function public.est_invite, public.garde_beta, public.garde_beta_de from public, anon, authenticated;
 
 -- =====================================================================
 --  Creation du profil a l'inscription
@@ -532,6 +628,22 @@ $$;
 -- parcourir les photos par identifiant.
 revoke all on function public.photo_discord from public, anon, authenticated;
 
+-- Version 3.0 : l'XP de combattant d'un joueur (26_niveaux.sql), pour le
+-- niveau pose sur son avatar partout ou son cadre s'affiche (amis, boite,
+-- classements, defis, evenement, fiche). La page calcule le niveau, comme
+-- pour me(). La table des combats vient plus loin (23_combats.sql) : tant
+-- qu'elle n'existe pas, c'est 0. Rouage interne, comme photo_discord.
+create or replace function public.xp_de(p uuid) returns integer
+language plpgsql stable security definer set search_path = public as $$
+declare v int;
+begin
+  select x.xp into v from combat_joueurs x where x.user_id = p;
+  return coalesce(v, 0);
+exception when undefined_table or undefined_column then
+  return 0;
+end $$;
+revoke all on function public.xp_de(uuid) from public, anon, authenticated;
+
 create or replace function public.period_key(sc text) returns text
 language sql stable as $$
   select case sc
@@ -545,8 +657,12 @@ create or replace function public.bump_quests(p uuid, m text, amount int)
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if amount <= 0 then return; end if;
+  -- Une quete d'evenement n'avance que pendant son evenement (version 3.0) :
+  -- sans ce filtre, les quetes « ev » (sur toute la duree) d'un evenement
+  -- futur commenceraient avec de l'avance.
   insert into quest_progress (user_id, quest_id, period_key, progress)
-  select p, q.id, period_key(q.scope), amount from quests q where q.metric = m
+  select p, q.id, period_key(q.scope), amount from quests q
+   where q.metric = m and (q.evenement is null or q.evenement = evenement_en_cours())
   on conflict (user_id, quest_id, period_key)
     do update set progress = quest_progress.progress + amount
     where not quest_progress.claimed;
@@ -610,6 +726,8 @@ begin
     do update set progress = greatest(quest_progress.progress, excluded.progress);
 end $$;
 
+drop function if exists public.seuil_maitrise(text, int);
+
 -- =====================================================================
 --  Droits de lecture
 --  Supabase accorde normalement ces droits toute seule aux nouvelles tables,
@@ -643,7 +761,7 @@ revoke insert, update, delete on public.profiles, public.collection, public.card
 
 -- =====================================================================
 --  Mate TCG Online — catalogue des cartes (genere, ne pas editer a la main)
---  Source : js/cards-data.js  ·  Regenerer : python3 supabase/gen-cards-sql.py
+--  Source : js/cards-data.js  ·  Regenerer : python3 tools/gen-cards-sql.py
 --  A rejouer dans Supabase apres chaque ajout ou retrait de carte.
 -- =====================================================================
 
@@ -910,6 +1028,12 @@ begin
     end if;
   end if;
 
+  -- L'avatar est un mot court : « discord », une cle d'AVATARS (js/config.js),
+  -- « ess:rose », « card:c012 ». Rien d'autre : il part chez tous ceux qui
+  -- voient le joueur (amis, classement, echanges).
+  if p_avatar is not null and p_avatar !~ '^[a-z0-9_:\-]{1,40}$' then
+    raise exception 'Avatar invalide.';
+  end if;
   -- Un avatar « card:cXXX » doit correspondre a une carte reellement possedee.
   if p_avatar is not null and p_avatar like 'card:%' then
     if not exists (select 1 from collection
@@ -918,9 +1042,11 @@ begin
     end if;
   end if;
 
-  -- Un cadre achete doit etre dans l'inventaire.
+  -- Un cadre (`f_…`, FRAMES dans js/config.js) doit etre dans l'inventaire :
+  -- un tapis ou un titre possede n'en est pas un.
   if p_frame is not null and p_frame <> 'default'
-     and not exists (select 1 from inventory where user_id = p and item_id = p_frame and qty > 0) then
+     and (p_frame not like 'f\_%'
+          or not exists (select 1 from inventory where user_id = p and item_id = p_frame and qty > 0)) then
     raise exception 'Cadre non débloqué.';
   end if;
 
@@ -964,6 +1090,15 @@ language plpgsql volatile as $$
 declare out_id text; ord text[]; essai text;
 begin
   -- On vise la rarete demandee, puis on se rabat sur la plus proche si elle est vide.
+  -- Version 3.0 : une Secrete (24_secretes.sql). Hors extension,
+  -- donc `promo`, elle a son propre tirage ; sans Secrete au catalogue, on
+  -- retombe sur une Legendaire.
+  if r = 'S' then
+    select id into out_id from cards where secrete order by random() limit 1;
+    if out_id is not null then return out_id; end if;
+    r := 'L';
+  end if;
+
   ord := case r
     when 'C'  then array['C','PC','R','E','L']
     when 'PC' then array['PC','C','R','E','L']
@@ -1018,21 +1153,23 @@ begin
   --   4 · Essence
   --   5 · une Reverse (01_schema.sql) : Commune 50 %, Peu commune 35 %,
   --       Rare 15 %
-  --   6 · le hit : Rare 80 %, Epique 16 %, Legendaire 4 %
+  --   6 · le hit : Rare 79 %, Epique 16 %, Legendaire 4,25 %, Secrete 0,75 %
+  --       (version 3.0 ; avant : Rare 80 %, Legendaire 4 %)
   -- L'ordre compte : c'est celui dans lequel la pile se feuillette, et la
   -- derniere carte porte la mise en scene de la revelation.
   --
-  -- Godpack : six cartes qui montent, de la rare a la legendaire garantie.
+  -- Godpack (version 3.0.13, decide par le proprietaire) : trois Epiques,
+  -- deux Legendaires, puis une Secrete, la derniere, qui porte la revelation.
   --
   -- Ces taux doivent rester identiques a RATES dans js/booster.js, qui sert
   -- aux ouvertures de test du Labo.
   if god then
-    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'R' else 'E' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 70.0 then 'R' else 'E' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 50.0 then 'R' else 'E' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 90.0 then 'E' else 'L' end);
-    x := random() * 100.0; ids := ids || pick_card(case when x < 60.0 then 'E' else 'L' end);
+    ids := ids || pick_card('E');
+    ids := ids || pick_card('E');
+    ids := ids || pick_card('E');
     ids := ids || pick_card('L');
+    ids := ids || pick_card('L');
+    ids := ids || pick_card('S');
   else
     ids := ids || pick_card('C');
     ids := ids || pick_card('C');
@@ -1054,9 +1191,10 @@ begin
     ids := ids || cid;
 
     x := random() * 100.0;
-    ids := ids || pick_card(case when x < 80.0 then 'R'
-                                 when x < 96.0 then 'E'
-                                 else 'L' end);
+    ids := ids || pick_card(case when x < 79.0 then 'R'
+                                 when x < 95.0 then 'E'
+                                 when x < 99.25 then 'L'
+                                 else 'S' end);
   end if;
 
   ids := array_remove(ids, null);
@@ -1127,6 +1265,9 @@ begin
   -- Version 2.0 : les Reverses Rares sorties.
   perform bump_quests(p, 'rev_R', (select count(*)::int from cards
                                    where id = any(ids) and reverse and rar = 'R'));
+  -- Version 3.0 : les Secretes sorties.
+  perform bump_quests(p, 'rarity_S', (select count(*)::int from cards
+                                      where id = any(ids) and rar = 'S'));
   perform sync_collection_quests(p);
   perform check_promos(p);
 
@@ -1219,16 +1360,17 @@ begin
     raise exception 'Tu as atteint la limite pour cet article.';
   end if;
 
-  -- La devise (version 2.0) : Eclats, Fragments, ou la monnaie de l'evenement
-  -- (les Prismes de Reflets, les Braises de L'Echauffement en 2.5).
+  -- La devise (version 2.0) : Eclats, Fragments, ou Prismes de l'evenement.
   if it.devise = 'fragments' then
     if pr.fragments < it.prix then raise exception 'Pas assez de Fragments.'; end if;
     update profiles set fragments = fragments - it.prix where id = p;
   elsif it.devise = 'prismes' then
     update evt_comptes set solde = solde - it.prix
      where user_id = p and evenement = it.evenement and solde >= it.prix;
+    -- Chaque evenement a le nom de sa monnaie : les Prismes de Reflets, les
+    -- Etincelles du Choc des Sections (25_choc.sql).
     if not found then
-      raise exception 'Pas assez de %.', case when it.evenement = 'echauffement' then 'Braises' else 'Prismes' end;
+      raise exception '%', case it.evenement when 'choc' then 'Pas assez d''Étincelles.' else 'Pas assez de Prismes.' end;
     end if;
   else
     if pr.shards < it.prix then raise exception 'Pas assez d''Éclats.'; end if;
@@ -1250,7 +1392,7 @@ begin
       on conflict (user_id, item_id) do update set qty = inventory.qty + excluded.qty;
   elsif it.effet = 'invitation' then
     perform creer_invitation(p);
-  elsif it.effet in ('fragments', 'reverse_R') then
+  elsif it.effet in ('fragments', 'reverse_R', 'brillante') then
     perform accorder(p, it.effet, it.montant, null);
   elsif it.effet = 'carte' then
     -- Une carte achetee entre dans la collection comme n'importe quelle autre.
@@ -1320,10 +1462,12 @@ begin
   if ro <> rw then raise exception 'Les deux cartes doivent être de la même rareté.'; end if;
   if ro = 'ES' then raise exception 'Les Essences ne s''échangent pas.'; end if;
   if ro = 'PR' then raise exception 'Les cartes Promo ne s''échangent pas.'; end if;
-  -- Tout ce qui est hors extension — Promos, Essences Brillantes, carte
-  -- unique — reste a qui l'a obtenu. Les Reverses, elles, s'echangent : contre
-  -- une Reverse de meme rarete.
-  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse) then
+  -- Tout ce qui est hors extension — Promos, carte unique — reste a qui l'a
+  -- obtenu. Les Reverses, elles, s'echangent : contre une Reverse de meme
+  -- rarete. Les Secretes aussi (version 3.0) : contre une autre Secrete,
+  -- puisque la rarete doit etre la meme. Et les Essences Brillantes (version
+  -- 3.0.11) : contre une autre Brillante (rarete BR).
+  if exists (select 1 from cards where id in (p_offer, p_want) and promo and not reverse and not secrete and rar <> 'BR') then
     raise exception 'Cette carte ne s''échange pas.';
   end if;
   if (select count(distinct reverse) from cards where id in (p_offer, p_want)) > 1 then
@@ -1358,7 +1502,7 @@ begin
   values (p, dest.id, p_offer, p_want, left(coalesce(p_note, ''), 140), not gratuit)
   returning id into tid;
 
-  -- Dans la boite du destinataire (supabase/11_boite.sql). Les deux cartes
+  -- Dans la boite du destinataire (supabase/installation/11_boite.sql). Les deux cartes
   -- voyagent avec l'evenement : la boite les montre sans autre appel.
   perform notifier(dest.id, 'echange_recu', p, tid::text,
                    jsonb_build_object('offer', p_offer, 'want', p_want));
@@ -1478,7 +1622,7 @@ begin
   -- Un compte qui n'a pas acces au jeu (01_schema.sql) n'est pas trouvable.
   if not found or not (beta_ouverte() or est_invite(r.id)) then return 'null'::jsonb; end if;
   return jsonb_build_object('pseudo', r.pseudo, 'avatar', r.avatar,
-    'frame', r.frame, 'photo', photo_discord(r.id));
+    'frame', r.frame, 'xp', xp_de(r.id), 'photo', photo_discord(r.id));
 end $$;
 
 -- =====================================================================
@@ -1521,6 +1665,11 @@ grant execute on function public.me, public.set_profile, public.checkin, public.
 insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo) values
   ('p01',  1, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
   ('p02',  2, 'Major de Paris',    'coach',  'mauve',  'PR', false, true),
+  -- Version 3.0 : les Promos des deux Starter Decks, donnees en Combats
+  -- (23_combats.sql). Version 3.0.13 : les vraies (photos du proprietaire,
+  -- 1er novembre 2026) — P03 pour la Section Deter, P04 pour Toxique.
+  ('p03',  3, 'Brawks Déter',      'joueur', 'neutre', 'PR', false, true),
+  ('p04',  4, 'Squeezie le Toxique', 'joueur', 'rose', 'PR', false, true),
   ('p05',  5, 'Tout Commence Ici', 'joueur', 'rose',   'PR', false, true),
   ('p06',  6, 'Le Marionnettiste', 'joueur', 'neutre', 'PR', false, true)
 on conflict (id) do update set
@@ -1649,13 +1798,16 @@ revoke all on function public.check_promos from public, anon, authenticated;
 --  L'extension compte 122 cartes : 9 essences, 33 communes, 24 peu
 --  communes, 28 rares, 18 epiques, 10 legendaires.
 --
---  Un booster donne 6 cartes : deux communes, une commune ou peu commune
---  (60/40), une peu commune, une essence, et un dernier tirage a
---  80 % rare / 16 % epique / 4 % legendaire.
+--  Un booster donne 6 cartes (open_pack(), 03_rpc.sql, fait foi) : deux
+--  communes, une peu commune, une essence (Brillante une fois sur 50), une
+--  Reverse (C 50 % / PC 35 % / R 15 %), et le hit : 79 % rare / 16 %
+--  epique / 4,25 % legendaire / 0,75 % Secrete.
 --  La reserve tient 5 boosters et se recharge de 1 toutes les 4 h — six
 --  boosters par jour pour qui passe regulierement.
 --
---  Ce que ca donne, en mediane de simulation :
+--  Ce que ca donnait, en mediane de simulation, avec le booster de la 1.x
+--  (une commune ou peu commune a la place de la Reverse, hit a 80 / 16 / 4,
+--  sans Secrete) ; le calcul n'a pas ete refait depuis :
 --      25 % de la collection ......    7 boosters  (le premier jour)
 --      50 % .......................   17 boosters  (trois jours)
 --      75 % .......................   45 boosters  (une semaine)   -> promo P06
@@ -1828,13 +1980,7 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   -- un mois environ chacune a six boosters par jour. Les echanges y aident.
   ('m_exR',     'milestone', 'ex_R',       10,      1000, null,      'Dix fois la même',      'Possède 10 exemplaires d''une même Rare.', 26),
   ('m_exE',     'milestone', 'ex_E',        5,      1500, null,      'Cinq fois la même',     'Possède 5 exemplaires d''une même Épique.', 27),
-  ('m_exL',     'milestone', 'ex_L',        3,      2500, null,      'Trois fois la même',    'Possède 3 exemplaires d''une même Légendaire.', 28),
-  -- ---------------------------------------------------------- version 2.5
-  -- Le mode sans fin de L'Echauffement (22f_sans-fin.sql) : dix jours
-  -- gagnes, le titre « Infatigable ». Un defi par jour, gagne une fois sur
-  -- deux a trois a peu pres (simulation, en tete du fichier) : trois
-  -- semaines environ pour un joueur qui vient chaque jour.
-  ('m_sf10',    'milestone', 'sf_victoire', 10,         0, 't_ech_infatigable', 'Infatigable', 'Gagne 10 défis du jour, après L''Échauffement.', 29)
+  ('m_exL',     'milestone', 'ex_L',        3,      2500, null,      'Trois fois la même',    'Possède 3 exemplaires d''une même Légendaire.', 28)
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id,
@@ -1848,11 +1994,19 @@ delete from public.quests where id not in (
   'm_packs25','m_packs50','m_packs100','m_packs200',
   'm_trade25',
   'd_revR','w_revR','m_revC','m_revPC','m_revR','m_revALL','m_master','m_brill','m_packs300','m_illu10','m_invite',
-  'm_exR','m_exE','m_exL','m_sf10',
+  'm_exR','m_exE','m_exL',
   'e_check','e_packs','e_illu','e_revR','e_titre','e_perso','e_revC','e_rev45','e_trade','e_illu7','e_packs70',
   'e_recycle','e_invite',
-  'ej_visite','ej_combat','ej_victoire','ej_packs',
-  'ee_sept','ee_parfaits','ee_etoiles','ee_joueurs','ee_eclats','ee_reverse','ee_packs','ee_recycle','ee_trade');
+  -- Version 3.0 : les combats, les Secretes ; et l'evenement du
+  -- Choc des Sections. Les oublier ici effacerait leur progression a chaque
+  -- fois qu'on rejoue ce fichier (quest_progress suit la quete en cascade).
+  'd_combat','d_victoire','d_vaincus','w_victoires','w_dur','w_defi',
+  'm_campagne','m_legende','m_cent','m_secrete','m_tutoriel',
+  'd_xp','w_xp','m_combats50','m_vaincus100','m_defis10','m_dures25',
+  'm_niv5','m_niv10','m_niv20','m_niv30','m_niv40','m_niv50',
+  'c_visite','c_combats','c_raid','c_epreuve','c_vaincus','c_packs',
+  'c_deg100','c_raidv5','c_ep7','c_ep15','c_vic30','c_dur5','c_legende','c_defis','c_deck','c_cosm',
+  'c_packs60','c_trade','c_invite');
 
 -- ------------------------------------------------- l'evenement « Reflets »
 -- Ses quetes paient en Prismes (21_reflets.sql). Du jour : 50 Prismes pour
@@ -1878,27 +2032,93 @@ insert into public.quests (id, scope, metric, goal, reward, item_id, titre, deta
   ('e_packs70', 'ev',      'packs',    70, 50, null, 'Soixante-dix boosters',  'Ouvre 70 boosters pendant l''événement.', 6, 'reflets', 'prismes'),
   ('e_trade',   'ev',      'trades',    3, 40, null, 'Échanges de reflets',    'Conclus 3 échanges.', 7, 'reflets', 'prismes'),
   ('e_recycle', 'ev',      'recycle', 150, 30, null, 'Grand ménage',           'Recycle 150 doublons pendant l''événement.', 8, 'reflets', 'prismes'),
-  ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes'),
-  -- ------------------------------------- l'evenement « L'Echauffement » (2.5)
-  -- Ses quetes paient en Braises (22e_echauffement-evenement.sql, ou est le
-  -- calcul du Pass). Du jour : 50 pour qui les fait toutes. De l'evenement,
-  -- une fois : 390. Elles portent sur les defis, et sur ce que la 2.5 ouvre
-  -- d'autre (fabriquer une Reverse). Comptees par le serveur : ech_terminer
-  -- (ech_combat, ech_victoire, ech_eclat, et ech_sync_quetes pour les
-  -- etats), fabriquer (fab_rev), open_pack, recycler, trade_respond.
-  ('ej_visite',   'ev_jour', 'ev_visite',     1, 10, null, 'À l''entraînement',     'Passe voir L''Échauffement aujourd''hui.', 1, 'echauffement', 'prismes'),
-  ('ej_combat',   'ev_jour', 'ech_combat',    1, 10, null, 'Un combat',             'Termine un combat de L''Échauffement.', 2, 'echauffement', 'prismes'),
-  ('ej_victoire', 'ev_jour', 'ech_victoire',  1, 15, null, 'Une victoire',          'Gagne un combat de L''Échauffement.', 3, 'echauffement', 'prismes'),
-  ('ej_packs',    'ev_jour', 'packs',         4, 15, null, 'Quatre boosters',       'Ouvre 4 boosters aujourd''hui.', 4, 'echauffement', 'prismes'),
-  ('ee_sept',     'ev',      'ech_gagnes',    7, 60, null, 'Les sept défis',        'Gagne les sept défis.', 1, 'echauffement', 'prismes'),
-  ('ee_parfaits', 'ev',      'ech_parfaits',  3, 40, null, 'Trois fois parfait',    'Fais trois étoiles à 3 défis.', 2, 'echauffement', 'prismes'),
-  ('ee_etoiles',  'ev',      'ech_etoiles',  21, 80, null, 'Vingt et une étoiles',  'Les trois étoiles aux sept défis.', 3, 'echauffement', 'prismes'),
-  ('ee_joueurs',  'ev',      'ech_joueurs',  10, 40, null, 'Tout l''effectif',      'Fais combattre 10 Joueurs différents.', 4, 'echauffement', 'prismes'),
-  ('ee_eclats',   'ev',      'ech_eclat',     5, 30, null, 'Cinq coups d''éclat',   'Place 5 coups d''éclat.', 5, 'echauffement', 'prismes'),
-  ('ee_reverse',  'ev',      'fab_rev',       1, 40, null, 'Une Reverse fabriquée', 'Fabrique une Reverse avec tes Fragments.', 6, 'echauffement', 'prismes'),
-  ('ee_packs',    'ev',      'packs',        30, 40, null, 'Trente boosters',       'Ouvre 30 boosters pendant l''événement.', 7, 'echauffement', 'prismes'),
-  ('ee_recycle',  'ev',      'recycle',     100, 30, null, 'Grand ménage',          'Recycle 100 doublons pendant l''événement.', 8, 'echauffement', 'prismes'),
-  ('ee_trade',    'ev',      'trades',        2, 30, null, 'Deux échanges',         'Conclus 2 échanges pendant l''événement.', 9, 'echauffement', 'prismes')
+  ('e_invite',  'ev',      'invite',    1, 50, null, 'Un ami de plus',         'Un ami entre dans le jeu avec ton invitation.', 9, 'reflets', 'prismes')
+on conflict (id) do update set
+  scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
+  reward = excluded.reward, item_id = excluded.item_id, titre = excluded.titre,
+  detail = excluded.detail, ordre = excluded.ordre, evenement = excluded.evenement,
+  monnaie = excluded.monnaie;
+
+-- --------------------------------------------- version 3.0 : les combats
+-- (23_combats.sql) Des quetes de combat a cote de celles de la collection, pas
+-- a leur place : un collectionneur qui ne combat pas garde tout ce qu'il
+-- avait. Le calcul de ce qu'elles ajoutent est dans docs/economie-3.0.md :
+-- un combattant regulier y gagne ~190 Eclats par jour (quetes), plus ses
+-- victoires (5 par jour au plus, js/combat/campagne.js).
+--   combats          : un combat termine, contre l'IA ou un ami
+--   victoires        : une victoire ; victoires_dures : en Difficile ou plus
+--   vaincus          : des Joueurs adverses vaincus
+--   defis            : un defi entre amis termine
+--   campagne         : un combat de campagne gagne pour la premiere fois
+--   legende          : l'IA battue en Legende (Arcade)
+--   rarity_S         : une Secrete sortie d'un booster (24_secretes.sql)
+--   xp               : de l'XP de combattant gagnee (26_niveaux.sql)
+--   niveau           : le niveau de combattant atteint — un etat, pas un
+--                      compteur : gagner_xp le recopie (26_niveaux.sql)
+--   tutoriel         : la partie du tutoriel gagnee (tutoriel_fini)
+insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre) values
+  ('d_combat',    'daily',     'combats',          1,   20, null,         'Sur le terrain',        'Joue un combat, en solo ou contre un ami.', 8),
+  ('d_victoire',  'daily',     'victoires',        1,   40, null,         'Première victoire',     'Gagne un combat.', 9),
+  ('d_vaincus',   'daily',     'vaincus',          5,   30, null,         'Faucheur',              'Vaincs 5 Joueurs adverses en combat.', 10),
+  ('w_victoires', 'weekly',    'victoires',       10,  250, null,         'Série de victoires',    'Gagne 10 combats cette semaine.', 8),
+  ('w_dur',       'weekly',    'victoires_dures',  3,  300, null,         'Sans trembler',         'Gagne 3 combats en Difficile ou plus.', 9),
+  ('w_defi',      'weekly',    'defis',            1,  150, null,         'Entre amis',            'Joue un défi contre un ami.', 10),
+  ('m_campagne',  'milestone', 'campagne',        20,  500, 't_sections', 'Champion des Sections', 'Termine la campagne des Combats.', 30),
+  ('m_legende',   'milestone', 'legende',          1,  300, 't_legende',  'Tombeur de Légende',    'Gagne en Arcade, difficulté Légende.', 31),
+  ('m_cent',      'milestone', 'victoires',      100, 1000, 't_stratege', 'Stratège',              'Gagne 100 combats.', 32),
+  ('m_secrete',   'milestone', 'rarity_S',         1,  500, 'f_secrete',  'Secret bien gardé',     'Sors ta première Secrète d''un booster.', 33),
+  -- Version 3.0.6 : le tutoriel (js/combat/tutoriel.js, tutoriel_fini dans
+  -- 23_combats.sql). Il se rejoue a volonte ; la quete ne paie qu'une fois.
+  ('m_tutoriel',  'milestone', 'tutoriel',         1,  200, null,         'Premiers pas',          'Gagne la partie du tutoriel (Combats, Guide).', 29),
+  ('d_xp',        'daily',     'xp',             150,   30, null,         'Montée en puissance',   'Gagne 150 XP en combat.', 11),
+  ('w_xp',        'weekly',    'xp',            1500,  200, null,         'Entraînement intensif', 'Gagne 1 500 XP en combat cette semaine.', 11),
+  ('m_combats50', 'milestone', 'combats',         50,  300, null,         'Habitué de l''arène',   'Joue 50 combats.', 37),
+  ('m_vaincus100','milestone', 'vaincus',        100,  400, null,         'Cent à terre',          'Vaincs 100 Joueurs adverses.', 38),
+  ('m_defis10',   'milestone', 'defis',           10,  400, null,         'Rival attitré',         'Joue 10 défis contre des amis.', 39),
+  ('m_dures25',   'milestone', 'victoires_dures', 25,  600, null,         'Sans pitié',            'Gagne 25 combats en Difficile ou plus.', 40),
+  ('m_niv5',      'milestone', 'niveau',           5,  100, null,         'Niveau 5',              'Atteins le niveau 5 de combattant.', 41),
+  ('m_niv10',     'milestone', 'niveau',          10,  200, null,         'Niveau 10',             'Atteins le niveau 10 de combattant.', 42),
+  ('m_niv20',     'milestone', 'niveau',          20,  400, null,         'Niveau 20',             'Atteins le niveau 20 de combattant.', 43),
+  ('m_niv30',     'milestone', 'niveau',          30,  600, null,         'Niveau 30',             'Atteins le niveau 30 de combattant.', 44),
+  ('m_niv40',     'milestone', 'niveau',          40,  800, null,         'Niveau 40',             'Atteins le niveau 40 de combattant.', 45),
+  ('m_niv50',     'milestone', 'niveau',          50, 1500, null,         'Niveau 50',             'Atteins le niveau 50 de combattant.', 46)
+on conflict (id) do update set
+  scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
+  reward = excluded.reward, item_id = excluded.item_id,
+  titre = excluded.titre, detail = excluded.detail, ordre = excluded.ordre,
+  evenement = null, monnaie = 'eclats';
+
+-- ------------------------------- l'evenement « Le Choc des Sections » (3.0)
+-- Ses quetes paient en Etincelles (25_choc.sql ; la colonne `monnaie` dit
+-- « prismes » pour toute monnaie d'evenement). Du jour : 75 Etincelles ; de
+-- l'evenement, une fois : 670. Version 3.0.13 : l'evenement dure deux
+-- semaines au lieu de trois, les objectifs qui dependent du temps sont
+-- ramenes aux deux tiers (100 degats → 70, 7 Epreuves gagnees → 5, 15 essais
+-- → 10, 30 victoires → 20, 60 boosters → 40), les recompenses ne bougent
+-- pas. Le calcul du Pass est dans docs/economie-3.0.md.
+--   raid, raid_degats, raid_victoires : le Raid, contre son boss du moment
+--   epreuve, epreuve_victoires        : l'Epreuve du jour
+--   deck, cosm                        : un deck enregistre, un tapis ou un sleeve change
+insert into public.quests (id, scope, metric, goal, reward, item_id, titre, detail, ordre, evenement, monnaie) values
+  ('c_visite',  'ev_jour', 'ev_visite',          1, 10, null, 'Au rapport',          'Passe voir l''événement aujourd''hui.', 1, 'choc', 'prismes'),
+  ('c_combats', 'ev_jour', 'combats',            2, 15, null, 'Deux combats',        'Joue 2 combats, en solo ou contre un ami.', 2, 'choc', 'prismes'),
+  ('c_raid',    'ev_jour', 'raid',               1, 15, null, 'Paratonnerre',        'Affronte le boss du Raid.', 3, 'choc', 'prismes'),
+  ('c_epreuve', 'ev_jour', 'epreuve',            1, 10, null, 'L''Épreuve du jour',  'Tente l''Épreuve du jour.', 4, 'choc', 'prismes'),
+  ('c_vaincus', 'ev_jour', 'vaincus',            6, 15, null, 'Six de chute',        'Vaincs 6 Joueurs adverses en combat.', 5, 'choc', 'prismes'),
+  ('c_packs',   'ev_jour', 'packs',              3, 10, null, 'Trois boosters',      'Ouvre 3 boosters aujourd''hui.', 6, 'choc', 'prismes'),
+  ('c_deg100',  'ev',      'raid_degats',       70, 80, null, 'Soixante-dix dégâts', 'Inflige 70 dégâts au boss du Raid.', 1, 'choc', 'prismes'),
+  ('c_raidv5',  'ev',      'raid_victoires',     4, 60, null, 'Quatre fois à terre', 'Fais tomber le boss du Raid 4 fois.', 2, 'choc', 'prismes'),
+  ('c_ep7',     'ev',      'epreuve_victoires',  5, 80, null, 'Cinq Épreuves',       'Gagne 5 Épreuves du jour.', 3, 'choc', 'prismes'),
+  ('c_ep15',    'ev',      'epreuve',           10, 60, null, 'Dix essais',          'Tente 10 fois l''Épreuve du jour.', 4, 'choc', 'prismes'),
+  ('c_vic30',   'ev',      'victoires',         20, 60, null, 'Vingt victoires',     'Gagne 20 combats pendant l''événement.', 5, 'choc', 'prismes'),
+  ('c_dur5',    'ev',      'victoires_dures',    5, 60, null, 'Sans trembler',       'Gagne 5 combats en Difficile ou plus.', 6, 'choc', 'prismes'),
+  ('c_legende', 'ev',      'legende',            1, 50, null, 'Tombeur de Légende',  'Gagne en Arcade, difficulté Légende.', 7, 'choc', 'prismes'),
+  ('c_defis',   'ev',      'defis',              5, 50, null, 'Entre amis',          'Joue 5 défis contre des amis.', 8, 'choc', 'prismes'),
+  ('c_deck',    'ev',      'deck',               1, 20, null, 'Mon deck à moi',      'Enregistre un deck que tu as construit.', 9, 'choc', 'prismes'),
+  ('c_cosm',    'ev',      'cosm',               1, 20, null, 'À mes couleurs',      'Change de tapis de jeu ou de sleeve.', 10, 'choc', 'prismes'),
+  ('c_packs60', 'ev',      'packs',             40, 50, null, 'Quarante boosters',   'Ouvre 40 boosters pendant l''événement.', 11, 'choc', 'prismes'),
+  ('c_trade',   'ev',      'trades',             3, 30, null, 'Bonnes affaires',     'Conclus 3 échanges.', 12, 'choc', 'prismes'),
+  ('c_invite',  'ev',      'invite',             1, 50, null, 'Un ami de plus',      'Un ami entre dans le jeu avec ton invitation.', 13, 'choc', 'prismes')
 on conflict (id) do update set
   scope = excluded.scope, metric = excluded.metric, goal = excluded.goal,
   reward = excluded.reward, item_id = excluded.item_id, titre = excluded.titre,
@@ -1930,7 +2150,10 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('f_azur',   'cosmetique', 'Cadre Azur',   'Un liseré bleu autour de ton avatar.',                      1200, 'cosmetique', 1, null, true, 1),
   ('f_rose',   'cosmetique', 'Cadre Rose',   'Le rose du logo, autour de ton avatar.',                    1200, 'cosmetique', 1, null, true, 2),
   ('f_or',     'cosmetique', 'Cadre Or',     'Doré, comme les Légendaires.',                              2500, 'cosmetique', 1, null, true, 3),
-  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4)
+  ('f_prisme', 'cosmetique', 'Cadre Prisme', 'Un anneau de cristal taillé, et son éclat qui scintille.',  5000, 'cosmetique', 1, null, true, 4),
+  -- Version 3.0 : les couleurs des deux Sections.
+  ('f_toxique','cosmetique', 'Cadre Toxique','Le vert de la Section Toxique, qui goutte.',                 3000, 'cosmetique', 1, null, true, 5),
+  ('f_deter',  'cosmetique', 'Cadre Déter',  'Le mauve de la Section Déter, ailes déployées.',             3000, 'cosmetique', 1, null, true, 6)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -1951,15 +2174,34 @@ insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, c
   ('ev_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 60, 'fragments', 500, null, false, 2, 'prismes', 'reflets', 5),
   ('ev_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n''as pas encore.', 150, 'reverse_R',  1, null, false, 3, 'prismes', 'reflets', 3),
   ('t_collect',    'evenement', 'Titre « Collectionneur de Reflets »', 'Un titre qui ne se vendra plus après l''événement.',
-                                                                                                200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null),
-  -- Version 2.5 : la boutique de L'Echauffement, payee en Braises
-  -- (22e_echauffement-evenement.sql). Tout acheter coute 1 120 ; un joueur
-  -- regulier en gagne ~815 : il faut choisir.
-  ('eh_boosters',  'evenement', 'x2 Boosters',       'Deux boosters à ouvrir tout de suite.',      80, 'tickets',    2, null, false, 1, 'prismes', 'echauffement', 4),
-  ('eh_fragments', 'evenement', '500 Fragments',     'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 2, 'prismes', 'echauffement', 4),
-  ('eh_reverse',   'evenement', 'Une Reverse Rare',  'Une Reverse Rare que tu n''as pas encore.', 160, 'reverse_R',  1, null, false, 3, 'prismes', 'echauffement', 2),
-  ('t_ech_entraineur', 'evenement', 'Titre « Entraîneur »', 'Un titre qui ne se vendra plus après l''événement.',
-                                                                                                200, 'cosmetique', 1, null, true, 4, 'prismes', 'echauffement', null)
+                                                                                                200, 'cosmetique', 1, null, true, 4, 'prismes', 'reflets', null)
+on conflict (id) do update set
+  categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
+  prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
+  carte_id = excluded.carte_id, unique_buy = excluded.unique_buy, ordre = excluded.ordre,
+  devise = excluded.devise, evenement = excluded.evenement, limite = excluded.limite, actif = true;
+
+-- Version 3.0 : les tapis de jeu et les sleeves (23_combats.sql), en Eclats.
+-- Les visuels sont adaptes des illustrations fournies (tools/cosmetiques.py) ;
+-- le tapis et le sleeve de base sont a tout le monde, sans achat.
+-- Et la boutique du Choc des Sections (25_choc.sql), en Etincelles.
+insert into public.shop_items (id, categ, titre, detail, prix, effet, montant, carte_id, unique_buy, ordre, devise, evenement, limite) values
+  ('t_chateau',    'tapis',  'Tapis « Champions du Monde »', 'L''illustration de la carte « Champions du Monde », sous tes cartes.',   4000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('t_reverie',    'tapis',  'Tapis « La Relève »', 'L''illustration de la carte « La Relève », sous tes cartes.', 4000, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
+  ('t_chevalier',  'tapis',  'Tapis « La Luxueuse III »', 'L''illustration de la carte « La Luxueuse III », sous tes cartes.',          5000, 'cosmetique', 1, null, true, 3, 'eclats', null, null),
+  ('t_veste',      'tapis',  'Tapis « Marteen Supreme »', 'L''illustration de la carte « Marteen Supreme », sous tes cartes.',                           4000, 'cosmetique', 1, null, true, 4, 'eclats', null, null),
+  ('t_pilote',     'tapis',  'Tapis « Baby Driver »', 'L''illustration de la carte « Baby Driver », sous tes cartes.',        4000, 'cosmetique', 1, null, true, 5, 'eclats', null, null),
+  ('t_peche',      'tapis',  'Tapis « Vanyabubu »', 'L''illustration de la carte « Vanyabubu », sous tes cartes.',     4000, 'cosmetique', 1, null, true, 6, 'eclats', null, null),
+  ('s_sorcier',    'sleeve', 'Sleeve « 6W26L »', 'Le dos de tes cartes : la Secrète 6W26L, en noir et blanc.',   3000, 'cosmetique', 1, null, true, 1, 'eclats', null, null),
+  ('s_argent',     'sleeve', 'Sleeve « Argent »',      'Le logo Gentle Mates, gravé sur fond argent.',           2500, 'cosmetique', 1, null, true, 2, 'eclats', null, null),
+  -- Boutique du Choc, sur deux colonnes : le tapis (5) et le cadre (6) du
+  -- Sorcier ensemble sur la derniere rangee (le proprietaire, 2 novembre 2026).
+  ('ch_boosters',  'evenement', 'x2 Boosters',      'Deux boosters à ouvrir tout de suite.',      80, 'tickets',   2,   null, false, 1, 'prismes', 'choc', 7),
+  ('ch_boosters5', 'evenement', 'x5 Boosters',      'Cinq boosters, un peu moins cher à l''unité.', 180, 'tickets', 5,   null, false, 2, 'prismes', 'choc', 2),
+  ('ch_fragments', 'evenement', '500 Fragments',    'De quoi fabriquer les cartes qui manquent.', 70, 'fragments', 500, null, false, 3, 'prismes', 'choc', 5),
+  ('t_orage',      'evenement', 'Tapis « The French Sorcerer »', 'L''illustration de la carte « The French Sorcerer », sous tes cartes. Ne se vendra plus après l''événement.', 600, 'cosmetique', 1, null, true, 5, 'prismes', 'choc', null),
+  ('t_supporter',  'evenement', 'Titre « Supporter du Choc »', 'Un titre qui ne se vendra plus après l''événement.', 200, 'cosmetique', 1, null, true, 4, 'prismes', 'choc', null),
+  ('f_foudre',     'evenement', 'Cadre « The French Sorcerer »', 'La foudre du Sorcier autour de ton avatar. Ne se vendra plus après l''événement.', 400, 'cosmetique', 1, null, true, 6, 'prismes', 'choc', null)
 on conflict (id) do update set
   categ = excluded.categ, titre = excluded.titre, detail = excluded.detail,
   prix = excluded.prix, effet = excluded.effet, montant = excluded.montant,
@@ -1969,9 +2211,10 @@ on conflict (id) do update set
 delete from public.shop_items where id not in (
   's_pack1','s_pack5','s_pack10','s_token1','s_token5',
   's_p01','s_p02',
-  'f_azur','f_rose','f_or','f_prisme',
+  'f_azur','f_rose','f_or','f_prisme','f_toxique','f_deter',
   's_invite','ev_boosters','ev_fragments','ev_reverse','t_collect',
-  'eh_boosters','eh_fragments','eh_reverse','t_ech_entraineur');
+  't_chateau','t_reverie','t_chevalier','t_veste','t_pilote','t_peche','s_sorcier','s_argent',
+  'ch_boosters','ch_boosters5','ch_fragments','t_orage','f_foudre','t_supporter');
 
 
 -- #####################################################################
@@ -2038,7 +2281,7 @@ begin
 
   insert into friendships (a, b, demandeur) values (x, y, moi);
 
-  -- Dans la boite de l'autre (supabase/11_boite.sql). Une demande annulee puis
+  -- Dans la boite de l'autre (supabase/installation/11_boite.sql). Une demande annulee puis
   -- renvoyee ne doit pas s'empiler : on retire d'abord l'ancienne annonce.
   delete from notifications where user_id = autre.id and acteur = moi and type = 'ami_demande';
   perform notifier(autre.id, 'ami_demande', moi);
@@ -2094,7 +2337,7 @@ begin
   perform garde_beta();
   return coalesce((
     select jsonb_agg(jsonb_build_object(
-        'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+        'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
         'photo', photo_discord(o.id),
         'is_admin', o.is_admin, 'streak', o.streak,
         'lien', case when f.accepte then 'ami'
@@ -2209,7 +2452,7 @@ grant execute on function public.set_vitrine to authenticated;
 -- connait pas. Rejouer 03_rpc.sql apres ce fichier l'effacerait — il faut alors
 -- rejouer celui-ci, ou plus simplement recoller TOUT.sql qui les met dans l'ordre.
 -- C'est la derniere version de me() : elle ajoute la vitrine au profil, et
--- c'est donc ici que se pose l'appel a check_promos (supabase/03b_promos.sql).
+-- c'est donc ici que se pose l'appel a check_promos (supabase/installation/03b_promos.sql).
 -- Une carte Promo de palier peut etre debloquee par un echange aussi bien que
 -- par un booster : sans cet appel, elle n'arriverait qu'a la prochaine
 -- ouverture de paquet.
@@ -2253,9 +2496,9 @@ begin
       -- 15_evenements.sql). Le compte a rebours du navigateur suit celui-ci.
       'ticket_cap', cfg('ticket_cap'), 'ticket_minutes', minutes_recharge(),
       'serveur', now()),
-    -- La pastille de la boite de reception (supabase/11_boite.sql).
+    -- La pastille de la boite de reception (supabase/installation/11_boite.sql).
     'boite', boite_non_lues(p),
-    -- Le recyclage et la fabrication (supabase/12_recyclage.sql) : ce que
+    -- Le recyclage et la fabrication (supabase/installation/12_recyclage.sql) : ce que
     -- rapporte chaque rarete en Fragments, et ce que coute une carte. Les
     -- montants partent d'ici pour que le navigateur n'en garde pas une copie
     -- qui finirait par mentir.
@@ -2274,17 +2517,12 @@ begin
     'recap', evenement_recent(),
     'chasse', chasse_etat(),
     -- Version 2.0 : les reglages, le solde de Prismes de l'evenement en
-    -- cours, et les invitations achetees. Les Reverses (version 2.5,
+    -- cours, et les invitations achetees. Les Reverses (reportees de la 2.5,
     -- 22c_reverses.sql) : ouvertes ou non, a partir de quand, et leur prix.
-    -- Plus de `fabrication_reverse` ici : le site 2.1.3 l'aurait affiche au
-    -- double, il garde donc les Reverses fermees.
     'parametres', jsonb_build_object('reverses', jsonb_build_object(
       'ouvertes', reverses_ouvertes(),
       'des', (select reverses_des from parametres where id = 1),
-      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R'))),
-      -- Version 2.5 (22d_admin.sql) : la date de sortie de chaque version,
-      -- que le site suit plutot que la sienne (SORTIE, js/config.js).
-      'sorties', coalesce((select sorties from parametres where id = 1), '{}'::jsonb)),
+      'couts', jsonb_build_object('C', prix_reverse('C'), 'PC', prix_reverse('PC'), 'R', prix_reverse('R')))),
     'prismes', coalesce((select solde from evt_comptes
                           where user_id = p and evenement = evenement_en_cours()), 0),
     'invitations', coalesce((
@@ -2298,6 +2536,11 @@ begin
     'gardes', coalesce((select jsonb_object_agg(card_id, n) from gardes where user_id = p), '{}'::jsonb),
     -- Version 2.1 : les cartes en favori, de la plus ancienne a la plus recente.
     'favoris', coalesce((select jsonb_agg(card_id order by le) from favoris where user_id = p), '[]'::jsonb),
+    -- Version 3.0 : l'etat des Combats (combat_etat, 23_combats.sql).
+    'combat', combat_etat(p),
+    -- Version 3.0.7 : les cartes maitrisees et la carte fetiche
+    -- (maitrise_etat, 28_maitrise.sql).
+    'maitrise', maitrise_etat(p),
     'inv', coalesce((select jsonb_object_agg(item_id, qty) from inventory
                      where user_id = p and qty > 0), '{}'::jsonb),
     'quetes', coalesce((
@@ -2322,7 +2565,7 @@ end $$;
 -- La vitrine est visible de tous : c'est fait pour etre montre.
 create or replace function public.player_profile(p_pseudo text) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int;
+declare moi uuid := auth.uid(); o profiles; ami boolean; total int; possede int; rev int; rev_total int; sec int;
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
@@ -2350,6 +2593,11 @@ begin
   select count(*) into rev
     from collection c join cards k on k.id = c.card_id
    where c.user_id = o.id and c.qty > 0 and k.reverse;
+  -- Version 3.0.11 : ses Secretes, que la fiche compte au-dela du total
+  -- (« 127 / 122 », comme la Collection).
+  select count(*) into sec
+    from collection c join cards k on k.id = c.card_id
+   where c.user_id = o.id and c.qty > 0 and k.secrete;
 
   return jsonb_build_object(
     'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
@@ -2358,9 +2606,18 @@ begin
     'packs_opened', o.packs_opened, 'trades_done', o.trades_done,
     'membre_depuis', o.created_at,
     'possede', possede, 'total', total,
-    'reverses', rev, 'reverses_total', rev_total,
+    'reverses', rev, 'reverses_total', rev_total, 'secretes', sec,
     'titre', o.titre, 'banniere', o.banniere, 'devise', o.devise,
     'vitrine', to_jsonb(o.vitrine),
+    -- Version 3.0 : son XP de combattant (26_niveaux.sql), pour le niveau
+    -- pose sur l'avatar ; la page le calcule, comme pour me().
+    'xp', xp_de(o.id),
+    -- Version 3.0.7 : sa carte fetiche et sa maitrise (fetiche_de,
+    -- 28_maitrise.sql) ; rien s'il n'en a pas, ou plus.
+    'fetiche', fetiche_de(o.id),
+    -- Version 3.0.13 : ses combats (sa Section, ses chiffres, ses decks
+    -- publics : combat_public, 23_combats.sql) ; null s'il n'a jamais combattu.
+    'combat', combat_public(o.id),
     'succes', succes_de(o.id),
     'ami', ami,
     'moi', o.id = moi,
@@ -2491,7 +2748,7 @@ begin
       select jsonb_agg(jsonb_build_object(
           'id', 'n' || n.id, 'type', n.type, 'quand', n.created_at,
           'ref', n.ref, 'data', n.data,
-          'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+          'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
           'photo', photo_discord(o.id),
           'en_attente', case n.type
             when 'ami_demande' then exists (
@@ -2622,7 +2879,7 @@ end $$;
 --  exemplaire de chaque carte : recycler ne fait jamais reculer la
 --  collection.
 --
---  Les montants sont dans cfg() (supabase/01_schema.sql) :
+--  Les montants sont dans cfg() (supabase/installation/01_schema.sql) :
 --      recyclage    Essence 1 · Commune 2 · Peu commune 5 · Rare 20
 --                   Epique 80 · Legendaire 250
 --      fabrication  Essence 20 · Commune 40 · Peu commune 100 · Rare 400
@@ -2730,11 +2987,13 @@ begin
     if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
     -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, a
     -- partir de la date d'ouverture (reverses_ouvertes, 22c_reverses.sql).
-    -- Une Reverse rapporte comme sa classique.
+    -- Version 3.0.17 (le proprietaire, 8 novembre 2026 : « le recyclage de
+    -- reverse ne donne pas le double du recyclage de normales ») : une
+    -- Reverse rapporte le double de sa classique (avant : autant).
     if k.reverse and not reverses_ouvertes() then
       raise exception 'Les Reverses ne se recyclent pas encore.';
     end if;
-    prix := cfg('recyclage_' || k.rar);
+    prix := cfg('recyclage_' || k.rar) * case when k.reverse then 2 else 1 end;
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 
     select qty into possede from collection where user_id = p and card_id = cid for update;
@@ -2779,9 +3038,9 @@ begin
   if k.promo and not k.reverse then raise exception 'Cette carte ne se fabrique pas.'; end if;
   cout := cfg('fabrication_' || k.rar);
   -- Les Reverses (version 2.0) : fermees au lancement, sinon les Fragments
-  -- accumules rempliraient la collection Reverse d'un coup ; ouvertes a la
-  -- sortie de la 2.5, au prix de leur vraie rarete (version 2.5 :
-  -- reverses_ouvertes et prix_reverse, 22c_reverses.sql).
+  -- accumules rempliraient la collection Reverse d'un coup ; ouvertes avec
+  -- la 2.5, au prix de leur vraie rarete (reverses_ouvertes et prix_reverse,
+  -- 22c_reverses.sql).
   if k.reverse then
     if not reverses_ouvertes() then
       raise exception 'La fabrication des Reverses n''est pas encore ouverte.';
@@ -2800,9 +3059,6 @@ begin
   insert into collection (user_id, card_id, qty) values (p, p_carte, 1)
     on conflict (user_id, card_id) do update set qty = collection.qty + 1;
 
-  -- Version 2.5 : la quete de L'Echauffement « Une Reverse fabriquee »
-  -- (04_seed.sql).
-  if k.reverse then perform bump_quests(p, 'fab_rev', 1); end if;
   perform sync_collection_quests(p);
   perform check_promos(p);
   return me();
@@ -2830,6 +3086,13 @@ grant execute on function public.recycler, public.fabriquer to authenticated;
 --    · serie      : jours de connexion d'affilee, en cours. Une serie dont le
 --                   dernier jour est avant-hier ou plus ancien est rompue : elle
 --                   compte zero, meme si le chiffre dort encore dans le profil.
+--  Version 3.0, trois de plus :
+--    · niveau     : l'XP de combattant (xp_de, 26_niveaux.sql) ; le client en
+--                   tire le niveau ;
+--    · secretes   : Secretes differentes (24_secretes.sql) ;
+--    · versus     : victoires en defi contre un ami (combat_joueurs.pvp_v,
+--                   23_combats.sql). Les victoires contre l'IA ne comptent
+--                   pas : l'Arcade se rejoue a volonte au niveau le plus bas.
 --
 --  Ce qui est montre d'un joueur ne va pas au-dela de ce que le jeu montrait
 --  deja a n'importe qui (find_player, player_profile) : pseudo, avatar, cadre,
@@ -2851,7 +3114,7 @@ declare
 begin
   if moi is null then raise exception 'non connecte'; end if;
   perform garde_beta();
-  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie') then
+  if p_critere is null or p_critere not in ('collection', 'reverses', 'boosters', 'echanges', 'serie', 'niveau', 'secretes', 'versus') then
     raise exception 'Classement inconnu.';
   end if;
 
@@ -2864,6 +3127,11 @@ begin
                 -- Version 2.0 : les Reverses differentes.
                 when 'reverses'   then (select count(*) from collection c join cards k on k.id = c.card_id
                                          where c.user_id = pr.id and c.qty > 0 and k.reverse)
+                -- Version 3.0.
+                when 'niveau'     then xp_de(pr.id)
+                when 'secretes'   then (select count(*) from collection c join cards k on k.id = c.card_id
+                                         where c.user_id = pr.id and c.qty > 0 and k.secrete)
+                when 'versus'     then coalesce((select cj.pvp_v from combat_joueurs cj where cj.user_id = pr.id), 0)
                 when 'boosters'   then pr.packs_opened
                 when 'echanges'   then pr.trades_done
                 else case when pr.last_checkin >= auj - 1 then pr.streak else 0 end
@@ -2883,14 +3151,14 @@ begin
       'classes', (select count(*) from classes),
       'top', coalesce((
         select jsonb_agg(jsonb_build_object(
-                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
+                 'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'xp', xp_de(c.id), 'titre', c.titre,
                  'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', c.id = moi)
                order by c.n)
           from classes c where c.n <= 50), '[]'::jsonb),
       -- Sa propre ligne, meme hors des cinquante premiers : on veut savoir ou
       -- l'on en est, pas seulement qui est devant.
       'moi', (select jsonb_build_object(
-                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'titre', c.titre,
+                'rang', c.rang, 'pseudo', c.pseudo, 'avatar', c.avatar, 'frame', c.frame, 'xp', xp_de(c.id), 'titre', c.titre,
                 'photo', photo_discord(c.id), 'valeur', c.valeur, 'moi', true)
                 from classes c where c.id = moi))
   );
@@ -3148,8 +3416,7 @@ grant execute on function public.mes_tirages to authenticated;
 
 -- =====================================================================
 --  Mate TCG Online — les cadeaux
---  A executer apres 15_evenements.sql (ou apres 17_maj-quetes.sql sur une
---  base deja installee). Rejouable sans danger.
+--  A executer apres 15_evenements.sql. Rejouable sans danger.
 --
 --  Un administrateur offre a un ou plusieurs joueurs des Eclats, des
 --  boosters, des Fragments et/ou une carte, avec un mot. Le joueur le
@@ -3460,7 +3727,9 @@ on conflict (evenement, palier) do update set
 -- montre.
 --   reverse_R : une Reverse Rare qu'on n'a pas (une au hasard si on les a
 --               toutes) ; brillante : une Essence Brillante qu'on n'a pas
---               (2 000 Fragments si on les a toutes).
+--               (2 000 Fragments si on les a toutes) ; legendaire : une
+--               Legendaire qu'on n'a pas (4 000 Fragments sinon) ; tapis,
+--               sleeve : un cosmetique de combat (version 3.0).
 create or replace function public.accorder(p uuid, t text, n int, objet text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare cartes text[] := '{}'; cid text; i int;
@@ -3471,9 +3740,25 @@ begin
     update profiles set shards = shards + n where id = p;
   elsif t = 'fragments' then
     update profiles set fragments = fragments + n where id = p;
-  elsif t in ('titre', 'cadre') then
+  elsif t in ('titre', 'cadre', 'tapis', 'sleeve') then
+    -- Version 3.0 : un tapis de jeu ou un sleeve (23_combats.sql) se range
+    -- comme un cadre, sous son identifiant.
     insert into inventory (user_id, item_id, qty) values (p, objet, 1)
       on conflict (user_id, item_id) do nothing;
+  elsif t = 'legendaire' then
+    -- Version 3.0 (Pass du Choc) : une Legendaire de l'extension qu'on n'a
+    -- pas ; si on les a toutes, la moitie du prix d'une Legendaire fabriquee.
+    select k.id into cid from cards k
+     where k.rar = 'L' and not k.promo
+       and not exists (select 1 from collection c where c.user_id = p and c.card_id = k.id and c.qty > 0)
+     order by random() limit 1;
+    if cid is null then
+      update profiles set fragments = fragments + cfg('fabrication_L') / 2 where id = p;
+    else
+      insert into collection (user_id, card_id, qty) values (p, cid, 1)
+        on conflict (user_id, card_id) do update set qty = collection.qty + 1;
+      cartes := cartes || cid;
+    end if;
   elsif t = 'reverse_R' then
     for i in 1..greatest(n, 1) loop
       select k.id into cid from cards k
@@ -3544,7 +3829,7 @@ begin
   -- l'evenement ». Pas la connexion du jour (`checkin`) : elle a souvent eu
   -- lieu avant l'ouverture de l'evenement, et la quete serait restee vide.
   insert into quest_progress (user_id, quest_id, period_key, progress)
-  select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite'
+  select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite' and q.evenement = ev
   on conflict (user_id, quest_id, period_key) do nothing;
   select * into cpt from evt_comptes where user_id = p and evenement = ev;
 
@@ -3552,10 +3837,6 @@ begin
     'code', ev,
     'solde', coalesce(cpt.solde, 0),
     'total', coalesce(cpt.total, 0),
-    -- Version 2.5 : sa place, pour qui n'est pas dans les dix.
-    'rang', case when coalesce(cpt.total, 0) > 0 then
-      (select count(*) + 1 from evt_comptes x where x.evenement = ev and x.total > cpt.total) end,
-    'joueurs', (select count(*) from evt_comptes x where x.evenement = ev and x.total > 0),
     'piste', coalesce((
       select jsonb_agg(jsonb_build_object(
                'palier', pa.palier, 'seuil', pa.seuil, 'type', pa.type, 'montant', pa.montant,
@@ -3566,7 +3847,7 @@ begin
         from evt_piste pa where pa.evenement = ev), '[]'::jsonb),
     'top', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'xp', xp_de(pr.id), 'titre', pr.titre,
                'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = ev and total > 0
@@ -3578,12 +3859,17 @@ end $$;
 -- Pendant trois jours apres la fin d'un evenement, son onglet devient un
 -- recap : ce que le joueur y a fait, le podium, et la suite. me() en porte
 -- l'annonce (le code, les dates) ; evenement_recap() donne le detail.
+-- Version 2.5 (reportee) : `recap_jusqua` fixe la fin du recap ; vide, trois
+-- jours apres la fin de l'evenement, comme avant. La 2.5 l'a pose pour Reflets
+-- (jusqu'au dimanche 25 octobre 2026 minuit).
+alter table public.evenements add column if not exists recap_jusqua timestamptz;
+
 create or replace function public.evenement_recent() returns jsonb
 language sql stable security definer set search_path = public as $$
   select jsonb_build_object('code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
-                            'jusqua', e.fin + interval '3 days')
+                            'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'))
     from evenements e
-   where e.code is not null and now() >= e.fin and now() < e.fin + interval '3 days'
+   where e.code is not null and now() >= e.fin and now() < coalesce(e.recap_jusqua, e.fin + interval '3 days')
      and evenement_en_cours() is null
    order by e.fin desc limit 1;
 $$;
@@ -3595,7 +3881,7 @@ begin
   if p is null then raise exception 'non connecte'; end if;
   perform garde_beta();
   select * into e from evenements
-   where code is not null and now() >= fin and now() < fin + interval '3 days'
+   where code is not null and now() >= fin and now() < coalesce(recap_jusqua, fin + interval '3 days')
    order by fin desc limit 1;
   if not found then return 'null'::jsonb; end if;
   select * into cpt from evt_comptes where user_id = p and evenement = e.code;
@@ -3604,7 +3890,7 @@ begin
   select count(*) into nb from evt_comptes where evenement = e.code and total > 0;
   return jsonb_build_object(
     'code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
-    'jusqua', e.fin + interval '3 days',
+    'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'),
     'total', coalesce(cpt.total, 0),
     'paliers', (select count(*) from evt_piste pa where pa.evenement = e.code and pa.seuil <= coalesce(cpt.total, 0)),
     'paliers_max', (select count(*) from evt_piste pa where pa.evenement = e.code),
@@ -3620,12 +3906,15 @@ begin
     'joueurs', nb,
     'top', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'xp', xp_de(pr.id), 'titre', pr.titre,
                'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
              order by c.total desc, lower(pr.pseudo))
         from (select * from evt_comptes where evenement = e.code and total > 0
                order by total desc limit 3) c
-        join profiles pr on pr.id = c.user_id), '[]'::jsonb));
+        join profiles pr on pr.id = c.user_id), '[]'::jsonb))
+    -- Version 3.0 : ce que le Choc des Sections ajoute au recap (25_choc.sql) —
+    -- et le titre de la Section gagnante, accorde ici.
+    || case when e.code = 'choc' then choc_recap(p) else '{}'::jsonb end;
 end $$;
 
 -- ========================================================= 3. Devine l'illu
@@ -3784,7 +4073,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object('carte', x.id, 'amis', x.amis) order by x.n desc, x.id)
       from (select k.id, count(*) as n,
-                   jsonb_agg(jsonb_build_object('pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+                   jsonb_agg(jsonb_build_object('pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id),
                                                 'photo', photo_discord(o.id), 'n', c.qty)
                              order by c.qty desc, lower(o.pseudo)) as amis
               from friendships f
@@ -3793,7 +4082,8 @@ begin
               join collection c on c.user_id = o.id and c.qty > garde_de(o.id, c.card_id)
               join cards k on k.id = c.card_id
              where (f.a = moi or f.b = moi) and f.accepte
-               and k.cat <> 'essence' and (not k.promo or k.reverse)
+               -- Version 3.0.11 : les Essences Brillantes, qui s'echangent entre elles.
+               and (k.cat <> 'essence' or k.rar = 'BR') and (not k.promo or k.reverse or k.secrete or k.rar = 'BR')
                and not exists (select 1 from collection m where m.user_id = moi and m.card_id = k.id and m.qty > 0)
              group by k.id) x), '[]'::jsonb);
 end $$;
@@ -3891,6 +4181,21 @@ update public.inventory iv
 -- (15_evenements.sql), calcules a la volee comme eux ; les autres sont des
 -- objets gagnes (inventaire, `t_…`) : Pass d'evenement, boutique, quetes.
 -- Les noms vivent dans TITRES (js/config.js).
+
+-- Version 3.0 : un tapis (genre 'tapis') ou un sleeve ('sleeve') de combat.
+-- Les tapis partagent le prefixe `t_` avec les titres, et l'inventaire a des
+-- `s_` qui ne sont pas des sleeves (`s_invite`) : c'est la boutique ou le Pass
+-- qui disent ce qu'est un objet (la categorie `tapis` ou `sleeve`, ou un
+-- article d'evenement qui en porte le nom, comme le tapis du Sorcier). Celui
+-- de base en est toujours un. Les noms vivent dans TAPIS et SLEEVES
+-- (js/combat/table.js).
+create or replace function public.est_cosmetique_combat(x text, genre text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select x = case genre when 'tapis' then 't_base' else 's_base' end
+      or exists (select 1 from shop_items s where s.id = x
+                   and (s.categ = genre or (s.categ = 'evenement' and s.titre like initcap(genre) || ' %')))
+      or exists (select 1 from evt_piste e where e.objet = x and e.type = genre);
+$$;
 create or replace function public.titres_de(p uuid) returns text[]
 language plpgsql stable security definer set search_path = public as $$
 declare s jsonb := succes_de(p); t text[] := '{}';
@@ -3907,7 +4212,8 @@ begin
   if s ? 'reverses_toutes'   then t := array_append(t, 't_reflet'); end if;
   if exists (select 1 from profiles where id = p and is_admin) then t := array_append(t, 't_admin'); end if;
   select t || coalesce(array_agg(item_id order by item_id), '{}') into t
-    from inventory where user_id = p and qty > 0 and item_id like 't\_%';
+    from inventory where user_id = p and qty > 0 and item_id like 't\_%'
+     and not est_cosmetique_combat(item_id, 'tapis');
   return t;
 end $$;
 
@@ -3957,8 +4263,8 @@ select 'Reflets', 'La version 2.0 : les Reverses, des cadres, des titres, Devine
 
 -- ================================================================= droits
 revoke all on function public.evenement_en_cours, public.crediter_prismes, public.accorder,
-  public.illu_cible, public.illu_grille, public.creer_invitation, public.est_filleul, public.titres_de
-  from public, anon, authenticated;
+  public.illu_cible, public.illu_grille, public.creer_invitation, public.est_filleul, public.titres_de,
+  public.est_cosmetique_combat from public, anon, authenticated;
 revoke all on function public.piste_reclamer, public.evenement_etat, public.illu_etat,
   public.illu_essai, public.utiliser_invitation, public.personnaliser, public.evenement_recap,
   public.evenement_recent, public.amis_doublons from public, anon;
@@ -4162,7 +4468,8 @@ begin
   perform garde_beta();
   select * into k from cards where id = p_carte;
   if not found then raise exception 'Carte inconnue.'; end if;
-  if k.promo and not k.reverse then raise exception 'Cette carte se garde toujours.'; end if;
+  -- Les Secretes (version 3.0) s'echangent : on peut dire combien en garder.
+  if k.promo and not k.reverse and not k.secrete then raise exception 'Cette carte se garde toujours.'; end if;
   if p_n is not null and (p_n < 1 or p_n > 99) then raise exception 'Entre 1 et 99 exemplaires.'; end if;
 
   select greatest(1, coalesce((garder ->> garde_cle(k))::int, 1)) into defaut from profiles where id = p;
@@ -4234,701 +4541,15 @@ grant execute on function public.favori to authenticated;
 
 
 -- #####################################################################
--- ###  22b_echauffement.sql
--- ###  Version 2.5 : L'Echauffement, sept defis avant la suite
--- #####################################################################
-
--- =====================================================================
---  Mate TCG Online — version 2.5 : L'Echauffement, un mini-evenement
---  A executer apres 22_garder.sql. Rejouable sans danger.
---
---  Sept defis, un par jour, juste apres l'evenement Reflets. Chaque defi
---  oppose une equipe de trois Joueurs de sa collection a un adversaire du
---  jour, avec une regle du jour. Le combat se deroule tout seul, a partir
---  des valeurs imprimees sur les cartes (Defense, cout et degats des
---  attaques) : le joueur ne fait que des choix — qui, dans quel ordre, avec
---  quelle attaque. C'est un avant-gout, sans rien dire de ce qui vient.
---
---  LES REGLES (ech_simuler ; la meme chose dans _demo/serveur.js)
---    · les trois Joueurs combattent ensemble ; celui de devant (le premier
---      encore debout) encaisse les coups de l'adversaire ;
---    · a chaque tour, chacun gagne 1 elan ; il frappe des que son elan
---      atteint le cout de son attaque (les Essences dessinees sur la carte),
---      et le depense ; l'adversaire fait de meme, apres eux ;
---    · deux Joueurs de la meme couleur partent avec 1 elan d'avance ;
---    · la Defense d'un Joueur est sa resistance : a 0, il est KO ;
---    · victoire si l'adversaire tombe avant la fin du 10e tour ;
---    · LE COUP D'ECLAT, le seul geste pendant le combat : une fois par
---      combat, on touche un Joueur qui va frapper ce tour-ci, et son coup
---      compte double (avant la Carapace : c'est ce qui permet de la percer).
---  Etoiles : 1 pour la victoire, 2 en perdant au plus un Joueur, 3 sans
---  en perdre aucun. La meilleure note compte.
---
---  LES ESSAIS : trois par defi et par jour de Paris, compte au depart
---  (ech_commencer) comme l'Epreuve du jour de la 3.0 ; un essai abandonne est
---  perdu. Les defis des jours passes restent jouables (meme plafond) : sans
---  rattrapage, un jour manque ferait perdre pour de bon son indice. Le combat
---  se joue dans le navigateur (le coup d'eclat se decide en direct), puis
---  ech_terminer le rejoue ici avec le meme geste : c'est ce resultat-la qui
---  compte.
---
---  RECOMPENSES : 80, 80 puis 140 Eclats pour les etoiles 1, 2 et 3 de chaque
---  defi (300 par defi, 2 100 en tout), et 15, 15 puis 25 Braises (55 par
---  defi, 385 en tout : la monnaie de l'evenement, 22e_echauffement-
---  evenement.sql) ; 3 boosters quand les sept defis sont gagnes ; le titre
---  « Echauffe » pour les 21 etoiles.
---
---  LES INDICES : trois etoiles au defi n debloquent l'indice n — une phrase
---  sur ce qui vient, sans rien montrer. Leur texte n'est que dans la base
---  (ech_indices) : le navigateur ne le recoit qu'une fois l'indice gagne.
---
---  LE CALENDRIER : la saison commence a la fin du recap de Reflets. Les
---  dates exactes de 2026 sont posees par calendrier-2.5.sql (a jouer une
---  fois, apres ce fichier).
---
---  L'EQUILIBRAGE (simulation sur les 51 Joueurs, toutes les equipes, et
---  chaque coup d'eclat possible) : chaque defi a une equipe a trois etoiles,
---  qui demande le coup d'eclat au bon moment les jours 3 et 7 ; une equipe au
---  hasard, meme avec le meilleur coup d'eclat, ne fait trois etoiles qu'une
---  fois sur trente a cent ; une collection aux deux tiers trouve presque
---  toujours ses trois etoiles, une collection au tiers deux ou trois.
---
---  Sa saison (ech_saison) commence a la fin du recap de Reflets. Depuis le
---  24 octobre 2026, L'Echauffement est aussi un evenement au sens de la table
---  `evenements` (code 'echauffement', 22e_echauffement-evenement.sql), calee
---  sur la saison : sa monnaie, ses quetes, son Pass, sa boutique, son
---  classement et son recap. Il vit dans l'onglet Combats ; apres la saison,
---  le mode sans fin y prend sa place (22f_sans-fin.sql).
---
---  Les noms commencent tous par `ech_` : la version 3.0 a deja ses `defis`.
--- =====================================================================
-
--- ------------------------------------------------ la fin du recap, reglable
--- Jusqu'ici, le recap d'un evenement durait trois jours apres sa fin, en dur
--- (21_reflets.sql). `recap_jusqua` permet de le fixer ; vide, rien ne change.
--- Les deux fonctions sont redefinies ici, a l'identique sauf cette date.
-alter table public.evenements add column if not exists recap_jusqua timestamptz;
-
-create or replace function public.evenement_recent() returns jsonb
-language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
-                            'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'))
-    from evenements e
-   where e.code is not null and now() >= e.fin and now() < coalesce(e.recap_jusqua, e.fin + interval '3 days')
-     and evenement_en_cours() is null
-   order by e.fin desc limit 1;
-$$;
-
-create or replace function public.evenement_recap() returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); e evenements; cpt evt_comptes; rang int; nb int;
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  select * into e from evenements
-   where code is not null and now() >= fin and now() < coalesce(recap_jusqua, fin + interval '3 days')
-   order by fin desc limit 1;
-  if not found then return 'null'::jsonb; end if;
-  select * into cpt from evt_comptes where user_id = p and evenement = e.code;
-  select count(*) + 1 into rang from evt_comptes
-   where evenement = e.code and total > coalesce(cpt.total, 0);
-  select count(*) into nb from evt_comptes where evenement = e.code and total > 0;
-  return jsonb_build_object(
-    'code', e.code, 'titre', e.titre, 'debut', e.debut, 'fin', e.fin,
-    'jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'),
-    'total', coalesce(cpt.total, 0),
-    'paliers', (select count(*) from evt_piste pa where pa.evenement = e.code and pa.seuil <= coalesce(cpt.total, 0)),
-    'paliers_max', (select count(*) from evt_piste pa where pa.evenement = e.code),
-    'pris', (select count(*) from evt_piste_prises x where x.user_id = p and x.evenement = e.code),
-    'illus', (select count(*) from devine_illu d where d.user_id = p and d.trouve
-               and d.jour between (e.debut at time zone 'Europe/Paris')::date and (e.fin at time zone 'Europe/Paris')::date),
-    'reverses', (select count(*) from collection c join cards k on k.id = c.card_id
-                  where c.user_id = p and c.qty > 0 and k.reverse),
-    'reverses_max', (select count(*) from cards where reverse),
-    'quetes', (select count(*) from quest_progress qp join quests q on q.id = qp.quest_id
-                where qp.user_id = p and qp.claimed and q.evenement = e.code),
-    'rang', case when coalesce(cpt.total, 0) > 0 then rang end,
-    'joueurs', nb,
-    'top', coalesce((
-      select jsonb_agg(jsonb_build_object(
-               'pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
-               'photo', photo_discord(pr.id), 'total', c.total, 'moi', pr.id = p)
-             order by c.total desc, lower(pr.pseudo))
-        from (select * from evt_comptes where evenement = e.code and total > 0
-               order by total desc limit 3) c
-        join profiles pr on pr.id = c.user_id), '[]'::jsonb))
-    -- L'Echauffement (22e_echauffement-evenement.sql) : ses defis, en plus.
-    || case when e.code = 'echauffement' then jsonb_build_object(
-         'etoiles', coalesce((select sum(etoiles) from ech_scores where user_id = p), 0),
-         'gagnes', (select count(*) from ech_scores where user_id = p and etoiles > 0),
-         'parfaits', (select count(*) from ech_scores where user_id = p and etoiles = 3),
-         'defis', (select count(*) from ech_defis),
-         'combats', (select count(*) from ech_essais where user_id = p and fini))
-       else '{}'::jsonb end;
-end $$;
-
--- La saison : une seule ligne. Elle commence a la fin du recap de Reflets
--- (ou tout de suite s'il est deja fini) et dure neuf jours : un defi de plus
--- chaque jour pendant sept jours, puis deux jours pour rattraper.
---   Avancer ou reculer :  update public.ech_saison set debut = ..., fin = ... where id = 1;
---   (la ligne de l'evenement suit : 22e_echauffement-evenement.sql ; le Labo
---   le fait aussi, 22d_admin.sql.)
-create table if not exists public.ech_saison (
-  id    integer primary key default 1 check (id = 1),
-  debut timestamptz not null,
-  fin   timestamptz not null check (fin > debut)
-);
-insert into public.ech_saison (id, debut, fin)
-select 1, d, d + interval '9 days'
-  from (select greatest(now(), coalesce((select max(coalesce(recap_jusqua, fin + interval '3 days'))
-                                           from public.evenements where code = 'reflets'), now())) as d) x
-on conflict (id) do nothing;
-
--- Les Joueurs et leurs valeurs imprimees (genere depuis js/cards-data.js).
--- Les attaques sans degats (un effet seulement) n'y sont pas.
-create table if not exists public.ech_joueurs (
-  card_id  text primary key references public.cards on delete cascade,
-  def      integer not null,
-  couleur  text not null,
-  attaques jsonb not null
-);
-insert into public.ech_joueurs (card_id, def, couleur, attaques) values
-  ('c010', 130, 'rose', '[{"nom":"Roi du Silence","cout":1,"degats":50}]'),
-  ('c011', 90, 'rose', '[{"nom":"S-Privilège","cout":1,"degats":90}]'),
-  ('c012', 110, 'rose', '[{"nom":"Trash-talk","cout":2,"degats":110}]'),
-  ('c013', 70, 'rose', '[{"nom":"Confusion","cout":1,"degats":60}]'),
-  ('c017', 90, 'rose', '[{"nom":"Premier Souffle","cout":1,"degats":90}]'),
-  ('c022', 90, 'rose', '[{"nom":"Rotation","cout":2,"degats":160}]'),
-  ('c023', 120, 'rose', '[{"nom":"Clutch","cout":2,"degats":126},{"nom":"World Record","cout":3,"degats":180}]'),
-  ('c024', 120, 'rose', '[{"nom":"Coup de fil","cout":2,"degats":100}]'),
-  ('c025', 120, 'rose', '[{"nom":"Locked In","cout":2,"degats":130}]'),
-  ('c029', 120, 'orange', '[{"nom":"Demon''s Domain","cout":2,"degats":80}]'),
-  ('c034', 90, 'orange', '[{"nom":"Baby Shark","cout":1,"degats":60}]'),
-  ('c035', 120, 'orange', '[{"nom":"Eclosion","cout":2,"degats":130}]'),
-  ('c039', 90, 'violette', '[{"nom":"What a Save !","cout":1,"degats":90}]'),
-  ('c040', 70, 'violette', '[{"nom":"Hold-Up","cout":1,"degats":60}]'),
-  ('c044', 140, 'violette', '[{"nom":"Pinch","cout":3,"degats":80}]'),
-  ('c045', 70, 'violette', '[]'),
-  ('c049', 100, 'jaune', '[{"nom":"Dictature","cout":1,"degats":50}]'),
-  ('c050', 140, 'mauve', '[{"nom":"Soutien Constant","cout":3,"degats":150}]'),
-  ('c051', 110, 'mauve', '[{"nom":"Télépathie","cout":2,"degats":120}]'),
-  ('c052', 90, 'mauve', '[{"nom":"Regard Sombre","cout":1,"degats":90},{"nom":"Sourire Radieux","cout":2,"degats":150}]'),
-  ('c057', 160, 'mauve', '[{"nom":"AimBot.exe","cout":2,"degats":90},{"nom":"Titanic","cout":3,"degats":140}]'),
-  ('c058', 130, 'mauve', '[{"nom":"Menace Fantôme","cout":2,"degats":120}]'),
-  ('c059', 40, 'mauve', '[{"nom":"Vroom Vroom","cout":1,"degats":40}]'),
-  ('c060', 150, 'mauve', '[{"nom":"Aspiration d''âme","cout":4,"degats":150}]'),
-  ('c062', 80, 'verte', '[{"nom":"Confusion","cout":1,"degats":90}]'),
-  ('c063', 160, 'verte', '[{"nom":"Sh*t On","cout":4,"degats":180}]'),
-  ('c064', 90, 'bleue', '[{"nom":"Frappe de faute","cout":1,"degats":90}]'),
-  ('c067', 60, 'bleue', '[{"nom":"Rien à perdre","cout":1,"degats":60}]'),
-  ('c068', 120, 'bleue', '[{"nom":"Tout à gagner","cout":2,"degats":120}]'),
-  ('c069', 130, 'azur', '[{"nom":"WaWar","cout":3,"degats":90}]'),
-  ('c071', 90, 'azur', '[{"nom":"→↓↘ + 👊","cout":2,"degats":90}]'),
-  ('c073', 110, 'neutre', '[{"nom":"Ascension","cout":2,"degats":120}]'),
-  ('c074', 130, 'neutre', '[{"nom":"Déboutonnage","cout":3,"degats":150}]'),
-  ('c075', 140, 'neutre', '[{"nom":"Vol","cout":3,"degats":90}]'),
-  ('c076', 100, 'neutre', '[{"nom":"Déploiement","cout":2,"degats":10}]'),
-  ('c077', 90, 'neutre', '[{"nom":"Déboîtement d''épaule","cout":1,"degats":90}]'),
-  ('c078', 80, 'neutre', '[{"nom":"Estafilade","cout":1,"degats":90},{"nom":"Serment","cout":2,"degats":120}]'),
-  ('c079', 70, 'neutre', '[{"nom":"Pré-Clic","cout":2,"degats":110}]'),
-  ('c080', 100, 'neutre', '[{"nom":"Permutation","cout":2,"degats":100}]'),
-  ('c081', 170, 'neutre', '[{"nom":"Hexa-Punch","cout":4,"degats":190}]'),
-  ('c100', 130, 'neutre', '[{"nom":"Doig BYE BYE BYE","cout":3,"degats":160}]'),
-  ('c101', 120, 'neutre', '[{"nom":"Choc D''Août","cout":2,"degats":120}]'),
-  ('c102', 70, 'neutre', '[{"nom":"Hyper-Vitesse","cout":1,"degats":100}]'),
-  ('c112', 130, 'neutre', '[{"nom":"Avenir Radieux","cout":2,"degats":120}]'),
-  ('c113', 150, 'rose', '[{"nom":"Coup d''jus","cout":3,"degats":150}]'),
-  ('c116', 180, 'mauve', '[{"nom":"Éclairs Vengeurs","cout":4,"degats":200}]'),
-  ('c117', 120, 'mauve', '[{"nom":"Sang Froid","cout":2,"degats":140}]'),
-  ('c118', 90, 'mauve', '[{"nom":"Cancel Slide","cout":2,"degats":150}]'),
-  ('c119', 110, 'neutre', '[{"nom":"Contre-Pitre","cout":1,"degats":10}]'),
-  ('c120', 150, 'neutre', '[{"nom":"Mâchouille","cout":2,"degats":120}]'),
-  ('c121', 140, 'neutre', '[{"nom":"Coup de fil","cout":3,"degats":160}]')
-on conflict (card_id) do update set def = excluded.def, couleur = excluded.couleur, attaques = excluded.attaques;
-
--- Les sept defis. `pv` : la Defense de l'adversaire pour ce defi.
-create table if not exists public.ech_defis (
-  jour       integer primary key check (jour between 1 and 7),
-  adversaire text not null references public.cards,
-  pv         integer not null check (pv > 0),
-  regle      text not null check (regle in ('aucune', 'carapace', 'eclair', 'affinite', 'riposte', 'fureur', 'final')),
-  param      jsonb not null default '{}',
-  titre      text not null,
-  texte      text not null
-);
-insert into public.ech_defis (jour, adversaire, pv, regle, param, titre, texte) values
-  (1, 'c010',  900, 'aucune',   '{}',                          'Premier contact', 'Pas de règle aujourd''hui : fais connaissance.'),
-  (2, 'c044', 1350, 'carapace', '{"seuil": 100}',              'Carapace',        'Il ignore les coups de moins de 100.'),
-  (3, 'c102',  600, 'eclair',   '{}',                          'Frappe éclair',   'Il frappe à chaque tour.'),
-  (4, 'c060', 1900, 'affinite', '{"couleur": "rose"}',         'Affinité Rose',   'Tes Joueurs Roses frappent deux fois plus fort.'),
-  (5, 'c081',  900, 'riposte',  '{"degats": 30}',              'Riposte',         'Chaque coup que tu lui portes te coûte 30 de Défense.'),
-  (6, 'c120', 1000, 'fureur',   '{"plus": 30}',                'Fureur',          'Ses coups gagnent 30 de dégâts à chaque fois.'),
-  (7, 'c116', 1150, 'final',    '{"seuil": 80, "plus": 20}',   'Le dernier défi', 'Il ignore les coups de moins de 80, et les siens gagnent 20 à chaque fois.')
-on conflict (jour) do update set adversaire = excluded.adversaire, pv = excluded.pv, regle = excluded.regle,
-  param = excluded.param, titre = excluded.titre, texte = excluded.texte;
-
--- Les indices : un par defi, gagne avec ses trois etoiles. `visuel` dit
--- comment l'afficher : un nombre, un mot, des etoiles, l'ombre d'une carte,
--- la teinte de la suite, un eventail de dos de cartes. Le dernier message
--- (jour 0) vient quand les sept sont gagnes. Rien de ce qu'ils disent ne
--- repose sur une regle de combat reconstituee (taille du deck, nombre de
--- lignes ou de PV : des choix « maison », docs/regles-3.0.md de la 3.0) ;
--- seulement sur ce que la suite contient : la refonte, les decks, les
--- Secretes (122 + cinq Secretes = 127, chiffre confirme par le proprietaire
--- le 23 octobre 2026 ; l'indice disait 128 auparavant),
--- les Sections, la maitrise, le Versus, le Raid.
-create table if not exists public.ech_indices (
-  jour   integer primary key check (jour between 0 and 7),
-  titre  text not null,
-  texte  text not null,
-  visuel jsonb not null default '{}'
-);
-insert into public.ech_indices (jour, titre, texte, visuel) values
-  (1, 'Nouveau visage',   'Tout le jeu va changer de visage. Les couleurs de cette page en sont un avant-goût.', '{"type": "teinte"}'),
-  (2, 'Ton deck',         'Tes cartes ne resteront pas dans un classeur : tu en feras ton deck.',               '{"type": "eventail"}'),
-  (3, 'Cent vingt-sept',  'La collection ne s''arrête pas à 122 : elle comptera 127 cartes.',                  '{"type": "nombre", "valeur": "127"}'),
-  (4, 'Deux',             'Deux camps. Il faudra choisir le tien.',                                            '{"type": "mot", "valeur": "Deux"}'),
-  (5, 'Plus loin',        'Tes cartes préférées pourront aller plus loin. Beaucoup plus loin.',                '{"type": "etoiles", "valeur": 5}'),
-  (6, 'Face à face',      'Un jour, ce sera contre tes amis.',                                                 '{"type": "mot", "valeur": "VS"}'),
-  (7, 'Il reviendra',     'Et la prochaine fois, vous l''affronterez tous ensemble.',                          '{"type": "carte", "carte": "c116"}'),
-  (0, 'Tout est prêt',    'Rendez-vous quand tu auras les cartes en main.',                                    '{"type": "mot", "valeur": "Bientôt"}')
-on conflict (jour) do update set titre = excluded.titre, texte = excluded.texte, visuel = excluded.visuel;
-
--- La meilleure note de chaque joueur, defi par defi.
-create table if not exists public.ech_scores (
-  user_id uuid not null references public.profiles on delete cascade,
-  jour    integer not null references public.ech_defis on delete cascade,
-  etoiles smallint not null check (etoiles between 0 and 3),
-  equipe  jsonb not null,
-  tours   integer not null,
-  le      timestamptz not null default now(),
-  primary key (user_id, jour)
-);
--- Chaque essai, des son depart : le plafond du jour se compte ici, et un
--- essai jamais termine reste compte (perdu).
-create table if not exists public.ech_essais (
-  id      bigint generated always as identity primary key,
-  user_id uuid not null references public.profiles on delete cascade,
-  jour    integer not null references public.ech_defis on delete cascade,
-  equipe  jsonb not null,
-  le      timestamptz not null default now(),
-  fini    boolean not null default false,
-  eclat   jsonb,
-  etoiles smallint
-);
-create index if not exists ech_essais_user_idx on public.ech_essais (user_id, jour, le desc);
--- Les paliers deja payes : « sept » (sept defis gagnes), « parfait » (21 etoiles).
-create table if not exists public.ech_paliers (
-  user_id uuid not null references public.profiles on delete cascade,
-  palier  text not null,
-  le      timestamptz not null default now(),
-  primary key (user_id, palier)
-);
-alter table public.ech_saison  enable row level security;
-alter table public.ech_joueurs enable row level security;
-alter table public.ech_defis   enable row level security;
-alter table public.ech_scores  enable row level security;
-alter table public.ech_paliers enable row level security;
-alter table public.ech_indices enable row level security;
-alter table public.ech_essais  enable row level security;
-revoke all on public.ech_saison, public.ech_joueurs, public.ech_defis, public.ech_scores, public.ech_paliers,
-  public.ech_indices, public.ech_essais from anon, authenticated;
-
--- Les essais d'un joueur sur un defi, aujourd'hui (jour de Paris).
-create or replace function public.ech_essais_du_jour(p uuid, p_jour integer) returns integer
-language sql stable security definer set search_path = public as $$
-  select count(*)::int from ech_essais
-   where user_id = p and jour = p_jour
-     and (le at time zone 'Europe/Paris')::date = (now() at time zone 'Europe/Paris')::date
-$$;
-
--- Le dernier defi ouvert : 0 avant le debut, 1 le premier jour, 7 au plus.
-create or replace function public.ech_jour_ouvert() returns integer
-language sql stable security definer set search_path = public as $$
-  select case when now() < s.debut then 0
-              else least(7, floor(extract(epoch from now() - s.debut) / 86400)::int + 1) end
-    from ech_saison s where s.id = 1
-$$;
-
--- ---------------------------------------------------------------- le combat
--- p_equipe : [{"carte": "c010", "a": 0}, ...], dans l'ordre, deja verifiee.
--- p_eclat : {"tour": t, "i": i} (le coup d'eclat), ou null.
--- Rend { gagne, etoiles, tours, ko, log } ; chaque ligne du log :
---   [tour, "eclat", i]                   (le coup d'eclat, juste avant le coup)
---   [tour, "frappe", i, degats, pv restants de l'adversaire]
---   [tour, "bloque", i, degats]          (la carapace)
---   [tour, "riposte", i, degats, defense restante]
---   [tour, "subit", i, degats, defense restante]
---   [tour, "ko", i]
--- `i` part de 0. La meme chose, a la ligne pres, est echCombat (js/echauffement.js).
---
--- ech_combat joue un defi donne : une ligne de ech_defis, ou l'adversaire du
--- jour du mode sans fin, mis sous la meme forme (22f_sans-fin.sql) ;
--- ech_simuler, celui d'un des sept jours.
-drop function if exists public.ech_simuler(integer, jsonb);
-create or replace function public.ech_combat(d ech_defis, p_equipe jsonb, p_eclat jsonb default null) returns jsonb
-language plpgsql stable security definer set search_path = public as $$
-declare
-  n int; i int; t int; e jsonb; j ech_joueurs; at jsonb;
-  pv int[] := '{}'; elan int[] := '{}'; cout int[] := '{}'; deg int[] := '{}'; col text[] := '{}';
-  pv_b int; elan_b int := 0; cout_b int; deg_b int; fureur int := 0; ko int := 0; dd int;
-  journal jsonb := '[]'; seuil int; plus int; riposte int; affin text;
-  ec_tour int; ec_i int; ec_pris boolean := false; issue text := null;
-begin
-  pv_b := d.pv;
-  seuil := coalesce((d.param ->> 'seuil')::int, 0);
-  plus := coalesce((d.param ->> 'plus')::int, 0);
-  riposte := coalesce((d.param ->> 'degats')::int, 0);
-  affin := d.param ->> 'couleur';
-  if p_eclat is not null and jsonb_typeof(p_eclat) = 'object' then
-    ec_tour := (p_eclat ->> 'tour')::int; ec_i := (p_eclat ->> 'i')::int;
-  end if;
-
-  -- L'adversaire frappe avec sa plus forte attaque (la premiere, a egalite).
-  select (x.value ->> 'cout')::int, (x.value ->> 'degats')::int into cout_b, deg_b
-    from ech_joueurs ej, jsonb_array_elements(ej.attaques) with ordinality x(value, k)
-   where ej.card_id = d.adversaire
-   order by (x.value ->> 'degats')::int desc, x.k limit 1;
-  if d.regle = 'eclair' then cout_b := 1; end if;
-
-  n := jsonb_array_length(p_equipe);
-  for i in 1..n loop
-    e := p_equipe -> (i - 1);
-    select * into j from ech_joueurs where card_id = e ->> 'carte';
-    at := j.attaques -> coalesce((e ->> 'a')::int, 0);
-    pv := pv || j.def; elan := elan || 0; col := col || j.couleur;
-    cout := cout || (at ->> 'cout')::int; deg := deg || (at ->> 'degats')::int;
-  end loop;
-  -- Deux Joueurs de la meme couleur : 1 elan d'avance.
-  for i in 1..n loop
-    if (select count(*) from unnest(col) c where c = col[i]) > 1 then elan[i] := 1; end if;
-  end loop;
-
-  for t in 1..10 loop
-    elan_b := elan_b + 1;
-    for i in 1..n loop
-      exit when issue is not null;
-      continue when pv[i] <= 0;
-      elan[i] := elan[i] + 1;
-      continue when cout[i] is null or elan[i] < cout[i];
-      elan[i] := elan[i] - cout[i];
-      dd := deg[i];
-      if d.regle = 'affinite' and col[i] = affin then dd := dd * 2; end if;
-      if ec_tour = t and ec_i = i - 1 and not ec_pris then
-        dd := dd * 2; ec_pris := true;
-        journal := journal || jsonb_build_array(jsonb_build_array(t, 'eclat', i - 1));
-      end if;
-      if d.regle in ('carapace', 'final') and dd < seuil then
-        journal := journal || jsonb_build_array(jsonb_build_array(t, 'bloque', i - 1, dd));
-        continue;
-      end if;
-      pv_b := pv_b - dd;
-      journal := journal || jsonb_build_array(jsonb_build_array(t, 'frappe', i - 1, dd, greatest(0, pv_b)));
-      if pv_b <= 0 then issue := 'gagne'; exit; end if;
-      if d.regle = 'riposte' then
-        pv[i] := pv[i] - riposte;
-        journal := journal || jsonb_build_array(jsonb_build_array(t, 'riposte', i - 1, riposte, greatest(0, pv[i])));
-        if pv[i] <= 0 then
-          ko := ko + 1;
-          journal := journal || jsonb_build_array(jsonb_build_array(t, 'ko', i - 1));
-          if not exists (select 1 from unnest(pv) v where v > 0) then issue := 'perdu'; exit; end if;
-        end if;
-      end if;
-    end loop;
-
-    if issue is null and elan_b >= cout_b then
-      elan_b := elan_b - cout_b;
-      select min(k) into i from generate_subscripts(pv, 1) k where pv[k] > 0;
-      dd := deg_b + fureur;
-      if d.regle in ('fureur', 'final') then fureur := fureur + plus; end if;
-      pv[i] := pv[i] - dd;
-      journal := journal || jsonb_build_array(jsonb_build_array(t, 'subit', i - 1, dd, greatest(0, pv[i])));
-      if pv[i] <= 0 then
-        ko := ko + 1;
-        journal := journal || jsonb_build_array(jsonb_build_array(t, 'ko', i - 1));
-        if not exists (select 1 from unnest(pv) v where v > 0) then issue := 'perdu'; end if;
-      end if;
-    end if;
-    if issue is null and t >= 10 then issue := 'perdu'; end if;
-    if issue is not null then
-      return jsonb_build_object('gagne', issue = 'gagne', 'tours', t, 'ko', ko,
-        'etoiles', case when issue = 'gagne' then (case when ko = 0 then 3 when ko = 1 then 2 else 1 end) else 0 end,
-        'log', journal);
-    end if;
-  end loop;
-  return null;
-end $$;
-
-create or replace function public.ech_simuler(p_jour integer, p_equipe jsonb, p_eclat jsonb default null) returns jsonb
-language sql stable security definer set search_path = public as $$
-  select ech_combat(d, p_equipe, p_eclat) from ech_defis d where d.jour = p_jour
-$$;
-
--- L'equipe proposee, verifiee et mise au propre : un a trois Joueurs
--- possedes (une Reverse joue comme sa carte classique), sans doublon, chacun
--- avec une attaque qui existe. Pour ech_commencer et ech_sf_commencer.
-create or replace function public.ech_equipe_propre(p uuid, p_equipe jsonb) returns jsonb
-language plpgsql stable security definer set search_path = public as $$
-declare e jsonb; cid text; nb int; vus text[] := '{}'; propre jsonb := '[]'; a int; natt int;
-begin
-  if p_equipe is null or jsonb_typeof(p_equipe) <> 'array' then raise exception 'Équipe invalide.'; end if;
-  nb := jsonb_array_length(p_equipe);
-  if nb < 1 or nb > 3 then raise exception 'Une équipe compte un à trois Joueurs.'; end if;
-  for e in select value from jsonb_array_elements(p_equipe) loop
-    cid := e ->> 'carte';
-    -- Une Reverse joue comme sa carte classique.
-    if cid ~ '^r[0-9]' then cid := 'c' || substr(cid, 2); end if;
-    if cid is null or not exists (select 1 from ech_joueurs where card_id = cid) then raise exception 'Ce n''est pas un Joueur.'; end if;
-    if cid = any(vus) then raise exception 'Un Joueur apparaît deux fois.'; end if;
-    vus := vus || cid;
-    if not exists (select 1 from collection where user_id = p and qty > 0
-                    and card_id in (cid, 'r' || substr(cid, 2))) then
-      raise exception 'Tu ne possèdes pas un des Joueurs choisis.';
-    end if;
-    natt := (select jsonb_array_length(attaques) from ech_joueurs where card_id = cid);
-    a := coalesce((e ->> 'a')::int, 0);
-    if a < 0 or (natt > 0 and a >= natt) or (natt = 0 and a <> 0) then raise exception 'Attaque inconnue.'; end if;
-    propre := propre || jsonb_build_array(jsonb_build_object('carte', cid, 'a', a));
-  end loop;
-  return propre;
-end $$;
-
--- Ce que les quetes de L'Echauffement recomptent (04_seed.sql) : des etats,
--- pas des compteurs, comme sync_collection_quests — les defis gagnes, ceux
--- a trois etoiles, les etoiles, et les Joueurs differents qui ont combattu.
-create or replace function public.ech_sync_quetes(p uuid) returns void
-language plpgsql security definer set search_path = public as $$
-declare g int; t int; e int; nj int;
-begin
-  select count(*) filter (where etoiles > 0), count(*) filter (where etoiles = 3), coalesce(sum(etoiles), 0)
-    into g, t, e from ech_scores where user_id = p;
-  select count(distinct x ->> 'carte') into nj
-    from ech_essais es, jsonb_array_elements(es.equipe) x where es.user_id = p and es.fini;
-  insert into quest_progress (user_id, quest_id, period_key, progress)
-  select p, q.id, period_key(q.scope),
-         case q.metric when 'ech_gagnes' then g when 'ech_parfaits' then t when 'ech_etoiles' then e else nj end
-    from quests q
-   where q.metric in ('ech_gagnes', 'ech_parfaits', 'ech_etoiles', 'ech_joueurs')
-     and (q.evenement is null or q.evenement = evenement_en_cours())
-  on conflict (user_id, quest_id, period_key)
-    do update set progress = greatest(quest_progress.progress, excluded.progress)
-    where not quest_progress.claimed;
-end $$;
-
--- ------------------------------------------------------------------ l'etat
-create or replace function public.ech_etat_de(p uuid) returns jsonb
-language sql stable security definer set search_path = public as $$
-  select jsonb_build_object(
-    'debut', s.debut, 'fin', s.fin, 'ouvert', ech_jour_ouvert(), 'serveur', now(),
-    'total', (select count(*) from ech_defis), 'essais_max', 3,
-    'defis', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'jour', d.jour, 'adversaire', d.adversaire, 'pv', d.pv, 'regle', d.regle, 'param', d.param,
-        'titre', d.titre, 'texte', d.texte,
-        'etoiles', coalesce(sc.etoiles, 0), 'equipe', sc.equipe,
-        'essais_jour', ech_essais_du_jour(p, d.jour)) order by d.jour)
-        from ech_defis d
-        left join ech_scores sc on sc.user_id = p and sc.jour = d.jour
-       where d.jour <= ech_jour_ouvert()), '[]'::jsonb),
-    'etoiles', coalesce((select sum(etoiles) from ech_scores where user_id = p), 0),
-    'gagnes', (select count(*) from ech_scores where user_id = p and etoiles > 0),
-    'paliers', coalesce((select jsonb_agg(palier) from ech_paliers where user_id = p), '[]'::jsonb),
-    -- Seulement ceux qu'on a gagnes : le texte des autres ne sort pas de la base.
-    'indices', coalesce((
-      select jsonb_agg(jsonb_build_object('jour', i.jour, 'titre', i.titre, 'texte', i.texte, 'visuel', i.visuel) order by i.jour)
-        from ech_indices i
-       where (i.jour > 0 and exists (select 1 from ech_scores sc where sc.user_id = p and sc.jour = i.jour and sc.etoiles = 3))
-          or (i.jour = 0 and (select count(*) from ech_scores sc where sc.user_id = p and sc.etoiles = 3) = 7)), '[]'::jsonb))
-  from ech_saison s where s.id = 1
-$$;
-
-create or replace function public.ech_etat() returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid();
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  return ech_etat_de(p);
-end $$;
-
--- ------------------------------------------------------------- commencer
--- Verifie l'equipe et compte l'essai (trois par defi et par jour de Paris).
--- Rend { essai, equipe, restants }. Le combat se joue ensuite dans le
--- navigateur, puis ech_terminer.
-drop function if exists public.ech_jouer(integer, jsonb);
-create or replace function public.ech_commencer(p_jour integer, p_equipe jsonb) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare
-  p uuid := auth.uid(); s ech_saison; nb int; propre jsonb; deja int; eid bigint;
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  select * into s from ech_saison where id = 1;
-  if not found or now() < s.debut then raise exception 'L''Échauffement n''a pas commencé.'; end if;
-  if now() >= s.fin then raise exception 'L''Échauffement est terminé.'; end if;
-  if p_jour is null or p_jour < 1 or p_jour > ech_jour_ouvert() then raise exception 'Ce défi n''est pas encore ouvert.'; end if;
-
-  if p_equipe is null or jsonb_typeof(p_equipe) <> 'array' then raise exception 'Équipe invalide.'; end if;
-  nb := jsonb_array_length(p_equipe);
-  if nb < 1 or nb > 3 then raise exception 'Une équipe compte un à trois Joueurs.'; end if;
-
-  -- Un depart a la fois : deux appuis partis ensemble ne comptent qu'un essai.
-  perform 1 from profiles where id = p for update;
-  deja := ech_essais_du_jour(p, p_jour);
-  if deja >= 3 then raise exception 'Plus d''essai pour ce défi aujourd''hui : reviens demain.'; end if;
-
-  propre := ech_equipe_propre(p, p_equipe);
-  insert into ech_essais (user_id, jour, equipe) values (p, p_jour, propre) returning id into eid;
-  return jsonb_build_object('essai', eid, 'equipe', propre, 'restants', 2 - deja);
-end $$;
-
--- -------------------------------------------------------------- terminer
--- Rejoue le combat de l'essai avec le coup d'eclat choisi, garde la
--- meilleure note, paie, et fait avancer les quetes de l'evenement. Rend
--- { resultat, avant, gain: { eclats, braises, boosters, titre }, indice,
--- etat, me }.
-create or replace function public.ech_terminer(p_essai bigint, p_eclat jsonb) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare
-  p uuid := auth.uid(); s ech_saison; es ech_essais; r jsonb; avant int; nouv int; k int; ec jsonb := null;
-  eclats int := 0; braises int := 0; boosters int := 0; titre text := null; indice jsonb := null;
-  prix int[] := array[80, 80, 140];
-  prix_braises int[] := array[15, 15, 25];
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  select * into s from ech_saison where id = 1;
-  -- Une heure de grace : un essai commence a 23 h 59 le dernier soir se termine.
-  if not found or now() >= s.fin + interval '1 hour' then raise exception 'L''Échauffement est terminé.'; end if;
-
-  perform 1 from profiles where id = p for update;
-  select * into es from ech_essais where id = p_essai and user_id = p for update;
-  if not found then raise exception 'Essai inconnu.'; end if;
-  if es.fini then raise exception 'Cet essai est déjà joué.'; end if;
-
-  if p_eclat is not null and jsonb_typeof(p_eclat) <> 'null' then
-    if jsonb_typeof(p_eclat) <> 'object' or jsonb_typeof(p_eclat -> 'tour') <> 'number' or jsonb_typeof(p_eclat -> 'i') <> 'number'
-       or (p_eclat ->> 'tour')::numeric not between 1 and 10
-       or (p_eclat ->> 'i')::numeric not between 0 and jsonb_array_length(es.equipe) - 1 then
-      raise exception 'Coup d''éclat invalide.';
-    end if;
-    ec := jsonb_build_object('tour', (p_eclat ->> 'tour')::int, 'i', (p_eclat ->> 'i')::int);
-  end if;
-
-  r := ech_simuler(es.jour, es.equipe, ec);
-  nouv := (r ->> 'etoiles')::int;
-  update ech_essais set fini = true, eclat = ec, etoiles = nouv where id = es.id;
-  select etoiles into avant from ech_scores where user_id = p and jour = es.jour;
-  avant := coalesce(avant, 0);
-
-  if nouv > avant then
-    for k in (avant + 1)..nouv loop eclats := eclats + prix[k]; braises := braises + prix_braises[k]; end loop;
-    insert into ech_scores (user_id, jour, etoiles, equipe, tours)
-    values (p, es.jour, nouv, es.equipe, (r ->> 'tours')::int)
-    on conflict (user_id, jour) do update set etoiles = excluded.etoiles, equipe = excluded.equipe,
-      tours = excluded.tours, le = now();
-    perform accorder(p, 'eclats', eclats, null);
-    -- Les Braises, la monnaie de l'evenement (22e_echauffement-evenement.sql).
-    perform crediter_prismes(p, 'echauffement', braises);
-  else
-    insert into ech_scores (user_id, jour, etoiles, equipe, tours)
-    values (p, es.jour, 0, es.equipe, (r ->> 'tours')::int)
-    on conflict (user_id, jour) do nothing;
-  end if;
-
-  -- Les quetes de l'evenement (04_seed.sql) : un combat de plus, une
-  -- victoire, un coup d'eclat qui a vraiment frappe ; puis ce qui se recompte.
-  perform bump_quests(p, 'ech_combat', 1);
-  if (r ->> 'gagne')::boolean then perform bump_quests(p, 'ech_victoire', 1); end if;
-  if exists (select 1 from jsonb_array_elements(r -> 'log') l where l ->> 1 = 'eclat') then
-    perform bump_quests(p, 'ech_eclat', 1);
-  end if;
-  perform ech_sync_quetes(p);
-
-  -- Un indice : les trois etoiles, pour la premiere fois.
-  if nouv = 3 and avant < 3 then
-    select jsonb_build_object('jour', i.jour, 'titre', i.titre, 'texte', i.texte, 'visuel', i.visuel) into indice
-      from ech_indices i where i.jour = es.jour;
-  end if;
-
-  -- Les paliers.
-  if (select count(*) from ech_scores where user_id = p and etoiles > 0) = 7 then
-    insert into ech_paliers (user_id, palier) values (p, 'sept') on conflict do nothing;
-    if found then boosters := 3; perform accorder(p, 'boosters', 3, null); end if;
-  end if;
-  if (select sum(etoiles) from ech_scores where user_id = p) = 21 then
-    insert into ech_paliers (user_id, palier) values (p, 'parfait') on conflict do nothing;
-    if found then titre := 't_echauffe'; perform accorder(p, 'titre', 0, 't_echauffe'); end if;
-  end if;
-
-  return jsonb_build_object('resultat', r, 'avant', avant,
-    'gain', jsonb_build_object('eclats', eclats, 'braises', braises, 'boosters', boosters, 'titre', titre),
-    'indice', indice, 'etat', ech_etat_de(p), 'me', me());
-end $$;
-
--- -------------------------------------------------------- administration
--- Pour le Labo : ce que les joueurs ne voient pas — la saison, les sept
--- defis meme fermes, les huit indices avec leur texte, et la participation.
--- Reserve aux administrateurs (le serveur le verifie, pas la page).
-create or replace function public.ech_admin() returns jsonb
-language plpgsql stable security definer set search_path = public as $$
-begin
-  if auth.uid() is null then raise exception 'non connecte'; end if;
-  if not exists (select 1 from profiles where id = auth.uid() and is_admin) then
-    raise exception 'Réservé aux administrateurs.';
-  end if;
-  return (select jsonb_build_object(
-    'debut', s.debut, 'fin', s.fin, 'ouvert', ech_jour_ouvert(), 'serveur', now(),
-    'total', (select count(*) from ech_defis), 'essais_max', 3,
-    'defis', (select jsonb_agg(jsonb_build_object(
-        'jour', d.jour, 'adversaire', d.adversaire, 'pv', d.pv, 'regle', d.regle, 'param', d.param,
-        'titre', d.titre, 'texte', d.texte,
-        'essais', (select count(*) from ech_essais e where e.jour = d.jour),
-        'gagnes', (select count(*) from ech_scores sc where sc.jour = d.jour and sc.etoiles > 0),
-        'parfaits', (select count(*) from ech_scores sc where sc.jour = d.jour and sc.etoiles = 3)) order by d.jour)
-      from ech_defis d),
-    'indices', (select jsonb_agg(jsonb_build_object('jour', i.jour, 'titre', i.titre, 'texte', i.texte, 'visuel', i.visuel) order by i.jour)
-      from ech_indices i),
-    'joueurs', (select count(distinct user_id) from ech_essais),
-    'sept', (select count(*) from ech_paliers where palier = 'sept'),
-    'parfait', (select count(*) from ech_paliers where palier = 'parfait'))
-  from ech_saison s where s.id = 1);
-end $$;
-
--- Rejouer : efface les essais du jour de l'administrateur lui-meme, pour
--- tester sans attendre le lendemain. Ses notes et ses gains restent.
-create or replace function public.ech_admin_rejouer() returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); n int;
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  if not exists (select 1 from profiles where id = p and is_admin) then
-    raise exception 'Réservé aux administrateurs.';
-  end if;
-  delete from ech_essais
-   where user_id = p and (le at time zone 'Europe/Paris')::date = (now() at time zone 'Europe/Paris')::date;
-  get diagnostics n = row_count;
-  return jsonb_build_object('effaces', n, 'etat', ech_etat_de(p));
-end $$;
-
-revoke all on function public.ech_jour_ouvert, public.ech_simuler, public.ech_etat_de, public.ech_essais_du_jour,
-  public.ech_combat, public.ech_equipe_propre, public.ech_sync_quetes
-  from public, anon, authenticated;
-revoke all on function public.ech_etat, public.ech_commencer, public.ech_terminer,
-  public.ech_admin, public.ech_admin_rejouer from public, anon;
-grant execute on function public.ech_etat, public.ech_commencer, public.ech_terminer,
-  public.ech_admin, public.ech_admin_rejouer to authenticated;
-
-
--- #####################################################################
 -- ###  22c_reverses.sql
--- ###  Version 2.5 : les Reverses se recyclent et se fabriquent
+-- ###  Version 2.5 (reportee) : les Reverses se recyclent et se fabriquent
 -- #####################################################################
 
 -- =====================================================================
---  Mate TCG Online — version 2.5 : les Reverses se recyclent et se
---  fabriquent. A executer apres 22b_echauffement.sql. Rejouable sans danger.
---  (La 2.5 s'appelait 2.1.4 jusqu'au 23 octobre 2026.)
+--  Mate TCG Online — les Reverses se recyclent et se fabriquent.
+--  Reporte de la 2.5 (branche version-2.5, supabase/22c_reverses.sql) :
+--  meme fichier, a garder identique a partir de « LE PRIX ». A executer
+--  apres 22_garder.sql. Rejouable sans danger.
 --
 --  Fermes depuis la 2.0 (21_reflets.sql : parametres.fabrication_reverse),
 --  le recyclage et la fabrication des Reverses ouvrent avec la 2.5.
@@ -4936,18 +4557,16 @@ grant execute on function public.ech_etat, public.ech_commencer, public.ech_term
 --   1. L'ouverture est datee : parametres.reverses_des. Passe cet instant,
 --      recycler et fabriquer (12_recyclage.sql) acceptent les Reverses, et
 --      me() (07_vitrine.sql) le dit au navigateur, qui bascule tout seul.
---      Sur la vraie base, la date est posee par calendrier-2.5.sql : le
---      lundi 26 octobre 2026 a 0 h, heure de Paris (dimanche soir minuit),
---      la sortie de la 2.5 et la fin du recap de Reflets. Vide (une
---      installation neuve) : ferme. `fabrication_reverse = true` ouvre tout
---      de suite, comme avant.
+--      Sur la vraie base, la 2.5 l'a posee au lundi 26 octobre 2026, 0 h,
+--      heure de Paris : quand la 3.0 sortira, elles seront deja ouvertes et
+--      la date reste. Vide (une installation neuve de la 3.0) : ferme.
+--      `fabrication_reverse = true` ouvre tout de suite, comme avant.
 --
 --   2. Le prix n'est plus le double d'une classique, mais celui de leur
 --      vraie rarete (prix_reverse, plus bas).
 --
---  me() n'envoie plus `parametres.fabrication_reverse` : un site 2.1.3
---  afficherait le double au lieu du vrai prix. Il garde donc les Reverses
---  fermees ; la 2.5 lit `parametres.reverses`.
+--  me() envoie `parametres.reverses` (ouvertes, date, prix), et plus
+--  `parametres.fabrication_reverse`.
 --
 --  ------------------------------------------------------------------
 --  LE PRIX
@@ -5032,67 +4651,2236 @@ revoke all on function public.reverses_ouvertes, public.prix_reverse from public
 
 
 -- #####################################################################
--- ###  22d_admin.sql
--- ###  Version 2.5 : le Labo (comptes et serveur), la date de sortie
+-- ###  23_combats.sql
+-- ###  Version 3.0 : les Combats — Sections, decks, combats, defis
 -- #####################################################################
 
 -- =====================================================================
---  Mate TCG Online — version 2.5 : le Labo refait, et la date de sortie
---  d'une version. A executer apres 22c_reverses.sql. Rejouable sans danger.
+--  Mate TCG Online — version 3.0 : les Combats
+--  A executer apres 22_garder.sql. Rejouable sans danger.
 --
---  LA DATE DE SORTIE
---  Le site peut etre en ligne avant sa sortie (SORTIE, js/config.js) : il
---  se montre tel qu'avant, puis bascule a la minute dite. Cette minute est
---  ecrite dans le code ; si parametres.sorties en donne une pour la version
---  (cle : son numero, valeur : l'instant, ou null pour « deja sortie »),
---  c'est celle du serveur qui compte. me() l'envoie (07_vitrine.sql), et le
---  Labo la deplace avec le reste du calendrier.
+--  Le combat lui-meme se joue dans le navigateur (js/combat/moteur.js) :
+--  Postgres ne fait pas tourner le moteur. Le serveur tient tout ce qui
+--  rapporte ou qui se partage :
+--    1. la Section du joueur, ses decks, ses tapis et sleeves ;
+--    2. l'ouverture et la cloture d'un combat contre l'IA, ce qu'il paie,
+--       le plafond du jour, la campagne ;
+--    3. les defis entre amis : le serveur range les actions dans l'ordre,
+--       chaque navigateur rejoue celles de l'autre.
 --
---  LE CALENDRIER OFFICIEL de la 2.5 vit ici, et nulle part ailleurs cote
---  serveur (calendrier_officiel) : calendrier-2.5.sql l'applique, le Labo y
---  revient.
+--  La Guerre des Sections du pre-build a ete retiree : ses tables et ses
+--  fonctions sont supprimees plus bas si une base de test les a encore.
 --
---  LE LABO (js/lab.js) : ce qu'un administrateur regle lui-meme, pour de vrai.
---  Chaque fonction verifie le droit (labo_garde) : cacher l'onglet ne
---  suffirait pas, c'est le serveur qui refuse.
+--  Ce que le serveur ne peut pas verifier, et ce qu'il fait a la place :
+--  il ne rejoue pas une partie, donc il croit le navigateur sur son
+--  resultat. Les garde-fous : il fixe la graine (la donne) de chaque combat,
+--  un combat trop court ne paie pas (20 s), cinq victoires par jour au plus
+--  sont recompensees, et les defis sont declares par les deux joueurs — un
+--  desaccord est note (defis.desaccord).
 --
---   Le serveur, pour tout le monde :
---     labo_etat()                 ce qui est en vigueur, et le calendrier officiel
---     labo_calendrier(etat, n)    poser un etat coherent de tout le calendrier :
---                                   'officiel'   les dates de la 2.5 ;
---                                   'avant'      le recap de Reflets, la 2.5 dans
---                                                n minutes (2 par defaut) ;
---                                   'defi'       la 2.5 sortie, le defi n ouvert ;
---                                   'rattrapage' les sept ouverts, la saison court ;
---                                   'fini'       la saison terminee depuis une
---                                                heure : son recap ;
---                                   'sans_fin'   le jour n du mode sans fin
---                                                (4 par defaut : recap fini)
---     labo_decaler(heures)        avancer (positif) ou reculer la saison
---     labo_reverses(ouvertes)     ouvrir ou fermer les Reverses a la main
---     labo_ech_raz('EFFACER')     effacer essais, notes et paliers de tous les
---                                 joueurs, mode sans fin compris (les gains
---                                 deja verses restent, Braises comprises)
---  La ligne de l'evenement L'Echauffement suit la saison toute seule
---  (declencheur, 22e_echauffement-evenement.sql).
---   Son propre compte :
---     labo_cartes(quoi)           'master' (tout sauf la carte unique),
---                                 'classiques' (les 122), 'joueurs' (ceux de
---                                 L'Echauffement), 'vider'
---     labo_monnaies(valeurs)      poser Eclats, Fragments, boosters en plus,
---                                 reserve, Prismes
---     labo_cosmetiques(ids)       des cadres (f_…) et des titres (t_…)
---     labo_ech_moi(action, ...)   ses etoiles a un defi ('etoiles'), ses essais
---                                 du jour ('essais', mode sans fin compris),
---                                 tout ('raz') ; rien n'est verse
---     labo_sauver(), labo_restaurer()  mettre son compte de cote, le remettre
---     labo_raz_moi()              repartir de zero, comme un nouveau joueur
---
---  Un apercu sans rien changer reste dans le navigateur (onglet Apercus du
---  Labo) ; ce qui passe ici est reel.
+--  Les valeurs (recompenses, niveaux) sont aussi dans js/combat/campagne.js,
+--  pour l'affichage : les deux doivent rester d'accord.
 -- =====================================================================
 
-alter table public.parametres add column if not exists sorties jsonb not null default '{}'::jsonb;
+-- ============================================================ 1. tables
+create table if not exists public.combat_joueurs (
+  user_id      uuid primary key references public.profiles on delete cascade,
+  section      text check (section in ('toxique', 'deter')),
+  deck_actif   text,
+  -- tapis, sleeve : identifiants d'inventaire (ou t_base, s_base)
+  cosm         jsonb not null default '{}'::jsonb,
+  -- La campagne : les combats deja gagnes (cp01 … cp20), et si elle est finie.
+  faits        text[] not null default '{}',
+  finie        boolean not null default false,
+  -- Le plafond du jour : victoires recompensees contre l'IA, defis recompenses.
+  jour         date,
+  recompensees integer not null default 0,
+  defis_jour   date,
+  defis_rec    integer not null default 0,
+  victoires    integer not null default 0,
+  defaites     integer not null default 0,
+  pvp_v        integer not null default 0,
+  pvp_d        integer not null default 0
+);
+
+-- Un deck : { carte: exemplaires } et { couleur: Essences }. Il peut etre
+-- incomplet (on le finira plus tard) : il ne se joue simplement pas.
+create table if not exists public.decks (
+  id         text primary key,
+  user_id    uuid not null references public.profiles on delete cascade,
+  nom        text not null,
+  cartes     jsonb not null default '{}'::jsonb,
+  reserve    jsonb not null default '{}'::jsonb,
+  couverture text,
+  maj        timestamptz not null default now()
+);
+create index if not exists decks_user_idx on public.decks (user_id);
+-- Version 3.0.13 : un deck public se montre sur le profil et la fiche du
+-- joueur (deck_publier) ; la serie de victoires en cours et la meilleure
+-- (combat_serie), pour les statistiques du profil.
+alter table public.decks add column if not exists public boolean not null default false;
+alter table public.combat_joueurs add column if not exists serie integer not null default 0;
+alter table public.combat_joueurs add column if not exists serie_max integer not null default 0;
+
+-- Un combat contre l'IA, entre son ouverture et sa cloture. Un seul a la
+-- fois par joueur : en ouvrir un autre compte le precedent comme perdu.
+create table if not exists public.combats_ouverts (
+  id      text primary key,
+  user_id uuid not null references public.profiles on delete cascade,
+  mode    text not null check (mode in ('campagne', 'infini', 'raid', 'epreuve')),
+  cle     text not null,
+  niveau  integer not null,
+  phase   integer,
+  jour    date not null,
+  graine  bigint not null,
+  debut   timestamptz not null default now()
+);
+create index if not exists combats_ouverts_user_idx on public.combats_ouverts (user_id);
+-- Version 3.0.14 : ce qu'il faut pour rejouer le combat (le serveur verifie
+-- le resultat : supabase/functions/combat-verifier). `deck` : le deck du
+-- joueur au format du moteur, tel qu'il l'a ouvert ; `section`, `boss`, `n`
+-- (le n-ieme jour du Choc, pour l'Epreuve) : ce qui choisit le deck adverse ;
+-- `journal` : la partie, ecrite une fois ; `meta` : le titre et l'adversaire
+-- pour l'historique ; `verif_k` : jusqu'ou elle est deja verifiee.
+alter table public.combats_ouverts add column if not exists deck    jsonb;
+alter table public.combats_ouverts add column if not exists section text;
+alter table public.combats_ouverts add column if not exists boss    text;
+alter table public.combats_ouverts add column if not exists n       integer;
+alter table public.combats_ouverts add column if not exists journal jsonb;
+alter table public.combats_ouverts add column if not exists meta    jsonb;
+alter table public.combats_ouverts add column if not exists verif_k integer not null default 0;
+
+-- Les combats dont le resultat n'a pas pu etre verifie (un coup refuse, un
+-- coup de l'adversaire qui n'est pas le sien) : ils ne rapportent rien ; le
+-- Labo les montre (labo_combats_refuses, 29_labo.sql).
+create table if not exists public.combats_refuses (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles on delete cascade,
+  le      timestamptz not null default now(),
+  mode    text not null,
+  cle     text,
+  raison  text,
+  coup    integer
+);
+create index if not exists combats_refuses_le_idx on public.combats_refuses (le desc);
+alter table public.combats_refuses enable row level security;
+revoke all on public.combats_refuses from anon, authenticated;
+
+-- La campagne : vingt combats, le niveau de l'IA et ce que paie la premiere
+-- victoire. Copie de NIVEAUX_CAMPAGNE et RECOMPENSES_CAMPAGNE.
+create table if not exists public.pve_campagne (
+  n         integer primary key check (n between 0 and 19),
+  niveau    integer not null,
+  eclats    integer not null default 0,
+  boosters  integer not null default 0,
+  fragments integer not null default 0
+);
+insert into public.pve_campagne (n, niveau, eclats, boosters, fragments) values
+  ( 0, 1,  80, 0,    0), ( 1, 1,  80, 0,    0), ( 2, 2, 100, 0,    0), ( 3, 2, 100, 0,    0),
+  ( 4, 2, 150, 2,  300), ( 5, 2, 120, 0,    0), ( 6, 2, 120, 0,    0), ( 7, 3, 140, 0,    0),
+  ( 8, 3, 140, 0,    0), ( 9, 3, 200, 3,  500), (10, 3, 160, 0,    0), (11, 3, 160, 0,    0),
+  (12, 4, 180, 0,    0), (13, 4, 180, 0,    0), (14, 4, 250, 4,  800), (15, 4, 200, 0,    0),
+  (16, 4, 200, 0,    0), (17, 5, 220, 0,    0), (18, 5, 220, 0,    0), (19, 5, 400, 5, 1200)
+on conflict (n) do update set niveau = excluded.niveau, eclats = excluded.eclats,
+  boosters = excluded.boosters, fragments = excluded.fragments;
+
+-- L'Arcade (mode 'infini') : ce que paie une victoire, selon la difficulte (DIFFICULTES).
+-- Reequilibre pour la 3.0 : docs/economie-3.0.md.
+create table if not exists public.pve_difficultes (
+  niveau integer primary key check (niveau between 1 and 5),
+  eclats integer not null
+);
+alter table public.pve_difficultes drop column if exists points;
+insert into public.pve_difficultes (niveau, eclats) values
+  (1, 10), (2, 15), (3, 25), (4, 35), (5, 50)
+on conflict (niveau) do update set eclats = excluded.eclats;
+
+-- Les deux Starter Decks (Decks.STARTERS, js/combat/decks.js ; leurs listes
+-- officielles depuis la 3.0.17). Ils sont
+-- pretes : un defi joue avec l'un d'eux n'exige pas d'en posseder les cartes.
+create table if not exists public.starters (
+  section text not null check (section in ('toxique', 'deter')),
+  card_id text not null references public.cards on delete cascade,
+  n       integer not null,
+  primary key (section, card_id)
+);
+delete from public.starters;
+insert into public.starters (section, card_id, n) values
+  ('toxique', 'p04', 1), ('toxique', 'c012', 2), ('toxique', 'c073', 3), ('toxique', 'c034', 3),
+  ('toxique', 'c011', 3), ('toxique', 'c013', 3), ('toxique', 'c074', 1), ('toxique', 'c016', 2),
+  ('toxique', 'c033', 2), ('toxique', 'c097', 3), ('toxique', 'c092', 2), ('toxique', 'c083', 3),
+  ('toxique', 'c082', 3), ('toxique', 'c015', 3), ('toxique', 'c085', 3), ('toxique', 'c087', 3),
+  ('deter', 'p03', 1), ('deter', 'c077', 2), ('deter', 'c079', 3), ('deter', 'c040', 3),
+  ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c074', 1), ('deter', 'c041', 2),
+  ('deter', 'c054', 2), ('deter', 'c097', 3), ('deter', 'c092', 2), ('deter', 'c083', 3),
+  ('deter', 'c082', 3), ('deter', 'c087', 3), ('deter', 'c085', 3), ('deter', 'c053', 3);
+
+-- La Guerre des Sections du pre-build : retiree.
+drop function if exists public.marquer_points(uuid, int);
+drop function if exists public.guerre_passee(uuid);
+drop table if exists public.guerre_contrib;
+drop table if exists public.guerre;
+
+-- Les defis entre amis. Les decks sont au format du moteur ({ club: [ids],
+-- reserve: [couleurs] }) ; `actions` : la partie, coup par coup.
+create table if not exists public.defis (
+  id           text primary key,
+  de           uuid not null references public.profiles on delete cascade,
+  pour         uuid not null references public.profiles on delete cascade,
+  statut       text not null default 'attente'
+               check (statut in ('attente', 'en_cours', 'fini', 'refuse', 'abandon')),
+  deck_de      jsonb not null,
+  deck_pour    jsonb,
+  graine       bigint not null,
+  actions      jsonb not null default '[]'::jsonb,
+  cree         timestamptz not null default now(),
+  maj          timestamptz not null default now(),
+  vu_de        boolean not null default true,
+  vu_pour      boolean not null default false,
+  -- Ce que chacun declare a la fin : le gagnant (0 = celui qui defie).
+  gagnant_de   integer,
+  gagnant_pour integer,
+  paye_de      boolean not null default false,
+  paye_pour    boolean not null default false,
+  desaccord    boolean not null default false,
+  constraint defi_pas_soi check (de <> pour)
+);
+create index if not exists defis_de_idx on public.defis (de, statut);
+-- Version 3.0.14 : qui a envoye chaque coup (0 : celui qui a defie, 1 :
+-- l'autre), pour que le serveur rejoue le defi et sache qui a joue hors de
+-- son tour (Verif.defi, js/combat/verif.js).
+alter table public.defis add column if not exists auteurs jsonb not null default '[]'::jsonb;
+create index if not exists defis_pour_idx on public.defis (pour, statut);
+
+alter table public.combat_joueurs  enable row level security;
+alter table public.decks           enable row level security;
+alter table public.combats_ouverts enable row level security;
+alter table public.pve_campagne    enable row level security;
+alter table public.pve_difficultes enable row level security;
+alter table public.starters        enable row level security;
+alter table public.defis           enable row level security;
+revoke all on public.combat_joueurs, public.decks, public.combats_ouverts, public.pve_campagne,
+  public.pve_difficultes, public.starters, public.defis
+  from anon, authenticated;
+
+-- ============================================================ 2. outils
+create or replace function public.jour_paris() returns date
+language sql stable as $$ select (now() at time zone 'Europe/Paris')::date; $$;
+
+-- La ligne de combat d'un joueur, creee a la premiere visite.
+create or replace function public.combat_joueur(p uuid) returns public.combat_joueurs
+language plpgsql security definer set search_path = public as $$
+declare c combat_joueurs;
+begin
+  insert into combat_joueurs (user_id) values (p) on conflict (user_id) do nothing;
+  select * into c from combat_joueurs where user_id = p;
+  return c;
+end $$;
+
+-- Deux cartes qui n'en font qu'une pour la limite d'exemplaires : une Reverse
+-- et sa carte, l'illustration alternative d'une Promo, la Promo d'une
+-- Legendaire (cleCopie, js/combat/decks.js).
+-- Regles officielles (« Construire son jeu ») : « Il ne peut pas contenir
+-- plus de trois exemplaires d'une meme carte. Un meme exemplaire d'une carte
+-- est une carte possedant le meme nom et la meme couleur, quand bien meme son
+-- texte ou son art est different. » La cle d'une carte : son nom et sa
+-- couleur (une Reverse, une Promo a l'illustration differente, les deux
+-- Leakof). Meme cle cote navigateur : Decks.cleCopie (js/combat/decks.js).
+create or replace function public.cle_copie(id text) returns text
+language sql stable security definer set search_path = public as $$
+  select coalesce((select lower(k.nom) || '|' || k.col from cards k where k.id = cle_copie.id), cle_copie.id);
+$$;
+
+-- Trois exemplaires, quelle que soit la rarete.
+create or replace function public.limite_copies(cle text) returns integer
+language sql immutable as $$
+  select 3;
+$$;
+
+-- Ce qui ne va pas dans un deck (le premier probleme), ou null.
+--   complet   : un deck qu'on va jouer — 40 cartes et 10 Essences (regles officielles) ;
+--   pretees   : les cartes pretees en plus de la collection (Starter Decks).
+create or replace function public.deck_erreur(p uuid, cartes jsonb, reserve jsonb,
+                                              complet boolean, pretees jsonb default '{}'::jsonb)
+returns text language plpgsql stable security definer set search_path = public as $$
+declare e record; k cards; nb int := 0; joueurs int := 0; ne int := 0; q int;
+begin
+  if jsonb_typeof(cartes) is distinct from 'object' or jsonb_typeof(coalesce(reserve, '{}'::jsonb)) <> 'object' then
+    return 'Deck invalide.';
+  end if;
+  for e in select key, value from jsonb_each(cartes) loop
+    if jsonb_typeof(e.value) <> 'number' then return 'Deck invalide.'; end if;
+    q := (e.value)::text::int;
+    if q < 0 or q > 3 then return 'Deck invalide.'; end if;
+    continue when q = 0;
+    select * into k from cards where id = e.key;
+    if not found or k.cat not in ('joueur', 'coach', 'moment', 'objet') then
+      return 'Une carte de ce deck ne se joue pas en combat.';
+    end if;
+    if coalesce((select c.qty from collection c where c.user_id = p and c.card_id = e.key), 0)
+       + coalesce((pretees->>e.key)::int, 0) < q then
+      return 'Tu n''as pas assez d''exemplaires de « ' || k.nom || ' ».';
+    end if;
+    nb := nb + q;
+    if k.cat = 'joueur' then joueurs := joueurs + q; end if;
+  end loop;
+  -- La limite d'exemplaires, carte et Reverse ensemble.
+  if exists (select 1 from jsonb_each(cartes) x
+              group by cle_copie(x.key)
+             having sum((x.value)::text::int) > limite_copies(cle_copie(x.key))) then
+    return 'Trop d''exemplaires d''une même carte.';
+  end if;
+  for e in select key, value from jsonb_each(coalesce(reserve, '{}'::jsonb)) loop
+    if e.key not in ('rose', 'orange', 'jade', 'violette', 'jaune', 'mauve', 'verte', 'bleue', 'azur')
+       or jsonb_typeof(e.value) <> 'number' then
+      return 'Couleur d''Essence inconnue.';
+    end if;
+    ne := ne + (e.value)::text::int;
+  end loop;
+  if complet then
+    if nb <> 40 then return 'Le Club doit compter 40 cartes.'; end if;
+    if ne <> 10 then return 'La Réserve doit compter 10 Essences.'; end if;
+  elsif nb > 40 or ne > 10 then
+    return 'Deck trop grand.';
+  end if;
+  return null;
+end $$;
+
+-- Un deck au format du moteur ({ club: [ids], reserve: [couleurs] }), remis
+-- au format d'un deck enregistre ({ cartes: {…}, reserve: {…} }).
+create or replace function public.deck_depuis_moteur(d jsonb) returns jsonb
+language sql immutable as $$
+  select jsonb_build_object(
+    'cartes', coalesce((select jsonb_object_agg(v, n) from (
+                 select x #>> '{}' v, count(*) n from jsonb_array_elements(d->'club') x group by 1) t), '{}'::jsonb),
+    'reserve', coalesce((select jsonb_object_agg(v, n) from (
+                 select x #>> '{}' v, count(*) n from jsonb_array_elements(d->'reserve') x group by 1) t), '{}'::jsonb));
+$$;
+
+-- Les cartes que les Starter Decks pretent a un joueur : celui de sa Section,
+-- et l'autre une fois la campagne finie.
+create or replace function public.cartes_pretees(p uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_object_agg(card_id, n), '{}'::jsonb) from (
+    select s.card_id, max(s.n) n from starters s join combat_joueurs c on c.user_id = p
+     where s.section = c.section or c.finie
+     group by s.card_id) t;
+$$;
+
+-- Un deck de defi (format du moteur) : complet, et possede ou prete.
+create or replace function public.deck_defi_erreur(p uuid, d jsonb) returns text
+language plpgsql stable security definer set search_path = public as $$
+declare x jsonb;
+begin
+  if jsonb_typeof(d->'club') <> 'array' or jsonb_typeof(d->'reserve') <> 'array' then return 'Deck invalide.'; end if;
+  x := deck_depuis_moteur(d);
+  return deck_erreur(p, x->'cartes', x->'reserve', true, cartes_pretees(p));
+end $$;
+
+-- ===================================================== 4. l'etat, dans me()
+create or replace function public.combat_etat(p uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare c combat_joueurs := combat_joueur(p);
+begin
+  return jsonb_build_object(
+    'section', c.section,
+    'decks', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'nom', d.nom, 'cartes', d.cartes,
+                                                          'reserve', d.reserve, 'couverture', d.couverture,
+                                                          'public', d.public) order by d.maj)
+                         from decks d where d.user_id = p), '[]'::jsonb),
+    'deck_actif', c.deck_actif,
+    'cosm', c.cosm,
+    'campagne', jsonb_build_object('faits', to_jsonb(c.faits), 'finie', c.finie),
+    -- Les plafonds du jour : victoires payées contre l'IA, défis payés.
+    'jour', jsonb_build_object('recompensees', case when c.jour = jour_paris() then c.recompensees else 0 end,
+                               'plafond', 5,
+                               'defis', case when c.defis_jour = jour_paris() then c.defis_rec else 0 end,
+                               'defis_plafond', 3),
+    'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites,
+                                'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d,
+                                'serie', c.serie, 'serie_max', c.serie_max),
+    -- L'XP de combattant (26_niveaux.sql) : le niveau se calcule dans la page.
+    'xp', c.xp,
+    'defis', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', d.id, 'pseudo', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'xp', xp_de(o.id), 'photo', photo_discord(o.id),
+               'pour_moi', d.pour = p, 'statut', d.statut,
+               'vu', case when d.de = p then d.vu_de else d.vu_pour end) order by d.cree)
+        from defis d join profiles o on o.id = case when d.de = p then d.pour else d.de end
+       where (d.de = p or d.pour = p) and d.statut in ('attente', 'en_cours')), '[]'::jsonb));
+end $$;
+
+-- ===================================================== 5. Section, reglages, decks
+-- Version 3.0.6 : la partie du tutoriel, gagnee. Elle se joue sans serveur
+-- (une partie ecrite d'avance, js/combat/tutoriel.js) : on ne peut que
+-- croire le client, et la quete m_tutoriel ne paie qu'une fois (200 Eclats).
+-- Rappeler la fonction ne rapporte donc rien de plus.
+create or replace function public.tutoriel_fini() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  perform bump_quests(p, 'tutoriel', 1);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.tutoriel_fini from public, anon;
+grant execute on function public.tutoriel_fini to authenticated;
+
+create or replace function public.combat_section(p_section text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); c combat_joueurs;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if p_section not in ('toxique', 'deter') then raise exception 'Section inconnue.'; end if;
+  c := combat_joueur(p);
+  if c.section is not null then raise exception 'Tu as déjà rejoint une Section.'; end if;
+  update combat_joueurs set section = p_section where user_id = p;
+  -- La Promo de sa Section (03b_promos.sql), et son Starter Deck, prete.
+  insert into collection (user_id, card_id, qty)
+  values (p, case p_section when 'toxique' then 'p04' else 'p03' end, 1)
+    on conflict (user_id, card_id) do nothing;
+  return me();
+end $$;
+
+-- Le deck actif, le tapis, le sleeve : on ne choisit que ce qu'on a.
+create or replace function public.combat_reglages(p_reglages jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); c combat_joueurs; k text; v text; base text;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  c := combat_joueur(p);
+  if p_reglages ? 'deck_actif' then
+    update combat_joueurs set deck_actif = left(p_reglages->>'deck_actif', 40) where user_id = p;
+  end if;
+  foreach k in array array['tapis', 'sleeve'] loop
+    v := p_reglages->>k;
+    continue when v is null;
+    base := case k when 'tapis' then 't_base' else 's_base' end;
+    -- Un tapis qui en est un, un sleeve qui en est un (21_reflets.sql) : un
+    -- titre possede n'est pas un tapis.
+    if not est_cosmetique_combat(v, k) then raise exception 'Cet objet ne se pose pas là.'; end if;
+    if v <> base and not exists (select 1 from inventory where user_id = p and item_id = v and qty > 0) then
+      raise exception 'Tu ne possèdes pas cet objet.';
+    end if;
+    if (c.cosm->>k) is distinct from v then perform bump_quests(p, 'cosm', 1); end if;
+    update combat_joueurs set cosm = cosm || jsonb_build_object(k, v) where user_id = p;
+  end loop;
+  return me();
+end $$;
+
+-- Enregistrer un deck : 20 au plus ; les cartes possedees ; la limite
+-- d'exemplaires respectee. Un deck incomplet s'enregistre.
+create or replace function public.deck_sauver(p_deck jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); c combat_joueurs; did text; err text; nom text; n int;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  c := combat_joueur(p);
+  err := deck_erreur(p, p_deck->'cartes', coalesce(p_deck->'reserve', '{}'::jsonb), false);
+  if err is not null then raise exception '%', err; end if;
+  nom := coalesce(nullif(left(trim(p_deck->>'nom'), 32), ''), 'Mon deck');
+  did := p_deck->>'id';
+  if did is null or not exists (select 1 from decks where id = did and user_id = p) then
+    if (select count(*) from decks where user_id = p) >= 20 then raise exception '20 decks au plus.'; end if;
+    did := 'd' || substr(md5(random()::text || clock_timestamp()::text), 1, 12);
+  end if;
+  insert into decks (id, user_id, nom, cartes, reserve, couverture, maj, public)
+  values (did, p, nom, p_deck->'cartes', coalesce(p_deck->'reserve', '{}'::jsonb), left(p_deck->>'couverture', 8), now(),
+          coalesce((p_deck->>'public')::boolean, false))
+  on conflict (id) do update set nom = excluded.nom, cartes = excluded.cartes, reserve = excluded.reserve,
+    couverture = excluded.couverture, maj = now(),
+    -- Sans la cle, le deck garde son etat (une page d'avant la 3.0.13).
+    public = case when p_deck ? 'public' then excluded.public else decks.public end;
+  -- Un deck public est un deck qu'on peut jouer : incomplet, il ne l'est plus.
+  if coalesce((p_deck->>'public')::boolean, false) or exists (select 1 from decks where id = did and public) then
+    if deck_erreur(p, p_deck->'cartes', coalesce(p_deck->'reserve', '{}'::jsonb), true) is not null then
+      update decks set public = false where id = did;
+    end if;
+  end if;
+  if c.deck_actif is null then update combat_joueurs set deck_actif = did where user_id = p; end if;
+  select coalesce(sum(value::text::int), 0) into n from jsonb_each(p_deck->'cartes');
+  -- Un deck complet : 40 cartes (regles officielles, 3.0.12 ; c'etait 30).
+  if n = 40 then perform bump_quests(p, 'deck', 1); end if;
+  return me();
+end $$;
+
+create or replace function public.deck_supprimer(p_id text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  delete from decks where id = p_id and user_id = p;
+  update combat_joueurs set deck_actif = null where user_id = p and deck_actif = p_id;
+  return me();
+end $$;
+
+-- Version 3.0.13 : montrer un deck sur son profil et sa fiche, ou le
+-- reprendre. Seul un deck complet se publie (on doit pouvoir le jouer).
+create or replace function public.deck_publier(p_id text, p_public boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); d decks;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into d from decks where id = p_id and user_id = p;
+  if not found then raise exception 'Deck introuvable.'; end if;
+  if coalesce(p_public, false) and deck_erreur(p, d.cartes, d.reserve, true) is not null then
+    raise exception 'Seul un deck complet se montre : 40 cartes et 10 Essences.';
+  end if;
+  update decks set public = coalesce(p_public, false) where id = p_id;
+  return me();
+end $$;
+
+-- La serie de victoires : une victoire l'allonge, une defaite (ou un combat
+-- abandonne, combat_debut) la remet a zero ; la meilleure reste.
+create or replace function public.combat_serie(p uuid, gagne boolean) returns void
+language sql security definer set search_path = public as $$
+  update combat_joueurs
+     set serie = case when gagne then serie + 1 else 0 end,
+         serie_max = greatest(serie_max, case when gagne then serie + 1 else 0 end)
+   where user_id = p
+$$;
+
+-- Ce que la fiche d'un joueur montre de ses combats (player_profile,
+-- 07_vitrine.sql) : sa Section, ses chiffres, sa campagne, ses decks publics.
+create or replace function public.combat_public(u uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'section', c.section,
+    'stats', jsonb_build_object('victoires', c.victoires, 'defaites', c.defaites, 'pvp_v', c.pvp_v, 'pvp_d', c.pvp_d,
+                                'serie', c.serie, 'serie_max', c.serie_max),
+    'campagne', coalesce(cardinality(c.faits), 0),
+    'decks', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'nom', d.nom, 'cartes', d.cartes,
+                                                           'reserve', d.reserve, 'couverture', d.couverture) order by d.maj desc)
+                         from decks d where d.user_id = u and d.public), '[]'::jsonb))
+    from combat_joueurs c where c.user_id = u
+$$;
+revoke all on function public.combat_serie, public.combat_public from public, anon, authenticated;
+
+-- ===================================================== 6. un combat contre l'IA
+-- combat_debut : le serveur ouvre le combat et tire la graine. Le Raid
+-- (27_raid.sql) et l'Epreuve du jour (25_choc.sql) fixent eux-memes le
+-- niveau de l'IA, le niveau du boss (`phase`) et la graine.
+-- Version 3.0.14 : `p_deck`, le deck du joueur au format du moteur ({ club,
+-- reserve }), possede ou prete (deck_defi_erreur) ; l'Epreuve impose le sien.
+-- Le serveur note tout ce qui fait la partie, et le rend : la page batit la
+-- sienne avec (Verif.partie, js/combat/verif.js), le serveur rejouera la
+-- meme. La version a trois arguments est retiree.
+drop function if exists public.combat_debut(text, text, integer);
+create or replace function public.combat_debut(p_mode text, p_cle text, p_niveau int, p_deck jsonb default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); c combat_joueurs; v_n int; niv int := p_niveau; ph int; gr bigint; x jsonb;
+        cid text; err text; v_boss text; v_jour int; deck jsonb := p_deck;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  c := combat_joueur(p);
+  if c.section is null then raise exception 'Rejoins d''abord une Section.'; end if;
+  if p_mode not in ('campagne', 'infini', 'raid', 'epreuve') then raise exception 'Mode inconnu.'; end if;
+  if p_mode = 'epreuve' then
+    deck := null;
+  else
+    if deck is null then raise exception 'Choisis un deck.'; end if;
+    err := deck_defi_erreur(p, deck);
+    if err is not null then raise exception '%', err; end if;
+  end if;
+  gr := floor(random() * 4294967295)::bigint + 1;
+  if p_mode = 'campagne' then
+    if p_cle !~ '^cp(0[1-9]|1[0-9]|20)$' then raise exception 'Combat inconnu.'; end if;
+    v_n := substr(p_cle, 3)::int - 1;
+    if v_n > 0 and not (('cp' || lpad(v_n::text, 2, '0')) = any(c.faits) or p_cle = any(c.faits)) then
+      raise exception 'Gagne d''abord le combat précédent.';
+    end if;
+    select niveau into niv from pve_campagne where n = v_n;
+  elsif p_mode = 'infini' then
+    if p_niveau is null or p_niveau not between 1 and 5 then raise exception 'Difficulté inconnue.'; end if;
+  else
+    x := case when p_mode = 'raid' then raid_debut(p, p_cle) else choc_debut(p, p_mode, p_cle) end;
+    niv := (x->>'niveau')::int; ph := (x->>'phase')::int; gr := (x->>'graine')::bigint;
+    v_boss := x->>'boss'; v_jour := (x->>'n')::int;
+  end if;
+  -- Un seul combat ouvert a la fois : le precedent est abandonne. Version
+  -- 3.0.14 (le proprietaire : « Les combats abandonnes comptent comme une
+  -- defaite seulement en online ou en raid ») : seul un combat de Raid
+  -- laisse compte comme perdu ; un combat solo laisse ne compte pas.
+  -- Version 3.0.16 (le proprietaire : « pas niquer le ratio W-L ») : le
+  -- Raid ne compte plus dans le bilan ni la serie ; sa tentative, elle,
+  -- reste prise (raid_debut).
+  delete from combats_ouverts where user_id = p;
+  cid := 'cb' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
+  insert into combats_ouverts (id, user_id, mode, cle, niveau, phase, jour, graine, deck, section, boss, n)
+  values (cid, p, p_mode, p_cle, niv, ph, jour_paris(), gr, deck, c.section, v_boss, v_jour);
+  return jsonb_build_object('id', cid, 'graine', gr, 'mode', p_mode, 'cle', p_cle, 'niveau', niv, 'jour', jour_paris(),
+                            'section', c.section, 'boss', v_boss, 'n', v_jour);
+end $$;
+
+-- Ce que rapporte un combat, une fois verifie (combat_fin_verifie) : le
+-- resultat, et ce qu'il paie. `v` : le verdict du serveur (Verif.rejouer,
+-- js/combat/verif.js) — gagne, abandon, tours, vaincus, touches, pv. Un
+-- abandon (3.0.14) ne fait avancer aucune quete ; en solo (campagne,
+-- Arcade, Epreuve), il ne compte pas du tout (ni defaite, ni serie, ni XP :
+-- l'historique le garde) ; au Raid, il compte comme une defaite.
+create or replace function public.combat_payer(p uuid, o public.combats_ouverts, v jsonb, histo jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare c combat_joueurs; r jsonb; trop boolean; p_gagne boolean := coalesce((v->>'gagne')::boolean, false);
+        v_n int; pc pve_campagne; pd pve_difficultes; g_eclats int := 0; g_boosters int := 0; g_fragments int := 0;
+        carte text; msg text := ''; plafond boolean; autre text; v_xp jsonb; v_abandon boolean;
+begin
+  c := combat_joueur(p);
+  if c.jour is distinct from jour_paris() then
+    update combat_joueurs set jour = jour_paris(), recompensees = 0 where user_id = p;
+    c.recompensees := 0;
+  end if;
+  trop := now() - o.debut < interval '20 seconds';
+  v_abandon := coalesce((v->>'abandon')::boolean, false) and not p_gagne;
+  -- L'historique (section 8) : le deroule, bati par le serveur en rejouant.
+  perform historique_ajouter(p, o.mode, o.cle, o.niveau, p_gagne, histo);
+  -- Un abandon en solo ne compte pas (l'essai d'une Epreuve reste pris : il
+  -- est compte a l'ouverture, choc_debut).
+  if v_abandon and o.mode <> 'raid' then
+    return jsonb_build_object('message', 'Combat abandonné : il ne compte pas.');
+  end if;
+  if not v_abandon then perform bump_quests(p, 'combats', 1); end if;
+
+  -- Le Raid hors du bilan victoires-defaites et de la serie (3.0.16) : il
+  -- a ses propres comptes (raid_participants) ; ses victoires font avancer
+  -- les quetes comme les autres.
+  if o.mode <> 'raid' then perform combat_serie(p, p_gagne); end if;
+  if not p_gagne then
+    if o.mode <> 'raid' then update combat_joueurs set defaites = defaites + 1 where user_id = p; end if;
+  else
+    if o.mode <> 'raid' then update combat_joueurs set victoires = victoires + 1 where user_id = p; end if;
+    perform bump_quests(p, 'victoires', 1);
+    perform bump_quests(p, 'vaincus', least(20, greatest(0, coalesce((v->>'vaincus')::int, 0))));
+    if o.niveau >= 4 then perform bump_quests(p, 'victoires_dures', 1); end if;
+    if o.niveau >= 5 and o.mode = 'infini' then perform bump_quests(p, 'legende', 1); end if;
+  end if;
+  -- L'XP, sans limite par jour (26_niveaux.sql) : tout combat fini en
+  -- rapporte, sauf un combat trop court.
+  if not trop then
+    v_xp := gagner_xp(p, xp_combat(o.mode, o.niveau, p_gagne,
+                                 coalesce((v->>'vaincus')::int, 0), coalesce((v->>'tours')::int, 0)));
+  end if;
+
+  -- Le Raid (27_raid.sql : Etincelles pendant le Choc, Eclats sinon) et
+  -- l'Epreuve du jour (25_choc.sql, en Etincelles).
+  if o.mode in ('raid', 'epreuve') then
+    r := case when o.mode = 'raid'
+              then raid_fin(p, o, p_gagne, v || jsonb_build_object('abandon', v_abandon), trop)
+              else choc_fin(p, o, p_gagne, v, trop) end;
+    return r || jsonb_build_object('xp', v_xp);
+  end if;
+
+  if not p_gagne then
+    msg := 'Pas d''Éclats pour une défaite, mais l''XP compte.';
+  elsif trop then
+    msg := 'Combat trop court pour être récompensé.';
+  else
+    plafond := c.recompensees < 5;
+    if o.mode = 'campagne' then
+      v_n := substr(o.cle, 3)::int - 1;
+      if not (o.cle = any(c.faits)) then
+        select * into pc from pve_campagne where n = v_n;
+        update combat_joueurs set faits = array_append(faits, o.cle) where user_id = p;
+        perform bump_quests(p, 'campagne', 1);
+        g_eclats := pc.eclats; g_boosters := pc.boosters; g_fragments := pc.fragments;
+        if cardinality(c.faits) + 1 >= 20 and not c.finie then
+          update combat_joueurs set finie = true where user_id = p;
+          autre := case c.section when 'toxique' then 'p03' else 'p04' end;
+          insert into collection (user_id, card_id, qty) values (p, autre, 1)
+            on conflict (user_id, card_id) do nothing;
+          carte := autre;
+          msg := 'Campagne terminée : la Promo de l''autre Section est à toi.';
+        end if;
+      else
+        if plafond then
+          update combat_joueurs set recompensees = recompensees + 1 where user_id = p;
+          g_eclats := 10;
+        else
+          msg := 'Victoires récompensées du jour atteintes : celle-ci est pour le plaisir.';
+        end if;
+      end if;
+    else
+      select * into pd from pve_difficultes where niveau = o.niveau;
+      if plafond then
+        update combat_joueurs set recompensees = recompensees + 1 where user_id = p;
+        g_eclats := pd.eclats;
+      else
+        msg := 'Victoires récompensées du jour atteintes : celle-ci est pour le plaisir.';
+      end if;
+    end if;
+    update profiles set shards = shards + g_eclats, boosters_bonus = boosters_bonus + g_boosters,
+                        fragments = fragments + g_fragments
+     where id = p;
+    perform sync_collection_quests(p);
+    perform check_promos(p);
+  end if;
+
+  return jsonb_build_object('eclats', g_eclats, 'boosters', g_boosters, 'fragments', g_fragments,
+    'carte', carte, 'titre', null, 'message', msg, 'xp', v_xp);
+end $$;
+
+-- Version 3.0.14 : le navigateur ne dit plus qui a gagne. combat_fin (qu'il
+-- appelait avec son resultat) est retiree ; il envoie la partie a la
+-- fonction du serveur (supabase/functions/combat-verifier), qui la rejoue
+-- et appelle les trois fonctions qui suivent, avec la cle de service. Elles
+-- ne sont ouvertes qu'a elle (section 9).
+drop function if exists public.combat_fin(text, boolean, jsonb);
+
+-- Le combat a verifier : ce que le serveur a note a l'ouverture, et la
+-- partie. Le journal s'ecrit une fois : une passe suivante (une partie
+-- longue se verifie en plusieurs fois) ne peut pas en changer.
+create or replace function public.combat_a_verifier(p_user uuid, p_id text, p_journal jsonb, p_meta jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare o combats_ouverts;
+begin
+  perform garde_beta_de(p_user);
+  select * into o from combats_ouverts where id = p_id and user_id = p_user for update;
+  if not found then raise exception 'Ce combat n''est plus ouvert.'; end if;
+  if o.journal is null then
+    if jsonb_typeof(p_journal) is distinct from 'array' or jsonb_array_length(p_journal) > 5000
+       or length(p_journal::text) > 800000 then
+      raise exception 'Partie illisible.';
+    end if;
+    update combats_ouverts set journal = p_journal,
+           meta = case when jsonb_typeof(p_meta) = 'object' and length(p_meta::text) < 2000 then p_meta end
+     where id = p_id returning * into o;
+  end if;
+  return jsonb_build_object('mode', o.mode, 'cle', o.cle, 'niveau', o.niveau, 'phase', o.phase, 'jour', o.jour,
+                            'graine', o.graine, 'deck', o.deck, 'section', o.section, 'boss', o.boss, 'n', o.n,
+                            'journal', o.journal, 'meta', coalesce(o.meta, '{}'::jsonb), 'verif_k', o.verif_k);
+end $$;
+
+-- Une passe de plus : la partie est verifiee jusqu'au coup `p_k`.
+create or replace function public.combat_verif_avance(p_user uuid, p_id text, p_k int) returns void
+language sql security definer set search_path = public as $$
+  update combats_ouverts set verif_k = greatest(verif_k, coalesce(p_k, 0)) where id = p_id and user_id = p_user;
+$$;
+
+-- La partie est verifiee : le serveur paie ce que le moteur a confirme. Le
+-- navigateur relit l'etat ensuite (me()).
+create or replace function public.combat_fin_verifie(p_user uuid, p_id text, p_verdict jsonb, p_histo jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare o combats_ouverts;
+begin
+  perform garde_beta_de(p_user);
+  select * into o from combats_ouverts where id = p_id and user_id = p_user for update;
+  if not found then raise exception 'Ce combat n''est plus ouvert.'; end if;
+  delete from combats_ouverts where id = p_id;
+  return jsonb_build_object('recompense', combat_payer(p_user, o, coalesce(p_verdict, '{}'::jsonb), p_histo),
+                            'verdict', p_verdict);
+end $$;
+
+-- La partie n'a pas tenu (un coup refuse par les regles, un coup de
+-- l'adversaire qui n'est pas le sien, une partie pas finie) : le combat se
+-- ferme sans rien rapporter, et le Labo le montre. L'essai du Raid ou de
+-- l'Epreuve, compte a l'ouverture, reste pris.
+create or replace function public.combat_refuse(p_user uuid, p_id text, p_raison text, p_k int)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare o combats_ouverts;
+begin
+  select * into o from combats_ouverts where id = p_id and user_id = p_user for update;
+  if not found then raise exception 'Ce combat n''est plus ouvert.'; end if;
+  delete from combats_ouverts where id = p_id;
+  insert into combats_refuses (user_id, mode, cle, raison, coup) values (p_user, o.mode, o.cle, left(p_raison, 300), p_k);
+  delete from combats_refuses where le < now() - interval '90 days';
+  return jsonb_build_object('recompense', jsonb_build_object(
+    'message', 'Ce combat n''a pas pu être vérifié par le serveur : il ne rapporte rien.'), 'refuse', true);
+end $$;
+
+-- ===================================================== 7. les defis entre amis
+create or replace function public.vue_defi(d public.defis, p uuid, depuis int) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare moi int := case when d.de = p then 0 else 1 end; o profiles;
+begin
+  select * into o from profiles where id = case when moi = 0 then d.pour else d.de end;
+  return jsonb_build_object(
+    'id', d.id, 'statut', d.statut, 'moi', moi,
+    'init', case when d.statut = 'attente' then null else jsonb_build_object(
+              'decks', jsonb_build_array(d.deck_de, d.deck_pour),
+              'noms', jsonb_build_array((select pseudo from profiles where id = d.de),
+                                        (select pseudo from profiles where id = d.pour)),
+              'graine', d.graine) end,
+    'actions', coalesce((select jsonb_agg(x order by i) from jsonb_array_elements(d.actions) with ordinality t(x, i)
+                          where i > coalesce(depuis, 0)), '[]'::jsonb),
+    'adversaire', jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame,
+                                     'xp', xp_de(o.id), 'photo', photo_discord(o.id),
+                                     'cosm', coalesce((select cosm from combat_joueurs where user_id = o.id), '{}'::jsonb)));
+end $$;
+
+create or replace function public.defi_lancer(p_pseudo text, p_deck jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); o profiles; err text; did text;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into o from profiles where lower(pseudo) = lower(trim(p_pseudo));
+  if not found then raise exception 'Joueur introuvable.'; end if;
+  if not exists (select 1 from friendships where a = least(p, o.id) and b = greatest(p, o.id) and accepte) then
+    raise exception 'Tu ne peux défier que tes amis.';
+  end if;
+  perform combat_joueur(p);
+  err := deck_defi_erreur(p, p_deck);
+  if err is not null then raise exception '%', err; end if;
+  if exists (select 1 from defis where statut in ('attente', 'en_cours')
+              and ((de = p and pour = o.id) or (de = o.id and pour = p))) then
+    raise exception 'Un défi est déjà en cours avec ce joueur.';
+  end if;
+  did := 'df' || substr(md5(random()::text || clock_timestamp()::text), 1, 14);
+  insert into defis (id, de, pour, deck_de, graine)
+  values (did, p, o.id, p_deck, floor(random() * 4294967295)::bigint + 1);
+  perform notifier(o.id, 'defi', p, did);
+  return me();
+end $$;
+
+create or replace function public.defi_repondre(p_id text, p_ok boolean, p_deck jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); d defis; err text;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into d from defis where id = p_id and (pour = p or de = p) for update;
+  if not found or d.statut <> 'attente' then raise exception 'Ce défi n''est plus en attente.'; end if;
+  if not coalesce(p_ok, false) then
+    update defis set statut = 'refuse', maj = now() where id = d.id;
+    return jsonb_build_object('etat', me());
+  end if;
+  if d.pour <> p then raise exception 'C''est à ton ami de répondre.'; end if;
+  perform combat_joueur(p);
+  err := deck_defi_erreur(p, p_deck);
+  if err is not null then raise exception '%', err; end if;
+  update defis set deck_pour = p_deck, statut = 'en_cours', vu_pour = true, vu_de = false, maj = now()
+   where id = d.id returning * into d;
+  perform notifier(d.de, 'defi_accepte', p, d.id);
+  return jsonb_build_object('etat', me(), 'defi', vue_defi(d, p, 0));
+end $$;
+
+create or replace function public.defi_etat(p_id text, p_depuis int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); d defis;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into d from defis where id = p_id and (pour = p or de = p);
+  if not found then raise exception 'Défi introuvable.'; end if;
+  if d.de = p and not d.vu_de then update defis set vu_de = true where id = d.id; end if;
+  if d.pour = p and not d.vu_pour then update defis set vu_pour = true where id = d.id; end if;
+  return vue_defi(d, p, p_depuis);
+end $$;
+
+-- Une action de plus. `p_n` : le nombre d'actions que le navigateur connait
+-- deja ; s'il ne correspond pas, l'autre a joue entre-temps.
+create or replace function public.defi_jouer(p_id text, p_n int, p_action jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); d defis;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select * into d from defis where id = p_id and (pour = p or de = p) for update;
+  if not found or d.statut <> 'en_cours' then raise exception 'Ce défi n''est plus en cours.'; end if;
+  if p_n <> jsonb_array_length(d.actions) then raise exception 'Actions désynchronisées.'; end if;
+  if jsonb_array_length(d.actions) >= 5000 then raise exception 'Ce défi est trop long.'; end if;
+  if jsonb_typeof(p_action) <> 'object' or length(p_action::text) > 2000 then raise exception 'Action invalide.'; end if;
+  update defis set actions = actions || jsonb_build_array(p_action),
+                   auteurs = auteurs || to_jsonb(case when d.de = p then 0 else 1 end), maj = now()
+   where id = d.id;
+  return jsonb_build_object('n', jsonb_array_length(d.actions) + 1);
+end $$;
+
+-- La fin d'un defi. Jusqu'a la 3.0.13, chacun declarait qui avait gagne, et
+-- etait paye sur sa propre declaration. Version 3.0.14 : la fonction du
+-- serveur (supabase/functions/combat-verifier) rejoue les coups que le
+-- serveur a ranges (Verif.defi, js/combat/verif.js) et dit qui a gagne ; un
+-- coup envoye hors de son tour, ou refuse par les regles, fait perdre celui
+-- qui l'a envoye (`p_verdict.fautif`). defi_fin est retiree (les versions a
+-- trois et quatre arguments).
+drop function if exists public.defi_fin(text, integer, integer);
+drop function if exists public.defi_fin(text, integer, integer, jsonb);
+
+-- Le defi a verifier : les decks, la graine, les coups et leurs auteurs.
+create or replace function public.defi_a_verifier(p_user uuid, p_id text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare d defis;
+begin
+  perform garde_beta_de(p_user);
+  select * into d from defis where id = p_id and (pour = p_user or de = p_user);
+  if not found then raise exception 'Défi introuvable.'; end if;
+  if d.statut not in ('en_cours', 'fini', 'abandon') then raise exception 'Ce défi n''a pas été joué.'; end if;
+  return jsonb_build_object('decks', jsonb_build_array(d.deck_de, d.deck_pour), 'graine', d.graine,
+                            'actions', d.actions, 'auteurs', d.auteurs, 'moi', case when d.de = p_user then 0 else 1 end);
+end $$;
+
+create or replace function public.defi_fin_verifie(p_user uuid, p_id text, p_verdict jsonb, p_histo jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := p_user; d defis; c combat_joueurs; moi int; gagne boolean;
+        p_gagnant int := (p_verdict->>'gagnant')::int; p_tours int := coalesce((p_verdict->>'tours')::int, 0);
+        g_eclats int := 0; msg text := ''; deja boolean; v_xp jsonb; v_abandon boolean;
+begin
+  perform garde_beta_de(p);
+  select * into d from defis where id = p_id and (pour = p or de = p) for update;
+  if not found then raise exception 'Défi introuvable.'; end if;
+  if d.statut not in ('en_cours', 'fini', 'abandon') then raise exception 'Ce défi n''a pas été joué.'; end if;
+  if p_gagnant is null or p_gagnant not in (0, 1) then raise exception 'Le défi n''est pas fini.'; end if;
+  moi := case when d.de = p then 0 else 1 end;
+  deja := case when moi = 0 then d.paye_de else d.paye_pour end;
+  if moi = 0 then
+    update defis set gagnant_de = p_gagnant, paye_de = true where id = d.id;
+  else
+    update defis set gagnant_pour = p_gagnant, paye_pour = true where id = d.id;
+  end if;
+  update defis set statut = case when statut = 'en_cours' then 'fini' else statut end, maj = now(),
+                   desaccord = gagnant_de is not null and gagnant_pour is not null and gagnant_de <> gagnant_pour
+   where id = d.id;
+
+  if not deja then
+    c := combat_joueur(p);
+    if c.defis_jour is distinct from jour_paris() then
+      update combat_joueurs set defis_jour = jour_paris(), defis_rec = 0 where user_id = p;
+      c.defis_rec := 0;
+    end if;
+    gagne := p_gagnant = moi;
+    update combat_joueurs set pvp_v = pvp_v + case when gagne then 1 else 0 end,
+                              pvp_d = pvp_d + case when gagne then 0 else 1 end
+     where user_id = p;
+    perform combat_serie(p, gagne);
+    -- L'historique, une fois : l'adversaire tel que le serveur le connait.
+    perform historique_ajouter(p, 'defi', d.id, 0, gagne, p_histo,
+      (select jsonb_build_object('nom', o.pseudo, 'avatar', o.avatar, 'frame', o.frame, 'photo', photo_discord(o.id))
+         from profiles o where o.id = case when moi = 0 then d.pour else d.de end));
+    -- Version 3.0.14 : un defi abandonne (par l'un ou l'autre) compte, comme
+    -- une defaite pour qui abandonne, mais ne fait avancer aucune quete :
+    -- s'accorder des victoires entre amis n'avance a rien. Un coup refuse
+    -- (`fautif`) vaut un abandon de son auteur.
+    v_abandon := exists (select 1 from jsonb_array_elements(d.actions) x where x->>'t' = 'abandon')
+                 or (p_verdict->>'fautif') is not null;
+    if not v_abandon then
+      perform bump_quests(p, 'defis', 1);
+      perform bump_quests(p, 'combats', 1);
+    end if;
+    -- Un defi ou personne n'a presque rien joue ne paie pas : on ne gagne
+    -- rien a s'accorder des victoires entre amis en trois clics.
+    if jsonb_array_length(d.actions) < 12 then
+      msg := 'Défi trop court pour être récompensé.';
+    else
+      if gagne and not v_abandon then perform bump_quests(p, 'victoires', 1); end if;
+      v_xp := gagner_xp(p, xp_combat('defi', 0, gagne, 0, coalesce(p_tours, 0)));
+      if c.defis_rec < 3 then
+        update combat_joueurs set defis_rec = defis_rec + 1 where user_id = p;
+        g_eclats := case when gagne then 40 else 15 end;
+        update profiles set shards = shards + g_eclats where id = p;
+      else
+        msg := 'Défis récompensés du jour atteints.';
+      end if;
+    end if;
+  end if;
+  return jsonb_build_object('recompense',
+    jsonb_build_object('eclats', g_eclats, 'message', msg, 'xp', v_xp), 'verdict', p_verdict);
+end $$;
+
+-- ===================================================== 8. l'historique des combats
+-- Version 3.0.12 : les trente derniers combats de chaque joueur, contre l'IA
+-- et entre amis, avec leur deroule tour par tour (js/combat/historique.js).
+-- Pas de replay : la page resume la partie en lignes compactes (un code, des
+-- identifiants de cartes, des valeurs) et l'envoie avec le resultat
+-- (combat_fin : p_resume->'histo' ; defi_fin : p_histo). Le serveur y ajoute
+-- ce qu'il sait mieux qu'elle : le mode, l'heure, le resultat, et
+-- l'adversaire d'un defi. Un souvenir, propre au joueur : rien ne s'y paie,
+-- et personne d'autre ne le lit.
+create table if not exists public.combats_historique (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references public.profiles on delete cascade,
+  le         timestamptz not null default now(),
+  mode       text not null,
+  cle        text,
+  niveau     integer,
+  gagne      boolean not null,
+  titre      text,
+  -- { nom, avatar, frame, photo } : tel qu'il etait ce jour-la.
+  adversaire jsonb not null default '{}'::jsonb,
+  raison     text check (raison in ('pv', 'club', 'abandon')),
+  tours      integer not null default 0,
+  pv         integer,
+  pv_adv     integer,
+  deck       text,
+  -- { v, premier, tours: [[n, qui, [lignes]]], coupe? } ; null : pas de deroule.
+  journal    jsonb
+);
+create index if not exists combats_historique_user_idx on public.combats_historique (user_id, id desc);
+alter table public.combats_historique enable row level security;
+-- Aucune policy : le navigateur passe par combats_historique() et combat_historique().
+revoke all on public.combats_historique from anon, authenticated;
+
+-- Un combat de plus, et seulement les trente derniers. Appelee par
+-- combat_fin et defi_fin : une entree mal formee est laissee de cote, et une
+-- erreur ici n'empeche jamais de payer le combat (le bloc d'exception
+-- l'annule seul).
+create or replace function public.historique_ajouter(p uuid, p_mode text, p_cle text, p_niveau int,
+                                                     p_gagne boolean, x jsonb, p_adv jsonb default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare j jsonb := x->'journal'; a jsonb := coalesce(p_adv, x->'adversaire');
+begin
+  if jsonb_typeof(x) is distinct from 'object' then return; end if;
+  if jsonb_typeof(j) is distinct from 'object' or jsonb_typeof(j->'tours') is distinct from 'array'
+     or length(j::text) > 30000 then
+    j := null;
+  end if;
+  insert into combats_historique (user_id, mode, cle, niveau, gagne, titre, adversaire, raison, tours, pv, pv_adv, deck, journal)
+  values (p, p_mode, left(p_cle, 40), p_niveau, coalesce(p_gagne, false), nullif(left(x->>'titre', 60), ''),
+          case when jsonb_typeof(a) = 'object' then jsonb_strip_nulls(jsonb_build_object(
+                 'nom', left(a->>'nom', 40), 'avatar', left(a->>'avatar', 40), 'frame', left(a->>'frame', 40),
+                 'photo', left(a->>'photo', 300)))
+               else '{}'::jsonb end,
+          case when x->>'raison' in ('pv', 'club', 'abandon') then x->>'raison' end,
+          least(999, greatest(0, coalesce((x->>'tours')::int, 0))),
+          least(99, greatest(0, (x->>'pv')::int)), least(99, greatest(0, (x->>'pv_adv')::int)),
+          nullif(left(x->>'deck', 32), ''), j);
+  delete from combats_historique h
+   where h.user_id = p
+     and h.id not in (select k.id from combats_historique k where k.user_id = p order by k.id desc limit 30);
+exception when others then
+  return;
+end $$;
+
+-- La liste, sans les deroules (le plus recent d'abord).
+create or replace function public.combats_historique() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('id', h.id, 'le', h.le, 'mode', h.mode, 'cle', h.cle, 'niveau', h.niveau,
+                                        'gagne', h.gagne, 'titre', h.titre, 'adversaire', h.adversaire,
+                                        'raison', h.raison, 'tours', h.tours, 'pv', h.pv, 'pv_adv', h.pv_adv,
+                                        'deck', h.deck, 'journal', h.journal is not null)
+                     order by h.id desc)
+      from combats_historique h where h.user_id = p), '[]'::jsonb);
+end $$;
+
+-- Un combat, avec son deroule.
+create or replace function public.combat_historique(p_id bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); r jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  select to_jsonb(h) - 'user_id' into r from combats_historique h where h.id = p_id and h.user_id = p;
+  if r is null then raise exception 'Combat introuvable.'; end if;
+  return r;
+end $$;
+
+-- ===================================================== 9. droits
+revoke all on function public.jour_paris, public.combat_joueur, public.cle_copie, public.limite_copies,
+  public.deck_erreur, public.deck_depuis_moteur, public.cartes_pretees, public.deck_defi_erreur,
+  public.combat_etat, public.vue_defi, public.historique_ajouter, public.combat_payer
+  from public, anon, authenticated;
+
+revoke all on function public.combat_section, public.combat_reglages, public.deck_sauver, public.deck_publier,
+  public.deck_supprimer, public.combat_debut, public.defi_lancer,
+  public.defi_repondre, public.defi_etat, public.defi_jouer,
+  public.combats_historique, public.combat_historique from public, anon;
+grant execute on function public.combat_section, public.combat_reglages, public.deck_sauver, public.deck_publier,
+  public.deck_supprimer, public.combat_debut, public.defi_lancer,
+  public.defi_repondre, public.defi_etat, public.defi_jouer,
+  public.combats_historique, public.combat_historique to authenticated;
+
+-- Version 3.0.14 : ce que paie un combat ne s'appelle qu'avec la cle de
+-- service, celle de la fonction qui verifie (supabase/functions/combat-verifier).
+revoke all on function public.combat_a_verifier, public.combat_verif_avance, public.combat_fin_verifie,
+  public.combat_refuse, public.defi_a_verifier, public.defi_fin_verifie from public, anon, authenticated;
+grant execute on function public.combat_a_verifier, public.combat_verif_avance, public.combat_fin_verifie,
+  public.combat_refuse, public.defi_a_verifier, public.defi_fin_verifie to service_role;
+
+
+-- #####################################################################
+-- ###  24_secretes.sql
+-- ###  Version 3.0 : les Secretes
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0 : les Secretes
+--  A executer apres 23_combats.sql. Rejouable sans danger.
+--
+--  Ce fichier ne contient que le catalogue des Secretes. Le reste vit dans
+--  les fichiers qu'il touche, pour que TOUT.sql reste dans l'ordre :
+--    · la colonne `cards.secrete` : 01_schema.sql ;
+--    · le tirage (Rare 79 %, Epique 16 %, Legendaire 4,25 %, Secrete
+--      0,75 %), pick_card('S'), l'echange d'une Secrete : 03_rpc.sql ;
+--    · la quete « Secret bien garde » : 04_seed.sql ;
+--    · les doublons des amis : 21_reflets.sql ; les exemplaires a garder :
+--      22_garder.sql.
+--
+--  Les Secretes : cinq cartes numerotees apres l'extension (#123 a #127),
+--  toutes revelees depuis la version 3.0.13 (124, 126 et 127 d'apres les
+--  photos du proprietaire, 1er novembre 2026). Elles sont hors des 122
+--  (`promo`), ni recyclables ni fabricables, et echangeables contre une
+--  autre Secrete (`secrete`).
+-- =====================================================================
+
+insert into public.cards (id, num, nom, cat, col, rar, in_booster, promo, reverse, secrete) values
+  ('c123', 123, 'Le Quatrième du Nom', 'joueur', 'orange', 'S', false, true, false, true),
+  ('c124', 124, 'Brawks Trop Déter',   'joueur', 'violette', 'S', false, true, false, true),
+  ('c125', 125, '6W26L',               'joueur', 'mauve',  'S', false, true, false, true),
+  ('c126', 126, 'GP Explorer II',      'moment', 'neutre', 'S', false, true, false, true),
+  ('c127', 127, 'Paris Gentle Mates',  'moment', 'mauve',  'S', false, true, false, true)
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat, col = excluded.col,
+  rar = excluded.rar, in_booster = excluded.in_booster, promo = excluded.promo,
+  reverse = excluded.reverse, secrete = excluded.secrete;
+
+
+-- #####################################################################
+-- ###  25_choc.sql
+-- ###  Version 3.0 : l'evenement « Le Choc des Sections »
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0 : l'evenement « Le Choc des Sections »
+--  A executer apres 24_secretes.sql. Rejouable sans danger.
+--
+--  Deux semaines autour des Combats (23_combats.sql ; trois jusqu'a la
+--  3.0.12, ramenees a deux en 3.0.13 a la demande du proprietaire : a la fin
+--  du Choc commence le raid suivant), avec ce qu'un evenement apporte deja
+--  depuis la 2.0 (21_reflets.sql) : une monnaie — les Etincelles, rangees
+--  dans evt_comptes comme les Prismes —, des quetes (04_seed.sql), un Pass
+--  de vingt paliers, une boutique (04_seed.sql) et un classement. En plus, l'Epreuve du jour : le meme combat pour tout le
+--  monde (les decks et la regle se deduisent de la graine du jour,
+--  js/combat/choc-data.js). Trois essais, le meilleur compte, un classement
+--  du jour.
+--
+--  Le Raid (27_raid.sql) reste toute l'annee ; pendant l'evenement, il paie
+--  en Etincelles, et ce qu'on y fait compte pour le recap (choc_joueurs).
+--
+--  La Guerre de l'evenement (points de Section doubles) a ete retiree du
+--  pre-build : ses tables et ses fonctions sont supprimees plus bas si une
+--  base de test les a encore.
+--
+--  Les chiffres de l'Epreuve sont aussi dans js/combat/choc-data.js
+--  (CHOC) : les deux doivent rester d'accord. L'equilibrage est explique
+--  dans docs/economie-3.0.md.
+--
+--  L'evenement ne s'ouvre pas tout seul : voir tout en bas de ce fichier.
+-- =====================================================================
+
+-- ============================================================ 1. tables
+-- Ce que chaque joueur a fait au boss du Raid pendant l'evenement (le
+-- recap) : raid_fin (27_raid.sql) le tient a jour.
+create table if not exists public.choc_joueurs (
+  user_id   uuid primary key references public.profiles on delete cascade,
+  degats    integer not null default 0,
+  victoires integer not null default 0
+);
+-- L'Epreuve du jour : les essais d'un joueur, un jour donne
+-- ([{ gagne, tours, pv, touches }]), et si sa premiere victoire est payee.
+create table if not exists public.choc_epreuves (
+  user_id uuid not null references public.profiles on delete cascade,
+  jour    date not null,
+  essais  jsonb not null default '[]'::jsonb,
+  gagnee  boolean not null default false,
+  primary key (user_id, jour)
+);
+
+-- La Guerre de l'evenement : retiree.
+drop function if exists public.choc_points(uuid, text, int);
+drop function if exists public.choc_multiplicateur();
+drop table if exists public.choc_guerre;
+drop table if exists public.choc_contrib;
+
+alter table public.choc_joueurs    enable row level security;
+alter table public.choc_epreuves   enable row level security;
+revoke all on public.choc_joueurs, public.choc_epreuves from anon, authenticated;
+
+-- ============================================================ 3. le Pass
+-- Vingt paliers (trente jusqu'a la 3.0.12, pour trois semaines). Le calcul
+-- (docs/economie-3.0.md) : un joueur engage (toutes les quetes du jour, trois
+-- Raids, trois essais d'Epreuve) gagne ~2 900 Etincelles en deux semaines et
+-- finit le Pass vers le 12e jour ; un joueur occasionnel ~1 450, palier 14.
+-- Les six exclusifs (trois titres, le sleeve, le cadre, le tapis) et
+-- l'Essence Brillante restent ; boosters, Eclats, Fragments et Reverses sont
+-- ramenes a environ deux tiers, comme la duree.
+delete from public.evt_piste where evenement = 'choc' and palier > 20;
+insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values
+  ('choc',  1,   20, 'boosters',    2, null,            '2 boosters'),
+  ('choc',  2,   50, 'titre',       0, 't_recrue',      'Titre « Recrue du Choc »'),
+  ('choc',  3,   90, 'eclats',    200, null,            '200 Éclats'),
+  ('choc',  4,  140, 'fragments',  400, null,           '400 Fragments'),
+  ('choc',  5,  200, 'sleeve',      0, 's_choc',        'Sleeve « Le Choc »'),
+  ('choc',  6,  270, 'boosters',    3, null,            '3 boosters'),
+  ('choc',  7,  350, 'reverse_R',   1, null,            'Une Reverse Rare'),
+  ('choc',  8,  440, 'eclats',    400, null,            '400 Éclats'),
+  ('choc',  9,  540, 'cadre',       0, 'f_choc',        'Cadre « Choc »'),
+  ('choc', 10,  650, 'boosters',    3, null,            '3 boosters'),
+  ('choc', 11,  770, 'fragments',  700, null,           '700 Fragments'),
+  ('choc', 12,  900, 'brillante',   1, null,            'Une Essence Brillante'),
+  ('choc', 13, 1040, 'eclats',    500, null,            '500 Éclats'),
+  ('choc', 14, 1200, 'boosters',    4, null,            '4 boosters'),
+  ('choc', 15, 1380, 'titre',       0, 't_veteran',     'Titre « Vétéran du Choc »'),
+  ('choc', 16, 1580, 'reverse_R',   2, null,            'Deux Reverses Rares'),
+  ('choc', 17, 1800, 'fragments', 1000, null,           '1 000 Fragments'),
+  ('choc', 18, 2040, 'boosters',    4, null,            '4 boosters'),
+  ('choc', 19, 2280, 'titre',       0, 't_maitre_choc', 'Titre « Maître du Choc »'),
+  ('choc', 20, 2500, 'tapis',       0, 't_arene',       'Tapis « Le Choc des Sections »')
+on conflict (evenement, palier) do update set
+  seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
+  objet = excluded.objet, titre = excluded.titre;
+
+-- ============================================================ 4. outils
+-- La graine de l'Epreuve : la meme pour tout le monde un jour donne, et
+-- impossible a deviner d'avance (le sel de parametres, 21_reflets.sql).
+create or replace function public.choc_graine(j date) returns bigint
+language sql stable security definer set search_path = public as $$
+  select ('x' || substr(md5('choc-epreuve:' || j::text || (select illu_sel from parametres where id = 1)), 1, 8))::bit(32)::bigint + 1;
+$$;
+
+-- Le score d'un essai (scoreEpreuve, js/combat/choc-data.js) : la victoire
+-- d'abord ; entre deux victoires, le moins de tours puis le plus de PV ;
+-- entre deux defaites, le plus de PV pris a l'adversaire.
+create or replace function public.choc_score(s jsonb) returns integer
+language sql immutable as $$
+  select case when s is null then 0
+    when coalesce((s->>'gagne')::boolean, false)
+      then 100000 + (100 - least(99, greatest(0, coalesce((s->>'tours')::int, 0)))) * 100
+           + least(99, greatest(0, coalesce((s->>'pv')::int, 0)))
+    else least(99, greatest(0, coalesce((s->>'touches')::int, 0))) * 100
+           + least(99, greatest(0, coalesce((s->>'pv')::int, 0))) end;
+$$;
+
+-- L'ancien Raid a phases et calendrier : retire (27_raid.sql).
+drop function if exists public.choc_jour_ev();
+
+-- ===================================================== 5. ouvrir, clore
+-- Appeles par combat_debut et combat_fin (23_combats.sql).
+create or replace function public.choc_debut(p uuid, p_mode text, p_cle text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare j date := jour_paris(); e choc_epreuves; ev evenements;
+begin
+  if evenement_en_cours() is distinct from 'choc' then raise exception 'L''événement est terminé.'; end if;
+  if p_mode <> 'epreuve' then raise exception 'Mode inconnu.'; end if;
+  -- L'Epreuve : l'essai compte des l'ouverture — en abandonner un ne le
+  -- rend pas. Il est note perdu jusqu'a ce que le resultat arrive.
+  if p_cle is distinct from j::text then raise exception 'L''Épreuve a changé : recharge la page.'; end if;
+  insert into choc_epreuves (user_id, jour) values (p, j) on conflict do nothing;
+  select * into e from choc_epreuves where user_id = p and jour = j for update;
+  if jsonb_array_length(e.essais) >= 3 then raise exception 'Épreuve terminée : une nouvelle demain.'; end if;
+  update choc_epreuves set essais = essais || '[{"gagne":false,"tours":0,"pv":0,"touches":0,"abandon":true}]'::jsonb
+   where user_id = p and jour = j;
+  -- `n` (3.0.14) : le n-ieme jour de l'evenement, comme choc_etat : il
+  -- choisit la regle du jour ; le serveur le garde pour rejouer le combat.
+  select * into ev from evenements x where x.code = 'choc' and now() >= x.debut and now() < x.fin
+   order by x.debut desc limit 1;
+  return jsonb_build_object('niveau', 3, 'phase', null, 'graine', choc_graine(j),
+                            'n', j - (ev.debut at time zone 'Europe/Paris')::date + 1);
+end $$;
+
+create or replace function public.choc_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare insignes int := 0; msg text := ''; e choc_epreuves; i int; score jsonb;
+begin
+  -- L'Epreuve du jour : le resultat remplace le premier essai encore ouvert.
+  perform bump_quests(p, 'epreuve', 1);
+  select * into e from choc_epreuves where user_id = p and jour = o.jour for update;
+  score := jsonb_build_object('gagne', gagne, 'tours', greatest(0, coalesce((res->>'tours')::int, 0)),
+                              'pv', greatest(0, coalesce((res->>'pv')::int, 0)),
+                              'touches', greatest(0, coalesce((res->>'touches')::int, 0)));
+  select min(k - 1) into i from jsonb_array_elements(e.essais) with ordinality t(x, k)
+   where coalesce((x->>'abandon')::boolean, false);
+  if i is not null then
+    update choc_epreuves set essais = jsonb_set(essais, array[i::text], score) where user_id = p and jour = o.jour;
+  end if;
+  if trop then
+    return jsonb_build_object('insignes', 0, 'message', 'Combat trop court pour compter.');
+  end if;
+  insignes := 5;
+  if gagne and not e.gagnee then
+    update choc_epreuves set gagnee = true where user_id = p and jour = o.jour;
+    insignes := insignes + 25;
+    perform bump_quests(p, 'epreuve_victoires', 1);
+    msg := 'Épreuve du jour gagnée !';
+  elsif gagne then
+    msg := 'Déjà gagnée aujourd''hui : ton meilleur score est gardé.';
+  end if;
+  perform crediter_prismes(p, 'choc', insignes);
+  return jsonb_build_object('insignes', insignes, 'message', msg);
+end $$;
+
+-- ===================================================== 6. l'etat de l'evenement
+create or replace function public.choc_joueur_vue(id uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
+                            'xp', xp_de(pr.id), 'photo', photo_discord(pr.id),
+                            'section', (select section from combat_joueurs where user_id = pr.id))
+    from profiles pr where pr.id = choc_joueur_vue.id;
+$$;
+
+create or replace function public.choc_etat() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); j date := jour_paris(); e choc_epreuves; ev evenements;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if evenement_en_cours() is distinct from 'choc' then return 'null'::jsonb; end if;
+  -- « Passe voir l'evenement », comme evenement_etat (21_reflets.sql).
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, period_key(q.scope), 1 from quests q where q.metric = 'ev_visite' and q.evenement = 'choc'
+  on conflict (user_id, quest_id, period_key) do nothing;
+  select * into e from choc_epreuves where user_id = p and jour = j;
+  select * into ev from evenements x where x.code = 'choc' and now() >= x.debut and now() < x.fin
+   order by x.debut desc limit 1;
+  return jsonb_build_object(
+    'jour', j,
+    -- Version 3.0.11 : le numero de l'Epreuve, le n-ieme jour de l'evenement
+    -- (heure de Paris), sur `jours` (14 pour un Choc ouvert a minuit : les
+    -- dates qu'il touche). Il choisit la regle du calendrier
+    -- (CHOC.epreuve.calendrier, js/combat/choc-data.js).
+    'n', j - (ev.debut at time zone 'Europe/Paris')::date + 1,
+    'jours', ((ev.fin - interval '1 microsecond') at time zone 'Europe/Paris')::date
+             - (ev.debut at time zone 'Europe/Paris')::date + 1,
+    'epreuve', jsonb_build_object(
+      'graine', choc_graine(j),
+      'essais', coalesce(e.essais, '[]'::jsonb),
+      'max', 3,
+      'meilleur', (select x from jsonb_array_elements(coalesce(e.essais, '[]'::jsonb)) x order by choc_score(x) desc limit 1),
+      'gagnee', coalesce(e.gagnee, false),
+      'top', coalesce((
+        select jsonb_agg(choc_joueur_vue(b.user_id) || b.s || jsonb_build_object('moi', b.user_id = p) order by choc_score(b.s) desc)
+          from (select ce.user_id,
+                       (select x from jsonb_array_elements(ce.essais) x
+                         where not coalesce((x->>'abandon')::boolean, false)
+                         order by choc_score(x) desc limit 1) s
+                  from choc_epreuves ce where ce.jour = j) b
+         where b.s is not null), '[]'::jsonb)));
+end $$;
+
+-- Ce que le recap de l'evenement ajoute (evenement_recap, 21_reflets.sql) :
+-- le Raid pendant l'evenement, et l'Epreuve.
+create or replace function public.choc_recap(p uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  return jsonb_build_object(
+    'degats', coalesce((select degats from choc_joueurs where user_id = p), 0),
+    -- Les phases du Raid abattues pendant l'evenement (27_raid.sql).
+    'raid_phases', (select count(*) from raid_tombees t
+                     where exists (select 1 from evenements e where e.code = 'choc'
+                                    and t.tombee_le >= e.debut and t.tombee_le < e.fin)),
+    'epreuves', (select count(*) from choc_epreuves where user_id = p and gagnee),
+    'section', (select section from combat_joueurs where user_id = p));
+end $$;
+
+-- ============================================================ 7. droits
+revoke all on function public.choc_graine, public.choc_score, public.choc_debut, public.choc_fin,
+  public.choc_joueur_vue, public.choc_recap from public, anon, authenticated;
+revoke all on function public.choc_etat from public, anon;
+grant execute on function public.choc_etat to authenticated;
+
+-- Version 3.0.17 (le proprietaire, 8 novembre 2026 : la sortie ce soir a
+-- minuit, « essaye d'automatiser ou de faire toi-meme au maximum ») : une base
+-- 2.x qui recoit la 3.0 ouvre le Choc d'elle-meme, a la sortie (lundi
+-- 9 novembre 2026, 0 h, heure de Paris ; collee un autre jour, a minuit ce
+-- jour-la), pour quatorze jours : quatorze Epreuves, le raid 1 des le premier
+-- jour. Une seule fois : seulement si cette meme mise a jour vient de mettre
+-- la base en maintenance (01_schema.sql), et si aucun Choc n'existe.
+do $$
+declare d timestamptz;
+begin
+  if exists (select 1 from maintenance where id = 1 and par = 'la mise à jour 3.0' and depuis > now() - interval '1 hour')
+     and not exists (select 1 from evenements where code = 'choc') then
+    d := greatest(timestamptz '2026-11-09 00:00:00+01',
+                  (date_trunc('day', now() at time zone 'Europe/Paris')) at time zone 'Europe/Paris');
+    insert into evenements (titre, texte, debut, fin, code) values (
+      'Le Choc des Sections',
+      'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.',
+      d, d + interval '14 days', 'choc');
+  end if;
+end $$;
+
+-- =====================================================================
+--  Ouvrir l'evenement — a la main, le jour venu, dans le SQL Editor :
+--
+--    insert into public.evenements (titre, texte, debut, fin, code) values (
+--      'Le Choc des Sections',
+--      'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.',
+--      '2026-11-02 00:00+01', '2026-11-16 00:00+01', 'choc');
+--
+--  (Les dates sont un exemple.) A minuit, heure de Paris : quatorze jours
+--  pleins, donc quatorze Epreuves (choc_etat › n, de 1 a 14) ; le raid 1
+--  commence le premier jour, et le raid 2 le lendemain de la fin du Choc
+--  (raid_ancre, 27_raid.sql : un raid tous les quatorze jours). Ouvert a une
+--  autre heure, l'evenement touche quinze dates : la premiere et la derniere
+--  Epreuve sont plus courtes, et la quinzieme reprend une regle a tour de
+--  role (regleEpreuve). Un evenement sans `ticket_minutes` ne change pas le
+--  rythme des boosters.
+--  Pour le fermer plus tot :
+--    update public.evenements set fin = now() where code = 'choc' and fin > now();
+-- =====================================================================
+
+
+-- #####################################################################
+-- ###  26_niveaux.sql
+-- ###  Version 3.0 : l'XP et le niveau de combattant
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0 : l'XP et le niveau de combattant
+--  A executer apres 25_choc.sql. Rejouable sans danger.
+--
+--  Chaque combat fini rapporte de l'XP, sans limite par jour : c'est la
+--  recompense de ceux qui jouent beaucoup, quand les Eclats des combats
+--  s'arretent a cinq victoires recompensees par jour (23_combats.sql).
+--  Chaque niveau atteint paie des Eclats ; certains paliers ajoutent des
+--  boosters, des Fragments, un cadre ou un titre. Pas de niveau maximum.
+--
+--  Les chiffres sont aussi dans js/combat/niveaux.js (NIVEAUX) : les deux
+--  doivent rester d'accord. L'equilibrage est explique dans
+--  docs/economie-3.0.md. combat_fin et defi_fin (23_combats.sql) appellent
+--  gagner_xp ; PL/pgSQL resout l'appel a l'execution.
+-- =====================================================================
+
+alter table public.combat_joueurs add column if not exists xp integer not null default 0;
+
+-- Les paliers qui paient plus que les Eclats de chaque niveau.
+create table if not exists public.niveau_paliers (
+  niveau    integer primary key check (niveau >= 2),
+  boosters  integer not null default 0,
+  fragments integer not null default 0,
+  cadre     text,
+  titre     text
+);
+delete from public.niveau_paliers where niveau not in (3, 5, 10, 15, 20, 25, 30, 40, 50);
+insert into public.niveau_paliers (niveau, boosters, fragments, cadre, titre) values
+  (3,  1, 0,   null,      null),
+  (5,  2, 0,   null,      't_bagarreur'),
+  (10, 2, 0,   'f_niv10', null),
+  (15, 3, 0,   null,      null),
+  (20, 0, 0,   'f_niv20', 't_veteran_arene'),
+  (25, 0, 500, null,      null),
+  (30, 3, 0,   'f_niv30', null),
+  (40, 5, 0,   null,      't_maitre_arene'),
+  (50, 0, 0,   'f_niv50', 't_legende_arene')
+on conflict (niveau) do update set boosters = excluded.boosters, fragments = excluded.fragments,
+  cadre = excluded.cadre, titre = excluded.titre;
+alter table public.niveau_paliers enable row level security;
+revoke all on public.niveau_paliers from anon, authenticated;
+
+-- L'XP pour passer du niveau n au suivant (xpRequis).
+create or replace function public.xp_requis(n int) returns integer
+language sql immutable as $$ select least(100 + 25 * (n - 1), 1100); $$;
+
+-- Le niveau d'un total d'XP (niveauDe).
+create or replace function public.niveau_de(xp int) returns integer
+language plpgsql immutable as $$
+declare v_n int := 1; reste int := greatest(0, coalesce(xp, 0));
+begin
+  while reste >= xp_requis(v_n) loop
+    reste := reste - xp_requis(v_n);
+    v_n := v_n + 1;
+  end loop;
+  return v_n;
+end $$;
+
+-- L'XP d'un combat (xpCombat) : contre l'IA, selon la difficulte (1 a 5) ;
+-- un defi entre amis a ses propres montants. Plus 4 par Joueur adverse
+-- vaincu, six au plus. Une defaite ne rapporte que si la partie a dure six
+-- tours : sinon, abandonner tout de suite rapporterait plus vite que jouer.
+drop function if exists public.xp_combat(text, int, boolean, int);
+create or replace function public.xp_combat(p_mode text, etoiles int, gagne boolean, vaincus int, tours int) returns integer
+language sql immutable as $$
+  select case when not gagne and coalesce(tours, 0) < 6 then 0
+    else (case when p_mode = 'defi' then case when gagne then 80 else 35 end
+              else round((case when gagne then 50 else 20 end)
+                         * (array[0.6, 0.8, 1, 1.25, 1.5])[least(5, greatest(1, coalesce(etoiles, 3)))])::int end
+         + least(6, greatest(0, coalesce(vaincus, 0))) * 4) end;
+$$;
+
+-- Gagner de l'XP : chaque niveau franchi paie (50 Eclats, plus son palier ;
+-- apres 50, deux boosters tous les cinq niveaux). Les quetes « xp » avancent,
+-- les quetes « niveau » suivent le niveau atteint. Renvoie ce qu'il faut
+-- montrer en fin de combat.
+create or replace function public.gagner_xp(p uuid, d int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare avant int; apres int; total int; k int; pal niveau_paliers; paliers jsonb := '[]'::jsonb;
+        g_eclats int; g_boosters int;
+begin
+  if coalesce(d, 0) <= 0 then return null; end if;
+  update combat_joueurs set xp = xp + d where user_id = p returning xp into total;
+  if total is null then return null; end if;
+  avant := niveau_de(total - d);
+  apres := niveau_de(total);
+  for k in avant + 1 .. apres loop
+    select * into pal from niveau_paliers where niveau = k;
+    g_eclats := 50;
+    g_boosters := coalesce(pal.boosters, 0) + case when k > 50 and k % 5 = 0 then 2 else 0 end;
+    update profiles set shards = shards + g_eclats, boosters_bonus = boosters_bonus + g_boosters,
+                        fragments = fragments + coalesce(pal.fragments, 0)
+     where id = p;
+    if pal.cadre is not null then perform accorder(p, 'cadre', 1, pal.cadre); end if;
+    if pal.titre is not null then perform accorder(p, 'titre', 1, pal.titre); end if;
+    paliers := paliers || jsonb_build_object('niveau', k, 'eclats', g_eclats, 'boosters', g_boosters,
+      'fragments', coalesce(pal.fragments, 0), 'cadre', pal.cadre, 'titre', pal.titre);
+    pal := null;
+  end loop;
+  perform bump_quests(p, 'xp', d);
+  insert into quest_progress (user_id, quest_id, period_key, progress)
+  select p, q.id, period_key(q.scope), apres from quests q where q.metric = 'niveau'
+  on conflict (user_id, quest_id, period_key)
+    do update set progress = greatest(quest_progress.progress, excluded.progress)
+    where not quest_progress.claimed;
+  return jsonb_build_object('gagne', d, 'total', total, 'avant', avant, 'niveau', apres, 'paliers', paliers);
+end $$;
+
+revoke all on function public.xp_requis, public.niveau_de, public.xp_combat, public.gagner_xp
+  from public, anon, authenticated;
+
+
+-- #####################################################################
+-- ###  27_raid.sql
+-- ###  Version 3.0 : le Raid, un boss commun par saisons de deux semaines
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0 : le Raid
+--  A executer apres 26_niveaux.sql. Rejouable sans danger.
+--
+--  Un boss commun a tout le serveur, pour deux semaines : un « raid » (une
+--  « saison » dans les tables). Depuis la version 3.0.11, les raids se
+--  comptent depuis le premier jour du Choc des Sections (raid_ancre) : le
+--  raid 1 commence avec lui (The French Sorcerer), le raid 2 quatorze jours
+--  plus tard — depuis la 3.0.13, le lendemain de la fin du Choc, qui dure
+--  deux semaines (Le Marionnettiste) —, puis les deux boss alternent
+--  (raid_boss). La page ne nomme un boss qu'a son arrivee (le proprietaire,
+--  1er novembre 2026 : « juste le fait que les raids sont periodiques »). Avant, ils se comptaient depuis
+--  le 12 octobre 2026, et le premier raid du Choc s'appelait « saison 2 ».
+--  Chaque raid, six phases : chaque PV qu'un joueur prend au boss en combat
+--  s'ajoute aux degats de tout le serveur, et chaque palier de degats
+--  atteint abat une phase — tous ceux qui ont combattu dans le raid ouvrent
+--  alors son coffre commun. En plus, trois paliers personnels (les degats
+--  de chacun). Les six phases abattues (si le serveur y arrive), le mode
+--  Infini : un palier par joueur, qui monte a chaque victoire, pour le
+--  classement. Trois tentatives par jour. Au raid suivant, tout recommence.
+--  Le deck du boss se tire dans la page (deckBoss, js/combat/choc-data.js),
+--  le serveur dit lequel ; depuis la 3.0.14, il rejoue le combat
+--  (supabase/functions/combat-verifier) : les degats comptes sont ceux de la
+--  partie rejouee, pas ceux que la page annonce.
+--
+--  Pendant le Choc des Sections (25_choc.sql), un combat de Raid paie en
+--  Etincelles ; le reste du temps, en Eclats.
+--
+--  Il remplace le Raid par niveaux de la pre-build 3.0.5 (et le Raid a
+--  phases de calendrier d'avant) : leurs tables et fonctions sont
+--  supprimees plus bas.
+--
+--  Les chiffres sont aussi dans js/combat/choc-data.js (RAID) : les deux
+--  doivent rester d'accord.
+-- =====================================================================
+
+-- ============================================================ 1. reglage
+-- Les paliers sont calcules pour une dizaine de joueurs. `raid_echelle` les
+-- multiplie, sans rien redeployer :
+--   update public.parametres set raid_echelle = 0.5 where id = 1;
+alter table public.parametres add column if not exists raid_echelle numeric not null default 1
+  check (raid_echelle > 0);
+
+-- ============================================================ 2. tables
+-- Les anciens Raids : retires.
+drop function if exists public.raid_reclamer(int);
+drop function if exists public.raid_frapper(uuid, int);
+drop function if exists public.raid_pv(int);
+drop function if exists public.raid_combat(int);
+drop function if exists public.raid_coffre(int);
+drop table if exists public.raid_etat;
+drop table if exists public.raid_tombes;
+drop table if exists public.raid_joueurs;
+drop table if exists public.raid_frappes;
+drop table if exists public.raid_coffres;
+drop function if exists public.choc_avancer();
+drop function if exists public.choc_frapper(uuid, int);
+drop function if exists public.choc_pv_phase(int);
+drop table if exists public.choc_phases;
+drop table if exists public.choc_raid;
+drop table if exists public.choc_tombees;
+drop table if exists public.choc_tentatives;
+drop table if exists public.choc_prises;
+
+-- Les degats de tout le serveur, par saison.
+create table if not exists public.raid_saisons (
+  n      integer primary key,
+  degats integer not null default 0
+);
+-- Les phases abattues, et quand (pour le recap de l'evenement). Ce qui
+-- ouvre un coffre, c'est le seuil depasse (raid_phase).
+create table if not exists public.raid_tombees (
+  saison    integer not null,
+  phase     integer not null,
+  tombee_le timestamptz not null default now(),
+  primary key (saison, phase)
+);
+-- Ce que chaque joueur a fait dans une saison. `infini` (inutilise depuis la
+-- 3.0.15 : les paliers Infini sont communs, raid_infini) : le dernier palier
+-- Infini battu.
+create table if not exists public.raid_participants (
+  saison        integer not null,
+  user_id       uuid not null references public.profiles on delete cascade,
+  combats       integer not null default 0,
+  degats        integer not null default 0,
+  victoires     integer not null default 0,
+  infini        integer not null default 0,
+  infini_le     timestamptz,
+  primary key (saison, user_id)
+);
+-- Les coffres ouverts : communs (une phase) ou personnels (un palier).
+create table if not exists public.raid_pris (
+  saison  integer not null,
+  user_id uuid not null references public.profiles on delete cascade,
+  quoi    text not null check (quoi in ('commun', 'perso')),
+  n       integer not null,
+  pris_le timestamptz not null default now(),
+  primary key (saison, user_id, quoi, n)
+);
+create table if not exists public.raid_tentatives (
+  user_id uuid not null references public.profiles on delete cascade,
+  jour    date not null,
+  n       integer not null default 0,
+  primary key (user_id, jour)
+);
+
+alter table public.raid_saisons      enable row level security;
+alter table public.raid_tombees      enable row level security;
+alter table public.raid_participants enable row level security;
+alter table public.raid_pris         enable row level security;
+alter table public.raid_tentatives   enable row level security;
+revoke all on public.raid_saisons, public.raid_tombees, public.raid_participants, public.raid_pris,
+  public.raid_tentatives from anon, authenticated;
+
+-- ============================================================ 3. les regles
+-- Le premier jour du raid 1 : la date (heure de Paris) ou commence le Choc
+-- des Sections — la ligne `choc` que le Labo prend aussi (labo_evenement) ;
+-- sans elle, le lundi 12 octobre 2026 (RAID.saison.depart), comme avant la
+-- 3.0.11. Deplacer le Choc (Labo, ou a la main) deplace donc les raids : les
+-- degats deja inscrits restent sous leur numero.
+create or replace function public.raid_ancre() returns date
+language sql stable security definer set search_path = public as $$
+  select coalesce((select (e.debut at time zone 'Europe/Paris')::date from evenements e
+                    where e.code = 'choc' order by e.fin desc limit 1),
+                  date '2026-10-12');
+$$;
+-- Le raid d'un jour : quatorze jours chacun depuis l'ancre (RAID.saison) ;
+-- avant elle, le premier.
+create or replace function public.raid_saison(j date) returns integer
+language sql stable security definer set search_path = public as $$
+  select greatest(1, floor((j - raid_ancre()) / 14.0)::int + 1);
+$$;
+create or replace function public.raid_saison_debut(n int) returns date
+language sql stable security definer set search_path = public as $$
+  select raid_ancre() + (n - 1) * 14;
+$$;
+-- Le boss d'un raid (RAID.bosses) : The French Sorcerer (#116) les raids
+-- impairs, Le Marionnettiste (#121) les raids pairs.
+create or replace function public.raid_boss(n int) returns text
+language sql immutable as $$
+  select (array['c116', 'c121'])[1 + (greatest(1, n) - 1) % 2];
+$$;
+
+-- Les six phases (RAID.phases) : le seuil de degats, le combat, le coffre.
+-- Version 3.0.14 : les seuils refaits pour une dizaine de joueurs actifs
+-- (tools/equilibre-raid.js), et le coffre de la derniere phase, l'exploit :
+-- une Legendaire qui manque (accorder 'legendaire'), et le titre « Heros du
+-- Raid » (`bonus`). Version 3.0.16 (le proprietaire : « beaucoup trop
+-- complique […] facilite-le un chouille ») : les combats plus doux d'un cran,
+-- et les seuils un peu plus hauts (115 … 1 620) pour que la sixieme phase
+-- reste l'affaire du dernier jour (docs/economie-3.0.md, § 3).
+create or replace function public.raid_phases() returns jsonb
+language sql immutable as $$
+  select '[
+    {"seuil": 115,  "ia": 2, "pv": 5, "ess": 0, "commun": {"type": "boosters",   "montant": 2,   "titre": "2 boosters"}},
+    {"seuil": 290,  "ia": 2, "pv": 6, "ess": 0, "commun": {"type": "fragments",  "montant": 300, "titre": "300 Fragments"}},
+    {"seuil": 520,  "ia": 3, "pv": 6, "ess": 1, "commun": {"type": "boosters",   "montant": 3,   "titre": "3 boosters"}},
+    {"seuil": 810,  "ia": 3, "pv": 7, "ess": 1, "commun": {"type": "eclats",     "montant": 500, "titre": "500 Éclats"}},
+    {"seuil": 1150, "ia": 4, "pv": 7, "ess": 1, "commun": {"type": "boosters",   "montant": 5,   "titre": "5 boosters"}},
+    {"seuil": 1620, "ia": 4, "pv": 8, "ess": 2, "commun": {"type": "legendaire", "montant": 1,   "titre": "Une Légendaire",
+      "bonus": {"type": "titre", "montant": 1, "objet": "t_heros_raid", "titre": "le titre « Héros du Raid »", "court": "+ un titre"}}}
+  ]'::jsonb;
+$$;
+-- Les paliers personnels (RAID.perso).
+create or replace function public.raid_perso() returns jsonb
+language sql immutable as $$
+  select '[
+    {"seuil": 30,  "type": "boosters",  "montant": 1,   "titre": "1 booster"},
+    {"seuil": 80,  "type": "fragments", "montant": 300, "titre": "300 Fragments"},
+    {"seuil": 150, "type": "boosters",  "montant": 2,   "titre": "2 boosters"}
+  ]'::jsonb;
+$$;
+
+-- L'Infini (RAID.infini, version 3.0.15) : apres la sixieme phase, le boss
+-- revient plus fort, palier apres palier, et les paliers sont COMMUNS (le
+-- proprietaire, 2 novembre 2026 : « les paliers d'avancement doivent etre
+-- commun. le but est d'aller le plus loin tous ensemble, de se souder »).
+-- Chaque palier demande `pas` degats de plus a tout le serveur (a la vie du
+-- boss et a l'echelle, comme les phases) ; il tombe, et tous ceux qui ont
+-- combattu dans le raid ouvrent son coffre. La performance de chacun se lit
+-- au classement des degats. Avant la 3.0.15 : un palier par joueur.
+create or replace function public.raid_infini() returns jsonb
+language sql immutable as $$
+  select '{"pas": 250, "coffre": {"type": "boosters", "montant": 1, "titre": "1 booster"}}'::jsonb;
+$$;
+
+-- La vie d'un boss (RAID.bosses › vie, version 3.0.14) : ses seuils de
+-- phase sont multiplies par elle. Le Marionnettiste est plus dur a chaque
+-- combat ; avec moins de vie, le serveur l'abat au meme rythme que le Sorcier.
+create or replace function public.raid_vie(b text) returns numeric
+language sql immutable as $$
+  select case b when 'c121' then 0.8 else 1 end::numeric;
+$$;
+
+-- Le seuil d'une phase du raid `s`, a l'echelle du serveur et a la vie de
+-- son boss. (Avant la 3.0.14 : raid_seuil(k), sans le raid.)
+drop function if exists public.raid_seuil(int);
+-- Au-dela de 6 (3.0.15) : le palier Infini k - 6, `pas` degats plus loin
+-- que le precedent.
+create or replace function public.raid_seuil(k int, s int) returns integer
+language sql stable security definer set search_path = public as $$
+  select greatest(10, round((case when k <= 6 then ((raid_phases()->(k - 1))->>'seuil')::int
+                                  else ((raid_phases()->5)->>'seuil')::int + (k - 6) * (raid_infini()->>'pas')::int end)
+                            * raid_vie(raid_boss(s)) * (select raid_echelle from parametres where id = 1))::int);
+$$;
+
+-- La phase en cours d'une saison : la premiere dont le seuil n'est pas
+-- atteint. Au-dela de 6 : l'Infini, palier k - 6, le meme pour tout le
+-- serveur (3.0.15).
+create or replace function public.raid_phase(s int) returns integer
+language plpgsql stable security definer set search_path = public as $$
+declare d int := coalesce((select degats from raid_saisons where n = s), 0); k int := 1;
+begin
+  while k <= 1000 and d >= raid_seuil(k, s) loop k := k + 1; end loop;
+  return k;
+end $$;
+
+-- Le combat d'une cle : 'p3' (la phase 3) ou 'i5' (l'Infini, palier 5).
+-- RAID.infini : le boss a plus de PV et d'Essences, puis c'est le joueur
+-- qui a moins de PV. Le joueur part des 4 PV des regles officielles (3.0.12 ;
+-- 5 avant, ecrit ici jusqu'a la 3.0.14 — sans effet : seuls les PV du boss
+-- comptent les degats, et le combat se rebatit dans la page).
+create or replace function public.raid_combat(p_cle text) returns jsonb
+language plpgsql immutable as $$
+declare n int := greatest(1, coalesce(nullif(substr(p_cle, 2), '')::int, 1)); ph jsonb;
+begin
+  if left(p_cle, 1) = 'i' then
+    -- 3.0.16 : un palier Infini se joue comme la sixieme phase (RAID.infini).
+    return jsonb_build_object('infini', true, 'n', n, 'ia', 4, 'pv_boss', 8, 'ess', 2, 'pv_moi', 4);
+  end if;
+  ph := raid_phases()->(least(n, 6) - 1);
+  return jsonb_build_object('infini', false, 'n', n, 'ia', (ph->>'ia')::int, 'pv_boss', (ph->>'pv')::int,
+                            'ess', (ph->>'ess')::int, 'pv_moi', 4);
+end $$;
+
+-- ===================================================== 4. ouvrir, clore
+-- Appeles par combat_debut et combat_fin (23_combats.sql). `p_cle` : ce que
+-- la page a affiche (la phase, ou le palier Infini) — s'il a change
+-- entre-temps, on recharge.
+create or replace function public.raid_debut(p uuid, p_cle text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare j date := jour_paris(); s int := raid_saison(jour_paris()); ph int; attendu text; v_t int; c jsonb;
+begin
+  insert into raid_saisons (n) values (s) on conflict do nothing;
+  ph := raid_phase(s);
+  attendu := case when ph <= 6 then 'p' || ph else 'i' || (ph - 6) end;
+  if p_cle is distinct from attendu then
+    raise exception 'Le Raid a changé : recharge la page.';
+  end if;
+  insert into raid_tentatives (user_id, jour, n) values (p, j, 0) on conflict do nothing;
+  update raid_tentatives set n = n + 1 where user_id = p and jour = j and n < 3
+  returning raid_tentatives.n into v_t;
+  if v_t is null then raise exception 'Plus de tentative aujourd''hui : reviens demain.'; end if;
+  insert into raid_participants (saison, user_id) values (s, p) on conflict do nothing;
+  update raid_participants set combats = combats + 1 where saison = s and user_id = p;
+  c := raid_combat(attendu);
+  -- `boss` (3.0.14) : le deck adverse s'en deduit (deckBoss) ; le serveur
+  -- le garde pour rejouer le combat.
+  return jsonb_build_object('niveau', (c->>'ia')::int, 'phase', case when ph <= 6 then ph end,
+                            'graine', floor(random() * 4294967295)::bigint + 1, 'boss', raid_boss(s));
+end $$;
+
+-- Les degats : les PV pris au boss (plafonnes a ses PV + 1), ou tous et 3
+-- de plus s'il tombe. Ils s'ajoutent a ceux du serveur, et peuvent abattre
+-- une ou plusieurs phases — ou, apres la sixieme, des paliers Infini, communs
+-- eux aussi (3.0.15). Pendant le Choc : 3 Etincelles par degat, +15 s'il
+-- tombe. Sinon : 2 Eclats par degat, +15.
+create or replace function public.raid_fin(p uuid, o public.combats_ouverts, gagne boolean, res jsonb, trop boolean)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare s int := raid_saison(jour_paris()); c jsonb; pb int; d int; gain int; msg text := '';
+        avant int; apres int; k int;
+begin
+  -- Un combat abandonne (3.0.14) compte comme une defaite (ses degats
+  -- comptent), mais ne fait avancer aucune quete.
+  if not coalesce((res->>'abandon')::boolean, false) then perform bump_quests(p, 'raid', 1); end if;
+  if trop then
+    return jsonb_build_object('degats', 0, 'message', 'Combat trop court pour compter.');
+  end if;
+  c := raid_combat(o.cle);
+  pb := (c->>'pv_boss')::int;
+  d := least(pb + 1, greatest(0, coalesce((res->>'touches')::int, 0)));
+  if gagne then d := pb + 1 + 3; end if;
+  insert into raid_saisons (n) values (s) on conflict do nothing;
+  insert into raid_participants (saison, user_id) values (s, p) on conflict do nothing;
+  update raid_participants set degats = degats + d, victoires = victoires + case when gagne then 1 else 0 end
+   where saison = s and user_id = p;
+  avant := raid_phase(s);
+  update raid_saisons set degats = degats + d where n = s;
+  apres := raid_phase(s);
+  k := avant;
+  while k < apres loop
+    insert into raid_tombees (saison, phase) values (s, k) on conflict do nothing;
+    k := k + 1;
+  end loop;
+  if apres > avant then
+    msg := case when apres - 1 = 6 then 'Les six phases sont abattues : l''Infini commence, tous ensemble.'
+                when apres - 1 > 6 then 'Palier Infini ' || (apres - 7) || ' abattu : un coffre pour tous ceux qui ont combattu.'
+                else 'Phase ' || (apres - 1) || ' abattue : un coffre commun pour tous ceux qui ont combattu.' end;
+  end if;
+  if d = 0 and msg = '' then msg := 'Pas un PV de pris : il rira moins la prochaine fois.'; end if;
+  if not coalesce((res->>'abandon')::boolean, false) then
+    perform bump_quests(p, 'raid_degats', d);
+    if gagne then perform bump_quests(p, 'raid_victoires', 1); end if;
+  end if;
+  if evenement_en_cours() = 'choc' then
+    gain := d * 3 + case when gagne then 15 else 0 end;
+    perform crediter_prismes(p, 'choc', gain);
+    insert into choc_joueurs (user_id, degats, victoires) values (p, d, case when gagne then 1 else 0 end)
+      on conflict (user_id) do update set degats = choc_joueurs.degats + d,
+                                          victoires = choc_joueurs.victoires + excluded.victoires;
+    return jsonb_build_object('insignes', gain, 'degats', d, 'message', msg);
+  end if;
+  gain := d * 2 + case when gagne then 15 else 0 end;
+  update profiles set shards = shards + gain where id = p;
+  return jsonb_build_object('eclats', gain, 'degats', d, 'message', msg);
+end $$;
+
+-- ===================================================== 5. ce que voit la page
+-- Un raid vu par un joueur : son boss, les phases (abattues, coffre pris ou
+-- pas), ses paliers personnels.
+create or replace function public.raid_vue_saison(p uuid, s int) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare moi raid_participants; d int := coalesce((select degats from raid_saisons where n = s), 0);
+begin
+  select * into moi from raid_participants where saison = s and user_id = p;
+  return jsonb_build_object(
+    'n', s, 'boss', raid_boss(s), 'debut', raid_saison_debut(s), 'fin', raid_saison_debut(s + 1), 'degats', d,
+    'phase', raid_phase(s),
+    -- Le tronçon en cours (une phase ou un palier Infini) : de `depuis` a
+    -- `cible` degats.
+    'depuis', case when raid_phase(s) > 1 then raid_seuil(raid_phase(s) - 1, s) else 0 end,
+    'cible', raid_seuil(raid_phase(s), s),
+    -- L'Infini (3.0.15) : ses paliers abattus, coffre ouvert ou pas.
+    'infini', jsonb_build_object(
+      'coffre', raid_infini()->'coffre',
+      'paliers', coalesce((select jsonb_agg(jsonb_build_object('n', k - 6, 'seuil', raid_seuil(k, s),
+          'pris', exists (select 1 from raid_pris r where r.saison = s and r.user_id = p and r.quoi = 'commun' and r.n = k)) order by k)
+        from generate_series(7, raid_phase(s) - 1) k), '[]'::jsonb)),
+    'phases', (select jsonb_agg(x.ph || jsonb_build_object(
+                 'n', x.k, 'seuil', raid_seuil(x.k::int, s),
+                 -- Abattue : les degats du serveur ont passe son seuil (meme si
+                 -- raid_echelle a baisse entre-temps).
+                 'tombee', d >= raid_seuil(x.k::int, s),
+                 'pris', exists (select 1 from raid_pris r where r.saison = s and r.user_id = p and r.quoi = 'commun' and r.n = x.k))
+               order by x.k)
+               from jsonb_array_elements(raid_phases()) with ordinality as x(ph, k)),
+    'moi', jsonb_build_object(
+      'participe', moi.user_id is not null, 'combats', coalesce(moi.combats, 0),
+      'degats', coalesce(moi.degats, 0), 'victoires', coalesce(moi.victoires, 0),
+      'perso', (select jsonb_agg(x.pa || jsonb_build_object(
+                   'n', x.k, 'pris', exists (select 1 from raid_pris r where r.saison = s and r.user_id = p and r.quoi = 'perso' and r.n = x.k))
+                 order by x.k)
+                 from jsonb_array_elements(raid_perso()) with ordinality as x(pa, k))));
+end $$;
+
+create or replace function public.raid_etat() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); j date := jour_paris(); s int := raid_saison(jour_paris()); v jsonb; prec jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  v := raid_vue_saison(p, s);
+  -- Le raid d'avant, si on y a laisse des coffres : ils s'ouvrent encore.
+  prec := raid_vue_saison(p, s - 1);
+  return v || jsonb_build_object(
+    'jour', j,
+    'joueurs', (select count(*) from raid_participants where saison = s and combats > 0),
+    'evenement', evenement_en_cours() is not distinct from 'choc',
+    'tentatives', coalesce((select n from raid_tentatives where user_id = p and jour = j), 0),
+    'max', 3,
+    'precedente', case when (prec->'moi'->>'participe')::boolean then prec end,
+    'top', coalesce((
+      select jsonb_agg(choc_joueur_vue(x.user_id) || jsonb_build_object('degats', x.degats, 'moi', x.user_id = p)
+                       order by x.degats desc)
+        from (select * from raid_participants where saison = s and degats > 0 order by degats desc limit 10) x), '[]'::jsonb),
+    -- Son rang aux degats, s'il n'est pas dans les dix (3.0.15).
+    'rang', (select 1 + count(*) from raid_participants x where x.saison = s
+              and x.degats > coalesce((select degats from raid_participants where saison = s and user_id = p), 0)));
+end $$;
+
+-- Un coffre : commun (une phase abattue, pour qui a combattu dans le raid)
+-- ou personnel (un palier de ses degats). Le raid en cours ou le precedent.
+-- Version 3.0.14 : un coffre peut donner un objet (`objet`) et un second
+-- present (`bonus` : le titre du dernier).
+create or replace function public.raid_reclamer(p_saison int, p_quoi text, p_n int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid(); s int := raid_saison(jour_paris()); moi raid_participants; c jsonb; cartes jsonb;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if p_saison is null or p_saison not in (s, s - 1) then raise exception 'Ce raid est terminé.'; end if;
+  select * into moi from raid_participants where saison = p_saison and user_id = p;
+  if moi.user_id is null or moi.combats < 1 then raise exception 'Tu n''as pas combattu dans ce raid.'; end if;
+  if p_quoi = 'commun' then
+    -- 1 a 6 : une phase ; au-dela, un palier Infini (n - 6), commun aussi.
+    if p_n is null or p_n not between 1 and 1000 then raise exception 'Phase inconnue.'; end if;
+    if raid_phase(p_saison) <= p_n then
+      raise exception 'Cette phase n''est pas encore abattue.';
+    end if;
+    c := case when p_n <= 6 then (raid_phases()->(p_n - 1))->'commun' else raid_infini()->'coffre' end;
+  elsif p_quoi = 'perso' then
+    if p_n is null or p_n not between 1 and 3 then raise exception 'Palier inconnu.'; end if;
+    c := raid_perso()->(p_n - 1);
+    if moi.degats < (c->>'seuil')::int then raise exception 'Palier pas encore atteint.'; end if;
+  else
+    raise exception 'Coffre inconnu.';
+  end if;
+  insert into raid_pris (saison, user_id, quoi, n) values (p_saison, p, p_quoi, p_n) on conflict do nothing;
+  if not found then raise exception 'Coffre déjà ouvert.'; end if;
+  cartes := accorder(p, c->>'type', (c->>'montant')::int, c->>'objet');
+  if c ? 'bonus' then
+    cartes := cartes || accorder(p, c->'bonus'->>'type', (c->'bonus'->>'montant')::int, c->'bonus'->>'objet');
+  end if;
+  return jsonb_build_object('cartes', cartes, 'etat', me());
+end $$;
+
+-- ============================================================ 6. droits
+revoke all on function public.raid_ancre, public.raid_saison, public.raid_saison_debut, public.raid_boss,
+  public.raid_phases, public.raid_perso, public.raid_vie, public.raid_infini,
+  public.raid_seuil, public.raid_phase, public.raid_combat, public.raid_debut, public.raid_fin,
+  public.raid_vue_saison from public, anon, authenticated;
+revoke all on function public.raid_etat, public.raid_reclamer from public, anon;
+grant execute on function public.raid_etat, public.raid_reclamer to authenticated;
+
+
+-- #####################################################################
+-- ###  28_maitrise.sql
+-- ###  Version 3.0.7 : la maitrise des cartes, et la carte fetiche
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0.7 : la maitrise des cartes, et la carte
+--  fetiche. A executer apres 27_raid.sql. Rejouable sans danger.
+--
+--  Ce que deviennent les Fragments quand la collection est complete : une
+--  carte qu'on possede s'ameliore, en cinq niveaux (Eclat, Lisere, Aura,
+--  Arene, Legende), et chaque niveau change son allure partout ou elle
+--  apparait, en combat compris (js/maitrise.js, css/maitrise.css).
+--
+--  Ce que coute un niveau (version 3.0.13, docs/economie-3.0.md partie 3 ter).
+--  Le proprietaire, le 31 octobre 2026 : « Il faut un certain nombre
+--  d'exemplaire et de fragments pour monter le niveau, et ce nombre
+--  d'exemplaire et de fragments depend de la rarete. Il n'est pas possible
+--  de compenser un manque d'exemplaire avec des fragments. Quand tu montes
+--  la mastery, les exemplaires sont CONSOMMES. Il faut que monter la mastery
+--  soit une tache ardue, c'est un peu l'endgame du jeu. »
+--    · des Fragments : une base selon la rarete, fois 1, 2, 4, 7 et 11
+--      (25 fois la base pour la Legende) :
+--          Commune       80    160    320    560    880   =  2 000
+--          Peu commune  120    240    480    840  1 320   =  3 000
+--          Rare         250    500  1 000  1 750  2 750   =  6 250
+--          Epique       500  1 000  2 000  3 500  5 500   = 12 500
+--          Legendaire,  800  1 600  3 200  5 600  8 800   = 20 000
+--          Secrete
+--    · des exemplaires de la carte, CONSOMMES, d'autant moins que la carte
+--      est rare (au moins un a chaque niveau) :
+--          Commune                2  3  4  5  6   (20)
+--          Peu commune            2  2  3  4  5   (16)
+--          Rare                   1  2  2  3  4   (12)
+--          Epique                 1  1  2  2  3   ( 9)
+--          Legendaire             1  1  1  2  2   ( 7)
+--          Secrete                1  1  1  1  1   ( 5)
+--    Avant la 3.0.13, un exemplaire qui manquait se remplacait par son prix
+--    de fabrication : ce n'est plus possible, le niveau attend.
+--
+--  Le conflit avec les decks (trois exemplaires pour jouer une carte trois
+--  fois, regles officielles depuis la 3.0.12) : la maitrise ne prend que
+--  les exemplaires EN TROP — au-dela de ce qu'un deck peut contenir
+--  (limite_copies, 23_combats.sql), au-dela de ce que le joueur garde
+--  (garde_de, 22_garder.sql), hors de ce qui est promis dans un echange en
+--  attente. Seuls les exemplaires de la carte classique comptent (pas ceux
+--  de sa Reverse).
+--
+--  La maitrise vaut pour la carte (toutes ses copies) ; sa Reverse la
+--  partage — elle se range sous la carte classique (cle_copie). Ni les
+--  Essences, ni les Promos (sauf les Secretes), ni les Essences Brillantes,
+--  ni l'Unique.
+--
+--  Les montants sont aussi dans le navigateur (MAITRISE, js/maitrise.js),
+--  qui affiche le cout ; le serveur revérifie tout.
+-- =====================================================================
+
+create table if not exists public.maitrises (
+  user_id uuid not null references public.profiles on delete cascade,
+  card_id text not null references public.cards on delete cascade,
+  niveau  smallint not null check (niveau between 1 and 5),
+  le      timestamptz not null default now(),
+  primary key (user_id, card_id)
+);
+alter table public.maitrises enable row level security;
+revoke all on public.maitrises from anon, authenticated;
+
+-- Le journal : ce que chaque niveau a pris. Il sert a repondre a « j'ai
+-- perdu des exemplaires » : la maitrise en absorbe.
+create table if not exists public.maitrises_journal (
+  id        bigint generated always as identity primary key,
+  user_id   uuid not null references public.profiles on delete cascade,
+  card_id   text not null references public.cards on delete cascade,
+  niveau    smallint not null,
+  fragments integer not null,
+  copies    integer not null,
+  le        timestamptz not null default now()
+);
+create index if not exists maitrises_journal_user_idx on public.maitrises_journal (user_id, le desc);
+alter table public.maitrises_journal enable row level security;
+revoke all on public.maitrises_journal from anon, authenticated;
+
+-- La carte fetiche : une carte possedee, mise en scene sur le profil.
+alter table public.profiles add column if not exists fetiche text references public.cards on delete set null;
+
+-- Les Fragments du niveau n (1 a 5), selon la rarete : la base de la rarete,
+-- fois 1, 2, 4, 7, 11. Version 3.0.8 : la base depend de la rarete (avant,
+-- 300 a 6 000 pour toutes) ; 3.0.13 : bases relevees d'un tiers.
+drop function if exists public.maitrise_fragments(int);
+create or replace function public.maitrise_fragments(rar text, n int) returns integer
+language sql immutable as $$
+  select (case rar when 'C' then 80 when 'PC' then 120 when 'R' then 250 when 'E' then 500
+                   when 'L' then 800 when 'S' then 800 else 0 end)
+         * coalesce((array[1, 2, 4, 7, 11])[n], 0)
+$$;
+
+-- Les exemplaires que consomme le niveau n, selon la rarete (3.0.13).
+-- Version 3.0.14 (le proprietaire, 1er novembre 2026 : « 2 ans pour maxer
+-- une secrete c'est un peu too much ») : une Legendaire en consomme 5 (au
+-- lieu de 7), une Secrete 2, aux niveaux I et V — une Secrete precise sort
+-- environ une fois tous les 111 jours a six boosters par jour : chaque
+-- exemplaire demande y pese plus que tous les Fragments. Simulation
+-- (tools/equilibre-maitrise.py, docs/economie-3.0.md 3 ter) : un joueur
+-- regulier, collection complete, mene une Epique en Legende en 3 mois, une
+-- Legendaire en 4 et demi, une Secrete en 6 (mediane).
+create or replace function public.maitrise_copies(rar text, n int) returns integer
+language sql immutable as $$
+  select coalesce((case rar
+    when 'C'  then array[2, 3, 4, 5, 6]
+    when 'PC' then array[2, 2, 3, 4, 5]
+    when 'R'  then array[1, 2, 2, 3, 4]
+    when 'E'  then array[1, 1, 2, 2, 3]
+    when 'L'  then array[1, 1, 1, 1, 1]
+    when 'S'  then array[1, 0, 0, 0, 1]
+  end)[n], 0)
+$$;
+
+-- La carte qui porte la maitrise (une Reverse : sa carte classique), si
+-- elle se maitrise ; null sinon.
+create or replace function public.maitrise_carte(p_carte text) returns text
+language sql stable security definer set search_path = public as $$
+  select k.id from cards k
+   where k.id = (case when p_carte ~ '^r[0-9]' then 'c' || substr(p_carte, 2) else p_carte end)
+     and k.cat <> 'essence' and not k.reverse
+     and (not k.promo or k.secrete)
+     and k.rar in ('C', 'PC', 'R', 'E', 'L', 'S')
+$$;
+
+-- Ce que le joueur a maitrise, et sa carte fetiche : pour me().
+create or replace function public.maitrise_etat(p uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'niveaux', coalesce((select jsonb_object_agg(card_id, niveau) from maitrises where user_id = p), '{}'::jsonb),
+    'fetiche', (select fetiche from profiles where id = p))
+$$;
+
+-- La carte fetiche d'un joueur, pour sa fiche publique : la carte, et sa
+-- maitrise. Seulement s'il la possede encore — une carte echangee depuis
+-- disparait de son profil.
+create or replace function public.fetiche_de(u uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when pr.fetiche is null then null
+    when not exists (select 1 from collection c where c.user_id = u and c.card_id = pr.fetiche and c.qty > 0) then null
+    else jsonb_build_object('carte', pr.fetiche,
+      'niveau', coalesce((select m.niveau from maitrises m
+                           where m.user_id = u and m.card_id = maitrise_carte(pr.fetiche)), 0))
+    end
+    from profiles pr where pr.id = u
+$$;
+
+revoke all on function public.maitrise_fragments, public.maitrise_copies, public.maitrise_carte,
+  public.maitrise_etat, public.fetiche_de from public, anon, authenticated;
+
+-- ---------------------------------------------------------------- maitriser
+-- Le niveau suivant d'une carte. Rend me().
+create or replace function public.maitriser(p_carte text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  p uuid := auth.uid(); cid text; k cards; n int; possede int; reserve int; garde int; endeck int;
+  copies int; dispo int; total int; reste int;
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+
+  cid := maitrise_carte(p_carte);
+  if cid is null then
+    if not exists (select 1 from cards where id = p_carte) then raise exception 'Carte inconnue.'; end if;
+    raise exception 'Cette carte ne se maîtrise pas.';
+  end if;
+  select * into k from cards where id = cid;
+
+  -- Une maitrise a la fois par joueur : deux appuis partis ensemble ne
+  -- doivent pas payer deux fois le meme niveau, ni compter deux fois le
+  -- meme exemplaire.
+  select fragments into reste from profiles where id = p for update;
+
+  select qty into possede from collection where user_id = p and card_id = cid for update;
+  if coalesce(possede, 0) < 1 then raise exception 'Il faut posséder la carte pour la maîtriser.'; end if;
+
+  n := coalesce((select niveau from maitrises where user_id = p and card_id = cid), 0) + 1;
+  if n > 5 then raise exception 'Cette carte est déjà au niveau maximum.'; end if;
+
+  -- Les exemplaires en trop : au-dela d'un (la carte reste dans la
+  -- collection), de ceux qu'on garde (son reglage), de ceux que ses decks
+  -- utilisent (le plus qu'en contient un de ses decks : aucun ne doit
+  -- devenir injouable), et de ceux qu'on a promis dans un echange. Avant la
+  -- 3.0.14, la maitrise laissait toujours trois exemplaires (la limite d'un
+  -- deck), meme a qui ne la jouait dans aucun : une Secrete en demandait
+  -- huit, deux ans de boosters.
+  select count(*) into reserve from trades
+   where from_user = p and offer_card = cid and status = 'pending';
+  garde := garde_de(p, cid);
+  select coalesce(max(case when jsonb_typeof(d.cartes -> cid) = 'number' then (d.cartes ->> cid)::int end), 0)
+    into endeck from decks d where d.user_id = p;
+  dispo := greatest(0, possede - greatest(1, garde, endeck) - reserve);
+  copies := maitrise_copies(k.rar, n);
+  -- Version 3.0.13 : un exemplaire qui manque ne se paie plus en Fragments.
+  if dispo < copies then
+    raise exception 'Il faut % exemplaire% en trop de « % » : tu en as %.',
+      copies, case when copies > 1 then 's' else '' end, k.nom, dispo;
+  end if;
+  total := maitrise_fragments(k.rar, n);
+  if reste < total then raise exception 'Pas assez de Fragments : il en faut %.', total; end if;
+
+  update profiles set fragments = fragments - total where id = p;
+  update collection set qty = qty - copies where user_id = p and card_id = cid;
+  insert into maitrises (user_id, card_id, niveau) values (p, cid, n)
+    on conflict (user_id, card_id) do update set niveau = excluded.niveau, le = now();
+  insert into maitrises_journal (user_id, card_id, niveau, fragments, copies)
+    values (p, cid, n, total, copies);
+  return me();
+end $$;
+
+-- ------------------------------------------------------------ la carte fetiche
+-- Une carte possedee, ou null pour la retirer. Rend me().
+create or replace function public.set_fetiche(p_carte text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := auth.uid();
+begin
+  if p is null then raise exception 'non connecte'; end if;
+  perform garde_beta();
+  if p_carte is not null and not exists (
+    select 1 from collection where user_id = p and card_id = p_carte and qty > 0) then
+    raise exception 'Tu ne possèdes pas cette carte.';
+  end if;
+  update profiles set fetiche = p_carte where id = p;
+  return me();
+end $$;
+
+revoke all on function public.maitriser, public.set_fetiche from public, anon;
+grant execute on function public.maitriser, public.set_fetiche to authenticated;
+
+
+-- #####################################################################
+-- ###  29_labo.sql
+-- ###  Version 3.0.10 : le Labo des administrateurs (le serveur, son compte)
+-- #####################################################################
+
+-- =====================================================================
+--  Mate TCG Online — version 3.0 : le Labo
+--  A executer apres 28_maitrise.sql. Rejouable sans danger.
+--
+--  Ce qu'un administrateur regle lui-meme, pour de vrai, depuis l'onglet
+--  Labo (js/lab.js). Chaque fonction verifie le droit (labo_garde) : cacher
+--  l'onglet ne suffirait pas, c'est le serveur qui refuse.
+--
+--  La base de la 3.0 sera celle de la 2.5, qui a deja un Labo
+--  (supabase/22d_admin.sql de la branche version-2.5). Ce fichier le
+--  remplace : memes noms et memes arguments quand le geste est le meme
+--  (PostgreSQL refuse de renommer un argument), et il retire ce qui n'a plus
+--  d'objet en 3.0 (le calendrier de la 2.5, les outils de L'Echauffement).
+--  La table des sauvegardes est la meme : une sauvegarde faite en 2.5 se
+--  restaure en 3.0 (ce qu'elle ne contient pas reste tel quel).
+--
+--   Le serveur, pour tout le monde :
+--     labo_etat()                    ce qui est en vigueur
+--     labo_evenement(etat, n)        le Choc des Sections dans un etat coherent :
+--                                      'avant'  il commence dans n minutes ;
+--                                      'jour'   il en est a son n-ieme jour (1 a 21) ;
+--                                      'recap'  il est fini, son recap court ;
+--                                      'fini'   son recap aussi est fini.
+--                                    Les autres evenements (Reflets) sont clos.
+--     labo_decaler(heures)           avancer (positif) ou reculer le Choc
+--     labo_evenement_raz('EFFACER')  effacer ce que tout le monde a fait pendant
+--                                    le Choc (les gains deja verses restent)
+--     labo_reverses(ouvertes)        ouvrir ou fermer les Reverses a la main
+--     labo_raid(phase)               le raid en cours a la phase dite
+--                                    (7 : les six abattues, l'Infini)
+--     labo_raid_echelle(x)           l'echelle des seuils du Raid
+--     labo_raid_raz('EFFACER')       le raid en cours a zero
+--   Son propre compte :
+--     labo_cartes(quoi)              'master', 'classiques', 'combat', 'maitrise', 'vider'
+--     labo_monnaies(valeurs)         Eclats, Fragments, boosters en plus, reserve,
+--                                    monnaie de l'evenement, niveau de combattant
+--     labo_cosmetiques(ids)          cadres, titres, tapis, sleeves
+--     labo_combats_moi(action, v)    sa Section, sa campagne, ses essais et
+--                                    plafonds du jour, ses maitrises
+--     labo_sauver(), labo_restaurer()  mettre son compte de cote, le remettre
+--     labo_raz_moi()                 repartir de zero, comme un nouveau joueur
+--
+--  Rien de ce qui touche son compte ne verse de recompense : poser un niveau
+--  ne paie pas ses paliers, finir la campagne ne donne pas la Promo de
+--  l'autre Section. Un apercu sans rien changer reste dans le navigateur
+--  (onglet Apercus du Labo).
+-- =====================================================================
+
+-- Ce que la 2.5 avait et que la 3.0 n'a plus (22d_admin.sql de la 2.5).
+drop function if exists public.labo_calendrier(text, integer);
+drop function if exists public.labo_ech_raz(text);
+drop function if exists public.labo_ech_moi(text, integer, integer);
+drop function if exists public.calendrier_officiel_poser();
+drop function if exists public.poser_calendrier(timestamptz, timestamptz, timestamptz, timestamptz, timestamptz, timestamptz);
+drop function if exists public.calendrier_officiel();
+-- Le mode sans fin de L'Echauffement (22f_sans-fin.sql de la 2.5 : un defi par
+-- jour, sans date de fin, « en attendant la 3.0 ») s'arrete avec elle : sans
+-- ces trois appels, il continuerait de verser des Eclats a qui l'appelle a la
+-- main. Ses tables restent (ech_sf_*, l'historique) ; « repartir de zero » et
+-- les deux remises a zero les vident. Le declencheur qui calait la ligne de
+-- l'evenement sur la saison (22e de la 2.5) part avec sa fonction.
+drop function if exists public.ech_sf_etat();
+drop function if exists public.ech_sf_commencer(jsonb);
+drop function if exists public.ech_sf_terminer(bigint, jsonb);
+drop function if exists public.ech_sf_etat_de(uuid);
+drop function if exists public.ech_sf_essais_du_jour(uuid, date);
+drop function if exists public.ech_sf_niveau(date);
+drop function if exists public.ech_sf_defi(date);
+drop function if exists public.ech_sf_ordre(date);
+drop function if exists public.ech_sf_premier();
+drop function if exists public.ech_saison_evenement() cascade;
 
 -- Une sauvegarde par administrateur : son compte tel qu'il etait.
 create table if not exists public.labo_sauvegardes (
@@ -5117,130 +6905,148 @@ begin
   return p;
 end $$;
 
--- ------------------------------------------------------ le calendrier officiel
--- Heure de Paris : vendredi 23 octobre minuit (heure d'ete), dimanche 25
--- minuit (heure d'hiver, apres le changement d'heure), mercredi 4 novembre.
-create or replace function public.calendrier_officiel() returns jsonb
-language sql stable as $$
-  select jsonb_build_object(
-    'reflets_fin',  timestamptz '2026-10-24 00:00:00+02',
-    'recap_jusqua', timestamptz '2026-10-26 00:00:00+01',
-    'saison_debut', timestamptz '2026-10-26 00:00:00+01',
-    'saison_fin',   timestamptz '2026-11-04 00:00:00+01',
-    'reverses_des', timestamptz '2026-10-26 00:00:00+01',
-    'sortie_25',    timestamptz '2026-10-26 00:00:00+01',
-    -- Pour la frise du Labo : la fin du recap de L'Echauffement (trois jours
-    -- apres la saison, 22e_echauffement-evenement.sql).
-    'ech_recap',    timestamptz '2026-11-07 00:00:00+01')
-$$;
-
--- Poser tout le calendrier d'un coup : la fin de Reflets et de son recap,
--- la saison de L'Echauffement, l'ouverture des Reverses (et plus
--- d'ouverture a la main), la sortie de la 2.5.
-create or replace function public.poser_calendrier(p_reflets_fin timestamptz, p_recap timestamptz,
-  p_saison timestamptz, p_saison_fin timestamptz, p_reverses timestamptz, p_sortie timestamptz)
-returns void language plpgsql security definer set search_path = public as $$
-begin
-  update evenements
-     set debut = least(debut, p_reflets_fin - interval '1 day'), fin = p_reflets_fin, recap_jusqua = p_recap
-   where code = 'reflets';
-  insert into ech_saison (id, debut, fin) values (1, p_saison, p_saison_fin)
-    on conflict (id) do update set debut = excluded.debut, fin = excluded.fin;
-  update parametres
-     set reverses_des = p_reverses, fabrication_reverse = false,
-         sorties = sorties || jsonb_build_object('2.5', p_sortie)
-   where id = 1;
-end $$;
-
-create or replace function public.calendrier_officiel_poser() returns void
-language plpgsql security definer set search_path = public as $$
-declare o jsonb := calendrier_officiel();
-begin
-  perform poser_calendrier((o->>'reflets_fin')::timestamptz, (o->>'recap_jusqua')::timestamptz,
-    (o->>'saison_debut')::timestamptz, (o->>'saison_fin')::timestamptz,
-    (o->>'reverses_des')::timestamptz, (o->>'sortie_25')::timestamptz);
-end $$;
-
 -- ------------------------------------------------------------ l'etat du jeu
 create or replace function public.labo_etat() returns jsonb
 language plpgsql stable security definer set search_path = public as $$
-declare p uuid := labo_garde();
+declare p uuid := labo_garde(); sa int := raid_saison(jour_paris());
 begin
   return jsonb_build_object(
     'serveur', now(),
-    'officiel', calendrier_officiel(),
-    'reflets', (select jsonb_build_object('debut', e.debut, 'fin', e.fin,
-                         'recap_jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'))
-                  from evenements e where e.code = 'reflets' order by e.fin desc limit 1),
-    'sortie', (select sorties -> '2.5' from parametres where id = 1),
-    'saison', (select jsonb_build_object('debut', s.debut, 'fin', s.fin, 'ouvert', ech_jour_ouvert())
-                 from ech_saison s where s.id = 1),
-    -- L'evenement L'Echauffement (22e_echauffement-evenement.sql) : la fin de
-    -- son recap ; et le mode sans fin (22f_sans-fin.sql) : l'adversaire du jour.
-    'ech_recap', (select coalesce(e.recap_jusqua, e.fin + interval '3 days') from evenements e
-                   where e.code = 'echauffement' order by e.fin desc limit 1),
-    'sans_fin', (select jsonb_build_object('ordre', ech_sf_ordre(j), 'niveau', ech_sf_niveau(j),
-                          'adversaire', (ech_sf_defi(j)).adversaire, 'titre', (ech_sf_defi(j)).titre,
-                          'joueurs', (select count(distinct user_id) from ech_sf_essais),
-                          'gagnes', (select count(*) from ech_sf_scores where jour = j and etoiles > 0))
-                   from (select (now() at time zone 'Europe/Paris')::date as j) x),
+    'choc', (select jsonb_build_object('debut', e.debut, 'fin', e.fin,
+                       'recap_jusqua', coalesce(e.recap_jusqua, e.fin + interval '3 days'))
+               from evenements e where e.code = 'choc' order by e.fin desc limit 1),
+    'en_cours', evenement_en_cours(),
+    'recent', evenement_recent(),
+    'participation', jsonb_build_object(
+      'joueurs', (select count(*) from evt_comptes where evenement = 'choc' and total > 0),
+      'etincelles', (select coalesce(sum(total), 0) from evt_comptes where evenement = 'choc'),
+      'epreuves', (select count(*) from choc_epreuves),
+      'gagnees', (select count(*) from choc_epreuves where gagnee),
+      'raid', (select coalesce(sum(degats), 0) from choc_joueurs)),
+    'raid', jsonb_build_object(
+      'saison', sa, 'boss', raid_boss(sa), 'debut', raid_saison_debut(sa), 'fin', raid_saison_debut(sa + 1),
+      'degats', coalesce((select degats from raid_saisons where n = sa), 0),
+      'phase', raid_phase(sa),
+      'seuils', (select jsonb_agg(raid_seuil(k, sa) order by k) from generate_series(1, 6) k),
+      'echelle', (select raid_echelle from parametres where id = 1),
+      'joueurs', (select count(*) from raid_participants where saison = sa and combats > 0)),
     'reverses', (select jsonb_build_object('des', reverses_des, 'manuel', fabrication_reverse,
                           'ouvertes', reverses_ouvertes())
                    from parametres where id = 1),
+    'sections', (select jsonb_build_object('toxique', count(*) filter (where section = 'toxique'),
+                                           'deter', count(*) filter (where section = 'deter'))
+                   from combat_joueurs),
     'chasse', chasse_etat(),
     'recharge', jsonb_build_object('minutes', minutes_recharge(), 'cap', cfg('ticket_cap')),
     'recharges', coalesce((select jsonb_agg(jsonb_build_object('titre', e.titre, 'debut', e.debut, 'fin', e.fin,
                                    'minutes', e.ticket_minutes) order by e.debut)
                              from evenements e where e.code is null and e.fin > now()), '[]'::jsonb),
-    'echauffement', ech_admin(),
     'joueurs', (select count(*) from profiles),
-    'sauvegarde', (select jsonb_build_object('le', s.le, 'cartes', jsonb_array_length(s.contenu -> 'collection'))
-                     from labo_sauvegardes s where s.user_id = p));
+    -- La maintenance (3.0.12, 01_schema.sql).
+    'maintenance', (select jsonb_build_object('actif', maintenance_active(), 'message', m.message, 'fin', m.fin,
+                                              'auto', m.fin_auto, 'depuis', m.depuis, 'par', m.par)
+                      from maintenance m where m.id = 1),
+    'sauvegarde', (select jsonb_build_object('le', s.le, 'version', coalesce(s.contenu ->> 'version', '2.5'),
+                            'cartes', jsonb_array_length(coalesce(s.contenu -> 'collection', '[]'::jsonb)))
+                     from labo_sauvegardes s where s.user_id = p),
+    -- Les combats que le serveur n'a pas pu verifier (3.0.14, 23_combats.sql :
+    -- combat_refuse) : les vingt derniers, et combien en trente jours.
+    'refuses', jsonb_build_object(
+      'n30', (select count(*) from combats_refuses r where r.le > now() - interval '30 days'),
+      'liste', coalesce((select jsonb_agg(x order by x.le desc) from (
+        select r.le, pr.pseudo joueur, r.mode, r.cle, r.raison, r.coup
+          from combats_refuses r left join profiles pr on pr.id = r.user_id
+         order by r.le desc limit 20) x), '[]'::jsonb)));
 end $$;
 
--- ------------------------------------------------------- naviguer les etats
-create or replace function public.labo_calendrier(p_etat text, p_n integer default null) returns jsonb
+-- ------------------------------------------------- le Choc des Sections
+-- Deux semaines, comme a son ouverture (fin de 25_choc.sql ; trois jusqu'a
+-- la 3.0.12). La ligne est creee si la base n'en a pas encore. Version
+-- 3.0.11 : un jour n commence a minuit, heure de Paris (n-1 jours avant
+-- aujourd'hui), comme le conseille 25_choc.sql — l'Epreuve est la n-ieme
+-- (choc_etat › n), et le raid du jour suit (raid_ancre, 27_raid.sql : le
+-- lendemain de la fin, le raid 2). Version 3.0.13 : la fin tombe a minuit,
+-- heure de Paris, quatorze dates plus tard ; avant, on ajoutait 14 × 24 h,
+-- et un Choc qui traversait le passage a l'heure d'hiver finissait a 23 h,
+-- une heure avant le raid suivant.
+create or replace function public.labo_evenement(p_etat text, p_n integer default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare d timestamptz; n int;
+declare d timestamptz; f timestamptz; n int; duree interval := interval '14 days'; id_choc bigint;
 begin
   perform labo_garde();
-  if p_etat = 'officiel' then
-    perform calendrier_officiel_poser();
-  elsif p_etat = 'avant' then
-    -- Le recap de Reflets court ; la 2.5 sort dans n minutes.
+  if p_etat = 'avant' then
     n := coalesce(p_n, 2);
     if n < 1 or n > 10080 then raise exception 'Entre 1 minute et 7 jours.'; end if;
     d := now() + make_interval(mins => n);
-    perform poser_calendrier(now() - interval '1 day', d, d, d + interval '9 days', d, d);
-  elsif p_etat in ('defi', 'rattrapage', 'fini', 'sans_fin') then
-    -- La 2.5 est sortie, au debut de la saison ; le recap avait dure deux jours.
-    -- 'sans_fin' : la saison est finie depuis n - 1 jours et une heure.
-    n := case p_etat when 'defi' then coalesce(p_n, 1) when 'rattrapage' then 8 when 'fini' then 10
-                     else 9 + coalesce(p_n, 4) end;
-    if p_etat = 'defi' and (n < 1 or n > 7) then raise exception 'Un défi de 1 à 7.'; end if;
-    if p_etat = 'sans_fin' and (n < 10 or n > 9 + 60) then raise exception 'Un jour de 1 à 60.'; end if;
-    d := now() - make_interval(days => n - 1) - interval '1 hour';
-    perform poser_calendrier(d - interval '2 days', d, d, d + interval '9 days', d, d);
+  elsif p_etat = 'jour' then
+    n := coalesce(p_n, 1);
+    if n < 1 or n > 14 then raise exception 'Un jour de 1 à 14.'; end if;
+    d := ((jour_paris() - (n - 1))::timestamp) at time zone 'Europe/Paris';
+    f := ((jour_paris() - (n - 1) + 14)::timestamp) at time zone 'Europe/Paris';
+  elsif p_etat = 'recap' then
+    -- Fini depuis une heure : le recap court encore pres de trois jours.
+    d := now() - duree - interval '1 hour';
+  elsif p_etat = 'fini' then
+    d := now() - duree - interval '4 days';
   else
     raise exception 'État inconnu.';
+  end if;
+  f := coalesce(f, d + duree);
+  -- Les autres evenements (Reflets) : clos, et leur recap aussi.
+  update evenements set fin = least(fin, now()), recap_jusqua = now()
+   where code is not null and code <> 'choc' and debut <= now()
+     and coalesce(recap_jusqua, fin + interval '3 days') > now();
+  select e.id into id_choc from evenements e where e.code = 'choc' order by e.fin desc limit 1;
+  if id_choc is null then
+    insert into evenements (titre, texte, debut, fin, code) values ('Le Choc des Sections',
+      'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.', d, f, 'choc');
+  else
+    update evenements set debut = d, fin = f, recap_jusqua = null,
+      texte = 'La version 3.0 : le Raid, un nouveau boss toutes les deux semaines, et l''Épreuve du jour.' where id = id_choc;
   end if;
   return labo_etat();
 end $$;
 
--- Avancer la saison de p_heures (24 : un defi de plus), ou la reculer.
+-- Avancer le Choc de p_heures (24 : un jour de plus), ou le reculer.
 create or replace function public.labo_decaler(p_heures integer) returns jsonb
 language plpgsql security definer set search_path = public as $$
+declare id_choc bigint;
 begin
   perform labo_garde();
   if p_heures is null or p_heures = 0 or abs(p_heures) > 336 then raise exception 'De 1 à 336 heures.'; end if;
-  update ech_saison set debut = debut - make_interval(hours => p_heures),
-                        fin = fin - make_interval(hours => p_heures)
-   where id = 1;
+  select e.id into id_choc from evenements e where e.code = 'choc' order by e.fin desc limit 1;
+  if id_choc is null then raise exception 'Pas de Choc à décaler : pose d''abord un état.'; end if;
+  update evenements set debut = debut - make_interval(hours => p_heures),
+                        fin = fin - make_interval(hours => p_heures),
+                        recap_jusqua = recap_jusqua - make_interval(hours => p_heures)
+   where id = id_choc;
   return labo_etat();
 end $$;
 
--- Les Reverses a la main : ouvertes tout de suite, ou fermees sans date (le
--- calendrier officiel remet la date).
+-- Effacer ce que tout le monde a fait pendant le Choc : l'Epreuve du jour,
+-- les degats comptes pour le recap, les Etincelles, le Pass et les quetes de
+-- l'evenement. Ce qui a ete verse (Eclats, boosters, cosmetiques) reste : on
+-- ne reprend rien a un joueur. Le Raid a sa propre remise a zero.
+create or replace function public.labo_evenement_raz(p_confirmation text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare a int; b int; c int; d int; e int;
+begin
+  perform labo_garde();
+  if p_confirmation is distinct from 'EFFACER' then raise exception 'Confirmation manquante.'; end if;
+  delete from choc_epreuves where true;
+  get diagnostics a = row_count;
+  delete from choc_joueurs where true;
+  get diagnostics b = row_count;
+  delete from evt_comptes where evenement = 'choc';
+  get diagnostics c = row_count;
+  delete from evt_piste_prises where evenement = 'choc';
+  get diagnostics d = row_count;
+  delete from quest_progress where quest_id in (select id from quests where evenement = 'choc');
+  get diagnostics e = row_count;
+  return jsonb_build_object('epreuves', a, 'raid', b, 'comptes', c, 'pass', d, 'quetes', e, 'etat', labo_etat());
+end $$;
+
+-- Les Reverses a la main : ouvertes tout de suite, ou fermees sans date.
 create or replace function public.labo_reverses(p_ouvertes boolean) returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
@@ -5253,48 +7059,87 @@ begin
   return labo_etat();
 end $$;
 
--- Remettre L'Echauffement a zero pour tout le monde. Ce qui a ete verse
--- (Eclats, boosters, titre) reste : on ne reprend rien a un joueur.
-create or replace function public.labo_ech_raz(p_confirmation text) returns jsonb
+-- ---------------------------------------------------------------- le Raid
+-- Le raid en cours a la phase p_phase : les degats du serveur sont poses
+-- au seuil de la phase d'avant (7 : les six abattues, l'Infini). Les coffres
+-- deja ouverts le restent.
+create or replace function public.labo_raid(p_phase integer) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare a int; b int; c int; a2 int; b2 int;
+declare sa int := raid_saison(jour_paris()); d int;
+begin
+  perform labo_garde();
+  -- 7 et plus (3.0.15) : l'Infini, palier p_phase - 6, commun a tout le serveur.
+  if p_phase is null or p_phase < 1 or p_phase > 20 then raise exception 'Une phase de 1 à 20 (7 et plus : l''Infini).'; end if;
+  d := case when p_phase = 1 then 0 else raid_seuil(p_phase - 1, sa) end;
+  insert into raid_saisons (n, degats) values (sa, d) on conflict (n) do update set degats = excluded.degats;
+  delete from raid_tombees where saison = sa and phase >= p_phase;
+  insert into raid_tombees (saison, phase) select sa, k from generate_series(1, p_phase - 1) k
+    on conflict do nothing;
+  return labo_etat();
+end $$;
+
+create or replace function public.labo_raid_echelle(p_echelle numeric) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  perform labo_garde();
+  if p_echelle is null or p_echelle < 0.05 or p_echelle > 20 then raise exception 'Une échelle de 0,05 à 20.'; end if;
+  update parametres set raid_echelle = p_echelle where id = 1;
+  return labo_etat();
+end $$;
+
+-- Le raid en cours a zero : les degats, les phases, la part de chacun, les
+-- coffres ouverts, les tentatives du jour. Ce qui a ete verse reste.
+create or replace function public.labo_raid_raz(p_confirmation text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare sa int := raid_saison(jour_paris()); a int; b int;
 begin
   perform labo_garde();
   if p_confirmation is distinct from 'EFFACER' then raise exception 'Confirmation manquante.'; end if;
-  delete from ech_essais where true;
+  delete from raid_participants where saison = sa;
   get diagnostics a = row_count;
-  delete from ech_scores where true;
+  delete from raid_pris where saison = sa;
   get diagnostics b = row_count;
-  delete from ech_paliers where true;
-  get diagnostics c = row_count;
-  -- Le mode sans fin (22f_sans-fin.sql).
-  delete from ech_sf_essais where true;
-  get diagnostics a2 = row_count;
-  delete from ech_sf_scores where true;
-  get diagnostics b2 = row_count;
-  return jsonb_build_object('essais', a + a2, 'notes', b + b2, 'paliers', c, 'etat', labo_etat());
+  delete from raid_tombees where saison = sa;
+  delete from raid_tentatives where jour = jour_paris();
+  update raid_saisons set degats = 0 where n = sa;
+  return jsonb_build_object('joueurs', a, 'coffres', b, 'etat', labo_etat());
 end $$;
 
 -- --------------------------------------------------------- son propre compte
--- Les cartes : le master set (tout le catalogue, sauf la carte unique, qui
--- n'existe qu'en un exemplaire), les 122, les Joueurs de L'Echauffement, ou
--- plus rien. Une carte deja la garde ses exemplaires.
+-- Les cartes, avec de quoi construire n'importe quel deck : autant
+-- d'exemplaires que la limite d'un deck (limite_copies, 23_combats.sql :
+-- deux, un pour une Legendaire, une Secrete, une Promo). Une carte deja la
+-- garde ses exemplaires en plus.
+--   master      tout le catalogue, sauf la carte unique (un seul exemplaire
+--               dans tout le jeu) ;
+--   classiques  les 122, un exemplaire ;
+--   combat      les Joueurs, Coachs, Moments et Objets des 122 ;
+--   maitrise    (3.0.13) chaque carte qui se maitrise, avec de quoi la mener
+--               en Legende : les trois d'un deck, plus tous les exemplaires
+--               que ses cinq niveaux consomment (de 8 a 23) ;
+--   vider       plus rien (et ses demandes d'echange en attente sont annulees).
 create or replace function public.labo_cartes(p_quoi text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := labo_garde();
 begin
   if p_quoi = 'vider' then
-    -- Ses demandes d'echange en attente n'ont plus d'objet.
     update trades set status = 'cancelled', resolved_at = now()
      where status = 'pending' and (from_user = p or to_user = p);
     delete from collection where user_id = p;
-  elsif p_quoi in ('master', 'classiques', 'joueurs') then
+  elsif p_quoi in ('master', 'classiques', 'combat') then
     insert into collection (user_id, card_id, qty)
-    select p, k.id, 1 from cards k
+    select p, k.id, case when p_quoi = 'classiques' then 1 else coalesce(limite_copies(k.id), 1) end
+      from cards k
      where case p_quoi when 'master' then k.rar <> 'UN'
                        when 'classiques' then not k.promo
-                       else k.id in (select card_id from ech_joueurs) end
-    on conflict (user_id, card_id) do update set qty = greatest(collection.qty, 1);
+                       else not k.promo and k.cat in ('joueur', 'coach', 'moment', 'objet') end
+    on conflict (user_id, card_id) do update set qty = greatest(collection.qty, excluded.qty);
+  elsif p_quoi = 'maitrise' then
+    insert into collection (user_id, card_id, qty)
+    select p, k.id, coalesce(limite_copies(k.id), 3) + (select sum(maitrise_copies(k.rar, n))::int from generate_series(1, 5) n)
+      from cards k
+     where maitrise_carte(k.id) = k.id
+    on conflict (user_id, card_id) do update set qty = greatest(collection.qty, excluded.qty);
   else
     raise exception 'Choix inconnu.';
   end if;
@@ -5304,19 +7149,25 @@ begin
 end $$;
 
 -- Les monnaies, posees a la valeur dite : eclats, fragments, boosters (en
--- plus, hors reserve), reserve, prismes (de l'evenement en cours, ou du
--- dernier). Une cle absente ne change rien.
+-- plus, hors reserve), reserve, prismes (la monnaie de l'evenement en cours,
+-- ou du dernier : les Etincelles du Choc), niveau (de combattant : l'XP est
+-- posee au debut du niveau, sans payer ses paliers). Une cle absente ne
+-- change rien.
 create or replace function public.labo_monnaies(p_valeurs jsonb) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := labo_garde(); k text; v numeric; lim numeric; ev text;
+declare p uuid := labo_garde(); k text; v numeric; lim numeric; bas numeric; ev text; niv int; xp_n int;
 begin
   if p_valeurs is null or jsonb_typeof(p_valeurs) <> 'object' then raise exception 'Valeurs invalides.'; end if;
   for k in select jsonb_object_keys(p_valeurs) loop
-    if k not in ('eclats', 'fragments', 'boosters', 'reserve', 'prismes') then raise exception 'Valeur inconnue : %.', k; end if;
+    if k not in ('eclats', 'fragments', 'boosters', 'reserve', 'prismes', 'niveau') then
+      raise exception 'Valeur inconnue : %.', k;
+    end if;
     if jsonb_typeof(p_valeurs -> k) <> 'number' then raise exception 'Un nombre est attendu.'; end if;
     v := (p_valeurs ->> k)::numeric;
-    lim := case k when 'reserve' then 99 when 'boosters' then 999 else 10000000 end;
-    if v < 0 or v > lim then raise exception 'Valeur hors limites : %.', k; end if;
+    -- (calculees avant le IF : un CASE dans sa condition trouble PL/pgSQL)
+    lim := case k when 'reserve' then 99 when 'boosters' then 999 when 'niveau' then 100 else 10000000 end;
+    bas := case k when 'niveau' then 1 else 0 end;
+    if v < bas or v > lim then raise exception 'Valeur hors limites : %.', k; end if;
   end loop;
   update profiles set
     shards         = coalesce(round((p_valeurs ->> 'eclats')::numeric)::int, shards),
@@ -5331,78 +7182,141 @@ begin
   if p_valeurs ? 'prismes' then
     ev := coalesce(evenement_en_cours(),
                    (select e.code from evenements e where e.code is not null order by e.fin desc limit 1));
-    if ev is null then raise exception 'Aucun événement : pas de Prismes à poser.'; end if;
+    if ev is null then raise exception 'Aucun événement : pas de monnaie d''événement à poser.'; end if;
     insert into evt_comptes (user_id, evenement, solde, total)
     values (p, ev, round((p_valeurs ->> 'prismes')::numeric)::int, round((p_valeurs ->> 'prismes')::numeric)::int)
     on conflict (user_id, evenement) do update
       set solde = excluded.solde, total = greatest(evt_comptes.total, excluded.solde);
   end if;
+  if p_valeurs ? 'niveau' then
+    niv := round((p_valeurs ->> 'niveau')::numeric)::int;
+    xp_n := (select coalesce(sum(xp_requis(x)), 0) from generate_series(1, niv - 1) x);
+    perform combat_joueur(p);
+    update combat_joueurs set xp = xp_n where user_id = p;
+    -- Les quetes « niveau » suivent, comme apres un combat (gagner_xp).
+    insert into quest_progress (user_id, quest_id, period_key, progress)
+    select p, q.id, period_key(q.scope), niv from quests q where q.metric = 'niveau'
+    on conflict (user_id, quest_id, period_key)
+      do update set progress = greatest(quest_progress.progress, excluded.progress)
+      where not quest_progress.claimed;
+  end if;
   return me();
 end $$;
 
--- Des cadres et des titres, par leur identifiant (le navigateur envoie ceux
--- de FRAMES et TITRES, js/config.js).
+-- Des cadres (f_…), des titres et des tapis (t_…), des sleeves (s_…), par
+-- leur identifiant : le navigateur envoie ceux de FRAMES, TITRES, TAPIS et
+-- SLEEVES.
 create or replace function public.labo_cosmetiques(p_ids text[]) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := labo_garde(); x text;
 begin
-  if p_ids is null or coalesce(array_length(p_ids, 1), 0) = 0 or array_length(p_ids, 1) > 200 then
+  if p_ids is null or coalesce(array_length(p_ids, 1), 0) = 0 or array_length(p_ids, 1) > 300 then
     raise exception 'Liste vide ou trop longue.';
   end if;
   foreach x in array p_ids loop
-    if x !~ '^[ft]_[a-z0-9_]{1,40}$' then raise exception 'Identifiant invalide : %.', x; end if;
+    if x !~ '^[fts]_[a-z0-9_]{1,40}$' then raise exception 'Identifiant invalide : %.', x; end if;
     insert into inventory (user_id, item_id, qty) values (p, x, 1)
       on conflict (user_id, item_id) do update set qty = greatest(inventory.qty, 1);
   end loop;
   return me();
 end $$;
 
--- L'Echauffement, sur son compte : ses etoiles a un defi (0 les efface),
--- ses essais du jour, ou tout. Rien n'est verse : c'est pour voir.
-create or replace function public.labo_ech_moi(p_action text, p_jour integer default null,
-  p_etoiles integer default null) returns jsonb
+-- Ses combats. Rien n'est verse : c'est pour voir et pour retester.
+--   section   'toxique', 'deter' (avec sa Promo, comme combat_section), ou
+--             null : choisir de nouveau depuis l'onglet Combats ;
+--   campagne  'finie' (les vingt combats gagnes) ou 'raz' ;
+--   jour      ses plafonds et ses essais du jour a zero : victoires payees,
+--             defis payes, tentatives du Raid, essais de l'Epreuve ;
+--   maitrises 'max' (toutes ses cartes au niveau 5) ou 'raz'.
+create or replace function public.labo_combats_moi(p_action text, p_valeur text default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := labo_garde();
 begin
-  if p_action = 'etoiles' then
-    if p_jour is null or p_jour < 1 or p_jour > 7 then raise exception 'Un défi de 1 à 7.'; end if;
-    if p_etoiles is null or p_etoiles < 0 or p_etoiles > 3 then raise exception 'De 0 à 3 étoiles.'; end if;
-    if p_etoiles = 0 then
-      delete from ech_scores where user_id = p and jour = p_jour;
-    else
-      insert into ech_scores (user_id, jour, etoiles, equipe, tours) values (p, p_jour, p_etoiles, '[]'::jsonb, 0)
-        on conflict (user_id, jour) do update set etoiles = excluded.etoiles, le = now();
+  perform combat_joueur(p);
+  if p_action = 'section' then
+    if p_valeur is not null and p_valeur not in ('toxique', 'deter') then raise exception 'Section inconnue.'; end if;
+    update combat_joueurs set section = p_valeur where user_id = p;
+    if p_valeur is not null then
+      insert into collection (user_id, card_id, qty)
+      values (p, case p_valeur when 'toxique' then 'p04' else 'p03' end, 1)
+        on conflict (user_id, card_id) do nothing;
     end if;
-  elsif p_action = 'essais' then
-    delete from ech_essais
-     where user_id = p and (le at time zone 'Europe/Paris')::date = (now() at time zone 'Europe/Paris')::date;
-    delete from ech_sf_essais where user_id = p and jour = (now() at time zone 'Europe/Paris')::date;
-  elsif p_action = 'raz' then
-    delete from ech_essais where user_id = p;
-    delete from ech_scores where user_id = p;
-    delete from ech_paliers where user_id = p;
-    delete from ech_sf_essais where user_id = p;
-    delete from ech_sf_scores where user_id = p;
+  elsif p_action = 'campagne' then
+    if p_valeur = 'finie' then
+      update combat_joueurs set faits = (select array_agg('cp' || lpad(k::text, 2, '0') order by k)
+                                           from generate_series(1, 20) k), finie = true
+       where user_id = p;
+    elsif p_valeur = 'raz' then
+      update combat_joueurs set faits = '{}', finie = false where user_id = p;
+    else
+      raise exception 'Choix inconnu.';
+    end if;
+  elsif p_action = 'jour' then
+    update combat_joueurs set recompensees = 0, jour = null, defis_rec = 0, defis_jour = null where user_id = p;
+    delete from raid_tentatives where user_id = p and jour = jour_paris();
+    delete from choc_epreuves where user_id = p and jour = jour_paris();
+  elsif p_action = 'maitrises' then
+    if p_valeur = 'max' then
+      insert into maitrises (user_id, card_id, niveau)
+      select distinct p, maitrise_carte(c.card_id), 5 from collection c
+       where c.user_id = p and c.qty > 0 and maitrise_carte(c.card_id) is not null
+      on conflict (user_id, card_id) do update set niveau = 5, le = now();
+    elsif p_valeur = 'raz' then
+      delete from maitrises where user_id = p;
+    else
+      raise exception 'Choix inconnu.';
+    end if;
   else
     raise exception 'Action inconnue.';
   end if;
-  return ech_etat_de(p);
+  return me();
+end $$;
+
+-- La maintenance (version 3.0.12, table maintenance de 01_schema.sql) :
+-- l'allumer, changer son message ou son heure de retour prevue, l'eteindre.
+-- Allumee, les joueurs voient l'ecran de maintenance et garde_beta() refuse
+-- leurs actions ; les administrateurs jouent. L'heure de retour ne fait que
+-- s'afficher, sauf `p_auto` (3.0.17) : la maintenance se leve alors d'elle-
+-- meme a cette heure. Changer le message d'une maintenance en cours garde
+-- son reglage (celle de la mise a jour 3.0 se leve a la sortie prevue).
+drop function if exists public.labo_maintenance(boolean, text, timestamptz);
+create or replace function public.labo_maintenance(p_actif boolean, p_message text default null,
+                                                   p_fin timestamptz default null, p_auto boolean default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p uuid := labo_garde(); a boolean := coalesce(p_actif, false);
+begin
+  if a and p_fin is not null and p_fin <= now() then raise exception 'L''heure de retour est déjà passée.'; end if;
+  update maintenance set
+    actif   = a,
+    message = case when a then nullif(left(trim(p_message), 300), '') end,
+    fin     = case when a then p_fin end,
+    fin_auto = a and p_fin is not null and coalesce(p_auto, actif and fin_auto),
+    -- Depuis quand : garde l'heure de depart si on ne fait que changer le message.
+    depuis  = case when not a then null when actif then depuis else now() end,
+    par     = case when not a then null when actif then par else (select pseudo from profiles where id = p) end
+   where id = 1;
+  return labo_etat();
 end $$;
 
 -- Ce qu'une sauvegarde emporte, et ce que « repartir de zero » efface : tout
--- ce qui est a soi, sauf les amis, la boite de reception et les echanges.
+-- ce qui est a soi, sauf les amis, la boite de reception, les echanges et les
+-- defis entre amis. Les tables de L'Echauffement (la 2.5) n'existent que sur
+-- une base qui l'a connue.
 create or replace function public.labo_tables() returns text[]
-language sql immutable as $$
-  select array['collection', 'inventory', 'quest_progress', 'evt_comptes', 'evt_piste_prises',
-               'gardes', 'favoris', 'devine_illu', 'ech_scores', 'ech_paliers', 'ech_essais',
-               'ech_sf_scores', 'ech_sf_essais', 'tirages', 'recyclages']
+language sql stable as $$
+  select coalesce(array_agg(x.t order by x.o), '{}') from unnest(array[
+    'collection', 'inventory', 'quest_progress', 'evt_comptes', 'evt_piste_prises', 'gardes', 'favoris',
+    'devine_illu', 'tirages', 'recyclages', 'combat_joueurs', 'decks', 'combats_historique', 'choc_joueurs', 'choc_epreuves',
+    'raid_participants', 'raid_pris', 'raid_tentatives', 'maitrises', 'maitrises_journal',
+    'ech_scores', 'ech_paliers', 'ech_essais', 'ech_sf_scores', 'ech_sf_essais']) with ordinality as x(t, o)
+   where to_regclass('public.' || x.t) is not null
 $$;
 
 create or replace function public.labo_sauver() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := labo_garde(); c jsonb; t text; r jsonb;
 begin
-  c := jsonb_build_object('profil', (select to_jsonb(x) from profiles x where x.id = p));
+  c := jsonb_build_object('version', '3.0', 'profil', (select to_jsonb(x) from profiles x where x.id = p));
   foreach t in array labo_tables() loop
     execute format('select coalesce(jsonb_agg(to_jsonb(x)), ''[]''::jsonb) from public.%I x where x.user_id = $1', t)
       into r using p;
@@ -5413,26 +7327,45 @@ begin
   return labo_etat();
 end $$;
 
--- Remettre le compte tel qu'il etait a la sauvegarde. Les lignes qui ne
--- tiennent plus (une carte, une quete, un defi disparus depuis) sont laissees.
+-- Remettre le compte tel qu'il etait a la sauvegarde. Une table que la
+-- sauvegarde ne contient pas (une sauvegarde de la 2.5 n'a pas les combats)
+-- reste telle quelle ; une colonne apparue depuis prend sa valeur par
+-- defaut ; une ligne qui ne tient plus (une carte, une quete disparues) est
+-- laissee de cote.
 create or replace function public.labo_restaurer() returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare p uuid := labo_garde(); s labo_sauvegardes; t text; r profiles; filtre text;
+declare p uuid := labo_garde(); s labo_sauvegardes; t text; r profiles; lignes jsonb; x jsonb;
+        cols text; vals text; pf jsonb;
 begin
   select * into s from labo_sauvegardes where user_id = p;
   if not found then raise exception 'Aucune sauvegarde.'; end if;
   foreach t in array labo_tables() loop
+    continue when not (s.contenu ? t);
     execute format('delete from public.%I where user_id = $1', t) using p;
-    filtre := case
-      when t in ('collection', 'gardes', 'favoris', 'recyclages') then 'where x.card_id in (select id from public.cards)'
-      when t = 'quest_progress' then 'where x.quest_id in (select id from public.quests)'
-      when t in ('ech_scores', 'ech_essais') then 'where x.jour in (select jour from public.ech_defis)'
-      else '' end;
-    execute format('insert into public.%I overriding system value select x.* from jsonb_populate_recordset(null::public.%I, $1) x %s',
-                   t, t, filtre)
-      using coalesce(s.contenu -> t, '[]'::jsonb);
+    lignes := s.contenu -> t;
+    continue when jsonb_typeof(lignes) <> 'array' or jsonb_array_length(lignes) = 0;
+    select string_agg(quote_ident(a.attname), ', ' order by a.attnum),
+           string_agg('x.' || quote_ident(a.attname), ', ' order by a.attnum)
+      into cols, vals
+      from pg_attribute a
+     where a.attrelid = ('public.' || t)::regclass and a.attnum > 0 and not a.attisdropped
+       and a.attgenerated = '' and (lignes -> 0) ? a.attname::text;
+    begin
+      execute format('insert into public.%I (%s) overriding system value select %s from jsonb_populate_recordset(null::public.%I, $1) x',
+                     t, cols, vals, t) using lignes;
+    exception when foreign_key_violation or unique_violation or check_violation or not_null_violation then
+      for x in select value from jsonb_array_elements(lignes) loop
+        begin
+          execute format('insert into public.%I (%s) overriding system value select %s from jsonb_populate_record(null::public.%I, $1) x',
+                         t, cols, vals, t) using x;
+        exception when foreign_key_violation or unique_violation or check_violation or not_null_violation then
+          null;
+        end;
+      end loop;
+    end;
   end loop;
-  r := jsonb_populate_record(null::public.profiles, s.contenu -> 'profil');
+  pf := s.contenu -> 'profil';
+  r := jsonb_populate_record(null::public.profiles, pf);
   update profiles set
     shards = coalesce(r.shards, shards), fragments = coalesce(r.fragments, fragments),
     tickets = coalesce(r.tickets, tickets), last_tick = coalesce(r.last_tick, last_tick),
@@ -5442,20 +7375,24 @@ begin
     streak = coalesce(r.streak, streak), last_checkin = r.last_checkin, serie_max = coalesce(r.serie_max, serie_max),
     fabrications = coalesce(r.fabrications, fabrications), avatar = coalesce(r.avatar, avatar), frame = coalesce(r.frame, frame),
     titre = r.titre, banniere = r.banniere, devise = r.devise,
-    vitrine = coalesce(r.vitrine, vitrine), garder = coalesce(r.garder, garder)
+    vitrine = coalesce(r.vitrine, vitrine), garder = coalesce(r.garder, garder),
+    fetiche = case when not (pf ? 'fetiche') then fetiche
+                   when r.fetiche in (select id from cards) then r.fetiche end
    where id = p;
   return me();
 end $$;
 
 -- Repartir de zero, comme un nouveau joueur : tout ce que labo_tables()
--- liste, et les compteurs du profil. Garde le compte, le pseudo, les amis,
--- la boite de reception, les droits. Penser a labo_sauver() avant.
+-- liste, le combat ouvert, et les compteurs du profil. Garde le compte, le
+-- pseudo, les amis, la boite de reception, les droits. La Section est a
+-- choisir de nouveau. Penser a labo_sauver() avant.
 create or replace function public.labo_raz_moi() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := labo_garde(); t text;
 begin
   update trades set status = 'cancelled', resolved_at = now()
    where status = 'pending' and (from_user = p or to_user = p);
+  delete from combats_ouverts where user_id = p;
   foreach t in array labo_tables() loop
     execute format('delete from public.%I where user_id = $1', t) using p;
   end loop;
@@ -5463,434 +7400,20 @@ begin
     shards = 0, fragments = 0, tickets = cfg('ticket_cap'), last_tick = now(), trade_free_at = now(),
     boosters_bonus = 0, tickets_offerts = 0, packs_opened = 0, trades_done = 0, streak = 0,
     last_checkin = null, serie_max = 0, fabrications = 0, avatar = 'star', frame = 'default',
-    titre = null, banniere = null, devise = null, vitrine = '{}', garder = '{}'
+    titre = null, banniere = null, devise = null, vitrine = '{}', garder = '{}', fetiche = null
    where id = p;
   return me();
 end $$;
 
-revoke all on function public.labo_garde, public.calendrier_officiel, public.poser_calendrier,
-  public.calendrier_officiel_poser, public.labo_tables from public, anon, authenticated;
-revoke all on function public.labo_etat, public.labo_calendrier, public.labo_decaler, public.labo_reverses,
-  public.labo_ech_raz, public.labo_cartes, public.labo_monnaies, public.labo_cosmetiques, public.labo_ech_moi,
-  public.labo_sauver, public.labo_restaurer, public.labo_raz_moi from public, anon;
-grant execute on function public.labo_etat, public.labo_calendrier, public.labo_decaler, public.labo_reverses,
-  public.labo_ech_raz, public.labo_cartes, public.labo_monnaies, public.labo_cosmetiques, public.labo_ech_moi,
-  public.labo_sauver, public.labo_restaurer, public.labo_raz_moi to authenticated;
-
-
--- #####################################################################
--- ###  22e_echauffement-evenement.sql
--- ###  Version 2.5 : L'Echauffement, un evenement (Braises, Pass, boutique)
--- #####################################################################
-
--- =====================================================================
---  Mate TCG Online — version 2.5 : L'Echauffement, un vrai evenement
---  A executer apres 22d_admin.sql. Rejouable sans danger.
---
---  Jusqu'au 24 octobre 2026, L'Echauffement n'etait que ses sept defis
---  (22b_echauffement.sql). Il devient un evenement a la maniere de Reflets
---  (21_reflets.sql), sur la meme charpente : une ligne de `evenements` (code
---  'echauffement'), calee sur sa saison, et tout ce qui porte ce code — sa
---  monnaie, ses quetes, son Pass, sa boutique, son classement, son recap.
---
---  LA MONNAIE : les Braises (on s'echauffe). En base, comme les Prismes de
---  Reflets, elles vivent dans evt_comptes (evenement = 'echauffement') et
---  s'appellent `prismes` partout ou une monnaie d'evenement est attendue
---  (quests.monnaie, shop_items.devise) : seul le nom affiche change
---  (MONNAIES_EV, js/config.js). `solde` se depense dans sa boutique, `total`
---  fait avancer le Pass : acheter ne le fait jamais reculer.
---
---  CE QUI EN RAPPORTE (calcul du Pass) :
---    · les etoiles des defis : 15, 15 puis 25 par defi (ech_terminer,
---      22b_echauffement.sql), 385 en tout ;
---    · quatre quetes du jour (04_seed.sql) : 50 par jour, 450 sur les neuf
---      jours de la saison ;
---    · neuf quetes de l'evenement, une fois : 390.
---  Soit 1 225 au plus. Un joueur qui vient chaque jour et fait tout finit le
---  Pass (1 050) vers le huitieme jour ; un joueur regulier (sept jours sur
---  neuf, les quatre cinquiemes des quetes du jour, deux tiers de celles de
---  l'evenement, quinze etoiles) en gagne ~815 : palier 16 ; un joueur de
---  passage (quatre jours, huit etoiles) ~395 : palier 8.
---
---  LE PASS (refait le 25 octobre 2026, a la demande du proprietaire : « des
---  paliers significatifs », et pas d'Essence Brillante, « c'est qu'un mini
---  event ») : vingt paliers, en quatre blocs de cinq.
---    · Chaque cinquieme palier est un cosmetique, de plus en plus beau : le
---      titre « Premier round » (5), le cadre « Braise » (10), le titre « Feu
---      sacre » (15), le cadre « Ardeur » (20) — tools/cadres.py.
---    · Entre eux, toujours le meme ordre : des boosters, des Fragments, des
---      Eclats, puis deux boosters ou une Reverse Rare ; les montants
---      grandissent d'un bloc a l'autre (Fragments 100, 200, 300, 400 ; Eclats
---      100, 150, 200, 250).
---    · Les seuils : de 40 en 40 jusqu'au palier 5 (200), de 50 en 50 jusqu'au
---      10 (450), puis de 60 en 60 (750 au 15, 1 050 au 20) : les premiers
---      tombent vite, les cosmetiques tombent sur des nombres ronds.
---  En tout : 10 boosters, 700 Eclats, 1 000 Fragments, 2 Reverses Rares, deux
---  titres et deux cadres. Nettement moins que le Pass de Reflets (14
---  boosters, 1 350 Eclats, 1 250 Fragments, 4 Reverses Rares, une Brillante),
---  pour un evenement de neuf jours qui paie deja ses defis en Eclats (2 100)
---  et en boosters (3).
---
---  LA BOUTIQUE (04_seed.sql) : tout acheter coute 1 120 Braises ; un joueur
---  regulier doit choisir.
---
---  LE CLASSEMENT : les dix joueurs qui ont gagne le plus de Braises
---  (evenement_etat, 21_reflets.sql).
---
---  APRES : trois jours de recap (evenement_recap, 22b_echauffement.sql), et
---  le mode sans fin dans l'onglet Combats (22f_sans-fin.sql).
--- =====================================================================
-
--- ------------------------------------------------- la ligne de l'evenement
--- Les memes dates que la saison (ech_saison), et trois jours de recap
--- apres. Le declencheur les garde ensemble : la saison bouge (Labo,
--- calendrier-2.5.sql, ou a la main), l'evenement suit.
-create or replace function public.ech_saison_evenement() returns trigger
-language plpgsql set search_path = public as $$
-begin
-  update evenements
-     set debut = new.debut, fin = new.fin, recap_jusqua = new.fin + interval '3 days'
-   where code = 'echauffement';
-  return new;
-end $$;
-drop trigger if exists ech_saison_evenement on public.ech_saison;
-create trigger ech_saison_evenement after insert or update on public.ech_saison
-  for each row execute function public.ech_saison_evenement();
-
-insert into public.evenements (titre, texte, debut, fin, ticket_minutes, code, recap_jusqua)
-select 'L''Échauffement', 'Sept défis, un par jour, avec tes Joueurs. Gagne des Braises et remonte le Pass.',
-       s.debut, s.fin, null, 'echauffement', s.fin + interval '3 days'
-  from public.ech_saison s
- where s.id = 1 and not exists (select 1 from public.evenements where code = 'echauffement');
-update public.evenements e
-   set debut = s.debut, fin = s.fin, recap_jusqua = s.fin + interval '3 days'
-  from public.ech_saison s
- where s.id = 1 and e.code = 'echauffement';
-
--- ----------------------------------------------- les quetes, pendant l'evenement
--- bump_quests (01_schema.sql), a l'identique sauf une chose : une quete
--- d'evenement ne compte que pendant son evenement. Avant, « Ouvre 30
--- boosters pendant l'evenement » aurait compte ceux ouverts avant son
--- debut — la ligne de la quete existe des la mise a jour.
-create or replace function public.bump_quests(p uuid, m text, amount int)
-returns void language plpgsql security definer set search_path = public as $$
-begin
-  if amount <= 0 then return; end if;
-  insert into quest_progress (user_id, quest_id, period_key, progress)
-  select p, q.id, period_key(q.scope), amount from quests q
-   where q.metric = m and (q.evenement is null or q.evenement = evenement_en_cours())
-  on conflict (user_id, quest_id, period_key)
-    do update set progress = quest_progress.progress + amount
-    where not quest_progress.claimed;
-end $$;
-
--- ------------------------------------------------------------------ le Pass
-delete from public.evt_piste where evenement = 'echauffement' and palier > 20;
-insert into public.evt_piste (evenement, palier, seuil, type, montant, objet, titre) values
-  ('echauffement',  1,   40, 'boosters',    1, null,            '1 booster'),
-  ('echauffement',  2,   80, 'fragments', 100, null,            '100 Fragments'),
-  ('echauffement',  3,  120, 'eclats',    100, null,            '100 Éclats'),
-  ('echauffement',  4,  160, 'boosters',    2, null,            '2 boosters'),
-  ('echauffement',  5,  200, 'titre',       0, 't_ech_round',   'Titre « Premier round »'),
-  ('echauffement',  6,  250, 'boosters',    1, null,            '1 booster'),
-  ('echauffement',  7,  300, 'fragments', 200, null,            '200 Fragments'),
-  ('echauffement',  8,  350, 'eclats',    150, null,            '150 Éclats'),
-  ('echauffement',  9,  400, 'reverse_R',   1, null,            'Une Reverse Rare'),
-  ('echauffement', 10,  450, 'cadre',       0, 'f_braise',      'Cadre « Braise »'),
-  ('echauffement', 11,  510, 'boosters',    2, null,            '2 boosters'),
-  ('echauffement', 12,  570, 'fragments', 300, null,            '300 Fragments'),
-  ('echauffement', 13,  630, 'eclats',    200, null,            '200 Éclats'),
-  ('echauffement', 14,  690, 'boosters',    2, null,            '2 boosters'),
-  ('echauffement', 15,  750, 'titre',       0, 't_ech_feu',     'Titre « Feu sacré »'),
-  ('echauffement', 16,  810, 'boosters',    2, null,            '2 boosters'),
-  ('echauffement', 17,  870, 'fragments', 400, null,            '400 Fragments'),
-  ('echauffement', 18,  930, 'eclats',    250, null,            '250 Éclats'),
-  ('echauffement', 19,  990, 'reverse_R',   1, null,            'Une Reverse Rare'),
-  ('echauffement', 20, 1050, 'cadre',       0, 'f_ardeur',      'Cadre « Ardeur »')
-on conflict (evenement, palier) do update set
-  seuil = excluded.seuil, type = excluded.type, montant = excluded.montant,
-  objet = excluded.objet, titre = excluded.titre;
-
--- ================================================================= droits
-revoke all on function public.ech_saison_evenement from public, anon, authenticated;
-revoke all on function public.bump_quests from public, anon, authenticated;
-
-
--- #####################################################################
--- ###  22f_sans-fin.sql
--- ###  Version 2.5 : L'Echauffement continue, un defi par jour
--- #####################################################################
-
--- =====================================================================
---  Mate TCG Online — version 2.5 : L'Echauffement continue, sans fin
---  A executer apres 22e_echauffement-evenement.sql. Rejouable sans danger.
---
---  Apres la saison (ech_saison.fin : le mercredi 4 novembre 2026, 0 h),
---  l'onglet Combats garde L'Echauffement, en mode sans fin, tant que la 3.0
---  n'est pas la : un defi par jour, le meme pour tout le monde, tire d'une
---  liste de 21 adversaires de niveaux varies. La difficulte ne monte pas,
---  elle change d'un jour a l'autre : l'ordre (`ordre`) melange Facile,
---  Moyen, Difficile et Redoutable, et ne met jamais deux fois la meme regle
---  deux jours de suite. Apres le 21e jour, on recommence au premier.
---
---  LE COMBAT est celui de la saison (ech_combat, 22b_echauffement.sql), avec
---  les memes regles (aucune, carapace, eclair, affinite, riposte, fureur,
---  final) et d'autres reglages. Trois essais par jour, comptes au depart ;
---  le combat se joue dans le navigateur, puis ech_sf_terminer le rejoue ici.
---  Seul le defi du jour se joue : pas de rattrapage, c'est un rendez-vous
---  quotidien, pas une collection a completer.
---
---  LES RECOMPENSES, comme Devine l'illu devenu permanent : de quoi revenir
---  chaque jour sans peser sur l'economie. 30, 30 puis 60 Eclats pour les
---  etoiles 1, 2 et 3 du jour (120 au plus, autant qu'une illu trouvee au
---  premier essai). Dix jours gagnes : le titre « Infatigable » (quete
---  saisonniere m_sf10, 04_seed.sql).
---
---  L'EQUILIBRAGE (simulation sur les 51 Joueurs, toutes les equipes
---  ordonnees, la meilleure attaque et le meilleur coup d'eclat ; la Defense
---  de chaque adversaire est le multiple de 50 qui approche le mieux la cible
---  de son niveau) :
---                       une equipe au hasard     une collection d'un tiers
---                       gagne     fait 3 ★       trouve ses 3 ★
---      Facile .......   70-93 %   17-25 %        toujours
---      Moyen ........   53-88 %    6-9 %         98-100 %
---      Difficile ....   31-51 %    2-3 %         75-99 %
---      Redoutable ...   16-35 %    ~1 %          58-83 %
---  Pour comparer, les sept defis de la saison sont entre Difficile et
---  Redoutable (une equipe au hasard fait 3 ★ une fois sur trente a cent).
---  Le detail, adversaire par adversaire, est dans le tableau ci-dessous.
--- =====================================================================
-
-create table if not exists public.ech_sf_adversaires (
-  ordre      integer primary key check (ordre between 1 and 99),
-  adversaire text not null references public.cards,
-  pv         integer not null check (pv > 0),
-  regle      text not null check (regle in ('aucune', 'carapace', 'eclair', 'affinite', 'riposte', 'fureur', 'final')),
-  param      jsonb not null default '{}',
-  niveau     smallint not null check (niveau between 1 and 4),
-  titre      text not null,
-  texte      text not null
-);
--- La simulation, par ligne : une equipe au hasard gagne (G) / fait trois
--- etoiles (3), et une collection d'un tiers trouve ses trois etoiles (T).
-insert into public.ech_sf_adversaires (ordre, adversaire, pv, regle, param, niveau, titre, texte) values
-  ( 1, 'c057',  850, 'aucune',   '{}',                        1, 'Sans règle',         'Pas de règle aujourd''hui.'),                                      -- G 91 %, 3 17,5 %, T 100 %
-  ( 2, 'c063', 1000, 'carapace', '{"seuil": 80}',             2, 'Carapace',           'Il ignore les coups de moins de 80.'),                             -- G 70 %, 3 8,8 %, T 98 %
-  ( 3, 'c079',  600, 'eclair',   '{}',                        3, 'Frappe éclair',      'Il frappe à chaque tour.'),                                        -- G 51 %, 3 2,8 %, T 99 %
-  ( 4, 'c074',  750, 'riposte',  '{"degats": 20}',            1, 'Riposte',            'Chaque coup que tu lui portes te coûte 20 de Défense.'),           -- G 86 %, 3 21,9 %, T 100 %
-  ( 5, 'c100', 1200, 'final',    '{"seuil": 70, "plus": 15}', 4, 'Carapace et fureur', 'Il ignore les coups de moins de 70, et les siens gagnent 15 à chaque fois.'), -- G 33 %, 3 0,9 %, T 58 %
-  ( 6, 'c112', 1150, 'affinite', '{"couleur": "rose"}',       2, 'Affinité Rose',      'Tes Joueurs Roses frappent deux fois plus fort.'),                 -- G 53 %, 3 7,4 %, T 100 %
-  ( 7, 'c071',  500, 'eclair',   '{}',                        1, 'Frappe éclair',      'Il frappe à chaque tour.'),                                        -- G 82 %, 3 17 %, T 100 %
-  ( 8, 'c035',  950, 'fureur',   '{"plus": 30}',              3, 'Fureur',             'Ses coups gagnent 30 de dégâts à chaque fois.'),                   -- G 36 %, 3 2,1 %, T 99 %
-  ( 9, 'c023',  850, 'aucune',   '{}',                        2, 'Sans règle',         'Pas de règle aujourd''hui.'),                                      -- G 88 %, 3 6,1 %, T 100 %
-  (10, 'c117',  900, 'carapace', '{"seuil": 100}',            4, 'Carapace',           'Il ignore les coups de moins de 100.'),                            -- G 16 %, 3 0,7 %, T 83 %
-  (11, 'c058', 1050, 'affinite', '{"couleur": "neutre"}',     1, 'Affinité Neutre',    'Tes Joueurs Neutres frappent deux fois plus fort.'),               -- G 70 %, 3 18,6 %, T 100 %
-  (12, 'c029', 1100, 'final',    '{"seuil": 90, "plus": 25}', 3, 'Carapace et fureur', 'Il ignore les coups de moins de 90, et les siens gagnent 25 à chaque fois.'), -- G 42 %, 3 1,6 %, T 93 %
-  (13, 'c012',  700, 'riposte',  '{"degats": 30}',            2, 'Riposte',            'Chaque coup que tu lui portes te coûte 30 de Défense.'),           -- G 65 %, 3 5,8 %, T 99 %
-  (14, 'c118',  550, 'fureur',   '{"plus": 40}',              1, 'Fureur',             'Ses coups gagnent 40 de dégâts à chaque fois.'),                   -- G 93 %, 3 24,7 %, T 100 %
-  (15, 'c022',  500, 'eclair',   '{}',                        4, 'Frappe éclair',      'Il frappe à chaque tour.'),                                        -- G 35 %, 3 0,8 %, T 80 %
-  (16, 'c113', 1650, 'affinite', '{"couleur": "mauve"}',      3, 'Affinité Mauve',     'Tes Joueurs Mauves frappent deux fois plus fort.'),                -- G 31 %, 3 2,7 %, T 83 %
-  (17, 'c121',  900, 'fureur',   '{"plus": 20}',              2, 'Fureur',             'Ses coups gagnent 20 de dégâts à chaque fois.'),                   -- G 85 %, 3 6 %, T 98 %
-  (18, 'c069', 1200, 'aucune',   '{}',                        1, 'Sans règle',         'Pas de règle aujourd''hui.'),                                      -- G 80 %, 3 22,1 %, T 100 %
-  (19, 'c050', 1100, 'carapace', '{"seuil": 90}',             3, 'Carapace',           'Il ignore les coups de moins de 90.'),                             -- G 46 %, 3 2,6 %, T 75 %
-  (20, 'c025',  850, 'aucune',   '{}',                        2, 'Sans règle',         'Pas de règle aujourd''hui.'),                                      -- G 65 %, 3 6,1 %, T 100 %
-  (21, 'c068',  800, 'riposte',  '{"degats": 40}',            4, 'Riposte',            'Chaque coup que tu lui portes te coûte 40 de Défense.')            -- G 26 %, 3 1,1 %, T 75 %
-on conflict (ordre) do update set adversaire = excluded.adversaire, pv = excluded.pv, regle = excluded.regle,
-  param = excluded.param, niveau = excluded.niveau, titre = excluded.titre, texte = excluded.texte;
-delete from public.ech_sf_adversaires where ordre > 21;
-
--- Chaque essai, des son depart (le plafond du jour se compte ici), et la
--- meilleure note de chaque jour.
-create table if not exists public.ech_sf_essais (
-  id      bigint generated always as identity primary key,
-  user_id uuid not null references public.profiles on delete cascade,
-  jour    date not null,
-  equipe  jsonb not null,
-  le      timestamptz not null default now(),
-  fini    boolean not null default false,
-  eclat   jsonb,
-  etoiles smallint
-);
-create index if not exists ech_sf_essais_user_idx on public.ech_sf_essais (user_id, jour);
-create table if not exists public.ech_sf_scores (
-  user_id uuid not null references public.profiles on delete cascade,
-  jour    date not null,
-  etoiles smallint not null check (etoiles between 0 and 3),
-  equipe  jsonb not null,
-  tours   integer not null,
-  le      timestamptz not null default now(),
-  primary key (user_id, jour)
-);
-alter table public.ech_sf_adversaires enable row level security;
-alter table public.ech_sf_essais enable row level security;
-alter table public.ech_sf_scores enable row level security;
-revoke all on public.ech_sf_adversaires, public.ech_sf_essais, public.ech_sf_scores from anon, authenticated;
-
--- Le jour de Paris, et le premier jour du mode sans fin : celui ou la
--- saison se termine.
-create or replace function public.ech_sf_premier() returns date
-language sql stable security definer set search_path = public as $$
-  select (s.fin at time zone 'Europe/Paris')::date from ech_saison s where s.id = 1
-$$;
-
--- La place d'un jour dans la liste : elle se deroule dans l'ordre, un
--- adversaire par jour, puis recommence.
-create or replace function public.ech_sf_ordre(j date) returns integer
-language sql stable security definer set search_path = public as $$
-  select (((j - ech_sf_premier()) % n) + n) % n + 1
-    from (select count(*)::int as n from ech_sf_adversaires) x
-$$;
--- L'adversaire d'un jour, sous la forme d'un defi (ech_defis) pour ech_combat.
-create or replace function public.ech_sf_defi(j date) returns ech_defis
-language sql stable security definer set search_path = public as $$
-  select jsonb_populate_record(null::ech_defis, to_jsonb(a) || jsonb_build_object('jour', 0))
-    from ech_sf_adversaires a where a.ordre = ech_sf_ordre(j)
-$$;
-create or replace function public.ech_sf_niveau(j date) returns smallint
-language sql stable security definer set search_path = public as $$
-  select a.niveau from ech_sf_adversaires a where a.ordre = ech_sf_ordre(j)
-$$;
-
-create or replace function public.ech_sf_essais_du_jour(p uuid, j date) returns integer
-language sql stable security definer set search_path = public as $$
-  select count(*)::int from ech_sf_essais where user_id = p and jour = j
-$$;
-
--- ------------------------------------------------------------------ l'etat
--- { ouvert, debut, serveur, jour, n (le combien de jours depuis le debut),
---   essais_max, prix, defi (l'adversaire du jour, sa note, son equipe, ses
---   essais), demain (le niveau du lendemain), victoires, etoiles, serie,
---   top (les dix qui ont le plus d'etoiles), rang }.
-create or replace function public.ech_sf_etat_de(p uuid) returns jsonb
-language plpgsql stable security definer set search_path = public as $$
-declare
-  s ech_saison; j date := (now() at time zone 'Europe/Paris')::date; d ech_defis; sc ech_sf_scores;
-  serie int := 0; k date; tot int; rang int;
-begin
-  select * into s from ech_saison where id = 1;
-  if not found then return 'null'::jsonb; end if;
-  if now() < s.fin then
-    return jsonb_build_object('ouvert', false, 'debut', s.fin, 'serveur', now());
-  end if;
-  d := ech_sf_defi(j);
-  select * into sc from ech_sf_scores where user_id = p and jour = j;
-  -- La serie : les jours gagnes d'affilee, jusqu'a aujourd'hui (ou hier, si
-  -- le defi du jour n'est pas encore gagne).
-  k := case when coalesce(sc.etoiles, 0) > 0 then j else j - 1 end;
-  while exists (select 1 from ech_sf_scores where user_id = p and jour = k and etoiles > 0) loop
-    serie := serie + 1; k := k - 1;
-  end loop;
-  select coalesce(sum(etoiles), 0) into tot from ech_sf_scores where user_id = p;
-  select count(*) + 1 into rang from (select user_id from ech_sf_scores group by user_id having sum(etoiles) > tot) x;
-  return jsonb_build_object(
-    'ouvert', true, 'debut', s.fin, 'serveur', now(), 'jour', j, 'n', j - ech_sf_premier() + 1,
-    'essais_max', 3, 'prix', jsonb_build_array(30, 30, 60),
-    'defi', jsonb_build_object('adversaire', d.adversaire, 'pv', d.pv, 'regle', d.regle, 'param', d.param,
-      'titre', d.titre, 'texte', d.texte, 'niveau', ech_sf_niveau(j),
-      'etoiles', coalesce(sc.etoiles, 0), 'equipe', sc.equipe, 'essais_jour', ech_sf_essais_du_jour(p, j)),
-    'demain', ech_sf_niveau(j + 1),
-    'victoires', (select count(*) from ech_sf_scores where user_id = p and etoiles > 0),
-    'etoiles', tot,
-    'serie', serie,
-    'rang', case when tot > 0 then rang end,
-    'top', coalesce((
-      select jsonb_agg(jsonb_build_object('pseudo', pr.pseudo, 'avatar', pr.avatar, 'frame', pr.frame, 'titre', pr.titre,
-               'photo', photo_discord(pr.id), 'total', x.total, 'moi', pr.id = p) order by x.total desc, lower(pr.pseudo))
-        from (select user_id, sum(etoiles)::int as total from ech_sf_scores group by user_id
-               having sum(etoiles) > 0 order by sum(etoiles) desc limit 10) x
-        join profiles pr on pr.id = x.user_id), '[]'::jsonb));
-end $$;
-
-create or replace function public.ech_sf_etat() returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid();
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  return ech_sf_etat_de(p);
-end $$;
-
--- ------------------------------------------------------------- commencer
--- Verifie l'equipe (ech_equipe_propre) et compte l'essai du jour. Rend
--- { essai, equipe, restants }.
-create or replace function public.ech_sf_commencer(p_equipe jsonb) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare p uuid := auth.uid(); s ech_saison; j date := (now() at time zone 'Europe/Paris')::date; nb int;
-  propre jsonb; deja int; eid bigint;
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  select * into s from ech_saison where id = 1;
-  if not found or now() < s.fin then raise exception 'Le défi du jour commence après L''Échauffement.'; end if;
-  if p_equipe is null or jsonb_typeof(p_equipe) <> 'array' then raise exception 'Équipe invalide.'; end if;
-  nb := jsonb_array_length(p_equipe);
-  if nb < 1 or nb > 3 then raise exception 'Une équipe compte un à trois Joueurs.'; end if;
-  -- Un depart a la fois : deux appuis partis ensemble ne comptent qu'un essai.
-  perform 1 from profiles where id = p for update;
-  deja := ech_sf_essais_du_jour(p, j);
-  if deja >= 3 then raise exception 'Plus d''essai aujourd''hui : un autre adversaire t''attend demain.'; end if;
-  propre := ech_equipe_propre(p, p_equipe);
-  insert into ech_sf_essais (user_id, jour, equipe) values (p, j, propre) returning id into eid;
-  return jsonb_build_object('essai', eid, 'equipe', propre, 'restants', 2 - deja);
-end $$;
-
--- -------------------------------------------------------------- terminer
--- Rejoue le combat de l'essai (contre l'adversaire de son jour) avec le
--- coup d'eclat choisi, garde la meilleure note du jour, paie les etoiles
--- nouvelles. Un essai se termine dans l'heure : commence a 23 h 59, il
--- compte pour son jour. Rend { resultat, avant, gain: { eclats }, etat, me }.
-create or replace function public.ech_sf_terminer(p_essai bigint, p_eclat jsonb) returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare
-  p uuid := auth.uid(); es ech_sf_essais; r jsonb; avant int; nouv int; k int; ec jsonb := null;
-  eclats int := 0; prix int[] := array[30, 30, 60];
-begin
-  if p is null then raise exception 'non connecte'; end if;
-  perform garde_beta();
-  perform 1 from profiles where id = p for update;
-  select * into es from ech_sf_essais where id = p_essai and user_id = p for update;
-  if not found then raise exception 'Essai inconnu.'; end if;
-  if es.fini then raise exception 'Cet essai est déjà joué.'; end if;
-  if now() > es.le + interval '1 hour' then raise exception 'Cet essai a expiré.'; end if;
-
-  if p_eclat is not null and jsonb_typeof(p_eclat) <> 'null' then
-    if jsonb_typeof(p_eclat) <> 'object' or jsonb_typeof(p_eclat -> 'tour') <> 'number' or jsonb_typeof(p_eclat -> 'i') <> 'number'
-       or (p_eclat ->> 'tour')::numeric not between 1 and 10
-       or (p_eclat ->> 'i')::numeric not between 0 and jsonb_array_length(es.equipe) - 1 then
-      raise exception 'Coup d''éclat invalide.';
-    end if;
-    ec := jsonb_build_object('tour', (p_eclat ->> 'tour')::int, 'i', (p_eclat ->> 'i')::int);
-  end if;
-
-  r := ech_combat(ech_sf_defi(es.jour), es.equipe, ec);
-  nouv := (r ->> 'etoiles')::int;
-  update ech_sf_essais set fini = true, eclat = ec, etoiles = nouv where id = es.id;
-  select etoiles into avant from ech_sf_scores where user_id = p and jour = es.jour;
-  avant := coalesce(avant, 0);
-
-  if nouv > avant then
-    for k in (avant + 1)..nouv loop eclats := eclats + prix[k]; end loop;
-    insert into ech_sf_scores (user_id, jour, etoiles, equipe, tours)
-    values (p, es.jour, nouv, es.equipe, (r ->> 'tours')::int)
-    on conflict (user_id, jour) do update set etoiles = excluded.etoiles, equipe = excluded.equipe,
-      tours = excluded.tours, le = now();
-    perform accorder(p, 'eclats', eclats, null);
-    -- La premiere victoire du jour fait avancer « Infatigable » (04_seed.sql).
-    if avant = 0 then perform bump_quests(p, 'sf_victoire', 1); end if;
-  else
-    insert into ech_sf_scores (user_id, jour, etoiles, equipe, tours)
-    values (p, es.jour, 0, es.equipe, (r ->> 'tours')::int)
-    on conflict (user_id, jour) do nothing;
-  end if;
-
-  return jsonb_build_object('resultat', r, 'avant', avant, 'gain', jsonb_build_object('eclats', eclats),
-    'etat', ech_sf_etat_de(p), 'me', me());
-end $$;
-
-revoke all on function public.ech_sf_premier, public.ech_sf_ordre, public.ech_sf_defi, public.ech_sf_niveau,
-  public.ech_sf_essais_du_jour, public.ech_sf_etat_de from public, anon, authenticated;
-revoke all on function public.ech_sf_etat, public.ech_sf_commencer, public.ech_sf_terminer from public, anon;
-grant execute on function public.ech_sf_etat, public.ech_sf_commencer, public.ech_sf_terminer to authenticated;
+revoke all on function public.labo_garde, public.labo_tables from public, anon, authenticated;
+revoke all on function public.labo_etat, public.labo_evenement, public.labo_decaler, public.labo_evenement_raz,
+  public.labo_reverses, public.labo_raid, public.labo_raid_echelle, public.labo_raid_raz, public.labo_cartes,
+  public.labo_monnaies, public.labo_cosmetiques, public.labo_combats_moi, public.labo_sauver,
+  public.labo_restaurer, public.labo_raz_moi, public.labo_maintenance from public, anon;
+grant execute on function public.labo_etat, public.labo_evenement, public.labo_decaler, public.labo_evenement_raz,
+  public.labo_reverses, public.labo_raid, public.labo_raid_echelle, public.labo_raid_raz, public.labo_cartes,
+  public.labo_monnaies, public.labo_cosmetiques, public.labo_combats_moi, public.labo_sauver,
+  public.labo_restaurer, public.labo_raz_moi, public.labo_maintenance to authenticated;
 
 
 -- =====================================================================
@@ -5904,6 +7427,7 @@ grant execute on function public.ech_sf_etat, public.ech_sf_commencer, public.ec
 --     - la connexion Discord    (Authentication > Providers > Discord)
 --   Tout est explique dans SETUP.md.
 --
---   Et quand ton compte sera cree, pense a supabase/05_admin.sql pour
---   te donner les droits d'administrateur.
+--   Et quand ton compte sera cree, pense a
+--   supabase/administration/admin.sql pour te donner les droits
+--   d'administrateur.
 -- =====================================================================

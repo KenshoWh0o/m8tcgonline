@@ -332,7 +332,7 @@ def v5_promos():
         'cards/promos/P01-Major_De_Paris.webp',
         'cards/promos/P02-Major_De_Paris.webp',
         'cards/promos/P05-Tout_Commence_Ici.webp',
-        'cards/promos/P06-Le_Marionnettiste.webp',
+        'cards/promos/P06-Le_Marionnettiste_v2.webp',
     ], l / 2, 452, 398, 200, 7, 16)
     texte(im, (l / 2, 828), 'Introuvables\nen booster.', TITRE(54), BLANC,
           halo=(255, 91, 176), interligne=1.12)
@@ -411,7 +411,8 @@ def gif_ouverture():
     pack = ouvrir('assets/boosters/booster-01.webp', 290)
     logo = ouvrir('assets/logo-m8.webp', 48)
 
-    # Cinq cartes, comme dans un vrai paquet : des communes, et le hit au centre.
+    # Cinq cartes (un vrai paquet en a six : l'eventail reste lisible a 800 px),
+    # le hit au centre.
     tirage = [
         'cards/010_C_Joueur_Rose_Broken-Brawks.avif',
         'cards/047_E_Moment-Instant_Violette_Champions-du-Major.avif',

@@ -36,6 +36,8 @@ function viderFilePromos() {
   if (promoEnCours || !filePromos.length) return;
   /* Le théâtre d'ouverture a la priorité : on attend qu'il se referme. */
   if (rv || opening || document.body.classList.contains('intheater')) return;
+  /* Version 3.0 : pas par-dessus un combat. */
+  if (typeof Table !== 'undefined' && Table.ouverte()) return;
   montrerPromo(filePromos.shift());
 }
 
@@ -119,6 +121,8 @@ function promoSousTitre(c) {
   if (c.foil) return 'Essence Brillante — une Essence sur ' + FOIL_ODDS + ' sort dans cette version.';
   if (c.obtention === 'master') return 'Récompense du Master Set — les ' + cards.length + ' cartes réunies.';
   if (c.obtention === 'palier') return 'Récompense de collection — ' + PROMO_PALIER + ' % de l\'extension.';
+  /* Version 3.0 : la Promo d'un Starter Deck, gagnée en Combats. */
+  if (c.obtention === 'section') return `Promo du Starter Deck ${c.section === 'deter' ? 'Section Déter' : 'Section Toxique'} — gagnée en Combats.`;
   return 'Achetée en boutique.';
 }
 

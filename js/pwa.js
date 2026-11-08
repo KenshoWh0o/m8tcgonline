@@ -5,20 +5,9 @@
    marche à suivre, une seule fois, et seulement après quelques minutes de jeu. */
 "use strict";
 
-const APP_VERSION = '2.5';
+const APP_VERSION = '3.0.17';
 
-/* La version est-elle sortie (SORTIE, js/config.js) ? À l'heure du serveur :
-   la montre de l'appareil n'avance pas une mise à jour. La date du serveur
-   passe avant celle du code, quand il en donne une (null : sortie). */
-const sortieLe = () => {
-  const s = (typeof save !== 'undefined' && save && save.parametres && save.parametres.sorties) || {};
-  return Object.prototype.hasOwnProperty.call(s, SORTIE.version) ? s[SORTIE.version] : SORTIE.le;
-};
-const sortieFaite = () => { const le = sortieLe(); return !le || Date.now() >= srvTime(le); };
-/* Le numéro que lit le joueur (tiroir, Réglages). */
-const versionJeu = () => (sortieFaite() ? APP_VERSION : SORTIE.avant);
-
-const PWA = { invite: null, installe: false, dejaVu: false };
+const PWA = { invite: null, dejaVu: false };
 const PWA_CLE = 'mtcg.install';
 
 /* Le jeu tourne-t-il déjà depuis l'écran d'accueil ? */
@@ -51,9 +40,8 @@ addEventListener('beforeinstallprompt', e => {
 
 addEventListener('appinstalled', () => {
   PWA.invite = null;
-  PWA.installe = true;
   noterMemoire({ fait: true });
-  fermerInstall();
+  closeSheet();
   toast('Mate TCG est sur ton écran d\'accueil.');
 });
 
@@ -100,12 +88,6 @@ function ouvrirInstall(force) {
   }});
 
   openSheet({ title: 'Ajouter à l\'écran d\'accueil', body: corpsInstall(), actions });
-  document.body.classList.add('installsheet');
-}
-
-function fermerInstall() {
-  document.body.classList.remove('installsheet');
-  closeSheet();
 }
 
 function majBoutonInstall() {
@@ -153,7 +135,13 @@ function brancherSW() {
         if (!sw) return;
         sw.addEventListener('statechange', () => {
           if (sw.state === 'installed' && navigator.serviceWorker.controller) {
-            openSheet({
+            /* Jamais à la place d'une fenêtre ouverte (un achat qu'on confirme,
+               un cadeau), ni pendant une ouverture, la visionneuse ou un
+               combat : on attend que l'écran soit rendu au joueur. */
+            const occupe = () => document.body.classList.contains('intheater')
+              || document.body.classList.contains('en-arene')
+              || !$('#sheet').hidden || !$('#viewer').hidden;
+            const prevenir = () => occupe() ? setTimeout(prevenir, 1500) : openSheet({
               title: 'Nouvelle version',
               body: '<p class="muted">Une mise à jour du jeu est prête.</p>',
               actions: [
@@ -161,6 +149,7 @@ function brancherSW() {
                 { label: 'Plus tard', fn: closeSheet }
               ]
             });
+            prevenir();
           }
         });
       });

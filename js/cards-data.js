@@ -1068,7 +1068,7 @@ const CARD_DATA = [
       { nom: "Coup de fil", cout: { neutre: 3 }, degats: 160 }
     ],
     mot_cle: { nom: "Riposte", icone: "declencheur", texte: "Lorsqu'il est vaincu, vous pouvez déclencher une des attaques de ce Joueur pour un coût diminué de 1, en ciblant le Joueur attaquant." },
-    ambiance: "Merci, Ô grand Squeezie, pour la générosité"
+    ambiance: "Merci, Ô grand Squeezie, pour ta générosité"
   },
   {
     fichier: "122_L_Objet-Lien_Neutre_La-Luxueuse-III.avif", num: 122, nom: "La Luxueuse III",

@@ -1,5 +1,5 @@
 /* Les cadeaux : ce qu'un administrateur offre à un joueur (Labo > Offrir un
-   cadeau, supabase/18_cadeaux.sql).
+   cadeau, supabase/installation/18_cadeaux.sql).
 
    Le joueur le découvre à sa visite suivante : un paquet qui frémit, qu'il
    ouvre lui-même — c'est l'ouverture, côté serveur, qui crédite le compte —,
@@ -94,7 +94,7 @@ function montrerContenu(c, file) {
   const ligne = (ico, n, quoi) => `<li><span class="cdico">${ico}</span><b class="tnum">+${fmtN(n)}</b><span>${quoi}</span></li>`;
   const suivant = file.length > 0;
   /* Les boosters offerts ne peuvent pas contenir la carte unique (open_pack,
-     supabase/03_rpc.sql) : on le dit tant qu'elle reste à trouver. */
+     supabase/installation/03_rpc.sql) : on le dit tant qu'elle reste à trouver. */
   const u = uniques[0];
   const sansUnique = c.boosters && u && save.chasse && !save.chasse.trouvee;
   openSheet({
@@ -115,7 +115,7 @@ function montrerContenu(c, file) {
     actions: suivant
       ? [{ label: 'Cadeau suivant', primary: true, fn: () => { closeSheet(); setTimeout(() => montrerCadeau(file[0], file), 250); } }]
       /* Des boosters dans le dernier paquet : ils s'ouvrent tout de suite, à
-         part de la réserve (open_pack, supabase/03_rpc.sql). « Plus tard » les
+         part de la réserve (open_pack, supabase/installation/03_rpc.sql). « Plus tard » les
          laisse sous « Ouvrir un booster en plus », écran Boosters. */
       : (c.test ? c.boosters : save.bonus > 0)
         ? [{ label: 'Ouvrir mes boosters', primary: true, fn: () => {
@@ -128,7 +128,7 @@ function montrerContenu(c, file) {
   });
   SFX.jouer('gagne');
   vibrer([30, 50, 30]);
-  if (!RM()) FX.sparkle({ n: 110, colors: ['#ffc73b', '#ff7cc8', '#b57aff', '#fff'], size: 3.6 });
+  if (!RM()) FX.sparkle({ n: 110, colors: ['#f5c451', '#ffdc85', '#b3a6ff', '#fff'], size: 3.6 });
 }
 
 function finCadeaux(c) {

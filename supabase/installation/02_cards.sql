@@ -1,0 +1,203 @@
+-- =====================================================================
+--  Mate TCG Online — catalogue des cartes (genere, ne pas editer a la main)
+--  Source : js/cards-data.js  ·  Regenerer : python3 tools/gen-cards-sql.py
+--  A rejouer dans Supabase apres chaque ajout ou retrait de carte.
+-- =====================================================================
+
+-- La colonne qui distingue les Promos du reste. Elle est aussi creee par
+-- 01_schema.sql ; on la redemande ici pour que ce fichier reste jouable seul,
+-- ce qui est son usage courant : on le rejoue a chaque ajout de carte.
+alter table public.cards add column if not exists promo boolean not null default false;
+
+insert into public.cards (id, num, nom, cat, col, rar, in_booster) values
+  ('c001', 1, 'Essence Rose', 'essence', 'rose', 'ES', true),
+  ('c002', 2, 'Essence Orange', 'essence', 'orange', 'ES', true),
+  ('c003', 3, 'Essence Jade', 'essence', 'jade', 'ES', true),
+  ('c004', 4, 'Essence Violette', 'essence', 'violette', 'ES', true),
+  ('c005', 5, 'Essence Jaune', 'essence', 'jaune', 'ES', true),
+  ('c006', 6, 'Essence Mauve', 'essence', 'mauve', 'ES', true),
+  ('c007', 7, 'Essence Verte', 'essence', 'verte', 'ES', true),
+  ('c008', 8, 'Essence Bleue', 'essence', 'bleue', 'ES', true),
+  ('c009', 9, 'Essence Azur', 'essence', 'azur', 'ES', true),
+  ('c010', 10, 'Broken Brawks', 'joueur', 'rose', 'C', true),
+  ('c011', 11, 'Vandale', 'joueur', 'rose', 'C', true),
+  ('c012', 12, 'Squeezie le Toxique', 'joueur', 'rose', 'PC', true),
+  ('c013', 13, 'Pas Compris', 'joueur', 'rose', 'PC', true),
+  ('c014', 14, 'Zacking Buff', 'coach', 'rose', 'PC', true),
+  ('c015', 15, 'Ravitaillement', 'objet', 'rose', 'C', true),
+  ('c016', 16, 'Mur Salvateur', 'moment', 'rose', 'PC', true),
+  ('c017', 17, 'Tout Commence Ici', 'joueur', 'rose', 'R', true),
+  ('c018', 18, 'Buy Bundle M8 !!', 'coach', 'rose', 'R', true),
+  ('c019', 19, 'OCE/PCE', 'moment', 'rose', 'R', true),
+  ('c020', 20, 'Dégustation d''adversaires', 'moment', 'rose', 'R', true),
+  ('c021', 21, 'Trauma Dump III', 'moment', 'rose', 'R', true),
+  ('c022', 22, 'Namifique', 'joueur', 'rose', 'E', true),
+  ('c023', 23, 'Marteen Supreme', 'joueur', 'rose', 'E', true),
+  ('c024', 24, 'Agent M.E.L', 'joueur', 'rose', 'E', true),
+  ('c025', 25, 'Gentle Mates Minny', 'joueur', 'rose', 'E', true),
+  ('c026', 26, 'Pause Technique', 'coach', 'rose', 'E', true),
+  ('c027', 27, 'Remontada', 'moment', 'rose', 'E', true),
+  ('c028', 28, 'Championnes d''Europe', 'moment', 'rose', 'E', true),
+  ('c029', 29, 'Pollo', 'joueur', 'orange', 'C', true),
+  ('c030', 30, 'Worlds Lyon', 'coach', 'orange', 'PC', true),
+  ('c031', 31, 'Moi je suis coach', 'coach', 'orange', 'C', true),
+  ('c032', 32, 'Invitation', 'objet', 'orange', 'PC', true),
+  ('c033', 33, 'Visa Refusé', 'moment', 'orange', 'C', true),
+  ('c034', 34, 'Vanyabubu', 'joueur', 'orange', 'R', true),
+  ('c035', 35, 'Pitchounes', 'joueur', 'orange', 'R', true),
+  ('c036', 36, 'Maillot Champions ''25', 'objet', 'orange', 'R', true),
+  ('c037', 37, 'L''Œil de Nikof', 'moment', 'orange', 'R', true),
+  ('c038', 38, 'Caprice de Gotaga', 'moment', 'jade', 'C', true),
+  ('c039', 39, 'Zéro Soucis', 'joueur', 'violette', 'C', true),
+  ('c040', 40, 'Les Rois du Saloon', 'joueur', 'violette', 'PC', true),
+  ('c041', 41, 'Trauma Dump I', 'moment', 'violette', 'C', true),
+  ('c042', 42, 'Reverse Squeeze', 'moment', 'violette', 'C', true),
+  ('c043', 43, 'BLBLBLBL', 'moment', 'violette', 'C', true),
+  ('c044', 44, 'Moroccan Monsters', 'joueur', 'violette', 'R', true),
+  ('c045', 45, 'Zzzzz', 'joueur', 'violette', 'R', true),
+  ('c046', 46, 'Maillot Champions ''24', 'objet', 'violette', 'R', true),
+  ('c047', 47, 'Champions du Major', 'moment', 'violette', 'E', true),
+  ('c048', 48, 'Champions du Major', 'moment', 'violette', 'E', true),
+  ('c049', 49, 'Le Roi des rois', 'joueur', 'jaune', 'E', true),
+  ('c050', 50, 'La Fée Rosalie', 'joueur', 'mauve', 'PC', true),
+  ('c051', 51, 'La Planète', 'joueur', 'mauve', 'PC', true),
+  ('c052', 52, 'Most Valuable Planet', 'joueur', 'mauve', 'C', true),
+  ('c053', 53, 'Ravitaillement', 'objet', 'mauve', 'C', true),
+  ('c054', 54, 'Trauma Dump II', 'moment', 'mauve', 'PC', true),
+  ('c055', 55, 'Target Missed', 'moment', 'mauve', 'C', true),
+  ('c056', 56, 'Le Maillot Maudit', 'objet', 'mauve', 'R', true),
+  ('c057', 57, 'Siborg', 'joueur', 'mauve', 'E', true),
+  ('c058', 58, 'Ghosty in Finals', 'joueur', 'mauve', 'E', true),
+  ('c059', 59, 'Baby Driver', 'joueur', 'mauve', 'E', true),
+  ('c060', 60, 'Gotaga Pose', 'joueur', 'mauve', 'E', true),
+  ('c061', 61, 'Champions du Major', 'moment', 'mauve', 'E', true),
+  ('c062', 62, 'Just Passion', 'joueur', 'verte', 'C', true),
+  ('c063', 63, 'Calma', 'joueur', 'verte', 'R', true),
+  ('c064', 64, 'Bwarks', 'joueur', 'bleue', 'PC', true),
+  ('c065', 65, 'Jus de bagarre', 'objet', 'bleue', 'C', true),
+  ('c066', 66, 'L''Immense Draculan', 'moment', 'bleue', 'R', true),
+  ('c067', 67, '1% Chance', 'joueur', 'bleue', 'E', true),
+  ('c068', 68, '99% Faith', 'joueur', 'bleue', 'E', true),
+  ('c069', 69, 'L''Arme Nucléaire', 'joueur', 'azur', 'PC', true),
+  ('c070', 70, 'Worlds Japon', 'coach', 'azur', 'PC', true),
+  ('c071', 71, 'Versus Fighting', 'joueur', 'azur', 'R', true),
+  ('c072', 72, 'Leakof', 'moment', 'neutre', 'C', true),
+  ('c073', 73, 'L''Héritier', 'joueur', 'neutre', 'C', true),
+  ('c074', 74, 'Grand Respect', 'joueur', 'neutre', 'C', true),
+  ('c075', 75, 'Pétrodollars', 'joueur', 'neutre', 'C', true),
+  ('c076', 76, 'Ralliement', 'joueur', 'neutre', 'C', true),
+  ('c077', 77, 'Brawks Déter', 'joueur', 'neutre', 'PC', true),
+  ('c078', 78, 'Le Chevalier Rose', 'joueur', 'neutre', 'PC', true),
+  ('c079', 79, 'Instalock', 'joueur', 'neutre', 'PC', true),
+  ('c080', 80, 'Meet & Greeter', 'joueur', 'neutre', 'PC', true),
+  ('c081', 81, 'Mon Cogneur', 'joueur', 'neutre', 'PC', true),
+  ('c082', 82, 'Barakataga', 'coach', 'neutre', 'C', true),
+  ('c083', 83, 'Mercato', 'coach', 'neutre', 'C', true),
+  ('c084', 84, 'La Chevalière', 'objet', 'neutre', 'PC', true),
+  ('c085', 85, 'Cooked', 'objet', 'neutre', 'C', true),
+  ('c086', 86, 'En slip sur la Faille', 'objet', 'neutre', 'C', true),
+  ('c087', 87, 'Gros Bonnet', 'objet', 'neutre', 'C', true),
+  ('c088', 88, 'M4', 'objet', 'neutre', 'C', true),
+  ('c089', 89, 'La Luxueuse I', 'objet', 'neutre', 'PC', true),
+  ('c090', 90, 'La Luxueuse II', 'objet', 'neutre', 'PC', true),
+  ('c091', 91, 'C''est officiel !', 'moment', 'neutre', 'C', true),
+  ('c092', 92, 'Clim', 'moment', 'neutre', 'C', true),
+  ('c093', 93, 'Alerte Leak', 'moment', 'neutre', 'C', true),
+  ('c094', 94, 'One More', 'moment', 'neutre', 'C', true),
+  ('c095', 95, 'Tunnel', 'moment', 'neutre', 'C', true),
+  ('c096', 96, 'Tweet la Défaite', 'moment', 'neutre', 'C', true),
+  ('c097', 97, 'Doig''Dance', 'moment', 'neutre', 'PC', true),
+  ('c098', 98, 'Méta Cœurs', 'moment', 'neutre', 'PC', true),
+  ('c099', 99, 'Méta F*ck', 'moment', 'neutre', 'PC', true),
+  ('c100', 100, 'Loup du Game', 'joueur', 'neutre', 'R', true),
+  ('c101', 101, 'Slay', 'joueur', 'neutre', 'R', true),
+  ('c102', 102, 'Monster', 'joueur', 'neutre', 'R', true),
+  ('c103', 103, 'Joueur de l''Ombre', 'coach', 'neutre', 'R', true),
+  ('c104', 104, 'Lofi Girl', 'coach', 'neutre', 'R', true),
+  ('c105', 105, 'M16', 'objet', 'neutre', 'R', true),
+  ('c106', 106, 'Trahison++', 'objet', 'neutre', 'R', true),
+  ('c107', 107, 'GP Explorer III', 'moment', 'neutre', 'R', true),
+  ('c108', 108, 'Keynote', 'moment', 'neutre', 'R', true),
+  ('c109', 109, 'Hatewatch', 'moment', 'neutre', 'R', true),
+  ('c110', 110, 'Leakof', 'moment', 'neutre', 'R', true),
+  ('c111', 111, 'La Gaming House', 'moment', 'neutre', 'R', true),
+  ('c112', 112, 'M8 Résilience', 'joueur', 'neutre', 'E', true),
+  ('c113', 113, 'Kampaï', 'joueur', 'rose', 'L', true),
+  ('c114', 114, 'SBG', 'moment', 'rose', 'L', true),
+  ('c115', 115, 'Champions du Monde', 'moment', 'orange', 'L', true),
+  ('c116', 116, 'The French Sorcerer', 'joueur', 'mauve', 'L', true),
+  ('c117', 117, 'La Relève', 'joueur', 'mauve', 'L', true),
+  ('c118', 118, 'Gotaga Dance', 'joueur', 'mauve', 'L', true),
+  ('c119', 119, 'Gotaga Circus', 'joueur', 'neutre', 'L', true),
+  ('c120', 120, 'Brawks Saga', 'joueur', 'neutre', 'L', true),
+  ('c121', 121, 'Le Marionnettiste', 'joueur', 'neutre', 'L', true),
+  ('c122', 122, 'La Luxueuse III', 'objet', 'neutre', 'L', true)
+on conflict (id) do update set
+  num = excluded.num, nom = excluded.nom, cat = excluded.cat,
+  col = excluded.col, rar = excluded.rar, in_booster = excluded.in_booster;
+
+-- ---------------------------------------------------------------- menage
+-- Une carte retiree de js/cards-data.js disparait aussi du tirage serveur.
+--
+-- Ce bloc est plus long qu'un simple `delete` pour deux raisons, apprises
+-- chacune a ses depens :
+--
+-- 1. `and not promo`. Ce fichier ne connait que l'extension. Les cartes Promo
+--    sont creees plus loin, par 03b_promos.sql, et n'apparaissent donc jamais
+--    dans la liste ci-dessus. Sans ce garde-fou, rejouer l'installation les
+--    effacait — et la boutique, qui en vend deux, refusait l'operation :
+--        violates foreign key constraint "shop_items_carte_id_fkey"
+--    La premiere execution passait (les Promos n'existaient pas encore), la
+--    seconde echouait. C'est le genre de piege qui ne se voit qu'au deuxieme
+--    passage.
+--
+-- 2. Les echanges en attente. `trades` pointe vers `cards` sans cascade : une
+--    carte retiree alors qu'un echange la propose bloquerait toute
+--    l'installation sur un message illisible. On annule donc ces demandes
+--    d'abord — elles ne peuvent de toute facon plus etre honorees — et on le
+--    dit dans les logs.
+--
+-- Ce qui reste volontairement bloquant : une carte encore vendue en boutique.
+-- La, c'est une erreur de configuration, et l'effacer en silence ferait bien
+-- plus de degats que de s'arreter.
+do $$
+declare
+  a_retirer text[];
+  vendues   text[];
+  n_ech     int;
+begin
+  select array_agg(id) into a_retirer
+    from public.cards
+   where not promo and id <> all (array['c001', 'c002', 'c003', 'c004', 'c005', 'c006', 'c007', 'c008', 'c009', 'c010', 'c011', 'c012', 'c013', 'c014', 'c015', 'c016', 'c017', 'c018', 'c019', 'c020', 'c021', 'c022', 'c023', 'c024', 'c025', 'c026', 'c027', 'c028', 'c029', 'c030', 'c031', 'c032', 'c033', 'c034', 'c035', 'c036', 'c037', 'c038', 'c039', 'c040', 'c041', 'c042', 'c043', 'c044', 'c045', 'c046', 'c047', 'c048', 'c049', 'c050', 'c051', 'c052', 'c053', 'c054', 'c055', 'c056', 'c057', 'c058', 'c059', 'c060', 'c061', 'c062', 'c063', 'c064', 'c065', 'c066', 'c067', 'c068', 'c069', 'c070', 'c071', 'c072', 'c073', 'c074', 'c075', 'c076', 'c077', 'c078', 'c079', 'c080', 'c081', 'c082', 'c083', 'c084', 'c085', 'c086', 'c087', 'c088', 'c089', 'c090', 'c091', 'c092', 'c093', 'c094', 'c095', 'c096', 'c097', 'c098', 'c099', 'c100', 'c101', 'c102', 'c103', 'c104', 'c105', 'c106', 'c107', 'c108', 'c109', 'c110', 'c111', 'c112', 'c113', 'c114', 'c115', 'c116', 'c117', 'c118', 'c119', 'c120', 'c121', 'c122']);
+
+  if a_retirer is null then
+    raise notice 'Catalogue a jour : aucune carte a retirer.';
+    return;
+  end if;
+
+  select array_agg(carte_id) into vendues
+    from public.shop_items where carte_id = any (a_retirer);
+  if vendues is not null then
+    raise exception
+      'Menage impossible : la boutique vend encore %. Retire l''article '
+      'correspondant de 04_seed.sql, ou remets la carte dans js/cards-data.js.',
+      vendues;
+  end if;
+
+  -- Ces annulations-la ne sont PAS remboursees, et c'est deliberate :
+  -- rembourser_demande() vit dans 03_rpc.sql, qui est joue apres ce
+  -- fichier-ci. L'appeler d'ici ferait dependre l'installation de son propre
+  -- ordre. Le cas est de toute facon une operation d'administration — on
+  -- retire une carte du jeu —, pas quelque chose qu'un joueur declenche.
+  update public.trades set status = 'cancelled', resolved_at = now()
+   where status = 'pending'
+     and (offer_card = any (a_retirer) or want_card = any (a_retirer));
+  get diagnostics n_ech = row_count;
+  if n_ech > 0 then
+    raise notice '% demande(s) d''echange annulee(s) : la carte proposee n''existe plus.', n_ech;
+  end if;
+
+  delete from public.trades where offer_card = any (a_retirer) or want_card = any (a_retirer);
+  delete from public.cards  where id = any (a_retirer);
+  raise notice '% carte(s) retiree(s) du catalogue serveur.', array_length(a_retirer, 1);
+end $$;

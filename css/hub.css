@@ -26,9 +26,6 @@
 
 .empty .ec{font-family:var(--display);font-stretch:110%;font-style:italic;font-size:20px;
   text-transform:none;letter-spacing:-.02em;color:var(--text);margin:0 0 6px;padding-left:0}
-/* Le titre d'un écran vide est centré : le trait d'accent des <h2> se
-   retrouverait posé tout seul dans la marge, à côté de rien. */
-.empty .ec::before{display:none}
 .empty .btn{max-width:280px;margin:18px auto 0}
 
 /* Le second groupe du rail et son pied n'apparaissent que sur grand écran :
@@ -44,16 +41,21 @@
    a appuyé. Sur mobile il couvre presque tout, sur ordinateur il n'existe pas. */
 #tiroir{position:fixed;inset:0;z-index:45}
 #tiroir[hidden]{display:none}
-.tiroir-bg{position:absolute;inset:0;background:var(--scrim);backdrop-filter:blur(6px);
+.tiroir-bg{position:absolute;inset:0;background:var(--scrim);
   opacity:0;transition:opacity .24s ease}
 #tiroir.on .tiroir-bg{opacity:1}
 
-.tiroir-panneau{position:absolute;top:0;right:0;bottom:0;width:min(336px,88vw);
+/* Une feuille de verre couvrant qui flotte, décollée des bords comme la
+   barre du bas : même matière, même famille d'objets. */
+.tiroir-panneau{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));right:8px;
+  bottom:calc(8px + env(safe-area-inset-bottom,0px));width:min(340px,calc(100vw - 40px));
   display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
-  background:linear-gradient(180deg,var(--surface-2),var(--bg-2) 46%);
-  border-left:1px solid var(--line-2);box-shadow:var(--sh-4);
-  padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));
-  transform:translateX(100%);transition:transform .28s cubic-bezier(.2,1,.35,1)}
+  background:var(--glass-strong);
+  -webkit-backdrop-filter:blur(32px) saturate(160%);backdrop-filter:blur(32px) saturate(160%);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-radius:var(--radius-xl);
+  box-shadow:var(--glass-hi),var(--sh-4);
+  padding:16px 14px 16px;
+  transform:translateX(calc(100% + 12px));transition:transform .32s var(--ease)}
 #tiroir.on .tiroir-panneau{transform:translateX(0)}
 
 .tiroir-id{display:flex;align-items:center;gap:12px;padding:4px 0 16px}
@@ -79,9 +81,11 @@
   background:none;border-radius:var(--radius-sm);padding:11px 10px;color:var(--subtle);
   transition:background .14s,color .14s}
 .tiroir-liste button:hover{background:var(--hover);color:var(--text)}
-.tiroir-liste button.on{background:linear-gradient(90deg,var(--accent-wash-2),transparent);color:var(--text)}
+.tiroir-liste button{border-radius:var(--radius)}
+.tiroir-liste button.on{background:rgba(255,255,255,.1);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 .tiroir-ico{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:var(--radius-sm);
-  background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--accent-soft)}
+  background:var(--surface-2);color:var(--subtle);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.tiroir-liste button.on .tiroir-ico{color:var(--accent-soft)}
 .tiroir-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
 .tiroir-ico svg.ico-star{width:22px;height:20px;stroke:none;fill:currentColor}
@@ -102,38 +106,56 @@
 
 /* ============ Pastille de compte ============ */
 .pastille{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
-  background:var(--brand);color:#fff;font-size:11px;font-weight:900;font-style:normal;line-height:1}
-.pastille.nav{position:absolute;top:1px;right:calc(50% - 24px);box-shadow:0 0 0 2px var(--bg-2);z-index:2}
+  background:var(--badge);color:#fff;font-size:11px;font-weight:900;font-style:normal;line-height:1;
+  box-shadow:0 2px 8px var(--accent-glow)}
+.pastille.nav{position:absolute;top:4px;right:calc(50% - 22px);z-index:2}
 
 /* ============ En-tête ============ */
 .hdr{display:flex;align-items:center;gap:7px}
-.pill{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--surface);
-  border:1px solid var(--line);border-radius:999px;padding:6px 15px 6px 11px;
-  font-family:var(--display);font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;
-  transition:border-color .15s,background .15s}
-.pill:hover{border-color:var(--line-2);background:var(--surface-2)}
+/* Les compteurs et les boutons de l'en-tête sont des capsules de verre. Ils
+   n'ont pas de flou à eux : le bord de l'en-tête floute déjà ce qui passe
+   dessous (pas de verre sur du verre, et un calque de moins à calculer). */
+.pill{position:relative;display:inline-flex;align-items:center;gap:7px;background:var(--glass);
+  border:1px solid var(--glass-line);border-top-color:var(--glass-line-top);border-radius:999px;
+  padding:0 14px 0 10px;height:38px;box-shadow:var(--glass-hi),var(--sh-2);
+  font-family:var(--display);font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;
+  cursor:pointer;transition:background .15s,transform .16s var(--spring)}
+.pill:hover{background:rgba(52,42,96,.6)}
+.pill:active{transform:scale(.95)}
 .pill .pk{width:20px;height:auto;flex:0 0 auto;filter:drop-shadow(0 0 7px var(--accent-glow))}
-.pill.ec{padding:6px 13px 6px 10px;gap:5px}
+.pill.ec{padding:0 13px 0 11px;gap:5px}
+.pill b,.pill span{white-space:nowrap}
 .pill.ec .shard{width:15px;height:15px}
 
-.hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:0;border-radius:50%;
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--subtle)}
-.hdrbtn:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.hdrbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid var(--glass-line);
+  border-top-color:var(--glass-line-top);border-radius:50%;background:var(--glass);
+  box-shadow:var(--glass-hi),var(--sh-2);color:var(--subtle);transition:color .15s,transform .16s var(--spring)}
+.hdrbtn:hover{color:var(--text)}
+.hdrbtn:active{transform:scale(.93)}
 .hdrbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round}
 /* L'avatar n'a ni fond ni cadre : c'est l'image qui fait le bouton. */
-.hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;width:auto;height:auto;overflow:visible}
+.hdrbtn.ava-btn{position:relative;background:none;box-shadow:none;border:0;width:auto;height:auto;overflow:visible}
 
-/* Le chevron qui dit « ça se déplie ». Il tourne quand le tiroir est ouvert. */
-/* Au-dessus des cadres décorés : leur décor déborde de l'avatar et la
-   recouvrait. */
-.moicaret{position:absolute;right:-4px;bottom:-4px;z-index:3;display:grid;place-items:center;width:17px;height:17px;
-  border-radius:50%;background:var(--surface-2);color:var(--subtle);
-  box-shadow:0 0 0 2px var(--bg),var(--sh-1);transition:transform .24s,color .15s}
-.moicaret svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.6;
-  stroke-linecap:round;stroke-linejoin:round}
-.ava-btn:hover .moicaret{color:var(--text)}
-.ava-btn[aria-expanded="true"] .moicaret{transform:rotate(180deg);color:var(--accent-soft)}
+/* Version 3.0, sur mobile : une pilule — les trois traits du menu, puis
+   l'avatar dans l'anneau de son XP. Plus de chevron ni de pastille dessus. */
+.hdrbtn.ava-btn.pilule{display:flex;align-items:center;gap:5px;height:38px;padding:0 3px 0 9px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--glass-hi),var(--sh-1)}
+.moi-menu{display:grid;place-items:center;color:var(--subtle)}
+.moi-menu svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round}
+.ava-btn[aria-expanded="true"] .moi-menu{color:var(--accent-soft)}
+/* Le niveau en chiffre, dans la pilule, juste avant la photo. */
+.moi-niv{display:grid;justify-items:center;line-height:1;min-width:18px;margin:0 1px 0 2px}
+.moi-niv small{font-size:7.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.moi-niv b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text);margin-top:1px}
+/* L'anneau d'XP et la photo : 32 px en tout, dans une pilule de 38. La règle
+   porte `.ava.sm` : `.ava.sm` (34 px, plus bas dans ce fichier) gagnait sur
+   `.moi-anneau .ava`, et la photo débordait de la pilule. Les cadres décorés
+   (`.fx`) ne débordent pas non plus : leur décor est rentré. */
+.moi-anneau{display:grid;place-items:center;flex:none;width:32px;height:32px;padding:2.5px;border-radius:50%;
+  background:conic-gradient(var(--accent-soft) var(--p),rgba(255,255,255,.14) 0)}
+.moi-anneau .ava.sm{width:27px;height:27px;box-shadow:0 0 0 2px var(--bg)}
+.moi-anneau .ava .fx-deco{display:none}
 
 /* Un point sur l'avatar quand quelque chose attend derrière le tiroir. */
 .hdrbtn.alerte::after{content:'';position:absolute;top:-1px;right:-1px;width:10px;height:10px;
@@ -143,15 +165,16 @@
 /* Un second niveau de navigation, à l'intérieur d'une page : un rail segmenté
    où le curseur glisse. Ce n'est pas un changement d'onglet, donc ce ne sont pas
    les mêmes puces que les filtres. */
-.segbar{display:flex;gap:3px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;
-  padding:3px;margin:0 0 var(--gap-4);overflow-x:auto;overflow-y:hidden;
+.segbar{display:flex;gap:2px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;
+  padding:4px;margin:0 0 var(--gap-4);overflow-x:auto;overflow-y:hidden;
   overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
 .segbar::-webkit-scrollbar{display:none}
 .segbar button{flex:1 1 0;min-width:max-content;display:inline-flex;align-items:center;justify-content:center;
   gap:7px;border:0;background:none;color:var(--muted);padding:9px 14px;border-radius:999px;
   font-size:13px;font-weight:800;white-space:nowrap;transition:color .15s,background .15s}
 .segbar button:hover{color:var(--subtle)}
-.segbar button.on{background:var(--surface);color:var(--text);box-shadow:var(--sh-1),inset 0 0 0 1px var(--line-2)}
+.segbar button.on{background:rgba(255,255,255,.15);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(255,255,255,.08),var(--sh-1)}
 .segbar .pastille{min-width:17px;height:17px;font-size:10px}
 .segbar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -163,16 +186,18 @@
   font-size:12px;font-weight:800;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line);
   display:inline-flex;align-items:center;gap:6px;transition:color .14s,background .14s}
 .souschips button:hover{color:var(--subtle)}
-.souschips button.on{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.souschips button.on{background:rgba(255,255,255,.15);color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.1)}
 
 /* ============ Quêtes ============ */
 /* Un bandeau par période : ce qu'il reste à faire, et dans combien de temps tout
    repart à zéro. Le compte à rebours remplace la phrase d'explication — « remis
    à zéro chaque nuit » ne dit pas quand, « dans 4 h 20 » si. */
-.qperiode{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--accent-wash),var(--surface) 64%);
-  border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;margin:0 0 var(--gap-3)}
+.qperiode{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--deco-wash),var(--surface) 64%);
+  border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px 16px;margin:0 0 var(--gap-3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .qpico{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:var(--radius-sm);
-  background:var(--surface);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line-2)}
+  background:var(--deco-wash);color:var(--deco-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
 .qpico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .qptxt{flex:1;min-width:0}
 .qptxt b{display:block;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;
@@ -186,14 +211,17 @@
 
 /* Une quête, compacte : titre et récompense, une ligne d'explication, puis
    la barre — ou le bouton. Une liste qu'on parcourt, pas un formulaire. */
-.quest{position:relative;display:flex;gap:11px;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius-sm);padding:10px 12px;box-shadow:var(--sh-1);transition:border-color .16s,box-shadow .16s}
-.questlist{display:flex;flex-direction:column;gap:7px}
-.quest.ready{border-color:var(--ok-line);box-shadow:0 0 0 1px var(--ok-wash),var(--sh-2)}
-.quest.done{opacity:.55;padding:8px 12px}
+.quest{position:relative;display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:12px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .16s,box-shadow .16s}
+.questlist{display:flex;flex-direction:column;gap:8px}
+/* « Tout récupérer » (version 3.0.11), au-dessus de la liste. */
+.qtout{margin:0 0 10px}
+.quest.ready{border-color:var(--ok-line);background:linear-gradient(135deg,var(--ok-wash),var(--surface) 60%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 8px 22px -10px var(--ok-line)}
+.quest.done{opacity:.55;padding:9px 14px}
 .quest.done .qdetail{display:none}
-.qico{display:grid;place-items:center;width:32px;height:32px;flex:0 0 auto;border-radius:10px;
-  background:var(--accent-wash);color:var(--accent-soft);align-self:flex-start}
+.qico{display:grid;place-items:center;width:36px;height:36px;flex:0 0 auto;border-radius:var(--radius-sm);
+  background:var(--deco-wash);color:var(--deco-ink);align-self:flex-start;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .qico svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .quest.ready .qico{background:var(--ok-wash);color:var(--ok)}
 .quest.done .qico{background:var(--surface-2);color:var(--muted);width:26px;height:26px}
@@ -208,7 +236,7 @@
 .qfoot{display:flex;align-items:center;gap:10px;margin-top:4px}
 .qbar{flex:1;height:6px;border-radius:99px;background:var(--bg-2);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
 .qbar i{display:block;height:100%;border-radius:99px;
-  background:linear-gradient(90deg,var(--accent),var(--accent-soft));
+  background:var(--progress);
   transition:width .5s cubic-bezier(.2,1,.4,1)}
 .qcompte{flex:0 0 auto;font-size:11.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
 .qcompte b{color:var(--subtle);font-weight:800}
@@ -244,6 +272,53 @@
    compteur, et le compte à rebours reste — c'est lui qui dit quand revenir. */
 .qperiode.fini{background:linear-gradient(135deg,var(--ok-wash),var(--surface) 64%);border-color:var(--ok-line)}
 .qperiode.fini .qpico{background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
+
+/* ============ « Ta journée » (3.0.13, refaite en 3.0.14), en tête des Quêtes ============ */
+/* Une carte : l'anneau des rendez-vous (un segment chacun), ce qui reste et
+   ce qu'il y a à gagner, la série ; puis les rendez-vous en tuiles, tous à
+   l'écran. Le prochain porte la lavande de l'action ; ce qui est fait se
+   coche et passe en retrait. Tout fait : une ligne verte. */
+.auj{position:relative;margin:0 0 var(--gap-3);padding:12px;border-radius:var(--radius-xl);
+  background:radial-gradient(120% 90% at 0% 0%,rgba(138,120,245,.2),transparent 60%),var(--surface);
+  box-shadow:inset 0 0 0 1px rgba(179,166,255,.22),var(--tuile)}
+.auj-tete{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.auj-anneau{position:relative;display:grid;place-items:center;width:56px;height:56px;flex:none}
+.auj-anneau svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);fill:none;stroke-width:5;stroke-linecap:butt}
+.auj-anneau circle{stroke:rgba(255,255,255,.1)}
+.auj-anneau circle.on{stroke:var(--accent-soft);filter:drop-shadow(0 0 3px rgba(179,166,255,.5))}
+.auj-anneau b{font-family:var(--display);font-style:italic;font-weight:900;font-size:18px;line-height:1}
+.auj-anneau b small{font-size:11px;font-style:normal;color:var(--muted)}
+.auj-t{flex:1;min-width:0}
+.auj-t h2{margin:0;font-family:var(--display);font-stretch:106%;font-weight:900;font-style:italic;font-size:19px;letter-spacing:-.02em}
+.auj-t p{margin:2px 0 0;font-size:13px;line-height:1.4;color:var(--subtle)}
+.auj-t p b{color:var(--text)}
+.auj-t small{display:block;margin-top:2px;font-size:11.5px;color:var(--muted)}
+.auj-gain{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.auj-gain .shard{width:13px;height:13px;color:var(--accent-soft)}
+/* La série : la flamme, en ambre (le seul endroit : c'est elle). */
+.auj-serie{align-self:flex-start;flex:none;display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;
+  color:#ffcf9a;background:rgba(255,160,80,.12);box-shadow:inset 0 0 0 1px rgba(255,160,80,.3)}
+.auj-serie svg{width:13px;height:13px;fill:#ff9f4a}
+.auj-l{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.auj-c{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:8px 4px 7px;border:0;border-radius:16px;font:inherit;color:var(--text);
+  text-align:center;cursor:pointer;background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);transition:transform .18s var(--spring)}
+.auj-c:active{transform:scale(.96)}
+.auj-ico{position:relative;display:grid;place-items:center;width:32px;height:32px;margin-bottom:2px;border-radius:11px;color:var(--accent-soft);background:var(--accent-wash-2)}
+.auj-ico>svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.auj-ico i{position:absolute;right:-5px;bottom:-5px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--surface)}
+.auj-ico i svg{width:11px;height:11px;stroke:#0e2a20;fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.auj-c b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;line-height:1.15}
+.auj-c small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;line-height:1.2;color:var(--subtle)}
+.auj-c.fait{background:transparent}
+.auj-c.fait .auj-ico{color:var(--muted);background:rgba(255,255,255,.06)}
+.auj-c.fait b,.auj-c.fait small{color:var(--muted)}
+.auj-c.suivant{background:linear-gradient(180deg,rgba(157,140,255,.22),rgba(93,75,217,.12));box-shadow:inset 0 0 0 1.5px rgba(179,166,255,.6),0 6px 18px -8px var(--accent-glow)}
+.auj-c.suivant small{color:var(--text)}
+.auj.boucle{display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(110deg,var(--ok-wash),transparent 70%),var(--surface);box-shadow:inset 0 0 0 1px var(--ok-line)}
+.auj.boucle .auj-anneau{width:44px;height:44px}
+.auj.boucle .auj-anneau circle.on{stroke:var(--ok);filter:none}
+.auj.boucle .auj-t h2{font-size:16px}
+@media (min-width:900px){.auj-l{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}}
 .qperiode.fini .qpreste small{color:var(--ok)}
 .qpok{display:grid;place-items:center;width:26px;height:26px;margin:0 0 3px auto;border-radius:50%;
   background:var(--ok-wash);color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok-line)}
@@ -254,7 +329,7 @@
 
 /* ============ Boutique ============ */
 .walletrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 var(--gap-3)}
-.wallet{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
+.wallet{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);
   border-radius:999px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--subtle)}
 .wallet b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
 .wallet svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
@@ -280,9 +355,9 @@
 .offres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .offre{position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;
   background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);
-  border-radius:var(--radius);padding:14px 12px 12px;box-shadow:var(--sh-1);
+  border-radius:var(--radius);padding:12px 12px 12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
   transition:transform .14s,border-color .14s,box-shadow .14s}
-.offre:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:var(--sh-3)}
+.offre:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),var(--sh-3)}
 .offre:active{transform:translateY(0)}
 .offre.owned{opacity:.58}
 .offre.owned:hover{transform:none}
@@ -291,18 +366,18 @@
 
 /* La vignette : l'objet, en grand, sur un fond qui en dit la nature. */
 .ofart{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1;max-height:112px;
-  border-radius:var(--radius-sm);background:radial-gradient(circle at 50% 38%,var(--accent-wash-2),var(--bg-2) 72%);
+  border-radius:var(--radius-sm);background:radial-gradient(circle at 50% 38%,var(--violet-glow),var(--bg-2) 72%);
   overflow:hidden}
 .ofart img{width:62%;height:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
 .ofart .cwrap{width:64%}
 .ofart svg{width:40%;height:40%;stroke:currentColor;fill:none;stroke-width:1.6;
-  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+  stroke-linecap:round;stroke-linejoin:round;color:var(--deco-ink)}
 .ofart svg.ico-star{stroke:none;fill:currentColor;width:46%;height:auto}
 .ofart .ava{width:60%;height:60%}
 .ofart .ofjeton{width:72%;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
 .wallet .wjeton{width:17px;height:17px;flex:0 0 auto}
 /* La quantité vendue, en pastille sur la vignette. */
-.ofqte{position:absolute;right:6px;bottom:6px;background:var(--surface);color:var(--text);
+.ofqte{position:absolute;right:6px;bottom:6px;background:var(--plate-3);color:var(--text);
   border-radius:999px;padding:2px 9px;font-family:var(--display);font-weight:900;font-size:12.5px;
   box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1)}
 
@@ -312,26 +387,17 @@
 .ofprix .shard{width:15px;height:15px;color:currentColor}
 /* Les rubans passent au-dessus de la vignette : sans `z-index`, l'illustration
    de l'article les recouvrait dès qu'elle atteignait le coin. */
-.ofbadge{position:absolute;z-index:2;top:8px;left:8px;background:var(--accent);color:var(--on-accent);
+.ofbadge{position:absolute;z-index:2;top:8px;left:8px;background:var(--plate-3);color:var(--text);
   border-radius:999px;padding:3px 9px;font-size:10px;font-weight:900;letter-spacing:.07em;
   text-transform:uppercase;box-shadow:var(--sh-1)}
 /* Une remise est une bonne nouvelle chiffrée : elle prend le vert des
    signaux positifs, le même que les quêtes accomplies. « Unique » n'est pas
    une bonne nouvelle, c'est une nature : il prend la couleur d'action. */
 .ofbadge.eco{background:var(--ok);color:#06251a;letter-spacing:.02em}
-.ofbadge.unique{background:linear-gradient(90deg,var(--accent),var(--accent-soft))}
+.ofbadge.unique{background:linear-gradient(180deg,var(--gold-light),var(--gold));color:var(--gold-ink)}
 .ofcoche{position:absolute;z-index:2;top:8px;right:8px;display:grid;place-items:center;width:22px;height:22px;
   border-radius:50%;background:var(--ok);color:#06251a}
 .ofcoche svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-
-/* Un rayon vide ou à venir : la case reste, barrée d'un cadenas. */
-.oflock{align-items:center;justify-content:center;min-height:150px;border-style:dashed;opacity:.72;
-  cursor:default;background:var(--bg-2)}
-.oflock:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}
-.oflockico{display:grid;place-items:center;width:40px;height:40px;border-radius:var(--radius-sm);
-  background:var(--surface-2);color:var(--muted)}
-.oflockico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.oflock small{font-size:11.5px;color:var(--muted);line-height:1.3;max-width:18ch}
 
 /* =====================================================================
    La fiche d'achat : on manipule ce qu'on achète
@@ -345,7 +411,7 @@
 .a3d{position:relative;width:100%;max-width:260px;margin:0 auto 16px;aspect-ratio:1;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   border-radius:var(--radius);perspective:1100px;touch-action:none;cursor:grab;
-  background:radial-gradient(circle at 50% 40%,var(--accent-wash-2),var(--bg-2) 74%);
+  background:radial-gradient(circle at 50% 40%,var(--violet-glow),transparent 74%);
   box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;user-select:none;-webkit-user-select:none}
 .a3d:active{cursor:grabbing}
 /* Un balayage de lumière qui suit l'inclinaison : c'est ce qui donne l'idée
@@ -388,7 +454,7 @@
 .a3d.carte .a3d-obj{width:56%;height:auto;aspect-ratio:5/7}
 .a3d-face,.a3d-dos{position:absolute;inset:0;border-radius:9px;overflow:hidden;
   box-shadow:0 14px 26px rgba(0,0,0,.6)}
-.a3d-dos{transform:rotateY(180deg);background:var(--bg-2)}
+.a3d-dos{transform:rotateY(180deg);background:var(--plate)}
 .a3d-dos img{width:100%;height:100%;object-fit:cover;display:block}
 .a3d-face .cwrap,.a3d-face .card{width:100%;height:100%;margin:0}
 .a3d-face img{width:100%;height:100%;object-fit:cover;display:block}
@@ -410,7 +476,7 @@
 }
 
 /* ---- Les libellés posés sur la scène ---- */
-.a3d-qte{position:absolute;right:10px;bottom:10px;background:var(--surface);color:var(--text);
+.a3d-qte{position:absolute;right:10px;bottom:10px;background:var(--plate-3);color:var(--text);
   border-radius:999px;padding:3px 11px;font-family:var(--display);font-weight:900;font-size:14px;
   box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-1);pointer-events:none}
 .a3d-dit{position:absolute;left:0;right:0;bottom:10px;display:flex;align-items:center;
@@ -465,7 +531,23 @@
 .ava.sm{width:34px;height:34px}
 .ava.md{width:56px;height:56px}
 .ava.lg{width:48px;height:48px}
-.ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--accent-glow)}
+.ava.xl{width:76px;height:76px;box-shadow:0 0 0 3px var(--f1,var(--line-2)),0 0 24px var(--violet-glow)}
+/* Version 3.0 : le niveau de combattant, une pastille lavande en bas à
+   droite de l'avatar (profil, fiche). Son liseré reprend le fond de la
+   tuile, pour la détacher du cadre. */
+.ava-nivw{position:relative;display:inline-grid;flex:none}
+.ava-niv{position:absolute;right:-5px;bottom:-4px;z-index:4;display:grid;place-items:center;min-width:27px;height:27px;padding:0 6px;border-radius:999px;
+  font-family:var(--display);font-style:normal;font-weight:900;font-size:13px;line-height:1;color:#fff;
+  background:var(--cta);box-shadow:0 0 0 2.5px var(--surface),0 3px 8px rgba(0,0,0,.45)}
+.sheet .ava-niv{box-shadow:0 0 0 2.5px var(--surface-2),0 3px 8px rgba(0,0,0,.45)}
+/* La pastille suit la taille de l'avatar. */
+.ava-nivw.sm .ava-niv{right:-5px;bottom:-4px;min-width:17px;height:17px;padding:0 4px;font-size:9.5px;box-shadow:0 0 0 2px var(--surface),0 2px 4px rgba(0,0,0,.4)}
+.ava-nivw.lg .ava-niv{right:-5px;bottom:-4px;min-width:20px;height:20px;padding:0 5px;font-size:11px;box-shadow:0 0 0 2px var(--surface),0 2px 5px rgba(0,0,0,.4)}
+.ava-nivw.md .ava-niv{right:-5px;bottom:-4px;min-width:21px;height:21px;padding:0 5px;font-size:11.5px;box-shadow:0 0 0 2px var(--surface),0 2px 5px rgba(0,0,0,.4)}
+/* Dans l'en-tête, sur le verre : le liseré prend le fond de la page. */
+#moi .ava-niv{box-shadow:0 0 0 2px var(--bg),0 2px 4px rgba(0,0,0,.4)}
+/* Dans l'arène, les avatars sont plus petits : la pastille aussi. */
+.ar-ceo .ava-nivw.md .ava-niv{min-width:18px;height:18px;font-size:10px;right:-4px;bottom:-3px;box-shadow:0 0 0 2px var(--bg)}
 /* Les cadres à texture (Prisme, Sceau, et ceux de la version 2.0) sont dans
    css/reflets.css, « Les cadres d'avatar à texture ». */
 .avaplus{font-size:26px;font-weight:300;color:var(--muted);line-height:1}
@@ -476,7 +558,7 @@
 .avapick:hover{background:var(--hover)}
 .avapick>span{font-size:10.5px;font-weight:700;color:var(--muted);line-height:1.2;text-align:center;
   overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
-.avapick.on{background:var(--accent-wash);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.avapick.on{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 2px rgba(255,255,255,.75)}
 .avapick.on>span{color:var(--text)}
 
 /* ============ Vitrine ============ */
@@ -489,7 +571,7 @@
 .vit.vide{justify-content:center;aspect-ratio:5/7;border:0;border-radius:var(--radius-sm);
   background:var(--bg-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);gap:2px}
 .vit.vide.muette{opacity:.4}
-.vitplus{font-size:22px;font-weight:300;line-height:1;color:var(--accent-soft)}
+.vitplus{font-size:22px;font-weight:300;line-height:1;color:var(--muted)}
 .vit.vide.muette .vitplus{color:var(--muted)}
 .vitcarte{display:block;width:100%;background:none;border:0;padding:0;border-radius:var(--radius-xs);
   box-shadow:var(--sh-2);transition:transform .16s}
@@ -504,7 +586,7 @@
 
 /* ============ Profil ============ */
 .idcard{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
-  background:linear-gradient(135deg,var(--accent-wash-2),var(--surface) 62%);
+  background:linear-gradient(135deg,var(--deco-wash),var(--surface) 62%);
   border:1px solid var(--line);border-radius:var(--radius);padding:16px 15px;margin-bottom:10px;
   box-shadow:var(--sh-1)}
 /* `flex:1 1 150px` et non `flex:1` : avec une base de zéro, la colonne du nom
@@ -531,6 +613,79 @@
 .found b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .findrow{display:flex;gap:8px;align-items:center;margin-top:8px}
 .findrow input{flex:1;min-width:0}
+
+/* ============ Profil et fiche d'un joueur : la carte de visite (3.0.13) ============
+   La même pour son profil et pour la fiche que voient les autres
+   (vCarteJoueur, js/profile.js). Un en-tête (le fond, l'avatar, le nom, le
+   titre, la devise, la Section), quatre chiffres, puis des blocs pleins :
+   la carte fétiche, la vitrine, les combats et les decks montrés, les
+   succès. Les réglages vivent dans la feuille « Personnaliser » (.pf-perso). */
+.pj{display:flex;flex-direction:column;gap:12px}
+.pj-hero{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px 16px;
+  padding:18px 16px 16px;border-radius:var(--radius-xl);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.pj.elu .pj-hero{box-shadow:inset 0 0 0 1.5px var(--gold),var(--tuile)}
+/* Le fond : l'illustration d'une carte, nette en haut, fondue vers le bas
+   (le texte reste sur un aplat). */
+.pj-hero .idbanniere>i{opacity:.62;filter:saturate(1.15)}
+.pj-hero .idbanniere::after{background:linear-gradient(180deg,rgba(28,27,37,.15) 0%,rgba(28,27,37,.62) 45%,var(--surface) 92%)}
+.pj-id{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+.pj-nom{max-width:100%;font-family:var(--display);font-stretch:108%;font-style:italic;font-weight:900;font-size:clamp(22px,6.6vw,30px);
+  line-height:1.05;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pj-devise{margin:0;font-size:13px;font-style:italic;line-height:1.35;color:var(--subtle)}
+.pj-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:2px 0 0;font-size:12px;font-weight:700;color:var(--muted)}
+.pj-sec{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 6px;border-radius:999px;color:var(--text);
+  background:color-mix(in srgb,var(--sc) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 45%,transparent)}
+.pj-sec>i{width:8px;height:8px;border-radius:50%;background:var(--sc);box-shadow:0 0 6px color-mix(in srgb,var(--sc) 70%,transparent)}
+/* Personnaliser, et « Ma fiche » (3.0.14) : la fiche telle que les autres
+   l'ouvrent, dans sa feuille. */
+.pj-actes{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.pj-perso{justify-self:start}
+.pj-perso svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+/* Quatre chiffres, côte à côte. */
+.pj-chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:8px}
+.pj-chiffres>div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:11px 10px;border-radius:var(--radius-sm);
+  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.pj-chiffres b{font-family:var(--display);font-stretch:106%;font-weight:900;font-size:19px;line-height:1.1;color:var(--text);white-space:nowrap}
+.pj-chiffres b small,.pj-cb b small{font-size:.62em;font-weight:800;color:var(--muted);margin-left:1px}
+.pj-chiffres span{font-size:11.5px;font-weight:700;color:var(--muted)}
+/* Un bloc plein. */
+.pj-bloc{padding:14px 14px 12px;border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile)}
+.pj .pj-bloc>h2{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 10px;font-size:17px}
+.pj-compte,.pj-niv{font-family:var(--font,inherit);font-style:normal;font-size:12.5px;font-weight:800;color:var(--muted)}
+.pj-bloc .vitrine{margin-bottom:2px}
+.pj .fet{margin:0}
+/* Les combats : les victoires en grand, quatre chiffres à côté. */
+.pj-cb{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px}
+.pj-cb>div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px;border-radius:var(--radius-sm);background:var(--surface-2)}
+.pj-cb-grand{grid-row:span 2;justify-content:center}
+.pj-cb b{font-family:var(--display);font-stretch:106%;font-weight:900;font-size:18px;line-height:1.1;color:var(--text);white-space:nowrap}
+.pj-cb-grand b{font-size:30px}
+.pj-cb b i{font-style:normal;font-weight:700;color:var(--muted);margin:0 1px}
+.pj-cb span{font-size:11.5px;font-weight:700;color:var(--muted)}
+.pj-cb small{font-size:11px;font-weight:600;color:var(--subtle)}
+@media (max-width:370px){.pj-cb{grid-template-columns:1fr 1fr}.pj-cb-grand{grid-row:auto;grid-column:1/-1}}
+/* Les decks montrés : l'illustration de sa carte de couverture, son nom,
+   ses Essences. Touché, il s'ouvre (voirDeckMontre). */
+.pj .pj-sous{margin:14px 0 8px;font-family:inherit;font-stretch:normal;font-style:normal;font-size:13px;font-weight:800;letter-spacing:0;color:var(--subtle)}
+.pj-decks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pj-deck{display:flex;flex-direction:column;min-width:0;padding:0;border:0;border-radius:var(--radius-sm);overflow:hidden;cursor:pointer;
+  font:inherit;color:inherit;text-align:left;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);transition:transform .16s var(--spring)}
+.pj-deck:active{transform:scale(.97)}
+.pj-deck-art{display:block;height:66px;background:var(--bg-2) no-repeat;background-size:128.2% auto;background-position:50% 24%}
+.pj-deck-t{display:flex;flex-direction:column;gap:4px;padding:8px 10px 10px;min-width:0}
+.pj-deck-t b{font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pj-deck-t small{display:flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.pj-deck-t small .ess{width:15px;height:15px}
+.pj-deck-t small span{margin-left:4px}
+.pj-vide{margin:10px 0 0;font-size:12.5px;line-height:1.4;color:var(--muted)}
+/* Dans une feuille (la fiche d'un autre), les blocs se posent sur le verre. */
+.sheet .pj-bloc,.sheet .pj-chiffres>div{background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.sheet .pj-cb>div,.sheet .pj-deck{background:var(--surface-3)}
+.pj-fiche .pj .pj-bloc>h2{font-size:16px}
+.pj-ajoute{margin:12px 2px 0}
+/* La feuille « Personnaliser ». */
+.pf-ongs{margin:0 0 12px}
+.pf-corps .persotitre:first-child{margin-top:0}
 
 /* ============ Réglages ============ */
 /* Un interrupteur qui glisse, pas une case à cocher du navigateur : le réglage
@@ -578,21 +733,6 @@
   box-shadow:var(--sh-2),0 0 0 1px var(--accent-deep)}
 .slider input[type=range]:active::-webkit-slider-thumb{transform:scale(1.16)}
 
-/* Un choix entre trois : les trois options côte à côte, celle qui est retenue
-   en plein. Plus direct qu'une liste déroulante pour trois mots. */
-.pickrow{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-bottom:8px}
-.pickopt{display:flex;flex-direction:column;align-items:center;gap:7px;border:0;
-  background:var(--surface-2);color:var(--subtle);border-radius:var(--radius-sm);padding:14px 8px 11px;
-  font-size:12.5px;font-weight:800;box-shadow:inset 0 0 0 1px var(--line);
-  transition:background .15s,color .15s,box-shadow .15s}
-.pickopt:hover{background:var(--surface-3);color:var(--text)}
-.pickopt svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;
-  stroke-linecap:round;stroke-linejoin:round}
-.pickopt.on{background:linear-gradient(180deg,var(--accent-wash-2),var(--accent-wash));color:var(--text);
-  box-shadow:inset 0 0 0 1px var(--accent-soft)}
-.pickopt.on svg{color:var(--accent-soft)}
-
-.reglabel{font-size:12.5px;font-weight:700;color:var(--muted);margin:14px 0 7px}
 .about code{background:var(--bg-2);border-radius:5px;padding:1px 5px;font-size:12px}
 .mentions{max-width:46ch;margin:26px auto 0;color:var(--muted);font-size:11px;line-height:1.5;
   text-align:center;text-wrap:pretty}
@@ -607,12 +747,12 @@
 .clligne{display:flex;align-items:center;gap:11px;width:100%;background:var(--surface);
   border:1px solid var(--line);border-radius:var(--radius);padding:8px 13px 8px 9px;text-align:left}
 .clligne:hover{background:var(--hover)}
-.clligne.moi{border-color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.clligne.moi{border-color:rgba(157,140,255,.55);background:linear-gradient(90deg,var(--deco-wash),var(--surface) 70%);box-shadow:inset 0 0 0 1px rgba(157,140,255,.4)}
 .clrang{flex:0 0 30px;text-align:center;font-family:var(--display);font-weight:900;font-size:15px;color:var(--muted)}
 .podium .clrang{height:28px;line-height:28px;border-radius:99px;color:#1a1205}
 /* Teintes fixes et claires, chiffre sombre : lisibles dans les deux thèmes
    (les jetons --r-l et --r-r foncent en thème clair). */
-.p1 .clrang{background:#ffc73b}
+.p1 .clrang{background:var(--gold)}
 .p2 .clrang{background:#c79bff}
 .p3 .clrang{background:#39b8ff}
 .clnom{flex:1;min-width:0;font-weight:800;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -650,36 +790,16 @@
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .pickmeta{display:block;font-size:10px;font-weight:700;color:var(--muted)}
 
-/* ============ Combats ============ */
-.soon{text-align:center;padding:14px 8px 40px}
-.soonart{position:relative;height:210px;margin:6px auto 22px;max-width:320px;pointer-events:none}
-.soondeck{position:absolute;top:0;left:50%;width:132px;margin-left:-66px;opacity:.9;
-  filter:drop-shadow(0 16px 26px rgba(0,0,0,.5))}
-.soondeck.d0{transform:translateX(-74px) rotate(-14deg)}
-.soondeck.d1{transform:translateY(-10px) scale(1.06);z-index:2}
-.soondeck.d2{transform:translateX(74px) rotate(14deg)}
-/* Du texte d'accent posé sur un lavis d'accent : 1,3:1 de contraste, une
-   étiquette qu'on devinait plus qu'on ne la lisait. La couleur du texte courant
-   sur le même lavis tient dans les deux thèmes. */
-.soontag{display:inline-block;background:var(--accent-wash-2);color:var(--text);border-radius:999px;
-  padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
-  box-shadow:inset 0 0 0 1px var(--accent-soft)}
-.soontitle{font-family:var(--display);font-stretch:114%;font-weight:900;font-style:italic;font-size:34px;
-  letter-spacing:-.03em;text-transform:none;color:var(--text);margin:12px 0 8px;padding:0}
-.soontitle::before{display:none}
-.soon p{max-width:38ch;margin-inline:auto}
-
 /* ============ Bulle d'installation (iPhone) ============ */
 .iossteps{list-style:none;margin:16px 0 4px;padding:0;display:flex;flex-direction:column;gap:12px;text-align:left}
 .iossteps li{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.35;color:var(--subtle)}
 .iossteps b{color:var(--text)}
 .iosico,.iosnum{flex:0 0 auto;width:34px;height:34px;border-radius:var(--radius-sm);display:grid;place-items:center;
-  background:var(--surface-2);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line)}
+  background:var(--deco-wash);color:var(--deco-ink);box-shadow:inset 0 0 0 1px var(--line)}
 .iosico{padding:6px}
 .iosnum{font-weight:900;color:var(--ok)}
 .iosarrow{text-align:center;font-size:26px;color:var(--accent-soft);margin:14px 0 -6px;animation:bob 1.5s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(7px);opacity:.55}}
-body.installsheet .sheet{border-bottom:2px solid var(--accent)}
 
 /* ============ Attente serveur ============ */
 body.busy{cursor:progress}
@@ -694,12 +814,11 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
      l'en-tête et celui des notifications en découlent tous. */
   :root{--rail:236px}
 
-  /* Une grille, pas un flex qui passe à la ligne : avec `flex-wrap`, le
-     navigateur répartit la hauteur restante entre les lignes, et l'en-tête
-     s'allongeait dès que le contenu de la page était court. */
-  body{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);grid-template-rows:auto minmax(0,1fr);
-    grid-template-areas:"top top" "main nav";height:100%}
-  .top{grid-area:top;padding:12px 26px}
+  /* Une grille à deux colonnes : le contenu, et la place du rail. L'en-tête
+     flotte au-dessus des deux (css/base.css) : il n'a pas de rangée à lui. */
+  body{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);grid-template-rows:minmax(0,1fr);
+    grid-template-areas:"main nav";height:100%}
+  .top{padding:env(safe-area-inset-top,0px) 22px 0;--top-h:68px}
   #nav{grid-area:nav}
   main{grid-area:main}
 
@@ -709,7 +828,7 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   body.inauth,body.inlock{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);
     grid-template-areas:"main"}
   body.inauth #main>*,body.inlock #main>*{max-width:none;margin-inline:auto}
-  #brand img{height:44px}
+  #brand img{height:42px}
 
   /* Le rail passe à droite : sous la main qui tient la souris, et à l'opposé
      du logo, pour que l'en-tête ne soit pas déséquilibré d'un seul côté.
@@ -718,69 +837,55 @@ body.busy main{opacity:.62;pointer-events:none;transition:opacity .15s}
   /* Une colonne, et non une grille : c'est ce qui permet au pied de menu
      d'être poussé tout en bas par `margin-top:auto`, quelle que soit la
      hauteur de la liste au-dessus. */
-  #nav{display:flex;flex-direction:column;gap:2px;
-    padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));
-    border-top:0;border-left:1px solid var(--line);background:var(--bg-2);backdrop-filter:none;
-    overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+  /* Le rail est la même capsule de verre que la barre du bas, debout :
+     décollé des bords, arrondi, et la page passe derrière lui. */
+  #nav{position:relative;left:auto;right:auto;bottom:auto;height:auto;display:flex;flex-direction:column;gap:2px;
+    margin:80px 14px 14px 0;padding:12px 10px 14px;border-radius:var(--radius-xl);
+    overflow-y:auto;scrollbar-width:none}
+  #nav::-webkit-scrollbar{display:none}
   #nav>*{flex:0 0 auto}
-  #nav button{flex-direction:row;justify-content:flex-start;gap:13px;padding:11px 13px;font-size:13.5px;
-    font-weight:700;letter-spacing:.005em;border-radius:var(--radius-sm);color:var(--subtle)}
+  #nav button{flex-direction:row;justify-content:flex-start;gap:13px;padding:11px 13px;font-size:14px;
+    font-weight:700;letter-spacing:.005em;border-radius:var(--radius);color:var(--subtle)}
   #nav button svg{width:20px;height:20px;flex:0 0 auto}
   #nav button svg.ico-star{width:22px;height:20px}
   #nav button span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis}
   #nav button:hover{color:var(--text);background:var(--hover)}
 
-  /* Sélection : une pastille pleine sur toute la ligne. La pastille ronde de la
-     version mobile est dessinée pour une icône seule ; ici elle laisserait le
-     libellé dehors. */
-  #nav button .navbg{position:absolute;inset:0;width:auto;height:auto;translate:none;scale:1;opacity:0;
-    border-radius:var(--radius-sm);background:linear-gradient(180deg,var(--accent-soft),var(--accent));
-    box-shadow:0 2px 10px var(--accent-glow),inset 0 1px 0 var(--gloss-soft);transition:opacity .18s}
-  #nav button.on .navbg{opacity:1}
-  #nav button.on{color:var(--on-accent);font-weight:800}
-  #nav button.on svg{stroke:var(--on-accent)}
-  #nav button.on svg.ico-star{fill:var(--on-accent);filter:none}
+  /* Sélection : la même lentille que sur mobile, sur toute la ligne. Elle ne
+     glisse pas : les lignes du rail n'ont pas toutes la même hauteur. */
+  #nav button.on .navbg{animation:none}
+  #nav button.on{color:var(--text);font-weight:800}
 
   /* Le compteur se range au bout de la ligne, à la place où l'œil le cherche. */
-  .pastille.nav{position:static;margin-left:auto;box-shadow:none}
-  #nav button.on .pastille.nav{background:rgba(0,0,0,.3);color:#fff}
+  .pastille.nav{position:static;margin-left:auto}
 
   /* Le contenu se centre dans la colonne qui lui reste, et non contre le rail :
      collé à gauche, la page paraissait décalée d'un côté sur un grand écran. */
   main{min-width:0;min-height:0;padding:24px 36px 44px}
+  main{padding-top:84px}
   #main>*{max-width:860px;margin-inline:auto}
   #main.tab-boosters>*,#main.tab-collection>*{max-width:1180px}
 
   /* Plus de barre en bas : les notifications se recentrent sur la zone de
      contenu plutôt que sur la fenêtre entière. */
   #toast{bottom:26px;left:calc(50% - var(--rail) / 2)}
-  #qnotif{top:88px;left:calc(50% - var(--rail) / 2)}
+  #qnotif{top:84px;left:calc(50% - var(--rail) / 2)}
 
   .stats{grid-template-columns:repeat(4,1fr)}
   .offres{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
-  .pickrow{gap:10px}
-
-  /* Sur ordinateur, l'avatar mène droit au profil : il n'y a pas de tiroir à
-     déplier, donc pas de chevron à montrer. */
-  .moicaret{display:none}
 
   /* Le rail a la place d'afficher les deux groupes : plus besoin de tiroir. */
   #nav .second{display:flex}
-  #nav .navsep{display:block;height:1px;margin:14px 10px 12px;background:var(--line);border:0}
+  #nav .navsep{display:block;height:1px;margin:10px 12px;background:var(--line);border:0}
   #nav .second span{font-weight:inherit;color:inherit}
   #nav button.second{padding:9px 13px;font-size:12.5px}
   #nav button.second svg{width:18px;height:18px}
-  #nav .navpied{display:block;margin-top:auto;padding:16px 13px 0;
+  #nav .navpied{display:block;margin-top:auto;padding:14px 8px 0;
     border-top:1px solid var(--line)}
-
-  .soonart{height:250px;max-width:380px}
-  .soondeck{width:156px;margin-left:-78px}
-  .soondeck.d0{transform:translateX(-92px) rotate(-14deg)}
-  .soondeck.d2{transform:translateX(92px) rotate(14deg)}
 
   /* Les feuilles modales se centrent plutôt que de monter du bas. */
   .sheet-wrap{align-items:center}
-  .sheet{border-radius:var(--radius-lg);border-bottom:1px solid var(--line);max-height:82vh;padding-bottom:20px}
+  .sheet{border-radius:var(--radius-xl);border-bottom:1px solid var(--glass-line);max-height:82vh;padding-bottom:20px}
   .sheet::before{display:none}
   .pickgrid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));max-height:46vh}
 }
@@ -844,12 +949,12 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 14px 8px 12px;
   font-size:12.5px;font-weight:700;color:var(--subtle)}
 .trecharge::before{content:'';position:absolute;inset:0 auto 0 0;width:var(--p,0%);
-  background:var(--accent-wash);pointer-events:none;transition:width 1s linear}
+  background:var(--deco-wash);pointer-events:none;transition:width 1s linear}
 .trecharge>*{position:relative}
 .trecharge>span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trecharge>span b{color:var(--text)}
 .trecharge>svg{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round;color:var(--accent-soft)}
+  stroke-linecap:round;stroke-linejoin:round;color:var(--deco-ink)}
 .trecharge.pret{border-color:var(--ok-line)}
 .trecharge.pret>svg{color:var(--ok);stroke-width:2.6}
 /* ---------- Une demande ---------- */
@@ -867,7 +972,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .troc-cartes{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;
   gap:12px;max-width:330px;margin:0 auto}
 .troc-fleche{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;
-  background:var(--surface-2);color:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--line)}
+  background:var(--deco-wash);color:var(--deco-ink);box-shadow:inset 0 0 0 1px var(--line)}
 .troc-fleche svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 
@@ -892,7 +997,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .tpill.neuf{background:var(--ok);color:#06251a}
 .tpill.perte{background:var(--warn);color:#2a1d00}
 .tpill.garde{font-family:var(--body);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
-  background:var(--accent-soft);color:#fff}
+  background:var(--plate-3);color:var(--text)}
 
 .troc-mot{margin:12px auto 0;max-width:330px;background:var(--bg-2);border-radius:var(--radius-sm);
   padding:9px 12px;font-size:13px;font-style:italic;line-height:1.4;color:var(--subtle)}
@@ -929,7 +1034,6 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .compo{display:flex;flex-direction:column;gap:12px}
 .compo-tete{display:flex;align-items:center;gap:10px}
 .compo-tete h2{margin:0;padding:0;font-size:18px}
-.compo-tete h2::before{display:none}
 .compo-retour{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;border:0;
   border-radius:50%;background:var(--surface);color:var(--subtle);box-shadow:inset 0 0 0 1px var(--line)}
 .compo-retour:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
@@ -971,15 +1075,22 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .compo-regle{margin:0;text-align:center;font-size:11.5px;line-height:1.5;color:var(--muted)}
 
 /* Les amis, d'un geste : c'est le chemin normal vers un échange. */
+/* 3.0.14 : de l'air autour des puces (rendu aussitôt par la marge négative).
+   Une bande qui défile de côté coupe aussi en hauteur : les cadres décorés
+   (qui débordent du cercle de 14 à 26 %) et la pastille de niveau étaient
+   rognés en rectangle. */
 .amirow{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
-  touch-action:pan-x;padding:2px 0 4px;scrollbar-width:none}
+  touch-action:pan-x;padding:10px 8px 10px;margin:-8px -8px -6px;scrollbar-width:none}
 .amirow::-webkit-scrollbar{display:none}
 .amichip{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;border:0;
   background:var(--surface-2);color:var(--subtle);border-radius:999px;padding:5px 15px 5px 5px;
   font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px var(--line);
   transition:background .14s,color .14s,box-shadow .14s}
 .amichip:hover{background:var(--surface-3);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
-.amichip span{max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 3.0.17, 8 novembre : le pseudo seul. « .amichip span » visait aussi les
+   <span> de l'avatar (.ava-nivw, .ava) : coupés à leur boîte, ils rognaient
+   l'anneau du cadre, le cadre décoré et la pastille de niveau. */
+.amichip-nom{max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Une alerte qui explique plutôt qu'elle ne bloque. */
 .autherr.doux{background:var(--surface-2);border-color:var(--line-2);color:var(--muted)}
@@ -990,13 +1101,13 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .pick .tpill{top:-5px;right:-5px;height:19px;min-width:22px;padding:0 6px;font-size:10.5px}
 .pick .tpill.neuf,.pick .tpill.perte,.pick .tpill.garde{font-size:8.5px}
 /* Une carte qui me manque, dans la collection d'un autre : un liseré. */
-.pick.manque .cwrap{box-shadow:0 0 0 2px var(--accent-soft),var(--sh-2)}
+.pick.manque .cwrap{box-shadow:0 0 0 2px var(--ok),var(--sh-2)}
 .souschips .rarchip .rardot{color:var(--rc,var(--muted))}
 .sheet .souschips{margin-top:4px}
 .pickn{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;
   margin-left:5px;border-radius:9px;background:var(--surface-3);color:var(--subtle);
   font-size:10px;font-weight:900;font-style:normal;line-height:1}
-.souschips button.on .pickn{background:var(--accent-wash-2);color:var(--accent-soft)}
+.souschips button.on .pickn{background:rgba(255,255,255,.2);color:var(--text)}
 .trcolvues{padding-top:4px}
 /* Dans une fiche, la grille est déjà courte : elle n'a pas à défiler dans son
    coin à l'intérieur d'une feuille qui défile déjà. */
@@ -1008,7 +1119,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   border-radius:999px;padding:5px 13px;font-size:12px;font-weight:600;color:var(--muted);
   box-shadow:inset 0 0 0 1px var(--line)}
 .colchip b{font-family:var(--display);font-weight:900;font-size:14px;color:var(--text)}
-.colchip.fort b{color:var(--accent-soft)}
+.colchip.fort b{color:var(--deco-ink)}
 .ficheacts{margin-top:12px}
 
 /* =====================================================================
@@ -1027,13 +1138,13 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .bmsg{position:relative;display:flex;gap:11px;background:var(--surface);border:1px solid var(--line);
   border-radius:var(--radius);padding:12px 13px;margin-bottom:8px;box-shadow:var(--sh-1)}
 /* Du neuf : un lavis, et un point dans le coin. */
-.bmsg.neuf{border-color:var(--accent-wash-2);
-  background:linear-gradient(135deg,var(--accent-wash),var(--surface) 62%)}
+.bmsg.neuf{border-color:rgba(157,140,255,.35);
+  background:linear-gradient(135deg,var(--deco-wash),var(--surface) 62%)}
 .bmsg.neuf::after{content:'';position:absolute;top:15px;right:14px;width:8px;height:8px;
   border-radius:50%;background:var(--brand)}
 .bava{flex:0 0 auto;align-self:flex-start;border:0;background:none;padding:0}
 .bico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;align-self:flex-start;
-  border-radius:50%;background:var(--accent-wash);color:var(--accent-soft)}
+  border-radius:50%;background:var(--deco-wash);color:var(--deco-ink)}
 .bico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .bcorps{flex:1;min-width:0;padding-right:16px}
@@ -1057,8 +1168,8 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .qn.boiteqn{border-color:var(--line-2)}
 .qn.boiteqn .qntxt b{font-weight:600}
 .qn.boiteqn .qntxt strong{font-weight:800}
-.qn.boiteqn .qntxt small{color:var(--accent-soft)}
-.qn.boiteqn .qnico{background:var(--accent-wash);color:var(--accent-soft)}
+.qn.boiteqn .qntxt small{color:var(--deco-ink)}
+.qn.boiteqn .qnico{background:var(--deco-wash);color:var(--deco-ink);box-shadow:none}
 .qn.froid .qnico{background:var(--surface-3);color:var(--muted)}
 .qn.froid .qntxt small{color:var(--muted)}
 .qnav{flex:0 0 auto;display:grid;place-items:center}
@@ -1066,26 +1177,20 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 /* =====================================================================
    Recyclage
    ===================================================================== */
-/* Le plafond de la semaine : ce qu'on a touché, en violet ; ce qu'on
-   s'apprête à toucher, rayé de vert à la suite. */
+/* La tuile « Fabriquer une carte » (vFabInfo, js/recyclage.js) : elle garde
+   le nom de l'ancien plafond de la semaine. */
 .recplafond{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
   padding:12px 14px;margin:0 0 10px;box-shadow:var(--sh-1)}
-.recplafond.plein{border-color:var(--ok-line)}
 .recplafond-tete{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:13.5px}
 .recplafond-tete>b{font-weight:800}
 .recplafond-tete span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;
   color:var(--muted)}
 .recplafond-tete span b{font-family:var(--display);font-weight:900;font-size:15px;color:var(--text)}
-.recbarre{display:flex;height:8px;margin:9px 0 7px;border-radius:99px;background:var(--bg-2);
-  overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
-.recbarre i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));
-  transition:width .35s cubic-bezier(.2,1,.4,1)}
-.recbarre i.sel{background:repeating-linear-gradient(135deg,var(--ok) 0 5px,var(--ok-deep) 5px 10px)}
 .recplafond small{font-size:12px;color:var(--muted)}
 
 /* Les Fragments : le même losange que les Éclats, en creux. */
 .fragico{display:inline-flex;vertical-align:-2px}
-.fragico svg{width:1.05em;height:1.05em;fill:none;stroke:var(--accent-soft);stroke-width:2;stroke-linejoin:round}
+.fragico svg{width:1.05em;height:1.05em;fill:none;stroke:var(--deco-ink);stroke-width:2;stroke-linejoin:round}
 .wallet .fragico svg{width:17px;height:17px}
 .fabinfo small{display:block;margin-top:5px;line-height:1.45}
 .fabinfo .linkbtn{margin-top:6px;font-size:12.5px}
@@ -1183,7 +1288,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
    petit écran, la marge est ce qui coûte le plus cher.
    ===================================================================== */
 @media (max-width:560px){
-  main{padding:12px 12px 24px}
+  main{padding-left:12px;padding-right:12px}
 
   /* ---- Boutique ---- */
   .offres{grid-template-columns:repeat(3,1fr);gap:8px}
@@ -1195,8 +1300,6 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   .ofqte{right:4px;bottom:4px;padding:1px 7px;font-size:11px}
   .ofbadge{top:5px;left:5px;padding:2px 7px;font-size:9px;letter-spacing:.04em}
   .ofcoche{top:5px;right:5px;width:19px;height:19px}
-  .oflock{min-height:0;padding:14px 8px}
-  .oflockico{width:32px;height:32px}
 
   /* ---- Sélecteurs de cartes ---- */
   /* Trois par rangée, pas quatre : chaque carte porte une étiquette dans son
@@ -1237,7 +1340,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   color:var(--muted)}
 .bvpoints b{color:var(--text)}
 .bvico{display:grid;place-items:center;width:32px;height:32px;flex:0 0 auto;
-  border-radius:var(--radius-sm);background:var(--accent-wash);color:var(--accent-soft)}
+  border-radius:var(--radius-sm);background:var(--deco-wash);color:var(--deco-ink)}
 .bvico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .bvico svg.ico-star{width:20px;height:14px;stroke:none;fill:currentColor}
@@ -1257,8 +1360,8 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .badge.on.tC .sucico{background:var(--surface-3);color:var(--text)}
 .badge.on.tR .sucico{background:#39b8ff;color:#06263a}
 .badge.on.tE .sucico{background:#a95cf2;color:#fff}
-.badge.on.tL .sucico{background:#ffc73b;color:#3a2600}
-.badge.on.tUN .sucico{background:conic-gradient(#ff5bb0,#ffc73b,#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
+.badge.on.tL .sucico{background:var(--gold);color:var(--gold-ink)}
+.badge.on.tUN .sucico{background:conic-gradient(#ff5bb0,var(--gold),#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
 .suctxt{min-width:0;display:flex;flex-direction:column}
 .suctxt b{font-size:13px;font-weight:800;line-height:1.2}
 .suctxt small{font-size:11px;color:var(--muted);line-height:1.3}
@@ -1277,22 +1380,17 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .nvcarte{position:relative;flex:0 0 34%;max-width:150px;rotate:-6deg}
 .nvtexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .nvkicker{align-self:flex-start;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
-  background:#ffc73b;color:#3a2600;padding:3px 9px;border-radius:999px}
+  background:var(--gold);color:var(--gold-ink);padding:3px 9px;border-radius:999px}
 .nvhero.trouvee .nvkicker{background:rgba(255,255,255,.2);color:#fff}
 .nvtexte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.1}
 .nvtexte small{font-size:12.5px;line-height:1.4;opacity:.88}
-.nvevent{display:flex;align-items:flex-start;gap:10px;margin:0 0 4px;padding:10px 12px;border-radius:var(--radius);
-  background:var(--accent-wash);color:var(--muted);font-size:13px;line-height:1.4}
-.nvevent b{color:var(--text)}
-.nvevent small{display:block;margin-top:2px}
-.nvevent svg{flex:0 0 auto;width:20px;height:14px;margin-top:3px;fill:var(--accent-soft)}
 .nvpoints{margin-top:12px}
 
 /* ============ Mes tirages ============ */
-.rardot.rBR{background:linear-gradient(135deg,#ff5bb0,#ffc73b,#55e6a6,#39b8ff)}
+.rardot.rBR{background:linear-gradient(135deg,#ff5bb0,var(--gold),#55e6a6,#39b8ff)}
 .tirliste h2{margin-top:18px}
 .tirage{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:9px}
-.tirage.god{border-color:#ffc73b}
+.tirage.god{border-color:var(--gold)}
 .tirtete{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .tirtete>span{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13.5px}
 .tirtete .btn{display:inline-flex;align-items:center;gap:6px}
@@ -1308,7 +1406,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
   background:radial-gradient(120% 150% at 22% 40%,#6a23c4 0%,#2c0f4d 52%,#140a20 100%)}
 .unvitrine.mienne{margin-top:var(--gap-3);
   background:radial-gradient(120% 150% at 22% 40%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
-  box-shadow:0 0 0 1.5px #ffc73b,0 10px 34px rgba(255,140,200,.3)}
+  box-shadow:0 0 0 1.5px var(--gold),0 10px 34px rgba(255,140,200,.3)}
 .unrayons{position:absolute;left:24%;top:50%;width:520px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.4;pointer-events:none;
   background:repeating-conic-gradient(from 0deg,rgba(236,143,255,.55) 0 6deg,transparent 6deg 18deg);
   -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
@@ -1322,9 +1420,9 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .untexte{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
 .unkicker{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
   padding:3px 9px;border-radius:999px;background:#ec8fff;color:#3a0640}
-.unvitrine.mienne .unkicker{background:#ffc73b;color:#3a2600}
+.unvitrine.mienne .unkicker{background:var(--gold);color:var(--gold-ink)}
 .unvitrine.trouvee .unkicker{background:rgba(255,255,255,.2);color:#fff}
-.unvitrine.bientot .unkicker{background:#ffc73b;color:#3a2600}
+.unvitrine.bientot .unkicker{background:var(--gold);color:var(--gold-ink)}
 .unnom{font-family:var(--display);font-style:italic;font-weight:900;font-size:23px;line-height:1.08}
 .unserie{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.6)}
 .untexte p{margin:3px 0 0;font-size:13px;line-height:1.45;color:rgba(255,255,255,.88)}
@@ -1358,7 +1456,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .cdde b{color:#fff}
 .cadeau .cdmot,.sheet .cdmot{margin:4px 0 0;padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;line-height:1.45;font-style:italic;
   background:rgba(255,255,255,.1);color:inherit;max-width:100%}
-.sheet > .cdmot{background:var(--accent-wash);color:var(--text)}
+.sheet > .cdmot{background:var(--deco-wash);color:var(--text)}
 .cadeau .cdaide{margin:2px 0 0;color:rgba(255,255,255,.6)}
 .cadeau.ouvert{padding-top:20px}
 .cdcarte{width:42%;max-width:170px;padding:0;border:0;background:none;cursor:pointer;rotate:-3deg;margin-bottom:6px;
@@ -1368,7 +1466,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .cdliste li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);text-align:left;
   background:rgba(255,255,255,.1);animation:cdsort .5s cubic-bezier(.3,1.4,.5,1) both}
 .cdliste li:nth-child(2){animation-delay:.08s}.cdliste li:nth-child(3){animation-delay:.16s}.cdliste li:nth-child(4){animation-delay:.24s}
-.cdliste b{font-family:var(--display);font-weight:900;font-size:19px;color:#ffc73b}
+.cdliste b{font-family:var(--display);font-weight:900;font-size:19px;color:var(--gold)}
 .cdliste span:last-child{font-size:13.5px;color:rgba(255,255,255,.88)}
 .cdnote{margin:4px 0 0;font-size:12px;line-height:1.4;color:rgba(255,255,255,.65)}
 .cdico{flex:0 0 26px;height:26px;display:grid;place-items:center}
@@ -1382,7 +1480,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
    déborde, comme celui qui le porte. */
 .ava.unique{overflow:visible;box-shadow:0 0 14px rgba(236,143,255,.55);animation:elu-halo 3s ease-in-out infinite}
 .ava.unique::before{content:"";position:absolute;inset:-3.5px;border-radius:50%;z-index:1;pointer-events:none;
-  background:conic-gradient(from 0deg,#ffc73b,#ff7cc8,#ec8fff,#7fd8ff,#fff6d6,#ffc73b);
+  background:conic-gradient(from 0deg,var(--gold),#ff7cc8,#ec8fff,#7fd8ff,#fff6d6,var(--gold));
   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
   mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));
   animation:elu-tourne 4s linear infinite}
@@ -1398,13 +1496,13 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 @keyframes elu-etoile{0%,100%{scale:.7;opacity:.6;rotate:0deg}50%{scale:1.1;opacity:1;rotate:45deg}}
 
 /* Sa carte d'identité et sa fiche prennent un liseré doré. */
-.idcard.elu{box-shadow:0 0 0 1.5px #ffc73b,0 8px 26px rgba(236,143,255,.25)}
+.idcard.elu{box-shadow:0 0 0 1.5px var(--gold),0 8px 26px rgba(236,143,255,.25)}
 
 /* L'écrin : la carte, des rayons dorés, et ce qu'elle a d'unique. */
 .elu-ecrin{position:relative;display:flex;align-items:center;gap:14px;width:100%;margin:0 0 var(--gap-4);padding:14px 16px;
   border:0;border-radius:var(--radius);overflow:hidden;isolation:isolate;text-align:left;color:#fff;cursor:pointer;
   background:radial-gradient(120% 160% at 15% 50%,#a2368f 0%,#4a1655 50%,#1a0a1f 100%);
-  box-shadow:0 0 0 1.5px #ffc73b,0 10px 30px rgba(255,140,200,.28)}
+  box-shadow:0 0 0 1.5px var(--gold),0 10px 30px rgba(255,140,200,.28)}
 .elu-rayons{position:absolute;left:14%;top:50%;width:360px;aspect-ratio:1;translate:-50% -50%;z-index:-1;opacity:.5;pointer-events:none;
   background:repeating-conic-gradient(from 0deg,rgba(255,199,59,.7) 0 6deg,transparent 6deg 18deg);
   -webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);
@@ -1412,7 +1510,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition
 .elu-carte{flex:0 0 74px;rotate:-5deg;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5))}
 .elu-texte{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
 .elu-kick{display:inline-flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:800;
-  letter-spacing:.08em;text-transform:uppercase;padding:3px 9px 3px 7px;border-radius:999px;background:#ffc73b;color:#3a2600}
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 9px 3px 7px;border-radius:999px;background:var(--gold);color:var(--gold-ink)}
 .elu-kick svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round}
 .elu-texte b{font-family:var(--display);font-style:italic;font-weight:900;font-size:19px;line-height:1.1}
 .elu-texte small{font-size:12.5px;line-height:1.4;color:rgba(255,255,255,.85)}
@@ -1431,628 +1529,231 @@ html.rm .ava.unique,html.rm .ava.unique::before,html.rm .ava.unique::after,html.
 .garde-groupe{display:flex;align-items:center;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   color:var(--muted);margin:14px 0 0}
 
-/* ============ L'Échauffement (js/echauffement.js) ============ */
-/* L'onglet a la charpente de l'écran Reflets (plus bas, .ech-rf) ; l'écran
-   du défi, la scène du combat et les visuels des indices ont leurs propres
-   blocs. Tous prennent les fonds, les textes et les boutons du site (jetons
-   `--e-*` posés sur ceux de css/tokens.css) ; l'événement n'y ajoute que ses
-   couleurs : la lavande de la suite et la braise. */
-.ech,.ech-rf,.ech-scene,.ech-rfban,.ech-annonce,.ech-ind-grand,.ech-final,.ech-picks,.ech-tri,.labinds{
-  --e-bg:var(--bg);--e-s1:var(--surface);--e-s2:var(--surface-2);--e-s3:var(--surface-3);--e-creux:var(--bg-2);
-  --e-l1:var(--line);--e-l2:var(--line-2);--e-l3:var(--line-3);
-  --e-txt:var(--text);--e-sub:var(--subtle);--e-mut:var(--muted);
-  --e-acc:#8a78f5;--e-acc2:#c8bfff;--e-deco:#c8bfff;--e-wash:rgba(138,120,245,.14);
-  --e-cta:linear-gradient(180deg,#8f7dfb,#5d4bd9);--e-glow:rgba(138,120,245,.4);
-  --e-or:var(--warn);--e-ok:var(--ok);--e-rouge:#ff6b6b;--e-braise:#ffb35c;
-  --e-tuile:var(--sh-2)}
 
-/* L'illustration seule d'une carte (la zone 85,205–895,684 du gabarit
-   1000 × 1397), recadrée pour couvrir son conteneur sans jamais montrer le
-   cadre ; --fx, --fy : le point gardé au centre. */
-.ech-illu{position:relative;display:block;overflow:hidden;container-type:size}
-.ech-illu img{position:absolute;max-width:none;height:auto;--cw:max(calc(100cqw / .81),calc(100cqh / .479));width:var(--cw);
-  left:clamp(calc(100cqw - var(--cw) * .895),calc(50cqw - var(--cw) * (.085 + .81 * var(--fx))),calc(var(--cw) * -.085));
-  top:clamp(calc(100cqh - var(--cw) * .684),calc(50cqh - var(--cw) * (.205 + .479 * var(--fy))),calc(var(--cw) * -.205))}
-.ech-illu.fond{position:absolute;inset:0;z-index:-2}
+/* Version 3.0 : les succès du profil en pavés, cinq ou six par rangée. */
+.succes.paves{grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px 4px}
+.sucpave{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 3px 7px;border:0;border-radius:14px;font:inherit;color:var(--muted);
+  background:transparent;cursor:pointer;opacity:.55;filter:grayscale(.7)}
+.sucpave.on{opacity:1;filter:none;color:var(--text);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.sucpave .sucico{flex:none;width:36px;height:36px}
+.sucpave b{font-size:10.5px;line-height:1.2;text-align:center;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sucpave.on.tC .sucico{background:var(--surface-3);color:var(--text)}
+.sucpave.on.tR .sucico{background:#39b8ff;color:#06263a}
+.sucpave.on.tE .sucico{background:#a95cf2;color:#fff}
+.sucpave.on.tL .sucico{background:var(--gold);color:var(--gold-ink)}
+.sucpave.on.tUN .sucico{background:conic-gradient(#ff5bb0,var(--gold),#55e6a6,#39b8ff,#a95cf2,#ff5bb0);color:#fff}
 
-.ech,#main>.ech{max-width:640px;height:100%;margin:0 auto;padding:0;display:flex;flex-direction:column;gap:12px;color:var(--e-txt)}
-.ech h3{display:flex;align-items:baseline;gap:8px;margin:0 0 10px;padding:0;font-family:var(--display);font-weight:800;font-size:17px;color:var(--e-txt);text-transform:none;letter-spacing:0}
-.ech h3::before{display:none}
-.ech h3 small{font-family:var(--display);font-weight:900;font-size:13px;color:var(--e-acc2)}
-.ech-kick{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--e-acc2)}
-.ech-et{display:inline-flex;gap:2px;font-size:11px;line-height:1}
-.ech-et i{font-style:normal;color:rgba(255,255,255,.18)}
-.ech-et i.on{color:var(--e-or);text-shadow:0 0 8px rgba(245,196,81,.45)}
-.ech-et.grand{font-size:36px;gap:8px}
-.ech-ico{flex:0 0 auto;width:30px;height:30px;padding:6px;border-radius:10px;fill:none;stroke:var(--e-deco);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;
-  background:var(--e-wash)}
+/* Version 3.0 : huit critères au classement, la rangée glisse de côté sur
+   téléphone (sa position est gardée, js/app.js). */
+.segbar.clseg{overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
+.segbar.clseg::-webkit-scrollbar{display:none}
+.segbar.clseg button{flex:0 0 auto;padding-inline:14px}
+@media (min-width:900px){.segbar.clseg button{flex:1 0 auto}}
 
-/* Indices : huit cases de carte (la grille : .ech-rf .ech-inds, plus bas). */
-.ech-case{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:0;border:0;background:none;font:inherit;color:inherit}
-button.ech-case{cursor:pointer}
-.ech-case small{width:100%;min-height:2.3em;font-size:10.5px;font-weight:700;line-height:1.15;text-align:center;color:var(--e-sub);
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ech-case>span.ech-ind+small{color:var(--e-mut)}
-.ech-ind{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:63/88;border-radius:10px;overflow:hidden;
-  color:#fff;background:var(--e-creux);box-shadow:inset 0 0 0 1px var(--e-l1);container-type:inline-size}
-.ech-ind>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.32) saturate(.5)}
-.ech-ind>svg{position:relative;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;opacity:.8}
-.ech-ind.ouvert{color:var(--e-txt);background:radial-gradient(100% 80% at 50% 30%,#3b2f7a,var(--e-s1) 80%);box-shadow:inset 0 0 0 1px rgba(200,191,255,.3),0 6px 16px rgba(93,75,217,.3)}
-
-/* Les visuels d'un indice. Un mot ou un nombre se règle sur la largeur de sa
-   case (cqi) et sur sa longueur (--l) : « Bientôt » tient dans une case de
-   carte comme en grand. */
-.ech-flip .face,.ech-ind-grand{container-type:inline-size}
-.ech-iv{position:relative;display:block}
-.ech-iv.nombre,.ech-iv.mot{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;line-height:1;letter-spacing:-.03em;padding-right:.08em;white-space:nowrap;
-  background:linear-gradient(180deg,#fff 25%,var(--e-deco));-webkit-background-clip:text;background-clip:text;color:transparent}
-.ech-iv.nombre{font-size:min(var(--fmax,26px),calc(80cqi / (var(--l) * .64)))}
-.ech-iv.mot{font-size:min(var(--fmax,20px),calc(82cqi / (var(--l) * .64)))}
-.ech-iv.etoiles{display:flex;font-size:10px;letter-spacing:-1px}
-.ech-iv.etoiles i{font-style:normal;color:var(--e-or)}
-.ech-iv.etoiles i.au-dela{color:var(--e-acc2);text-shadow:0 0 8px var(--e-acc)}
-.ech-iv.carte{width:72cqi;aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(200,191,255,.4),0 0 16px rgba(140,120,255,.4)}
-.ech-iv.carte .ech-illu{width:100%;height:100%}
-.ech-iv.carte img{filter:brightness(.3) saturate(.4) contrast(1.3)}
-.ech-iv.teinte{display:grid;place-items:center;width:58cqi;aspect-ratio:1;border-radius:28%;
-  background:linear-gradient(135deg,#2d2b3a 0 46%,transparent 46%),linear-gradient(135deg,#8f7dfb,#5d4bd9);
-  box-shadow:0 0 0 1px rgba(200,191,255,.45),0 0 18px rgba(140,120,255,.5)}
-.ech-iv.teinte i{font-style:normal;font-size:min(22px,22cqi);color:#fff;text-shadow:0 0 10px #fff;transform:translate(18%,18%)}
-.ech-iv.eventail{width:76cqi;aspect-ratio:1}
-.ech-iv.eventail img{position:absolute;left:50%;bottom:10%;width:48%;border-radius:5%;transform-origin:50% 100%;box-shadow:0 3px 8px rgba(0,0,0,.55)}
-.ech-iv.eventail img:nth-child(1){transform:translateX(-50%) rotate(-18deg)}
-.ech-iv.eventail img:nth-child(2){transform:translateX(-50%) translateY(-4%)}
-.ech-iv.eventail img:nth-child(3){transform:translateX(-50%) rotate(18deg)}
-.ech-ind-grand{display:flex;flex-direction:column;align-items:center;gap:10px;margin:2px 0 8px;padding:28px 16px 18px;border-radius:22px;text-align:center;color:var(--e-txt);
-  background:radial-gradient(100% 80% at 50% 25%,#3b2f7a,var(--e-s1) 75%)}
-.ech-ind-grand .ech-iv.nombre{--fmax:76px}
-.ech-ind-grand .ech-iv.mot{--fmax:52px}
-.ech-ind-grand .ech-iv.etoiles{font-size:36px;letter-spacing:3px}
-.ech-ind-grand .ech-iv.carte{width:150px}
-.ech-ind-grand .ech-iv.teinte{width:120px}
-.ech-ind-grand .ech-iv.teinte i{font-size:40px}
-.ech-ind-grand .ech-iv.eventail{width:170px}
-.ech-ind-grand b{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--e-acc2)}
-.ech-ind-grand p{margin:0;font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;line-height:1.2}
-
-/* La révélation des 21 étoiles (montrerDernierMot) : les sept indices en
-   éventail, le dernier mot qui se retourne ; son texte n'apparaît qu'après. */
-.ech-final{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 0 6px;padding:18px 14px 16px;border-radius:22px;text-align:center;color:var(--text);
-  background:radial-gradient(90% 60% at 50% 38%,rgba(255,179,92,.16),transparent 70%),radial-gradient(100% 80% at 50% 25%,#3b2f7a,var(--surface) 75%)}
-.ech-final-sept{display:flex;justify-content:center;height:74px;padding-top:4px}
-.ech-final-sept .ech-ind{flex:0 0 44px;width:44px;margin:0 -5px;transform-origin:50% 120%;transform:translateY(var(--y)) rotate(calc(var(--k) * 8deg));
-  box-shadow:inset 0 0 0 1px rgba(200,191,255,.35),0 6px 14px rgba(0,0,0,.45)}
-.ech-final:not(.vu) .ech-final-sept .ech-ind{animation:ech-final-sept .6s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc((var(--k) + 3) * 70ms)}
-@keyframes ech-final-sept{from{opacity:0;transform:translateY(30px) rotate(0)}}
-.ech-final-carte{padding:0;border:0;background:none;cursor:pointer}
-.ech-final-carte{display:block}
-.ech-final .ech-flip{display:block;flex:none;width:118px;perspective:800px}
-.ech-final .ech-flip>span{border-radius:9px}
-.ech-final .ech-flip .face{--fmax:30px}
-.ech-final.vu .ech-flip{filter:drop-shadow(0 0 18px rgba(255,179,92,.45)) drop-shadow(0 10px 22px rgba(0,0,0,.5))}
-.ech-final:not(.vu) .ech-flip{animation:ech-appel 1.6s ease-in-out infinite}
-.ech-final>small{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c8bfff}
-.ech-final-titre{font-family:var(--display);font-stretch:110%;font-style:italic;font-weight:900;font-size:24px;line-height:1.1;padding-right:.1em;
-  background:linear-gradient(100deg,#fff,#ffe1bf 40%,#d9d0ff 75%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
-.ech-final-txt{margin:0;font-size:14px;line-height:1.4;color:var(--subtle)}
-.ech-final>small,.ech-final-titre,.ech-final-txt{transition:opacity .45s .35s,transform .45s .35s}
-.ech-final:not(.vu)>small,.ech-final:not(.vu) .ech-final-titre,.ech-final:not(.vu) .ech-final-txt{opacity:0;transform:translateY(8px)}
-
-/* Une jauge : l'or pour ce qui paie, la lavande pour le Pass. */
-.ech-rj{display:block;width:100%;height:8px;border-radius:999px;overflow:hidden;background:var(--e-creux);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-rj i{display:block;height:100%;background:linear-gradient(90deg,#d9a63a,var(--e-or))}
-.ech-rj.lav i{background:linear-gradient(90deg,var(--e-acc),var(--e-acc2))}
-
-/* L'écran du défi : l'adversaire en bandeau, l'équipe prend la place qui
-   reste (container query sur la hauteur), le bouton et le pied. */
-.ech-ecran{gap:10px}
-.ech-barre-haut{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between}
-.ech-retour{padding:4px 0;border:0;background:none;cursor:pointer;font:inherit;font-weight:700;font-size:14px;color:var(--e-acc2)}
-.ech-q{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;cursor:pointer;font:inherit;font-weight:800;font-size:15px;color:var(--e-txt);
-  background:var(--e-s2);box-shadow:inset 0 0 0 1px var(--e-l2)}
-.ech-adv{flex:0 0 auto;display:flex;align-items:center;gap:12px}
-.ech-adv-carte{flex:0 0 auto;width:clamp(60px,17%,104px);padding:0;border:0;background:none;cursor:pointer;
-  filter:drop-shadow(0 12px 20px rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(255,107,107,.18))}
-.ech-adv-txt{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
-.ech-adv-nom{font-family:var(--display);font-stretch:110%;font-weight:900;font-style:italic;font-size:21px;line-height:1.05}
-.ech-adv-val{display:flex;flex-wrap:wrap;gap:6px}
-.ech-adv-val>span{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:10px;background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-adv-val>span::before{content:"";flex:0 0 auto;width:12px;height:12px;background:var(--e-rouge);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
-.ech-adv-val .def::before{background:var(--e-mut);--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l8 3.5V11c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5.5z'/%3E%3C/svg%3E")}
-.ech-adv-val .frappe::before{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7z'/%3E%3C/svg%3E")}
-.ech-adv-val b{font-family:var(--display);font-weight:900;font-size:16px;line-height:1.1}
-.ech-adv-val em{font-style:normal;font-size:11px;color:var(--e-sub)}
-.ech-regle{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:5px 10px 5px 5px;border-radius:12px;font-size:12px;line-height:1.3;color:var(--e-sub);
-  background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l1)}
-.ech-regle .ech-ico{width:26px;height:26px;padding:5px;border-radius:8px}
-.ech-regle b{font-size:13px;color:var(--e-txt)}
-.ech-equipe{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:6px}
-.ech-equipe h3{flex:0 0 auto;margin:0;justify-content:center;flex-wrap:wrap;font-size:15px}
-.ech-equipe h3 small{font-family:var(--body);font-weight:600;font-size:11.5px;color:var(--e-mut)}
-.ech-ligne{flex:1 1 0;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start;container-type:size;
-  --cw:min(100%,calc((100cqh - 74px) * .716))}
-.ech-place{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
-.ech-place-tete{display:flex;align-items:center;justify-content:center;width:var(--cw);height:14px}
-.ech-place-tete small{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--e-mut)}
-.ech-place:first-child .ech-place-tete small{color:var(--e-acc2)}
-/* Sa Défense, posée sur la carte (celle qui est imprimée est trop petite pour se lire). */
-.ech-def{position:absolute;left:-5px;top:-6px;display:inline-flex;align-items:center;gap:3px;padding:2px 7px 2px 5px;border-radius:999px;font-family:var(--display);font-weight:900;font-size:12.5px;
-  color:var(--e-txt);background:var(--e-s3);box-shadow:0 0 0 2px var(--e-bg)}
-.ech-def::before,.ech-a b::before{content:"";flex:0 0 auto;width:10px;height:10px;background:var(--e-mut);
-  -webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
-.ech-def::before{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l8 3.5V11c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5.5z'/%3E%3C/svg%3E")}
-.ech-vide{display:grid;place-items:center;width:var(--cw);aspect-ratio:63/88;border:0;border-radius:12px;cursor:pointer;font:inherit;
-  background:var(--e-creux);box-shadow:inset 0 0 0 1.5px var(--e-l2)}
-.ech-vide i{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;font-style:normal;font-size:24px;font-weight:600;color:#fff;
-  background:var(--e-cta);box-shadow:0 6px 16px var(--e-glow)}
-.ech-vide[disabled]{cursor:default;opacity:.5}
-.ech-vide[disabled] i{background:var(--e-s3);box-shadow:none;color:var(--e-mut)}
-.ech-carte{position:relative;display:block;width:var(--cw)}
-.ech-carte-b{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;filter:drop-shadow(0 10px 16px rgba(0,0,0,.45))}
-.ech-place:first-child .ech-carte-b{filter:drop-shadow(0 10px 16px rgba(0,0,0,.45)) drop-shadow(0 0 12px var(--e-glow))}
-.ech-x{position:absolute;right:-7px;top:-7px;display:grid;place-items:center;width:24px;height:24px;border:0;border-radius:50%;cursor:pointer;font:inherit;font-size:15px;
-  line-height:1;color:var(--e-txt);background:var(--e-s3);box-shadow:0 0 0 2px var(--e-bg)}
-.ech-carte em{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);padding:2px 8px;border-radius:999px;font-style:normal;font-size:10px;font-weight:800;white-space:nowrap}
-.ech-carte em.bon{color:#05301f;background:var(--e-ok)}
-/* L'attaque : ses dégâts et son coût en élan (un point = un tour). Deux
-   attaques : deux pastilles côte à côte, la choisie en blanc ; le rythme de
-   la choisie reste écrit dessous. */
-.ech-atq{display:flex;gap:4px;width:var(--cw);margin-top:4px}
-.ech-a{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 2px 3px;border:0;border-radius:10px;font:inherit;
-  color:var(--e-txt);background:var(--e-s1);box-shadow:inset 0 0 0 1px var(--e-l2)}
-.ech-a b{display:inline-flex;align-items:center;gap:3px;font-family:var(--display);font-weight:900;font-size:14px;line-height:1.1}
-button.ech-a b{font-size:13.5px}
-button.ech-a b::before{display:none}
-.ech-a b::before{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7z'/%3E%3C/svg%3E")}
-.ech-a i{font-style:normal;font-size:7px;line-height:1;letter-spacing:1.5px;color:var(--e-acc2)}
-button.ech-a{cursor:pointer;color:var(--e-mut);background:none;box-shadow:inset 0 0 0 1px var(--e-l2)}
-button.ech-a i{color:var(--e-mut)}
-button.ech-a.on{color:var(--e-txt);background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.8)}
-button.ech-a.on i{color:var(--e-acc2)}
-.ech-a.double b{color:var(--e-ok)}
-.ech-a.bloque b{color:var(--e-rouge);text-decoration:line-through}
-.ech-ryt{max-width:var(--cw);font-size:10.5px;line-height:1.2;color:var(--e-mut);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ech-lancer{flex:0 0 auto;width:100%}
-.ech-pied{flex:0 0 auto;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 10px;margin:0;font-size:11.5px;color:var(--e-mut)}
-.ech-pied-prix{color:var(--e-or)}
-.ech-picks .ech-val{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:4px;font-family:var(--display);font-weight:900;font-size:13px;color:var(--e-txt)}
-.ech-picks .ech-val b{display:inline-flex;align-items:center;gap:4px}
-.ech-picks .ech-val b::before{content:"";width:10px;height:10px;background:var(--e-mut);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
-.ech-picks .ech-val b:first-child{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l8 3.5V11c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5.5z'/%3E%3C/svg%3E")}
-.ech-picks .ech-val b:last-child{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7z'/%3E%3C/svg%3E")}
-.ech-picks .ech-val i{width:1px;height:12px;background:var(--e-l3)}
-.ech-tri{margin:2px 0 6px}
-
-/* L'annonce : la couverture des fenêtres de l'événement. */
-.ech-annonce::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
-.ech-annonce{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;min-height:180px;margin:0 0 10px;padding:16px;border-radius:22px;
-  color:var(--e-txt);background:var(--e-s1)}
-.ech-annonce::after{background:linear-gradient(180deg,rgba(28,27,37,0) 25%,rgba(28,27,37,.97))}
-.ech-annonce>span{display:flex;flex-direction:column;gap:3px}
-.ech-annonce small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--e-acc2)}
-.ech-annonce b{font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:30px;line-height:1}
-.ech-annonce span span{font-size:14px;color:var(--e-sub)}
-/* La fenêtre de la 2.5 (js/bienvenue.js) : la même couverture, plus basse,
-   pour que la fenêtre tienne sans défiler à 375 × 667. */
-.ech-annonce.maj25{min-height:132px}
-
-/* La scène du combat. */
-.ech-scene{position:fixed;inset:0;z-index:70;isolation:isolate;display:grid;place-items:center;padding:14px;overflow:hidden;background:var(--e-bg);
-  opacity:0;transition:opacity .25s}
-.ech-scene.on{opacity:1}
-.ech-scene>.ech-illu.fond img{filter:blur(18px) brightness(.3) saturate(1.1)}
-.ech-scene::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(70% 45% at 50% 28%,rgba(140,120,255,.16),transparent 70%),linear-gradient(180deg,rgba(18,17,25,.2),rgba(18,17,25,.85))}
-.ech-sc{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:12px;width:min(100%,440px);height:100%;max-height:820px;
-  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color:var(--e-txt)}
-.ech-sc-haut{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
-.ech-sc-tour{font-family:var(--display);font-weight:900;font-style:italic;font-size:18px}
-.ech-sc-regle{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--e-sub)}
-.ech-sc-regle .ech-ico{width:24px;height:24px;padding:4px;border-radius:8px}
-.ech-passer{padding:7px 13px;border:0;border-radius:999px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;color:var(--e-txt);background:rgba(255,255,255,.1)}
-.ech-sc-adv{display:flex;flex-direction:column;align-items:center;gap:7px;width:50%;margin:auto 0;transition:filter .5s,opacity .5s,transform .5s}
-.ech-sc-adv .ech-sc-carte{filter:drop-shadow(0 16px 26px rgba(0,0,0,.6)) drop-shadow(0 0 22px rgba(255,107,107,.25))}
-.ech-sc-adv.vaincu{filter:grayscale(.85) brightness(.6);transform:scale(.94);opacity:.8}
-.ech-sc-carte{position:relative;display:block;width:100%}
-.ech-sc-aide{margin:0;font-size:12.5px;font-weight:700;color:var(--e-acc2);opacity:0;transition:opacity .2s}
-.ech-sc-aide.on{opacity:1}
-.ech-sc-eq{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
-.ech-sc-j{display:flex;flex-direction:column;gap:6px;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:default;transition:opacity .4s,filter .4s}
-.ech-sc-j .ech-sc-carte{filter:drop-shadow(0 10px 16px rgba(0,0,0,.5));transition:transform .25s var(--spring,ease)}
-.ech-sc-j:first-child .ech-sc-carte{filter:drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(140,120,255,.55))}
-.ech-sc-j.pret{cursor:pointer}
-.ech-sc-j.pret .ech-sc-carte{transform:translateY(-8px);animation:ech-pret 1s ease-in-out infinite;
-  filter:drop-shadow(0 10px 16px rgba(0,0,0,.5)) drop-shadow(0 0 16px var(--e-acc)) drop-shadow(0 0 4px #fff)}
-@keyframes ech-pret{50%{transform:translateY(-12px)}}
-.ech-sc-j.ko{opacity:.4;filter:grayscale(1)}
-.ech-jauge{position:relative;width:100%;height:16px;border-radius:999px;overflow:hidden;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px var(--e-l2)}
-.ech-jauge i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#3fb886,var(--e-ok));transition:width .4s cubic-bezier(.2,.8,.2,1)}
-.ech-jauge.adv i{background:linear-gradient(90deg,#c23b3b,var(--e-rouge))}
-.ech-jauge span{position:relative;display:block;text-align:center;font-family:var(--display);font-size:10.5px;font-weight:900;line-height:16px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
-.ech-pips{display:flex;justify-content:center;gap:4px;min-height:8px}
-.ech-pips i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);transition:background .25s,box-shadow .25s}
-.ech-pips i.on{background:var(--e-acc2);box-shadow:0 0 8px var(--e-acc)}
-.ech-pips.adv i.on{background:#ffb0b0;box-shadow:0 0 8px var(--e-rouge)}
-.ech-flot{position:absolute;left:50%;top:28%;z-index:3;transform:translate(-50%,0);font-style:normal;font-family:var(--display);font-size:26px;font-weight:900;
-  color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.4),0 0 14px rgba(140,120,255,.8);opacity:0;pointer-events:none;white-space:nowrap}
-.ech-flot.gros{font-size:34px;color:var(--e-or);text-shadow:0 2px 0 rgba(0,0,0,.4),0 0 16px rgba(245,196,81,.8)}
-.ech-flot.rouge{color:#ffd6d6;text-shadow:0 2px 0 rgba(0,0,0,.4),0 0 14px rgba(255,107,107,.9)}
-.ech-flot.gris{top:34%;padding:4px 12px 5px;border-radius:999px;font-family:inherit;font-style:normal;font-size:14px;font-weight:800;letter-spacing:.02em;color:#fff;
-  background:rgba(18,17,25,.88);box-shadow:inset 0 0 0 1.5px rgba(200,191,255,.6),0 6px 16px rgba(0,0,0,.5);text-shadow:none}
-.ech-flot.petit{font-size:17px}
-.ech-flot.go{animation:ech-flot .8s cubic-bezier(.2,.8,.2,1)}
-@keyframes ech-flot{0%{opacity:0;transform:translate(-50%,12px) scale(.6)}25%{opacity:1;transform:translate(-50%,0) scale(1.15)}100%{opacity:0;transform:translate(-50%,-30px) scale(1)}}
-.ech-eclat{position:absolute;inset:0;z-index:2;border-radius:6%;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.9),rgba(200,191,255,.35) 35%,transparent 65%)}
-.touche .ech-eclat{animation:ech-eclat .4s ease-out}
-.bloque .ech-eclat{animation:ech-eclat .4s ease-out;background:radial-gradient(circle at 50% 45%,rgba(140,120,255,.8),transparent 60%)}
-.eclate .ech-eclat{animation:ech-eclat .6s ease-out;background:radial-gradient(circle at 50% 50%,#fff,rgba(245,196,81,.75) 30%,transparent 70%)}
-@keyframes ech-eclat{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
-.ech-ko{position:absolute;inset:0;z-index:2;display:none;place-items:center;font-style:normal;font-family:var(--display);font-size:22px;font-weight:900;color:#fff;
-  letter-spacing:.06em;text-shadow:0 2px 10px rgba(0,0,0,.8)}
-.ech-sc-j.ko .ech-ko{display:grid;animation:ech-ko .35s cubic-bezier(.2,1.4,.4,1)}
-@keyframes ech-ko{from{transform:scale(2) rotate(-12deg);opacity:0}to{transform:scale(1) rotate(-8deg);opacity:1}}
-.frappe .ech-sc-carte{animation:ech-frappe .38s cubic-bezier(.2,.8,.2,1)}
-.attaque .ech-sc-carte{animation:ech-attaque .38s cubic-bezier(.2,.8,.2,1)}
-.touche .ech-sc-carte,.bloque .ech-sc-carte{animation:ech-touche .38s ease-out}
-@keyframes ech-frappe{45%{transform:translateY(-18px) scale(1.06)}}
-@keyframes ech-attaque{45%{transform:translateY(18px) scale(1.04)}}
-@keyframes ech-touche{20%{transform:translateX(-6px) rotate(-1deg)}40%{transform:translateX(6px) rotate(1deg)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
-.ech-sc-fin{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;flex-direction:column;align-items:center;gap:9px;padding:20px 16px 16px;border-radius:24px;
-  text-align:center;background:rgba(28,27,37,.98);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 0 1px var(--e-l2),0 -14px 50px rgba(0,0,0,.6);
-  transform:translateY(24px);opacity:0;transition:transform .35s cubic-bezier(.2,1.2,.4,1),opacity .25s}
-.ech-sc-fin.on{transform:none;opacity:1}
-.ech-sc-fin[hidden]{display:none}
-.ech-sc-verdict{font-family:var(--display);font-stretch:112%;font-style:italic;font-weight:900;font-size:32px;line-height:1}
-.ech-sc-tours{font-size:12.5px;color:var(--e-sub)}
-/* L'entrée, en face-à-face (echScene › entree) : l'adversaire arrive de
-   près, le bandeau du défi traverse l'écran, l'équipe monte. Retirer la
-   classe .intro (un toucher, ou au bout de 1,75 s) pose tout à sa place. */
-.ech-sc-vs{display:none}
-.ech-scene.intro .ech-sc-vs{position:absolute;left:0;right:0;top:54%;z-index:4;display:block;padding:14px 18px 16px;pointer-events:none;
-  background:linear-gradient(90deg,rgba(21,13,28,.9),rgba(21,13,28,.97) 30%,rgba(21,13,28,.97) 70%,rgba(21,13,28,.9));
-  box-shadow:0 -2px 0 var(--ev-a),0 2px 0 var(--ev-c),0 24px 60px rgba(0,0,0,.65);animation:ech-vs 1.75s cubic-bezier(.2,.8,.2,1) both}
-.ech-sc-vs>div{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:440px;margin:0 auto;text-align:center;transform:skewY(4deg)}
-.ech-sc-vs small{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ev-b)}
-.ech-sc-vs b{font-family:var(--display);font-stretch:110%;font-style:italic;font-weight:900;font-size:clamp(24px,8vw,34px);line-height:1.05;padding-right:.1em;
-  background:linear-gradient(100deg,#fff,#ffe1bf 40%,#d9d0ff 75%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
-.ech-sc-vs-regle{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 5px;border-radius:999px;font-size:13px;font-weight:700;color:var(--e-txt);
-  background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
-.ech-sc-vs-regle .ech-ico{width:24px;height:24px;padding:4px;border-radius:8px}
-@keyframes ech-vs{0%{transform:translate(-105%,-50%) skewY(-4deg);opacity:0}16%{transform:translate(0,-50%) skewY(-4deg);opacity:1}
-  80%{transform:translate(0,-50%) skewY(-4deg);opacity:1}100%{transform:translate(105%,-50%) skewY(-4deg);opacity:0}}
-.ech-scene.intro .ech-sc-adv{animation:ech-vs-adv .6s cubic-bezier(.2,1.2,.4,1) both}
-@keyframes ech-vs-adv{from{transform:scale(1.4);opacity:0;filter:brightness(2.2)}to{transform:none;opacity:1;filter:none}}
-.ech-scene.intro .ech-sc-j{animation:ech-vs-j .5s cubic-bezier(.2,1.2,.4,1) .95s both}
-.ech-scene.intro .ech-sc-j:nth-child(2){animation-delay:1.05s}
-.ech-scene.intro .ech-sc-j:nth-child(3){animation-delay:1.15s}
-@keyframes ech-vs-j{from{transform:translateY(80px);opacity:0}to{transform:none;opacity:1}}
-
-/* La fin, en scène (echFinEnScene) : le verdict tombe, les étoiles se
-   posent dans leurs cases, le tampon « Parfait », une lueur de braise. Les
-   particules passent au-dessus de la scène (#fx, css/opening.css). */
-#fx.dessus{z-index:75}
-.ech-scene.gagne::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(70% 45% at 50% 80%,rgba(255,179,92,.3),transparent 70%);animation:ech-lueur 1.4s ease-out both}
-@keyframes ech-lueur{from{opacity:0}35%{opacity:1}to{opacity:.55}}
-.ech-scene.secousse .ech-sc{animation:ech-secousse .42s}
-@keyframes ech-secousse{20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
-.ech-sc-fin.on .ech-sc-verdict{animation:ech-verdict .55s cubic-bezier(.2,1.3,.4,1) backwards}
-@keyframes ech-verdict{from{transform:scale(1.9);opacity:0;filter:blur(6px)}}
-.ech-sc-verdict.gagne{padding-right:.1em;background:linear-gradient(100deg,#fff,#ffe1bf 45%,#ffc73b);-webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 2px 14px rgba(255,179,92,.45))}
-.ech-fin-et{position:relative;display:flex;justify-content:center;gap:12px;margin:2px 0}
-.ech-fin-case{position:relative;display:grid;place-items:center;width:50px;height:50px;border-radius:50%;font-style:normal;
-  background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);transition:background .3s,box-shadow .3s}
-.ech-fin-case b{font-size:30px;line-height:1;color:rgba(255,255,255,.14)}
-.ech-fin-case.posee{background:radial-gradient(circle,rgba(255,199,59,.32),transparent 72%);box-shadow:inset 0 0 0 1.5px rgba(255,199,59,.65),0 0 22px rgba(255,199,59,.3)}
-.ech-fin-case.posee b{color:#ffc73b;text-shadow:0 0 14px rgba(255,199,59,.85);animation:ech-et-pose .5s cubic-bezier(.2,1.5,.4,1) backwards}
-@keyframes ech-et-pose{0%{transform:translateY(-80px) scale(1.9) rotate(-35deg);opacity:0}60%{transform:translateY(4px) scale(.9);opacity:1}}
-.ech-tampon{position:absolute;left:50%;top:66%;z-index:1;padding:3px 14px 4px;border:3px solid #ffb35c;border-radius:10px;
-  font-family:var(--display);font-style:italic;font-weight:900;font-size:21px;letter-spacing:.08em;text-transform:uppercase;line-height:1.1;
-  color:#ffb35c;background:rgba(21,13,28,.82);box-shadow:0 0 26px rgba(255,179,92,.45),inset 0 0 12px rgba(255,179,92,.25);
-  transform:translate(-50%,-50%) rotate(-12deg);opacity:0;pointer-events:none}
-.ech-tampon.posee{opacity:1;animation:ech-tampon .45s cubic-bezier(.2,1.6,.4,1) backwards}
-@keyframes ech-tampon{0%{transform:translate(-50%,-50%) rotate(-12deg) scale(2.6);opacity:0}70%{transform:translate(-50%,-50%) rotate(-12deg) scale(.92);opacity:1}}
-.ech-gains{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-.ech-gains span{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:800;color:var(--e-or);
-  background:rgba(245,196,81,.12);box-shadow:inset 0 0 0 1px rgba(245,196,81,.35)}
-.ech-gains b{font-family:var(--display);font-weight:900}
-.ech-gains .shard,.ech-gains .prismeico{width:14px;height:14px}
-.ech-gains svg:not(.shard):not(.prismeico){width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
-.ech-gains span.titre{color:#c8bfff;background:rgba(138,120,245,.14);box-shadow:inset 0 0 0 1px rgba(200,191,255,.4)}
-.ech-sc-indice.invite:not(.vu){animation:ech-invite 1.5s ease-in-out infinite}
-@keyframes ech-invite{50%{box-shadow:inset 0 0 0 1px rgba(200,191,255,.7),0 0 20px rgba(138,120,245,.45)}}
-.ech-sc-fin small{font-size:12.5px;color:var(--e-sub)}
-.ech-astuce{max-width:34ch}
-.ech-sc-fin .btn{width:100%;margin-top:4px}
-.ech-sc-indice{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:16px;cursor:pointer;font:inherit;text-align:left;color:var(--e-txt);
-  background:linear-gradient(110deg,rgba(93,75,217,.35),rgba(28,27,37,.6));box-shadow:inset 0 0 0 1px rgba(200,191,255,.3)}
-.ech-sc-ind-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
-.ech-sc-ind-txt b{font-size:14.5px}
-.ech-sc-ind-txt small{font-size:12.5px;color:var(--e-deco)}
-.ech-flip{position:relative;flex:0 0 62px;aspect-ratio:63/88;perspective:600px}
-.ech-flip>span{position:absolute;inset:0;display:grid;place-items:center;border-radius:6px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  transition:transform .7s cubic-bezier(.2,.8,.2,1)}
-.ech-flip .dos img{display:block;width:100%;height:100%;object-fit:cover}
-.ech-flip .face{transform:rotateY(180deg);background:radial-gradient(100% 80% at 50% 30%,#3b2f7a,var(--e-s1) 80%)}
-.vu .ech-flip .dos{transform:rotateY(-180deg)}
-.vu .ech-flip .face{transform:rotateY(0)}
-.ech-sc-indice:not(.vu) .ech-flip{animation:ech-appel 1.6s ease-in-out infinite}
-@keyframes ech-appel{50%{transform:translateY(-3px) rotate(-2deg)}}
-
-/* ---------- L'onglet de l'événement, sur la charpente de Reflets ---------- */
-/* Les composants de l'écran Reflets (css/reflets.css : .rf-tete, .rf-onglets,
-   .rf-tuile, .rf-pass, .rf-art, .rf-top, .rr-*, .rfban), avec les couleurs
-   de L'Échauffement à la place du rose de Reflets : la braise (l'ambre) et
-   la lavande de la suite. Les fonds, les textes et les boutons restent ceux
-   du site. */
-.ech-rf,.ech-rfban,.ech-scene{--ev-a:#ffb35c;--ev-b:#c8bfff;--ev-c:#8a78f5;--ev-chaud:#ff9a4d}
-
-/* L'en-tête : le médaillon de « La Luxueuse III » au bout de sa chaîne,
-   fondu dans le fond comme La Relève dans celui de Reflets. */
-.rf-tete.ech-tete{background:#150d1c}
-.rf-tete.ech-tete .rf-fond>i,.rfban.ech-rfban .rf-fond>i{--t:.30;--z:1.5;filter:saturate(1.1) brightness(.92);
-  background-position:60% calc(50% + (0.5 - var(--t)) * var(--z) * 139.7cqw)}
-/* Le titre est long : le surtitre et les chiffres partagent la première
-   ligne, le nom prend toute la largeur dessous. */
-.ech-tete .rf-tetenom{flex:1;min-width:0}
-.ech-tl1{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 10px}
-.ech-tl1 small{min-width:0}
-.ech-tete .rf-tetechiffres{flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px}
-.ech-tete .rf-solde,.ech-tete .rf-fin{white-space:nowrap}
-.ech-tete .rf-tetenom h1{margin-top:8px}
-.rf-tete.ech-tete::before,.rfban.ech-rfban::before{background-image:linear-gradient(110deg,transparent 25%,rgba(255,179,92,.7) 40%,rgba(255,255,255,.9) 48%,rgba(200,191,255,.75) 56%,transparent 72%)}
-.ech-tete .rf-tetenom h1{font-size:36px;background-image:linear-gradient(100deg,#fff 0%,#ffe1bf 32%,#d9d0ff 62%,#fff)}
-.ech-tete .rf-solde .prismeico{width:17px;height:17px}
-.ech-tete .rf-solde svg:not(.prismeico){width:15px;height:15px;fill:none;stroke:var(--ev-b);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ech-rf .rf-onglets button.on::after{background:linear-gradient(90deg,var(--ev-a),var(--ev-b),var(--ev-c))}
-.ech-rf .rf-pastille,.ech-rfban .rfban-n{background:var(--ev-chaud)}
-@media (max-width:480px){.ech-tete .rf-tetenom h1{font-size:28px}}
-
-/* Les tuiles (Aujourd'hui) */
-.ech-rf .rf-tuile:hover{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
-.ech-rf .rf-tuile.chaud{box-shadow:inset 0 0 0 1.5px var(--ev-chaud)}
-.ech-rf .rf-tuile.chaud .rf-tuiletxt span{color:var(--ev-a)}
-.ech-rf .rf-tuileico{background:linear-gradient(135deg,var(--ev-a),var(--ev-c))}
-.ech-rf .rf-tuiletxt b sup{font-size:.6em}
-.ech-rf .rf-tuile.fixe{cursor:default}
-.ech-rf .rf-tuile.fixe:hover{box-shadow:inset 0 0 0 1px var(--line);translate:none}
-.ech-rf .rf-tuiletxt .ech-niv{font-size:13px}
-
-/* Le défi du jour, en vedette : la carte de l'adversaire et l'invitation. */
-.ech-une{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;gap:16px;width:100%;padding:16px;border:0;border-radius:var(--radius);
-  cursor:pointer;font:inherit;text-align:left;color:var(--text);background:#150d1c;
-  box-shadow:inset 0 0 0 1.5px var(--ev-c),0 12px 30px rgba(0,0,0,.4);transition:translate .15s}
-.ech-une:active{translate:0 1px}
-.ech-une>.ech-illu.fond{left:30%;-webkit-mask:linear-gradient(90deg,transparent,#000 55%);mask:linear-gradient(90deg,transparent,#000 55%)}
-.ech-une>.ech-illu.fond img{filter:saturate(1.1) brightness(.62)}
-.ech-une::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(90% 120% at 0% 50%,rgba(21,13,28,.9),rgba(21,13,28,.35) 70%),linear-gradient(0deg,rgba(21,13,28,.7),transparent 60%)}
-.ech-une.parfait{box-shadow:inset 0 0 0 1.5px rgba(255,199,59,.6),0 12px 30px rgba(0,0,0,.4)}
-.ech-une-carte{flex:0 0 92px;rotate:-5deg;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
-.ech-une-txt{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
-.ech-une-txt>small{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ev-b)}
-.ech-une-txt>small .ech-niv{letter-spacing:0;text-transform:none}
-.ech-une-txt>b{font-family:var(--display);font-stretch:110%;font-style:italic;font-weight:900;font-size:24px;line-height:1.05;padding-right:.1em}
-.ech-une-regle{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--subtle)}
-.ech-une-regle .ech-ico{width:26px;height:26px;padding:5px;border-radius:8px}
-.ech-une-bas{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted)}
-.ech-une-bas .ech-et{font-size:15px}
-.ech-une-bas em{font-style:normal}
-.ech-une-cta{margin-top:4px;pointer-events:none}
-@media (max-width:380px){.ech-une{gap:12px;padding:14px 12px}.ech-une-carte{flex-basis:78px}.ech-une-txt>b{font-size:21px}}
-
-/* Les sept défis et les bonus : la piste du Pass de Reflets. */
-.ech-rf .rf-pal.pris::before,.ech-rf .rf-pal.pret::before,.ech-defis .rf-pal.gagne::before{background:linear-gradient(var(--ev-a),var(--ev-c))}
-.ech-rf .rf-pal.pris .rf-palnum,.ech-rf .rf-pal.pret .rf-palnum,.ech-defis .rf-pal.gagne .rf-palnum{color:#fff;background:linear-gradient(135deg,var(--ev-a),var(--ev-b),var(--ev-c));box-shadow:none}
-.ech-rf .rf-pal.prochain .rf-palnum{box-shadow:inset 0 0 0 2px var(--ev-c)}
-.ech-rf .rf-pal.rare .rf-palcarte{background:linear-gradient(110deg,rgba(255,179,92,.12),rgba(138,120,245,.1)),var(--surface)}
-.ech-rf .rf-pal.pret .rf-palcarte{box-shadow:inset 0 0 0 1.5px var(--ev-chaud),0 0 18px rgba(255,154,77,.16)}
-.ech-rf .rf-pal.prochain .rf-palcarte{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
-.ech-rf .rf-pal.prochain .rf-paletat{color:var(--ev-b)}
-.ech-rf .rf-palico{color:var(--ev-b)}
-.ech-rf .rf-paltxt small .prismeico{width:13px;height:13px}
-.ech-defis .rf-pal.pris .rf-palcarte{opacity:1}
-.ech-defis .rf-pal.arattraper .rf-palcarte{box-shadow:inset 0 0 0 1px rgba(255,154,77,.5)}
-.ech-defis .rf-pal.ferme{opacity:.55}
-.ech-defis button.rf-palcarte{width:100%;border:0;cursor:pointer;font:inherit;color:inherit;text-align:left}
-.ech-defis button.rf-palcarte:active{translate:0 1px}
-.ech-defis .rf-palico.illu{position:relative;isolation:isolate;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line-2)}
-.ech-defis .rf-paltxt small{gap:6px;color:var(--subtle)}
-.ech-defis .rf-paltxt small .ech-ico{width:18px;height:18px;padding:3px;border-radius:6px}
-.ech-defis .rf-palnum svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.ech-dl-fin{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-.ech-dl-fin .ech-et{font-size:14px}
-.ech-dl-fin em{font-style:normal;font-size:10.5px;font-weight:800;color:var(--ev-a);white-space:nowrap}
-.ech-comment{align-self:center}
-
-/* Le Pass : un palier sur cinq, un titre ou un cadre, un peu plus grand. */
-.ech-rf .rf-passtete{background:radial-gradient(100% 140% at 0% 50%,rgba(255,179,92,.14),transparent 60%),var(--surface)}
-.ech-rf .rf-passniv{background:radial-gradient(circle,var(--surface) 62%,transparent 63%),conic-gradient(var(--ev-a),var(--ev-b),var(--ev-c),var(--ev-a))}
-.ech-rf .rf-jauge i{background:linear-gradient(90deg,var(--ev-a),var(--ev-b),var(--ev-c))}
-.ech-rf .rf-pal.jalon .rf-palnum{flex-basis:40px;height:40px;font-family:var(--display);font-size:15px}
-.ech-rf .rf-pal.jalon .rf-palcarte{padding:12px}
-.ech-rf .rf-pal.jalon .rf-palico{flex-basis:50px;height:50px;border-radius:14px}
-.ech-rf .rf-pal.jalon .rf-palico .ava{width:42px;height:42px}
-.ech-rf .rf-pal.jalon .rf-paltxt b{font-family:var(--display);font-style:italic;font-weight:900;font-size:15px}
-.ech-gain .rf-gainico{background:linear-gradient(135deg,#ffb35c,#c8bfff 55%,#8a78f5);box-shadow:0 10px 26px rgba(255,179,92,.3)}
-.ech-gain .rf-gainico .ava{width:60px;height:60px}
-.ech-gain p{margin:0}
-
-/* La boutique, le classement */
-.ech-rf .rf-art{padding:12px 10px 10px;gap:5px}
-.ech-rf .rf-artvis{height:52px;color:var(--ev-b)}
-.ech-rf .rf-artvis svg{width:38px;height:38px}
-.ech-rf .rf-art .btn .prismeico{width:15px;height:15px}
-.ech-rf .rf-top li.moi{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
-.ech-rf .rf-pts .prismeico{width:15px;height:15px}
-.ech-top-et{font-style:normal;color:var(--warn)}
-.ech-maplace{margin:0;font-size:13px;color:var(--muted)}
-.ech-maplace b{color:var(--text)}
-
-/* Les indices : huit cases de carte, quatre par rangée (huit à partir de 640 px). */
-.ech-rf .ech-inds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 10px}
-@media (min-width:640px){.ech-rf .ech-inds{grid-template-columns:repeat(4,minmax(0,120px));justify-content:center}}
-@media (max-height:760px) and (max-width:639px){.ech-rf .ech-inds{grid-template-columns:repeat(4,minmax(0,64px));justify-content:center;gap:10px 14px}}
-.ech-rf .ech-case{width:auto}
-.ech-rf .ech-case small{width:auto}
-
-/* Le mode sans fin : son niveau en quatre crans ; ce qu'il rapporte. */
-.ech-niv{display:inline-flex;align-items:center;gap:3px;vertical-align:-1px}
-.ech-niv i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)}
-.ech-niv i.on{background:var(--ev-b,#c8bfff)}
-.ech-niv.n3 i.on{background:#ffb37a}
-.ech-niv.n4 i.on{background:#ff6b6b}
-.ech-niv em{margin-left:3px;font-style:normal;font-weight:800;letter-spacing:.06em}
-.ech-regle-sf{display:flex;align-items:flex-start;gap:10px;margin:0;padding:12px 14px;border-radius:var(--radius-sm);font-size:13px;line-height:1.45;color:var(--subtle);
-  background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.ech-regle-sf .shard{flex:0 0 auto;width:18px;height:18px;margin-top:1px;color:var(--accent-soft)}
-.ech-regle-sf b{color:var(--text)}
-
-/* Le mode sans fin : trois chiffres côte à côte, même sur téléphone. */
-.ech-rf .rf-tuiles.ech-ts{grid-template-columns:repeat(3,minmax(0,1fr))}
-.ech-rf .ech-ts .rf-tuile{flex-direction:column;align-items:flex-start;gap:7px;padding:10px}
-.ech-rf .ech-ts .rf-tuileico{width:26px;height:26px;border-radius:8px}
-.ech-rf .ech-ts .rf-tuileico svg{width:15px;height:15px}
-.ech-rf .ech-ts .rf-tuiletxt b{font-size:15px}
-.ech-rf .ech-ts .rf-tuiletxt span{font-size:11px}
-/* « Demain » : le nom du niveau sous ses crans (« Redoutable » ne tient pas à côté sur téléphone). */
-.ech-rf .ech-ts .ech-niv{flex-wrap:wrap}
-.ech-rf .ech-ts .ech-niv em{flex:1 0 100%;margin:3px 0 0}
-
-/* Le récap : les blocs de celui de Reflets (.rr-*), aux couleurs de
-   l'événement, resserrés pour tenir dans l'écran avec son podium (règle 8) :
-   six chiffres en deux rangées de trois (une rangée de six à partir de
-   720 px), l'icône à côté du chiffre ; la suite en une seule carte. */
-.ech-rf .rr-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-.ech-rf .rr-stat,.ech-rf .rr-stat:first-child{grid-column:auto;display:grid;grid-template-columns:auto minmax(0,1fr);align-content:start;align-items:center;gap:2px 7px;padding:10px}
-.ech-rf .rr-stat:first-child{background:radial-gradient(120% 160% at 0% 0%,rgba(255,179,92,.18),transparent 60%),var(--surface)}
-.ech-rf .rr-stat .rr-ico,.ech-rf .rr-lien .rr-ico{color:#fff;background:linear-gradient(135deg,var(--ev-a),var(--ev-c))}
-.ech-rf .rr-stat .rr-ico{width:24px;height:24px;margin:0;border-radius:8px}
-.ech-rf .rr-stat .rr-ico svg{width:14px;height:14px}
-.ech-rf .rr-stat .rr-ico .prismeico{width:17px;height:17px}
-.ech-rf .rr-stat b,.ech-rf .rr-stat:first-child b{font-size:22px}
-.ech-rf .rr-stat>span:not(.rr-ico),.ech-rf .rr-stat>small{grid-column:1 / -1;line-height:1.25}
-.ech-rf .rr-stat>span:not(.rr-ico){margin-top:3px;font-size:12px}
-.ech-rf .rr-stat>small{color:var(--ev-a)}
-@media (min-width:720px){.ech-rf .rr-stats{grid-template-columns:repeat(6,minmax(0,1fr))}}
-/* Le rang dans le coin, pas au-dessus : une ligne de moins. */
-.ech-rf .rr-podium li{position:relative;padding:12px 6px 9px;gap:4px}
-.ech-rf .rr-podium li.p1{padding-top:16px}
-.ech-rf .rr-place{position:absolute;top:6px;left:9px;font-size:13px}
-.ech-rf .rr-podium .ava{width:46px;height:46px}
-.ech-rf .rr-podium small .prismeico{width:13px;height:13px}
-.ech-rf .rr-lien.ech-suite{flex-direction:row;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left}
-.ech-rf .rr-lien .rr-ico{flex:0 0 auto;width:34px;height:34px;display:grid;place-items:center;border-radius:10px}
-.ech-suite>span:not(.rr-ico){display:flex;flex-direction:column;gap:2px;min-width:0}
-.ech-suite .ech-niv{margin-left:2px}
-.ech-rf .rr-lien:hover{box-shadow:inset 0 0 0 1.5px var(--ev-c)}
-/* La 3.0 dans le récap (PROCHAINE, js/config.js) : le titre et le temps qui
-   reste sur une ligne, ses deux dates dessous, une par ligne. */
-.rr-continue .ech-suite+.ech-suite{margin-top:8px}
-.ech-rf .rr-lien.ech-30{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"ico titre temps" "ico dates dates";
-  align-items:center;column-gap:12px;row-gap:2px;cursor:default}
-.ech-rf .rr-lien.ech-30:hover{box-shadow:inset 0 0 0 1px var(--line)}
-.ech-30>.rr-ico{grid-area:ico}
-.ech-30>b{grid-area:titre;min-width:0}
-.ech-30>small{grid-area:dates;display:flex;flex-direction:column}
-.ech-30-t{grid-area:temps;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap;color:var(--text);
-  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-2)}
-.ech-court{display:none}
-/* Sur téléphone, les trois chiffres de second plan (indices, combats,
-   quêtes) passent en pastilles d'une ligne : la place de la 3.0. */
-@media (max-width:639px){
-  .ech-rf .rr-stat.mineur{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:6px;padding:6px 8px;background:none}
-  .ech-rf .rr-stat.mineur .rr-ico{width:20px;height:20px;border-radius:6px}
-  .ech-rf .rr-stat.mineur .rr-ico svg{width:12px;height:12px}
-  .ech-rf .rr-stat.mineur b{font-size:15px}
-  .ech-rf .rr-stat.mineur b small{font-size:11px}
-  .ech-rf .rr-stat.mineur>span:not(.rr-ico){min-width:0;margin:0;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ech-rf .rr-lien.ech-suite{padding:10px 12px}
-  .ech-rf .rf-page:has(>.rr-bilan){gap:10px}
+/* ============ Réglages (refaits en 3.0.14) ============ */
+/* Quatre sections : des onglets sur téléphone, une colonne sur ordinateur.
+   Chaque réglage est une ligne d'un groupe — son icône, ce qu'il fait, son
+   interrupteur (ou un chevron) — et toute la ligne se touche. */
+.rg{display:flex;flex-direction:column;gap:14px}
+.rg-nav{position:sticky;top:-8px;z-index:4;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:4px;border-radius:18px;
+  background:var(--glass-solid);box-shadow:inset 0 0 0 1px var(--line-2),var(--sh-2)}
+.rg-nav button{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;min-height:52px;padding:6px 4px;border:0;border-radius:14px;
+  font:inherit;font-size:12px;font-weight:800;color:var(--muted);background:none;cursor:pointer}
+.rg-nav button span{display:grid;place-items:center}
+.rg-nav button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rg-nav button:hover:not(.on){color:var(--subtle);background:var(--hover)}
+.rg-nav button.on{color:var(--text);background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),var(--sh-1)}
+.rg-corps{display:flex;flex-direction:column;gap:16px;min-width:0}
+.rg-g h3{margin:0 4px 7px;font-family:var(--body);font-style:normal;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.rg-c{border-radius:var(--radius-lg);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),var(--tuile);overflow:hidden}
+.rg-l{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;border:0;border-top:1px solid var(--line);
+  font:inherit;color:var(--text);text-align:left;text-decoration:none;background:none;cursor:pointer}
+.rg-c>.rg-l:first-child,.rg-c>p:first-child+.rg-l{border-top:0}
+.rg-b:hover,label.rg-l:hover{background:var(--hover)}
+.rg-ico{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:10px;color:var(--accent-soft);background:var(--accent-wash)}
+.rg-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rg-ico svg[fill="currentColor"]{fill:currentColor;stroke:none}
+.rg-ico:empty{background:none}
+.rg-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rg-tx b{font-size:14.5px;font-weight:700}
+.rg-tx small{font-size:12.5px;line-height:1.35;color:var(--muted)}
+.rg-chev{display:grid;place-items:center;color:var(--muted)}
+.rg-chev svg{width:16px;height:16px;transform:rotate(-90deg);fill:none;stroke:currentColor;stroke-width:2.4}
+.rg-val{font-size:13.5px;font-weight:800;color:var(--subtle)}
+.rg-note{margin:7px 6px 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+/* L'interrupteur : une piste, un bouton rond ; vert quand il est mis. */
+.rg-sw{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:46px;height:28px;margin:0;border-radius:99px;cursor:pointer;
+  background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);transition:background .2s}
+.rg-sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .2s var(--spring)}
+.rg-sw:checked{background:var(--ok-deep)}
+.rg-sw:checked::after{transform:translateX(18px)}
+.rg-sw:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+.rg-curseur{cursor:default}
+.rg-curseur .slider{flex:1;min-width:0;margin:0}
+.rg-curseur.off .rg-ico{opacity:.4}
+.rg-moi{display:flex;align-items:center;gap:12px;padding:14px}
+.rg-ok{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:var(--ok);vertical-align:1px}
+.rg-garder{padding:12px 14px}
+.rg-dit{margin:0 0 4px;font-size:13px;line-height:1.45;color:var(--subtle)}
+.rg-garder .garde-groupe{margin:12px 0 0;font-size:12.5px;font-weight:800;color:var(--subtle)}
+.rg-apropos .mentions{margin:10px 6px 0}
+@media (prefers-reduced-motion:reduce){.rg-sw,.rg-sw::after{transition:none}}
+html.rm .rg-sw,html.rm .rg-sw::after{transition:none}
+/* Sur ordinateur : la navigation à gauche, en colonne. */
+@media (min-width:900px){
+  .rg{display:grid;grid-template-columns:200px minmax(0,1fr);gap:22px;align-items:start}
+  .rg-nav{top:-8px;grid-template-columns:1fr;padding:6px}
+  .rg-nav button{flex-direction:row;justify-content:flex-start;gap:10px;min-height:44px;padding:8px 12px;font-size:14px}
 }
-/* Moins de 400 px : la pastille sans son icône, sinon « combats » se coupe. */
-@media (max-width:399px){
-  .ech-rf .rr-stat.mineur{justify-content:center;gap:5px}
-  .ech-rf .rr-stat.mineur .rr-ico{display:none}
+/* Un écran bas (375 × 667) : les sections courtes tiennent sans défiler d'un
+   rien — des lignes et des titres plus serrés. */
+@media (max-height:700px) and (max-width:899px){
+  .rg{gap:10px}
+  .rg-corps{gap:12px}
+  .rg-nav button{min-height:46px;padding:4px}
+  .rg-l{min-height:50px;padding:7px 12px}
+  .rg-tx small{font-size:12px}
+  .rg-note{margin-top:5px;font-size:12px}
+  .rg-g h3{margin-bottom:5px}
+  .rg-moi{padding:10px 12px}
+  .rg-apropos .mentions{margin-top:6px;font-size:11px}
 }
 
-/* Les écrans bas (375 × 667, 360 × 740) : l'en-tête se resserre, la
-   boutique passe en liste, pour qu'aucune page ne défile d'un tout petit peu
-   (règle 8) ; les pages longues (Défis, Quêtes, Pass) défilent. */
+/* ============ La présentation (la démo de Gentle Mates, 3.0.14) ============ */
+/* presDiapos et montrerPresentation, js/bienvenue.js. Une feuille presque
+   plein écran sur téléphone, une affiche de deux colonnes sur ordinateur.
+   Chaque écran : un visuel fait des vraies cartes du jeu, puis le texte. Rien
+   ne défile en hauteur : la piste glisse de côté, écran par écran. */
+.sheet.pres{padding:0;max-width:520px;height:min(700px,calc(100dvh - 12px));max-height:none;overflow:hidden;
+  display:flex;flex-direction:column}
+.sheet.pres>h3{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0}
+.sheet.pres>.acts{display:none}
+.pres-passer{position:absolute;top:14px;right:16px;z-index:3;font-size:13.5px;font-weight:700;color:var(--subtle);
+  padding:6px 10px;border-radius:99px;background:rgba(15,14,20,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.pres-passer[hidden]{display:none}
+.pres-piste{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+  overscroll-behavior-x:contain;scrollbar-width:none}
+.pres-piste::-webkit-scrollbar{display:none}
+.pres-d{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:grid;
+  grid-template-rows:minmax(0,1fr) auto}
+.pres-visu{position:relative;overflow:hidden;isolation:isolate;
+  background:radial-gradient(70% 62% at 50% 46%,rgba(138,120,245,.34),transparent 72%),
+    linear-gradient(180deg,rgba(255,255,255,.02),transparent 70%);
+  -webkit-mask:linear-gradient(180deg,#000 86%,transparent);mask:linear-gradient(180deg,#000 86%,transparent)}
+.pres-txt{padding:2px 22px 0;text-align:center}
+.pres-kick{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--deco-ink);
+  padding:5px 10px;border-radius:99px;background:var(--deco-wash)}
+.pres-txt h4{font-family:var(--display);font-stretch:112%;font-weight:900;font-style:italic;letter-spacing:-.02em;
+  font-size:clamp(23px,6.6vw,28px);line-height:1.06;margin:9px 0 7px}
+.pres-txt p{margin:0 auto;max-width:36ch;font-size:14.5px;line-height:1.45;color:var(--subtle)}
+.pres-chiffres{list-style:none;display:flex;justify-content:center;gap:8px;margin:13px 0 0;padding:0}
+.pres-chiffres li{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 11px 7px;
+  border-radius:var(--radius-sm);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.pres-chiffres b{font-family:var(--display);font-weight:900;font-style:italic;font-size:17px;line-height:1.1;color:var(--text);white-space:nowrap}
+.pres-chiffres span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.pres-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 18px 0}
+.pres-points{display:flex;gap:6px}
+.pres-points button{width:8px;height:8px;padding:0;border:0;border-radius:99px;background:var(--line-3);cursor:pointer;
+  transition:width .3s var(--ease),background .3s}
+.pres-points button[aria-current]{width:22px;background:var(--accent-soft)}
+.pres-fl{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;cursor:pointer;
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);color:var(--text)}
+.pres-fl svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;rotate:90deg}
+.pres-fl.suiv svg{rotate:-90deg}
+.pres-fl:disabled{opacity:.35;cursor:default}
+.pres-go{width:auto;margin:12px 18px calc(16px + env(safe-area-inset-bottom,0px))}
+.pres-annonce{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0}
+
+/* Les visuels : des cartes posées en absolu, en hauteur de la zone. */
+.pres-c{position:absolute;left:50%;top:50%;height:62%;aspect-ratio:63/88;translate:-50% -50%;
+  transition:transform .6s var(--spring),opacity .4s}
+.pres-c .cwrap{box-shadow:0 14px 30px -8px rgba(0,0,0,.6)}
+.pres-d:not(.on) .pres-c{opacity:.4}
+.v-accueil .pres-c{height:58%;top:44%}
+.v-accueil .pres-c.g{transform:translateX(-58%) rotate(-13deg)}
+.v-accueil .pres-c.d{transform:translateX(58%) rotate(13deg)}
+.v-accueil .pres-c.m{z-index:2;transform:translateY(-4%)}
+.pres-d.v-accueil:not(.on) .pres-c,.pres-d.v-boosters:not(.on) .pres-c,.pres-d.v-echanges:not(.on) .pres-c{transform:none}
+.pres-logo{position:absolute;z-index:3;left:50%;bottom:8%;translate:-50% 0;height:24%;width:auto;max-width:76%;object-fit:contain;
+  filter:drop-shadow(0 6px 22px rgba(0,0,0,.75)) drop-shadow(0 0 30px rgba(138,120,245,.45))}
+.pres-pack{position:absolute;z-index:3;left:50%;bottom:-6%;height:58%;width:auto;translate:-50% 0;rotate:-4deg;
+  filter:drop-shadow(0 16px 28px rgba(0,0,0,.6))}
+.v-boosters .pres-c{height:50%;top:38%}
+.v-boosters .pres-c.p1{transform:translateX(-56%) rotate(-15deg)}
+.v-boosters .pres-c.p2{transform:translateX(56%) rotate(15deg)}
+.v-boosters .pres-c.p3{z-index:2;transform:translateY(-14%)}
+.pres-grille{position:absolute;left:50%;top:43%;translate:-50% -50%;height:68%;aspect-ratio:3/2;max-width:90%;
+  display:grid;grid-template-columns:repeat(4,1fr);align-content:center;gap:7px}
+.pres-g{display:block;min-width:0}
+.pres-g .cwrap{box-shadow:0 8px 16px -6px rgba(0,0,0,.6)}
+.pres-g.vide{aspect-ratio:63/88;border-radius:9%/6.4%;display:grid;place-items:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));box-shadow:inset 0 0 0 1px var(--line-2)}
+.pres-g.vide i{font-family:var(--display);font-style:italic;font-weight:900;font-size:22px;color:var(--muted)}
+.pres-jauge{position:absolute;left:50%;bottom:7%;translate:-50% 0;width:min(70%,300px);display:flex;align-items:center;gap:10px}
+.pres-jauge i{flex:1;height:7px;border-radius:99px;background:var(--line-2);position:relative;overflow:hidden}
+.pres-jauge i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--p);border-radius:inherit;background:var(--progress,var(--accent-soft))}
+.pres-jauge b{font-size:13px;font-weight:800;color:var(--text)}
+.v-echanges .pres-c{height:56%}
+.v-echanges .pres-c.e1{transform:translateX(-56%) rotate(-6deg)}
+.v-echanges .pres-c.e2{transform:translateX(56%) rotate(6deg)}
+.pres-swap{position:absolute;z-index:3;left:50%;top:50%;translate:-50% -50%;width:58px;height:58px;border-radius:50%;
+  display:grid;place-items:center;background:var(--glass-strong);box-shadow:inset 0 0 0 1px var(--glass-line),0 10px 26px rgba(0,0,0,.5);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:var(--deco-ink)}
+.pres-swap svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pres-boite{position:absolute;top:47%;height:min(56%,46vw);width:auto;translate:0 -50%;filter:drop-shadow(0 16px 28px rgba(0,0,0,.6));
+  transition:transform .6s var(--spring)}
+.pres-boite.t{right:49%;rotate:-7deg}
+.pres-boite.d{left:49%;rotate:7deg}
+.pres-vs{position:absolute;z-index:4;left:50%;top:50%;translate:-50% -50%;font-family:var(--display);font-weight:900;font-style:italic;
+  font-size:30px;letter-spacing:-.02em;color:#fff;text-shadow:0 0 18px rgba(138,120,245,.9),0 3px 10px rgba(0,0,0,.8)}
+.pres-choc{position:absolute;inset:6% 0 10%;background-size:cover;background-position:center 30%}
+.pres-choc.t{clip-path:polygon(0 0,58% 0,42% 100%,0 100%)}
+.pres-choc.d{clip-path:polygon(58% 0,100% 0,100% 100%,42% 100%);background-position:center 30%}
+.v-choc .pres-visu{background:#111}
+.v-choc .pres-vs{font-size:36px}
+.pres-labo{position:absolute;left:50%;top:40%;translate:-50% -50%;width:104px;height:104px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 35%,rgba(179,166,255,.4),rgba(93,75,217,.25) 60%,transparent 72%);
+  box-shadow:inset 0 0 0 1px var(--glass-line),0 0 60px rgba(138,120,245,.35);color:var(--deco-ink)}
+.pres-labo svg{width:50px;height:50px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pres-pills{list-style:none;position:absolute;left:0;right:0;bottom:12%;margin:0;padding:0 16px;display:flex;flex-wrap:wrap;justify-content:center;gap:7px}
+.pres-pills li{font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:99px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+
+/* L'arrivée d'un écran : ses cartes se déploient. */
+@media (prefers-reduced-motion:no-preference){
+  .pres-d.on .pres-visu>*{animation:pres-entre .55s var(--spring) both}
+  .pres-d.on .pres-visu>*:nth-child(2){animation-delay:.05s}
+  .pres-d.on .pres-visu>*:nth-child(3){animation-delay:.1s}
+  .pres-d.on .pres-visu>*:nth-child(4){animation-delay:.15s}
+}
+@keyframes pres-entre{from{opacity:0;translate:-50% calc(-50% + 22px)}}
+.pres-d.on .pres-logo,.pres-d.on .pres-pack,.pres-d.on .pres-jauge,.pres-d.on .pres-pills,.pres-d.on .pres-boite,
+.pres-d.on .pres-choc,.pres-d.on .pres-grille{animation-name:pres-fond}
+@keyframes pres-fond{from{opacity:0}}
+
+/* Écrans bas (375 × 667, 360 × 740) : le texte se resserre. */
 @media (max-height:760px){
-  .rf-tete.ech-tete{padding-top:14px}
-  .ech-tete .rf-tetenom h1{font-size:26px;margin-top:4px}
-  .ech-tete .rf-onglets{margin-top:12px}
-  .ech-tete .rf-onglets button{padding:10px 9px 11px}
-  .ech-rf .rf-page{gap:10px}
-  .ech-une{padding:12px}
-  .ech-une-carte{flex-basis:70px}
-  .ech-une-txt{gap:5px}
-  .ech-une-txt>b{font-size:20px}
-  .ech-une-cta{padding-top:10px;padding-bottom:10px}
-  .ech-rf .ech-ts .rf-tuile{padding:8px 10px;gap:5px}
-  .ech-regle-sf{padding:9px 12px}
-  .ech-rf .rf-top{gap:5px}
-  .ech-rf .rf-top li{padding:6px 12px}
-  .ech-rf .rf-top .ava{width:34px;height:34px}
-  .ech-rf .rr-stat,.ech-rf .rr-stat:first-child{padding:8px 9px}
-  .ech-rf .rr-stat .rr-ico{width:22px;height:22px}
-  .ech-rf .rr-stat b,.ech-rf .rr-stat:first-child b{font-size:19px}
-  .ech-rf .rr-podium li{padding:9px 6px 7px;gap:3px}
-  .ech-rf .rr-podium li.p1{padding-top:12px}
-  .ech-rf .rr-podium .ava{width:40px;height:40px}
-  .ech-rf .rf-page h2{margin-bottom:6px;font-size:16px}
-  .ech-long{display:none}
-  .ech-court{display:inline}
+  .pres-txt h4{font-size:22px;margin:7px 0 5px}
+  .pres-txt p{font-size:13.5px}
+  .pres-chiffres{margin-top:10px}
+  .pres-chiffres li{padding:6px 9px 5px}
+  .pres-chiffres b{font-size:15.5px}
+  .pres-nav{padding-top:9px}
+  .pres-go{margin-top:9px}
 }
-/* Le récap sur un écran bas de téléphone : un peu moins d'air, pour la 3.0. */
-@media (max-height:760px) and (max-width:639px){
-  .ech-rf .rf-page:has(>.rr-bilan){gap:8px}
-  .ech-rf .rf-page:has(>.rr-bilan) h2{margin-bottom:4px}
-  .ech-rf .rr-stat.mineur{padding-top:4px;padding-bottom:4px}
-  .ech-rf .rr-lien.ech-suite{padding:8px 12px}
-}
-/* 375 × 667 : le podium en trois pastilles (l'avatar à côté du nom). */
-@media (max-height:700px){
-  .ech-rf .rr-podium h2{display:none}
-  .ech-rf .rr-podium li,.ech-rf .rr-podium li.p1{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:0 7px;padding:7px 8px;text-align:left}
-  .ech-rf .rr-podium .ava{grid-row:1 / 3;width:32px;height:32px}
-  .ech-rf .rr-podium b,.ech-rf .rr-podium small{grid-column:2;justify-self:start}
-  .ech-rf .rr-place{top:3px;left:auto;right:7px;font-size:12px}
-}
-@media (max-height:760px) and (max-width:639px){
-  .ech-rf .rf-arts{grid-template-columns:1fr;gap:8px}
-  .ech-rf .rf-art{display:grid;grid-template-columns:44px 1fr auto;grid-template-rows:auto auto;align-items:center;column-gap:12px;row-gap:2px;padding:10px 12px;text-align:left}
-  .ech-rf .rf-artvis{grid-row:1 / 3;height:44px}
-  .ech-rf .rf-artvis svg{width:30px;height:30px}
-  .ech-rf .rf-artvis .qrtitre{font-size:9.5px;padding:4px 5px}
-  .ech-rf .rf-art>b{grid-column:2;font-size:13.5px}
-  .ech-rf .rf-art>small{display:none}
-  .ech-rf .rf-artreste{grid-column:2;grid-row:2}
-  .ech-rf .rf-art .btn,.ech-rf .rf-art .qtag{grid-column:3;grid-row:1 / 3;width:auto;min-width:84px}
-}
+@media (max-width:359px){.pres-chiffres span{font-size:10.5px}.pres-chiffres li{padding-inline:7px}}
 
-/* Les bandeaux (écran Boosters, Boutique principale) */
-.rfban.ech-rfban{background:#150d1c}
-.ech-rfban .rfban-txt b{background-image:linear-gradient(100deg,#fff,#ffe1bf 38%,#d9d0ff 70%,#fff)}
-.ech-rfban .rfban-solde .prismeico{width:15px;height:15px}
-.ech-rfban .rfban-solde .ech-et{font-size:13px}
-.ech-rfban.shopev{max-width:none;margin:0 0 12px}
-
-/* Le pied de l'écran du défi, et la fenêtre de fin */
-.ech-pied-prix.braises{display:inline-flex;align-items:center;gap:3px;color:var(--e-acc2)}
-.ech-pied .shard{width:11px;height:11px;vertical-align:-1px;color:var(--e-or)}
-.ech-pied .prismeico{width:12px;height:12px}
-.ech-popstats{margin:0 0 6px}
-.ech-popstats b small{font-size:12px;color:var(--muted)}
-
-@media (max-height:700px){.ech-sc-adv{width:34%}.ech-sc{gap:8px}.ech-sc-eq{gap:8px;width:88%}}
-@media (prefers-reduced-motion:reduce){.frappe .ech-sc-carte,.touche .ech-sc-carte,.attaque .ech-sc-carte,.bloque .ech-sc-carte,.ech-flot.go,.ech-sc-j.pret .ech-sc-carte,
-  .touche .ech-eclat,.eclate .ech-eclat,.ech-sc-indice .ech-flip,.ech-sc-j.ko .ech-ko,
-  .ech-scene.gagne::before,.ech-scene.secousse .ech-sc,.ech-sc-fin.on .ech-sc-verdict,.ech-fin-case.posee b,.ech-tampon.posee,.ech-sc-indice.invite,
-  .ech-scene.intro .ech-sc-vs,.ech-scene.intro .ech-sc-adv,.ech-scene.intro .ech-sc-j,.ech-final .ech-ind,.ech-final .ech-flip{animation:none}}
-html.rm .frappe .ech-sc-carte,html.rm .touche .ech-sc-carte,html.rm .attaque .ech-sc-carte,html.rm .bloque .ech-sc-carte,html.rm .ech-sc-j.pret .ech-sc-carte,
-html.rm .ech-sc-indice .ech-flip,html.rm .ech-sc-j.ko .ech-ko,html.rm .ech-scene.gagne::before,html.rm .ech-scene.secousse .ech-sc,
-html.rm .ech-sc-fin.on .ech-sc-verdict,html.rm .ech-fin-case.posee b,html.rm .ech-tampon.posee,html.rm .ech-sc-indice.invite,
-html.rm .ech-scene.intro .ech-sc-vs,html.rm .ech-scene.intro .ech-sc-adv,html.rm .ech-scene.intro .ech-sc-j,html.rm .ech-final .ech-ind,html.rm .ech-final .ech-flip{animation:none}
+/* Ordinateur : une affiche en deux colonnes, la navigation en bas. */
+@media (min-width:900px){
+  .sheet.pres{max-width:none;width:min(900px,92vw);height:min(560px,88vh);display:grid;
+    grid-template:"piste piste" minmax(0,1fr) "nav go" auto / 1fr auto}
+  .pres-piste{grid-area:piste}
+  .pres-d{grid-template-rows:none;grid-template-columns:1.1fr 1fr;align-items:center}
+  .pres-visu{height:100%;-webkit-mask:linear-gradient(90deg,#000 82%,transparent);mask:linear-gradient(90deg,#000 82%,transparent)}
+  .pres-txt{text-align:left;padding:0 44px 0 12px}
+  .pres-txt h4{font-size:34px;margin:12px 0 10px}
+  .pres-txt p{margin:0;font-size:15.5px;max-width:38ch}
+  .pres-chiffres{justify-content:flex-start;margin-top:18px}
+  .pres-nav{grid-area:nav;justify-content:flex-start;padding:0 0 22px 28px}
+  .pres-go{grid-area:go;margin:0 28px 22px 0;min-width:170px}
+  .pres-passer{top:16px;right:18px}
+}

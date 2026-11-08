@@ -1,7 +1,8 @@
 /* Point d'entrée : navigation, en-tête, clics, démarrage. Chargé en dernier.
    Les onglets sont décrits dans TABS (js/config.js) : ceux marqués `bas`
    tiennent dans la barre du bas sur mobile et dans le rail latéral sur
-   ordinateur, les autres sont rangés dans la page « Plus ». */
+   ordinateur ; ceux marqués `tiroir` vivent dans le tiroir du compte sur
+   mobile, et sous un filet du rail sur ordinateur. */
 "use strict";
 
 /* ---------- Quel onglet montrer ---------- */
@@ -9,27 +10,29 @@ function ongletDispo(t) {
   if (t.admin) return !!save && !!save.isAdmin;
   /* L'onglet d'un événement n'existe que pendant qu'il dure — et trois
      jours après, le temps de son récap. */
-  if (t.evenement) return evenementEnCours() === t.evenement || !!(typeof recapReflets === 'function' && recapReflets());
+  if (t.evenement) return evenementEnCours() === t.evenement || !!(RECAPS[t.evenement] && RECAPS[t.evenement]());
   /* Ce qui vit dans l'onglet de l'événement pendant qu'il dure. */
   if (t.horsEvenement) return evenementEnCours() !== t.horsEvenement;
   return true;
 }
 
-/* Le code de l'événement en cours (supabase/15_evenements.sql), s'il en a un
+/* Le récap d'un événement fini depuis moins de trois jours (ou son aperçu
+   du Labo), événement par événement. */
+const RECAPS = { reflets: () => recapReflets(), choc: () => recapChoc() };
+
+/* Le code de l'événement en cours (supabase/installation/15_evenements.sql), s'il en a un
    et qu'il a commencé. */
 const evenementEnCours = () => {
   const ev = save && save.evenement;
   return ev && !ev.a_venir && ev.code ? ev.code : null;
 };
 
-/* La barre du bas : pendant l'événement Reflets, son onglet prend la place de
-   Combats — qui n'est encore qu'un aperçu de la version 3.0 et passe dans le
-   tiroir. */
+/* La barre du bas. Version 3.0 : Combats y reste, même pendant un
+   événement — ce n'est plus un aperçu. L'onglet de l'événement passe en
+   tête du tiroir (ongletsTiroir). */
 function ongletsBas() {
-  const ev = TABS.find(t => t.evenement && ongletDispo(t));
-  return TABS.filter(t => t.bas).map(t => (t.id === 'combats' && ev ? ev : t));
+  return TABS.filter(t => t.bas);
 }
-const combatsAuTiroir = () => !ongletsBas().some(t => t.id === 'combats');
 
 function ongletValide(id) {
   const t = TABS.find(x => x.id === id);
@@ -41,22 +44,36 @@ function ongletValide(id) {
    ce sont les seules portes vers la boutique et vers le menu du compte. Les cacher
    revenait à cacher qu'ils existent. */
 function header() {
-  const tk = $('#tk');
-  if (tk) tk.textContent = save.unlimited ? '∞' : String(save.tickets);
+  /* Version 3.0 : plus de compteur de boosters dans l'en-tête — c'est une
+     pastille sur l'onglet Boosters (pastilleOnglet), remise à jour ici. */
+  majPastilleBoosters();
 
   const ec = $('#ec');
   if (ec) ec.querySelector('b').textContent = fmtN(save.shards);
 
   /* Sur mobile, l'avatar ouvre le tiroir du compte — mais rien ne le disait :
-     une photo ronde ressemble à une décoration, pas à un bouton. Le chevron
-     posé dessus est le signe universel du panneau qui se déplie. Sur ordinateur
-     il n'y a pas de tiroir, donc pas de chevron (voir css/hub.css). */
+     une photo ronde ressemble à une décoration, pas à un bouton. Une flèche
+     et la pastille du niveau posées dessus en faisaient trop. Le bouton est
+     donc une pilule : les trois traits du menu, le niveau en chiffre, puis
+     l'avatar dans un fin anneau qui se remplit avec l'XP du niveau en cours.
+     Le niveau est dans la pilule, à côté de la photo, plus dessus. Sur
+     ordinateur il n'y a pas de tiroir : l'avatar seul, avec son niveau (voir
+     css/hub.css). */
   const av = $('#moi');
   if (av) {
-    av.innerHTML = avatarHTML(save.avatar, save.frame, 'sm', maPhoto())
-      + '<i class="moicaret" aria-hidden="true">' + NAVICO.caret + '</i>';
-    av.classList.toggle('alerte', pastilleTiroir() > 0);
-    av.setAttribute('aria-label', surOrdi() ? 'Mon profil' : 'Menu du compte');
+    const ordi = surOrdi();
+    const n = typeof niveauDe === 'function' ? niveauDe(monXp() || 0) : null;
+    const p = n ? Math.round(100 * n.dans / n.requis) : 0;
+    av.innerHTML = ordi
+      ? avatarHTML(save.avatar, save.frame, 'sm', maPhoto(), monXp())
+      : `<span class="moi-menu" aria-hidden="true">${NAVICO.menu}</span>`
+        + (n ? `<span class="moi-niv" aria-hidden="true"><small>Niv.</small><b class="tnum">${n.niveau}</b></span>` : '')
+        + `<span class="moi-anneau" style="--p:${p}%" title="${n ? `Niveau ${n.niveau}` : ''}">${avatarHTML(save.avatar, save.frame, 'sm', maPhoto())}</span>`;
+    av.classList.toggle('pilule', !ordi);
+    /* Sur ordinateur, il n'y a pas de tiroir : le rail montre déjà chaque
+       pastille, l'avatar n'a rien à signaler. */
+    av.classList.toggle('alerte', !surOrdi() && pastilleTiroir() > 0);
+    av.setAttribute('aria-label', ordi ? 'Mon profil' : `Menu du compte${n ? ` · niveau ${n.niveau}` : ''}`);
     av.setAttribute('aria-expanded', String(tiroirOuvert));
   }
 
@@ -71,40 +88,65 @@ function header() {
    sous un filet — inutile de cacher derrière un menu ce qui tient à l'écran. */
 const surOrdi = () => matchMedia('(min-width:900px)').matches;
 
+/* L'onglet affiché au rendu précédent : la lentille de la barre du bas glisse
+   depuis lui (`--de`, en nombre d'onglets ; css/base.css). */
+let navPrec = null;
+
 function navHTML() {
+  const bas = ongletsBas().map(t => t.id);
+  const ici = bas.indexOf(tab), avant = bas.indexOf(navPrec);
+  const de = ici >= 0 && avant >= 0 ? avant - ici : 0;
+  navPrec = tab;
   const bouton = (t, groupe) => {
     const n = pastilleOnglet(t.id);
     const cls = [groupe, tab === t.id ? 'on' : ''].filter(Boolean).join(' ');
     return `<button data-tab="${t.id}" class="${cls}" aria-label="${h(t.nom)}"
-      ${tab === t.id ? 'aria-current="page"' : ''}><i class="navbg" aria-hidden="true"></i>
+      ${tab === t.id ? `aria-current="page" style="--de:${de}"` : ''}><i class="navbg" aria-hidden="true"></i>
       ${NAVICO[t.ico]}<span>${h(t.nom)}</span>${n ? `<i class="pastille nav">${n}</i>` : ''}</button>`;
   };
   /* Le pied n'existe que sur le rail d'ordinateur : sur mobile, ces destinations
      et cette mention vivent dans le tiroir du compte. */
-  return ongletsBas().map(t => bouton(t, t.evenement ? 'evnav' : '')).join('')
+  return ongletsBas().map(t => bouton(t, '')).join('')
     + '<i class="navsep" aria-hidden="true"></i>'
     + ongletsTiroir().map(t => bouton(t, 'second')).join('')
-    + `<div class="navpied">${lienDiscord('discordlien', 'Rejoindre le Discord')}
+    + `<div class="navpied">${DEMO ? '' : lienDiscord('discordlien', 'Rejoindre le Discord')}
          <p class="mentions courtes">${MENTIONS_COURT}</p></div>`;
 }
 
 /* Ce qui réclame l'attention, onglet par onglet. */
 function pastilleOnglet(id) {
+  /* Les boosters qui attendent d'être ouverts (rien quand c'est illimité :
+     une pastille « ∞ » ne dirait rien). En ligne comme hors ligne. */
+  if (id === 'boosters') return save && !save.unlimited ? Math.max(0, save.tickets || 0) : 0;
   if (Backend.mode !== 'cloud') return 0;
   if (id === 'quetes') return questesPretes();
   /* L'événement : ses quêtes à encaisser et les paliers de piste atteints. */
   if (id === 'reflets') return evQuetesPretes();
+  if (id === 'choc') return chocPastille();
   if (id === 'illu') return illuData && !illuData.fini ? 1 : 0;
   if (id === 'social') return socNotifs();
-  /* L'Échauffement (js/echauffement.js) : les défis ouverts pas encore gagnés. */
-  if (id === 'combats') return echPastille();
+  /* Version 3.0 : un défi qui attend une réponse, un coffre du Raid à ouvrir. */
+  if (id === 'combats') return ((save.combat || {}).defis || []).filter(d => d.pour_moi && d.statut === 'attente').length + rdCoffres();
   return 0;
 }
 
-/* Sur l'avatar : ce qui attend derrière le tiroir, pour qu'on pense à l'ouvrir. */
+/* La pastille de l'onglet Boosters suit la réserve à la seconde (un booster
+   qui se recharge, un booster ouvert) sans redessiner toute la barre. */
+function majPastilleBoosters() {
+  const b = document.querySelector('#nav [data-tab="boosters"]');
+  if (!b || !save) return;
+  const n = pastilleOnglet('boosters');
+  let p = b.querySelector('.pastille.nav');
+  if (!n) { if (p) p.remove(); return; }
+  if (!p) { p = document.createElement('i'); p.className = 'pastille nav'; b.appendChild(p); }
+  p.textContent = n;
+}
+
+/* Sur l'avatar : ce qui attend derrière le tiroir, pour qu'on pense à l'ouvrir.
+   Les mêmes entrées que le tiroir (`ongletsTiroir`), donc l'onglet de
+   l'événement en tête, et pas un onglet que le tiroir ne montre pas. */
 function pastilleTiroir() {
-  return TABS.filter(t => t.tiroir).reduce((n, t) => n + pastilleOnglet(t.id), 0)
-    + (combatsAuTiroir() ? pastilleOnglet('combats') : 0);
+  return ongletsTiroir().reduce((n, t) => n + pastilleOnglet(t.id), 0);
 }
 
 /* ---------- Tiroir du compte ---------- */
@@ -112,15 +154,12 @@ function pastilleTiroir() {
    mouvement dit d'où vient le panneau, et où il retournera. */
 let tiroirOuvert = false;
 
-/* Les entrées du tiroir, Combats compris quand l'événement lui a pris sa
-   place : il se range alors sous Recyclage, pas en tête de liste. */
+/* Les entrées du tiroir. L'onglet de l'événement en cours (ou de son récap)
+   passe en tête de liste. */
 function ongletsTiroir() {
   const l = TABS.filter(t => t.tiroir && ongletDispo(t));
-  const c = TABS.find(t => t.id === 'combats');
-  if (c && combatsAuTiroir() && ongletDispo(c)) {
-    const i = l.findIndex(t => t.id === 'recyclage');
-    l.splice(i < 0 ? l.length : i + 1, 0, c);
-  }
+  const ev = TABS.find(t => t.evenement && ongletDispo(t));
+  if (ev) l.unshift(ev);
   return l;
 }
 
@@ -138,7 +177,7 @@ function vTiroir() {
   return `<div class="tiroir-bg" data-tiroir="fermer"></div>
   <nav class="tiroir-panneau" aria-label="Menu du compte">
     <header class="tiroir-id">
-      ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto())}
+      ${avatarHTML(save.avatar, save.frame, 'xl', maPhoto(), monXp())}
       <div><b>${h(save.pseudo)}</b><p class="muted small">${h(sousTitre)}</p></div>
       <button class="tiroir-x" data-tiroir="fermer" aria-label="Fermer">✕</button>
     </header>
@@ -164,7 +203,7 @@ function vTiroir() {
 
     <footer class="tiroir-pied">
       ${enLigne
-        ? '<button class="btn ghost" data-act="deconnexion">Se déconnecter</button>'
+        ? (DEMO ? '' : '<button class="btn ghost" data-act="deconnexion">Se déconnecter</button>')
         : Backend.dispo
           ? `<p class="muted small">Un compte garde ta collection et ouvre les échanges,
                les quêtes et la boutique.</p>
@@ -172,8 +211,8 @@ function vTiroir() {
                ? 'Créer un compte' : 'Se connecter avec Discord'}</button>`
           : `<p class="muted small">Le serveur n'est pas encore branché sur ce site :
                ta progression reste dans ce navigateur.</p>`}
-      ${lienDiscord('discordlien', 'Rejoindre le Discord')}
-      <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${h(versionJeu())}</p>
+      ${DEMO ? '' : `${lienDiscord('discordlien', 'Rejoindre le Discord')}
+      <p class="tiroir-ver muted small">${h(GAME_NAME)} · version ${APP_VERSION}</p>`}
       <p class="mentions courtes">${MENTIONS_COURT}</p>
     </footer>
   </nav>`;
@@ -215,6 +254,7 @@ const VUES = {
   combats: () => vCombats(),
   illu: () => vIlluPage(),
   reflets: () => vReflets(),
+  choc: () => vChoc(),
   recyclage: () => vRecyclage(),
   classement: () => vClassement(),
   tirages: () => vTirages(),
@@ -224,19 +264,44 @@ const VUES = {
   labo: () => vTest()
 };
 
-function render() {
-  /* La maintenance de la 3.0 (js/gate.js) passe avant tout. */
-  if (enMaintenance30()) {
-    document.body.className = 'inlock';
-    $('#main').innerHTML = vMaintenance30();
-    return;
+/* Le focus à travers un rendu (version 3.0.13). Redessiner la page remplaçait
+   l'élément qui avait le focus : au clavier, ou avec un lecteur d'écran,
+   chaque geste renvoyait au début de la page. On retient de quoi retrouver
+   l'élément — son id, sinon ses attributs d'action et de valeur, et son rang
+   parmi ceux qui ont les mêmes —, puis on rend le focus à son remplaçant,
+   sans faire défiler. Après un toucher ou un clic, le navigateur ne montre
+   pas d'anneau de focus (:focus-visible) : rien ne change à l'œil. */
+const FOCUS_ATTRS = ['data-cb', 'data-act', 'data-v', 'data-tab', 'data-show', 'data-q', 'data-lab', 'data-t', 'data-ech', 'data-ong', 'data-c', 'data-id',
+  'data-colvue', 'data-clv', 'data-qv', 'data-ch', 'data-rfvue', 'data-rd', 'data-rgv'];
+function retenirFocus(m) {
+  const el = document.activeElement;
+  if (!el || el === document.body || !m.contains(el)) return null;
+  let sel = el.id ? '#' + CSS.escape(el.id) : '';
+  if (!sel) {
+    const a = FOCUS_ATTRS.filter(x => el.hasAttribute(x)).map(x => `[${x}="${CSS.escape(el.getAttribute(x))}"]`).join('');
+    if (!a) return null;
+    sel = el.tagName.toLowerCase() + a;
   }
+  const rang = [...m.querySelectorAll(sel)].indexOf(el);
+  const champ = 'selectionStart' in el && typeof el.selectionStart === 'number' ? [el.selectionStart, el.selectionEnd] : null;
+  return { sel, rang: Math.max(0, rang), champ };
+}
+function rendreFocus(m, f) {
+  const l = m.querySelectorAll(f.sel);
+  const el = l[Math.min(f.rang, l.length - 1)];
+  if (!el || el.disabled) return;
+  el.focus({ preventScroll: true });
+  if (f.champ) try { el.setSelectionRange(f.champ[0], f.champ[1]); } catch (e) { /* champ sans curseur */ }
+}
+
+function render() {
   /* L'écran d'attente passe avant tout le reste : tant qu'il est là, le jeu
      n'existe pas pour le visiteur. */
   if (!porteOuverte()) {
     document.body.className = 'inlock';
     $('#main').innerHTML = vPorte();
     bindPorte();
+    majPastilleMaintenance();
     return;
   }
 
@@ -259,6 +324,7 @@ function render() {
   header();
   $('#nav').innerHTML = navHTML();
   majBoutonInstall();
+  majPastilleMaintenance();
 
   tab = ongletValide(tab);
   const vue = VUES[tab] || VUES.boosters;
@@ -267,13 +333,46 @@ function render() {
      position de lecture appartient au joueur : un rafraîchissement de fond ne
      doit pas le renvoyer en haut de ses 122 cases. */
   const haut = m.className === 'tab-' + tab ? m.scrollTop : 0;
+  /* Pareil pour un bloc qu'on a déplié ou replié (`data-garde`) : la page se
+     redessine souvent (une quête qui avance, un ami qui répond), et le bloc
+     revenait à son état de départ sous le doigt. */
+  const gardes = {};
+  /* Et ce qui défile à l'intérieur de la page (`data-defil`) : une rangée
+     de filtres qu'on a fait glisser, la colonne du deck dans l'atelier.
+     Redessinée à chaque geste, elle revenait au début sous le doigt. */
+  const defils = {};
+  if (haut || m.className === 'tab-' + tab) {
+    m.querySelectorAll('details[data-garde]').forEach(d => { gardes[d.dataset.garde] = d.open; });
+    m.querySelectorAll('[data-defil]').forEach(x => { defils[x.dataset.defil] = [x.scrollTop, x.scrollLeft]; });
+  }
+  const focus = m.className === 'tab-' + tab ? retenirFocus(m) : null;
+  /* L'onglet en cours, pour les styles : la classe de #main (`#main.tab-…`).
+     Jamais `data-tab` sur <body> : c'est l'attribut des liens vers un onglet
+     (clicPage), et il y faisait de chaque clic dans la page un « retour à
+     l'onglet » — page redessinée, remontée en haut, champ de saisie qui
+     perd la main. */
   m.className = 'tab-' + tab;
   m.innerHTML = vue();
+  m.querySelectorAll('details[data-garde]').forEach(d => { if (d.dataset.garde in gardes) d.open = gardes[d.dataset.garde]; });
+  m.querySelectorAll('[data-defil]').forEach(x => { const p = defils[x.dataset.defil]; if (p) { x.scrollTop = p[0]; x.scrollLeft = p[1]; } });
+  /* Un onglet choisi tout au bout de la rangée reste en vue. */
+  m.querySelectorAll('[role="tablist"][data-defil]').forEach(n => {
+    const on = n.querySelector('.on');
+    if (!on || n.scrollWidth <= n.clientWidth) return;
+    const a = on.offsetLeft - n.offsetLeft, b = a + on.offsetWidth;
+    if (a < n.scrollLeft) n.scrollLeft = Math.max(0, a - 24);
+    else if (b > n.scrollLeft + n.clientWidth) n.scrollLeft = b - n.clientWidth + 24;
+  });
+  normaliserOnglets(m);
   if (haut) m.scrollTop = haut;
+  if (focus) rendreFocus(m, focus);
+  majDefile();
 
   if (tab === 'boosters') bindPack();
   if (tab === 'reflets') placerPass();
-  if (tab === 'combats' && typeof echPlacerPass === 'function') echPlacerPass();
+  if (tab === 'choc') placerPassChoc();
+  if (tab === 'combats' && cbVue === 'atelier') bindAtelier();
+  if (tab === 'combats' && cbVue === 'guides' && !cbGuide) bindGuide();
   bindReglages();
   /* Le tiroir montre les compteurs et les pastilles : il suit chaque rendu. */
   if (tiroirOuvert) $('#tiroir').innerHTML = vTiroir();
@@ -286,6 +385,16 @@ function render() {
      d'une fenêtre par session, et jamais par-dessus autre chose. */
   proposerAccueil();
 }
+
+/* L'en-tête prend son fond de verre dès que la page passe dessous
+   (version 3.0.11, `body.defile`, css/base.css) : en haut de page, il n'y a
+   rien sous lui. Il n'y a plus le bord flou et dégradé qui effaçait le
+   contenu en remontant. */
+function majDefile() {
+  const m = $('#main');
+  document.body.classList.toggle('defile', !!m && m.scrollTop > 2);
+}
+$('#main').addEventListener('scroll', majDefile, { passive: true });
 
 /* Va sur un onglet, en remontant en haut de page. */
 function aller(id) {
@@ -303,12 +412,21 @@ function aller(id) {
     if (tab === 'boutique' && !Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     /* Version 2.0 : l'événement se charge en arrivant. */
     if (tab === 'illu') chargerIllu();
-    /* L'Échauffement : un défi de plus chaque jour, on relit en arrivant. */
-    if (tab === 'combats') chargerEch();
+    /* 3.0.13 : le bloc « Aujourd'hui » des Quêtes lit l'Épreuve, le Raid et
+       Devine l'illu, qui ne se chargent sinon qu'en visitant leur écran. */
+    if (tab === 'quetes') chargerAujourdhui();
     if (tab === 'reflets' && recapReflets()) chargerRecap();
     else if (tab === 'reflets') {
       passPlace = false;
       chargerReflets();
+      if (!Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
+    }
+    /* Version 3.0 : le Choc des Sections. */
+    if (tab === 'choc' && recapChoc()) chargerRecapChoc();
+    else if (tab === 'choc') {
+      chPassPlace = false;
+      chargerChoc();
+      relireRaid();
       if (!Backend.shop.length) Backend.loadShop().then(render).catch(() => {});
     }
     /* Le recyclage met de côté les cartes promises dans un échange : il lui
@@ -317,6 +435,13 @@ function aller(id) {
     if (tab === 'boite') ouvrirBoite();
     if (tab === 'classement') chargerClassement();
     if (tab === 'tirages') chargerTirages();
+    /* Version 3.0 : les défis bougent sans nous. */
+    if (tab === 'combats') {
+      /* L'affiche du Raid dit son niveau et les tentatives du jour. */
+      relireRaid();
+      Backend.pull().then(() => { if (tab === 'combats' && !enTrainDEcrire()) render(); }).catch(() => {});
+      if (!Backend.amis.length) Backend.loadAmis().then(() => { if (tab === 'combats' && cbVue === 'versus') render(); }).catch(() => {});
+    }
   }
 }
 
@@ -330,18 +455,34 @@ $('#nav').addEventListener('click', e => {
 /* La feuille modale vit à côté de #main, pas dedans : sans ce second branchement,
    choisir une carte dans le sélecteur ne déclencherait rien. */
 async function clicPage(e) {
-  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-lab],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-ech]');
+  const el = e.target.closest('[data-act],[data-show],[data-filter],[data-ess],[data-rar],[data-tab],[data-auth],[data-tr],[data-soc],[data-qv],[data-shv],[data-shop],[data-quete],[data-trep],[data-trann],[data-pick],[data-cardpick],[data-ava],[data-avacard],[data-frame],[data-fiche],[data-ami-ok],[data-ami-non],[data-troc],[data-trdemande],[data-colde],[data-trcol],[data-vit-on],[data-vit-off],[data-promo],[data-pickrar],[data-pickrev],[data-recplus],[data-recmoins],[data-recrar],[data-voirtroc],[data-annonce-off],[data-clv],[data-craft],[data-tirpart],[data-labv],[data-lab],[data-palier],[data-illu],[data-rfvue],[data-colvue],[data-invit],[data-titre],[data-banniere],[data-gdef],[data-cb],[data-ch],[data-rd],[data-succes],[data-rgv]');
   if (!el) return;
   const d = el.dataset;
 
-  if (d.tab) return aller(d.tab);
-  /* L'Échauffement (js/echauffement.js). */
-  if (d.ech) return echAction(d.ech, el);
+  /* Un lien vers une vue précise de la Collection porte les deux : la vue
+     d'abord, puis l'onglet (data-tab passe avant tout le reste). */
+  if (d.tab) {
+    if (d.colvue) colVue = d.colvue;
+    /* 3.0.13 : une vue des Combats ou du Choc (le bloc « Aujourd'hui »). */
+    if (d.cbv) return allerCb(d.cbv);
+    if (d.chv) chVue = d.chv;
+    return aller(d.tab);
+  }
+  /* Version 3.0 : l'onglet Combats et son atelier (js/battle.js). */
+  if (d.cb) return cbAction(d.cb, el);
+  /* Version 3.0 : l'événement « Le Choc des Sections » (js/choc.js). */
+  if (d.ch) return chAction(d.ch, el);
+  /* Version 3.0 : le Raid (js/raid.js). */
+  if (d.rd) return raidAction(d.rd, el);
   if (d.labv) { labVue = d.labv; return render(); }
-  /* Le Labo (js/lab.js) : le serveur, son compte. */
+  /* Le Labo : le serveur et son compte (js/lab.js). */
   if (d.lab) return labAction(d.lab, el);
   /* Version 2.0 */
-  if (d.colvue) { colVue = d.colvue; if (!d.tab) return render(); }
+  if (d.succes) {
+    const x = SUCCES.find(y => y.id === d.succes);
+    return x && toast(`${x.nom} — ${x.dit}${(save.succes || []).includes(x.id) ? ' Obtenu.' : ''}`);
+  }
+  if (d.colvue) { colVue = d.colvue; return render(); }
   if (d.palier) return reclamerPalier(+d.palier);
   if (d.illu) return illuProposer(d.illu);
   if (d.rfvue) return allerRf(d.rfvue);
@@ -358,6 +499,8 @@ async function clicPage(e) {
   if (d.tr) { trRetenirMot(); trVue = d.tr; if (d.tr === 'amis') trDoublons = null; return render(); }
   if (d.soc) { socVue = d.soc; return render(); }
   if (d.qv) { qVue = d.qv; return render(); }
+  /* Les sections des Réglages (3.0.14). */
+  if (d.rgv) { rgVue = d.rgv; render(); return $('#main').scrollTo({ top: 0 }); }
   if (d.clv) { clVue = d.clv; render(); return chargerClassement(); }
   if (d.craft) return ouvrirFabrication(d.craft);
   if (d.tirpart) {
@@ -389,13 +532,13 @@ async function clicPage(e) {
 
   /* Quêtes, boutique, échanges */
   if (d.quete) return agir(() => Backend.claimQuest(d.quete), 'Récompense encaissée.')
-    .then(ok => { if (ok && tab === 'reflets') chargerReflets(); if (ok && tab === 'combats') chargerEch(); });
+    .then(ok => { if (ok && tab === 'reflets') chargerReflets(); if (ok && tab === 'choc') chargerChoc(); });
   if (d.trep) return trRepondre(d.trep, d.ok === '1');
   if (d.gdef) return reglerGardeDefaut(d.gdef, +d.n);
   if (d.trann) return agir(() => Backend.tradeCancel(d.trann), 'Demande annulée.');
   if (d.pick) { trRetenirMot(); trPickRar = 'all'; return ouvrirChoixCarte(d.pick); }
   if (d.pickrar) return ouvrirChoixCarte(d.role, d.pickrar);
-  if (d.pickrev) return ouvrirChoixCarte(d.role, null, d.pickrev === '1');
+  if (d.pickrev) return ouvrirChoixCarte(d.role, null, d.pickrev);
   if (d.cardpick) return trChoisir(d.role, d.cardpick);
 
   /* Recyclage */
@@ -405,15 +548,23 @@ async function clicPage(e) {
 
   /* Profil */
   if (d.ava) return agir(() => Backend.setProfile({ p_avatar: d.ava }));
-  if (d.avacard) { closeSheet(); return agir(() => Backend.setProfile({ p_avatar: 'card:' + d.avacard })); }
+  if (d.avacard) { closeSheet(); return agir(() => Backend.setProfile({ p_avatar: 'card:' + d.avacard })).then(revenirPerso); }
   if (d.frame) return agir(() => Backend.setProfile({ p_frame: d.frame }));
 
   switch (d.act) {
     case 'open': return openBooster();
     case 'open-bonus': return openBooster({ bonus: true });
+    /* Version 3.0.11 : dix au plus d'un coup, un seul récap (js/opening.js). */
+    case 'quetes-tout': return recupererQuetes((el.dataset.ids || '').split(',').filter(Boolean));
     case 'nouveautes': return montrerNouveautes();
-    case 't-nouveautes-25': return montrerNouveautes25();
-    case 't-nouveautes-21': return montrerNouveautes21();
+    case 'presentation': return montrerPresentation();
+    /* Version 3.0.11 : l'échange des Essences Brillantes, depuis l'onglet du
+       Choc ; la composition s'ouvre du côté des Spéciales. */
+    case 'echange-brillantes':
+      socVue = 'echanges'; trVue = 'nouvelle'; trCible = null;
+      trBrouillon = { pseudo: '', offre: null, veut: null, note: '' };
+      trPickCote = 's'; trPickRar = 'all';
+      return aller('social');
     case 'connexion': return ouvrirConnexion();
     case 'son-test': return testerSon();
     case 'vers-garder': return versGarder();
@@ -421,15 +572,23 @@ async function clicPage(e) {
     case 'pass-tout': return reclamerTout();
     case 'pf-devise': return enregistrerDevise();
     case 'pf-banniere': return ouvrirChoixBanniere();
+    /* Le profil (3.0.13) : la feuille « Personnaliser », ses onglets, un deck montré. */
+    case 'pf-perso': return ouvrirPerso();
+    case 'pf-ong': persoOnglet = d.v; return rafraichirPerso();
+    case 'pj-deck': return voirDeckMontre(d.qui, d.v);
     case 'col-toggle': colOuvert = !colOuvert; return render();
     case 'col-reset':
       colFilter = essFilter = rarFilter = 'all';
       colPossedees = colObjectifs = colFavoris = false;
       return render();
+    /* Une Secrète qu'on n'a pas : elle ne se fabrique pas, on dit d'où elle
+       vient — mais pas son taux. */
+    case 'col-secrete': return toast('Une Secrète ne se fabrique pas : elle sort des boosters, ou s\'échange contre une autre Secrète.');
     case 'porte-discord': return porteConnexion();
-    case 'hype30': return montrerHype30();
     case 'porte-sortir': return porteSortir();
     case 'porte-code': return porteCode();
+    /* La maintenance (version 3.0.12, js/gate.js). */
+    case 'maint-relire': return relireMaintenance();
     case 'installer': return ouvrirInstall(true);
     case 'pf-pseudo': return changerPseudo();
     case 'pf-carte': return ouvrirChoixAvatar();
@@ -470,21 +629,26 @@ async function clicPage(e) {
     case 't-god': return openBooster({ test: true, god: true });
     case 't-BR': return openBooster({ test: true, god: false, brillante: true });
     case 't-UN': return openBooster({ test: true, god: false, unique: true });
+    case 't-S': return openBooster({ test: true, force: 'S', god: false });
     case 't-REV': return openBooster({ test: true, god: false, reverseR: true });
+    case 't-v3-nouveautes': return montrerNouveautes30();
+    case 't-v3-camp': cbLabo = { section: el.dataset.v }; cbChoix.acte = 0; aller('combats'); cbVue = 'campagne'; cbChoix.acte = 0; return render();
+    case 't-v3-recompenses': return openSheet({ title: 'Toutes les récompenses', body: laboRecompenses(), actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
+    case 't-v3-niveau': return ouvrirNiveau();
+    case 't-v3-bon-deck': return Decks.STARTERS ? (cbVue = 'decks', ouvrirBilan('starter-toxique')) : null;
+    case 't-v3-fin': {
+      /* Une victoire en Légende qui fait passer deux niveaux, telle que l'écran
+         de fin de l'arène la montre. */
+      const total = [1, 2, 3, 4, 5, 6, 7, 8, 9].reduce((a, n) => a + xpRequis(n), 0) + 40;
+      const x = { gagne: Math.round(xpRequis(9) + xpRequis(8) / 2), total, paliers: [recompenseNiveau(9), recompenseNiveau(10)] };
+      return openSheet({ title: 'Victoire · aperçu', body: `<div class="ar-fin-apercu">${htmlRecompense({ recompense: { xp: x, eclats: 50, boosters: 2, fragments: 300 } })}</div>`,
+        actions: [{ label: 'Fermer', primary: true, fn: closeSheet }] });
+    }
     case 't-v2-invitation': return montrerInvitation('M8-TEST-0000');
-    case 't-ech-debut': return labEchApercu(false);
-    case 't-ech-complet': return labEchApercu(true);
-    case 't-ech-annonce':
-      if (!(echData && echData.apercu) && !echActif()) labEchApercu(false);
-      return echData && montrerEchAnnonce();
-    case 't-ech-indices': return labEchIndices();
-    case 't-ech-final': return labEchFinal();
-    case 't-ech-sf': return labEchApercuApres(false);
-    case 't-ech-recap': return labEchApercuApres(true);
-    case 't-v2-recap': apercuRecap(); return aller('reflets');
-    case 't-v2-recap-pop': apercuRecap(); return montrerRecap();
-    case 't-v2-recap-ban': apercuRecap(); return aller('boosters');
-    case 'recap-quitter': return quitterApercuRecap();
+    /* Version 3.0 : le Choc des Sections. */
+    case 't-v3-recap': apercuRecapChoc(); return aller('choc');
+    case 't-v3-recap-pop': apercuRecapChoc(); return montrerRecapChoc();
+    case 't-v3-recap-ban': apercuRecapChoc(); return aller('boosters');
     case 't-partage':
       return partagerTirage({ ids: makeBooster(poolFor(), false).map(c => c.id), quand: new Date().toISOString() });
     case 't-ev-reel': return labEtatReel();
@@ -493,6 +657,7 @@ async function clicPage(e) {
     case 't-cadeau': return labApercuCadeau();
     case 't-promo-file': return testFilePromos();
     case 't-quete': return testQuete();
+    case 't-quetes': return testQuetes();
     case 't-ping': return testPing();
     case 't-toast': return toast('Voilà à quoi ça ressemble.');
 
@@ -522,7 +687,6 @@ $('.top').addEventListener('click', e => {
   if (e.target.closest('#cloche')) return aller('boite');
   if (e.target.closest('#btn-install')) return ouvrirInstall(true);
   if (e.target.closest('#ec')) return aller('boutique');
-  if (e.target.closest('.pill')) return aller('boosters');
 });
 
 /* ---------- Tiroir ---------- */
@@ -532,8 +696,41 @@ $('#tiroir').addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && tiroirOuvert) fermerTiroir();
+  if (e.key === 'Escape' && tiroirOuvert && !e.defaultPrevented) fermerTiroir();
 });
+
+/* Les rangées d'onglets au clavier (3.0.13) : les flèches passent d'un
+   onglet à l'autre et l'ouvrent, Début et Fin vont aux bouts. */
+document.addEventListener('keydown', e => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const t = e.target.closest && e.target.closest('[role="tab"]');
+  const l = t && t.closest('[role="tablist"]');
+  if (!l) return;
+  const tabs = [...l.querySelectorAll('[role="tab"]')].filter(b => b.closest('[role="tablist"]') === l && !b.disabled);
+  const i = tabs.indexOf(t);
+  if (i < 0) return;
+  const k = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  e.preventDefault();
+  tabs[k].focus();
+  tabs[k].click();
+});
+
+/* Chaque rangée d'onglets dit qui est qui (3.0.13) : ses boutons sont des
+   onglets, celui en cours le dit, et lui seul prend le Tab (les flèches
+   mènent aux autres). Posé après chaque rendu : les écrans n'ont pas à y
+   penser. */
+function normaliserOnglets(racine) {
+  racine.querySelectorAll('[role="tablist"]').forEach(l => {
+    const tabs = [...l.querySelectorAll('button')].filter(b => b.closest('[role="tablist"]') === l);
+    if (!tabs.length) return;
+    const on = tabs.find(b => b.getAttribute('aria-selected') === 'true') || tabs.find(b => b.classList.contains('on')) || tabs[0];
+    tabs.forEach(b => {
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', b === on ? 'true' : 'false');
+      b.tabIndex = b === on ? 0 : -1;
+    });
+  });
+}
 
 /* ---------- Boucle de la réserve ---------- */
 /* Hors ligne, les boosters se rechargent ici. En ligne, seul le serveur les
@@ -544,7 +741,6 @@ let attenteServeur = false;
    js/booster.js) : on redemande l'état, au plus toutes les trente secondes si
    le serveur n'a pas encore basculé. */
 let derniereBascule = 0;
-let sortieVue = sortieFaite();
 setInterval(() => {
   if (!save || !porteOuverte() || porteVisible()) return;
 
@@ -558,12 +754,9 @@ setInterval(() => {
     if (bascule && Date.now() >= bascule + 1000 && Date.now() - derniereBascule > 30000 && !attenteServeur) {
       attenteServeur = true;
       derniereBascule = Date.now();
-      Backend.pull().then(() => { attenteServeur = false; majDiscrete(true); chargerEch(); })
+      Backend.pull().then(() => { attenteServeur = false; majDiscrete(true); })
                     .catch(() => { attenteServeur = false; });
     }
-    /* La sortie de la version (SORTIE, js/config.js) : le numéro, la fenêtre
-       des nouveautés et le teasing du récap changent à la minute dite. */
-    if (sortieFaite() !== sortieVue) { sortieVue = sortieFaite(); majDiscrete(true); }
     document.querySelectorAll('[data-rebours]').forEach(el => {
       el.textContent = dureeCourte(+el.dataset.rebours - Date.now());
     });
@@ -594,11 +787,12 @@ setInterval(() => {
      · pendant qu'une demande d'échange ou une annonce se compose — le champ
        de saisie perdrait le curseur et le texte déjà tapé.
    Les deux tests vivent ici, et nulle part ailleurs. */
-const ecranOccupe = () => !!rv || opening || promoEnCours;
+const ecranOccupe = () => !!rv || opening || promoEnCours || (typeof Table !== 'undefined' && Table.ouverte());
 const enTrainDEcrire = () => (tab === 'social' && socVue === 'echanges' && trVue === 'nouvelle')
   || tab === 'labo'
-  /* Devine l'illu, la devise du profil : un champ en cours de saisie. */
-  || (document.activeElement && ['il-saisie', 'pf-devise'].includes(document.activeElement.id));
+  /* Devine l'illu, la devise du profil, l'atelier de decks : un champ en
+     cours de saisie. */
+  || (document.activeElement && ['il-saisie', 'pf-devise', 'at-q', 'at-nom', 'at-code'].includes(document.activeElement.id));
 
 /* Les compteurs, la barre et le tiroir se remettent à jour sans toucher à la
    page. Le contenu, lui, n'est redessiné que si ça ne dérange personne. */
@@ -620,7 +814,6 @@ addEventListener('visibilitychange', () => {
   releverBoite();
   relireCadeaux();
   chargerIllu();
-  chargerEch();
 });
 
 /* Ce qui arrive des autres joueurs — demandes d'ami, d'échange, réponses — et
@@ -636,7 +829,7 @@ addEventListener('visibilitychange', () => {
    pour qui revient souvent.
 
    La journée est celle de Paris, comme côté serveur (checkin dans
-   supabase/03_rpc.sql) : sans ça, les deux ne changeraient pas de jour au
+   supabase/installation/03_rpc.sql) : sans ça, les deux ne changeraient pas de jour au
    même moment. */
 function visiteDuJourFaite() {
   if (!save || !save.lastCheckin) return false;
@@ -645,13 +838,38 @@ function visiteDuJourFaite() {
   return String(save.lastCheckin).slice(0, 10) === jour;
 }
 
-(async () => {
+/* Le chargement (3.0.16 ; le propriétaire : « un chargement des ressources
+   au lancement du site afin d'éviter tout bug et tout chargement
+   dégueulasse ») : l'écran #chargement d'index.html reste tant que les
+   polices, les images de l'habillage et le démarrage ne sont pas prêts, six
+   secondes au plus. */
+const Chargement = (() => {
+  const image = src => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => ok(); im.src = src; });
+  function attendre(demarrage) {
+    const e = document.getElementById('chargement');
+    if (!e) return;
+    const barre = e.querySelector('i');
+    const l = [document.fonts ? document.fonts.ready : null, demarrage]
+      .concat([ART.logo, ART.back].concat(PACK_ARTS.map(p => (typeof p === 'string' ? p : p.img || p.src))).filter(Boolean).map(image))
+      .filter(Boolean);
+    let fait = 0;
+    l.forEach(p => Promise.resolve(p).catch(() => {}).then(() => { if (barre) barre.style.transform = `scaleX(${Math.max(0.06, ++fait / l.length)})`; }));
+    const fin = () => { e.classList.add('fini'); setTimeout(() => e.remove(), reglageRM() ? 0 : 450); };
+    Promise.race([Promise.all(l.map(p => Promise.resolve(p).catch(() => {}))), new Promise(ok => setTimeout(ok, 6000))]).then(fin);
+  }
+  return { attendre };
+})();
+
+const demarrage = (async () => {
   cards = buildCards();
   promos = buildPromos();
   brillantes = buildBrillantes(cards);
   reverses = buildReverses(cards);
   uniques = buildUniques();
+  secretes = buildSecretes();
   rebuild();
+  /* Version 3.0 : le moteur de combat connaît toutes les cartes jouables. */
+  Combat.catalogue(cards.concat(promos, reverses, uniques, secretes));
   brand();
   rollPack();
   oublierTheme();
@@ -671,8 +889,11 @@ function visiteDuJourFaite() {
   await Backend.init();
 
   /* L'écran d'attente demande au serveur si c'est ouvert, et quelle heure il
-     est chez lui : ni la montre de l'appareil ni la page n'en décident. */
-  if (PORTE.active) await Porte.lire();
+     est chez lui : ni la montre de l'appareil ni la page n'en décident.
+     Version 3.0.12 : toujours, même le jeu ouvert à tous — la réponse dit
+     aussi si la base est en 3.0 et si une maintenance est en cours. Avec une
+     session, Backend.init l'a déjà demandé. */
+  if (!Porte.connu()) await Porte.lire();
 
   if (!porteOuverte()) return render();
 
@@ -686,11 +907,8 @@ function visiteDuJourFaite() {
       /* Un cadeau qui attend (js/cadeaux.js) : il s'ouvre quand l'écran est calme. */
       relireCadeaux();
       /* Devine l'illu : sa pastille dit qu'une grille attend, avant même
-         qu'on ouvre l'onglet (elle n'apparaissait qu'après une visite de
-         l'événement). */
+         qu'on ouvre l'onglet. */
       chargerIllu();
-      /* L'Échauffement (js/echauffement.js) : son bandeau, sa pastille. */
-      chargerEch();
     } catch (e) {
       toast(e.message || 'Le serveur a répondu de travers.');
     }
@@ -704,3 +922,4 @@ function visiteDuJourFaite() {
     toast("La sauvegarde n'est pas disponible sur ce navigateur : ta progression sera perdue en quittant.");
   }
 })();
+Chargement.attendre(demarrage);

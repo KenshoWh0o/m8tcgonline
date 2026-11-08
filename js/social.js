@@ -41,7 +41,7 @@ function vAmis() {
 
   const ligne = (a, actions) => `<article class="amiligne">
     <button class="amiid" data-fiche="${h(a.pseudo)}">
-      ${avatarHTML(a.avatar, a.frame, 'sm', a.photo)}
+      ${avatarHTML(a.avatar, a.frame, 'sm', a.photo, a.xp)}
       <span class="aminom"><b>${h(a.pseudo)}</b>${a.is_admin ? '<i class="qtag ok">admin</i>' : ''}
         <small class="muted">${a.lien === 'ami'
           ? (a.echanges ? a.echanges + ' échange' + (a.echanges > 1 ? 's' : '') + ' en cours' : 'Voir le profil')
@@ -71,7 +71,7 @@ function vAmis() {
     <button class="btn tiny ghost" data-ami-non="${h(a.pseudo)}">Refuser</button>`)}
 
   ${bloc('Tes amis', amis, a => `
-    <button class="btn tiny" data-troc="${h(a.pseudo)}">Échanger</button>`)}
+    <button class="btn tiny ghost" data-troc="${h(a.pseudo)}">Échanger</button>`)}
 
   ${bloc('Demandes envoyées', envoyees, a => `
     <button class="btn tiny ghost" data-ami-non="${h(a.pseudo)}">Annuler</button>`)}
@@ -94,7 +94,6 @@ async function ouvrirFiche(pseudo) {
   }
   if (!f) return toast('Joueur introuvable.');
 
-  const pct = f.total ? Math.round(f.possede / f.total * 100) : 0;
 
   /* Entre amis, sa collection est lisible. Mais ce qui se décide dans une
      fiche, c'est « est-ce que ça vaut le coup de lui demander quelque chose ? »
@@ -114,9 +113,9 @@ async function ouvrirFiche(pseudo) {
     const sienne = toutesCartes().filter(c => f.col[c.id] > 0);
     /* Un doublon, ici, c'est une carte qu'il peut céder. Les Essences et les
        Promos ne s'échangent pas : les compter promettrait ce que le serveur
-       refusera (voir trade_create dans supabase/03_rpc.sql). Et ce qu'il a
-       choisi de garder n'en est pas un (version 2.1, supabase/22_garder.sql). */
-    const doubles = sienne.filter(c => sesDoublons(f.pseudo, c) > 0 && c.cat !== 'essence' && !c.promo);
+       refusera (voir trade_create dans supabase/installation/03_rpc.sql). Et ce qu'il a
+       choisi de garder n'en est pas un (version 2.1, supabase/installation/22_garder.sql). */
+    const doubles = sienne.filter(c => sesDoublons(f.pseudo, c) > 0 && echangeable(c));
     const forts = doubles.filter(c => rk(c) >= 3).sort(parRarete).slice(0, 12);
     const manque = sienne.filter(c => !(save.col[c.id] > 0)).length;
 
@@ -139,33 +138,12 @@ async function ouvrirFiche(pseudo) {
       </div>`;
   }
 
-  /* L'en-tête porte le pseudo lui-même (la feuille n'a plus de titre) : à
-     côté de l'avatar, le nom, depuis quand, et où en est sa collection. Les
-     titres de joueur (version 2.0) viendront se poser sous le nom. */
+  /* Version 3.0.13 : la fiche est la carte de visite du joueur, la même que
+     son profil (vCarteJoueur, js/profile.js) ; entre amis, sa collection
+     vient ensuite. */
   openSheet({
-    body: `<div class="fiche${(f.succes || []).includes('unique') ? ' elu' : ''}${f.banniere ? ' banniere' : ''}">
-      ${vBanniere(f.banniere)}
-      ${avatarHTML(f.avatar, f.frame, 'xl', f.photo)}
-      <div class="fichemeta">
-        <b class="fichenom">${h(f.pseudo)}</b>
-        ${vTitreLigne(f.titre)}
-        ${f.devise ? `<p class="iddevise">« ${h(f.devise)} »</p>` : ''}
-        <p class="fichesous">${f.is_admin ? '<span class="qtag ok">Admin</span>' : ''}Membre depuis ${h(dateCourte(f.membre_depuis).split(' à ')[0])}</p>
-        <div class="prog fiche-prog"><div class="bar"><i style="width:${pct}%"></i></div>
-          <span class="tnum"><b>${f.possede}</b> / ${f.total}</span></div>
-      </div>
-    </div>
-    ${vElu(f.succes, f.moi)}
-    ${(f.vitrine || []).length ? vVitrine(f.vitrine, false) : ''}
-    <div class="stats">
-      <div class="stat"><b>${f.possede} / ${f.total}</b><span>collection (${pct} %)</span></div>
-      ${f.reverses_total ? `<div class="stat"><b>${f.reverses} / ${f.reverses_total}</b><span>Reverses</span></div>` : ''}
-      <div class="stat"><b>${fmtN(f.packs_opened)}</b><span>boosters ouverts</span></div>
-      <div class="stat"><b>${fmtN(f.trades_done)}</b><span>échanges conclus</span></div>
-      <div class="stat"><b>${fmtN(f.streak)}</b><span>jours d'affilée</span></div>
-    </div>
-    ${(f.succes || []).length ? `<h2>Succès</h2>${vSucces(f.succes, false)}` : ''}
-    ${f.ami ? collection : '<p class="muted small">Ajoute-le en ami pour voir sa collection et lui proposer un échange.</p>'}`,
+    body: `<div class="pj-fiche">${vCarteJoueur(f, {})}
+    ${f.ami ? `<section class="pj-bloc">${collection}</section>` : f.moi ? '' : '<p class="muted small pj-ajoute">Ajoute-le en ami pour voir sa collection.</p>'}</div>`,
     actions: f.moi ? [{ label: 'Fermer', fn: closeSheet }]
       : f.ami
         ? [{ label: 'Proposer un échange', primary: true, fn: () => { closeSheet(); versEchange(f.pseudo); } },

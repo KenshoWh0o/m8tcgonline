@@ -1,7 +1,7 @@
 /* Onglet Boutique. On y dépense les Éclats gagnés en quête — rien d'autre :
    aucun paiement, aucune monnaie réelle, nulle part dans le jeu.
 
-   Deux rayons, et un étal plutôt qu'une liste : on voit l'objet avant son
+   Trois rayons, et un étal plutôt qu'une liste : on voit l'objet avant son
    libellé. Un achat demande toujours deux gestes — on ouvre la fiche, on
    confirme — parce qu'un article à 5 000 Éclats ne doit jamais partir sur un
    doigt posé de travers.
@@ -11,10 +11,12 @@
    toutes ses faces. On n'achète pas une icône. */
 "use strict";
 
-/* Les deux rayons, dans l'ordre des sous-onglets. `categs` dit quelles
-   catégories du serveur atterrissent dans chacun : la boutique côté serveur en
-   compte quatre, mais « ce qui sert à jouer » et « ce qui décore » sont les
-   deux seules distinctions qui comptent pour le joueur. */
+/* Les trois rayons, dans l'ordre des sous-onglets. `sections` dit quelles
+   catégories du serveur (`categ` de shop_items) atterrissent dans chacun, et
+   sous quel titre. Le joueur n'a que trois questions en tête : ce qui sert à
+   jouer (Cartes), ce qui décore son profil (Cosmétiques), ce qui habille ses
+   combats (Combat, version 3.0). Les articles d'un événement (`evenement`)
+   n'ont pas de rayon ici : ils se vendent dans l'onglet de l'événement. */
 const RAYONS = [
   { id: 'cartes', titre: 'Cartes', sous: 'De quoi ouvrir, échanger, et compléter.',
     sections: [
@@ -25,8 +27,13 @@ const RAYONS = [
     ] },
   { id: 'cosmetique', titre: 'Cosmétiques', sous: 'Purement décoratif : aucun effet sur le jeu.',
     sections: [
-      { categ: 'cosmetique', titre: 'Cadres d\'avatar' },
-      { titre: 'Avec les combats', avenir: true }
+      { categ: 'cosmetique', titre: 'Cadres d\'avatar' }
+    ] },
+  /* Version 3.0 : ce qui habille les combats. */
+  { id: 'combat', titre: 'Combat', sous: 'Le tapis sur lequel tu joues, le dos de tes cartes. Rien qui change le jeu.',
+    sections: [
+      { categ: 'tapis', titre: 'Tapis de jeu' },
+      { categ: 'sleeve', titre: 'Sleeves' }
     ] }
 ];
 
@@ -53,12 +60,15 @@ function vArticleArt(it) {
   const c = carteDe(it);
   if (c) return renderCard(c);
   if (FRAMES[it.id]) return avatarHTML(save.avatar, it.id, 'lg', maPhoto());
+  /* Version 3.0 : un tapis de jeu, une sleeve. */
+  if (typeof TAPIS !== 'undefined' && TAPIS[it.id]) return `<img class="oftapis" src="${TAPIS[it.id].img.replace('.webp', '-mini.webp')}" alt="">`;
+  if (typeof SLEEVES !== 'undefined' && SLEEVES[it.id]) return `<img class="ofsleeve" src="${SLEEVES[it.id].img}" alt="">`;
   if (TITRES[it.id]) return `<span class="qrtitre t${TITRES[it.id].ton}">${h(TITRES[it.id].nom)}</span>`;
   if (it.effet === 'invitation') return `<span class="ofinvit">M8-<b>••••</b></span>`;
   if (it.effet === 'reverse_R') return reverses.length ? renderCard(reverses.find(c => c.rar === 'R') || reverses[0]) : ICON.star;
   if (it.effet === 'fragments') return `<span class="offrag">${NAVICO.fragment}</span>`;
   if (it.effet === 'trade_token') return `<img class="ofjeton" src="${ART.jeton}" alt="">`;
-  if (it.effet === 'tickets' || it.effet === 'refill') return `<img src="${PACK_ARTS[0]}" alt="">`;
+  if (it.effet === 'tickets') return `<img src="${PACK_ARTS[0]}" alt="">`;
   return ICON.star;
 }
 
@@ -114,8 +124,8 @@ function vBoutique() {
         <span class="rfban-solde">${prismeIco}${fmtN(save.prismes || 0)}</span>
         <span class="rfban-fl" aria-hidden="true">›</span>
       </button>`
-    /* Version 2.5 : celle de L'Échauffement vit dans l'onglet Combats. */
-    : evenementEnCours() === 'echauffement' ? vBandeauEchBoutique() : '';
+    /* Version 3.0 : celle du Choc des Sections. */
+    : evenementEnCours() === 'choc' ? vBandeauChoc('boutique') : '';
   return tete + ev + `<div class="segbar">${onglets}</div>${vRayon(shopVue, items)}`;
 }
 
@@ -126,16 +136,14 @@ function vRayon(id, items) {
 
   const blocs = r.sections.map(sec => {
     /* Version 2.1 : un joueur entré par invitation n'invite pas à son tour
-       (est_filleul, supabase/21_reflets.sql). */
+       (est_filleul, supabase/installation/21_reflets.sql). */
     if (sec.invitations && save.filleul) {
       return `<section class="rayon"><h2>${h(sec.titre)}</h2>
         <p class="muted small">Tu es entré grâce à une invitation : les invitations sont réservées aux joueurs qui ne sont pas arrivés ainsi.</p></section>`;
     }
-    const cases = sec.avenir
-      ? vCosmetiquesAVenir()
-      : items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
+    const cases = items.filter(i => i.categ === sec.categ).map(it => vArticle(it, items)).join('');
     if (!cases) return '';
-    return `<section class="rayon${sec.avenir ? ' avenir' : ''}">
+    return `<section class="rayon">
       <h2>${h(sec.titre)}</h2>
       <div class="offres">${cases}</div>
       ${sec.invitations ? vMesInvitations() : ''}
@@ -165,25 +173,6 @@ function vArticle(it, items) {
       : `<span class="ofprix">${dv.ico()}${fmtN(it.prix)}</span>`}
   </article>`;
 }
-
-/* Le rayon cosmétique n'a encore que des cadres. Plutôt que de laisser croire
-   qu'il n'y aura rien d'autre, on montre les cases à venir : elles disent ce
-   que le mode Combat apportera, et pourquoi garder ses Éclats. */
-const COSMETIQUES_A_VENIR = [
-  ['Protège-cartes', 'Le dos de tes cartes, en combat'],
-  ['Jetons de dégâts', 'Les marqueurs posés sur le terrain'],
-  ['Tapis de jeu', 'Le plateau sur lequel tu joues'],
-  ['Titres', 'Une mention sous ton pseudo']
-];
-
-/* Plus d'étiquette « Avec les combats » sur chaque case : c'est le titre de la
-   section, juste au-dessus. Le répéter quatre fois ne renseignait personne. */
-const vCosmetiquesAVenir = () => COSMETIQUES_A_VENIR.map(([nom, quoi]) =>
-  `<article class="offre oflock">
-    <span class="oflockico">${NAVICO.lock}</span>
-    <span class="ofnom">${h(nom)}</span>
-    <small>${h(quoi)}</small>
-  </article>`).join('');
 
 /* =====================================================================
    La fiche d'achat
@@ -245,6 +234,13 @@ function vAchatScene(it) {
 
   if (FRAMES[it.id]) {
     return `<div class="a3d cadre"><div class="a3d-cadre">${avatarHTML(save.avatar, it.id, 'xl', maPhoto())}</div></div>`;
+  }
+  /* Version 3.0 : le tapis en entier, la sleeve sur une carte. */
+  if (typeof TAPIS !== 'undefined' && TAPIS[it.id]) {
+    return `<div class="a3d cadre"><div class="a3d-tapis"><img src="${TAPIS[it.id].img}" alt=""></div></div>`;
+  }
+  if (typeof SLEEVES !== 'undefined' && SLEEVES[it.id]) {
+    return `<div class="a3d cadre"><div class="a3d-sleeve"><img src="${SLEEVES[it.id].img}" alt=""></div></div>`;
   }
   /* Version 2.0 : un titre se montre sous le pseudo, une invitation comme un billet. */
   if (TITRES[it.id]) {
@@ -363,7 +359,7 @@ async function acheter(it) {
      un message en bas de l'écran par-dessus serait redondant. */
   if (it.effet === 'carte') return;
   /* Des boosters : ils s'ouvrent tout de suite, à part de la réserve — sa
-     recharge continue (open_pack, supabase/03_rpc.sql). Quitter la série en
+     recharge continue (open_pack, supabase/installation/03_rpc.sql). Quitter la série en
      route les garde : « Ouvrir un booster en plus », écran Boosters. */
   if (it.effet === 'tickets') {
     SFX.jouer('gagne');
@@ -377,8 +373,23 @@ async function acheter(it) {
     if (inv) montrerInvitation(inv.code);
     return;
   }
-  if (it.evenement === 'echauffement') chargerEch(true);
+  /* Un article d'événement : l'onglet de l'événement affiche son propre solde
+     (rfData pour Reflets, chEv pour le Choc), relu ici chez celui qui vend
+     l'article. */
+  if (it.evenement === 'choc' && typeof chargerChoc === 'function') chargerChoc();
   else if (it.evenement && typeof chargerReflets === 'function') chargerReflets();
+  /* Version 3.0 : un tapis ou une sleeve, qu'on peut mettre tout de suite. */
+  if (it.categ === 'tapis' || it.categ === 'sleeve') {
+    SFX.jouer('gagne');
+    return openSheet({
+      title: `${it.titre} débloqué`,
+      body: '<p class="muted">Tu peux le changer quand tu veux dans Combats › Decks.</p>',
+      actions: [
+        { label: 'L\'utiliser', primary: true, fn: () => { closeSheet(); agir(() => Backend.combatReglages({ [it.categ]: it.id }), 'C\'est fait.'); } },
+        { label: 'Plus tard', fn: closeSheet }
+      ]
+    });
+  }
   toast(it.unique_buy ? `${it.titre} débloqué.` : `${it.titre} : c'est dans ta réserve.`);
   SFX.jouer('gagne');
 }
@@ -386,7 +397,7 @@ async function acheter(it) {
 /* ---------- Les invitations (version 2.0) ---------- */
 /* Un code par invitation, valable une fois. L'ami se connecte avec Discord,
    saisit le code sur l'écran d'attente (js/gate.js), et entre — avec un cadeau
-   de bienvenue (supabase/21_reflets.sql). Le lien remplit le code tout seul. */
+   de bienvenue (supabase/installation/21_reflets.sql). Le lien remplit le code tout seul. */
 const lienInvitation = code => `${String(SITE_URL || location.origin).replace(/\/$/, '')}/?invitation=${encodeURIComponent(code)}`;
 
 function vMesInvitations() {

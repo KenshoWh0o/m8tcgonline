@@ -72,21 +72,29 @@ function makeCard(meta, idx) {
   if (cat === 'joueur') {
     const defRaw = firstDefined(meta.def, meta.pv);
     c.def = defRaw != null ? (+defRaw || 0) : (DEFV[rar] || 90);
-    const at = Array.isArray(meta.attaques) ? meta.attaques : [];
-    c.atks = at.filter(a => a && typeof a === 'object').map(a => ({
+    const at = (Array.isArray(meta.attaques) ? meta.attaques : []).filter(a => a && typeof a === 'object');
+    /* Une ligne sans Essence devant n'est pas une attaque : c'est un talent
+       (version 3.0). Il ne se paie pas et ne se déclenche pas comme une
+       attaque ; le combat le lit dans `talents`. */
+    const talent = a => a.cout == null || (typeof a.cout === 'object' && !Object.values(a.cout).some(n => +n > 0));
+    c.atks = at.filter(a => !talent(a)).map(a => ({
       nom: String(a.nom || 'Attaque'),
       cout: normCost(a.cout),
       degats: (a.degats == null || a.degats === '') ? null : (+a.degats || 0),
       effet: String(a.effet || ''),
       plus: !!a.plus
     }));
-    if (!c.atks.length) c.atks = [{ nom: 'Attaque', cout: { neutre: 2 }, degats: DEFD[rar] || 60, effet: '', plus: false }];
+    c.talents = at.filter(talent).map(a => ({ nom: String(a.nom || 'Talent'), texte: String(a.effet || '') }));
+    if (!at.length) c.atks = [{ nom: 'Attaque', cout: { neutre: 2 }, degats: DEFD[rar] || 60, effet: '', plus: false }];
     if (meta.mot_cle && meta.mot_cle.nom) {
-      c.kw = { nom: String(meta.mot_cle.nom), texte: String(meta.mot_cle.texte || ''), icone: meta.mot_cle.icone || null };
+      c.kw = { nom: String(meta.mot_cle.nom), texte: String(meta.mot_cle.texte || '') };
     }
   } else {
     c.fx = Array.isArray(meta.effets) ? meta.effets.map(e => e && e.texte ? String(e.texte) : '').filter(Boolean) : [];
   }
+  /* Version 3.0 : la Résilience, jouée quand la carte sort des PV en combat
+     (js/combat/moteur.js). */
+  if (meta.resilience) c.res = String(meta.resilience);
 
   return c;
 }
@@ -109,6 +117,7 @@ function makePromo(meta) {
     attaques: meta.attaques,
     mot_cle: meta.mot_cle,
     effets: meta.effets,
+    resilience: meta.resilience,
     fichier: meta.fichier,
     booster: false,
     num
@@ -119,7 +128,11 @@ function makePromo(meta) {
   c.promo = true;
   c.obtention = meta.obtention || 'boutique';
   c.illustrateur = meta.illustrateur || '';
-  c.variante = meta.variante || '';
+  /* Version 3.0 : la Promo d'un Starter Deck dit sa Section ; une Promo
+     dont on ne connaît pas encore le contenu est `provisoire` (aucune depuis
+     la 3.0.13). */
+  if (meta.section) c.section = meta.section;
+  if (meta.provisoire) c.provisoire = true;
   return c;
 }
 
@@ -131,7 +144,7 @@ function buildPromos() {
 /* ---------- Les Essences Brillantes ---------- */
 /* La version brillante de chaque Essence : même illustration, autre finition
    (le reflet est posé par renderCard). `b` + le numéro de l'Essence, comme
-   côté serveur (supabase/03b_promos.sql). Hors extension, comme les Promos. */
+   côté serveur (supabase/installation/03b_promos.sql). Hors extension, comme les Promos. */
 function buildBrillantes(liste) {
   return liste.filter(c => c.cat === 'essence').map(e => Object.assign({}, e, {
     id: 'b' + e.id.slice(1),
@@ -148,15 +161,15 @@ function buildBrillantes(liste) {
 /* ---------- Les Reverses (version 2.0) ---------- */
 /* Chaque Commune, Peu commune et Rare de l'extension a sa Reverse : la même
    carte, frappée du logo Tout Commence Ici (posé par renderCard). `r` + le
-   numéro, comme côté serveur (supabase/03b_promos.sql). Hors des 122, mais
+   numéro, comme côté serveur (supabase/installation/03b_promos.sql). Hors des 122, mais
    échangeables, recyclables et fabricables — d'où `promo: false` ici : côté
    navigateur, c'est `rev` qui les met à part. */
 function buildReverses(liste) {
   return liste.filter(c => ['C', 'PC', 'R'].includes(c.rar) && c.cat !== 'essence').map(c => Object.assign({}, c, {
     id: 'r' + c.id.slice(1),
-    /* Le même nom : la carte se reconnaît à son reflet, et une petite icône
-       la signale dans les listes où l'on ne voit que le nom (nomH). */
-    nomBase: c.nom,
+    /* Le nom reste celui de la carte : elle se reconnaît à son reflet, et une
+       petite icône la signale dans les listes où l'on ne voit que le nom
+       (nomH). */
     inBoost: false,
     promo: false,
     rev: true,
@@ -172,7 +185,7 @@ function buildUniques() {
     const num = +String(meta.code).replace(/\D/g, '') || 1;
     const c = makeCard({
       nom: meta.nom, categorie: meta.categorie, sous_type: meta.sous_type,
-      couleur: meta.couleur, rarete: 'UN', effets: meta.effets,
+      couleur: meta.couleur, rarete: 'UN', effets: meta.effets, resilience: meta.resilience,
       fichier: meta.fichier, booster: false, num
     }, num - 1);
     c.id = 'u' + String(num).padStart(2, '0');
@@ -180,6 +193,26 @@ function buildUniques() {
     c.promo = true;
     c.unique = true;
     c.illustrateur = meta.illustrateur || '';
+    return c;
+  });
+}
+
+/* ---------- Les Secrètes (version 3.0) ---------- */
+/* `c123`… comme les cartes de l'extension, et le même moule ; mais elles
+   vivent dans leur liste (`secretes`), hors des 122. `secrete` les met à part
+   partout où l'on compte, et les laisse s'échanger. Une Secrète pas encore
+   révélée (`cachee`) n'a que son visuel flouté. */
+function buildSecretes() {
+  if (typeof SECRET_DATA === 'undefined') return [];
+  return SECRET_DATA.map(meta => {
+    const c = makeCard(Object.assign({ rarete: 'S' }, meta, meta.cachee
+      ? { nom: 'Secrète n°' + meta.num, categorie: 'Joueur', couleur: 'Neutre', attaques: [] } : {}), meta.num - 1);
+    c.rar = 'S';
+    c.secrete = true;
+    c.promo = false;
+    c.code = '#' + meta.num + '/' + CARD_DATA.length;
+    c.illustrateur = meta.illustrateur || '';
+    if (meta.cachee) { c.cachee = true; c.atks = []; c.kw = null; c.def = null; }
     return c;
   });
 }
