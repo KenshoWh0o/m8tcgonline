@@ -36,7 +36,8 @@ const REC_DEFAUT = { ES: 1, C: 2, PC: 5, R: 20, E: 80, L: 250 };
 const FAB_DEFAUT = { ES: 20, C: 40, PC: 100, R: 400, E: 2000, L: 8000 };
 const recValeurs = () => (save.recyclage && save.recyclage.valeurs) || REC_DEFAUT;
 const fabCouts = () => (save.recyclage && save.recyclage.couts) || FAB_DEFAUT;
-const recPrix = c => recValeurs()[c.rar] || 0;
+/* Une Reverse rapporte le double de sa classique (3.0.17, recycler). */
+const recPrix = c => (recValeurs()[c.rar] || 0) * (c.rev ? 2 : 1);
 /* Les Reverses (version 2.0) se recyclent et se fabriquent à partir d'une
    date que donne le serveur (reporté de la 2.5, supabase/installation/22c_reverses.sql) :
    la page bascule toute seule à l'heure dite, et prochaineBascule()

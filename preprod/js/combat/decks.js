@@ -102,49 +102,23 @@ function reserveAuto(cartes, defaut) {
 }
 
 /* ---------- Les Starter Decks ---------- */
-/* M8 vend deux Starter Decks : Section Toxique et Section Déter. Ceux d'ici
-   sont reconstitués (leur liste réelle n'est pas connue) : la Section
-   Toxique joue Rose — engager l'adversaire, des Joueurs qui frappent tôt —,
-   la Section Déter joue Mauve — des Joueurs qui reviennent, des coups
-   lourds. 40 cartes chacun, en suivant les conseils des règles officielles :
-   au moins 15 Joueurs (18 ici), une couleur dans la Réserve, des attaques à
-   une ou deux Essences. Chacun contient sa Promo. Ils sont prêtés : on peut
-   les jouer sans en posséder les cartes.
-   Mesuré le 31 octobre (3.0.12, IA niveau 3 des deux côtés, places
-   alternées, 240 parties, graines 2000 + i) : contre des decks tirés au sort
-   (Decks.aleatoire, niveau 3), le Toxique gagne 66 %, le Déter 48 % ; face
-   à face, **le Toxique 69 %** (165 sur 240 ; 274 sur 400). Le Toxique
-   engage les Joueurs adverses, qui ne peuvent alors plus défendre : avec
-   les règles officielles, ses attaques passent sur le CEO. Ce déséquilibre
-   est connu et ouvert (feuille de route, § 4) : les chiffres d'abord écrits
-   ici (64 %, 58 %, 61 %) ne se retrouvent pas sur le même code, et aucune
-   des variantes essayées ne le corrige — onze par la première passe (trois
-   Fée Rosalie au lieu d'une, des Épiques, Cooked, Doig'Dance, un Toxique
-   sans un Squeezie ni un Vandale…), quatre le 31 (un Déter à la courbe plus
-   basse : 69 % ; un Toxique sans Tout Commence Ici : 70 % ; les deux :
-   72 %). Version 3.0.13 : chacun a la vraie Promo de sa Section — P04
-   (Squeezie le Toxique) prend une place de Squeezie, la place libérée va à
-   un troisième Vandale ; P03 (Brawks Déter) remplace la Promo provisoire du
-   Déter. Mêmes mesures, mêmes graines : le Toxique 68,8 % puis 69,2 % sur
-   240 parties, 68,5 % avant comme après sur 400 (274). */
+/* M8 vend deux Starter Decks : Section Toxique et Section Déter. Depuis la
+   3.0.17, **leurs listes officielles** (le propriétaire, 8 novembre 2026) :
+   40 cartes chacun, dont 16 Joueurs et la Promo de la Section (P04, P03) ;
+   la Réserve, 7 Rose et 3 Orange pour le Toxique, 7 Mauve et 3 Violette
+   pour le Déter. Ils sont prêtés : on peut les jouer sans en posséder les
+   cartes. Jusqu'à la 3.0.16, des listes reconstituées par la session
+   (docs/economie-3.0.md, § 3 bis). */
 const STARTERS = {
   toxique: {
     id: 'starter-toxique', nom: 'Starter · Section Toxique', starter: true, couverture: 'c012',
-    cartes: {
-      p04: 1, c010: 3, c011: 3, c012: 2, c013: 2, c017: 1, c073: 2, c078: 2, c079: 1, c074: 1,
-      c015: 3, c085: 2, c087: 2, c088: 1,
-      c014: 2, c016: 2, c083: 2, c104: 1, c096: 2, c097: 2, c020: 1, c091: 1, c092: 1
-    },
-    reserve: { rose: 10 }
+    cartes: { p04: 1, c012: 2, c073: 3, c034: 3, c011: 3, c013: 3, c074: 1, c016: 2, c033: 2, c097: 3, c092: 2, c083: 3, c082: 3, c015: 3, c085: 3, c087: 3 },
+    reserve: { rose: 7, orange: 3 }
   },
   deter: {
     id: 'starter-deter', nom: 'Starter · Section Déter', starter: true, couverture: 'c077',
-    cartes: {
-      p03: 1, c051: 3, c052: 3, c050: 3, c077: 2, c074: 1, c076: 1, c080: 2, c081: 1, c059: 1,
-      c053: 3, c087: 2, c088: 2, c056: 1,
-      c054: 2, c055: 2, c083: 2, c082: 2, c092: 2, c093: 1, c072: 1, c094: 1, c095: 1
-    },
-    reserve: { mauve: 10 }
+    cartes: { p03: 1, c077: 2, c079: 3, c040: 3, c051: 3, c052: 3, c074: 1, c041: 2, c054: 2, c097: 3, c092: 2, c083: 3, c082: 3, c087: 3, c085: 3, c053: 3 },
+    reserve: { mauve: 7, violette: 3 }
   }
 };
 
