@@ -215,7 +215,11 @@ const CB_ICO = {
 
 /* Les illustrations des portes : Solo sur « 99% Faith » (#068), l'Arcade
    sur « Monster » (#102), Versus sur « Marteen Supreme » (#023). */
-const COUV = { solo: 'c068', arcade: 'c102', versus: 'c023' };
+/* Les affiches des modes. Depuis la 3.0.17 (le propriétaire, 8 novembre :
+   l'Arcade « mal croppée » ; la Campagne avec « l'image de la carte
+   Champions du Monde, pareil pour tout le monde tout le temps »), l'Arcade et
+   la Campagne passent par illuCadre (js/ui.js), cadrées sur leur sujet. */
+const COUV = { solo: 'c068', arcade: 'c102', campagne: 'c115', versus: 'c023' };
 
 /* Le fond d'une porte : l'illustration d'une carte (sa partie haute).
    L'adresse est absolue : dans une variable CSS, une adresse relative se
@@ -282,7 +286,7 @@ function vCbSolo(e) {
   const n = cbChoix.infini || 3;
   return `${cbSousTete('Solo', 'Campagne et Arcade')}
     <button class="cb-mode campagne" data-cb="vue" data-v="campagne">
-      <span class="cb-mode-art"${cbArt(prochain ? prochain.rival : adverse.promo)}></span>
+      <span class="cb-mode-art">${illuCadre(COUV.campagne, 0.66, 0.9, 1.5)}</span>
       <span class="cb-mode-t">
         <small>Campagne · ${e.campagne.finie ? 'terminée' : `acte ${ACTES.indexOf(acte) + 1} sur ${ACTES.length}`}</small>
         <b>${e.campagne.finie ? 'Les vingt rivaux sont tombés' : h(acte.nom)}</b>
@@ -292,7 +296,7 @@ function vCbSolo(e) {
       <span class="cb-une-go">${e.campagne.finie ? 'Revoir' : fait.size ? 'Continuer' : 'Commencer'}</span>
     </button>
     <button class="cb-mode arcade" data-cb="vue" data-v="arcade">
-      <span class="cb-mode-art"${cbArt(COUV.arcade)}></span>
+      <span class="cb-mode-art">${illuCadre(COUV.arcade, 0.5, 0.85, 1.5)}</span>
       <span class="cb-mode-t">
         <small>Arcade</small>
         <b>De Débutant à Légende</b>

@@ -122,9 +122,10 @@ Défausse, « où sont placées toutes les cartes défaussées ou bench » ; le 
 - **[Direction]** On ne possède pas les Essences : on les choisit. Les
   Essences Brillantes qu'on possède brillent en combat.
 - **[Direction]** Les deux **Starter Decks** (Toxique, Déter) sont prêtés : on
-  les joue sans en posséder les cartes. **Leurs listes ne sont pas connues** :
-  celles du jeu sont reconstituées (40 cartes, au moins 15 Joueurs, une
-  couleur chacun, `Decks.STARTERS` et la table `starters`). Chacun contient
+  les joue sans en posséder les cartes. **Leurs listes officielles** sont
+  dans le jeu depuis la 3.0.17 (le propriétaire, 8 novembre 2026 ;
+  `Decks.STARTERS` et la table `starters`) ; avant, des listes
+  reconstituées. Chacun contient
   la Promo de sa Section, connue depuis la 3.0.13 : P04 *Squeezie le Toxique*
   (le texte de la #012) pour Toxique, P03 *Brawks Déter* (celui de la #077)
   pour Déter.

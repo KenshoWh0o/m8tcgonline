@@ -309,7 +309,7 @@ function vLabVigueur() {
       ${['ES', 'C', 'PC', 'R', 'E', 'L'].map(x => `<span><i class="rardot r${x}"></i>${h((RAR[x] || RAR.C).nom)}</span>
         <span class="tnum">+${fmtN(recValeurs()[x])}</span><span class="tnum">${fmtN(fabCouts()[x])}</span>`).join('')}
       ${['C', 'PC', 'R'].map(x => `<span><i class="rardot r${x}"></i>Reverse ${h((RAR[x] || RAR.C).nom)}</span>
-        <span class="tnum">+${fmtN(recValeurs()[x])}</span><span class="tnum">${fmtN(revCouts()[x])}</span>`).join('')}
+        <span class="tnum">+${fmtN(2 * recValeurs()[x])}</span><span class="tnum">${fmtN(revCouts()[x])}</span>`).join('')}
     </div>
     <details class="labplus"><summary>Requêtes SQL, pour ce que le Labo ne fait pas</summary>
       <pre class="labsql">-- Un événement de recharge (ici : maintenant, pour 3 jours)

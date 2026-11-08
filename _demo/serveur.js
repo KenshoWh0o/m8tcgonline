@@ -1255,7 +1255,9 @@
       if (!k) refuser('Carte inconnue.');
       if (k.promo) refuser('Cette carte ne se recycle pas.');
       if (k.rev && !revOuvertes()) refuser('Les Reverses ne se recyclent pas encore.');
-      const prix = cfg('recyclage_' + k.rar);
+      /* Une Reverse rapporte le double de sa classique (3.0.17). */
+      const base = cfg('recyclage_' + k.rar);
+      const prix = base == null ? null : base * (k.rev ? 2 : 1);
       if (prix == null) refuser('Cette carte ne se recycle pas.');
       const reserve = S.trades.filter(t => t.from_user === p && t.offer_card === cid && t.status === 'pending').length;
       const g = gardeDe(p, cid);

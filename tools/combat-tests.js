@@ -861,9 +861,9 @@ test('un Starter ne se copie qu\'avec ses propres cartes, toutes versions compri
   r = Decks.copieStarter(st, sansPromo);
   egal([r.ok, r.cartes.c012, r.cartes.p04], [true, 3, undefined], 'la classique remplace la Promo');
   /* Une Reverse compte comme sa classique ; la copie reste valide contre la collection. */
-  const reverse = Object.assign({}, st.cartes, { c010: 1, r010: 2 });
+  const reverse = Object.assign({}, st.cartes, { c011: 1, r011: 2 });
   r = Decks.copieStarter(st, reverse);
-  egal([r.cartes.c010, r.cartes.r010], [1, 2]);
+  egal([r.cartes.c011, r.cartes.r011], [1, 2]);
   egal(Decks.verifier({ cartes: r.cartes, reserve: st.reserve }, reverse), [], 'copie valide');
   /* Plus d'exemplaires qu'il n'en faut : la Promo du Starter garde sa place. */
   r = Decks.copieStarter(st, Object.assign({}, st.cartes, { c012: 5 }));

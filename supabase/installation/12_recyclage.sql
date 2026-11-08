@@ -117,11 +117,13 @@ begin
     if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
     -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, a
     -- partir de la date d'ouverture (reverses_ouvertes, 22c_reverses.sql).
-    -- Une Reverse rapporte comme sa classique.
+    -- Version 3.0.17 (le proprietaire, 8 novembre 2026 : « le recyclage de
+    -- reverse ne donne pas le double du recyclage de normales ») : une
+    -- Reverse rapporte le double de sa classique (avant : autant).
     if k.reverse and not reverses_ouvertes() then
       raise exception 'Les Reverses ne se recyclent pas encore.';
     end if;
-    prix := cfg('recyclage_' || k.rar);
+    prix := cfg('recyclage_' || k.rar) * case when k.reverse then 2 else 1 end;
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 
     select qty into possede from collection where user_id = p and card_id = cid for update;

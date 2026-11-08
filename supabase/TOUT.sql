@@ -14,7 +14,7 @@
 --   requete ; avec psql, ajouter --single-transaction pour qu'une erreur
 --   annule tout.
 --
---   Assemble le 2026-11-03
+--   Assemble le 2026-11-08
 --
 -- =====================================================================
 
@@ -2963,11 +2963,13 @@ begin
     if k.promo and not k.reverse then raise exception 'Cette carte ne se recycle pas.'; end if;
     -- Les Reverses (version 2.0) se recyclent et se fabriquent ensemble, a
     -- partir de la date d'ouverture (reverses_ouvertes, 22c_reverses.sql).
-    -- Une Reverse rapporte comme sa classique.
+    -- Version 3.0.17 (le proprietaire, 8 novembre 2026 : « le recyclage de
+    -- reverse ne donne pas le double du recyclage de normales ») : une
+    -- Reverse rapporte le double de sa classique (avant : autant).
     if k.reverse and not reverses_ouvertes() then
       raise exception 'Les Reverses ne se recyclent pas encore.';
     end if;
-    prix := cfg('recyclage_' || k.rar);
+    prix := cfg('recyclage_' || k.rar) * case when k.reverse then 2 else 1 end;
     if prix is null then raise exception 'Cette carte ne se recycle pas.'; end if;
 
     select qty into possede from collection where user_id = p and card_id = cid for update;
@@ -4769,7 +4771,8 @@ insert into public.pve_difficultes (niveau, eclats) values
   (1, 10), (2, 15), (3, 25), (4, 35), (5, 50)
 on conflict (niveau) do update set eclats = excluded.eclats;
 
--- Les deux Starter Decks (Decks.STARTERS, js/combat/decks.js). Ils sont
+-- Les deux Starter Decks (Decks.STARTERS, js/combat/decks.js ; leurs listes
+-- officielles depuis la 3.0.17). Ils sont
 -- pretes : un defi joue avec l'un d'eux n'exige pas d'en posseder les cartes.
 create table if not exists public.starters (
   section text not null check (section in ('toxique', 'deter')),
@@ -4779,18 +4782,14 @@ create table if not exists public.starters (
 );
 delete from public.starters;
 insert into public.starters (section, card_id, n) values
-  ('toxique', 'p04', 1), ('toxique', 'c010', 3), ('toxique', 'c011', 3), ('toxique', 'c012', 2),
-  ('toxique', 'c013', 2), ('toxique', 'c017', 1), ('toxique', 'c073', 2), ('toxique', 'c078', 2),
-  ('toxique', 'c079', 1), ('toxique', 'c074', 1), ('toxique', 'c015', 3), ('toxique', 'c085', 2),
-  ('toxique', 'c087', 2), ('toxique', 'c088', 1), ('toxique', 'c014', 2), ('toxique', 'c016', 2),
-  ('toxique', 'c083', 2), ('toxique', 'c104', 1), ('toxique', 'c096', 2), ('toxique', 'c097', 2),
-  ('toxique', 'c020', 1), ('toxique', 'c091', 1), ('toxique', 'c092', 1), ('deter', 'p03', 1),
-  ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c050', 3), ('deter', 'c077', 2),
-  ('deter', 'c074', 1), ('deter', 'c076', 1), ('deter', 'c080', 2), ('deter', 'c081', 1),
-  ('deter', 'c059', 1), ('deter', 'c053', 3), ('deter', 'c087', 2),
-  ('deter', 'c088', 2), ('deter', 'c056', 1), ('deter', 'c054', 2), ('deter', 'c055', 2),
-  ('deter', 'c083', 2), ('deter', 'c082', 2), ('deter', 'c092', 2), ('deter', 'c093', 1),
-  ('deter', 'c072', 1), ('deter', 'c094', 1), ('deter', 'c095', 1);
+  ('toxique', 'p04', 1), ('toxique', 'c012', 2), ('toxique', 'c073', 3), ('toxique', 'c034', 3),
+  ('toxique', 'c011', 3), ('toxique', 'c013', 3), ('toxique', 'c074', 1), ('toxique', 'c016', 2),
+  ('toxique', 'c033', 2), ('toxique', 'c097', 3), ('toxique', 'c092', 2), ('toxique', 'c083', 3),
+  ('toxique', 'c082', 3), ('toxique', 'c015', 3), ('toxique', 'c085', 3), ('toxique', 'c087', 3),
+  ('deter', 'p03', 1), ('deter', 'c077', 2), ('deter', 'c079', 3), ('deter', 'c040', 3),
+  ('deter', 'c051', 3), ('deter', 'c052', 3), ('deter', 'c074', 1), ('deter', 'c041', 2),
+  ('deter', 'c054', 2), ('deter', 'c097', 3), ('deter', 'c092', 2), ('deter', 'c083', 3),
+  ('deter', 'c082', 3), ('deter', 'c087', 3), ('deter', 'c085', 3), ('deter', 'c053', 3);
 
 -- La Guerre des Sections du pre-build : retiree.
 drop function if exists public.marquer_points(uuid, int);
