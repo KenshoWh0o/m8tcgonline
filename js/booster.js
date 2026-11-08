@@ -145,8 +145,29 @@ function pendant(ms) {
   return hh >= 48 ? `pendant ${Math.round(hh / 24)} jours` : `pendant ${hh} h`;
 }
 
+/* La 3.0 (le propriétaire, 8 novembre 2026 : « Mets sur le vrai site en
+   évidence cette date de sortie pour hype les gens ») : jusqu'à la sortie
+   (PROCHAINE, js/config.js), ce bandeau passe avant tous les autres, avec
+   son compte à rebours ; il ouvre la fenêtre de la 3.0 (montrerHype30,
+   js/bienvenue.js). */
+const hype30Actif = () => typeof PROCHAINE !== 'undefined' && Date.now() < srvTime(PROCHAINE.sortie);
+function vBandeau30() {
+  const s = srvTime(PROCHAINE.sortie);
+  const c = byId.c078;
+  return `<button class="rfban ban30" data-act="hype30" aria-label="La version ${h(PROCHAINE.version)} sort ce soir à minuit">
+    ${c && c.img ? `<span class="rf-fond" aria-hidden="true"><i style="background-image:url('${h(c.img)}')"></i></span>` : ''}
+    <span class="rfban-txt">
+      <small>Version ${h(PROCHAINE.version)} · ce soir à minuit</small>
+      <b>Les combats arrivent</b>
+    </span>
+    <span class="ban30-rebours tnum" data-rebours="${s}">${h(dureeCourte(s - Date.now()))}</span>
+    <span class="rfban-fl" aria-hidden="true">›</span>
+  </button>`;
+}
+
 function vBandeauEvenement() {
   if (Backend.mode !== 'cloud' || !save) return '';
+  if (hype30Actif()) return vBandeau30();
   const ev = save.evenement;
   /* Version 2.0 : l'événement « Reflets » a son propre bandeau, qui mène à
      son onglet. */

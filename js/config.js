@@ -42,7 +42,7 @@ const SORTIE = { version: '2.5', le: '2026-10-26T00:00:00+01:00', avant: '2.1.3'
    mardi 10 novembre SOIR à minuit ») : la maintenance commence dans la nuit
    du lundi 9 au mardi 10 novembre à 0 h, la 3.0 sort dans la nuit du mardi 10
    au mercredi 11 à 0 h, heure de Paris. vEchSuite30, js/echauffement.js. */
-const PROCHAINE = { version: '3.0', maintenance: '2026-11-10T00:00:00+01:00', sortie: '2026-11-11T00:00:00+01:00' };
+const PROCHAINE = { version: '3.0', maintenance: '2026-11-08T23:50:00+01:00', sortie: '2026-11-09T00:00:00+01:00' };
 
 /* Dossier des images, ajouté devant le champ "fichier" de chaque carte de js/cards-data.js. */
 const CARD_DIR = 'cards/';

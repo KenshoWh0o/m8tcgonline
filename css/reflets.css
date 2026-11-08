@@ -509,3 +509,12 @@ html.rm .rf-holo,html.rm #nav button.evnav svg,html.rm .il-pix.net,html.rm .il-a
   .rr-stat:first-child{grid-column:auto}
   .rr-stat:first-child b{font-size:26px}
 }
+/* La 3.0, ce soir (8 novembre 2026) : le bandeau de Boosters, en graphite et
+   lavande (js/booster.js, vBandeau30). */
+.rfban.ban30{background:#16151e}
+.rfban.ban30::before{background:linear-gradient(110deg,transparent 25%,rgba(179,166,255,.7) 40%,rgba(255,255,255,.9) 48%,rgba(200,191,255,.7) 56%,transparent 72%) no-repeat;background-size:300% 100%}
+.rfban.ban30 .rf-fond>i{--t:.3;--z:1.4}
+.rfban.ban30 .rfban-txt b{width:auto;max-width:100%;font-size:18px;white-space:nowrap;background:linear-gradient(100deg,#fff,#e4dfff 45%,#b3a6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+@media (max-width:370px){.rfban.ban30 .rfban-txt b{font-size:16px}.ban30-rebours{padding:4px 8px;font-size:12px}}
+.ban30-rebours{flex:none;padding:5px 10px;border-radius:999px;font-size:13px;font-weight:900;color:#16151e;background:#c8bfff;box-shadow:0 0 14px rgba(140,120,255,.45)}
+

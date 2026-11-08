@@ -427,6 +427,7 @@ async function clicPage(e) {
       colPossedees = colObjectifs = colFavoris = false;
       return render();
     case 'porte-discord': return porteConnexion();
+    case 'hype30': return montrerHype30();
     case 'porte-sortir': return porteSortir();
     case 'porte-code': return porteCode();
     case 'installer': return ouvrirInstall(true);

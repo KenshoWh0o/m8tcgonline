@@ -172,7 +172,7 @@ function vMaintenance30() {
     <h1 class="locktitle">La ${h(PROCHAINE.version)} arrive</h1>
     <div class="lockfin">
       <strong>Le jeu est en maintenance le temps de la mise à jour.</strong>
-      <p>Retour prévu le ${h(jourParis30(PROCHAINE.sortie))} à 0 h (heure de Paris), en version ${h(PROCHAINE.version)}.</p>
+      <p>Retour à minuit (heure de Paris), en version ${h(PROCHAINE.version)}.</p>
       <p class="lockreste" id="m30-reste" role="timer">${resteMaint30()}</p>
     </div>
     <div class="lockentree">${lienDiscord('btn discord', 'Rejoindre le Discord')}</div>

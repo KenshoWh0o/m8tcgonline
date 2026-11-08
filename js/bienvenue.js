@@ -240,8 +240,32 @@ function montrerChasseFin() {
 }
 
 /* Appelé après chaque rendu : c'est le moment où l'écran est posé. */
+/* La 3.0, ce soir (8 novembre 2026) : une fenêtre, une fois par appareil,
+   avant la sortie ; le bandeau de l'écran Boosters la rouvre. */
+const HYPE30_CLE = 'mtcg.hype30';
+const hype30AVoir = () => { try { return hype30Actif() && !localStorage.getItem(HYPE30_CLE); } catch (e) { return false; } };
+function montrerHype30() {
+  try { localStorage.setItem(HYPE30_CLE, '1'); } catch (e) { /* mode privé */ }
+  const s = srvTime(PROCHAINE.sortie);
+  const point = (ico, titre, texte) => `<li><span class="bvico">${NAVICO[ico] || NAVICO.promo}</span><span><b>${titre}</b> ${texte}</span></li>`;
+  openSheet({
+    title: '',
+    body: `<div class="ech-annonce maj25 maj30">${echIllu(byId.c078, .62, .33, 'fond')}<span><small>Ce soir à minuit</small><b>Version ${h(PROCHAINE.version)}</b><span>Encore <b class="tnum" data-rebours="${s}">${h(dureeCourte(s - Date.now()))}</b></span></span></div>
+      <ol class="bvpoints nvpoints">
+        ${point('sword', 'Les combats.', 'Une Campagne de vingt rivaux, l\'Arcade, et le Versus entre amis.')}
+        ${point('cards', 'Tes decks.', '40 cartes et 10 Essences, construits avec ta collection ; deux Starter Decks prêtés pour commencer.')}
+        ${point('trophy', 'Le Raid.', 'Un boss pour tout le serveur, et des coffres pour tous ceux qui l\'affrontent.')}
+        ${point('amis', 'Le Choc des Sections.', 'Toxique ou Déter : deux semaines d\'événement, et l\'Épreuve du jour.')}
+        ${point('promo', 'La maîtrise et les Secrètes.', 'Fais monter tes cartes préférées, et cinq cartes Secrètes rejoignent la collection.')}
+      </ol>
+      <p class="muted small">Maintenance à 23 h 50 (heure de Paris) : le jeu revient à minuit, en version ${h(PROCHAINE.version)}.</p>`,
+    actions: [{ label: 'J\'ai hâte', primary: true, fn: () => { closeSheet(); SFX.jouer('gagne'); } }]
+  });
+}
+
 function proposerAccueil() {
   if (accueilDejaPropose) return;
+  if (hype30AVoir()) return quandCalme(montrerHype30);
   if (bienvenueAVoir()) return quandCalme(montrerBienvenue);
   if (chasseFinAVoir()) return quandCalme(montrerChasseFin);
   if (recapAVoir()) return quandCalme(montrerRecap);
