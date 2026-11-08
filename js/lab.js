@@ -142,11 +142,12 @@ function vLabMaintenance() {
   return `<section class="panel labmaint${m.actif ? ' on' : ''}">
     <h2>Maintenance <small class="labtag">pour tout le monde</small></h2>
     <div class="labmaint-etat"><i aria-hidden="true"></i><span>${m.actif
-      ? `<b>En maintenance</b><small>depuis ${h(labQuand(m.depuis))}${m.par ? ` · ${h(m.par)}` : ''}</small>`
+      ? `<b>En maintenance</b><small>depuis ${h(labQuand(m.depuis))}${m.par ? ` · ${h(m.par)}` : ''}${m.auto && m.fin ? ` · se lève d'elle-même ${h(labQuand(m.fin))}` : ''}</small>`
       : '<b>En service</b><small>les joueurs jouent</small>'}</span></div>
     <p class="muted small">Pendant une maintenance, les joueurs voient l'écran de maintenance et le serveur refuse
       toutes leurs actions ; les administrateurs jouent, avec une pastille en haut de l'écran. Elle ne finit que
-      quand on la lève ici. Une base 2.x qui reçoit la 3.0 y entre d'office.</p>
+      quand on la lève ici, sauf celle de la mise à jour 3.0 : une base 2.x qui la reçoit y entre d'office, et
+      en sort d'elle-même à la sortie prévue (mercredi 11 novembre, 0 h) si elle l'a reçue avant.</p>
     <label class="field"><span>Le message</span><textarea id="lab-maint-msg" rows="3" maxlength="300"
       placeholder="${h(MAINT_DEFAUT)}">${h(m.message || '')}</textarea></label>
     <label class="field"><span>Retour prévu (facultatif, à l'heure de cet appareil)</span>

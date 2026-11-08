@@ -1,4 +1,17 @@
 \set ON_ERROR_STOP 1
+-- 0. 3.0.17 : la maintenance de la mise a jour se leve d'elle-meme a la
+-- sortie prevue (mercredi 11 novembre 2026, 0 h, heure de Paris), si la base
+-- l'a recue avant ; apres, elle attend un administrateur.
+do $t$
+declare m maintenance;
+begin
+  select * into m from maintenance where id = 1;
+  if now() < timestamptz '2026-11-11 00:00:00+01' then
+    if not m.fin_auto or m.fin <> timestamptz '2026-11-11 00:00:00+01' then raise exception 'ECHEC : levee automatique % %', m.fin_auto, m.fin; end if;
+  elsif m.fin_auto or m.fin is not null then raise exception 'ECHEC : levee automatique apres la date % %', m.fin_auto, m.fin;
+  end if;
+  raise warning 'OK 0 : la maintenance de la mise a jour se leve d''elle-meme a % (auto : %)', coalesce(m.fin::text, 'personne'), m.fin_auto;
+end $t$;
 -- 1. Sans compte : porte() dit la version et la maintenance.
 select set_config('request.jwt.claim.sub', '', false);
 set role anon;
@@ -65,3 +78,23 @@ begin
   perform public.combat_section('toxique');
   raise warning 'OK 4 : maintenance levee, le joueur joue';
 end $t$;
+
+-- 5. 3.0.17 : une maintenance qui se leve d'elle-meme a son heure de retour.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b2', false);
+do $t$
+declare e jsonb;
+begin
+  e := public.labo_maintenance(true, 'Retour a l''heure dite', now() + interval '1 day', true);
+  if not (e->'maintenance'->>'auto')::boolean or public.porte()->'maintenance' = 'null'::jsonb then raise exception 'ECHEC : maintenance automatique %', e->'maintenance'; end if;
+end $t$;
+reset role;
+update public.maintenance set fin = now() - interval '1 second' where id = 1;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b1', false);
+do $t$
+begin
+  if public.porte()->'maintenance' <> 'null'::jsonb then raise exception 'ECHEC : porte() voit une maintenance passee son heure'; end if;
+  perform public.checkin();
+  raise warning 'OK 5 : passee son heure de retour, la maintenance automatique ne compte plus (porte, garde)';
+end $t$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000b2', false);
+select public.labo_maintenance(false) is not null as levee;

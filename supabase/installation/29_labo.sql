@@ -131,8 +131,8 @@ begin
                              from evenements e where e.code is null and e.fin > now()), '[]'::jsonb),
     'joueurs', (select count(*) from profiles),
     -- La maintenance (3.0.12, 01_schema.sql).
-    'maintenance', (select jsonb_build_object('actif', m.actif, 'message', m.message, 'fin', m.fin,
-                                              'depuis', m.depuis, 'par', m.par)
+    'maintenance', (select jsonb_build_object('actif', maintenance_active(), 'message', m.message, 'fin', m.fin,
+                                              'auto', m.fin_auto, 'depuis', m.depuis, 'par', m.par)
                       from maintenance m where m.id = 1),
     'sauvegarde', (select jsonb_build_object('le', s.le, 'version', coalesce(s.contenu ->> 'version', '2.5'),
                             'cartes', jsonb_array_length(coalesce(s.contenu -> 'collection', '[]'::jsonb)))
@@ -464,9 +464,12 @@ end $$;
 -- l'allumer, changer son message ou son heure de retour prevue, l'eteindre.
 -- Allumee, les joueurs voient l'ecran de maintenance et garde_beta() refuse
 -- leurs actions ; les administrateurs jouent. L'heure de retour ne fait que
--- s'afficher : la maintenance ne finit que quand on l'eteint ici.
+-- s'afficher, sauf `p_auto` (3.0.17) : la maintenance se leve alors d'elle-
+-- meme a cette heure. Changer le message d'une maintenance en cours garde
+-- son reglage (celle de la mise a jour 3.0 se leve a la sortie prevue).
+drop function if exists public.labo_maintenance(boolean, text, timestamptz);
 create or replace function public.labo_maintenance(p_actif boolean, p_message text default null,
-                                                   p_fin timestamptz default null) returns jsonb
+                                                   p_fin timestamptz default null, p_auto boolean default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := labo_garde(); a boolean := coalesce(p_actif, false);
 begin
@@ -475,6 +478,7 @@ begin
     actif   = a,
     message = case when a then nullif(left(trim(p_message), 300), '') end,
     fin     = case when a then p_fin end,
+    fin_auto = a and p_fin is not null and coalesce(p_auto, actif and fin_auto),
     -- Depuis quand : garde l'heure de depart si on ne fait que changer le message.
     depuis  = case when not a then null when actif then depuis else now() end,
     par     = case when not a then null when actif then par else (select pseudo from profiles where id = p) end

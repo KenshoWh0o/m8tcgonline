@@ -672,7 +672,7 @@
   RPC.porte = () => {
     const m = maintDemo();
     return { ouvert: true, lancement: null, serveur: iso(now()), version: '3.0',
-      maintenance: m.actif ? { message: m.message, fin: m.fin, depuis: m.depuis } : null };
+      maintenance: m.actif && !(m.auto && m.fin && Date.parse(m.fin) <= now()) ? { message: m.message, fin: m.fin, depuis: m.depuis, auto: !!m.auto } : null };
   };
 
   RPC.set_profile = (p, { p_pseudo, p_avatar, p_frame }) => {
@@ -1384,7 +1384,7 @@
   }
   RPC.labo_etat = p => { estAdmin(p); return laboEtat(p); };
   /* labo_maintenance (29_labo.sql, 3.0.12). */
-  RPC.labo_maintenance = (p, { p_actif, p_message, p_fin }) => {
+  RPC.labo_maintenance = (p, { p_actif, p_message, p_fin, p_auto }) => {
     estAdmin(p);
     const a = !!p_actif, m = maintDemo();
     if (a && p_fin && Date.parse(p_fin) <= now()) refuser('L\'heure de retour est déjà passée.');
@@ -1392,6 +1392,8 @@
     m.actif = a;
     m.message = a ? (String(p_message || '').trim().slice(0, 300) || null) : null;
     m.fin = a && p_fin ? iso(Date.parse(p_fin)) : null;
+    /* 3.0.17 : se lever d'elle-même à l'heure de retour (fin_auto). */
+    m.auto = !!(a && m.fin && (p_auto != null ? p_auto : deja && m.auto));
     m.depuis = !a ? null : deja ? m.depuis : iso(now());
     m.par = !a ? null : deja ? m.par : profil(p).pseudo;
     return laboEtat(p);

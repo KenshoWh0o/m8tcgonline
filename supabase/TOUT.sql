@@ -318,6 +318,15 @@ $$;
 -- verifie. La detection se fait a la creation de la table, donc une seule
 -- fois : sans table `combat_joueurs` (une base qui n'a jamais eu la 3.0) et
 -- avec au moins un profil. Une installation neuve, elle, n'a personne.
+--
+-- Version 3.0.17 (le proprietaire, 8 novembre 2026 : « programmer la
+-- maintenance […] pour la date prevue, et tout automatiser ») : `fin_auto`.
+-- Vraie, la maintenance se leve d'elle-meme a son heure de retour (`fin`) :
+-- maintenance_active() ne la compte plus, porte() ne la montre plus, et les
+-- ecrans de maintenance rechargent la page (js/gate.js). La maintenance de la
+-- mise a jour la pose pour la sortie prevue, mercredi 11 novembre 2026, 0 h
+-- (heure de Paris), si on la colle avant ; collee apres, elle attend qu'un
+-- administrateur la leve (Labo › Serveur), comme avant.
 do $$
 begin
   if to_regclass('public.maintenance') is null then
@@ -326,17 +335,30 @@ begin
       actif   boolean not null default false,
       message text,
       fin     timestamptz,
+      fin_auto boolean not null default false,
       depuis  timestamptz,
       par     text
     );
-    insert into public.maintenance (id, actif, message, depuis, par)
-    select 1, true, 'La version 3.0 arrive : le jeu est en maintenance le temps de la mise à jour.', now(), 'la mise à jour 3.0'
+    insert into public.maintenance (id, actif, message, fin, fin_auto, depuis, par)
+    select 1, true, 'La version 3.0 arrive : le jeu est en maintenance le temps de la mise à jour.',
+           case when now() < timestamptz '2026-11-11 00:00:00+01' then timestamptz '2026-11-11 00:00:00+01' end,
+           now() < timestamptz '2026-11-11 00:00:00+01', now(), 'la mise à jour 3.0'
      where to_regclass('public.combat_joueurs') is null and exists (select 1 from public.profiles);
   end if;
 end $$;
+alter table public.maintenance add column if not exists fin_auto boolean not null default false;
 insert into public.maintenance (id) values (1) on conflict (id) do nothing;
 alter table public.maintenance enable row level security;
 revoke all on public.maintenance from anon, authenticated;
+
+-- La maintenance compte-t-elle en ce moment ? Allumee, et pas passee son
+-- heure de retour si elle se leve d'elle-meme (fin_auto, 3.0.17).
+create or replace function public.maintenance_active() returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select m.actif and not (m.fin_auto and m.fin is not null and now() >= m.fin)
+                     from maintenance m where m.id = 1), false);
+$$;
+revoke all on function public.maintenance_active from public, anon, authenticated;
 
 -- Ce que l'ecran d'attente a besoin de savoir, sans compte : est-ce ouvert,
 -- quand ca ouvre, et quelle heure il est ICI. Le navigateur compte ensuite le
@@ -352,8 +374,9 @@ language sql stable security definer set search_path = public as $$
                             'lancement', beta_lancement(),
                             'serveur', now(),
                             'version', '3.0',
-                            'maintenance', (select case when m.actif then jsonb_build_object(
-                                                     'message', m.message, 'fin', m.fin, 'depuis', m.depuis) end
+                            'maintenance', (select case when maintenance_active() then jsonb_build_object(
+                                                     'message', m.message, 'fin', m.fin, 'depuis', m.depuis,
+                                                     'auto', m.fin_auto) end
                                               from maintenance m where m.id = 1));
 $$;
 
@@ -467,7 +490,7 @@ begin
   end if;
   -- Version 3.0.12 : pendant une maintenance, seuls les administrateurs
   -- jouent (une ligne lue par sa cle : rien a payer le reste du temps).
-  if exists (select 1 from maintenance where id = 1 and actif)
+  if maintenance_active()
      and not exists (select 1 from profiles where id = p and is_admin) then
     raise exception 'MAINTENANCE';
   end if;
@@ -6898,8 +6921,8 @@ begin
                              from evenements e where e.code is null and e.fin > now()), '[]'::jsonb),
     'joueurs', (select count(*) from profiles),
     -- La maintenance (3.0.12, 01_schema.sql).
-    'maintenance', (select jsonb_build_object('actif', m.actif, 'message', m.message, 'fin', m.fin,
-                                              'depuis', m.depuis, 'par', m.par)
+    'maintenance', (select jsonb_build_object('actif', maintenance_active(), 'message', m.message, 'fin', m.fin,
+                                              'auto', m.fin_auto, 'depuis', m.depuis, 'par', m.par)
                       from maintenance m where m.id = 1),
     'sauvegarde', (select jsonb_build_object('le', s.le, 'version', coalesce(s.contenu ->> 'version', '2.5'),
                             'cartes', jsonb_array_length(coalesce(s.contenu -> 'collection', '[]'::jsonb)))
@@ -7231,9 +7254,12 @@ end $$;
 -- l'allumer, changer son message ou son heure de retour prevue, l'eteindre.
 -- Allumee, les joueurs voient l'ecran de maintenance et garde_beta() refuse
 -- leurs actions ; les administrateurs jouent. L'heure de retour ne fait que
--- s'afficher : la maintenance ne finit que quand on l'eteint ici.
+-- s'afficher, sauf `p_auto` (3.0.17) : la maintenance se leve alors d'elle-
+-- meme a cette heure. Changer le message d'une maintenance en cours garde
+-- son reglage (celle de la mise a jour 3.0 se leve a la sortie prevue).
+drop function if exists public.labo_maintenance(boolean, text, timestamptz);
 create or replace function public.labo_maintenance(p_actif boolean, p_message text default null,
-                                                   p_fin timestamptz default null) returns jsonb
+                                                   p_fin timestamptz default null, p_auto boolean default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare p uuid := labo_garde(); a boolean := coalesce(p_actif, false);
 begin
@@ -7242,6 +7268,7 @@ begin
     actif   = a,
     message = case when a then nullif(left(trim(p_message), 300), '') end,
     fin     = case when a then p_fin end,
+    fin_auto = a and p_fin is not null and coalesce(p_auto, actif and fin_auto),
     -- Depuis quand : garde l'heure de depart si on ne fait que changer le message.
     depuis  = case when not a then null when actif then depuis else now() end,
     par     = case when not a then null when actif then par else (select pseudo from profiles where id = p) end
